@@ -85,6 +85,11 @@ export const importApi = {
   },
 };
 
+// ===== Whisky of the Day =====
+export const wotdApi = {
+  get: () => fetchJSON("/whisky-of-the-day"),
+};
+
 // ===== Ratings =====
 export const ratingApi = {
   getForWhisky: (whiskyId: string) => fetchJSON(`/whiskies/${whiskyId}/ratings`),

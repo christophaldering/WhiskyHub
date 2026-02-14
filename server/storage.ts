@@ -9,6 +9,13 @@ import {
   type InsertRating, type Rating,
 } from "@shared/schema";
 
+export interface WhiskyOfTheDay {
+  whisky: Whisky;
+  avgRating: number;
+  ratingCount: number;
+  categories: { nose: number; taste: number; finish: number; balance: number };
+}
+
 export interface IStorage {
   // Participants
   getParticipant(id: string): Promise<Participant | undefined>;
@@ -31,6 +38,7 @@ export interface IStorage {
 
   // Whiskies
   getWhiskiesForTasting(tastingId: string): Promise<Whisky[]>;
+  getAllWhiskies(): Promise<Whisky[]>;
   getWhisky(id: string): Promise<Whisky | undefined>;
   createWhisky(data: InsertWhisky): Promise<Whisky>;
   updateWhisky(id: string, data: Partial<InsertWhisky>): Promise<Whisky | undefined>;
@@ -127,6 +135,10 @@ export class DatabaseStorage implements IStorage {
   // --- Whiskies ---
   async getWhiskiesForTasting(tastingId: string): Promise<Whisky[]> {
     return db.select().from(whiskies).where(eq(whiskies.tastingId, tastingId)).orderBy(asc(whiskies.sortOrder));
+  }
+
+  async getAllWhiskies(): Promise<Whisky[]> {
+    return db.select().from(whiskies);
   }
 
   async getWhisky(id: string): Promise<Whisky | undefined> {

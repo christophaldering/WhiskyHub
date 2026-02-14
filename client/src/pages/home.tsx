@@ -4,11 +4,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLocation } from "wouter";
-import { UserPlus, Plus, ArrowRight } from "lucide-react";
+import { UserPlus, Plus, ArrowRight, Star, Wine, ImageIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, participantApi } from "@/lib/api";
+import { tastingApi, participantApi, wotdApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { LoginDialog } from "@/components/login-dialog";
 import { queryClient } from "@/lib/queryClient";
@@ -30,6 +30,12 @@ export default function Home() {
   const { data: tastings } = useQuery({
     queryKey: ["tastings"],
     queryFn: tastingApi.getAll,
+  });
+
+  const { data: wotd } = useQuery({
+    queryKey: ["whisky-of-the-day"],
+    queryFn: wotdApi.get,
+    staleTime: 1000 * 60 * 60,
   });
 
   const createTasting = useMutation({
@@ -165,6 +171,83 @@ export default function Home() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Whisky of the Day */}
+      {wotd && wotd.whisky && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.8 }} className="w-full">
+          <div className="bg-card border border-border/50 rounded-lg overflow-hidden shadow-sm" data-testid="card-wotd">
+            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 py-3 border-b border-border/30">
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4 text-primary" />
+                <h2 className="text-sm font-serif font-bold text-primary uppercase tracking-widest">{t("wotd.title")}</h2>
+              </div>
+            </div>
+            <div className="p-6 flex flex-col md:flex-row gap-6 items-center">
+              <div className="flex-shrink-0">
+                {wotd.whisky.imageUrl ? (
+                  <img src={wotd.whisky.imageUrl} alt={wotd.whisky.name} className="w-24 h-24 object-cover rounded-full border-2 border-primary/20 shadow-md" data-testid="img-wotd" />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-secondary/30 border-2 border-primary/20 flex items-center justify-center">
+                    <Wine className="w-10 h-10 text-primary/30" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 text-center md:text-left space-y-2">
+                <h3 className="font-serif text-2xl font-bold text-primary" data-testid="text-wotd-name">{wotd.whisky.name}</h3>
+                <p className="text-muted-foreground font-serif italic">{wotd.whisky.distillery || "Unknown distillery"}</p>
+                <div className="flex flex-wrap gap-3 justify-center md:justify-start mt-2">
+                  {wotd.whisky.age && (
+                    <span className="text-xs bg-secondary px-2 py-1 rounded text-secondary-foreground">{wotd.whisky.age} yo</span>
+                  )}
+                  {wotd.whisky.abv && (
+                    <span className="text-xs bg-secondary px-2 py-1 rounded text-secondary-foreground font-mono">{wotd.whisky.abv}%</span>
+                  )}
+                  {wotd.whisky.region && (
+                    <span className="text-xs bg-secondary px-2 py-1 rounded text-secondary-foreground">{wotd.whisky.region}</span>
+                  )}
+                  {wotd.whisky.type && (
+                    <span className="text-xs bg-secondary px-2 py-1 rounded text-secondary-foreground">{wotd.whisky.type}</span>
+                  )}
+                  {wotd.whisky.peatLevel && wotd.whisky.peatLevel !== "None" && (
+                    <span className="text-xs bg-secondary px-2 py-1 rounded text-secondary-foreground">Peat: {wotd.whisky.peatLevel}</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex-shrink-0 text-center space-y-3 min-w-[140px]">
+                {wotd.ratingCount > 0 ? (
+                  <>
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">{t("wotd.avgRating")}</p>
+                      <p className="text-4xl font-mono font-bold text-primary" data-testid="text-wotd-rating">{wotd.avgRating}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t("wotd.ratings", { count: wotd.ratingCount })}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-secondary/30 rounded px-2 py-1">
+                        <span className="text-muted-foreground block">{t("wotd.nose")}</span>
+                        <span className="font-mono font-medium">{wotd.categories.nose}</span>
+                      </div>
+                      <div className="bg-secondary/30 rounded px-2 py-1">
+                        <span className="text-muted-foreground block">{t("wotd.taste")}</span>
+                        <span className="font-mono font-medium">{wotd.categories.taste}</span>
+                      </div>
+                      <div className="bg-secondary/30 rounded px-2 py-1">
+                        <span className="text-muted-foreground block">{t("wotd.finish")}</span>
+                        <span className="font-mono font-medium">{wotd.categories.finish}</span>
+                      </div>
+                      <div className="bg-secondary/30 rounded px-2 py-1">
+                        <span className="text-muted-foreground block">{t("wotd.balance")}</span>
+                        <span className="font-mono font-medium">{wotd.categories.balance}</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic font-serif">{t("wotd.noRatings")}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Existing Sessions */}
       {tastings && tastings.length > 0 && (

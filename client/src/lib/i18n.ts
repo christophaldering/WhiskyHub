@@ -84,6 +84,17 @@ const resources = {
         addToFlight: "Add to Flight",
         noExpressions: "No expressions yet."
       },
+      wotd: {
+        title: "Whisky of the Day",
+        noWhiskies: "No whiskies have been added yet.",
+        avgRating: "Average Rating",
+        ratings: "{{count}} ratings",
+        noRatings: "Not yet rated",
+        nose: "Nose",
+        taste: "Taste",
+        finish: "Finish",
+        balance: "Balance"
+      },
       import: {
         title: "Import Flight",
         subtitle: "Import multiple expressions from a spreadsheet. Optionally include bottle photos via ZIP or URL.",
@@ -191,6 +202,17 @@ const resources = {
         addExpression: "Expression hinzuf\u00fcgen",
         addToFlight: "Zum Flight hinzuf\u00fcgen",
         noExpressions: "Noch keine Expressions."
+      },
+      wotd: {
+        title: "Whisky des Tages",
+        noWhiskies: "Es wurden noch keine Whiskies hinzugef\u00fcgt.",
+        avgRating: "Durchschnittsbewertung",
+        ratings: "{{count}} Bewertungen",
+        noRatings: "Noch nicht bewertet",
+        nose: "Nase",
+        taste: "Geschmack",
+        finish: "Abgang",
+        balance: "Balance"
       },
       import: {
         title: "Flight importieren",

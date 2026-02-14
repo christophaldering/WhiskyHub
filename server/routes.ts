@@ -512,6 +512,40 @@ export async function registerRoutes(
     }
   });
 
+  // ===== WHISKY OF THE DAY =====
+
+  app.get("/api/whisky-of-the-day", async (_req, res) => {
+    try {
+      const allWhiskies = await storage.getAllWhiskies();
+      if (allWhiskies.length === 0) return res.json(null);
+
+      const today = new Date().toISOString().split("T")[0];
+      let seed = 0;
+      for (let i = 0; i < today.length; i++) seed = ((seed << 5) - seed + today.charCodeAt(i)) | 0;
+      const idx = Math.abs(seed) % allWhiskies.length;
+      const whisky = allWhiskies[idx];
+
+      const whiskyRatings = await storage.getRatingsForWhisky(whisky.id);
+      const count = whiskyRatings.length;
+
+      let avgRating = 0;
+      let categories = { nose: 0, taste: 0, finish: 0, balance: 0 };
+      if (count > 0) {
+        avgRating = Math.round((whiskyRatings.reduce((s, r) => s + r.overall, 0) / count) * 10) / 10;
+        categories = {
+          nose: Math.round((whiskyRatings.reduce((s, r) => s + r.nose, 0) / count) * 10) / 10,
+          taste: Math.round((whiskyRatings.reduce((s, r) => s + r.taste, 0) / count) * 10) / 10,
+          finish: Math.round((whiskyRatings.reduce((s, r) => s + r.finish, 0) / count) * 10) / 10,
+          balance: Math.round((whiskyRatings.reduce((s, r) => s + r.balance, 0) / count) * 10) / 10,
+        };
+      }
+
+      res.json({ whisky, avgRating, ratingCount: count, categories });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== RATINGS =====
 
   app.get("/api/whiskies/:id/ratings", async (req, res) => {
