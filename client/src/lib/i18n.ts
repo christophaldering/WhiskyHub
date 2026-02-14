@@ -6,7 +6,7 @@ const resources = {
     translation: {
       app: {
         name: "CaskSense",
-        tagline: "The Art of Whisky Analysis",
+        tagline: "Structured Tasting Experience",
         copyright: "\u00a9 2026 CaskSense. All rights reserved."
       },
       login: {
@@ -430,7 +430,7 @@ const resources = {
     translation: {
       app: {
         name: "CaskSense",
-        tagline: "Die Kunst der Whisky-Analyse",
+        tagline: "Strukturierte Verkostungserfahrung",
         copyright: "\u00a9 2026 CaskSense. Alle Rechte vorbehalten."
       },
       login: {
