@@ -225,10 +225,24 @@ export async function registerRoutes(
       const data = insertParticipantSchema.parse(req.body);
       const existing = await storage.getParticipantByName(data.name);
       if (existing) {
-        if (data.pin && existing.pin && data.pin !== existing.pin) {
+        if (!data.pin) {
+          return res.status(400).json({ message: "PIN is required" });
+        }
+        if (!existing.pin) {
+          await storage.updateParticipantPin(existing.id, data.pin);
+          const updated = await storage.getParticipant(existing.id);
+          return res.json(updated);
+        }
+        if (data.pin !== existing.pin) {
           return res.status(401).json({ message: "Invalid PIN" });
         }
         return res.json(existing);
+      }
+      if (!data.pin) {
+        return res.status(400).json({ message: "PIN is required" });
+      }
+      if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        return res.status(400).json({ message: "A valid email is required" });
       }
       const participant = await storage.createParticipant(data);
       res.status(201).json(participant);

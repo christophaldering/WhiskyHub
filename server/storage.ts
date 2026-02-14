@@ -29,6 +29,7 @@ export interface IStorage {
   createParticipant(data: InsertParticipant): Promise<Participant>;
   updateParticipant(id: string, data: Partial<{name: string; email: string; pin: string}>): Promise<Participant | undefined>;
   updateParticipantLanguage(id: string, language: string): Promise<Participant | undefined>;
+  updateParticipantPin(id: string, pin: string): Promise<Participant | undefined>;
 
   // Tastings
   getTasting(id: string): Promise<Tasting | undefined>;
@@ -112,6 +113,11 @@ export class DatabaseStorage implements IStorage {
 
   async updateParticipantLanguage(id: string, language: string): Promise<Participant | undefined> {
     const [result] = await db.update(participants).set({ language }).where(eq(participants.id, id)).returning();
+    return result;
+  }
+
+  async updateParticipantPin(id: string, pin: string): Promise<Participant | undefined> {
+    const [result] = await db.update(participants).set({ pin }).where(eq(participants.id, id)).returning();
     return result;
   }
 

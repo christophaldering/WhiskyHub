@@ -17,8 +17,8 @@ async function fetchJSON(url: string, options?: RequestInit) {
 
 // ===== Participants =====
 export const participantApi = {
-  loginOrCreate: (name: string, pin?: string) =>
-    fetchJSON("/participants", { method: "POST", body: JSON.stringify({ name, pin }) }),
+  loginOrCreate: (name: string, pin?: string, email?: string) =>
+    fetchJSON("/participants", { method: "POST", body: JSON.stringify({ name, pin, email }) }),
   get: (id: string) => fetchJSON(`/participants/${id}`),
   setLanguage: (id: string, language: string) =>
     fetchJSON(`/participants/${id}/language`, { method: "PATCH", body: JSON.stringify({ language }) }),

@@ -9,6 +9,24 @@ const resources = {
         tagline: "The Art of Whisky Analysis",
         copyright: "\u00a9 2026 CaskSense. All rights reserved."
       },
+      login: {
+        title: "Join CaskSense",
+        subtitle: "Enter your details to participate.",
+        returningSubtitle: "Welcome back! Enter your name and PIN to log in.",
+        name: "Name",
+        namePlaceholder: "Your name",
+        email: "Email",
+        emailPlaceholder: "your@email.com",
+        pin: "PIN",
+        pinPlaceholder: "4–6 digit PIN",
+        pinHint: "Choose a PIN to secure your profile",
+        enter: "Enter",
+        joining: "Joining...",
+        nameRequired: "Name is required",
+        emailRequired: "Email is required",
+        pinRequired: "PIN is required",
+        invalidEmail: "Please enter a valid email address"
+      },
       nav: {
         lobby: "Lobby",
         sessions: "Sessions",
@@ -368,6 +386,24 @@ const resources = {
         name: "CaskSense",
         tagline: "Die Kunst der Whisky-Analyse",
         copyright: "\u00a9 2026 CaskSense. Alle Rechte vorbehalten."
+      },
+      login: {
+        title: "Bei CaskSense anmelden",
+        subtitle: "Geben Sie Ihre Daten ein, um teilzunehmen.",
+        returningSubtitle: "Willkommen zurück! Name und PIN eingeben.",
+        name: "Name",
+        namePlaceholder: "Ihr Name",
+        email: "E-Mail",
+        emailPlaceholder: "ihre@email.de",
+        pin: "PIN",
+        pinPlaceholder: "4–6-stellige PIN",
+        pinHint: "Wählen Sie eine PIN zum Schutz Ihres Profils",
+        enter: "Eintreten",
+        joining: "Beitritt...",
+        nameRequired: "Name ist erforderlich",
+        emailRequired: "E-Mail ist erforderlich",
+        pinRequired: "PIN ist erforderlich",
+        invalidEmail: "Bitte geben Sie eine gültige E-Mail-Adresse ein"
       },
       nav: {
         lobby: "Lobby",
