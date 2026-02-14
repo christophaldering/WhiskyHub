@@ -36,7 +36,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 3.  **Session State Machine**: Tastings progress through defined stages (draft, open, closed, reveal, archived) controlled by the host. The reveal stage has a multi-act structure.
 4.  **Asynchronous Updates**: React Query polling is used for near real-time updates without WebSockets.
 5.  **Bulk Import**: Hosts can import whisky data from various spreadsheet formats (Excel, CSV, TXT) with image attachment support.
-6.  **Bottle Photo Uploads**: Supports image uploads (JPG, PNG, WebP, GIF) for whiskies, stored and served locally.
+6.  **Bottle Photo Uploads**: Supports image uploads (JPG, PNG, WebP, GIF) for whiskies, stored in Replit Object Storage (persistent cloud storage) and served via `/objects/` paths. Legacy `/uploads/` paths still supported as fallback.
 7.  **Whiskybase Integration**: Provides external links to Whiskybase for research, with direct links when a `whiskybaseId` is available.
 8.  **Whisky Management**: Comprehensive features for editing, reordering, and deleting whiskies within a tasting.
 9.  **Flight Board View**: A structured display of whiskies within a tasting, optimized for host and participant views.

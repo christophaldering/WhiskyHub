@@ -62,11 +62,14 @@ async function uploadBufferToObjectStorage(
   contentType: string
 ): Promise<string> {
   const uploadURL = await objectStorage.getObjectEntityUploadURL();
-  await fetch(uploadURL, {
+  const resp = await fetch(uploadURL, {
     method: "PUT",
     body: buffer,
     headers: { "Content-Type": contentType },
   });
+  if (!resp.ok) {
+    throw new Error(`Object storage upload failed (${resp.status})`);
+  }
   return objectStorage.normalizeObjectEntityPath(uploadURL);
 }
 
