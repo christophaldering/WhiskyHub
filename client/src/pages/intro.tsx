@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import whiskyBg from "@/assets/whisky-bg.png";
+import whiskyBg from "@assets/PNG-Bild_1771095178148.png";
 
 const INTRO_SEEN_KEY = "casksense_intro_seen";
 
