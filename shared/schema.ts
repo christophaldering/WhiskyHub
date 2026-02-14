@@ -28,6 +28,13 @@ export const tastings = pgTable("tastings", {
   status: text("status").notNull().default("draft"), // draft | open | closed | reveal | archived
   currentAct: text("current_act").default("act1"), // act1 | act2 | act3 | act4
   hostReflection: text("host_reflection"),
+  blindMode: boolean("blind_mode").default(false),
+  revealIndex: integer("reveal_index").default(0),
+  revealStep: integer("reveal_step").default(0), // 0=blind, 1=name, 2=meta, 3=image
+  reflectionEnabled: boolean("reflection_enabled").default(false),
+  reflectionMode: text("reflection_mode").default("standard"), // standard | custom
+  reflectionVisibility: text("reflection_visibility").default("named"), // named | anonymous | optional
+  customPrompts: text("custom_prompts"), // JSON array of custom prompt strings
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -108,6 +115,34 @@ export const sessionInvites = pgTable("session_invites", {
 export const insertSessionInviteSchema = createInsertSchema(sessionInvites).omit({ id: true, createdAt: true, acceptedAt: true });
 export type InsertSessionInvite = z.infer<typeof insertSessionInviteSchema>;
 export type SessionInvite = typeof sessionInvites.$inferSelect;
+
+// --- Discussion Entries ---
+export const discussionEntries = pgTable("discussion_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tastingId: varchar("tasting_id").notNull(),
+  participantId: varchar("participant_id").notNull(),
+  text: text("text").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertDiscussionEntrySchema = createInsertSchema(discussionEntries).omit({ id: true, createdAt: true });
+export type InsertDiscussionEntry = z.infer<typeof insertDiscussionEntrySchema>;
+export type DiscussionEntry = typeof discussionEntries.$inferSelect;
+
+// --- Reflection Entries ---
+export const reflectionEntries = pgTable("reflection_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tastingId: varchar("tasting_id").notNull(),
+  participantId: varchar("participant_id").notNull(),
+  promptText: text("prompt_text").notNull(),
+  text: text("text").notNull(),
+  isAnonymous: boolean("is_anonymous").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertReflectionEntrySchema = createInsertSchema(reflectionEntries).omit({ id: true, createdAt: true });
+export type InsertReflectionEntry = z.infer<typeof insertReflectionEntrySchema>;
+export type ReflectionEntry = typeof reflectionEntries.$inferSelect;
 
 // --- Ratings (evaluations) ---
 export const ratings = pgTable("ratings", {
