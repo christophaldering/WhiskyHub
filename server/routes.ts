@@ -14,6 +14,7 @@ import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertPart
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { isSmtpConfigured, sendEmail, buildInviteEmail } from "./email";
+import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -34,6 +35,16 @@ const upload = multer({
   },
 });
 
+const memUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req: any, file: any, cb: any) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Only JPG, PNG, WebP, and GIF images are allowed"));
+  },
+});
+
 const importUpload = multer({
   storage: multer.diskStorage({
     destination: (_req: any, _file: any, cb: any) => cb(null, uploadsDir),
@@ -44,6 +55,20 @@ const importUpload = multer({
   }),
   limits: { fileSize: 20 * 1024 * 1024 },
 });
+
+async function uploadBufferToObjectStorage(
+  objectStorage: ObjectStorageService,
+  buffer: Buffer,
+  contentType: string
+): Promise<string> {
+  const uploadURL = await objectStorage.getObjectEntityUploadURL();
+  await fetch(uploadURL, {
+    method: "PUT",
+    body: buffer,
+    headers: { "Content-Type": contentType },
+  });
+  return objectStorage.normalizeObjectEntityPath(uploadURL);
+}
 
 const COLUMN_MAP: Record<string, string> = {
   name: "name", whisky: "name", expression: "name", bezeichnung: "name", titel: "name",
@@ -177,7 +202,7 @@ function parseArrayRows(raw: any[][], errors: string[]): { rows: Record<string, 
   return { rows, errors };
 }
 
-async function downloadImageFromUrl(url: string): Promise<string | null> {
+async function downloadImageFromUrl(url: string, objectStorage: ObjectStorageService): Promise<string | null> {
   try {
     const response = await fetch(url);
     if (!response.ok) return null;
@@ -188,15 +213,8 @@ async function downloadImageFromUrl(url: string): Promise<string | null> {
     const buffer = Buffer.from(await response.arrayBuffer());
     if (buffer.length > 5 * 1024 * 1024) return null;
 
-    let ext = ".jpg";
-    if (contentType.includes("png")) ext = ".png";
-    else if (contentType.includes("webp")) ext = ".webp";
-    else if (contentType.includes("gif")) ext = ".gif";
-
-    const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
-    const filePath = path.join(uploadsDir, filename);
-    fs.writeFileSync(filePath, buffer);
-    return `/uploads/${filename}`;
+    const mimeType = contentType.split(";")[0].trim() || "image/jpeg";
+    return await uploadBufferToObjectStorage(objectStorage, buffer, mimeType);
   } catch {
     return null;
   }
@@ -206,6 +224,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  const objectStorage = new ObjectStorageService();
 
   // ===== HEALTH & VERSION =====
 
@@ -469,7 +488,7 @@ export async function registerRoutes(
     try {
       const whisky = await storage.getWhisky(req.params.id);
       if (!whisky) return res.status(404).json({ message: "Not found" });
-      if (whisky.imageUrl) {
+      if (whisky.imageUrl && whisky.imageUrl.startsWith("/uploads/")) {
         const filePath = path.join(process.cwd(), whisky.imageUrl);
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       }
@@ -481,7 +500,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/whiskies/:id/image", (req: any, res: any, next: any) => {
-    upload.single("image")(req, res, (err: any) => {
+    memUpload.single("image")(req, res, (err: any) => {
       if (err) {
         if (err.code === 'LIMIT_FILE_SIZE') {
           return res.status(413).json({ message: "Image must be under 2 MB / Bild muss kleiner als 2 MB sein" });
@@ -496,7 +515,7 @@ export async function registerRoutes(
   }, async (req: any, res: any) => {
     try {
       if (!req.file) return res.status(400).json({ message: "No image file provided" });
-      const imageUrl = `/uploads/${req.file.filename}`;
+      const imageUrl = await uploadBufferToObjectStorage(objectStorage, req.file.buffer, req.file.mimetype);
       const updated = await storage.updateWhisky(req.params.id, { imageUrl });
       if (!updated) return res.status(404).json({ message: "Not found" });
       res.json(updated);
@@ -508,7 +527,7 @@ export async function registerRoutes(
   app.delete("/api/whiskies/:id/image", async (req, res) => {
     const whisky = await storage.getWhisky(req.params.id);
     if (!whisky) return res.status(404).json({ message: "Not found" });
-    if (whisky.imageUrl) {
+    if (whisky.imageUrl && whisky.imageUrl.startsWith("/uploads/")) {
       const filePath = path.join(process.cwd(), whisky.imageUrl);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
@@ -517,6 +536,7 @@ export async function registerRoutes(
   });
 
   app.use("/uploads", express.static(uploadsDir));
+  registerObjectStorageRoutes(app);
 
   // ===== FLIGHT IMPORT =====
 
@@ -685,17 +705,20 @@ export async function registerRoutes(
           if (mappedFilename) {
             const filePath = imageFileMap.get(mappedFilename.toLowerCase());
             if (filePath && fs.existsSync(filePath)) {
+              const fileBuffer = fs.readFileSync(filePath);
               const ext = path.extname(mappedFilename).toLowerCase();
-              const newFilename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
-              const destPath = path.join(uploadsDir, newFilename);
-              fs.copyFileSync(filePath, destPath);
-              await storage.updateWhisky(whisky.id, { imageUrl: `/uploads/${newFilename}` });
+              let mimeType = "image/jpeg";
+              if (ext === ".png") mimeType = "image/png";
+              else if (ext === ".webp") mimeType = "image/webp";
+              else if (ext === ".gif") mimeType = "image/gif";
+              const imageUrl = await uploadBufferToObjectStorage(objectStorage, fileBuffer, mimeType);
+              await storage.updateWhisky(whisky.id, { imageUrl });
               imageAttached = true;
             }
           }
 
           if (!imageAttached && imageRef && /^https?:\/\//i.test(imageRef)) {
-            const imageUrl = await downloadImageFromUrl(imageRef);
+            const imageUrl = await downloadImageFromUrl(imageRef, objectStorage);
             if (imageUrl) {
               await storage.updateWhisky(whisky.id, { imageUrl });
               imageAttached = true;
@@ -890,19 +913,31 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/profiles/:participantId/photo", upload.single("photo"), async (req: any, res) => {
+  app.post("/api/profiles/:participantId/photo", (req: any, res: any, next: any) => {
+    memUpload.single("photo")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ message: "Image must be under 2 MB" });
+        }
+        if (err.message) {
+          return res.status(415).json({ message: err.message });
+        }
+        return res.status(400).json({ message: "Upload failed" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
     try {
       if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-      const photoUrl = `/uploads/${req.file.filename}`;
+      const photoUrl = await uploadBufferToObjectStorage(objectStorage, req.file.buffer, req.file.mimetype);
       const existing = await storage.getProfile(req.params.participantId);
-      if (existing && existing.photoUrl) {
+      if (existing && existing.photoUrl && existing.photoUrl.startsWith("/uploads/")) {
         const oldPath = path.join(uploadsDir, path.basename(existing.photoUrl));
         if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
       const profile = await storage.upsertProfile({
         participantId: req.params.participantId,
         photoUrl,
-        ...(existing ? {} : {}),
       });
       res.json(profile);
     } catch (e: any) {
@@ -913,7 +948,7 @@ export async function registerRoutes(
   app.delete("/api/profiles/:participantId/photo", async (req, res) => {
     try {
       const existing = await storage.getProfile(req.params.participantId);
-      if (existing && existing.photoUrl) {
+      if (existing && existing.photoUrl && existing.photoUrl.startsWith("/uploads/")) {
         const oldPath = path.join(uploadsDir, path.basename(existing.photoUrl));
         if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
