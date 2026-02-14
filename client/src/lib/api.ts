@@ -240,3 +240,29 @@ export const ratingApi = {
     fetchJSON(`/ratings/${participantId}/${whiskyId}`).catch(() => null),
   upsert: (data: any) => fetchJSON("/ratings", { method: "POST", body: JSON.stringify(data) }),
 };
+
+// ===== Export Notes =====
+export const exportApi = {
+  getParticipantNotes: (tastingId: string, participantId: string) =>
+    fetchJSON(`/tastings/${tastingId}/participant-notes?participantId=${participantId}`),
+};
+
+// ===== Host Dashboard =====
+export const hostDashboardApi = {
+  getSummary: (hostId: string) => fetchJSON(`/hosts/${hostId}/summary`),
+};
+
+// ===== Tasting Recap =====
+export const recapApi = {
+  get: (tastingId: string) => fetchJSON(`/tastings/${tastingId}/recap`),
+};
+
+// ===== Pairing Suggestions =====
+export const pairingsApi = {
+  get: (tastingId: string) => fetchJSON(`/tastings/${tastingId}/pairings`),
+};
+
+// ===== Leaderboard =====
+export const leaderboardApi = {
+  get: () => fetchJSON("/leaderboard"),
+};

@@ -1524,5 +1524,372 @@ export async function registerRoutes(
     }
   });
 
+  // ===== PARTICIPANT NOTES =====
+
+  app.get("/api/tastings/:id/participant-notes", async (req, res) => {
+    try {
+      const tastingId = req.params.id;
+      const participantId = req.query.participantId as string;
+      if (!participantId) {
+        return res.status(400).json({ message: "participantId query parameter is required" });
+      }
+      const [tasting, participant, whiskies, ratings] = await Promise.all([
+        storage.getTasting(tastingId),
+        storage.getParticipant(participantId),
+        storage.getWhiskiesForTasting(tastingId),
+        storage.getRatingsForTasting(tastingId),
+      ]);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (!participant) return res.status(404).json({ message: "Participant not found" });
+
+      const participantRatings = ratings.filter(r => r.participantId === participantId);
+      const whiskyMap = new Map(whiskies.map(w => [w.id, w]));
+      const notes = participantRatings.map(r => {
+        const whisky = whiskyMap.get(r.whiskyId);
+        return {
+          whisky: whisky ? { name: whisky.name, distillery: whisky.distillery, age: whisky.age, abv: whisky.abv, imageUrl: whisky.imageUrl, region: whisky.region } : null,
+          rating: { nose: r.nose, taste: r.taste, finish: r.finish, balance: r.balance, overall: r.overall, notes: r.notes },
+        };
+      });
+      res.json({
+        tasting: { id: tasting.id, name: tasting.title, date: tasting.date },
+        participant: { id: participant.id, name: participant.name },
+        notes,
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== HOST SUMMARY =====
+
+  app.get("/api/hosts/:hostId/summary", async (req, res) => {
+    try {
+      const hostId = req.params.hostId;
+      const allTastings = await storage.getAllTastings();
+      const hostTastings = allTastings.filter(t => t.hostId === hostId);
+
+      if (hostTastings.length === 0) {
+        return res.json({
+          totalTastings: 0,
+          totalParticipants: 0,
+          totalWhiskies: 0,
+          averageScores: { nose: 0, taste: 0, finish: 0, balance: 0, overall: 0 },
+          topWhiskies: [],
+          recentTastings: [],
+        });
+      }
+
+      const uniqueParticipantIds = new Set<string>();
+      let totalWhiskies = 0;
+      const allRatings: any[] = [];
+      const whiskyTastingMap = new Map<string, { whisky: any; tastingTitle: string }>();
+
+      const tastingData = await Promise.all(
+        hostTastings.map(async (t) => {
+          const [participants, whiskies, ratings] = await Promise.all([
+            storage.getTastingParticipants(t.id),
+            storage.getWhiskiesForTasting(t.id),
+            storage.getRatingsForTasting(t.id),
+          ]);
+          participants.forEach(p => uniqueParticipantIds.add(p.participantId));
+          totalWhiskies += whiskies.length;
+          allRatings.push(...ratings);
+          whiskies.forEach(w => whiskyTastingMap.set(w.id, { whisky: w, tastingTitle: t.title }));
+          return { tasting: t, participantCount: participants.length };
+        })
+      );
+
+      const scoreFields = ["nose", "taste", "finish", "balance", "overall"] as const;
+      const averageScores: Record<string, number> = {};
+      for (const field of scoreFields) {
+        const vals = allRatings.map(r => r[field]).filter(v => v != null);
+        averageScores[field] = vals.length > 0 ? Math.round((vals.reduce((a: number, b: number) => a + b, 0) / vals.length) * 10) / 10 : 0;
+      }
+
+      const whiskyScores = new Map<string, number[]>();
+      for (const r of allRatings) {
+        if (r.overall == null) continue;
+        if (!whiskyScores.has(r.whiskyId)) whiskyScores.set(r.whiskyId, []);
+        whiskyScores.get(r.whiskyId)!.push(r.overall);
+      }
+      const topWhiskies = Array.from(whiskyScores.entries())
+        .map(([whiskyId, scores]) => {
+          const info = whiskyTastingMap.get(whiskyId);
+          const avgScore = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10;
+          return {
+            name: info?.whisky?.name || "Unknown",
+            distillery: info?.whisky?.distillery || null,
+            averageScore: avgScore,
+            tastingTitle: info?.tastingTitle || "Unknown",
+          };
+        })
+        .sort((a, b) => b.averageScore - a.averageScore)
+        .slice(0, 10);
+
+      const recentTastings = tastingData
+        .sort((a, b) => (b.tasting.date || "").localeCompare(a.tasting.date || ""))
+        .slice(0, 10)
+        .map(d => ({
+          id: d.tasting.id,
+          title: d.tasting.title,
+          date: d.tasting.date,
+          status: d.tasting.status,
+          participantCount: d.participantCount,
+        }));
+
+      res.json({
+        totalTastings: hostTastings.length,
+        totalParticipants: uniqueParticipantIds.size,
+        totalWhiskies,
+        averageScores,
+        topWhiskies,
+        recentTastings,
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== TASTING RECAP =====
+
+  app.get("/api/tastings/:id/recap", async (req, res) => {
+    try {
+      const tastingId = req.params.id;
+      const tasting = await storage.getTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+      const [host, participants, whiskies, ratings] = await Promise.all([
+        storage.getParticipant(tasting.hostId),
+        storage.getTastingParticipants(tastingId),
+        storage.getWhiskiesForTasting(tastingId),
+        storage.getRatingsForTasting(tastingId),
+      ]);
+
+      const whiskyMap = new Map(whiskies.map(w => [w.id, w]));
+      const scoreFields = ["nose", "taste", "finish", "balance", "overall"] as const;
+
+      const whiskyRatings = new Map<string, any[]>();
+      for (const r of ratings) {
+        if (!whiskyRatings.has(r.whiskyId)) whiskyRatings.set(r.whiskyId, []);
+        whiskyRatings.get(r.whiskyId)!.push(r);
+      }
+
+      const whiskyStats = Array.from(whiskyRatings.entries()).map(([whiskyId, wRatings]) => {
+        const whisky = whiskyMap.get(whiskyId);
+        const overalls = wRatings.map(r => r.overall).filter((v: any) => v != null);
+        const avgScore = overalls.length > 0 ? Math.round((overalls.reduce((a: number, b: number) => a + b, 0) / overalls.length) * 10) / 10 : 0;
+        const mean = overalls.length > 0 ? overalls.reduce((a: number, b: number) => a + b, 0) / overalls.length : 0;
+        const variance = overalls.length > 1 ? overalls.reduce((sum: number, v: number) => sum + (v - mean) ** 2, 0) / overalls.length : 0;
+        const stddev = Math.round(Math.sqrt(variance) * 10) / 10;
+        return {
+          whiskyId,
+          name: whisky?.name || "Unknown",
+          distillery: whisky?.distillery || null,
+          imageUrl: whisky?.imageUrl || null,
+          avgScore,
+          stddev,
+        };
+      });
+
+      const topRated = [...whiskyStats].sort((a, b) => b.avgScore - a.avgScore).slice(0, 5).map(w => ({
+        name: w.name,
+        distillery: w.distillery,
+        avgScore: w.avgScore,
+        imageUrl: w.imageUrl,
+      }));
+
+      const mostDivisive = whiskyStats.length > 0
+        ? [...whiskyStats].sort((a, b) => b.stddev - a.stddev)[0]
+        : null;
+
+      const overallAverages: Record<string, number> = {};
+      for (const field of scoreFields) {
+        const vals = ratings.map(r => r[field]).filter(v => v != null);
+        overallAverages[field] = vals.length > 0 ? Math.round((vals.reduce((a: number, b: number) => a + b, 0) / vals.length) * 10) / 10 : 0;
+      }
+
+      const participantRatings = new Map<string, any[]>();
+      for (const r of ratings) {
+        if (!participantRatings.has(r.participantId)) participantRatings.set(r.participantId, []);
+        participantRatings.get(r.participantId)!.push(r);
+      }
+      const participantHighlights = await Promise.all(
+        Array.from(participantRatings.entries()).map(async ([pId, pRatings]) => {
+          const participant = await storage.getParticipant(pId);
+          const overalls = pRatings.map(r => r.overall).filter((v: any) => v != null);
+          const avgScore = overalls.length > 0 ? Math.round((overalls.reduce((a: number, b: number) => a + b, 0) / overalls.length) * 10) / 10 : 0;
+          return {
+            name: participant?.name || "Unknown",
+            ratingsCount: pRatings.length,
+            avgScore,
+          };
+        })
+      );
+
+      res.json({
+        tasting: {
+          id: tasting.id,
+          title: tasting.title,
+          date: tasting.date,
+          location: tasting.location,
+          status: tasting.status,
+        },
+        hostName: host?.name || "Unknown",
+        participantCount: participants.length,
+        whiskyCount: whiskies.length,
+        topRated,
+        mostDivisive: mostDivisive ? { name: mostDivisive.name, stddev: mostDivisive.stddev } : null,
+        overallAverages,
+        participantHighlights,
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== SMART PAIRING SUGGESTIONS =====
+
+  app.get("/api/tastings/:id/pairings", async (req, res) => {
+    try {
+      const tastingId = req.params.id;
+      const lineupWhiskies = await storage.getWhiskiesForTasting(tastingId);
+
+      const lineupRegions = new Set(lineupWhiskies.map(w => w.region).filter(Boolean));
+      const lineupCasks = new Set(lineupWhiskies.map(w => w.caskInfluence).filter(Boolean));
+      const lineupPeats = new Set(lineupWhiskies.map(w => w.peatLevel).filter(Boolean));
+      const lineupIds = new Set(lineupWhiskies.map(w => w.id));
+
+      const allWhiskies = await storage.getAllWhiskies();
+      const candidates = allWhiskies.filter(w => !lineupIds.has(w.id));
+
+      const scored = candidates.map(w => {
+        let score = 0;
+        const reasons: string[] = [];
+
+        if (w.region && !lineupRegions.has(w.region)) {
+          score += 3;
+          reasons.push(`Adds ${w.region} region not yet in lineup`);
+        }
+        if (w.caskInfluence && !lineupCasks.has(w.caskInfluence)) {
+          score += 2;
+          reasons.push(`Brings ${w.caskInfluence} cask influence`);
+        }
+        if (w.peatLevel && !lineupPeats.has(w.peatLevel)) {
+          score += 2;
+          reasons.push(`Introduces ${w.peatLevel} peat level`);
+        }
+
+        if (w.region && lineupRegions.has(w.region) && w.caskInfluence && !lineupCasks.has(w.caskInfluence)) {
+          score += 1;
+          reasons.push(`Same region but different cask for comparison`);
+        }
+
+        if (reasons.length === 0) {
+          reasons.push("Adds variety to the lineup");
+        }
+
+        return {
+          id: w.id,
+          name: w.name,
+          distillery: w.distillery,
+          region: w.region,
+          caskInfluence: w.caskInfluence,
+          peatLevel: w.peatLevel,
+          abv: w.abv,
+          age: w.age,
+          imageUrl: w.imageUrl,
+          score,
+          reasons,
+        };
+      });
+
+      const suggestions = scored.sort((a, b) => b.score - a.score).slice(0, 5);
+      res.json(suggestions);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== GLOBAL LEADERBOARD =====
+
+  app.get("/api/leaderboard", async (_req, res) => {
+    try {
+      const allTastings = await storage.getAllTastings();
+      const allRatings: any[] = [];
+      for (const t of allTastings) {
+        const ratings = await storage.getRatingsForTasting(t.id);
+        allRatings.push(...ratings);
+      }
+
+      const participantData = new Map<string, { ratings: any[] }>();
+      for (const r of allRatings) {
+        if (!participantData.has(r.participantId)) {
+          participantData.set(r.participantId, { ratings: [] });
+        }
+        participantData.get(r.participantId)!.ratings.push(r);
+      }
+
+      const stats = await Promise.all(
+        Array.from(participantData.entries()).map(async ([pId, data]) => {
+          const participant = await storage.getParticipant(pId);
+          const ratingsCount = data.ratings.length;
+          const notesLengths = data.ratings.map(r => (r.notes || "").length);
+          const avgNotesLength = Math.round(notesLengths.reduce((a: number, b: number) => a + b, 0) / ratingsCount);
+          const overalls = data.ratings.map(r => r.overall).filter((v: any) => v != null);
+          const avgScore = overalls.length > 0 ? Math.round((overalls.reduce((a: number, b: number) => a + b, 0) / overalls.length) * 10) / 10 : 0;
+
+          let consistency = 0;
+          if (overalls.length > 1) {
+            const mean = overalls.reduce((a: number, b: number) => a + b, 0) / overalls.length;
+            const variance = overalls.reduce((sum: number, v: number) => sum + (v - mean) ** 2, 0) / overalls.length;
+            const stddev = Math.sqrt(variance);
+            const normalizedStddev = mean > 0 ? stddev / mean : 0;
+            consistency = Math.round((1 - Math.min(normalizedStddev, 1)) * 100) / 100;
+          } else if (overalls.length === 1) {
+            consistency = 1;
+          }
+
+          return {
+            id: pId,
+            name: participant?.name || "Unknown",
+            ratingsCount,
+            avgNotesLength,
+            avgScore,
+            consistency,
+          };
+        })
+      );
+
+      const mostActive = [...stats].sort((a, b) => b.ratingsCount - a.ratingsCount).slice(0, 10).map(s => ({
+        id: s.id,
+        name: s.name,
+        ratingsCount: s.ratingsCount,
+      }));
+
+      const mostDetailed = [...stats].sort((a, b) => b.avgNotesLength - a.avgNotesLength).slice(0, 10).map(s => ({
+        id: s.id,
+        name: s.name,
+        avgNotesLength: s.avgNotesLength,
+      }));
+
+      const highestRated = [...stats].sort((a, b) => b.avgScore - a.avgScore).slice(0, 10).map(s => ({
+        id: s.id,
+        name: s.name,
+        avgScore: s.avgScore,
+      }));
+
+      const mostConsistent = [...stats].sort((a, b) => b.consistency - a.consistency).slice(0, 10).map(s => ({
+        id: s.id,
+        name: s.name,
+        consistency: s.consistency,
+      }));
+
+      res.json({ mostActive, mostDetailed, highestRated, mostConsistent });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }

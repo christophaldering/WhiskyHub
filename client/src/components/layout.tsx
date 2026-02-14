@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState } from "react";
@@ -70,9 +70,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       { href: "/friends", icon: Users, label: t('nav.friends') },
       { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
       { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
+      { href: "/flavor-wheel", icon: CircleDot, label: t('nav.flavorWheel') },
       { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
       { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
+      { href: "/export-notes", icon: Download, label: t('nav.exportNotes') },
+      { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
+      { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
       { href: "/activity", icon: Rss, label: t('nav.activity') },
+      { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
       { href: "/badges", icon: Trophy, label: t('nav.badges') },
     ] : []),
   ];
@@ -159,6 +164,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           >
             <Calendar className="w-4 h-4" />
             <span className="text-sm font-medium">{t('nav.calendar')}</span>
+          </div>
+        </Link>
+
+        <Link href="/recap">
+          <div
+            className={cn(
+              "flex items-center gap-3 px-4 py-2 rounded-sm transition-all duration-300 cursor-pointer",
+              location === "/recap" || location.startsWith("/recap/")
+                ? "bg-secondary text-primary border-l-2 border-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            )}
+            onClick={() => setOpen(false)}
+            data-testid="nav-recap"
+          >
+            <ClipboardList className="w-4 h-4" />
+            <span className="text-sm font-medium">{t('nav.recap')}</span>
           </div>
         </Link>
 

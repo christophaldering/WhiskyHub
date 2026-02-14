@@ -21,6 +21,12 @@ import Comparison from "@/pages/comparison";
 import TastingTemplates from "@/pages/tasting-templates";
 import ActivityFeed from "@/pages/activity-feed";
 import TastingCalendar from "@/pages/tasting-calendar";
+import ExportNotes from "@/pages/export-notes";
+import HostDashboard from "@/pages/host-dashboard";
+import TastingRecap from "@/pages/tasting-recap";
+import FlavorWheel from "@/pages/flavor-wheel";
+import PairingSuggestions from "@/pages/pairing-suggestions";
+import Leaderboard from "@/pages/leaderboard";
 import Intro from "@/pages/intro";
 import { hasSeenIntro } from "@/pages/intro";
 import { BuildFooter } from "@/components/build-footer";
@@ -52,11 +58,18 @@ function Router() {
               <Route path="/badges" component={Badges} />
               <Route path="/lexicon" component={Lexicon} />
               <Route path="/flavor-profile" component={FlavorProfile} />
+              <Route path="/flavor-wheel" component={FlavorWheel} />
               <Route path="/recommendations" component={Recommendations} />
               <Route path="/comparison" component={Comparison} />
               <Route path="/tasting-templates" component={TastingTemplates} />
               <Route path="/activity" component={ActivityFeed} />
               <Route path="/calendar" component={TastingCalendar} />
+              <Route path="/export-notes" component={ExportNotes} />
+              <Route path="/host-dashboard" component={HostDashboard} />
+              <Route path="/recap/:id" component={TastingRecap} />
+              <Route path="/recap" component={TastingRecap} />
+              <Route path="/pairings" component={PairingSuggestions} />
+              <Route path="/leaderboard" component={Leaderboard} />
               <Route path="/about-method" component={AboutMethod} />
               <Route path="/invite/:token" component={InviteAccept} />
               <Route component={NotFound} />

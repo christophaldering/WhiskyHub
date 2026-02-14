@@ -60,11 +60,22 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 27. **QR Code Invitations**: Generates a scannable QR code per tasting session for instant in-person joining via `qrcode` library.
 28. **Friend Activity Feed**: Lightweight timeline showing friends' journal entries and tasting participations, refreshing every 60s.
 29. **Shared Tasting Calendar**: Monthly calendar view of all tastings with status badges, upcoming events sidebar, and overview stats.
+30. **Export & Share Tasting Notes**: Export personal ratings/notes from a tasting as printable PDF or copyable text with whisky details and scores.
+31. **Host Dashboard Summary**: Overview page for hosts showing total tastings, participants, whiskies, average scores with bar chart, top-rated whiskies, and recent tastings.
+32. **Tasting Recap**: Shareable post-tasting summary with top-rated whiskies, most divisive whisky, overall averages, and participant highlights.
+33. **Flavor Wheel Visualization**: Interactive sunburst-style radial chart mapping flavor keywords from journal entries across 8 categories (Fruity, Floral, Sweet, Spicy, Woody, Smoky, Malty, Maritime).
+34. **Smart Whisky Pairing Suggestions**: Algorithm analyzing a tasting lineup's regions/casks/peat levels and suggesting complementary whiskies from the database with reasoning.
+35. **Participant Leaderboard**: Global rankings across 4 metrics: most active (ratings count), most detailed notes, highest rated, most consistent (lowest variance).
 
 ### Key Endpoints (continued)
 - `GET /api/participants/:id/flavor-profile` — Aggregated flavor profile with radar data, breakdowns, and whisky lists
 - `GET /api/participants/:id/friend-activity` — Friend activity feed (journal entries + tasting participations)
 - `GET /api/calendar` — All tastings with host name, participant/whisky counts for calendar view
+- `GET /api/tastings/:id/participant-notes` — Participant's ratings + whisky data for a tasting (export)
+- `GET /api/hosts/:hostId/summary` — Host dashboard aggregation (tastings, participants, scores, top whiskies)
+- `GET /api/tastings/:id/recap` — Tasting recap with top-rated, most divisive, averages, highlights
+- `GET /api/tastings/:id/pairings` — Smart pairing suggestions based on lineup analysis
+- `GET /api/leaderboard` — Global participant rankings across 4 metrics
 
 ## External Dependencies
 
