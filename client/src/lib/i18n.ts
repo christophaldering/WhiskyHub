@@ -174,22 +174,35 @@ const resources = {
         loginRequired: "Please sign in to access your journal.",
       },
       aboutMethod: {
-        heroTitle: "Where Tasting Becomes Reflection",
-        heroSubtitle: "A journey from sensation to understanding",
-        section1Title: "The Art of Perceiving",
-        section1Body: "Before we name what we taste, we must learn to notice. CaskSense begins with the nose — that first, unhurried encounter with the glass. In this moment, there is no right or wrong. Only attention. The aromas that reach you are personal, shaped by memory and experience. We give them space.",
-        section1Quote: "The nose knows before the mind does.",
-        section2Title: "Tasting with Intention",
-        section2Body: "To taste with intention is to resist the urge to judge quickly. CaskSense structures your evaluation across five dimensions — nose, taste, finish, balance, and overall — not to restrict, but to deepen. Each dimension is a lens, inviting you to linger where you might otherwise rush. The decimal scale honours nuance: not every whisky is simply good or bad. Most live beautifully in between.",
-        section2Quote: "Precision is not the enemy of pleasure — it is its companion.",
-        section3Title: "Reflection as Ritual",
-        section3Body: "The most powerful moment in a tasting is not the first sip. It is the conversation that follows. CaskSense creates a shared space where personal impressions meet collective insight. The four-act reveal transforms private notes into a group narrative — from participation to consensus, from identity to ranking. What emerges is not a winner, but a deeper understanding of what moved each person.",
-        section3Quote: "We taste alone, but we understand together.",
-        section4Title: "Your Tasting Journal",
-        section4Body: "Every session leaves traces — not just scores, but stories. CaskSense preserves your evaluations, your notes, your reflections across tastings. Over time, a personal archive emerges: your evolving palate, your shifting preferences, the whiskies that surprised you. This is not data. This is your tasting biography.",
-        section4Quote: "The best dram is the one that taught you something.",
-        closingTitle: "The Circle Awaits",
-        closingBody: "CaskSense is not about being an expert. It is about being present — with a glass, with friends, with yourself. Slow down. Taste deeply. Reflect together.",
+        heroTitle: "About the Method",
+        section1Title: "The Discipline of Perception",
+        section1Paragraphs: [
+          "Before we evaluate, we observe.",
+          "CaskSense begins with attention. The first encounter with a whisky belongs to the nose — unhurried, without judgement.",
+          "Aromas are personal. They are shaped by memory, experience, and association. There is no objective \"correct\" perception.",
+          "The method therefore begins not with scoring, but with awareness."
+        ],
+        section2Title: "Structured Differentiation",
+        section2Paragraphs: [
+          "Pleasure and precision are not opposites.",
+          "CaskSense evaluates across five dimensions: nose, taste, finish, balance, and overall impression.",
+          "Each dimension serves as a deliberate pause. Instead of asking \"Do I like it?\" the method asks: Where exactly does it convince me? Where does it surprise me? Where does it lose clarity?",
+          "The decimal scale allows nuance. Most whiskies live between extremes. The structure helps articulate that space."
+        ],
+        section3Title: "Reflection Before Ranking",
+        section3Paragraphs: [
+          "A tasting is not complete with the first sip.",
+          "The method unfolds in stages: individual perception, documented evaluation, shared reflection, collective transparency.",
+          "The goal is not to declare a winner. It is to deepen understanding.",
+          "Individual impressions remain visible. Consensus becomes traceable."
+        ],
+        section4Title: "The Longitudinal Perspective",
+        section4Paragraphs: [
+          "Over time, patterns emerge.",
+          "CaskSense preserves every tasting. Scores, notes, context.",
+          "What develops is not a database. It is a biography of taste.",
+          "The most valuable whisky is not the highest rated. It is the one that expanded perception."
+        ],
         backToApp: "Return to CaskSense"
       },
       whisky: {
@@ -667,22 +680,35 @@ const resources = {
         loginRequired: "Bitte melden Sie sich an, um auf Ihr Tagebuch zuzugreifen.",
       },
       aboutMethod: {
-        heroTitle: "Where Tasting Becomes Reflection",
-        heroSubtitle: "Eine Reise von der Empfindung zum Verstehen",
-        section1Title: "Die Kunst des Wahrnehmens",
-        section1Body: "Bevor wir benennen, was wir schmecken, müssen wir lernen, es zu bemerken. CaskSense beginnt mit der Nase — jener ersten, ungeeilten Begegnung mit dem Glas. In diesem Moment gibt es kein Richtig oder Falsch. Nur Aufmerksamkeit. Die Aromen, die Sie erreichen, sind persönlich, geformt von Erinnerung und Erfahrung. Wir geben ihnen Raum.",
-        section1Quote: "Die Nase weiß, bevor der Verstand es tut.",
-        section2Title: "Verkosten mit Absicht",
-        section2Body: "Mit Absicht zu verkosten bedeutet, dem Drang zu widerstehen, schnell zu urteilen. CaskSense strukturiert Ihre Bewertung in fünf Dimensionen — Nase, Geschmack, Abgang, Balance und Gesamt — nicht um einzuschränken, sondern um zu vertiefen. Jede Dimension ist eine Linse, die Sie einlädt zu verweilen, wo Sie sonst eilen würden. Die Dezimalskala ehrt die Nuance: Nicht jeder Whisky ist einfach gut oder schlecht. Die meisten leben wunderbar dazwischen.",
-        section2Quote: "Präzision ist nicht der Feind des Genusses — sie ist sein Begleiter.",
-        section3Title: "Reflexion als Ritual",
-        section3Body: "Der kraftvollste Moment eines Tastings ist nicht der erste Schluck. Es ist das Gespräch, das folgt. CaskSense schafft einen gemeinsamen Raum, in dem persönliche Eindrücke auf kollektive Erkenntnis treffen. Die Vier-Akte-Enthüllung verwandelt private Notizen in eine Gruppenerzählung — von Teilnahme zu Konsens, von Identität zu Ranking. Was entsteht, ist kein Gewinner, sondern ein tieferes Verständnis dessen, was jeden bewegt hat.",
-        section3Quote: "Wir verkosten allein, aber wir verstehen gemeinsam.",
-        section4Title: "Ihr Tasting-Tagebuch",
-        section4Body: "Jedes Tasting hinterlässt Spuren — nicht nur Punkte, sondern Geschichten. CaskSense bewahrt Ihre Bewertungen, Ihre Notizen, Ihre Reflexionen über Tastings hinweg. Mit der Zeit entsteht ein persönliches Archiv: Ihr sich entwickelnder Gaumen, Ihre sich wandelnden Vorlieben, die Whiskys, die Sie überrascht haben. Das sind keine Daten. Das ist Ihre Verkostungsbiografie.",
-        section4Quote: "Der beste Dram ist der, der Sie etwas gelehrt hat.",
-        closingTitle: "Der Kreis wartet",
-        closingBody: "Bei CaskSense geht es nicht darum, ein Experte zu sein. Es geht darum, präsent zu sein — mit einem Glas, mit Freunden, mit sich selbst. Innehalten. Bewusst schmecken. Gemeinsam reflektieren.",
+        heroTitle: "Über die Methode",
+        section1Title: "Die Disziplin der Wahrnehmung",
+        section1Paragraphs: [
+          "Bevor wir bewerten, beobachten wir.",
+          "CaskSense beginnt mit Aufmerksamkeit. Die erste Begegnung mit einem Whisky gehört der Nase – ruhig und ohne Urteil.",
+          "Aromen sind persönlich. Sie entstehen aus Erinnerung, Erfahrung und Assoziation. Es gibt keine objektiv \u201Erichtige\u201C Wahrnehmung.",
+          "Deshalb beginnt die Methode nicht mit Punkten, sondern mit Bewusstheit."
+        ],
+        section2Title: "Strukturierte Differenzierung",
+        section2Paragraphs: [
+          "Genuss und Präzision sind kein Widerspruch.",
+          "CaskSense differenziert in fünf Dimensionen: Nase, Geschmack, Abgang, Balance und Gesamteindruck.",
+          "Jede Dimension ist eine bewusste Unterbrechung. Nicht nur: \u201EGef\u00E4llt er mir?\u201C Sondern: Wo \u00FCberzeugt er mich? Wo \u00FCberrascht er? Wo verliert er an Klarheit?",
+          "Die Dezimalskala ermöglicht Nuancen. Die meisten Whiskys bewegen sich zwischen den Extremen. Die Struktur hilft, diesen Raum zu beschreiben."
+        ],
+        section3Title: "Reflexion vor Ranking",
+        section3Paragraphs: [
+          "Eine Verkostung endet nicht mit dem ersten Schluck.",
+          "Die Methode verläuft in Etappen: individuelle Wahrnehmung, dokumentierte Bewertung, gemeinsame Reflexion, kollektive Transparenz.",
+          "Ziel ist nicht der Sieger. Ziel ist ein tieferes Verständnis.",
+          "Individuelle Eindrücke bleiben sichtbar. Konsens wird nachvollziehbar."
+        ],
+        section4Title: "Die longitudinale Perspektive",
+        section4Paragraphs: [
+          "Mit der Zeit entstehen Muster.",
+          "CaskSense bewahrt jede Verkostung. Punkte, Notizen, Kontext.",
+          "Was entsteht, ist keine Datenbank. Es ist eine Biografie des Geschmacks.",
+          "Der wertvollste Whisky ist nicht der am höchsten bewertete. Sondern der, der die Wahrnehmung erweitert."
+        ],
         backToApp: "Zurück zu CaskSense"
       },
       whisky: {
