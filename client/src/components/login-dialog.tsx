@@ -26,7 +26,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     setError("");
     try {
       const participant = await participantApi.loginOrCreate(name.trim(), pin || undefined);
-      setParticipant({ id: participant.id, name: participant.name });
+      setParticipant({ id: participant.id, name: participant.name, role: participant.role });
       onClose();
     } catch (e: any) {
       setError(e.message || "Failed to join");

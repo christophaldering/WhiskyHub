@@ -5,8 +5,8 @@ export type SessionStatus = 'draft' | 'open' | 'closed' | 'reveal' | 'archived';
 export type RevealAct = 'act1' | 'act2' | 'act3' | 'act4';
 
 interface AppState {
-  currentParticipant: { id: string; name: string } | null;
-  setParticipant: (participant: { id: string; name: string } | null) => void;
+  currentParticipant: { id: string; name: string; role?: string } | null;
+  setParticipant: (participant: { id: string; name: string; role?: string } | null) => void;
   language: string;
   setLanguage: (lang: string) => void;
 }

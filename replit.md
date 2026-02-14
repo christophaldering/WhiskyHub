@@ -80,7 +80,7 @@ Preferred communication style: Simple, everyday language.
 - Storage layer (`server/storage.ts`) implements an `IStorage` interface with a `DatabaseStorage` class
 
 ### Database Schema
-- **participants**: id, name, pin (optional), email (optional), language, createdAt
+- **participants**: id, name, pin (optional), email (optional), role (default 'user', can be 'admin'), language, createdAt
 - **tastings**: id, title, date, location, hostId, code (join code), status (draft|open|closed|reveal|archived|deleted), currentAct, hostReflection, createdAt
 - **tasting_participants**: id, tastingId, participantId, joinedAt
 - **whiskies**: id, tastingId, name, distillery, age, abv, type, notes, sortOrder, category, region, abvBand, ageBand, caskInfluence, peatLevel, ppm, whiskybaseId, imageUrl

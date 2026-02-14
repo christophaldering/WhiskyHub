@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useTranslation } from "react-i18next";
-import { Play, Lock, Eye, Archive, ChevronRight, Glasses, Trash2 } from "lucide-react";
+import { Play, Lock, Eye, Archive, ChevronRight, Glasses, Trash2, AlertTriangle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { tastingApi, blindModeApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
+import { useAppStore } from "@/lib/store";
 import type { Tasting } from "@shared/schema";
 import {
   AlertDialog,
@@ -17,6 +19,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface SessionControlProps {
   tasting: Tasting;
@@ -26,7 +36,12 @@ interface SessionControlProps {
 export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const { currentParticipant } = useAppStore();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showPermanentDeleteDialog, setShowPermanentDeleteDialog] = useState(false);
+  const [confirmName, setConfirmName] = useState("");
+
+  const isAdmin = currentParticipant?.role === "admin";
 
   const updateStatus = useMutation({
     mutationFn: (params: { status: string; currentAct?: string }) =>
@@ -37,6 +52,14 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
       if (vars.status === "deleted") {
         navigate("/sessions");
       }
+    },
+  });
+
+  const hardDelete = useMutation({
+    mutationFn: () => tastingApi.hardDelete(tasting.id, currentParticipant!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+      navigate("/sessions");
     },
   });
 
@@ -66,9 +89,15 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
     updateStatus.mutate({ status: "archived" });
   };
 
-  const handleDelete = () => {
+  const handleSoftDelete = () => {
     updateStatus.mutate({ status: "deleted" });
     setShowDeleteDialog(false);
+  };
+
+  const handlePermanentDelete = () => {
+    hardDelete.mutate();
+    setShowPermanentDeleteDialog(false);
+    setConfirmName("");
   };
 
   const getButtonConfig = () => {
@@ -97,6 +126,94 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
   const canDelete = tasting.status !== "open";
   const showArchiveDelete = tasting.status !== "archived" && tasting.status !== "deleted";
 
+  const SoftDeleteDialog = () => (
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('session.actions.deleteConfirmTitle')}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('session.actions.deleteConfirmMessage')}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t('session.actions.deleteCancel')}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleSoftDelete}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {t('session.actions.deleteConfirm')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
+  const PermanentDeleteDialog = () => (
+    <Dialog open={showPermanentDeleteDialog} onOpenChange={(open) => { setShowPermanentDeleteDialog(open); if (!open) setConfirmName(""); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="w-5 h-5" />
+            {t('session.actions.permanentDeleteTitle')}
+          </DialogTitle>
+          <DialogDescription>
+            {t('session.actions.permanentDeleteMessage')}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <label className="text-sm font-medium text-foreground">
+            {t('session.actions.permanentDeleteTypeName')}
+          </label>
+          <Input
+            value={confirmName}
+            onChange={(e) => setConfirmName(e.target.value)}
+            placeholder={tasting.title}
+            className="font-mono"
+            data-testid="input-confirm-delete-name"
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setShowPermanentDeleteDialog(false); setConfirmName(""); }}>
+            {t('session.actions.deleteCancel')}
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handlePermanentDelete}
+            disabled={confirmName !== tasting.title || hardDelete.isPending}
+            data-testid="button-confirm-permanent-delete"
+          >
+            {t('session.actions.permanentDeleteConfirm')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  if (tasting.status === "deleted") {
+    if (!isAdmin) return null;
+    return (
+      <div className="fixed bottom-6 right-6 z-50">
+        <div className="bg-card border border-border/50 shadow-2xl p-4 rounded-lg flex flex-col gap-2 min-w-[200px]">
+          <div className="text-xs uppercase tracking-widest text-muted-foreground font-mono mb-1">
+            Host Control
+          </div>
+          <div className="text-sm font-serif font-bold text-destructive/70 mb-3">
+            {t('session.actions.deleteSession')}
+          </div>
+          <button
+            onClick={() => setShowPermanentDeleteDialog(true)}
+            className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-destructive transition-colors rounded-sm hover:bg-destructive/5 w-full"
+            data-testid="button-permanent-delete"
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            {t('session.actions.permanentDelete')}
+          </button>
+        </div>
+        <PermanentDeleteDialog />
+      </div>
+    );
+  }
+
   if (tasting.status === "archived") {
     return (
       <div className="fixed bottom-6 right-6 z-50">
@@ -110,33 +227,13 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
           <button
             onClick={() => canDelete ? setShowDeleteDialog(true) : undefined}
             className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-destructive transition-colors rounded-sm hover:bg-destructive/5 w-full"
-            title={!canDelete ? t('session.actions.cannotDeleteActive') : undefined}
             data-testid="button-delete-session"
           >
             <Trash2 className="w-3.5 h-3.5" />
             {t('session.actions.deleteSession')}
           </button>
-
-          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t('session.actions.deleteConfirmTitle')}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t('session.actions.deleteConfirmMessage')}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t('session.actions.deleteCancel')}</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDelete}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {t('session.actions.deleteConfirm')}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
+        <SoftDeleteDialog />
       </div>
     );
   }
@@ -210,25 +307,7 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
         )}
       </div>
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('session.actions.deleteConfirmTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('session.actions.deleteConfirmMessage')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('session.actions.deleteCancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t('session.actions.deleteConfirm')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <SoftDeleteDialog />
     </div>
   );
 }

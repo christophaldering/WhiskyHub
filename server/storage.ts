@@ -78,6 +78,9 @@ export interface IStorage {
   getReflectionEntries(tastingId: string): Promise<ReflectionEntry[]>;
   createReflectionEntry(data: InsertReflectionEntry): Promise<ReflectionEntry>;
   getReflectionsByParticipant(tastingId: string, participantId: string): Promise<ReflectionEntry[]>;
+
+  // Hard Delete (admin only)
+  hardDeleteTasting(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -309,6 +312,16 @@ export class DatabaseStorage implements IStorage {
 
   async getReflectionsByParticipant(tastingId: string, participantId: string): Promise<ReflectionEntry[]> {
     return db.select().from(reflectionEntries).where(and(eq(reflectionEntries.tastingId, tastingId), eq(reflectionEntries.participantId, participantId))).orderBy(asc(reflectionEntries.createdAt));
+  }
+
+  async hardDeleteTasting(id: string): Promise<void> {
+    await db.delete(ratings).where(eq(ratings.tastingId, id));
+    await db.delete(discussionEntries).where(eq(discussionEntries.tastingId, id));
+    await db.delete(reflectionEntries).where(eq(reflectionEntries.tastingId, id));
+    await db.delete(sessionInvites).where(eq(sessionInvites.tastingId, id));
+    await db.delete(whiskies).where(eq(whiskies.tastingId, id));
+    await db.delete(tastingParticipants).where(eq(tastingParticipants.tastingId, id));
+    await db.delete(tastings).where(eq(tastings.id, id));
   }
 }
 

@@ -9,6 +9,7 @@ export const participants = pgTable("participants", {
   name: text("name").notNull(),
   pin: text("pin"),
   email: text("email"),
+  role: text("role").default("user"),
   language: text("language").default("en"),
   createdAt: timestamp("created_at").defaultNow(),
 });

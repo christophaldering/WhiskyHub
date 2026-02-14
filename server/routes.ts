@@ -307,6 +307,26 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  app.delete("/api/tastings/:id", async (req, res) => {
+    try {
+      const { participantId } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const participant = await storage.getParticipant(participantId);
+      if (!participant || participant.role !== "admin") {
+        return res.status(403).json({ message: "Only admins can permanently delete sessions" });
+      }
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.status !== "deleted") {
+        return res.status(400).json({ message: "Only soft-deleted sessions can be permanently deleted" });
+      }
+      await storage.hardDeleteTasting(req.params.id);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== TASTING PARTICIPANTS =====
 
   app.get("/api/tastings/:id/participants", async (req, res) => {

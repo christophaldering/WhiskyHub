@@ -41,7 +41,12 @@ const resources = {
           deleteConfirmMessage: "This will remove the session from all lists. Data can only be restored manually.",
           deleteConfirm: "Delete Permanently",
           deleteCancel: "Cancel",
-          cannotDeleteActive: "Close the session before deleting it."
+          cannotDeleteActive: "Close the session before deleting it.",
+          permanentDelete: "Permanently Delete",
+          permanentDeleteTitle: "Permanently Delete Session",
+          permanentDeleteMessage: "This will permanently remove this session and all its data (ratings, discussions, reflections, invites, lineup). This action is irreversible.",
+          permanentDeleteTypeName: "Type the session name to confirm:",
+          permanentDeleteConfirm: "Delete Forever"
         }
       },
       evaluation: {
@@ -385,7 +390,12 @@ const resources = {
           deleteConfirmMessage: "Dies entfernt die Sitzung aus allen Listen. Daten k\u00f6nnen nur manuell wiederhergestellt werden.",
           deleteConfirm: "Endg\u00fcltig l\u00f6schen",
           deleteCancel: "Abbrechen",
-          cannotDeleteActive: "Schlie\u00dfen Sie die Sitzung, bevor Sie sie l\u00f6schen."
+          cannotDeleteActive: "Schlie\u00dfen Sie die Sitzung, bevor Sie sie l\u00f6schen.",
+          permanentDelete: "Endg\u00fcltig l\u00f6schen",
+          permanentDeleteTitle: "Sitzung endg\u00fcltig l\u00f6schen",
+          permanentDeleteMessage: "Dies l\u00f6scht die Sitzung und alle zugeh\u00f6rigen Daten (Bewertungen, Diskussionen, Reflexionen, Einladungen, Lineup) unwiderruflich.",
+          permanentDeleteTypeName: "Geben Sie den Sitzungsnamen zur Best\u00e4tigung ein:",
+          permanentDeleteConfirm: "Unwiderruflich l\u00f6schen"
         }
       },
       evaluation: {
