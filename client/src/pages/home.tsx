@@ -9,7 +9,7 @@ import { UserPlus, Plus, ArrowRight, Star, Wine, ImageIcon, Glasses, BookOpen, L
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, participantApi, wotdApi } from "@/lib/api";
+import { tastingApi, wotdApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { LoginDialog } from "@/components/login-dialog";
 import { queryClient } from "@/lib/queryClient";
@@ -28,11 +28,6 @@ export default function Home() {
   const [newDate, setNewDate] = useState(new Date().toISOString().split("T")[0]);
   const [blindMode, setBlindMode] = useState(false);
   const [reflectionEnabled, setReflectionEnabled] = useState(false);
-
-  const { data: tastings } = useQuery({
-    queryKey: ["tastings"],
-    queryFn: tastingApi.getAll,
-  });
 
   const { data: wotd } = useQuery({
     queryKey: ["whisky-of-the-day"],
@@ -300,31 +295,6 @@ export default function Home() {
         })()}
       </motion.div>
 
-      {/* Existing Sessions */}
-      {tastings && tastings.length > 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="w-full space-y-4">
-          <h2 className="text-xl font-serif text-primary">Recent Sessions</h2>
-          <div className="space-y-2">
-            {tastings.map((tasting: any) => (
-              <button
-                key={tasting.id}
-                onClick={() => navigate(`/tasting/${tasting.id}`)}
-                className="w-full text-left p-4 bg-card border border-border/50 rounded-lg hover:shadow-sm transition-all flex justify-between items-center group"
-                data-testid={`card-tasting-${tasting.id}`}
-              >
-                <div>
-                  <div className="font-serif font-bold text-primary group-hover:underline">{tasting.title}</div>
-                  <div className="text-sm text-muted-foreground">{tasting.location} • {new Date(tasting.date).toLocaleDateString()}</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs bg-secondary px-2 py-1 rounded-full text-secondary-foreground font-mono uppercase">{tasting.status}</span>
-                  <span className="text-xs font-mono text-muted-foreground">Code: {tasting.code}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 }

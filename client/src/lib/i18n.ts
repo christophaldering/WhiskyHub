@@ -11,6 +11,11 @@ const resources = {
       },
       nav: {
         lobby: "Lobby",
+        sessions: "Sessions",
+        sessionsActive: "Active Sessions",
+        sessionsDraft: "Draft Sessions",
+        sessionsArchived: "Archived Sessions",
+        noSessions: "No sessions yet. Create one from the Lobby.",
         tastingRoom: "Tasting Room",
         insight: "Insight Mode",
         host: "Host Controls",
@@ -344,6 +349,11 @@ const resources = {
       },
       nav: {
         lobby: "Lobby",
+        sessions: "Sitzungen",
+        sessionsActive: "Aktive Sitzungen",
+        sessionsDraft: "Entwürfe",
+        sessionsArchived: "Archivierte Sitzungen",
+        noSessions: "Noch keine Sitzungen. Erstellen Sie eine im Lobby.",
         tastingRoom: "Verkostungsraum",
         insight: "Einsichtsmodus",
         host: "Gastgeber-Steuerung",
