@@ -1,12 +1,12 @@
 import { useParams, useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { EvaluationForm } from "@/components/evaluation-form";
 import { RevealView } from "@/components/reveal-view";
 import { SessionControl } from "@/components/session-control";
 import { LoginDialog } from "@/components/login-dialog";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Camera, X, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,8 +19,35 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import type { Whisky, Tasting } from "@shared/schema";
 
+function WhiskyThumbnail({ whisky, size = "sm" }: { whisky: Whisky; size?: "sm" | "lg" }) {
+  const dim = size === "lg" ? "w-40 h-40" : "w-10 h-10";
+  const iconSize = size === "lg" ? "w-12 h-12" : "w-4 h-4";
+
+  if (whisky.imageUrl) {
+    return (
+      <img
+        src={whisky.imageUrl}
+        alt={whisky.name}
+        className={cn(dim, "object-cover rounded-full border border-border/50")}
+        data-testid={`img-whisky-${whisky.id}`}
+      />
+    );
+  }
+
+  return (
+    <div className={cn(dim, "rounded-full bg-secondary/30 border border-secondary flex items-center justify-center")}>
+      <ImageIcon className={cn(iconSize, "text-muted-foreground/40")} />
+    </div>
+  );
+}
+
 function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageError, setImageError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name: "", distillery: "", age: "", abv: "", type: "Single Malt",
     notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "",
@@ -28,13 +55,47 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
   });
 
   const createWhisky = useMutation({
-    mutationFn: (data: any) => whiskyApi.create(data),
+    mutationFn: async (data: any) => {
+      const whisky = await whiskyApi.create(data);
+      if (imageFile) {
+        await whiskyApi.uploadImage(whisky.id, imageFile);
+      }
+      return whisky;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
       setOpen(false);
-      setForm({ name: "", distillery: "", age: "", abv: "", type: "Single Malt", notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "", caskInfluence: "", peatLevel: "None" });
+      resetForm();
     },
   });
+
+  const resetForm = () => {
+    setForm({ name: "", distillery: "", age: "", abv: "", type: "Single Malt", notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "", caskInfluence: "", peatLevel: "None" });
+    setImageFile(null);
+    setImagePreview(null);
+    setImageError("");
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageError("");
+
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      setImageError(t("whisky.photoInvalidType"));
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setImageError(t("whisky.photoTooLarge"));
+      return;
+    }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = () => {
     if (!form.name.trim()) return;
@@ -57,17 +118,63 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="border-primary/30 text-primary font-serif" data-testid="button-add-whisky">
-          <Plus className="w-4 h-4 mr-1" /> Add Expression
+          <Plus className="w-4 h-4 mr-1" /> {t("whisky.addExpression")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-serif text-2xl text-primary">Add Expression</DialogTitle>
+          <DialogTitle className="font-serif text-2xl text-primary">{t("whisky.addExpression")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-4">
+          {/* Image Upload */}
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("whisky.bottlePhoto")}</Label>
+            <div className="flex items-center gap-4">
+              {imagePreview ? (
+                <div className="relative">
+                  <img src={imagePreview} alt="Preview" className="w-20 h-20 object-cover rounded-lg border border-border/50" />
+                  <button
+                    onClick={() => { setImageFile(null); setImagePreview(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                    className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                    data-testid="button-remove-preview"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-20 h-20 rounded-lg bg-secondary/20 border border-dashed border-border flex items-center justify-center">
+                  <Camera className="w-6 h-6 text-muted-foreground/40" />
+                </div>
+              )}
+              <div className="flex-1 space-y-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                  data-testid="input-whisky-image"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs"
+                  data-testid="button-upload-photo"
+                >
+                  <Camera className="w-3 h-3 mr-1" />
+                  {imagePreview ? t("whisky.changePhoto") : t("whisky.uploadPhoto")}
+                </Button>
+                <p className="text-xs text-muted-foreground">{t("whisky.photoHint")}</p>
+                {imageError && <p className="text-xs text-destructive">{imageError}</p>}
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs uppercase tracking-widest text-muted-foreground">Name *</Label>
@@ -143,7 +250,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
             </div>
           </div>
           <Button onClick={handleSubmit} disabled={createWhisky.isPending || !form.name.trim()} className="w-full bg-primary text-primary-foreground font-serif" data-testid="button-submit-whisky">
-            {createWhisky.isPending ? "Adding..." : "Add to Flight"}
+            {createWhisky.isPending ? "Adding..." : t("whisky.addToFlight")}
           </Button>
         </div>
       </DialogContent>
@@ -226,7 +333,7 @@ export default function TastingRoom() {
         </div>
       </header>
 
-      {/* Flight Navigation + Add Button */}
+      {/* Flight Navigation */}
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex overflow-x-auto gap-3 flex-1 no-scrollbar items-center">
           {whiskyList.map((w: Whisky, idx: number) => (
@@ -234,14 +341,18 @@ export default function TastingRoom() {
               key={w.id}
               onClick={() => setActiveWhiskyId(w.id)}
               className={cn(
-                "flex flex-col items-center justify-center min-w-[60px] h-[60px] rounded-full border transition-all duration-500 relative",
+                "flex flex-col items-center justify-center min-w-[60px] h-[60px] rounded-full border transition-all duration-500 relative overflow-hidden",
                 (activeWhisky?.id === w.id)
-                  ? "bg-primary text-primary-foreground border-primary scale-110 shadow-lg z-10"
+                  ? "border-primary scale-110 shadow-lg z-10 ring-2 ring-primary"
                   : "bg-background border-border hover:border-primary/50 text-muted-foreground"
               )}
               data-testid={`button-whisky-${w.id}`}
             >
-              <span className="font-serif font-bold text-lg">{idx + 1}</span>
+              {w.imageUrl ? (
+                <img src={w.imageUrl} alt={w.name} className="w-full h-full object-cover rounded-full" />
+              ) : (
+                <span className="font-serif font-bold text-lg">{idx + 1}</span>
+              )}
             </button>
           ))}
         </div>
@@ -252,9 +363,9 @@ export default function TastingRoom() {
 
       {whiskyList.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-4">
-          <p className="text-2xl font-serif text-muted-foreground">No expressions yet.</p>
+          <p className="text-2xl font-serif text-muted-foreground">{t("whisky.noExpressions")}</p>
           {isHost && (
-            <p className="text-sm text-muted-foreground">Use "Add Expression" above to add whiskies to this flight.</p>
+            <p className="text-sm text-muted-foreground">Use "{t("whisky.addExpression")}" above to add whiskies to this flight.</p>
           )}
         </div>
       ) : activeWhisky ? (
@@ -281,15 +392,15 @@ export default function TastingRoom() {
             <div className="sticky top-8 space-y-8">
               <div className="bg-card border border-border/50 shadow-sm p-8 text-center relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50"></div>
-                <div className="w-40 h-40 mx-auto rounded-full bg-secondary/30 border border-secondary flex items-center justify-center mb-6">
-                  <span className="text-6xl font-serif text-primary opacity-80">🥃</span>
+                <div className="mx-auto mb-6">
+                  <WhiskyThumbnail whisky={activeWhisky} size="lg" />
                 </div>
                 <h3 className="font-serif text-3xl font-bold mb-2 text-primary">{activeWhisky.name}</h3>
                 <p className="text-muted-foreground font-serif italic mb-6 text-lg">{activeWhisky.distillery || "Unknown"}</p>
                 <div className="grid grid-cols-2 gap-4 text-left mt-8 pt-8 border-t border-border/30">
                   <div>
                     <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">ABV</span>
-                    <span className="font-mono text-lg font-medium">{activeWhisky.abv ? `${activeWhisky.abv}%` : "—"}</span>
+                    <span className="font-mono text-lg font-medium">{activeWhisky.abv ? `${activeWhisky.abv}%` : "\u2014"}</span>
                   </div>
                   <div>
                     <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">Age</span>

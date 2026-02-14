@@ -1,16 +1,18 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { GlassWater, BarChart3, Home, Users, LogOut, Menu } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
+import { WelcomeOverlay } from "@/components/welcome-overlay";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
   const { t } = useTranslation();
   const { currentParticipant, setParticipant } = useAppStore();
 
@@ -51,6 +53,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           );
         })}
+
+        <button
+          onClick={() => { setShowWelcome(true); setOpen(false); }}
+          className="flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-300 cursor-pointer w-full text-left text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+          data-testid="button-about-method"
+        >
+          <BookOpen className="w-4 h-4" />
+          <span className="text-sm font-medium">{t('nav.aboutMethod')}</span>
+        </button>
       </nav>
 
       <div className="p-6 border-t border-border/50 space-y-4">
@@ -76,6 +87,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden font-sans">
       <div className="fixed inset-0 z-0 bg-[#F9F9F7]" />
+
+      <WelcomeOverlay />
+      {showWelcome && (
+        <WelcomeOverlay forceOpen onClose={() => setShowWelcome(false)} />
+      )}
 
       <header className="md:hidden sticky top-0 z-50 flex items-center justify-between p-4 border-b border-border bg-card/80 backdrop-blur-lg">
         <div className="flex items-center gap-2">

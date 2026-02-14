@@ -64,6 +64,7 @@ export const whiskies = pgTable("whiskies", {
   ageBand: text("age_band"), // NAS, Young (3-9), Classic (10-17), Mature (18-25), Old (25+)
   caskInfluence: text("cask_influence"), // Bourbon, Sherry, Port, Wine, etc.
   peatLevel: text("peat_level"), // None, Light, Medium, Heavy
+  imageUrl: text("image_url"),
 });
 
 export const insertWhiskySchema = createInsertSchema(whiskies).omit({ id: true });

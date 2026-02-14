@@ -1,8 +1,31 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+// @ts-ignore
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { storage } from "./storage";
 import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema } from "@shared/schema";
 import { z } from "zod";
+
+const uploadsDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req: any, _file: any, cb: any) => cb(null, uploadsDir),
+    filename: (_req: any, file: any, cb: any) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`);
+    },
+  }),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req: any, file: any, cb: any) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Only JPG, PNG, and WebP images are allowed"));
+  },
+});
 
 export async function registerRoutes(
   httpServer: Server,
@@ -140,6 +163,31 @@ export async function registerRoutes(
     await storage.deleteWhisky(req.params.id);
     res.status(204).send();
   });
+
+  app.post("/api/whiskies/:id/image", upload.single("image"), async (req: any, res: any) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: "No image file provided" });
+      const imageUrl = `/uploads/${req.file.filename}`;
+      const updated = await storage.updateWhisky(req.params.id, { imageUrl });
+      if (!updated) return res.status(404).json({ message: "Not found" });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/whiskies/:id/image", async (req, res) => {
+    const whisky = await storage.getWhisky(req.params.id);
+    if (!whisky) return res.status(404).json({ message: "Not found" });
+    if (whisky.imageUrl) {
+      const filePath = path.join(process.cwd(), whisky.imageUrl);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
+    const updated = await storage.updateWhisky(req.params.id, { imageUrl: null });
+    res.json(updated);
+  });
+
+  app.use("/uploads", (await import("express")).default.static(uploadsDir));
 
   // ===== RATINGS =====
 

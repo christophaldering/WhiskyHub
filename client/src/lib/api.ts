@@ -46,6 +46,17 @@ export const whiskyApi = {
   create: (data: any) => fetchJSON("/whiskies", { method: "POST", body: JSON.stringify(data) }),
   update: (id: string, data: any) => fetchJSON(`/whiskies/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (id: string) => fetchJSON(`/whiskies/${id}`, { method: "DELETE" }),
+  uploadImage: async (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    const res = await fetch(`${API_BASE}/whiskies/${id}/image`, { method: "POST", body: formData });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Upload failed");
+    }
+    return res.json();
+  },
+  deleteImage: (id: string) => fetchJSON(`/whiskies/${id}/image`, { method: "DELETE" }),
 };
 
 // ===== Ratings =====
