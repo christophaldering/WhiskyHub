@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -147,9 +148,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             Signed in as <span className="font-semibold text-foreground">{currentParticipant.name}</span>
           </div>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <LanguageToggle />
           <ThemeToggle />
+          <AmbientToggle />
         </div>
         {currentParticipant && (
           <button

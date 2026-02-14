@@ -1,0 +1,161 @@
+INSTRUCTION FOR REPLIT – Update Menu Section “About the Method”
+
+GOAL
+Replace the entire content of the menu item “About the Method” with the new structured text below.
+The tone must be calm, reflective, precise – not promotional.
+The section must support bilingual display (German / English toggle).
+
+IMPORTANT
+- Completely replace the existing text.
+- Do not mix old and new copy.
+- No marketing language.
+- Clean typography.
+- Clear section hierarchy (H2 + paragraph blocks).
+- Optimized for readability on mobile.
+
+--------------------------------------------------
+ENGLISH VERSION
+--------------------------------------------------
+
+Menu Title:
+About the Method
+
+Section 1 – The Discipline of Perception
+
+Before we evaluate, we observe.
+
+CaskSense begins with attention.
+The first encounter with a whisky belongs to the nose — unhurried, without judgement.
+
+Aromas are personal.
+They are shaped by memory, experience, and association.
+There is no objective “correct” perception.
+
+The method therefore begins not with scoring,
+but with awareness.
+
+Section 2 – Structured Differentiation
+
+Pleasure and precision are not opposites.
+
+CaskSense evaluates across five dimensions:
+nose, taste, finish, balance, and overall impression.
+
+Each dimension serves as a deliberate pause.
+Instead of asking “Do I like it?”
+the method asks:
+Where exactly does it convince me?
+Where does it surprise me?
+Where does it lose clarity?
+
+The decimal scale allows nuance.
+Most whiskies live between extremes.
+The structure helps articulate that space.
+
+Section 3 – Reflection Before Ranking
+
+A tasting is not complete with the first sip.
+
+The method unfolds in stages:
+individual perception,
+documented evaluation,
+shared reflection,
+collective transparency.
+
+The goal is not to declare a winner.
+It is to deepen understanding.
+
+Individual impressions remain visible.
+Consensus becomes traceable.
+
+Section 4 – The Longitudinal Perspective
+
+Over time, patterns emerge.
+
+CaskSense preserves every tasting.
+Scores, notes, context.
+
+What develops is not a database.
+It is a biography of taste.
+
+The most valuable whisky is not the highest rated.
+It is the one that expanded perception.
+
+--------------------------------------------------
+GERMAN VERSION
+--------------------------------------------------
+
+Menütitel:
+Über die Methode
+
+Abschnitt 1 – Die Disziplin der Wahrnehmung
+
+Bevor wir bewerten, beobachten wir.
+
+CaskSense beginnt mit Aufmerksamkeit.
+Die erste Begegnung mit einem Whisky gehört der Nase – ruhig und ohne Urteil.
+
+Aromen sind persönlich.
+Sie entstehen aus Erinnerung, Erfahrung und Assoziation.
+Es gibt keine objektiv „richtige“ Wahrnehmung.
+
+Deshalb beginnt die Methode nicht mit Punkten,
+sondern mit Bewusstheit.
+
+Abschnitt 2 – Strukturierte Differenzierung
+
+Genuss und Präzision sind kein Widerspruch.
+
+CaskSense differenziert in fünf Dimensionen:
+Nase, Geschmack, Abgang, Balance und Gesamteindruck.
+
+Jede Dimension ist eine bewusste Unterbrechung.
+Nicht nur: „Gefällt er mir?“
+Sondern:
+Wo überzeugt er mich?
+Wo überrascht er?
+Wo verliert er an Klarheit?
+
+Die Dezimalskala ermöglicht Nuancen.
+Die meisten Whiskys bewegen sich zwischen den Extremen.
+Die Struktur hilft, diesen Raum zu beschreiben.
+
+Abschnitt 3 – Reflexion vor Ranking
+
+Eine Verkostung endet nicht mit dem ersten Schluck.
+
+Die Methode verläuft in Etappen:
+individuelle Wahrnehmung,
+dokumentierte Bewertung,
+gemeinsame Reflexion,
+kollektive Transparenz.
+
+Ziel ist nicht der Sieger.
+Ziel ist ein tieferes Verständnis.
+
+Individuelle Eindrücke bleiben sichtbar.
+Konsens wird nachvollziehbar.
+
+Abschnitt 4 – Die longitudinale Perspektive
+
+Mit der Zeit entstehen Muster.
+
+CaskSense bewahrt jede Verkostung.
+Punkte, Notizen, Kontext.
+
+Was entsteht, ist keine Datenbank.
+Es ist eine Biografie des Geschmacks.
+
+Der wertvollste Whisky ist nicht der am höchsten bewertete.
+Sondern der, der die Wahrnehmung erweitert.
+
+--------------------------------------------------
+
+ACCEPTANCE CRITERIA
+
+- The menu item “About the Method” displays the full text above.
+- Language toggle correctly switches between English and German.
+- Clear visual separation between sections.
+- No duplicated headings.
+- No added marketing phrasing.
+- Clean spacing for mobile readability.

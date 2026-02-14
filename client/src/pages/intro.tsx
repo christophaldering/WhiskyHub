@@ -1,6 +1,7 @@
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import whiskyBg from "@assets/PNG-Bild_1771095178148.png";
+import { AmbientToggle } from "@/components/ambient-toggle";
 
 const INTRO_SEEN_KEY = "casksense_intro_seen";
 
@@ -62,7 +63,8 @@ export default function Intro() {
           </div>
         </div>
 
-        <div className="flex flex-col items-center gap-3 mb-8">
+        <div className="flex flex-col items-center gap-4 mb-8">
+          <AmbientToggle variant="intro" />
           <button
             onClick={handleEnter}
             className="px-8 py-3 border border-amber-500/70 text-amber-100 rounded-sm font-serif text-sm tracking-wide hover:bg-amber-500/10 transition-colors"

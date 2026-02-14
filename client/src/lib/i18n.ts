@@ -49,6 +49,16 @@ const resources = {
         switchToDark: "Switch to dark mode",
         switchToLight: "Switch to light mode"
       },
+      ambient: {
+        title: "Ambient Sound",
+        enable: "Ambient Sound",
+        fireplace: "Fireplace",
+        rain: "Rain",
+        night: "Night",
+        volume: "Volume",
+        play: "Play",
+        stop: "Stop"
+      },
       intro: {
         title: "CaskSense",
         tagline: "Where Tasting Becomes Reflection",
@@ -560,6 +570,16 @@ const resources = {
         light: "Hell",
         switchToDark: "Zum dunklen Modus wechseln",
         switchToLight: "Zum hellen Modus wechseln"
+      },
+      ambient: {
+        title: "Klangkulisse",
+        enable: "Klangkulisse",
+        fireplace: "Kaminfeuer",
+        rain: "Regen",
+        night: "Nacht",
+        volume: "Lautst\u00E4rke",
+        play: "Abspielen",
+        stop: "Stopp"
       },
       intro: {
         title: "CaskSense",
