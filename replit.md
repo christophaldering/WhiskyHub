@@ -54,6 +54,10 @@ Preferred communication style: Simple, everyday language.
 - `POST /api/whiskies` — Add whisky to tasting
 - `PATCH /api/whiskies/:id` — Update whisky
 - `DELETE /api/whiskies/:id` — Delete whisky
+- `POST /api/whiskies/:id/image` — Upload bottle photo for a whisky
+- `DELETE /api/whiskies/:id/image` — Remove bottle photo
+- `POST /api/tastings/:id/import/parse` — Parse spreadsheet (Excel/CSV/TXT) and return preview
+- `POST /api/tastings/:id/import/confirm` — Confirm import: create whiskies in bulk with optional ZIP/URL images
 - Rating endpoints for upserting and querying evaluations
 
 ### Database
@@ -82,6 +86,7 @@ Preferred communication style: Simple, everyday language.
 2. **Shared schema**: Drizzle schema in `shared/` ensures type safety across the full stack without duplication.
 3. **Session state machine**: Tastings progress through draft → open → closed → reveal (with 4 acts) → archived, controlled by the host.
 4. **Real-time-ish updates**: Uses React Query polling (refetchInterval) rather than WebSockets for simplicity.
+5. **Flight import**: Hosts can bulk-import whiskies from Excel (.xlsx), CSV, or TXT files. Supports image attachment via URL column or ZIP archive with image_filename references. Uses SheetJS (xlsx) for Excel parsing and adm-zip for ZIP extraction. Two-step flow: parse → preview → confirm.
 
 ## External Dependencies
 
