@@ -1,10 +1,22 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { Play, Lock, Eye, Archive, ChevronRight, Glasses } from "lucide-react";
+import { Play, Lock, Eye, Archive, ChevronRight, Glasses, Trash2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { tastingApi, blindModeApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import type { Tasting } from "@shared/schema";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SessionControlProps {
   tasting: Tasting;
@@ -13,12 +25,18 @@ interface SessionControlProps {
 
 export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const updateStatus = useMutation({
     mutationFn: (params: { status: string; currentAct?: string }) =>
-      tastingApi.updateStatus(tasting.id, params.status, params.currentAct),
-    onSuccess: () => {
+      tastingApi.updateStatus(tasting.id, params.status, params.currentAct, tasting.hostId),
+    onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ["tasting", tasting.id] });
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+      if (vars.status === "deleted") {
+        navigate("/sessions");
+      }
     },
   });
 
@@ -44,6 +62,15 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
     }
   };
 
+  const handleArchive = () => {
+    updateStatus.mutate({ status: "archived" });
+  };
+
+  const handleDelete = () => {
+    updateStatus.mutate({ status: "deleted" });
+    setShowDeleteDialog(false);
+  };
+
   const getButtonConfig = () => {
     const status = tasting.status;
     if (status === "draft") return { label: t('session.actions.start'), icon: Play };
@@ -67,7 +94,52 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
     return null;
   };
 
-  if (tasting.status === "archived") return null;
+  const canDelete = tasting.status !== "open";
+  const showArchiveDelete = tasting.status !== "archived" && tasting.status !== "deleted";
+
+  if (tasting.status === "archived") {
+    return (
+      <div className="fixed bottom-6 right-6 z-50">
+        <div className="bg-card border border-border/50 shadow-2xl p-4 rounded-lg flex flex-col gap-2 min-w-[200px]">
+          <div className="text-xs uppercase tracking-widest text-muted-foreground font-mono mb-1">
+            Host Control
+          </div>
+          <div className="text-sm font-serif font-bold text-primary mb-3">
+            {t(`session.status.${tasting.status}`)}
+          </div>
+          <button
+            onClick={() => canDelete ? setShowDeleteDialog(true) : undefined}
+            className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-destructive transition-colors rounded-sm hover:bg-destructive/5 w-full"
+            title={!canDelete ? t('session.actions.cannotDeleteActive') : undefined}
+            data-testid="button-delete-session"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            {t('session.actions.deleteSession')}
+          </button>
+
+          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t('session.actions.deleteConfirmTitle')}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t('session.actions.deleteConfirmMessage')}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t('session.actions.deleteCancel')}</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {t('session.actions.deleteConfirm')}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
@@ -112,7 +184,51 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
             </Button>
           </div>
         )}
+
+        {showArchiveDelete && (
+          <div className="mt-3 pt-3 border-t border-border/50 flex flex-col gap-1">
+            {tasting.status !== "draft" && tasting.status !== "open" && (
+              <button
+                onClick={handleArchive}
+                className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors rounded-sm hover:bg-secondary/50 w-full"
+                data-testid="button-archive-session"
+              >
+                <Archive className="w-3.5 h-3.5" />
+                {t('session.actions.archive')}
+              </button>
+            )}
+            <button
+              onClick={() => canDelete ? setShowDeleteDialog(true) : undefined}
+              className={`flex items-center gap-2 px-3 py-2 text-xs rounded-sm w-full transition-colors ${canDelete ? "text-muted-foreground hover:text-destructive hover:bg-destructive/5 cursor-pointer" : "text-muted-foreground/40 cursor-not-allowed"}`}
+              title={!canDelete ? t('session.actions.cannotDeleteActive') : undefined}
+              data-testid="button-delete-session"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {t('session.actions.deleteSession')}
+            </button>
+          </div>
+        )}
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('session.actions.deleteConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('session.actions.deleteConfirmMessage')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('session.actions.deleteCancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('session.actions.deleteConfirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -35,7 +35,13 @@ const resources = {
           close: "Close Evaluation",
           reveal: "Begin Reveal",
           nextAct: "Next Act",
-          archive: "Archive Session"
+          archive: "Archive Session",
+          deleteSession: "Delete Session",
+          deleteConfirmTitle: "Delete Session?",
+          deleteConfirmMessage: "This will remove the session from all lists. Data can only be restored manually.",
+          deleteConfirm: "Delete Permanently",
+          deleteCancel: "Cancel",
+          cannotDeleteActive: "Close the session before deleting it."
         }
       },
       evaluation: {
@@ -373,7 +379,13 @@ const resources = {
           close: "Bewertung schlie\u00dfen",
           reveal: "Enth\u00fcllung starten",
           nextAct: "N\u00e4chster Akt",
-          archive: "Sitzung archivieren"
+          archive: "Sitzung archivieren",
+          deleteSession: "Session l\u00f6schen",
+          deleteConfirmTitle: "Session l\u00f6schen?",
+          deleteConfirmMessage: "Dies entfernt die Sitzung aus allen Listen. Daten k\u00f6nnen nur manuell wiederhergestellt werden.",
+          deleteConfirm: "Endg\u00fcltig l\u00f6schen",
+          deleteCancel: "Abbrechen",
+          cannotDeleteActive: "Schlie\u00dfen Sie die Sitzung, bevor Sie sie l\u00f6schen."
         }
       },
       evaluation: {
