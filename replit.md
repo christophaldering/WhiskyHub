@@ -77,9 +77,19 @@ Preferred communication style: Simple, everyday language.
 
 ### Build Process
 - `npm run dev` — Development server with Vite HMR
-- `npm run build` — Builds client with Vite, bundles server with esbuild into `dist/index.cjs`
-- `npm run start` — Runs production build
+- `npm run build` — Builds client with Vite, bundles server with esbuild into `dist/index.cjs`; injects GIT_SHA and BUILD_TIME into the server bundle
+- `npm run start` — Runs production build (`NODE_ENV=production node dist/index.cjs`)
 - Server bundling selectively externalizes dependencies for faster cold starts
+
+### Deployment (Publishing)
+- **Build command**: `npm run build`
+- **Run command**: `npm run start`
+- The production server serves the Vite-built SPA from `dist/public/` with a catch-all fallback to `index.html` for SPA routing
+- Uploads directory (`/uploads`) is served via express.static for bottle images
+- Health check: `GET /health` returns `{"status":"ok"}`
+- Version info: `GET /version` returns `{"version","gitSha","buildTime","env"}`
+- On startup, the server logs version, build SHA, environment, and build time
+- The `GIT_SHA` env var is injected at build time; falls back to "dev" in development
 
 ### Key Design Decisions
 1. **Lightweight auth**: No passwords or sessions — just name + optional PIN stored client-side via Zustand. Chosen for simplicity in a social tasting context.
