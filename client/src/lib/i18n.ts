@@ -43,6 +43,12 @@ const resources = {
         journal: "Whisky Journal",
         about: "About"
       },
+      theme: {
+        dark: "Dark",
+        light: "Light",
+        switchToDark: "Switch to dark mode",
+        switchToLight: "Switch to light mode"
+      },
       intro: {
         title: "CaskSense",
         tagline: "Where Tasting Becomes Reflection",
@@ -548,6 +554,12 @@ const resources = {
         friends: "Meine Whisky-Freunde",
         journal: "Whisky-Tagebuch",
         about: "Über"
+      },
+      theme: {
+        dark: "Dunkel",
+        light: "Hell",
+        switchToDark: "Zum dunklen Modus wechseln",
+        switchToLight: "Zum hellen Modus wechseln"
       },
       intro: {
         title: "CaskSense",

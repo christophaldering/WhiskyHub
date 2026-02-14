@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -146,7 +147,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             Signed in as <span className="font-semibold text-foreground">{currentParticipant.name}</span>
           </div>
         )}
-        <LanguageToggle />
+        <div className="flex items-center gap-2">
+          <LanguageToggle />
+          <ThemeToggle />
+        </div>
         {currentParticipant && (
           <button
             onClick={() => setParticipant(null)}
@@ -173,6 +177,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-2">
           <ProfileAvatar size={48} showName />
           <LanguageToggle />
+          <ThemeToggle />
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="text-primary hover:bg-secondary">
