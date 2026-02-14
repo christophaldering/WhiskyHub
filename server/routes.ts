@@ -54,6 +54,8 @@ const COLUMN_MAP: Record<string, string> = {
   fass: "caskInfluence", fasseinfluss: "caskInfluence",
   peat: "peatLevel", "peat level": "peatLevel", peat_level: "peatLevel",
   torf: "peatLevel", torfgehalt: "peatLevel",
+  ppm: "ppm", phenol: "ppm", "phenol ppm": "ppm",
+  whiskybase: "whiskybaseId", whiskybase_id: "whiskybaseId", "whiskybase id": "whiskybaseId", wb: "whiskybaseId",
   notes: "notes", notizen: "notes", anmerkungen: "notes",
   order: "sortOrder", reihenfolge: "sortOrder", sort: "sortOrder", sort_order: "sortOrder",
   image: "imageRef", image_url: "imageRef", image_filename: "imageRef", bild: "imageRef", foto: "imageRef",
@@ -154,6 +156,10 @@ function parseArrayRows(raw: any[][], errors: string[]): { rows: Record<string, 
     if (obj.abv) {
       const parsed = parseFloat(String(obj.abv).replace(",", ".").replace("%", ""));
       obj.abv = isNaN(parsed) ? null : parsed;
+    }
+    if (obj.ppm) {
+      const parsed = parseFloat(String(obj.ppm).replace(",", "."));
+      obj.ppm = isNaN(parsed) ? null : parsed;
     }
     if (obj.sortOrder) {
       const parsed = parseInt(String(obj.sortOrder), 10);
@@ -470,6 +476,8 @@ export async function registerRoutes(
             ageBand: row.ageBand || null,
             caskInfluence: row.caskInfluence || null,
             peatLevel: row.peatLevel || null,
+            ppm: row.ppm ? parseFloat(String(row.ppm).replace(",", ".")) : null,
+            whiskybaseId: row.whiskybaseId || null,
           };
 
           const whisky = await storage.createWhisky(whiskyData);

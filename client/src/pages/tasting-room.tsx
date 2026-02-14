@@ -7,7 +7,7 @@ import { LoginDialog } from "@/components/login-dialog";
 import { ImportFlightDialog } from "@/components/import-flight-dialog";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Plus, Camera, X, ImageIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Camera, X, ImageIcon, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,7 +52,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
   const [form, setForm] = useState({
     name: "", distillery: "", age: "", abv: "", type: "Single Malt",
     notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "",
-    caskInfluence: "", peatLevel: "None",
+    caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "",
   });
 
   const createWhisky = useMutation({
@@ -71,7 +71,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
   });
 
   const resetForm = () => {
-    setForm({ name: "", distillery: "", age: "", abv: "", type: "Single Malt", notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "", caskInfluence: "", peatLevel: "None" });
+    setForm({ name: "", distillery: "", age: "", abv: "", type: "Single Malt", notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "", caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "" });
     setImageFile(null);
     setImagePreview(null);
     setImageError("");
@@ -115,6 +115,8 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
       ageBand: form.ageBand || null,
       caskInfluence: form.caskInfluence.trim() || null,
       peatLevel: form.peatLevel || null,
+      ppm: form.ppm ? parseFloat(form.ppm) : null,
+      whiskybaseId: form.whiskybaseId.trim() || null,
     });
   };
 
@@ -247,6 +249,34 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
                     <SelectItem value="Old (25+)">Old (25+)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">{t("whisky.ppm")}</Label>
+                <Input type="number" value={form.ppm} onChange={(e) => setForm(p => ({ ...p, ppm: e.target.value }))} placeholder="55" step="1" data-testid="input-whisky-ppm" />
+              </div>
+              <div className="space-y-1 col-span-2">
+                <Label className="text-xs text-muted-foreground">{t("whisky.whiskybaseId")}</Label>
+                <div className="flex gap-2">
+                  <Input value={form.whiskybaseId} onChange={(e) => setForm(p => ({ ...p, whiskybaseId: e.target.value }))} placeholder="12345" className="flex-1" data-testid="input-whisky-wbid" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs flex-shrink-0"
+                    onClick={() => {
+                      if (form.whiskybaseId.trim()) {
+                        window.open(`https://www.whiskybase.com/whiskies/whisky/${form.whiskybaseId.trim()}`, "_blank");
+                      } else {
+                        const q = [form.name, form.distillery].filter(Boolean).join(" ");
+                        window.open(`https://www.whiskybase.com/search?q=${encodeURIComponent(q)}`, "_blank");
+                      }
+                    }}
+                    data-testid="button-search-whiskybase"
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    {t("whisky.searchWhiskybase")}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -410,6 +440,26 @@ export default function TastingRoom() {
                     <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">Age</span>
                     <span className="font-mono text-lg font-medium">{activeWhisky.age || "NAS"}</span>
                   </div>
+                  {activeWhisky.ppm != null && (
+                    <div>
+                      <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">PPM</span>
+                      <span className="font-mono text-lg font-medium">{activeWhisky.ppm}</span>
+                    </div>
+                  )}
+                  {activeWhisky.whiskybaseId && (
+                    <div>
+                      <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">Whiskybase</span>
+                      <a
+                        href={`https://www.whiskybase.com/whiskies/whisky/${activeWhisky.whiskybaseId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-sm font-medium text-primary hover:underline inline-flex items-center gap-1"
+                        data-testid="link-whiskybase"
+                      >
+                        #{activeWhisky.whiskybaseId} <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
 

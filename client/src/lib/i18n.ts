@@ -82,7 +82,12 @@ const resources = {
         photoInvalidType: "Only JPG, PNG, and WebP images are allowed",
         addExpression: "Add Expression",
         addToFlight: "Add to Flight",
-        noExpressions: "No expressions yet."
+        noExpressions: "No expressions yet.",
+        ppm: "PPM (Phenol)",
+        ppmHint: "Phenol parts per million",
+        whiskybaseId: "Whiskybase ID",
+        whiskybaseHint: "Whiskybase catalog number",
+        searchWhiskybase: "Search Whiskybase"
       },
       wotd: {
         title: "Whisky of the Day",
@@ -121,6 +126,8 @@ const resources = {
           peat: "None / Light / Medium / Heavy",
           notes: "Free-text tasting notes",
           order: "Position in flight (1, 2, 3...)",
+          ppm: "Phenol level in ppm, e.g. 55",
+          whiskybase_id: "Whiskybase catalog number, e.g. 12345",
           image_filename: "Filename in ZIP, e.g. uigeadail.jpg",
           image_url: "URL to bottle image"
         },
@@ -219,7 +226,12 @@ const resources = {
         photoInvalidType: "Nur JPG, PNG und WebP Bilder erlaubt",
         addExpression: "Expression hinzuf\u00fcgen",
         addToFlight: "Zum Flight hinzuf\u00fcgen",
-        noExpressions: "Noch keine Expressions."
+        noExpressions: "Noch keine Expressions.",
+        ppm: "PPM (Phenol)",
+        ppmHint: "Phenol-Teile pro Million",
+        whiskybaseId: "Whiskybase-Nr.",
+        whiskybaseHint: "Whiskybase-Katalognummer",
+        searchWhiskybase: "Whiskybase suchen"
       },
       wotd: {
         title: "Whisky des Tages",
@@ -258,6 +270,8 @@ const resources = {
           peat: "None / Light / Medium / Heavy",
           notes: "Freitext-Verkostungsnotizen",
           order: "Position im Flight (1, 2, 3\u2026)",
+          ppm: "Phenolgehalt in ppm, z.\u00a0B. 55",
+          whiskybase_id: "Whiskybase-Katalognummer, z.\u00a0B. 12345",
           image_filename: "Dateiname im ZIP, z.\u00a0B. uigeadail.jpg",
           image_url: "URL zum Flaschenbild"
         },
