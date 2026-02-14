@@ -184,6 +184,17 @@ export const reflectionApi = {
     }),
 };
 
+// ===== Whisky Friends =====
+export const friendsApi = {
+  getAll: (participantId: string) => fetchJSON(`/participants/${participantId}/friends`),
+  create: (participantId: string, data: { name: string; email: string }) =>
+    fetchJSON(`/participants/${participantId}/friends`, { method: "POST", body: JSON.stringify(data) }),
+  update: (participantId: string, friendId: string, data: { name: string; email: string }) =>
+    fetchJSON(`/participants/${participantId}/friends/${friendId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  delete: (participantId: string, friendId: string) =>
+    fetchJSON(`/participants/${participantId}/friends/${friendId}`, { method: "DELETE" }),
+};
+
 // ===== Ratings =====
 export const ratingApi = {
   getForWhisky: (whiskyId: string) => fetchJSON(`/whiskies/${whiskyId}/ratings`),

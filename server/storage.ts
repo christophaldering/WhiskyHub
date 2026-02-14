@@ -2,7 +2,7 @@ import { eq, ne, and, asc } from "drizzle-orm";
 import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
-  profiles, sessionInvites, discussionEntries, reflectionEntries,
+  profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -12,6 +12,7 @@ import {
   type InsertSessionInvite, type SessionInvite,
   type InsertDiscussionEntry, type DiscussionEntry,
   type InsertReflectionEntry, type ReflectionEntry,
+  type InsertWhiskyFriend, type WhiskyFriend,
 } from "@shared/schema";
 
 export interface WhiskyOfTheDay {
@@ -79,6 +80,12 @@ export interface IStorage {
   getReflectionEntries(tastingId: string): Promise<ReflectionEntry[]>;
   createReflectionEntry(data: InsertReflectionEntry): Promise<ReflectionEntry>;
   getReflectionsByParticipant(tastingId: string, participantId: string): Promise<ReflectionEntry[]>;
+
+  // Whisky Friends
+  getWhiskyFriends(participantId: string): Promise<WhiskyFriend[]>;
+  createWhiskyFriend(data: InsertWhiskyFriend): Promise<WhiskyFriend>;
+  deleteWhiskyFriend(id: string, participantId: string): Promise<void>;
+  updateWhiskyFriend(id: string, participantId: string, data: { name: string; email: string }): Promise<WhiskyFriend | undefined>;
 
   // Hard Delete (admin only)
   hardDeleteTasting(id: string): Promise<void>;
@@ -318,6 +325,25 @@ export class DatabaseStorage implements IStorage {
 
   async getReflectionsByParticipant(tastingId: string, participantId: string): Promise<ReflectionEntry[]> {
     return db.select().from(reflectionEntries).where(and(eq(reflectionEntries.tastingId, tastingId), eq(reflectionEntries.participantId, participantId))).orderBy(asc(reflectionEntries.createdAt));
+  }
+
+  // --- Whisky Friends ---
+  async getWhiskyFriends(participantId: string): Promise<WhiskyFriend[]> {
+    return db.select().from(whiskyFriends).where(eq(whiskyFriends.participantId, participantId)).orderBy(asc(whiskyFriends.name));
+  }
+
+  async createWhiskyFriend(data: InsertWhiskyFriend): Promise<WhiskyFriend> {
+    const [result] = await db.insert(whiskyFriends).values(data).returning();
+    return result;
+  }
+
+  async deleteWhiskyFriend(id: string, participantId: string): Promise<void> {
+    await db.delete(whiskyFriends).where(and(eq(whiskyFriends.id, id), eq(whiskyFriends.participantId, participantId)));
+  }
+
+  async updateWhiskyFriend(id: string, participantId: string, data: { name: string; email: string }): Promise<WhiskyFriend | undefined> {
+    const [result] = await db.update(whiskyFriends).set(data).where(and(eq(whiskyFriends.id, id), eq(whiskyFriends.participantId, participantId))).returning();
+    return result;
   }
 
   async hardDeleteTasting(id: string): Promise<void> {

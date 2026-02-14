@@ -58,7 +58,11 @@ Preferred communication style: Simple, everyday language.
 - `DELETE /api/whiskies/:id/image` — Remove bottle photo
 - `POST /api/tastings/:id/import/parse` — Parse spreadsheet (Excel/CSV/TXT) and return preview
 - `POST /api/tastings/:id/import/confirm` — Confirm import: create whiskies in bulk with optional ZIP/URL images
-- `PATCH /api/participants/:id` — Update participant (name, email)
+- `PATCH /api/participants/:id` — Update participant (name, email, PIN)
+- `GET /api/participants/:id/friends` — List whisky friends
+- `POST /api/participants/:id/friends` — Add a whisky friend
+- `PATCH /api/participants/:participantId/friends/:friendId` — Update a whisky friend
+- `DELETE /api/participants/:participantId/friends/:friendId` — Remove a whisky friend
 - `GET /api/profiles/:participantId` — Get participant profile
 - `PUT /api/profiles/:participantId` — Create/update profile (bio, preferences, favorite whisky, etc.)
 - `POST /api/profiles/:participantId/photo` — Upload profile photo
@@ -87,6 +91,7 @@ Preferred communication style: Simple, everyday language.
 - **ratings**: id, participantId, whiskyId, tastingId, nose, taste, finish, balance, overall, notes
 - **profiles**: id, participantId, bio, favoriteWhisky, goToDram, preferredRegions, preferredPeatLevel, preferredCaskInfluence, photoUrl, createdAt, updatedAt
 - **session_invites**: id, tastingId, email, token, personalNote, status (invited/joined), acceptedAt, createdAt
+- **whisky_friends**: id, participantId, name, email, createdAt
 
 ### Build Process
 - `npm run dev` — Development server with Vite HMR

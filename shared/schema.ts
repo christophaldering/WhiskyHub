@@ -145,6 +145,19 @@ export const insertReflectionEntrySchema = createInsertSchema(reflectionEntries)
 export type InsertReflectionEntry = z.infer<typeof insertReflectionEntrySchema>;
 export type ReflectionEntry = typeof reflectionEntries.$inferSelect;
 
+// --- Whisky Friends (contact list) ---
+export const whiskyFriends = pgTable("whisky_friends", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertWhiskyFriendSchema = createInsertSchema(whiskyFriends).omit({ id: true, createdAt: true });
+export type InsertWhiskyFriend = z.infer<typeof insertWhiskyFriendSchema>;
+export type WhiskyFriend = typeof whiskyFriends.$inferSelect;
+
 // --- Ratings (evaluations) ---
 export const ratings = pgTable("ratings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

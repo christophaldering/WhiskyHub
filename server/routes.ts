@@ -904,6 +904,62 @@ export async function registerRoutes(
     }
   });
 
+  // ===== WHISKY FRIENDS =====
+
+  app.get("/api/participants/:id/friends", async (req, res) => {
+    try {
+      const friends = await storage.getWhiskyFriends(req.params.id);
+      res.json(friends);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/participants/:id/friends", async (req, res) => {
+    try {
+      const { name, email } = req.body;
+      if (!name?.trim()) return res.status(400).json({ message: "Name is required" });
+      if (!email?.trim()) return res.status(400).json({ message: "Email is required" });
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) return res.status(400).json({ message: "Invalid email format" });
+      const friend = await storage.createWhiskyFriend({
+        participantId: req.params.id,
+        name: name.trim(),
+        email: email.trim(),
+      });
+      res.status(201).json(friend);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/participants/:participantId/friends/:friendId", async (req, res) => {
+    try {
+      const { name, email } = req.body;
+      if (!name?.trim()) return res.status(400).json({ message: "Name is required" });
+      if (!email?.trim()) return res.status(400).json({ message: "Email is required" });
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) return res.status(400).json({ message: "Invalid email format" });
+      const friend = await storage.updateWhiskyFriend(req.params.friendId, req.params.participantId, {
+        name: name.trim(),
+        email: email.trim(),
+      });
+      if (!friend) return res.status(404).json({ message: "Friend not found" });
+      res.json(friend);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/participants/:participantId/friends/:friendId", async (req, res) => {
+    try {
+      await storage.deleteWhiskyFriend(req.params.friendId, req.params.participantId);
+      res.status(204).send();
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== SESSION INVITES =====
 
   app.get("/api/tastings/:id/invites", async (req, res) => {
