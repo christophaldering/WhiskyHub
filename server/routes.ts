@@ -798,7 +798,8 @@ export async function registerRoutes(
 
   app.put("/api/profiles/:participantId", async (req, res) => {
     try {
-      const data = {
+      const existing = await storage.getProfile(req.params.participantId);
+      const data: any = {
         participantId: req.params.participantId,
         bio: req.body.bio || null,
         favoriteWhisky: req.body.favoriteWhisky || null,
@@ -806,8 +807,12 @@ export async function registerRoutes(
         preferredRegions: req.body.preferredRegions || null,
         preferredPeatLevel: req.body.preferredPeatLevel || null,
         preferredCaskInfluence: req.body.preferredCaskInfluence || null,
-        photoUrl: req.body.photoUrl || null,
       };
+      if ("photoUrl" in req.body) {
+        data.photoUrl = req.body.photoUrl || null;
+      } else if (existing) {
+        data.photoUrl = existing.photoUrl;
+      }
       const profile = await storage.upsertProfile(data);
       res.json(profile);
     } catch (e: any) {
