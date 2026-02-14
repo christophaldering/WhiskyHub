@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState } from "react";
@@ -69,6 +69,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       { href: "/profile", icon: User, label: t('profile.title') },
       { href: "/friends", icon: Users, label: t('nav.friends') },
       { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
+      { href: "/badges", icon: Trophy, label: t('nav.badges') },
     ] : []),
   ];
 
@@ -108,6 +109,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           );
         })}
+
+        <Link href="/lexicon">
+          <div
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-300 cursor-pointer",
+              location === "/lexicon"
+                ? "bg-secondary text-primary border-l-2 border-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            )}
+            onClick={() => setOpen(false)}
+            data-testid="nav-lexicon"
+          >
+            <Library className="w-4 h-4" />
+            <span className="text-sm font-medium">{t('nav.lexicon')}</span>
+          </div>
+        </Link>
 
         <Link href="/about-method">
           <div

@@ -245,8 +245,10 @@ export function stopSoundscape() {
 }
 
 export function setVolume(vol: number) {
-  if (masterGain) {
-    masterGain.gain.setTargetAtTime(Math.max(0, Math.min(1, vol)), masterGain.context.currentTime, 0.05);
+  const clamped = Math.max(0, Math.min(1, vol));
+  if (masterGain && audioCtx) {
+    masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    masterGain.gain.value = clamped;
   }
 }
 

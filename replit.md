@@ -12,16 +12,23 @@ Preferred communication style: Simple, everyday language.
 The application employs a monorepo structure, separating client, server, and shared code. It is built entirely with TypeScript, utilizing ESM modules. A shared `schema.ts` defines Drizzle ORM and Zod validation schemas for consistent data handling across the frontend and backend.
 
 ### Frontend (`client/`)
-The frontend is a React application built with Vite. It uses Wouter for routing, TanStack React Query for server state, and Zustand for client-side state management. The UI is constructed with shadcn/ui (new-york style) based on Radix UI primitives and Tailwind CSS, featuring a custom theme with a muted slate blue palette. Animations are handled by Framer Motion, and data visualizations are powered by Recharts. Internationalization is managed via react-i18next, supporting English and German. Fonts (Merriweather and Inter) are chosen for a sophisticated aesthetic.
+The frontend is a React application built with Vite. It uses Wouter for routing, TanStack React Query for server state, and Zustand for client-side state management. The UI is constructed with shadcn/ui (new-york style) based on Radix UI primitives and Tailwind CSS, featuring a custom theme with a muted slate blue palette and a light mode alternative. Animations are handled by Framer Motion, and data visualizations are powered by Recharts. Internationalization is managed via react-i18next, supporting English and German. Fonts (Playfair Display and Inter) are chosen for a sophisticated aesthetic.
 
 ### Backend (`server/`)
 The backend is an Express 5 HTTP server providing RESTful API endpoints. It serves the frontend assets in production and integrates with the Vite dev server for development. Participant identification is client-side, avoiding session-based authentication.
 
 ### API Structure
-The API provides comprehensive endpoints for managing tastings, participants, whiskies, ratings, profiles, invitations, discussion, and reflections. Key functionalities include participant login, tasting creation and management, whisky CRUD operations (including image uploads and bulk import), participant profiles, session invitations via email, attendee rosters, blind tasting mode controls, and discussion/reflection entry management.
+The API provides comprehensive endpoints for managing tastings, participants, whiskies, ratings, profiles, invitations, discussion, reflections, journal entries, and participant stats.
+
+### Key Endpoints
+- `GET /api/participants/:id/stats` — Aggregated participant statistics for badge computation
+- `GET /api/journal/:participantId` — List journal entries
+- `POST /api/journal/:participantId` — Create journal entry (Zod validated)
+- `PATCH /api/journal/:participantId/:id` — Update journal entry (field-filtered)
+- `DELETE /api/journal/:participantId/:id` — Delete journal entry
 
 ### Database
-PostgreSQL is the primary database, accessed via Drizzle ORM. The schema includes tables for `participants`, `tastings`, `whiskies`, `ratings`, `profiles`, `session_invites`, `whisky_friends`, `journal_entries`, `discussion_entries`, and `reflection_entries`. UUIDs are used for identifiers.
+PostgreSQL is the primary database, accessed via Drizzle ORM. The schema includes tables for `participants`, `tastings`, `tasting_participants`, `whiskies`, `ratings`, `profiles`, `session_invites`, `whisky_friends`, `journal_entries`, `discussion_entries`, and `reflection_entries`. UUIDs are used for identifiers.
 
 ### Key Design Decisions
 1.  **Lightweight Authentication**: Participant authentication is simplified, relying on name and an optional PIN stored client-side.
@@ -40,10 +47,16 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 14. **Discussion Panel**: A basic real-time discussion feature for active sessions using polling.
 15. **Tasting Note Generator**: An interactive tool to assist participants in crafting structured tasting notes using predefined flavor categories.
 16. **Reflection Phase**: An optional post-tasting reflection feature with configurable prompts and visibility settings.
+17. **Whisky Journal**: Private tasting diary with CRUD operations, rich metadata, personal scores, mood/occasion tracking.
+18. **Dark/Light Theme**: Togglable dark (warm whisky) and light (cream/amber) themes with localStorage persistence and no-flash initialization.
+19. **Ambient Soundscapes**: Web Audio API procedural sound engine with three soundscapes (fireplace, rain, night), volume control, centralized state via Zustand.
+20. **Whisky Lexicon**: Reference glossary with 53 bilingual entries across 5 categories, searchable with accordion sections.
+21. **Host Briefing Notes**: Auto-generated summary cards for whiskies in a tasting, with print support.
+22. **Achievement Badges**: 15 milestone badges computed client-side from participant stats API, with progress tracking.
 
 ## External Dependencies
 
 -   **PostgreSQL**: The core relational database.
--   **Google Fonts**: Used for fetching Merriweather and Inter fonts.
+-   **Google Fonts**: Used for fetching Playfair Display and Inter fonts.
 -   **Nodemailer**: Employed for sending email invitations (optional, requires SMTP configuration).
 -   **SheetJS (xlsx)**: Used for parsing Excel files during bulk whisky import.

@@ -212,6 +212,11 @@ export const journalApi = {
     fetchJSON(`/journal/${participantId}/${id}`, { method: "DELETE" }),
 };
 
+// ===== Participant Stats =====
+export const statsApi = {
+  get: (participantId: string) => fetchJSON(`/participants/${participantId}/stats`),
+};
+
 // ===== Ratings =====
 export const ratingApi = {
   getForWhisky: (whiskyId: string) => fetchJSON(`/whiskies/${whiskyId}/ratings`),

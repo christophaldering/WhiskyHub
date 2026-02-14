@@ -7,6 +7,7 @@ import { LoginDialog } from "@/components/login-dialog";
 import { ImportFlightDialog } from "@/components/import-flight-dialog";
 import { FlightBoard } from "@/components/flight-board";
 import { PdfExportDialog } from "@/components/pdf-export-dialog";
+import { BriefingNotes } from "@/components/briefing-notes";
 import { AttendeeRoster } from "@/components/attendee-roster";
 import { InvitePanel } from "@/components/invite-panel";
 import DiscussionPanel from "@/components/discussion-panel";
@@ -691,6 +692,7 @@ export default function TastingRoom() {
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-3">
               <PdfExportDialog tasting={tasting} whiskies={whiskyList} />
+              {isHost && <BriefingNotes whiskies={whiskyList} tastingTitle={tasting.title} />}
               <span className="text-xs font-mono bg-secondary px-2 py-1 rounded text-muted-foreground">Code: {tasting.code}</span>
               <div className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm font-medium border border-border/50">
                 {t(`session.status.${tasting.status}`)}

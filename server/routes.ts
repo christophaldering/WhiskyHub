@@ -1394,5 +1394,18 @@ export async function registerRoutes(
     }
   });
 
+  // ===== PARTICIPANT STATS (for badges) =====
+
+  app.get("/api/participants/:id/stats", async (req, res) => {
+    try {
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      const stats = await storage.getParticipantStats(req.params.id);
+      res.json(stats);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }

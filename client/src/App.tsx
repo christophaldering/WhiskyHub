@@ -13,6 +13,8 @@ import Sessions from "@/pages/sessions";
 import InviteAccept from "@/pages/invite-accept";
 import AboutMethod from "@/pages/about-method";
 import Journal from "@/pages/journal";
+import Badges from "@/pages/badges";
+import Lexicon from "@/pages/lexicon";
 import Intro from "@/pages/intro";
 import { hasSeenIntro } from "@/pages/intro";
 import { BuildFooter } from "@/components/build-footer";
@@ -41,6 +43,8 @@ function Router() {
               <Route path="/profile" component={Profile} />
               <Route path="/friends" component={WhiskyFriends} />
               <Route path="/journal" component={Journal} />
+              <Route path="/badges" component={Badges} />
+              <Route path="/lexicon" component={Lexicon} />
               <Route path="/about-method" component={AboutMethod} />
               <Route path="/invite/:token" component={InviteAccept} />
               <Route component={NotFound} />

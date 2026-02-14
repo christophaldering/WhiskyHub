@@ -1,4 +1,4 @@
-import { eq, ne, and, asc, sql } from "drizzle-orm";
+import { eq, ne, and, asc, sql, inArray } from "drizzle-orm";
 import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
@@ -98,6 +98,17 @@ export interface IStorage {
   createJournalEntry(data: InsertJournalEntry): Promise<JournalEntry>;
   updateJournalEntry(id: string, participantId: string, data: Partial<InsertJournalEntry>): Promise<JournalEntry | undefined>;
   deleteJournalEntry(id: string, participantId: string): Promise<void>;
+
+  // Participant Stats (for badges)
+  getParticipantStats(participantId: string): Promise<{
+    totalRatings: number;
+    totalTastings: number;
+    totalJournalEntries: number;
+    ratedRegions: Record<string, number>;
+    ratedCaskTypes: Record<string, number>;
+    ratedPeatLevels: Record<string, number>;
+    highestOverall: number;
+  }>;
 
   // Hard Delete (admin only)
   hardDeleteTasting(id: string): Promise<void>;
@@ -397,6 +408,54 @@ export class DatabaseStorage implements IStorage {
 
   async deleteJournalEntry(id: string, participantId: string): Promise<void> {
     await db.delete(journalEntries).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId)));
+  }
+
+  async getParticipantStats(participantId: string): Promise<{
+    totalRatings: number;
+    totalTastings: number;
+    totalJournalEntries: number;
+    ratedRegions: Record<string, number>;
+    ratedCaskTypes: Record<string, number>;
+    ratedPeatLevels: Record<string, number>;
+    highestOverall: number;
+  }> {
+    const allRatings = await db.select().from(ratings).where(eq(ratings.participantId, participantId));
+
+    const whiskyIds = [...new Set(allRatings.map(r => r.whiskyId))];
+    const allWhiskies = whiskyIds.length > 0
+      ? await db.select().from(whiskies).where(inArray(whiskies.id, whiskyIds))
+      : [];
+    const whiskyMap = new Map(allWhiskies.map(w => [w.id, w]));
+
+    const participations = await db.select().from(tastingParticipants).where(eq(tastingParticipants.participantId, participantId));
+    const totalTastings = participations.length;
+
+    const journalCount = await db.select({ count: sql<number>`count(*)::int` }).from(journalEntries).where(eq(journalEntries.participantId, participantId));
+
+    const ratedRegions: Record<string, number> = {};
+    const ratedCaskTypes: Record<string, number> = {};
+    const ratedPeatLevels: Record<string, number> = {};
+    let highestOverall = 0;
+
+    for (const rating of allRatings) {
+      if (rating.overall > highestOverall) highestOverall = rating.overall;
+      const w = whiskyMap.get(rating.whiskyId);
+      if (w) {
+        if (w.region) ratedRegions[w.region] = (ratedRegions[w.region] || 0) + 1;
+        if (w.caskInfluence) ratedCaskTypes[w.caskInfluence] = (ratedCaskTypes[w.caskInfluence] || 0) + 1;
+        if (w.peatLevel) ratedPeatLevels[w.peatLevel] = (ratedPeatLevels[w.peatLevel] || 0) + 1;
+      }
+    }
+
+    return {
+      totalRatings: allRatings.length,
+      totalTastings,
+      totalJournalEntries: journalCount[0]?.count || 0,
+      ratedRegions,
+      ratedCaskTypes,
+      ratedPeatLevels,
+      highestOverall,
+    };
   }
 
   async hardDeleteTasting(id: string): Promise<void> {

@@ -41,6 +41,8 @@ const resources = {
         aboutMethod: "About the Method",
         friends: "My Whisky Friends",
         journal: "Whisky Journal",
+        lexicon: "Whisky Lexicon",
+        badges: "Achievements",
         about: "About"
       },
       theme: {
@@ -188,6 +190,12 @@ const resources = {
         created: "Created",
         updated: "Last updated",
         loginRequired: "Please sign in to access your journal.",
+      },
+      lexicon: {
+        title: "Whisky Lexicon",
+        subtitle: "A reference glossary for whisky tasting terms, flavors, regions, and production methods.",
+        searchPlaceholder: "Search terms, definitions...",
+        noResults: "No matching entries found. Try a different search term.",
       },
       aboutMethod: {
         heroTitle: "About the Method",
@@ -521,6 +529,27 @@ const resources = {
         lineup: "Lineup",
         participants: "Participants",
         noParticipants: "No participants yet."
+      },
+      briefing: {
+        title: "Host Briefing Notes",
+        subtitle: "Summary cards for each expression",
+        print: "Print",
+        noWhiskies: "No expressions in this flight yet.",
+        region: "Region",
+        age: "Age",
+        abv: "ABV",
+        cask: "Cask",
+        peat: "Peat",
+        notes: "Notes",
+        category: "Category"
+      },
+      badges: {
+        title: "Achievements",
+        subtitle: "Your whisky journey milestones",
+        earned: "earned",
+        locked: "Locked",
+        progress: "Progress",
+        loginRequired: "Please sign in to view your achievements."
       }
     }
   },
@@ -563,6 +592,8 @@ const resources = {
         aboutMethod: "\u00dcber die Methode",
         friends: "Meine Whisky-Freunde",
         journal: "Whisky-Tagebuch",
+        lexicon: "Whisky-Lexikon",
+        badges: "Erfolge",
         about: "Über"
       },
       theme: {
@@ -710,6 +741,12 @@ const resources = {
         created: "Erstellt",
         updated: "Zuletzt aktualisiert",
         loginRequired: "Bitte melden Sie sich an, um auf Ihr Tagebuch zuzugreifen.",
+      },
+      lexicon: {
+        title: "Whisky-Lexikon",
+        subtitle: "Ein Nachschlagewerk für Verkostungsbegriffe, Aromen, Regionen und Herstellungsverfahren.",
+        searchPlaceholder: "Begriffe, Definitionen suchen...",
+        noResults: "Keine passenden Einträge gefunden. Versuchen Sie einen anderen Suchbegriff.",
       },
       aboutMethod: {
         heroTitle: "Über die Methode",
@@ -1043,6 +1080,27 @@ const resources = {
         lineup: "Lineup",
         participants: "Teilnehmer",
         noParticipants: "Noch keine Teilnehmer."
+      },
+      briefing: {
+        title: "Gastgeber-Notizen",
+        subtitle: "Zusammenfassungskarten für jede Expression",
+        print: "Drucken",
+        noWhiskies: "Noch keine Expressions in diesem Flight.",
+        region: "Region",
+        age: "Alter",
+        abv: "Vol.-%",
+        cask: "Fass",
+        peat: "Torf",
+        notes: "Notizen",
+        category: "Kategorie"
+      },
+      badges: {
+        title: "Erfolge",
+        subtitle: "Meilensteine Ihrer Whisky-Reise",
+        earned: "erreicht",
+        locked: "Gesperrt",
+        progress: "Fortschritt",
+        loginRequired: "Bitte melden Sie sich an, um Ihre Erfolge zu sehen."
       }
     }
   }
