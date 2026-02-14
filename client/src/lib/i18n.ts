@@ -329,7 +329,10 @@ const resources = {
         status: "Invitation Status",
         statusInvited: "Invited",
         statusJoined: "Joined",
-        noInvites: "No invitations sent yet."
+        noInvites: "No invitations sent yet.",
+        friendsList: "My Whisky Friends",
+        addSelected: "Add {{count}} selected",
+        friendsAlreadyInvited: "{{count}} friend(s) already invited"
       },
       roster: {
         title: "Attendees",
@@ -738,7 +741,10 @@ const resources = {
         status: "Einladungsstatus",
         statusInvited: "Eingeladen",
         statusJoined: "Beigetreten",
-        noInvites: "Noch keine Einladungen gesendet."
+        noInvites: "Noch keine Einladungen gesendet.",
+        friendsList: "Meine Whisky-Freunde",
+        addSelected: "{{count}} ausgewählte hinzufügen",
+        friendsAlreadyInvited: "{{count}} Freund(e) bereits eingeladen"
       },
       roster: {
         title: "Teilnehmer",

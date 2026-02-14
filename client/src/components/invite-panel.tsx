@@ -2,13 +2,15 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { inviteApi } from "@/lib/api";
+import { inviteApi, friendsApi } from "@/lib/api";
+import { useAppStore } from "@/lib/store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Copy, Check, AlertCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Mail, Copy, Check, AlertCircle, Users, UserPlus } from "lucide-react";
 
 interface InvitePanelProps {
   tastingId: string;
@@ -27,13 +29,22 @@ interface ExistingInvite {
   token: string;
 }
 
+interface WhiskyFriend {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 export function InvitePanel({ tastingId }: InvitePanelProps) {
   const { t } = useTranslation();
+  const { currentParticipant } = useAppStore();
   const [open, setOpen] = useState(false);
   const [emails, setEmails] = useState("");
   const [personalNote, setPersonalNote] = useState("");
   const [results, setResults] = useState<InviteResult[] | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
 
   const { data: smtpStatus } = useQuery<{ configured: boolean }>({
     queryKey: ["smtpStatus"],
@@ -46,6 +57,12 @@ export function InvitePanel({ tastingId }: InvitePanelProps) {
     enabled: !!tastingId && open,
   });
 
+  const { data: friends = [] } = useQuery<WhiskyFriend[]>({
+    queryKey: ["friends", currentParticipant?.id],
+    queryFn: () => friendsApi.getAll(currentParticipant!.id),
+    enabled: !!currentParticipant?.id && open,
+  });
+
   const sendMutation = useMutation({
     mutationFn: ({ emailList, note }: { emailList: string[]; note?: string }) =>
       inviteApi.sendInvites(tastingId, emailList, note),
@@ -53,9 +70,34 @@ export function InvitePanel({ tastingId }: InvitePanelProps) {
       setResults(data.results);
       setEmails("");
       setPersonalNote("");
+      setSelectedFriends(new Set());
       queryClient.invalidateQueries({ queryKey: ["invites", tastingId] });
     },
   });
+
+  const alreadyInvitedEmails = new Set(existingInvites.map((inv) => inv.email.toLowerCase()));
+
+  const toggleFriend = (friend: WhiskyFriend) => {
+    const next = new Set(selectedFriends);
+    if (next.has(friend.id)) {
+      next.delete(friend.id);
+    } else {
+      next.add(friend.id);
+    }
+    setSelectedFriends(next);
+  };
+
+  const addSelectedToEmails = () => {
+    const selected = friends.filter((f) => selectedFriends.has(f.id));
+    const newEmails = selected.map((f) => f.email).filter((e) => e);
+    const currentEmails = emails
+      .split("\n")
+      .map((e) => e.trim())
+      .filter((e) => e.length > 0);
+    const combined = Array.from(new Set([...currentEmails, ...newEmails]));
+    setEmails(combined.join("\n"));
+    setSelectedFriends(new Set());
+  };
 
   const handleSend = () => {
     const emailList = emails
@@ -77,8 +119,13 @@ export function InvitePanel({ tastingId }: InvitePanelProps) {
     setOpen(v);
     if (!v) {
       setResults(null);
+      setSelectedFriends(new Set());
     }
   };
+
+  const availableFriends = friends.filter(
+    (f) => f.email && !alreadyInvitedEmails.has(f.email.toLowerCase())
+  );
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -102,6 +149,58 @@ export function InvitePanel({ tastingId }: InvitePanelProps) {
 
         {!results ? (
           <div className="space-y-4 mt-2">
+            {availableFriends.length > 0 && (
+              <div className="space-y-2" data-testid="friends-quick-add">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5" />
+                    {t("invite.friendsList")}
+                  </Label>
+                  {selectedFriends.size > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-primary font-serif px-2"
+                      onClick={addSelectedToEmails}
+                      data-testid="button-add-selected-friends"
+                    >
+                      <UserPlus className="w-3 h-3 mr-1" />
+                      {t("invite.addSelected", { count: selectedFriends.size })}
+                    </Button>
+                  )}
+                </div>
+                <div className="max-h-40 overflow-y-auto rounded-lg border border-border/40 divide-y divide-border/20">
+                  {availableFriends.map((friend) => {
+                    const isSelected = selectedFriends.has(friend.id);
+                    return (
+                      <label
+                        key={friend.id}
+                        className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/50 transition-colors"
+                        data-testid={`friend-row-${friend.id}`}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleFriend(friend)}
+                          data-testid={`checkbox-friend-${friend.id}`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {friend.firstName} {friend.lastName}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">{friend.email}</p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+                {friends.length > availableFriends.length && (
+                  <p className="text-[10px] text-muted-foreground italic">
+                    {t("invite.friendsAlreadyInvited", { count: friends.length - availableFriends.length })}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("invite.emailsLabel")}</Label>
               <Textarea
@@ -205,7 +304,7 @@ export function InvitePanel({ tastingId }: InvitePanelProps) {
           </div>
         )}
 
-        {existingInvites.length === 0 && !results && (
+        {existingInvites.length === 0 && !results && availableFriends.length === 0 && (
           <p className="text-xs text-muted-foreground italic text-center pt-2" data-testid="text-no-invites">
             {t("invite.noInvites")}
           </p>
