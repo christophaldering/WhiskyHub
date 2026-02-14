@@ -6,7 +6,7 @@ const resources = {
     translation: {
       app: {
         name: "CaskSense",
-        tagline: "Structured Tasting Experience",
+        tagline: "Where Tasting Becomes Reflection",
         copyright: "\u00a9 2026 CaskSense. All rights reserved."
       },
       login: {
@@ -44,7 +44,7 @@ const resources = {
       },
       intro: {
         title: "CaskSense",
-        tagline: "Structured Tasting Experience",
+        tagline: "Where Tasting Becomes Reflection",
         subline: "A circle for structured perception.",
         whyTitle: "Why CaskSense",
         whyBody: "In a world of instant ratings and quick impressions, CaskSense creates space for deliberate perception.",
@@ -437,7 +437,7 @@ const resources = {
     translation: {
       app: {
         name: "CaskSense",
-        tagline: "Strukturierte Verkostungserfahrung",
+        tagline: "Where Tasting Becomes Reflection",
         copyright: "\u00a9 2026 CaskSense. Alle Rechte vorbehalten."
       },
       login: {
@@ -475,7 +475,7 @@ const resources = {
       },
       intro: {
         title: "CaskSense",
-        tagline: "Strukturierte Verkostungserfahrung",
+        tagline: "Where Tasting Becomes Reflection",
         subline: "Ein Kreis f\u00fcr strukturierte Wahrnehmung.",
         whyTitle: "Warum CaskSense",
         whyBody: "In einer Welt schneller Bewertungen und fl\u00fcchtiger Eindr\u00fccke schafft CaskSense Raum f\u00fcr bewusste Wahrnehmung.",
