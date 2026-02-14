@@ -245,6 +245,29 @@ export async function registerRoutes(
         return res.status(400).json({ message: "A valid email is required" });
       }
       const participant = await storage.createParticipant(data);
+
+      if (participant.email) {
+        try {
+          const friendEntries = await storage.getWhiskyFriendsByEmail(participant.email);
+          for (const entry of friendEntries) {
+            const owner = await storage.getParticipant(entry.participantId);
+            if (owner) {
+              const nameParts = owner.name.trim().split(/\s+/);
+              const firstName = nameParts[0] || owner.name;
+              const lastName = nameParts.slice(1).join(" ") || "";
+              await storage.createWhiskyFriend({
+                participantId: participant.id,
+                firstName,
+                lastName,
+                email: owner.email || "",
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Error creating reciprocal friends:", err);
+        }
+      }
+
       res.status(201).json(participant);
     } catch (e: any) {
       res.status(400).json({ message: e.message });

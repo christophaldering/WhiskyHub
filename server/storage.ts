@@ -83,6 +83,7 @@ export interface IStorage {
 
   // Whisky Friends
   getWhiskyFriends(participantId: string): Promise<WhiskyFriend[]>;
+  getWhiskyFriendsByEmail(email: string): Promise<WhiskyFriend[]>;
   createWhiskyFriend(data: InsertWhiskyFriend): Promise<WhiskyFriend>;
   deleteWhiskyFriend(id: string, participantId: string): Promise<void>;
   updateWhiskyFriend(id: string, participantId: string, data: { firstName: string; lastName: string; email: string }): Promise<WhiskyFriend | undefined>;
@@ -330,6 +331,10 @@ export class DatabaseStorage implements IStorage {
   // --- Whisky Friends ---
   async getWhiskyFriends(participantId: string): Promise<WhiskyFriend[]> {
     return db.select().from(whiskyFriends).where(eq(whiskyFriends.participantId, participantId)).orderBy(asc(whiskyFriends.lastName), asc(whiskyFriends.firstName));
+  }
+
+  async getWhiskyFriendsByEmail(email: string): Promise<WhiskyFriend[]> {
+    return db.select().from(whiskyFriends).where(eq(whiskyFriends.email, email));
   }
 
   async createWhiskyFriend(data: InsertWhiskyFriend): Promise<WhiskyFriend> {
