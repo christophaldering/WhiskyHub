@@ -81,7 +81,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Database Schema
 - **participants**: id, name, pin (optional), email (optional), language, createdAt
-- **tastings**: id, title, date, location, hostId, code (join code), status, currentAct, hostReflection, createdAt
+- **tastings**: id, title, date, location, hostId, code (join code), status (draft|open|closed|reveal|archived|deleted), currentAct, hostReflection, createdAt
 - **tasting_participants**: id, tastingId, participantId, joinedAt
 - **whiskies**: id, tastingId, name, distillery, age, abv, type, notes, sortOrder, category, region, abvBand, ageBand, caskInfluence, peatLevel, ppm, whiskybaseId, imageUrl
 - **ratings**: id, participantId, whiskyId, tastingId, nose, taste, finish, balance, overall, notes
