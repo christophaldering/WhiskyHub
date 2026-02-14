@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Users, Plus, Pencil, Trash2, Check, User } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, Check, User, UserPlus, X } from "lucide-react";
 
 export default function WhiskyFriends() {
   const { t } = useTranslation();
@@ -30,6 +30,13 @@ export default function WhiskyFriends() {
     queryKey: ["friends", currentParticipant?.id],
     queryFn: () => friendsApi.getAll(currentParticipant!.id),
     enabled: !!currentParticipant,
+  });
+
+  const { data: pendingRequests = [] } = useQuery({
+    queryKey: ["friends-pending", currentParticipant?.id],
+    queryFn: () => friendsApi.getPending(currentParticipant!.id),
+    enabled: !!currentParticipant,
+    refetchInterval: 30000,
   });
 
   const addMutation = useMutation({
@@ -67,6 +74,25 @@ export default function WhiskyFriends() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["friends", currentParticipant?.id] });
       toast({ title: t("friends.friendRemoved") });
+    },
+  });
+
+  const acceptMutation = useMutation({
+    mutationFn: (friendId: string) =>
+      friendsApi.accept(currentParticipant!.id, friendId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friends", currentParticipant?.id] });
+      queryClient.invalidateQueries({ queryKey: ["friends-pending", currentParticipant?.id] });
+      toast({ title: t("friends.accepted") });
+    },
+  });
+
+  const declineMutation = useMutation({
+    mutationFn: (friendId: string) =>
+      friendsApi.decline(currentParticipant!.id, friendId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friends-pending", currentParticipant?.id] });
+      toast({ title: t("friends.declined") });
     },
   });
 
@@ -111,7 +137,69 @@ export default function WhiskyFriends() {
   }
 
   return (
-    <div className="flex flex-col items-center w-full max-w-2xl mx-auto py-10 px-4">
+    <div className="flex flex-col items-center w-full max-w-2xl mx-auto py-10 px-4 space-y-6">
+      {pendingRequests.length > 0 && (
+        <Card className="w-full border-primary/30 bg-primary/5 shadow-sm" data-testid="card-pending-requests">
+          <CardHeader>
+            <div>
+              <h2 className="font-serif text-xl text-primary tracking-tight flex items-center gap-2" data-testid="text-pending-title">
+                <UserPlus className="w-5 h-5" />
+                {t("friends.pendingRequests")}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">{t("friends.pendingSubtitle")}</p>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {pendingRequests.map((req: any) => (
+              <div
+                key={req.id}
+                className="flex items-center gap-3 p-3 rounded-lg border border-primary/20 bg-card hover:bg-secondary/10 transition-colors"
+                data-testid={`card-pending-${req.id}`}
+              >
+                <Avatar className="w-9 h-9 border border-primary/20">
+                  <AvatarFallback className="bg-primary/15 text-primary text-xs font-serif">
+                    {req.firstName.charAt(0).toUpperCase()}{req.lastName ? req.lastName.charAt(0).toUpperCase() : ""}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate" data-testid={`text-pending-name-${req.id}`}>
+                    {req.firstName} {req.lastName}
+                  </p>
+                  {req.email && (
+                    <p className="text-xs text-muted-foreground truncate" data-testid={`text-pending-email-${req.id}`}>
+                      {req.email}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-1.5">
+                  <Button
+                    size="sm"
+                    onClick={() => acceptMutation.mutate(req.id)}
+                    disabled={acceptMutation.isPending || declineMutation.isPending}
+                    className="h-8 px-3 font-serif text-xs"
+                    data-testid={`button-accept-${req.id}`}
+                  >
+                    <Check className="w-3.5 h-3.5 mr-1" />
+                    {t("friends.accept")}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => declineMutation.mutate(req.id)}
+                    disabled={acceptMutation.isPending || declineMutation.isPending}
+                    className="h-8 px-3 text-xs text-muted-foreground hover:text-destructive"
+                    data-testid={`button-decline-${req.id}`}
+                  >
+                    <X className="w-3.5 h-3.5 mr-1" />
+                    {t("friends.decline")}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="w-full border-border/50 bg-card shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between">

@@ -323,7 +323,14 @@ const resources = {
         friendRemoved: "Friend removed",
         noFriends: "No whisky friends yet. Add someone to your circle!",
         saveFriend: "Save",
-        cancelEdit: "Cancel"
+        cancelEdit: "Cancel",
+        pendingRequests: "Friend Requests",
+        pendingSubtitle: "These people added you as a friend.",
+        accept: "Accept",
+        decline: "Decline",
+        accepted: "Friend request accepted",
+        declined: "Friend request declined",
+        noPending: "No pending friend requests."
       },
       invite: {
         title: "Invite Participants",
@@ -747,7 +754,14 @@ const resources = {
         friendRemoved: "Freund entfernt",
         noFriends: "Noch keine Whisky-Freunde. Fügen Sie jemanden hinzu!",
         saveFriend: "Speichern",
-        cancelEdit: "Abbrechen"
+        cancelEdit: "Abbrechen",
+        pendingRequests: "Freundschaftsanfragen",
+        pendingSubtitle: "Diese Personen haben dich als Freund hinzugefügt.",
+        accept: "Annehmen",
+        decline: "Ablehnen",
+        accepted: "Freundschaftsanfrage angenommen",
+        declined: "Freundschaftsanfrage abgelehnt",
+        noPending: "Keine offenen Freundschaftsanfragen."
       },
       invite: {
         title: "Teilnehmer einladen",

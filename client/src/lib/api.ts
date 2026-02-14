@@ -187,12 +187,17 @@ export const reflectionApi = {
 // ===== Whisky Friends =====
 export const friendsApi = {
   getAll: (participantId: string) => fetchJSON(`/participants/${participantId}/friends`),
+  getPending: (participantId: string) => fetchJSON(`/participants/${participantId}/friends/pending`),
   create: (participantId: string, data: { firstName: string; lastName: string; email: string }) =>
     fetchJSON(`/participants/${participantId}/friends`, { method: "POST", body: JSON.stringify(data) }),
   update: (participantId: string, friendId: string, data: { firstName: string; lastName: string; email: string }) =>
     fetchJSON(`/participants/${participantId}/friends/${friendId}`, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (participantId: string, friendId: string) =>
     fetchJSON(`/participants/${participantId}/friends/${friendId}`, { method: "DELETE" }),
+  accept: (participantId: string, friendId: string) =>
+    fetchJSON(`/participants/${participantId}/friends/${friendId}/accept`, { method: "POST" }),
+  decline: (participantId: string, friendId: string) =>
+    fetchJSON(`/participants/${participantId}/friends/${friendId}/decline`, { method: "POST" }),
 };
 
 // ===== Ratings =====

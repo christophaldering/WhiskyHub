@@ -248,10 +248,14 @@ export async function registerRoutes(
 
       if (participant.email) {
         try {
-          const friendEntries = await storage.getWhiskyFriendsByEmail(participant.email);
+          const friendEntries = await storage.getWhiskyFriendsByEmail(participant.email.toLowerCase());
+          const existingPending = await storage.getPendingFriendRequests(participant.id);
           for (const entry of friendEntries) {
+            if (entry.participantId === participant.id) continue;
             const owner = await storage.getParticipant(entry.participantId);
             if (owner) {
+              const ownerEmail = (owner.email || "").toLowerCase();
+              if (existingPending.some(p => p.email.toLowerCase() === ownerEmail)) continue;
               const nameParts = owner.name.trim().split(/\s+/);
               const firstName = nameParts[0] || owner.name;
               const lastName = nameParts.slice(1).join(" ") || "";
@@ -260,6 +264,7 @@ export async function registerRoutes(
                 firstName,
                 lastName,
                 email: owner.email || "",
+                status: "pending",
               });
             }
           }
@@ -946,12 +951,50 @@ export async function registerRoutes(
       if (!email?.trim()) return res.status(400).json({ message: "Email is required" });
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) return res.status(400).json({ message: "Invalid email format" });
+      const normalizedEmail = email.trim().toLowerCase();
+
+      const adder = await storage.getParticipant(req.params.id);
+      if (adder && adder.email && adder.email.toLowerCase() === normalizedEmail) {
+        return res.status(400).json({ message: "You cannot add yourself as a friend" });
+      }
+
+      const existingFriends = await storage.getWhiskyFriends(req.params.id);
+      const pendingFriends = await storage.getPendingFriendRequests(req.params.id);
+      const allEntries = [...existingFriends, ...pendingFriends];
+      if (allEntries.some(f => f.email.toLowerCase() === normalizedEmail)) {
+        return res.status(400).json({ message: "This person is already in your friends list" });
+      }
+
       const friend = await storage.createWhiskyFriend({
         participantId: req.params.id,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        email: email.trim(),
+        email: normalizedEmail,
+        status: "accepted",
       });
+
+      try {
+        const targetUser = await storage.getParticipantByEmail(normalizedEmail);
+        if (targetUser && targetUser.id !== req.params.id) {
+          const targetFriends = await storage.getWhiskyFriends(targetUser.id);
+          const targetPending = await storage.getPendingFriendRequests(targetUser.id);
+          const targetAll = [...targetFriends, ...targetPending];
+          const adderEmail = adder?.email?.toLowerCase() || "";
+          if (!targetAll.some(f => f.email.toLowerCase() === adderEmail)) {
+            const nameParts = (adder?.name || "").trim().split(/\s+/);
+            await storage.createWhiskyFriend({
+              participantId: targetUser.id,
+              firstName: nameParts[0] || adder?.name || "",
+              lastName: nameParts.slice(1).join(" ") || "",
+              email: adder?.email || "",
+              status: "pending",
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error creating pending reciprocal friend:", err);
+      }
+
       res.status(201).json(friend);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -981,6 +1024,34 @@ export async function registerRoutes(
   app.delete("/api/participants/:participantId/friends/:friendId", async (req, res) => {
     try {
       await storage.deleteWhiskyFriend(req.params.friendId, req.params.participantId);
+      res.status(204).send();
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/participants/:id/friends/pending", async (req, res) => {
+    try {
+      const pending = await storage.getPendingFriendRequests(req.params.id);
+      res.json(pending);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/participants/:participantId/friends/:friendId/accept", async (req, res) => {
+    try {
+      const accepted = await storage.acceptFriendRequest(req.params.friendId, req.params.participantId);
+      if (!accepted) return res.status(404).json({ message: "Pending request not found" });
+      res.json(accepted);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/participants/:participantId/friends/:friendId/decline", async (req, res) => {
+    try {
+      await storage.declineFriendRequest(req.params.friendId, req.params.participantId);
       res.status(204).send();
     } catch (e: any) {
       res.status(500).json({ message: e.message });

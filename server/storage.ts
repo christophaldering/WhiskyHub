@@ -1,4 +1,4 @@
-import { eq, ne, and, asc } from "drizzle-orm";
+import { eq, ne, and, asc, sql } from "drizzle-orm";
 import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
@@ -83,8 +83,11 @@ export interface IStorage {
 
   // Whisky Friends
   getWhiskyFriends(participantId: string): Promise<WhiskyFriend[]>;
+  getPendingFriendRequests(participantId: string): Promise<WhiskyFriend[]>;
   getWhiskyFriendsByEmail(email: string): Promise<WhiskyFriend[]>;
   createWhiskyFriend(data: InsertWhiskyFriend): Promise<WhiskyFriend>;
+  acceptFriendRequest(id: string, participantId: string): Promise<WhiskyFriend | undefined>;
+  declineFriendRequest(id: string, participantId: string): Promise<void>;
   deleteWhiskyFriend(id: string, participantId: string): Promise<void>;
   updateWhiskyFriend(id: string, participantId: string, data: { firstName: string; lastName: string; email: string }): Promise<WhiskyFriend | undefined>;
 
@@ -105,7 +108,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getParticipantByEmail(email: string): Promise<Participant | undefined> {
-    const [result] = await db.select().from(participants).where(eq(participants.email, email));
+    const [result] = await db.select().from(participants).where(sql`lower(${participants.email}) = ${email.toLowerCase()}`);
     return result;
   }
 
@@ -330,16 +333,29 @@ export class DatabaseStorage implements IStorage {
 
   // --- Whisky Friends ---
   async getWhiskyFriends(participantId: string): Promise<WhiskyFriend[]> {
-    return db.select().from(whiskyFriends).where(eq(whiskyFriends.participantId, participantId)).orderBy(asc(whiskyFriends.lastName), asc(whiskyFriends.firstName));
+    return db.select().from(whiskyFriends).where(and(eq(whiskyFriends.participantId, participantId), eq(whiskyFriends.status, "accepted"))).orderBy(asc(whiskyFriends.lastName), asc(whiskyFriends.firstName));
+  }
+
+  async getPendingFriendRequests(participantId: string): Promise<WhiskyFriend[]> {
+    return db.select().from(whiskyFriends).where(and(eq(whiskyFriends.participantId, participantId), eq(whiskyFriends.status, "pending"))).orderBy(asc(whiskyFriends.createdAt));
   }
 
   async getWhiskyFriendsByEmail(email: string): Promise<WhiskyFriend[]> {
-    return db.select().from(whiskyFriends).where(eq(whiskyFriends.email, email));
+    return db.select().from(whiskyFriends).where(sql`lower(${whiskyFriends.email}) = ${email.toLowerCase()}`);
   }
 
   async createWhiskyFriend(data: InsertWhiskyFriend): Promise<WhiskyFriend> {
     const [result] = await db.insert(whiskyFriends).values(data).returning();
     return result;
+  }
+
+  async acceptFriendRequest(id: string, participantId: string): Promise<WhiskyFriend | undefined> {
+    const [result] = await db.update(whiskyFriends).set({ status: "accepted" }).where(and(eq(whiskyFriends.id, id), eq(whiskyFriends.participantId, participantId), eq(whiskyFriends.status, "pending"))).returning();
+    return result;
+  }
+
+  async declineFriendRequest(id: string, participantId: string): Promise<void> {
+    await db.delete(whiskyFriends).where(and(eq(whiskyFriends.id, id), eq(whiskyFriends.participantId, participantId), eq(whiskyFriends.status, "pending")));
   }
 
   async deleteWhiskyFriend(id: string, participantId: string): Promise<void> {
