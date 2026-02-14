@@ -11,6 +11,7 @@ import Profile from "@/pages/profile";
 import WhiskyFriends from "@/pages/whisky-friends";
 import Sessions from "@/pages/sessions";
 import InviteAccept from "@/pages/invite-accept";
+import AboutMethod from "@/pages/about-method";
 import Intro from "@/pages/intro";
 import { hasSeenIntro } from "@/pages/intro";
 import { BuildFooter } from "@/components/build-footer";
@@ -38,6 +39,7 @@ function Router() {
               <Route path="/tasting/:id" component={TastingRoom} />
               <Route path="/profile" component={Profile} />
               <Route path="/friends" component={WhiskyFriends} />
+              <Route path="/about-method" component={AboutMethod} />
               <Route path="/invite/:token" component={InviteAccept} />
               <Route component={NotFound} />
             </Switch>
