@@ -186,9 +186,58 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
               </div>
             </div>
 
-            <div className="bg-secondary/30 rounded-lg p-4 border border-border/30">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">{t("import.templateHint")}</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">{t("import.columns")}</p>
+            <div className="bg-secondary/30 rounded-lg border border-border/30 overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-border/20">
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("import.templateHint")}</p>
+              </div>
+
+              <div className="px-4 py-3 border-b border-border/20">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1.5">{t("import.exampleHeader")}</p>
+                <div className="overflow-x-auto">
+                  <code className="text-[11px] font-mono text-primary/80 whitespace-nowrap block">
+                    name,distillery,age,abv,type,category,region,cask,peat,notes,order,image_filename,image_url
+                  </code>
+                </div>
+              </div>
+
+              <div className="px-4 py-3 border-b border-border/20">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1.5">{t("import.exampleRow")}</p>
+                <div className="overflow-x-auto">
+                  <code className="text-[11px] font-mono text-foreground/70 whitespace-nowrap block">
+                    Ardbeg Uigeadail,Ardbeg,NAS,54.2,Single Malt,Whisky,Islay,Sherry,Heavy,"Dark chocolate, smoke",1,uigeadail.jpg,
+                  </code>
+                </div>
+              </div>
+
+              <div className="px-4 py-3">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">{t("import.fieldExplanations")}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+                  {[
+                    { key: "name", required: true },
+                    { key: "distillery" },
+                    { key: "age" },
+                    { key: "abv" },
+                    { key: "type" },
+                    { key: "category" },
+                    { key: "region" },
+                    { key: "cask" },
+                    { key: "peat" },
+                    { key: "notes" },
+                    { key: "order" },
+                    { key: "image_filename" },
+                    { key: "image_url" },
+                  ].map((col) => (
+                    <div key={col.key} className="flex items-baseline gap-1.5 py-0.5">
+                      <code className="text-[10px] font-mono text-primary/70 flex-shrink-0">
+                        {col.key}{col.required ? " *" : ""}
+                      </code>
+                      <span className="text-[10px] text-muted-foreground leading-tight">
+                        {t(`import.col.${col.key}`)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <Button
