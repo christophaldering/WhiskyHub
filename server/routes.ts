@@ -4,6 +4,10 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+// @ts-ignore
+import * as XLSX from "xlsx";
+// @ts-ignore
+import AdmZip from "adm-zip";
 import { storage } from "./storage";
 import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema } from "@shared/schema";
 import { z } from "zod";
@@ -26,6 +30,167 @@ const upload = multer({
     else cb(new Error("Only JPG, PNG, and WebP images are allowed"));
   },
 });
+
+const importUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req: any, _file: any, cb: any) => cb(null, uploadsDir),
+    filename: (_req: any, file: any, cb: any) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `import-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`);
+    },
+  }),
+  limits: { fileSize: 20 * 1024 * 1024 },
+});
+
+const COLUMN_MAP: Record<string, string> = {
+  name: "name", whisky: "name", expression: "name", bezeichnung: "name", titel: "name",
+  distillery: "distillery", brennerei: "distillery", destillerie: "distillery",
+  age: "age", alter: "age",
+  abv: "abv", alkohol: "abv", "abv%": "abv", "abv (%)": "abv",
+  type: "type", typ: "type", kategorie: "type",
+  category: "category",
+  region: "region",
+  cask: "caskInfluence", "cask influence": "caskInfluence", cask_influence: "caskInfluence",
+  fass: "caskInfluence", fasseinfluss: "caskInfluence",
+  peat: "peatLevel", "peat level": "peatLevel", peat_level: "peatLevel",
+  torf: "peatLevel", torfgehalt: "peatLevel",
+  notes: "notes", notizen: "notes", anmerkungen: "notes",
+  order: "sortOrder", reihenfolge: "sortOrder", sort: "sortOrder", sort_order: "sortOrder",
+  image: "imageRef", image_url: "imageRef", image_filename: "imageRef", bild: "imageRef", foto: "imageRef",
+  abv_band: "abvBand", abvband: "abvBand",
+  age_band: "ageBand", ageband: "ageBand", altersband: "ageBand",
+};
+
+function normalizeColumnName(raw: string): string | null {
+  const key = raw.trim().toLowerCase().replace(/[_\s]+/g, " ");
+  return COLUMN_MAP[key] || COLUMN_MAP[key.replace(/ /g, "_")] || COLUMN_MAP[key.replace(/ /g, "")] || null;
+}
+
+function parseSpreadsheetRows(buffer: Buffer, filename: string): { rows: Record<string, any>[]; errors: string[] } {
+  const ext = path.extname(filename).toLowerCase();
+  const errors: string[] = [];
+
+  if (ext === ".xlsx" || ext === ".xls") {
+    const wb = XLSX.read(buffer, { type: "buffer" });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    if (!sheet) { errors.push("No worksheet found in file"); return { rows: [], errors }; }
+    const raw: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    return parseArrayRows(raw, errors);
+  }
+
+  if (ext === ".csv" || ext === ".txt") {
+    const text = buffer.toString("utf-8");
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) { errors.push("File must have a header row and at least one data row"); return { rows: [], errors }; }
+
+    const delimiter = detectDelimiter(lines[0]);
+    const raw = lines.map(line => parseLine(line, delimiter));
+    return parseArrayRows(raw, errors);
+  }
+
+  errors.push(`Unsupported file type: ${ext}`);
+  return { rows: [], errors };
+}
+
+function detectDelimiter(headerLine: string): string {
+  const tab = (headerLine.match(/\t/g) || []).length;
+  const semi = (headerLine.match(/;/g) || []).length;
+  const comma = (headerLine.match(/,/g) || []).length;
+  if (tab >= semi && tab >= comma && tab > 0) return "\t";
+  if (semi >= comma && semi > 0) return ";";
+  return ",";
+}
+
+function parseLine(line: string, delimiter: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if (ch === delimiter && !inQuotes) {
+      result.push(current.trim());
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function parseArrayRows(raw: any[][], errors: string[]): { rows: Record<string, any>[]; errors: string[] } {
+  if (raw.length < 2) { errors.push("Need at least a header and one data row"); return { rows: [], errors }; }
+
+  const headerRaw = raw[0].map((h: any) => String(h || "").trim());
+  const colMapping: (string | null)[] = headerRaw.map(normalizeColumnName);
+
+  if (!colMapping.includes("name")) {
+    errors.push("Missing required 'name' column. Expected one of: name, whisky, expression, bezeichnung, titel");
+    return { rows: [], errors };
+  }
+
+  const rows: Record<string, any>[] = [];
+  for (let i = 1; i < raw.length; i++) {
+    const dataRow = raw[i];
+    if (!dataRow || dataRow.every((c: any) => !c && c !== 0)) continue;
+
+    const obj: Record<string, any> = {};
+    for (let j = 0; j < colMapping.length; j++) {
+      const field = colMapping[j];
+      if (!field) continue;
+      const val = dataRow[j];
+      if (val === undefined || val === null || val === "") continue;
+      obj[field] = String(val).trim();
+    }
+
+    if (!obj.name) {
+      errors.push(`Row ${i + 1}: missing name, skipped`);
+      continue;
+    }
+
+    if (obj.abv) {
+      const parsed = parseFloat(String(obj.abv).replace(",", ".").replace("%", ""));
+      obj.abv = isNaN(parsed) ? null : parsed;
+    }
+    if (obj.sortOrder) {
+      const parsed = parseInt(String(obj.sortOrder), 10);
+      obj.sortOrder = isNaN(parsed) ? i : parsed;
+    } else {
+      obj.sortOrder = i;
+    }
+
+    rows.push(obj);
+  }
+
+  return { rows, errors };
+}
+
+async function downloadImageFromUrl(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const contentType = response.headers.get("content-type") || "";
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.some(a => contentType.includes(a))) return null;
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    if (buffer.length > 5 * 1024 * 1024) return null;
+
+    let ext = ".jpg";
+    if (contentType.includes("png")) ext = ".png";
+    else if (contentType.includes("webp")) ext = ".webp";
+
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
+    const filePath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filePath, buffer);
+    return `/uploads/${filename}`;
+  } catch {
+    return null;
+  }
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -188,6 +353,164 @@ export async function registerRoutes(
   });
 
   app.use("/uploads", (await import("express")).default.static(uploadsDir));
+
+  // ===== FLIGHT IMPORT =====
+
+  app.post("/api/tastings/:id/import/parse", importUpload.fields([
+    { name: "spreadsheet", maxCount: 1 },
+    { name: "images", maxCount: 1 },
+  ]), async (req: any, res: any) => {
+    try {
+      const files = req.files as Record<string, any[]>;
+      const spreadsheetFile = files?.spreadsheet?.[0];
+      if (!spreadsheetFile) return res.status(400).json({ message: "No spreadsheet file provided" });
+
+      const buffer = fs.readFileSync(spreadsheetFile.path);
+      const { rows, errors } = parseSpreadsheetRows(buffer, spreadsheetFile.originalname);
+
+      let zipImageNames: string[] = [];
+      const zipFilePath = files?.images?.[0]?.path;
+      if (zipFilePath) {
+        try {
+          const zip = new AdmZip(zipFilePath);
+          zipImageNames = zip.getEntries()
+            .filter((e: any) => !e.isDirectory && /\.(jpe?g|png|webp)$/i.test(e.entryName))
+            .map((e: any) => path.basename(e.entryName));
+        } catch {
+          errors.push("Could not read ZIP file");
+        }
+      }
+
+      const preview = rows.map((row, idx) => {
+        const rowErrors: string[] = [];
+        if (!row.name) rowErrors.push("Missing name");
+
+        let imageStatus: string | null = null;
+        if (row.imageRef) {
+          const ref = row.imageRef;
+          if (/^https?:\/\//i.test(ref)) {
+            imageStatus = "url";
+          } else if (zipImageNames.some(n => n.toLowerCase() === ref.toLowerCase())) {
+            imageStatus = "zip";
+          } else {
+            imageStatus = "missing";
+            rowErrors.push(`Image file "${ref}" not found in ZIP`);
+          }
+        }
+
+        return { ...row, _row: idx + 2, _errors: rowErrors, _imageStatus: imageStatus };
+      });
+
+      fs.unlinkSync(spreadsheetFile.path);
+
+      res.json({ preview, parseErrors: errors, zipAvailable: !!zipFilePath, zipImageNames });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message || "Failed to parse file" });
+    }
+  });
+
+  app.post("/api/tastings/:id/import/confirm", importUpload.fields([
+    { name: "spreadsheet", maxCount: 1 },
+    { name: "images", maxCount: 1 },
+  ]), async (req: any, res: any) => {
+    try {
+      const tastingId = req.params.id;
+      const tasting = await storage.getTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+      const files = req.files as Record<string, any[]>;
+      const spreadsheetFile = files?.spreadsheet?.[0];
+      if (!spreadsheetFile) return res.status(400).json({ message: "No spreadsheet file provided" });
+
+      const buffer = fs.readFileSync(spreadsheetFile.path);
+      const { rows, errors: parseErrors } = parseSpreadsheetRows(buffer, spreadsheetFile.originalname);
+
+      let zipEntries: Map<string, any> = new Map();
+      const zipFilePath = files?.images?.[0]?.path;
+      if (zipFilePath) {
+        try {
+          const zip = new AdmZip(zipFilePath);
+          for (const entry of zip.getEntries()) {
+            if (!entry.isDirectory && /\.(jpe?g|png|webp)$/i.test(entry.entryName)) {
+              zipEntries.set(path.basename(entry.entryName).toLowerCase(), entry);
+            }
+          }
+        } catch {
+          parseErrors.push("Could not read ZIP file");
+        }
+      }
+
+      const results: { row: number; name: string; success: boolean; error?: string; id?: string }[] = [];
+      const existingWhiskies = await storage.getWhiskiesForTasting(tastingId);
+      const startOrder = existingWhiskies.length;
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        try {
+          if (!row.name) {
+            results.push({ row: i + 2, name: "(empty)", success: false, error: "Missing name" });
+            continue;
+          }
+
+          const imageRef = row.imageRef;
+          delete row.imageRef;
+
+          const whiskyData = {
+            tastingId,
+            name: row.name,
+            distillery: row.distillery || null,
+            age: row.age || null,
+            abv: row.abv || null,
+            type: row.type || null,
+            notes: row.notes || null,
+            sortOrder: row.sortOrder ?? (startOrder + i),
+            category: row.category || null,
+            region: row.region || null,
+            abvBand: row.abvBand || null,
+            ageBand: row.ageBand || null,
+            caskInfluence: row.caskInfluence || null,
+            peatLevel: row.peatLevel || null,
+          };
+
+          const whisky = await storage.createWhisky(whiskyData);
+
+          if (imageRef) {
+            let imageUrl: string | null = null;
+            if (/^https?:\/\//i.test(imageRef)) {
+              imageUrl = await downloadImageFromUrl(imageRef);
+            } else {
+              const zipEntry = zipEntries.get(imageRef.toLowerCase());
+              if (zipEntry) {
+                const imgBuffer = zipEntry.getData();
+                const ext = path.extname(imageRef).toLowerCase();
+                const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
+                const filePath = path.join(uploadsDir, filename);
+                fs.writeFileSync(filePath, imgBuffer);
+                imageUrl = `/uploads/${filename}`;
+              }
+            }
+            if (imageUrl) {
+              await storage.updateWhisky(whisky.id, { imageUrl });
+            }
+          }
+
+          results.push({ row: i + 2, name: row.name, success: true, id: whisky.id });
+        } catch (e: any) {
+          results.push({ row: i + 2, name: row.name || "(unknown)", success: false, error: e.message });
+        }
+      }
+
+      fs.unlinkSync(spreadsheetFile.path);
+      if (zipFilePath && fs.existsSync(zipFilePath)) fs.unlinkSync(zipFilePath);
+
+      const successCount = results.filter(r => r.success).length;
+      const errorCount = results.filter(r => !r.success).length;
+
+      res.json({ results, successCount, errorCount, parseErrors });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message || "Import failed" });
+    }
+  });
 
   // ===== RATINGS =====
 

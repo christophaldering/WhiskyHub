@@ -59,6 +59,32 @@ export const whiskyApi = {
   deleteImage: (id: string) => fetchJSON(`/whiskies/${id}/image`, { method: "DELETE" }),
 };
 
+// ===== Flight Import =====
+export const importApi = {
+  parse: async (tastingId: string, spreadsheet: File, imagesZip?: File) => {
+    const formData = new FormData();
+    formData.append("spreadsheet", spreadsheet);
+    if (imagesZip) formData.append("images", imagesZip);
+    const res = await fetch(`${API_BASE}/tastings/${tastingId}/import/parse`, { method: "POST", body: formData });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Parse failed");
+    }
+    return res.json();
+  },
+  confirm: async (tastingId: string, spreadsheet: File, imagesZip?: File) => {
+    const formData = new FormData();
+    formData.append("spreadsheet", spreadsheet);
+    if (imagesZip) formData.append("images", imagesZip);
+    const res = await fetch(`${API_BASE}/tastings/${tastingId}/import/confirm`, { method: "POST", body: formData });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Import failed");
+    }
+    return res.json();
+  },
+};
+
 // ===== Ratings =====
 export const ratingApi = {
   getForWhisky: (whiskyId: string) => fetchJSON(`/whiskies/${whiskyId}/ratings`),

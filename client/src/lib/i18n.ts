@@ -83,6 +83,30 @@ const resources = {
         addExpression: "Add Expression",
         addToFlight: "Add to Flight",
         noExpressions: "No expressions yet."
+      },
+      import: {
+        title: "Import Flight",
+        subtitle: "Import multiple expressions from a spreadsheet. Optionally include bottle photos via ZIP or URL.",
+        spreadsheet: "Spreadsheet File",
+        dropSpreadsheet: "Click to select a spreadsheet",
+        formats: "Supported: Excel (.xlsx), CSV (.csv), Text (.txt)",
+        imagesZip: "Bottle Photos (optional)",
+        dropZip: "Click to select a ZIP archive",
+        zipHint: "ZIP file with images referenced by filename in the spreadsheet",
+        templateHint: "Expected Columns",
+        columns: "name (required), distillery, age, abv, type, category, region, cask, peat, notes, order, image_filename / image_url",
+        parsePreview: "Parse & Preview",
+        parsing: "Parsing...",
+        previewCount: "{{total}} rows found, {{valid}} valid",
+        back: "Back",
+        confirmImport: "Import {{count}} expressions",
+        importing: "Importing expressions...",
+        complete: "Import Complete",
+        summary: "{{success}} expressions imported successfully. {{errors}} errors.",
+        errorDetails: "Errors",
+        successDetails: "Imported",
+        imageMissing: "Not found",
+        close: "Close"
       }
     }
   },
@@ -167,6 +191,30 @@ const resources = {
         addExpression: "Expression hinzuf\u00fcgen",
         addToFlight: "Zum Flight hinzuf\u00fcgen",
         noExpressions: "Noch keine Expressions."
+      },
+      import: {
+        title: "Flight importieren",
+        subtitle: "Importieren Sie mehrere Expressions aus einer Tabelle. Optional mit Flaschenfotos per ZIP oder URL.",
+        spreadsheet: "Tabellendatei",
+        dropSpreadsheet: "Klicken, um eine Tabelle auszuw\u00e4hlen",
+        formats: "Unterst\u00fctzt: Excel (.xlsx), CSV (.csv), Text (.txt)",
+        imagesZip: "Flaschenfotos (optional)",
+        dropZip: "Klicken, um ein ZIP-Archiv auszuw\u00e4hlen",
+        zipHint: "ZIP-Datei mit Bildern, referenziert durch Dateiname in der Tabelle",
+        templateHint: "Erwartete Spalten",
+        columns: "name (erforderlich), distillery, age, abv, type, category, region, cask, peat, notes, order, image_filename / image_url",
+        parsePreview: "Analysieren & Vorschau",
+        parsing: "Wird analysiert...",
+        previewCount: "{{total}} Zeilen gefunden, {{valid}} g\u00fcltig",
+        back: "Zur\u00fcck",
+        confirmImport: "{{count}} Expressions importieren",
+        importing: "Expressions werden importiert...",
+        complete: "Import abgeschlossen",
+        summary: "{{success}} Expressions erfolgreich importiert. {{errors}} Fehler.",
+        errorDetails: "Fehler",
+        successDetails: "Importiert",
+        imageMissing: "Nicht gefunden",
+        close: "Schlie\u00dfen"
       }
     }
   }

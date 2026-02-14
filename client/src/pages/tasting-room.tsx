@@ -4,6 +4,7 @@ import { EvaluationForm } from "@/components/evaluation-form";
 import { RevealView } from "@/components/reveal-view";
 import { SessionControl } from "@/components/session-control";
 import { LoginDialog } from "@/components/login-dialog";
+import { ImportFlightDialog } from "@/components/import-flight-dialog";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Plus, Camera, X, ImageIcon } from "lucide-react";
@@ -357,7 +358,10 @@ export default function TastingRoom() {
           ))}
         </div>
         {isHost && (tasting.status === "draft" || tasting.status === "open") && (
-          <AddWhiskyDialog tastingId={tasting.id} />
+          <div className="flex gap-2">
+            <AddWhiskyDialog tastingId={tasting.id} />
+            <ImportFlightDialog tastingId={tasting.id} />
+          </div>
         )}
       </div>
 
