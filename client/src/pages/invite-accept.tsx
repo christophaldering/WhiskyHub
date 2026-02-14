@@ -91,7 +91,7 @@ export default function InviteAccept() {
       <div className="flex items-center justify-center min-h-[40vh]">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
-            <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
+            <CheckCircle className="w-12 h-12 text-primary mx-auto mb-4" />
             <h2 className="text-lg font-serif font-bold mb-2">Invitation Accepted</h2>
             <p className="text-sm text-muted-foreground">
               Joining {data.tasting?.title}...

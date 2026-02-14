@@ -68,8 +68,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   const NavContent = () => (
-    <div className="flex flex-col h-full bg-card/95 backdrop-blur-md border-r border-border/50 shadow-sm">
-      <div className="p-8 border-b border-border/50">
+    <div className="flex flex-col h-full bg-card border-r border-border/40">
+      <div className="p-8 border-b border-border/40">
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-serif font-black tracking-tight text-primary">
@@ -130,7 +130,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </Link>
       </nav>
 
-      <div className="p-6 border-t border-border/50 space-y-4">
+      <div className="p-6 border-t border-border/40 space-y-4">
         {currentParticipant && (
           <div className="text-xs text-muted-foreground px-4 mb-2">
             Signed in as <span className="font-semibold text-foreground">{currentParticipant.name}</span>
@@ -152,14 +152,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden font-sans">
-      <div className="fixed inset-0 z-0 bg-[#F9F9F7]" />
+      <div className="fixed inset-0 z-0 bg-background" />
 
       <WelcomeOverlay />
       {showWelcome && (
         <WelcomeOverlay forceOpen onClose={() => setShowWelcome(false)} />
       )}
 
-      <header className="md:hidden sticky top-0 z-50 flex items-center justify-between p-4 border-b border-border bg-card/80 backdrop-blur-lg">
+      <header className="md:hidden sticky top-0 z-50 flex items-center justify-between p-4 border-b border-border/40 bg-card/95 backdrop-blur-lg">
         <div className="flex items-center gap-2">
           <span className="font-serif font-bold text-lg text-primary">{t('app.name')}</span>
         </div>
@@ -172,7 +172,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 border-r-border/50 w-72 bg-card">
+            <SheetContent side="left" className="p-0 border-r-border/40 w-72 bg-card">
               <NavContent />
             </SheetContent>
           </Sheet>

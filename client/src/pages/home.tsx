@@ -281,7 +281,7 @@ export default function Home() {
             <div className="bg-card border border-border/50 rounded-lg overflow-hidden shadow-sm" data-testid="card-wisdom">
               <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent px-6 py-3 border-b border-border/30">
                 <div className="flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-amber-600" />
+                  <Lightbulb className="w-4 h-4 text-accent" />
                   <h2 className="text-sm font-serif font-bold text-primary uppercase tracking-widest">{t("wisdom.title")}</h2>
                 </div>
               </div>

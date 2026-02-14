@@ -132,7 +132,7 @@ export default function ReflectionPanel({ tasting }: { tasting: Tasting }) {
 
                   {submitted && myReflection ? (
                     <div className="flex items-start gap-2 bg-muted/50 rounded-md p-3" data-testid={`reflection-submitted-${index}`}>
-                      <span className="text-green-600 mt-0.5">✓</span>
+                      <span className="text-primary mt-0.5">✓</span>
                       <p className="font-serif text-sm text-foreground/80">{myReflection.text}</p>
                     </div>
                   ) : (

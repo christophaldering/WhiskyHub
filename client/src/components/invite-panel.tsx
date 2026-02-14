@@ -143,7 +143,7 @@ export function InvitePanel({ tastingId }: InvitePanelProps) {
         {smtpStatus && !smtpStatus.configured && (
           <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3" data-testid="text-smtp-warning">
             <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-amber-700 dark:text-amber-400">{t("invite.smtpNotConfigured")}</p>
+            <p className="text-xs text-amber-400">{t("invite.smtpNotConfigured")}</p>
           </div>
         )}
 
