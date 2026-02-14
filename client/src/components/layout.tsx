@@ -8,6 +8,8 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { WelcomeOverlay } from "@/components/welcome-overlay";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
+import { useQuery } from "@tanstack/react-query";
+import { profileApi } from "@/lib/api";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -15,6 +17,46 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [showWelcome, setShowWelcome] = useState(false);
   const { t } = useTranslation();
   const { currentParticipant, setParticipant } = useAppStore();
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", currentParticipant?.id],
+    queryFn: () => profileApi.get(currentParticipant!.id),
+    enabled: !!currentParticipant,
+  });
+
+  const initials = currentParticipant?.name
+    ? currentParticipant.name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
+    : "";
+
+  const ProfileAvatar = ({ size = 36 }: { size?: number }) => {
+    if (!currentParticipant) return null;
+    const photoUrl = profile?.photoUrl;
+    return (
+      <Link href="/profile">
+        <div
+          title={t("profile.title")}
+          className="cursor-pointer"
+          data-testid="avatar-profile"
+        >
+          {photoUrl ? (
+            <img
+              src={photoUrl}
+              alt={currentParticipant.name}
+              className="rounded-full object-cover border-2 border-border/60"
+              style={{ width: size, height: size }}
+            />
+          ) : (
+            <div
+              className="rounded-full bg-secondary border-2 border-border/60 flex items-center justify-center text-primary font-serif font-bold"
+              style={{ width: size, height: size, fontSize: size * 0.38 }}
+            >
+              {initials || <User className="w-4 h-4 text-muted-foreground" />}
+            </div>
+          )}
+        </div>
+      </Link>
+    );
+  };
 
   const navItems = [
     { href: "/", icon: Home, label: t('nav.lobby') },
@@ -26,9 +68,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col h-full bg-card/95 backdrop-blur-md border-r border-border/50 shadow-sm">
       <div className="p-8 border-b border-border/50">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-serif font-black tracking-tight text-primary">
-            {t('app.name')}
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-serif font-black tracking-tight text-primary">
+              {t('app.name')}
+            </h1>
+            <ProfileAvatar size={36} />
+          </div>
           <p className="text-xs text-muted-foreground uppercase tracking-widest font-sans">
             {t('app.tagline')}
           </p>
@@ -100,6 +145,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <span className="font-serif font-bold text-lg text-primary">{t('app.name')}</span>
         </div>
         <div className="flex items-center gap-2">
+          <ProfileAvatar size={32} />
           <LanguageToggle />
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
