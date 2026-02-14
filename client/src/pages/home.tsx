@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useLocation } from "wouter";
-import { UserPlus, Plus, ArrowRight, Star, Wine, ImageIcon, Glasses, BookOpen } from "lucide-react";
+import { UserPlus, Plus, ArrowRight, Star, Wine, ImageIcon, Glasses, BookOpen, Lightbulb } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
@@ -274,6 +274,31 @@ export default function Home() {
           </div>
         </motion.div>
       )}
+
+      {/* Whisky Wisdom */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55, duration: 0.8 }} className="w-full">
+        {(() => {
+          const facts = t("wisdom.facts", { returnObjects: true }) as string[];
+          const today = new Date();
+          const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
+          const factIndex = dayOfYear % facts.length;
+          return (
+            <div className="bg-card border border-border/50 rounded-lg overflow-hidden shadow-sm" data-testid="card-wisdom">
+              <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent px-6 py-3 border-b border-border/30">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-amber-600" />
+                  <h2 className="text-sm font-serif font-bold text-primary uppercase tracking-widest">{t("wisdom.title")}</h2>
+                </div>
+              </div>
+              <div className="p-6">
+                <p className="font-serif text-lg leading-relaxed text-foreground/90 italic" data-testid="text-wisdom-fact">
+                  "{facts[factIndex]}"
+                </p>
+              </div>
+            </div>
+          );
+        })()}
+      </motion.div>
 
       {/* Existing Sessions */}
       {tastings && tastings.length > 0 && (
