@@ -631,6 +631,42 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   );
 }
 
+function DeleteTastingButton({ tasting }: { tasting: Tasting }) {
+  const { t } = useTranslation();
+  const { currentParticipant } = useAppStore();
+  const [, navigate] = useLocation();
+
+  const deleteMut = useMutation({
+    mutationFn: () => tastingApi.updateStatus(tasting.id, "deleted", undefined, currentParticipant!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+      navigate("/sessions");
+    },
+  });
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" size="sm" className="border-destructive/30 text-destructive font-serif hover:bg-destructive/10" data-testid="button-delete-tasting">
+          <Trash2 className="w-4 h-4 mr-1" /> {t("session.actions.deleteSession")}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="font-serif">{t("session.actions.deleteConfirmTitle")}</AlertDialogTitle>
+          <AlertDialogDescription>{t("session.actions.deleteConfirmMessage")}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("session.actions.deleteCancel")}</AlertDialogCancel>
+          <AlertDialogAction onClick={() => deleteMut.mutate()} disabled={deleteMut.isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" data-testid="button-confirm-delete-tasting">
+            {deleteMut.isPending ? "..." : t("session.actions.deleteConfirm")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 function DuplicateTastingButton({ tasting }: { tasting: Tasting }) {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
@@ -788,6 +824,7 @@ export default function TastingRoom() {
             <div className="flex items-center gap-3 flex-wrap">
               {isHost && (tasting.status === "draft" || tasting.status === "open") && <EditTastingDialog tasting={tasting} />}
               <DuplicateTastingButton tasting={tasting} />
+              {isHost && tasting.status !== "deleted" && <DeleteTastingButton tasting={tasting} />}
               <PdfExportDialog tasting={tasting} whiskies={whiskyList} />
               {isHost && <BriefingNotes whiskies={whiskyList} tastingTitle={tasting.title} />}
               <span className="text-xs font-mono bg-secondary px-2 py-1 rounded text-muted-foreground">Code: {tasting.code}</span>
