@@ -57,7 +57,6 @@ function PageOne({ onNext, onSkip }: { onNext: () => void; onSkip: () => void })
         transition={{ delay: 1.2, duration: 0.8 }}
         className="flex flex-col items-center gap-4 mb-8"
       >
-        <AmbientToggle variant="intro" />
         <button
           onClick={onNext}
           className="group px-8 py-3 border border-amber-500/70 text-amber-100 rounded-sm font-serif text-sm tracking-wide hover:bg-amber-500/10 transition-colors flex items-center gap-2"
@@ -76,6 +75,15 @@ function PageOne({ onNext, onSkip }: { onNext: () => void; onSkip: () => void })
       </motion.div>
 
       <div className="flex-1" />
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.5, duration: 0.8 }}
+        className="pb-8"
+      >
+        <AmbientToggle variant="intro" />
+      </motion.div>
     </motion.div>
   );
 }
@@ -175,6 +183,15 @@ function PageTwo({ onEnter, onBack }: { onEnter: () => void; onBack: () => void 
       </motion.div>
 
       <div className="flex-1" />
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.6, duration: 0.7 }}
+        className="pb-8"
+      >
+        <AmbientToggle variant="intro" />
+      </motion.div>
     </motion.div>
   );
 }
