@@ -85,7 +85,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <h1 className="text-2xl font-serif font-black tracking-tight text-primary">
               {t('app.name')}
             </h1>
-            <ProfileAvatar size={54} showName />
+            <ProfileAvatar size={54} />
           </div>
           <p className="text-xs text-muted-foreground uppercase tracking-widest font-sans">
             {t('app.tagline')}
