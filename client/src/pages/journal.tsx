@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Plus, ArrowLeft, Pencil, Trash2, BookOpen, Wine, Calendar } from "lucide-react";
+import { TastingNoteGenerator } from "@/components/tasting-note-generator";
 import type { JournalEntry } from "@shared/schema";
 
 type View = "list" | "form" | "detail";
@@ -503,6 +504,46 @@ function EntryForm({
           <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider mb-4">
             {t("journal.noseNotes")} / {t("journal.tasteNotes")} / {t("journal.finishNotes")}
           </h3>
+
+          <div className="mb-5 bg-secondary/20 rounded-lg border border-border/30 p-3">
+            <TastingNoteGenerator
+              currentNotes={[form.noseNotes, form.tasteNotes, form.finishNotes].filter(Boolean).join(" ")}
+              onInsertNote={(note: string) => {
+                const nosePatterns = [/^On the nose:?\s*/i, /^The aroma presents:?\s*/i, /^Nose:?\s*/i, /^In der Nase:?\s*/i, /^Das Aroma zeigt:?\s*/i, /^Nase:?\s*/i];
+                const palatePatterns = [/^On the palate:?\s*/i, /^The taste reveals:?\s*/i, /^Palate:?\s*/i, /^Am Gaumen:?\s*/i, /^Der Geschmack offenbart:?\s*/i, /^Gaumen:?\s*/i];
+                const finishPatterns = [/^The finish is:?\s*/i, /^Finish:?\s*/i, /^It finishes with:?\s*/i, /^Der Abgang ist:?\s*/i, /^Abgang:?\s*/i, /^Er endet mit:?\s*/i];
+
+                const sentences = note.split(/(?<=\.)\s+|\n+/).map(s => s.trim()).filter(Boolean);
+                let nosePart = "";
+                let palatePart = "";
+                let finishPart = "";
+
+                for (const s of sentences) {
+                  if (nosePatterns.some(p => p.test(s))) {
+                    let cleaned = s;
+                    for (const p of nosePatterns) cleaned = cleaned.replace(p, "");
+                    nosePart = cleaned.replace(/\.$/, "").trim();
+                  } else if (palatePatterns.some(p => p.test(s))) {
+                    let cleaned = s;
+                    for (const p of palatePatterns) cleaned = cleaned.replace(p, "");
+                    palatePart = cleaned.replace(/\.$/, "").trim();
+                  } else if (finishPatterns.some(p => p.test(s))) {
+                    let cleaned = s;
+                    for (const p of finishPatterns) cleaned = cleaned.replace(p, "");
+                    finishPart = cleaned.replace(/\.$/, "").trim();
+                  }
+                }
+
+                setForm(prev => ({
+                  ...prev,
+                  noseNotes: nosePart ? (prev.noseNotes ? `${prev.noseNotes}, ${nosePart}` : nosePart) : prev.noseNotes,
+                  tasteNotes: palatePart ? (prev.tasteNotes ? `${prev.tasteNotes}, ${palatePart}` : palatePart) : prev.tasteNotes,
+                  finishNotes: finishPart ? (prev.finishNotes ? `${prev.finishNotes}, ${finishPart}` : finishPart) : prev.finishNotes,
+                }));
+              }}
+            />
+          </div>
+
           <div className="space-y-4">
             <div>
               <Label htmlFor="noseNotes" className="text-sm">{t("journal.noseNotes")}</Label>
