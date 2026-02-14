@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
-import { profileApi, participantApi, participantUpdateApi, friendsApi } from "@/lib/api";
+import { profileApi, participantApi, participantUpdateApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Camera, X, User, KeyRound, Users, Plus, Pencil, Trash2, Check } from "lucide-react";
+import { Camera, X, User, KeyRound } from "lucide-react";
 
 const REGIONS = [
   "Speyside", "Highlands", "Islay", "Lowlands", "Campbeltown",
@@ -21,257 +21,6 @@ const REGIONS = [
 
 const PEAT_LEVELS = ["None", "Light", "Medium", "Heavy"];
 const CASK_TYPES = ["Bourbon", "Sherry", "Port", "Wine", "Rum", "Other"];
-
-function WhiskyFriendsSection({ participantId }: { participantId: string }) {
-  const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  const [newName, setNewName] = useState("");
-  const [newEmail, setNewEmail] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [showAddForm, setShowAddForm] = useState(false);
-
-  const { data: friends = [] } = useQuery({
-    queryKey: ["friends", participantId],
-    queryFn: () => friendsApi.getAll(participantId),
-  });
-
-  const addMutation = useMutation({
-    mutationFn: (data: { name: string; email: string }) =>
-      friendsApi.create(participantId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friends", participantId] });
-      setNewName("");
-      setNewEmail("");
-      setShowAddForm(false);
-      toast({ title: t("profile.friendAdded") });
-    },
-    onError: (error: Error) => {
-      toast({ title: error.message, variant: "destructive" });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ friendId, data }: { friendId: string; data: { name: string; email: string } }) =>
-      friendsApi.update(participantId, friendId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friends", participantId] });
-      setEditingId(null);
-      toast({ title: t("profile.friendUpdated") });
-    },
-    onError: (error: Error) => {
-      toast({ title: error.message, variant: "destructive" });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (friendId: string) =>
-      friendsApi.delete(participantId, friendId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["friends", participantId] });
-      toast({ title: t("profile.friendRemoved") });
-    },
-  });
-
-  const handleAdd = () => {
-    if (!newName.trim() || !newEmail.trim()) return;
-    addMutation.mutate({ name: newName.trim(), email: newEmail.trim() });
-  };
-
-  const handleUpdate = (friendId: string) => {
-    if (!editName.trim() || !editEmail.trim()) return;
-    updateMutation.mutate({ friendId, data: { name: editName.trim(), email: editEmail.trim() } });
-  };
-
-  const startEditing = (friend: any) => {
-    setEditingId(friend.id);
-    setEditName(friend.name);
-    setEditEmail(friend.email);
-  };
-
-  return (
-    <Card className="w-full border-border/50 bg-card shadow-sm">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-serif text-xl text-primary flex items-center gap-2" data-testid="text-friends-title">
-              <Users className="w-5 h-5" />
-              {t("profile.friends")}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">{t("profile.friendsSubtitle")}</p>
-          </div>
-          {!showAddForm && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowAddForm(true)}
-              className="font-serif"
-              data-testid="button-add-friend"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              {t("profile.addFriend")}
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {showAddForm && (
-          <div className="border border-primary/20 rounded-lg p-4 bg-primary/5 space-y-3" data-testid="form-add-friend">
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="space-y-1">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-                  {t("profile.friendName")}
-                </Label>
-                <Input
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder={t("profile.friendNamePlaceholder")}
-                  className="bg-background"
-                  data-testid="input-friend-name"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-                  {t("profile.friendEmail")}
-                </Label>
-                <Input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder={t("profile.friendEmailPlaceholder")}
-                  className="bg-background"
-                  data-testid="input-friend-email"
-                  onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-                />
-              </div>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => { setShowAddForm(false); setNewName(""); setNewEmail(""); }}
-                className="font-serif"
-                data-testid="button-cancel-add-friend"
-              >
-                {t("profile.cancelEdit")}
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleAdd}
-                disabled={!newName.trim() || !newEmail.trim() || addMutation.isPending}
-                className="font-serif"
-                data-testid="button-confirm-add-friend"
-              >
-                <Plus className="w-3 h-3 mr-1" />
-                {t("profile.addFriend")}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {friends.length === 0 && !showAddForm && (
-          <p className="text-sm text-muted-foreground text-center py-6 font-serif" data-testid="text-no-friends">
-            {t("profile.noFriends")}
-          </p>
-        )}
-
-        <div className="space-y-2">
-          {friends.map((friend: any) => (
-            <div
-              key={friend.id}
-              className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-secondary/10 hover:bg-secondary/20 transition-colors"
-              data-testid={`card-friend-${friend.id}`}
-            >
-              {editingId === friend.id ? (
-                <div className="flex-1 space-y-2">
-                  <div className="grid gap-2 md:grid-cols-2">
-                    <Input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      placeholder={t("profile.friendNamePlaceholder")}
-                      className="bg-background text-sm"
-                      data-testid={`input-edit-friend-name-${friend.id}`}
-                    />
-                    <Input
-                      type="email"
-                      value={editEmail}
-                      onChange={(e) => setEditEmail(e.target.value)}
-                      placeholder={t("profile.friendEmailPlaceholder")}
-                      className="bg-background text-sm"
-                      data-testid={`input-edit-friend-email-${friend.id}`}
-                      onKeyDown={(e) => e.key === "Enter" && handleUpdate(friend.id)}
-                    />
-                  </div>
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setEditingId(null)}
-                      className="text-xs"
-                      data-testid={`button-cancel-edit-${friend.id}`}
-                    >
-                      {t("profile.cancelEdit")}
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleUpdate(friend.id)}
-                      disabled={!editName.trim() || !editEmail.trim() || updateMutation.isPending}
-                      className="text-xs"
-                      data-testid={`button-save-friend-${friend.id}`}
-                    >
-                      <Check className="w-3 h-3 mr-1" />
-                      {t("profile.saveFriend")}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <Avatar className="w-9 h-9 border border-primary/10">
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-serif">
-                      {friend.name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate" data-testid={`text-friend-name-${friend.id}`}>
-                      {friend.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate" data-testid={`text-friend-email-${friend.id}`}>
-                      {friend.email}
-                    </p>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => startEditing(friend)}
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
-                      data-testid={`button-edit-friend-${friend.id}`}
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteMutation.mutate(friend.id)}
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                      data-testid={`button-delete-friend-${friend.id}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 export default function Profile() {
   const { t } = useTranslation();
@@ -712,8 +461,6 @@ export default function Profile() {
           </Button>
         </CardContent>
       </Card>
-
-      <WhiskyFriendsSection participantId={currentParticipant.id} />
     </div>
   );
 }

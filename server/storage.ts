@@ -85,7 +85,7 @@ export interface IStorage {
   getWhiskyFriends(participantId: string): Promise<WhiskyFriend[]>;
   createWhiskyFriend(data: InsertWhiskyFriend): Promise<WhiskyFriend>;
   deleteWhiskyFriend(id: string, participantId: string): Promise<void>;
-  updateWhiskyFriend(id: string, participantId: string, data: { name: string; email: string }): Promise<WhiskyFriend | undefined>;
+  updateWhiskyFriend(id: string, participantId: string, data: { firstName: string; lastName: string; email: string }): Promise<WhiskyFriend | undefined>;
 
   // Hard Delete (admin only)
   hardDeleteTasting(id: string): Promise<void>;
@@ -329,7 +329,7 @@ export class DatabaseStorage implements IStorage {
 
   // --- Whisky Friends ---
   async getWhiskyFriends(participantId: string): Promise<WhiskyFriend[]> {
-    return db.select().from(whiskyFriends).where(eq(whiskyFriends.participantId, participantId)).orderBy(asc(whiskyFriends.name));
+    return db.select().from(whiskyFriends).where(eq(whiskyFriends.participantId, participantId)).orderBy(asc(whiskyFriends.lastName), asc(whiskyFriends.firstName));
   }
 
   async createWhiskyFriend(data: InsertWhiskyFriend): Promise<WhiskyFriend> {
@@ -341,7 +341,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(whiskyFriends).where(and(eq(whiskyFriends.id, id), eq(whiskyFriends.participantId, participantId)));
   }
 
-  async updateWhiskyFriend(id: string, participantId: string, data: { name: string; email: string }): Promise<WhiskyFriend | undefined> {
+  async updateWhiskyFriend(id: string, participantId: string, data: { firstName: string; lastName: string; email: string }): Promise<WhiskyFriend | undefined> {
     const [result] = await db.update(whiskyFriends).set(data).where(and(eq(whiskyFriends.id, id), eq(whiskyFriends.participantId, participantId))).returning();
     return result;
   }

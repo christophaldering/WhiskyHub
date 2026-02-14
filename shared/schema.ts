@@ -149,7 +149,8 @@ export type ReflectionEntry = typeof reflectionEntries.$inferSelect;
 export const whiskyFriends = pgTable("whisky_friends", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   participantId: varchar("participant_id").notNull(),
-  name: text("name").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
   email: text("email").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });

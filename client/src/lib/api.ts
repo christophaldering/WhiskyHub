@@ -187,9 +187,9 @@ export const reflectionApi = {
 // ===== Whisky Friends =====
 export const friendsApi = {
   getAll: (participantId: string) => fetchJSON(`/participants/${participantId}/friends`),
-  create: (participantId: string, data: { name: string; email: string }) =>
+  create: (participantId: string, data: { firstName: string; lastName: string; email: string }) =>
     fetchJSON(`/participants/${participantId}/friends`, { method: "POST", body: JSON.stringify(data) }),
-  update: (participantId: string, friendId: string, data: { name: string; email: string }) =>
+  update: (participantId: string, friendId: string, data: { firstName: string; lastName: string; email: string }) =>
     fetchJSON(`/participants/${participantId}/friends/${friendId}`, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (participantId: string, friendId: string) =>
     fetchJSON(`/participants/${participantId}/friends/${friendId}`, { method: "DELETE" }),

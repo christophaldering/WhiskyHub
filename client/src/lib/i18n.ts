@@ -38,7 +38,8 @@ const resources = {
         insight: "Insight Mode",
         host: "Host Controls",
         leave: "Leave Session",
-        aboutMethod: "About the Method"
+        aboutMethod: "About the Method",
+        friends: "My Whisky Friends"
       },
       session: {
         status: {
@@ -293,19 +294,22 @@ const resources = {
         selectRegions: "Select regions...",
         selectPeat: "Select peat level...",
         selectCask: "Select cask type...",
-        friends: "Whisky Friends",
-        friendsSubtitle: "Save contacts to quickly invite to tastings.",
+        selectRegionsPlaceholder: "Select regions..."
+      },
+      friends: {
+        title: "My Whisky Friends",
+        subtitle: "Save contacts to quickly invite to tastings.",
         addFriend: "Add Friend",
-        friendName: "Name",
-        friendNamePlaceholder: "Friend's name",
-        friendEmail: "Email",
-        friendEmailPlaceholder: "Friend's email",
+        firstName: "First Name",
+        firstNamePlaceholder: "First name",
+        lastName: "Last Name",
+        lastNamePlaceholder: "Last name",
+        email: "Email",
+        emailPlaceholder: "Email address",
         friendAdded: "Friend added",
         friendUpdated: "Friend updated",
         friendRemoved: "Friend removed",
         noFriends: "No whisky friends yet. Add someone to your circle!",
-        editFriend: "Edit",
-        removeFriend: "Remove",
         saveFriend: "Save",
         cancelEdit: "Cancel"
       },
@@ -443,7 +447,8 @@ const resources = {
         insight: "Einsichtsmodus",
         host: "Gastgeber-Steuerung",
         leave: "Sitzung verlassen",
-        aboutMethod: "\u00dcber die Methode"
+        aboutMethod: "\u00dcber die Methode",
+        friends: "Meine Whisky-Freunde"
       },
       session: {
         status: {
@@ -698,19 +703,22 @@ const resources = {
         selectRegions: "Regionen wählen...",
         selectPeat: "Torfgehalt wählen...",
         selectCask: "Fasstyp wählen...",
-        friends: "Whisky-Freunde",
-        friendsSubtitle: "Kontakte speichern, um sie schnell zu Verkostungen einzuladen.",
+        selectRegionsPlaceholder: "Regionen wählen..."
+      },
+      friends: {
+        title: "Meine Whisky-Freunde",
+        subtitle: "Kontakte speichern, um sie schnell zu Verkostungen einzuladen.",
         addFriend: "Freund hinzufügen",
-        friendName: "Name",
-        friendNamePlaceholder: "Name des Freundes",
-        friendEmail: "E-Mail",
-        friendEmailPlaceholder: "E-Mail des Freundes",
+        firstName: "Vorname",
+        firstNamePlaceholder: "Vorname",
+        lastName: "Nachname",
+        lastNamePlaceholder: "Nachname",
+        email: "E-Mail",
+        emailPlaceholder: "E-Mail-Adresse",
         friendAdded: "Freund hinzugefügt",
         friendUpdated: "Freund aktualisiert",
         friendRemoved: "Freund entfernt",
         noFriends: "Noch keine Whisky-Freunde. Fügen Sie jemanden hinzu!",
-        editFriend: "Bearbeiten",
-        removeFriend: "Entfernen",
         saveFriend: "Speichern",
         cancelEdit: "Abbrechen"
       },

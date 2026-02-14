@@ -91,7 +91,7 @@ Preferred communication style: Simple, everyday language.
 - **ratings**: id, participantId, whiskyId, tastingId, nose, taste, finish, balance, overall, notes
 - **profiles**: id, participantId, bio, favoriteWhisky, goToDram, preferredRegions, preferredPeatLevel, preferredCaskInfluence, photoUrl, createdAt, updatedAt
 - **session_invites**: id, tastingId, email, token, personalNote, status (invited/joined), acceptedAt, createdAt
-- **whisky_friends**: id, participantId, name, email, createdAt
+- **whisky_friends**: id, participantId, firstName, lastName, email, createdAt
 
 ### Build Process
 - `npm run dev` — Development server with Vite HMR

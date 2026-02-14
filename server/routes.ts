@@ -917,14 +917,16 @@ export async function registerRoutes(
 
   app.post("/api/participants/:id/friends", async (req, res) => {
     try {
-      const { name, email } = req.body;
-      if (!name?.trim()) return res.status(400).json({ message: "Name is required" });
+      const { firstName, lastName, email } = req.body;
+      if (!firstName?.trim()) return res.status(400).json({ message: "First name is required" });
+      if (!lastName?.trim()) return res.status(400).json({ message: "Last name is required" });
       if (!email?.trim()) return res.status(400).json({ message: "Email is required" });
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) return res.status(400).json({ message: "Invalid email format" });
       const friend = await storage.createWhiskyFriend({
         participantId: req.params.id,
-        name: name.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         email: email.trim(),
       });
       res.status(201).json(friend);
@@ -935,13 +937,15 @@ export async function registerRoutes(
 
   app.patch("/api/participants/:participantId/friends/:friendId", async (req, res) => {
     try {
-      const { name, email } = req.body;
-      if (!name?.trim()) return res.status(400).json({ message: "Name is required" });
+      const { firstName, lastName, email } = req.body;
+      if (!firstName?.trim()) return res.status(400).json({ message: "First name is required" });
+      if (!lastName?.trim()) return res.status(400).json({ message: "Last name is required" });
       if (!email?.trim()) return res.status(400).json({ message: "Email is required" });
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) return res.status(400).json({ message: "Invalid email format" });
       const friend = await storage.updateWhiskyFriend(req.params.friendId, req.params.participantId, {
-        name: name.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         email: email.trim(),
       });
       if (!friend) return res.status(404).json({ message: "Friend not found" });
