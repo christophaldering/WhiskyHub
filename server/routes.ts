@@ -10,7 +10,7 @@ import * as XLSX from "xlsx";
 // @ts-ignore
 import AdmZip from "adm-zip";
 import { storage } from "./storage";
-import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema } from "@shared/schema";
+import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema } from "@shared/schema";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { isSmtpConfigured, sendEmail, buildInviteEmail } from "./email";
@@ -1334,6 +1334,61 @@ export async function registerRoutes(
     try {
       const entries = await storage.getReflectionsByParticipant(req.params.id, req.params.participantId);
       res.json(entries);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== Journal Entries =====
+  app.get("/api/journal/:participantId", async (req, res) => {
+    try {
+      const entries = await storage.getJournalEntries(req.params.participantId);
+      res.json(entries);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/journal/:participantId/:id", async (req, res) => {
+    try {
+      const entry = await storage.getJournalEntry(req.params.id, req.params.participantId);
+      if (!entry) return res.status(404).json({ message: "Journal entry not found" });
+      res.json(entry);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/journal/:participantId", async (req, res) => {
+    try {
+      const parsed = insertJournalEntrySchema.parse({ ...req.body, participantId: req.params.participantId });
+      const entry = await storage.createJournalEntry(parsed);
+      res.status(201).json(entry);
+    } catch (e: any) {
+      if (e.name === "ZodError") return res.status(400).json({ message: "Validation failed", errors: e.errors });
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/journal/:participantId/:id", async (req, res) => {
+    try {
+      const allowed = ["title", "whiskyName", "distillery", "region", "age", "abv", "caskType", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "mood", "occasion", "body"];
+      const filtered: any = {};
+      for (const key of allowed) {
+        if (req.body[key] !== undefined) filtered[key] = req.body[key];
+      }
+      const entry = await storage.updateJournalEntry(req.params.id, req.params.participantId, filtered);
+      if (!entry) return res.status(404).json({ message: "Journal entry not found" });
+      res.json(entry);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/journal/:participantId/:id", async (req, res) => {
+    try {
+      await storage.deleteJournalEntry(req.params.id, req.params.participantId);
+      res.status(204).end();
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

@@ -200,6 +200,18 @@ export const friendsApi = {
     fetchJSON(`/participants/${participantId}/friends/${friendId}/decline`, { method: "POST" }),
 };
 
+// ===== Journal =====
+export const journalApi = {
+  getAll: (participantId: string) => fetchJSON(`/journal/${participantId}`),
+  get: (participantId: string, id: string) => fetchJSON(`/journal/${participantId}/${id}`),
+  create: (participantId: string, data: any) =>
+    fetchJSON(`/journal/${participantId}`, { method: "POST", body: JSON.stringify(data) }),
+  update: (participantId: string, id: string, data: any) =>
+    fetchJSON(`/journal/${participantId}/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  delete: (participantId: string, id: string) =>
+    fetchJSON(`/journal/${participantId}/${id}`, { method: "DELETE" }),
+};
+
 // ===== Ratings =====
 export const ratingApi = {
   getForWhisky: (whiskyId: string) => fetchJSON(`/whiskies/${whiskyId}/ratings`),

@@ -2,7 +2,7 @@ import { eq, ne, and, asc, sql } from "drizzle-orm";
 import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
-  profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends,
+  profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, journalEntries,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -13,6 +13,7 @@ import {
   type InsertDiscussionEntry, type DiscussionEntry,
   type InsertReflectionEntry, type ReflectionEntry,
   type InsertWhiskyFriend, type WhiskyFriend,
+  type InsertJournalEntry, type JournalEntry,
 } from "@shared/schema";
 
 export interface WhiskyOfTheDay {
@@ -90,6 +91,13 @@ export interface IStorage {
   declineFriendRequest(id: string, participantId: string): Promise<void>;
   deleteWhiskyFriend(id: string, participantId: string): Promise<void>;
   updateWhiskyFriend(id: string, participantId: string, data: { firstName: string; lastName: string; email: string }): Promise<WhiskyFriend | undefined>;
+
+  // Journal Entries
+  getJournalEntries(participantId: string): Promise<JournalEntry[]>;
+  getJournalEntry(id: string, participantId: string): Promise<JournalEntry | undefined>;
+  createJournalEntry(data: InsertJournalEntry): Promise<JournalEntry>;
+  updateJournalEntry(id: string, participantId: string, data: Partial<InsertJournalEntry>): Promise<JournalEntry | undefined>;
+  deleteJournalEntry(id: string, participantId: string): Promise<void>;
 
   // Hard Delete (admin only)
   hardDeleteTasting(id: string): Promise<void>;
@@ -365,6 +373,30 @@ export class DatabaseStorage implements IStorage {
   async updateWhiskyFriend(id: string, participantId: string, data: { firstName: string; lastName: string; email: string }): Promise<WhiskyFriend | undefined> {
     const [result] = await db.update(whiskyFriends).set(data).where(and(eq(whiskyFriends.id, id), eq(whiskyFriends.participantId, participantId))).returning();
     return result;
+  }
+
+  // --- Journal Entries ---
+  async getJournalEntries(participantId: string): Promise<JournalEntry[]> {
+    return db.select().from(journalEntries).where(eq(journalEntries.participantId, participantId)).orderBy(asc(journalEntries.createdAt));
+  }
+
+  async getJournalEntry(id: string, participantId: string): Promise<JournalEntry | undefined> {
+    const [result] = await db.select().from(journalEntries).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId)));
+    return result;
+  }
+
+  async createJournalEntry(data: InsertJournalEntry): Promise<JournalEntry> {
+    const [result] = await db.insert(journalEntries).values(data).returning();
+    return result;
+  }
+
+  async updateJournalEntry(id: string, participantId: string, data: Partial<InsertJournalEntry>): Promise<JournalEntry | undefined> {
+    const [result] = await db.update(journalEntries).set({ ...data, updatedAt: new Date() }).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId))).returning();
+    return result;
+  }
+
+  async deleteJournalEntry(id: string, participantId: string): Promise<void> {
+    await db.delete(journalEntries).where(and(eq(journalEntries.id, id), eq(journalEntries.participantId, participantId)));
   }
 
   async hardDeleteTasting(id: string): Promise<void> {

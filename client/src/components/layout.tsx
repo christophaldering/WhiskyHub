@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -66,6 +66,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ...(currentParticipant ? [
       { href: "/profile", icon: User, label: t('profile.title') },
       { href: "/friends", icon: Users, label: t('nav.friends') },
+      { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
     ] : []),
   ];
 

@@ -178,3 +178,29 @@ export const ratings = pgTable("ratings", {
 export const insertRatingSchema = createInsertSchema(ratings).omit({ id: true, updatedAt: true });
 export type InsertRating = z.infer<typeof insertRatingSchema>;
 export type Rating = typeof ratings.$inferSelect;
+
+// --- Journal Entries (private tasting log) ---
+export const journalEntries = pgTable("journal_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  title: text("title").notNull(),
+  whiskyName: text("whisky_name"),
+  distillery: text("distillery"),
+  region: text("region"),
+  age: text("age"),
+  abv: text("abv"),
+  caskType: text("cask_type"),
+  noseNotes: text("nose_notes"),
+  tasteNotes: text("taste_notes"),
+  finishNotes: text("finish_notes"),
+  personalScore: real("personal_score"),
+  mood: text("mood"),
+  occasion: text("occasion"),
+  body: text("body"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertJournalEntrySchema = createInsertSchema(journalEntries).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
+export type JournalEntry = typeof journalEntries.$inferSelect;
