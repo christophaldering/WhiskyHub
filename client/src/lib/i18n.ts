@@ -45,12 +45,12 @@ const resources = {
       intro: {
         title: "CaskSense",
         tagline: "Where Tasting Becomes Reflection",
-        subline: "A circle for structured perception.",
+        subline: "Slow down. Taste deeply. Reflect together.",
         whyTitle: "Why CaskSense",
-        whyBody: "In a world of instant ratings and quick impressions, CaskSense creates space for deliberate perception.",
+        whyBody: "In a world of instant ratings and quick impressions, CaskSense creates space for mindful tasting and shared reflection.",
         notFaster: "Not faster judgement.",
-        butClearer: "But clearer awareness.",
-        enter: "Enter the Circle",
+        butClearer: "But deeper understanding.",
+        enter: "Begin Your Reflection",
         skip: "Skip for now"
       },
       session: {
@@ -476,13 +476,13 @@ const resources = {
       intro: {
         title: "CaskSense",
         tagline: "Where Tasting Becomes Reflection",
-        subline: "Ein Kreis f\u00fcr strukturierte Wahrnehmung.",
+        subline: "Innehalten. Bewusst schmecken. Gemeinsam reflektieren.",
         whyTitle: "Warum CaskSense",
-        whyBody: "In einer Welt schneller Bewertungen und fl\u00fcchtiger Eindr\u00fccke schafft CaskSense Raum f\u00fcr bewusste Wahrnehmung.",
+        whyBody: "In einer Welt schneller Bewertungen und flüchtiger Eindrücke schafft CaskSense Raum für achtsames Verkosten und gemeinsame Reflexion.",
         notFaster: "Nicht schnelleres Urteilen.",
-        butClearer: "Sondern klarere Wahrnehmung.",
-        enter: "Betreten Sie den Kreis",
-        skip: "Sp\u00e4ter"
+        butClearer: "Sondern tieferes Verstehen.",
+        enter: "Reflexion beginnen",
+        skip: "Später"
       },
       session: {
         status: {
