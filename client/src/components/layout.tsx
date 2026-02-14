@@ -1,25 +1,21 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { GlassWater, BarChart3, Home, Users, BookOpen, LogOut, Menu } from "lucide-react";
+import { GlassWater, BarChart3, Home, Users, LogOut, Menu } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useTranslation } from "react-i18next";
-// @ts-ignore
-import bgImage from "@/assets/cask-bg.png"; // Fallback if image generation failed, or use solid color
+import { useAppStore } from "@/lib/store";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
   const { t } = useTranslation();
+  const { currentParticipant, setParticipant } = useAppStore();
 
   const navItems = [
     { href: "/", icon: Home, label: t('nav.lobby') },
-    { href: "/tasting/t1", icon: GlassWater, label: t('nav.tastingRoom') },
-    // Insight Mode is separate in CaskSense, maybe shown only when active
-    { href: "/results/t1", icon: BarChart3, label: t('nav.insight') },
-    { href: "/admin", icon: Users, label: t('nav.host') },
   ];
 
   const NavContent = () => (
@@ -58,21 +54,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </nav>
 
       <div className="p-6 border-t border-border/50 space-y-4">
+        {currentParticipant && (
+          <div className="text-xs text-muted-foreground px-4 mb-2">
+            Signed in as <span className="font-semibold text-foreground">{currentParticipant.name}</span>
+          </div>
+        )}
         <LanguageToggle />
-        <button className="flex items-center gap-3 px-4 py-2 w-full text-left text-muted-foreground hover:text-destructive transition-colors rounded-sm hover:bg-destructive/5 text-sm">
-          <LogOut className="w-4 h-4" />
-          <span>{t('nav.leave')}</span>
-        </button>
+        {currentParticipant && (
+          <button
+            onClick={() => setParticipant(null)}
+            className="flex items-center gap-3 px-4 py-2 w-full text-left text-muted-foreground hover:text-destructive transition-colors rounded-sm hover:bg-destructive/5 text-sm"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>{t('nav.leave')}</span>
+          </button>
+        )}
       </div>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden font-sans">
-      {/* Background - Clean Paper Style */}
-      <div className="fixed inset-0 z-0 bg-[#F9F9F7]" /> {/* Warm paper fallback */}
-      
-      {/* Mobile Header */}
+      <div className="fixed inset-0 z-0 bg-[#F9F9F7]" />
+
       <header className="md:hidden sticky top-0 z-50 flex items-center justify-between p-4 border-b border-border bg-card/80 backdrop-blur-lg">
         <div className="flex items-center gap-2">
           <span className="font-serif font-bold text-lg text-primary">{t('app.name')}</span>
@@ -93,12 +97,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       <div className="flex relative z-10 h-screen overflow-hidden">
-        {/* Desktop Sidebar */}
         <aside className="hidden md:block w-72 h-full">
           <NavContent />
         </aside>
-
-        {/* Main Content */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
           <div className="container max-w-5xl mx-auto p-6 md:p-12 pb-24 md:pb-12 animate-in fade-in duration-700">
             {children}
