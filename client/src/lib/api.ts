@@ -222,6 +222,16 @@ export const flavorProfileApi = {
   get: (participantId: string) => fetchJSON(`/participants/${participantId}/flavor-profile`),
 };
 
+// ===== Friend Activity Feed =====
+export const activityApi = {
+  getFriendActivity: (participantId: string) => fetchJSON(`/participants/${participantId}/friend-activity`),
+};
+
+// ===== Calendar =====
+export const calendarApi = {
+  getAll: () => fetchJSON("/calendar"),
+};
+
 // ===== Ratings =====
 export const ratingApi = {
   getForWhisky: (whiskyId: string) => fetchJSON(`/whiskies/${whiskyId}/ratings`),

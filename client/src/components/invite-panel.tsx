@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, Copy, Check, AlertCircle, Users, UserPlus } from "lucide-react";
+import { Mail, Copy, Check, AlertCircle, Users, UserPlus, QrCode, Download } from "lucide-react";
+import QRCode from "qrcode";
 
 interface InvitePanelProps {
   tastingId: string;
@@ -45,6 +46,9 @@ export function InvitePanel({ tastingId }: InvitePanelProps) {
   const [results, setResults] = useState<InviteResult[] | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [showQr, setShowQr] = useState(false);
+  const [qrCopied, setQrCopied] = useState(false);
 
   const { data: smtpStatus } = useQuery<{ configured: boolean }>({
     queryKey: ["smtpStatus"],
@@ -120,7 +124,35 @@ export function InvitePanel({ tastingId }: InvitePanelProps) {
     if (!v) {
       setResults(null);
       setSelectedFriends(new Set());
+      setShowQr(false);
     }
+  };
+
+  const tastingJoinUrl = `${window.location.origin}/tasting/${tastingId}`;
+
+  useEffect(() => {
+    if (open && tastingId) {
+      QRCode.toDataURL(tastingJoinUrl, {
+        width: 256,
+        margin: 2,
+        color: { dark: "#1a1a2e", light: "#ffffff" },
+        errorCorrectionLevel: "M",
+      }).then(setQrDataUrl).catch(() => setQrDataUrl(null));
+    }
+  }, [open, tastingId, tastingJoinUrl]);
+
+  const downloadQr = () => {
+    if (!qrDataUrl) return;
+    const a = document.createElement("a");
+    a.href = qrDataUrl;
+    a.download = `casksense-tasting-${tastingId}-qr.png`;
+    a.click();
+  };
+
+  const copyQrLink = async () => {
+    await navigator.clipboard.writeText(tastingJoinUrl);
+    setQrCopied(true);
+    setTimeout(() => setQrCopied(false), 2000);
   };
 
   const availableFriends = friends.filter(
@@ -146,6 +178,37 @@ export function InvitePanel({ tastingId }: InvitePanelProps) {
             <p className="text-xs text-amber-400">{t("invite.smtpNotConfigured")}</p>
           </div>
         )}
+
+        <div className="border border-border/40 rounded-lg p-4 space-y-3" data-testid="qr-code-section">
+          <button
+            className="w-full flex items-center justify-between text-left"
+            onClick={() => setShowQr(!showQr)}
+            data-testid="button-toggle-qr"
+          >
+            <div className="flex items-center gap-2">
+              <QrCode className="w-4 h-4 text-primary" />
+              <span className="text-sm font-serif font-semibold text-foreground">{t("invite.qrTitle")}</span>
+            </div>
+            <span className="text-xs text-muted-foreground">{showQr ? "▲" : "▼"}</span>
+          </button>
+          {showQr && qrDataUrl && (
+            <div className="flex flex-col items-center gap-3 pt-2">
+              <p className="text-xs text-muted-foreground text-center">{t("invite.qrDescription")}</p>
+              <div className="bg-white p-3 rounded-lg shadow-sm">
+                <img src={qrDataUrl} alt="QR Code" className="w-48 h-48" data-testid="img-qr-code" />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="font-serif text-xs" onClick={downloadQr} data-testid="button-download-qr">
+                  <Download className="w-3.5 h-3.5 mr-1" /> {t("invite.qrDownload")}
+                </Button>
+                <Button variant="outline" size="sm" className="font-serif text-xs" onClick={copyQrLink} data-testid="button-copy-qr-link">
+                  {qrCopied ? <Check className="w-3.5 h-3.5 mr-1 text-green-500" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
+                  {qrCopied ? t("invite.qrCopied") : t("invite.qrCopyLink")}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
 
         {!results ? (
           <div className="space-y-4 mt-2">

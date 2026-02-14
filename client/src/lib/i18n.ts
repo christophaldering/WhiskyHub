@@ -47,6 +47,8 @@ const resources = {
         recommendations: "Recommendations",
         comparison: "Comparison",
         templates: "Note Templates",
+        activity: "Friend Activity",
+        calendar: "Tasting Calendar",
         about: "About"
       },
       theme: {
@@ -454,7 +456,12 @@ const resources = {
         noInvites: "No invitations sent yet.",
         friendsList: "My Whisky Friends",
         addSelected: "Add {{count}} selected",
-        friendsAlreadyInvited: "{{count}} friend(s) already invited"
+        friendsAlreadyInvited: "{{count}} friend(s) already invited",
+        qrTitle: "QR Code Invitation",
+        qrDescription: "Guests can scan this code to join the tasting session instantly.",
+        qrDownload: "Download",
+        qrCopyLink: "Copy Link",
+        qrCopied: "Copied!"
       },
       roster: {
         title: "Attendees",
@@ -592,6 +599,23 @@ const resources = {
       templates: {
         title: "Tasting Note Templates",
         subtitle: "Pre-built vocabulary templates for different whisky styles to guide your tasting notes."
+      },
+      activityFeed: {
+        title: "Friend Activity",
+        subtitle: "See what your whisky friends have been up to lately.",
+        loginRequired: "Please sign in to see your friends' activity.",
+        empty: "No friend activity to show yet.",
+        emptyHint: "Add whisky friends to see their journal entries and tasting participations here."
+      },
+      calendar: {
+        title: "Tasting Calendar",
+        subtitle: "View upcoming and past tasting sessions at a glance.",
+        noEvents: "No tastings on this date.",
+        upcoming: "Upcoming Tastings",
+        noUpcoming: "No upcoming tastings scheduled.",
+        stats: "Overview",
+        totalTastings: "Total Tastings",
+        active: "Active"
       }
     }
   },
@@ -640,6 +664,8 @@ const resources = {
         recommendations: "Empfehlungen",
         comparison: "Vergleich",
         templates: "Notiz-Vorlagen",
+        activity: "Freunde-Aktivität",
+        calendar: "Tasting-Kalender",
         about: "Über"
       },
       theme: {
@@ -1047,7 +1073,12 @@ const resources = {
         noInvites: "Noch keine Einladungen gesendet.",
         friendsList: "Meine Whisky-Freunde",
         addSelected: "{{count}} ausgewählte hinzufügen",
-        friendsAlreadyInvited: "{{count}} Freund(e) bereits eingeladen"
+        friendsAlreadyInvited: "{{count}} Freund(e) bereits eingeladen",
+        qrTitle: "QR-Code-Einladung",
+        qrDescription: "Gäste können diesen Code scannen, um dem Tasting sofort beizutreten.",
+        qrDownload: "Herunterladen",
+        qrCopyLink: "Link kopieren",
+        qrCopied: "Kopiert!"
       },
       roster: {
         title: "Teilnehmer",
@@ -1185,6 +1216,23 @@ const resources = {
       templates: {
         title: "Verkostungsnotiz-Vorlagen",
         subtitle: "Vorgefertigte Vokabelvorlagen für verschiedene Whisky-Stile als Leitfaden für Ihre Verkostungsnotizen."
+      },
+      activityFeed: {
+        title: "Freunde-Aktivität",
+        subtitle: "Sehen Sie, was Ihre Whisky-Freunde zuletzt gemacht haben.",
+        loginRequired: "Bitte melden Sie sich an, um die Aktivität Ihrer Freunde zu sehen.",
+        empty: "Noch keine Freunde-Aktivität vorhanden.",
+        emptyHint: "Fügen Sie Whisky-Freunde hinzu, um deren Tagebucheinträge und Tasting-Teilnahmen hier zu sehen."
+      },
+      calendar: {
+        title: "Tasting-Kalender",
+        subtitle: "Alle anstehenden und vergangenen Tastings auf einen Blick.",
+        noEvents: "Keine Tastings an diesem Datum.",
+        upcoming: "Kommende Tastings",
+        noUpcoming: "Keine anstehenden Tastings geplant.",
+        stats: "Übersicht",
+        totalTastings: "Tastings gesamt",
+        active: "Aktiv"
       }
     }
   }

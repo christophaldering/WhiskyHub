@@ -10,7 +10,7 @@ import * as XLSX from "xlsx";
 // @ts-ignore
 import AdmZip from "adm-zip";
 import { storage } from "./storage";
-import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema } from "@shared/schema";
+import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, type Participant } from "@shared/schema";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { isSmtpConfigured, sendEmail, buildInviteEmail } from "./email";
@@ -1415,6 +1415,110 @@ export async function registerRoutes(
       if (!participant) return res.status(404).json({ message: "Not found" });
       const stats = await storage.getParticipantStats(req.params.id);
       res.json(stats);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== FRIEND ACTIVITY FEED =====
+
+  app.get("/api/participants/:id/friend-activity", async (req, res) => {
+    try {
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+
+      const friends = await storage.getWhiskyFriends(req.params.id);
+      const friendEmails = friends.map(f => f.email.toLowerCase());
+
+      if (friendEmails.length === 0) {
+        return res.json({ activities: [] });
+      }
+
+      const allParticipants = await Promise.all(
+        friendEmails.map(email => storage.getParticipantByEmail(email))
+      );
+      const friendParticipants = allParticipants.filter(Boolean) as Participant[];
+      const friendMap = new Map(friendParticipants.map(p => [p.id, p]));
+
+      const activities: Array<{
+        type: string;
+        participantId: string;
+        participantName: string;
+        timestamp: string;
+        details: Record<string, any>;
+      }> = [];
+
+      const allTastings = await storage.getAllTastings();
+
+      for (const fp of friendParticipants) {
+        const journalEntries = await storage.getJournalEntries(fp.id);
+        for (const entry of journalEntries.slice(0, 5)) {
+          activities.push({
+            type: "journal",
+            participantId: fp.id,
+            participantName: fp.name,
+            timestamp: entry.createdAt?.toISOString() || new Date().toISOString(),
+            details: {
+              title: entry.title,
+              whiskyName: entry.whiskyName,
+              distillery: entry.distillery,
+              personalScore: entry.personalScore,
+            },
+          });
+        }
+
+        for (const tasting of allTastings) {
+          const isIn = await storage.isParticipantInTasting(tasting.id, fp.id);
+          if (isIn) {
+            activities.push({
+              type: "tasting",
+              participantId: fp.id,
+              participantName: fp.name,
+              timestamp: tasting.createdAt?.toISOString() || tasting.date || new Date().toISOString(),
+              details: {
+                tastingId: tasting.id,
+                title: tasting.title,
+                date: tasting.date,
+                location: tasting.location,
+                status: tasting.status,
+              },
+            });
+          }
+        }
+      }
+
+      activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+      res.json({ activities: activities.slice(0, 30) });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== TASTING CALENDAR =====
+
+  app.get("/api/calendar", async (_req, res) => {
+    try {
+      const allTastings = await storage.getAllTastings();
+      const calendarEvents = await Promise.all(
+        allTastings.map(async (t) => {
+          const host = await storage.getParticipant(t.hostId);
+          const participants = await storage.getTastingParticipants(t.id);
+          const whiskies = await storage.getWhiskiesForTasting(t.id);
+          return {
+            id: t.id,
+            title: t.title,
+            date: t.date,
+            location: t.location,
+            status: t.status,
+            hostName: host?.name || "Unknown",
+            participantCount: participants.length,
+            whiskyCount: whiskies.length,
+            code: t.code,
+          };
+        })
+      );
+      res.json(calendarEvents);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

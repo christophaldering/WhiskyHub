@@ -19,6 +19,8 @@ import FlavorProfile from "@/pages/flavor-profile";
 import Recommendations from "@/pages/recommendations";
 import Comparison from "@/pages/comparison";
 import TastingTemplates from "@/pages/tasting-templates";
+import ActivityFeed from "@/pages/activity-feed";
+import TastingCalendar from "@/pages/tasting-calendar";
 import Intro from "@/pages/intro";
 import { hasSeenIntro } from "@/pages/intro";
 import { BuildFooter } from "@/components/build-footer";
@@ -53,6 +55,8 @@ function Router() {
               <Route path="/recommendations" component={Recommendations} />
               <Route path="/comparison" component={Comparison} />
               <Route path="/tasting-templates" component={TastingTemplates} />
+              <Route path="/activity" component={ActivityFeed} />
+              <Route path="/calendar" component={TastingCalendar} />
               <Route path="/about-method" component={AboutMethod} />
               <Route path="/invite/:token" component={InviteAccept} />
               <Route component={NotFound} />

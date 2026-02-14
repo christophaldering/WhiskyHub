@@ -53,6 +53,18 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 20. **Whisky Lexicon**: Reference glossary with 53 bilingual entries across 5 categories, searchable with accordion sections.
 21. **Host Briefing Notes**: Auto-generated summary cards for whiskies in a tasting, with print support.
 22. **Achievement Badges**: 15 milestone badges computed client-side from participant stats API, with progress tracking.
+23. **Personal Flavor Profile**: Radar charts showing taste dimension averages, region/cask/peat breakdowns, and top-rated whiskies.
+24. **Whisky Recommendations**: Algorithm scoring unrated whiskies based on region (40%), cask (30%), and peat (30%) preferences.
+25. **Side-by-Side Comparison**: Compare 2-3 rated whiskies with overlaid radar charts, score tables, notes, and details.
+26. **Tasting Note Templates**: Pre-built vocabulary for 6 whisky styles (Islay, Speyside, Sherry, Bourbon, Highland, Japanese) with copy support.
+27. **QR Code Invitations**: Generates a scannable QR code per tasting session for instant in-person joining via `qrcode` library.
+28. **Friend Activity Feed**: Lightweight timeline showing friends' journal entries and tasting participations, refreshing every 60s.
+29. **Shared Tasting Calendar**: Monthly calendar view of all tastings with status badges, upcoming events sidebar, and overview stats.
+
+### Key Endpoints (continued)
+- `GET /api/participants/:id/flavor-profile` — Aggregated flavor profile with radar data, breakdowns, and whisky lists
+- `GET /api/participants/:id/friend-activity` — Friend activity feed (journal entries + tasting participations)
+- `GET /api/calendar` — All tastings with host name, participant/whisky counts for calendar view
 
 ## External Dependencies
 
@@ -60,3 +72,4 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Google Fonts**: Used for fetching Playfair Display and Inter fonts.
 -   **Nodemailer**: Employed for sending email invitations (optional, requires SMTP configuration).
 -   **SheetJS (xlsx)**: Used for parsing Excel files during bulk whisky import.
+-   **qrcode**: Generates QR code data URLs for tasting session invitations.

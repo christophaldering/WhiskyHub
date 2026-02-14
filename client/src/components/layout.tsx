@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState } from "react";
@@ -72,6 +72,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
       { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
       { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
+      { href: "/activity", icon: Rss, label: t('nav.activity') },
       { href: "/badges", icon: Trophy, label: t('nav.badges') },
     ] : []),
   ];
@@ -142,6 +143,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           >
             <FileText className="w-4 h-4" />
             <span className="text-sm font-medium">{t('nav.templates')}</span>
+          </div>
+        </Link>
+
+        <Link href="/calendar">
+          <div
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-300 cursor-pointer",
+              location === "/calendar"
+                ? "bg-secondary text-primary border-l-2 border-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            )}
+            onClick={() => setOpen(false)}
+            data-testid="nav-calendar"
+          >
+            <Calendar className="w-4 h-4" />
+            <span className="text-sm font-medium">{t('nav.calendar')}</span>
           </div>
         </Link>
 
