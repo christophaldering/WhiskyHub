@@ -7,6 +7,8 @@ import { LoginDialog } from "@/components/login-dialog";
 import { ImportFlightDialog } from "@/components/import-flight-dialog";
 import { FlightBoard } from "@/components/flight-board";
 import { PdfExportDialog } from "@/components/pdf-export-dialog";
+import { AttendeeRoster } from "@/components/attendee-roster";
+import { InvitePanel } from "@/components/invite-panel";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList } from "lucide-react";
@@ -892,7 +894,12 @@ export default function TastingRoom() {
       ) : null}
       </>}
 
+      <AttendeeRoster tastingId={tasting.id} hostId={tasting.hostId} />
+
       {isHost && <SessionControl tasting={tasting} />}
+      {isHost && (tasting.status === "draft" || tasting.status === "open") && (
+        <InvitePanel tastingId={tasting.id} />
+      )}
     </div>
   );
 }

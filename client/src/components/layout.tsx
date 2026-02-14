@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: "/", icon: Home, label: t('nav.lobby') },
+    ...(currentParticipant ? [{ href: "/profile", icon: User, label: t('profile.title') }] : []),
   ];
 
   const NavContent = () => (
