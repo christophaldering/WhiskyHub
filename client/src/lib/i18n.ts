@@ -39,7 +39,19 @@ const resources = {
         host: "Host Controls",
         leave: "Leave Session",
         aboutMethod: "About the Method",
-        friends: "My Whisky Friends"
+        friends: "My Whisky Friends",
+        about: "About"
+      },
+      intro: {
+        title: "CaskSense",
+        tagline: "Structured Tasting Experience",
+        subline: "A circle for structured perception.",
+        whyTitle: "Why CaskSense",
+        whyBody: "In a world of instant ratings and quick impressions, CaskSense creates space for deliberate perception.",
+        notFaster: "Not faster judgement.",
+        butClearer: "But clearer awareness.",
+        enter: "Enter the Circle",
+        skip: "Skip for now"
       },
       session: {
         status: {
@@ -451,7 +463,19 @@ const resources = {
         host: "Gastgeber-Steuerung",
         leave: "Sitzung verlassen",
         aboutMethod: "\u00dcber die Methode",
-        friends: "Meine Whisky-Freunde"
+        friends: "Meine Whisky-Freunde",
+        about: "\u00dcber"
+      },
+      intro: {
+        title: "CaskSense",
+        tagline: "Strukturierte Verkostungserfahrung",
+        subline: "Ein Kreis f\u00fcr strukturierte Wahrnehmung.",
+        whyTitle: "Warum CaskSense",
+        whyBody: "In einer Welt schneller Bewertungen und fl\u00fcchtiger Eindr\u00fccke schafft CaskSense Raum f\u00fcr bewusste Wahrnehmung.",
+        notFaster: "Nicht schnelleres Urteilen.",
+        butClearer: "Sondern klarere Wahrnehmung.",
+        enter: "Betreten Sie den Kreis",
+        skip: "Sp\u00e4ter"
       },
       session: {
         status: {

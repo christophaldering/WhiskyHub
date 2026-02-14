@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -11,22 +11,40 @@ import Profile from "@/pages/profile";
 import WhiskyFriends from "@/pages/whisky-friends";
 import Sessions from "@/pages/sessions";
 import InviteAccept from "@/pages/invite-accept";
+import Intro from "@/pages/intro";
+import { hasSeenIntro } from "@/pages/intro";
 import { BuildFooter } from "@/components/build-footer";
 import "@/lib/i18n";
 
+function IntroRedirect() {
+  const [location] = useLocation();
+  if (!hasSeenIntro() && location !== "/intro") {
+    return <Redirect to="/intro" />;
+  }
+  return null;
+}
+
 function Router() {
   return (
-    <Layout>
+    <>
+      <IntroRedirect />
       <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/sessions" component={Sessions} />
-        <Route path="/tasting/:id" component={TastingRoom} />
-        <Route path="/profile" component={Profile} />
-        <Route path="/friends" component={WhiskyFriends} />
-        <Route path="/invite/:token" component={InviteAccept} />
-        <Route component={NotFound} />
+        <Route path="/intro" component={Intro} />
+        <Route>
+          <Layout>
+            <Switch>
+              <Route path="/" component={Home} />
+              <Route path="/sessions" component={Sessions} />
+              <Route path="/tasting/:id" component={TastingRoom} />
+              <Route path="/profile" component={Profile} />
+              <Route path="/friends" component={WhiskyFriends} />
+              <Route path="/invite/:token" component={InviteAccept} />
+              <Route component={NotFound} />
+            </Switch>
+          </Layout>
+        </Route>
       </Switch>
-    </Layout>
+    </>
   );
 }
 

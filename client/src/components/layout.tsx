@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -112,6 +112,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <BookOpen className="w-4 h-4" />
           <span className="text-sm font-medium">{t('nav.aboutMethod')}</span>
         </button>
+
+        <Link href="/intro">
+          <div
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-300 cursor-pointer",
+              location === "/intro"
+                ? "bg-secondary text-primary border-l-2 border-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            )}
+            onClick={() => setOpen(false)}
+            data-testid="nav-about"
+          >
+            <Info className="w-4 h-4" />
+            <span className="text-sm font-medium">{t('nav.about')}</span>
+          </div>
+        </Link>
       </nav>
 
       <div className="p-6 border-t border-border/50 space-y-4">
