@@ -8,6 +8,7 @@ export const participants = pgTable("participants", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   pin: text("pin"),
+  email: text("email"),
   language: text("language").default("en"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -72,6 +73,41 @@ export const whiskies = pgTable("whiskies", {
 export const insertWhiskySchema = createInsertSchema(whiskies).omit({ id: true });
 export type InsertWhisky = z.infer<typeof insertWhiskySchema>;
 export type Whisky = typeof whiskies.$inferSelect;
+
+// --- Participant Profiles ---
+export const profiles = pgTable("profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  bio: text("bio"),
+  favoriteWhisky: text("favorite_whisky"),
+  goToDram: text("go_to_dram"),
+  preferredRegions: text("preferred_regions"),
+  preferredPeatLevel: text("preferred_peat_level"),
+  preferredCaskInfluence: text("preferred_cask_influence"),
+  photoUrl: text("photo_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertProfileSchema = createInsertSchema(profiles).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertProfile = z.infer<typeof insertProfileSchema>;
+export type Profile = typeof profiles.$inferSelect;
+
+// --- Session Invites ---
+export const sessionInvites = pgTable("session_invites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tastingId: varchar("tasting_id").notNull(),
+  email: text("email").notNull(),
+  token: text("token").notNull(),
+  personalNote: text("personal_note"),
+  status: text("status").notNull().default("invited"),
+  createdAt: timestamp("created_at").defaultNow(),
+  acceptedAt: timestamp("accepted_at"),
+});
+
+export const insertSessionInviteSchema = createInsertSchema(sessionInvites).omit({ id: true, createdAt: true, acceptedAt: true });
+export type InsertSessionInvite = z.infer<typeof insertSessionInviteSchema>;
+export type SessionInvite = typeof sessionInvites.$inferSelect;
 
 // --- Ratings (evaluations) ---
 export const ratings = pgTable("ratings", {
