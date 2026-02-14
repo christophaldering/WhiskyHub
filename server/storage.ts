@@ -110,6 +110,20 @@ export interface IStorage {
     highestOverall: number;
   }>;
 
+  // Flavor Profile (aggregated ratings with whisky metadata)
+  getFlavorProfile(participantId: string): Promise<{
+    avgScores: { nose: number; taste: number; finish: number; balance: number; overall: number };
+    regionBreakdown: Record<string, { count: number; avgScore: number }>;
+    caskBreakdown: Record<string, { count: number; avgScore: number }>;
+    peatBreakdown: Record<string, { count: number; avgScore: number }>;
+    categoryBreakdown: Record<string, { count: number; avgScore: number }>;
+    ratedWhiskies: Array<{
+      whisky: Whisky;
+      rating: Rating;
+    }>;
+    allWhiskies: Whisky[];
+  }>;
+
   // Hard Delete (admin only)
   hardDeleteTasting(id: string): Promise<void>;
 }
@@ -455,6 +469,85 @@ export class DatabaseStorage implements IStorage {
       ratedCaskTypes,
       ratedPeatLevels,
       highestOverall,
+    };
+  }
+
+  async getFlavorProfile(participantId: string): Promise<{
+    avgScores: { nose: number; taste: number; finish: number; balance: number; overall: number };
+    regionBreakdown: Record<string, { count: number; avgScore: number }>;
+    caskBreakdown: Record<string, { count: number; avgScore: number }>;
+    peatBreakdown: Record<string, { count: number; avgScore: number }>;
+    categoryBreakdown: Record<string, { count: number; avgScore: number }>;
+    ratedWhiskies: Array<{ whisky: typeof whiskies.$inferSelect; rating: typeof ratings.$inferSelect }>;
+    allWhiskies: Array<typeof whiskies.$inferSelect>;
+  }> {
+    const allRatings = await db.select().from(ratings).where(eq(ratings.participantId, participantId));
+    const whiskyIds = [...new Set(allRatings.map(r => r.whiskyId))];
+    const ratedWhiskyRows = whiskyIds.length > 0
+      ? await db.select().from(whiskies).where(inArray(whiskies.id, whiskyIds))
+      : [];
+    const whiskyMap = new Map(ratedWhiskyRows.map(w => [w.id, w]));
+
+    let sumNose = 0, sumTaste = 0, sumFinish = 0, sumBalance = 0, sumOverall = 0;
+    const regionAcc: Record<string, { total: number; count: number }> = {};
+    const caskAcc: Record<string, { total: number; count: number }> = {};
+    const peatAcc: Record<string, { total: number; count: number }> = {};
+    const categoryAcc: Record<string, { total: number; count: number }> = {};
+
+    for (const r of allRatings) {
+      sumNose += r.nose; sumTaste += r.taste; sumFinish += r.finish;
+      sumBalance += r.balance; sumOverall += r.overall;
+      const w = whiskyMap.get(r.whiskyId);
+      if (w) {
+        if (w.region) {
+          if (!regionAcc[w.region]) regionAcc[w.region] = { total: 0, count: 0 };
+          regionAcc[w.region].total += r.overall; regionAcc[w.region].count++;
+        }
+        if (w.caskInfluence) {
+          if (!caskAcc[w.caskInfluence]) caskAcc[w.caskInfluence] = { total: 0, count: 0 };
+          caskAcc[w.caskInfluence].total += r.overall; caskAcc[w.caskInfluence].count++;
+        }
+        if (w.peatLevel) {
+          if (!peatAcc[w.peatLevel]) peatAcc[w.peatLevel] = { total: 0, count: 0 };
+          peatAcc[w.peatLevel].total += r.overall; peatAcc[w.peatLevel].count++;
+        }
+        if (w.category) {
+          if (!categoryAcc[w.category]) categoryAcc[w.category] = { total: 0, count: 0 };
+          categoryAcc[w.category].total += r.overall; categoryAcc[w.category].count++;
+        }
+      }
+    }
+
+    const n = allRatings.length || 1;
+    const toBreakdown = (acc: Record<string, { total: number; count: number }>) => {
+      const result: Record<string, { count: number; avgScore: number }> = {};
+      for (const [k, v] of Object.entries(acc)) {
+        result[k] = { count: v.count, avgScore: Math.round((v.total / v.count) * 10) / 10 };
+      }
+      return result;
+    };
+
+    const allWhiskyRows = await db.select().from(whiskies);
+
+    const ratedWhiskiesResult = allRatings.map(r => {
+      const w = whiskyMap.get(r.whiskyId);
+      return w ? { whisky: w, rating: r } : null;
+    }).filter(Boolean) as Array<{ whisky: typeof whiskies.$inferSelect; rating: typeof ratings.$inferSelect }>;
+
+    return {
+      avgScores: {
+        nose: Math.round((sumNose / n) * 10) / 10,
+        taste: Math.round((sumTaste / n) * 10) / 10,
+        finish: Math.round((sumFinish / n) * 10) / 10,
+        balance: Math.round((sumBalance / n) * 10) / 10,
+        overall: Math.round((sumOverall / n) * 10) / 10,
+      },
+      regionBreakdown: toBreakdown(regionAcc),
+      caskBreakdown: toBreakdown(caskAcc),
+      peatBreakdown: toBreakdown(peatAcc),
+      categoryBreakdown: toBreakdown(categoryAcc),
+      ratedWhiskies: ratedWhiskiesResult,
+      allWhiskies: allWhiskyRows,
     };
   }
 

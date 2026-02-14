@@ -43,6 +43,10 @@ const resources = {
         journal: "Whisky Journal",
         lexicon: "Whisky Lexicon",
         badges: "Achievements",
+        flavorProfile: "Flavor Profile",
+        recommendations: "Recommendations",
+        comparison: "Comparison",
+        templates: "Note Templates",
         about: "About"
       },
       theme: {
@@ -550,6 +554,44 @@ const resources = {
         locked: "Locked",
         progress: "Progress",
         loginRequired: "Please sign in to view your achievements."
+      },
+      flavorProfile: {
+        title: "Flavor Profile",
+        subtitle: "Your evolving taste preferences based on ratings and tasting history.",
+        loginRequired: "Please sign in to view your flavor profile.",
+        empty: "Start rating whiskies to build your personal flavor profile.",
+        radarTitle: "Tasting Dimensions",
+        radarSubtitle: "Average scores across {{count}} rated whiskies",
+        regionTitle: "Region Preferences",
+        regionSubtitle: "Average scores by whisky region",
+        peatTitle: "Peat Level Affinity",
+        caskTitle: "Cask Influence Affinity",
+        topTitle: "Your Top-Rated Whiskies"
+      },
+      recommendations: {
+        title: "Recommendations",
+        subtitle: "Whiskies you might enjoy based on your taste profile and highest-rated drams.",
+        loginRequired: "Please sign in to see recommendations.",
+        empty: "Rate some whiskies first to receive personalized recommendations.",
+        noMatches: "No matching recommendations found yet. Try more tastings to expand your profile.",
+        basedOn: "Recommendations are based on your preferred regions, cask types, and peat levels."
+      },
+      comparison: {
+        title: "Side-by-Side Comparison",
+        subtitle: "Pick two or three whiskies to compare their scores, notes, and radar charts.",
+        loginRequired: "Please sign in to compare whiskies.",
+        empty: "Rate some whiskies first to enable comparison.",
+        selectLabel: "Select whiskies to compare",
+        searchPlaceholder: "Search by name or distillery...",
+        selectMore: "Select at least one more whisky to see the comparison.",
+        radarTitle: "Score Overlay",
+        dimension: "Dimension",
+        notesTitle: "Tasting Notes",
+        detailsTitle: "Whisky Details"
+      },
+      templates: {
+        title: "Tasting Note Templates",
+        subtitle: "Pre-built vocabulary templates for different whisky styles to guide your tasting notes."
       }
     }
   },
@@ -594,6 +636,10 @@ const resources = {
         journal: "Whisky-Tagebuch",
         lexicon: "Whisky-Lexikon",
         badges: "Erfolge",
+        flavorProfile: "Geschmacksprofil",
+        recommendations: "Empfehlungen",
+        comparison: "Vergleich",
+        templates: "Notiz-Vorlagen",
         about: "Über"
       },
       theme: {
@@ -1101,6 +1147,44 @@ const resources = {
         locked: "Gesperrt",
         progress: "Fortschritt",
         loginRequired: "Bitte melden Sie sich an, um Ihre Erfolge zu sehen."
+      },
+      flavorProfile: {
+        title: "Geschmacksprofil",
+        subtitle: "Ihre sich entwickelnden Geschmackspräferenzen basierend auf Bewertungen und Verkostungshistorie.",
+        loginRequired: "Bitte melden Sie sich an, um Ihr Geschmacksprofil zu sehen.",
+        empty: "Bewerten Sie Whiskys, um Ihr persönliches Geschmacksprofil aufzubauen.",
+        radarTitle: "Verkostungsdimensionen",
+        radarSubtitle: "Durchschnittswerte über {{count}} bewertete Whiskys",
+        regionTitle: "Regionale Präferenzen",
+        regionSubtitle: "Durchschnittsbewertungen nach Whisky-Region",
+        peatTitle: "Torf-Affinität",
+        caskTitle: "Fass-Affinität",
+        topTitle: "Ihre bestbewerteten Whiskys"
+      },
+      recommendations: {
+        title: "Empfehlungen",
+        subtitle: "Whiskys, die Ihnen gefallen könnten, basierend auf Ihrem Geschmacksprofil und bestbewerteten Drams.",
+        loginRequired: "Bitte melden Sie sich an, um Empfehlungen zu sehen.",
+        empty: "Bewerten Sie zuerst einige Whiskys, um personalisierte Empfehlungen zu erhalten.",
+        noMatches: "Noch keine passenden Empfehlungen gefunden. Probieren Sie mehr Tastings, um Ihr Profil zu erweitern.",
+        basedOn: "Empfehlungen basieren auf Ihren bevorzugten Regionen, Fasstypen und Torfstufen."
+      },
+      comparison: {
+        title: "Seite-an-Seite-Vergleich",
+        subtitle: "Wählen Sie zwei oder drei Whiskys, um ihre Bewertungen, Notizen und Radar-Diagramme zu vergleichen.",
+        loginRequired: "Bitte melden Sie sich an, um Whiskys zu vergleichen.",
+        empty: "Bewerten Sie zuerst einige Whiskys, um den Vergleich zu nutzen.",
+        selectLabel: "Whiskys zum Vergleichen auswählen",
+        searchPlaceholder: "Nach Name oder Brennerei suchen...",
+        selectMore: "Wählen Sie mindestens einen weiteren Whisky für den Vergleich.",
+        radarTitle: "Bewertungsüberlagerung",
+        dimension: "Dimension",
+        notesTitle: "Verkostungsnotizen",
+        detailsTitle: "Whisky-Details"
+      },
+      templates: {
+        title: "Verkostungsnotiz-Vorlagen",
+        subtitle: "Vorgefertigte Vokabelvorlagen für verschiedene Whisky-Stile als Leitfaden für Ihre Verkostungsnotizen."
       }
     }
   }

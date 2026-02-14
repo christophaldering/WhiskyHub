@@ -217,6 +217,11 @@ export const statsApi = {
   get: (participantId: string) => fetchJSON(`/participants/${participantId}/stats`),
 };
 
+// ===== Flavor Profile =====
+export const flavorProfileApi = {
+  get: (participantId: string) => fetchJSON(`/participants/${participantId}/flavor-profile`),
+};
+
 // ===== Ratings =====
 export const ratingApi = {
   getForWhisky: (whiskyId: string) => fetchJSON(`/whiskies/${whiskyId}/ratings`),

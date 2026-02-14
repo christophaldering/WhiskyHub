@@ -1394,6 +1394,19 @@ export async function registerRoutes(
     }
   });
 
+  // ===== FLAVOR PROFILE =====
+
+  app.get("/api/participants/:id/flavor-profile", async (req, res) => {
+    try {
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      const profile = await storage.getFlavorProfile(req.params.id);
+      res.json(profile);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== PARTICIPANT STATS (for badges) =====
 
   app.get("/api/participants/:id/stats", async (req, res) => {
