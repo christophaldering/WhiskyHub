@@ -280,10 +280,20 @@ export async function registerRoutes(
   });
 
   app.patch("/api/tastings/:id/status", async (req, res) => {
-    const { status, currentAct } = req.body;
-    const validStatuses = ["draft", "open", "closed", "reveal", "archived"];
+    const { status, currentAct, hostId } = req.body;
+    const validStatuses = ["draft", "open", "closed", "reveal", "archived", "deleted"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
+    }
+    if (status === "deleted" || status === "archived") {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Not found" });
+      if (hostId && tasting.hostId !== hostId) {
+        return res.status(403).json({ message: "Only the host can perform this action" });
+      }
+      if (status === "deleted" && tasting.status === "open") {
+        return res.status(400).json({ message: "Cannot delete an active session. Close it first." });
+      }
     }
     const updated = await storage.updateTastingStatus(req.params.id, status, currentAct);
     if (!updated) return res.status(404).json({ message: "Not found" });

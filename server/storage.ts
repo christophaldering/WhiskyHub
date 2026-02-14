@@ -1,4 +1,4 @@
-import { eq, and, asc } from "drizzle-orm";
+import { eq, ne, and, asc } from "drizzle-orm";
 import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
@@ -124,7 +124,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllTastings(): Promise<Tasting[]> {
-    return db.select().from(tastings);
+    return db.select().from(tastings).where(ne(tastings.status, "deleted"));
   }
 
   async createTasting(data: InsertTasting): Promise<Tasting> {
