@@ -58,22 +58,35 @@ Preferred communication style: Simple, everyday language.
 - `DELETE /api/whiskies/:id/image` — Remove bottle photo
 - `POST /api/tastings/:id/import/parse` — Parse spreadsheet (Excel/CSV/TXT) and return preview
 - `POST /api/tastings/:id/import/confirm` — Confirm import: create whiskies in bulk with optional ZIP/URL images
+- `PATCH /api/participants/:id` — Update participant (name, email)
+- `GET /api/profiles/:participantId` — Get participant profile
+- `PUT /api/profiles/:participantId` — Create/update profile (bio, preferences, favorite whisky, etc.)
+- `POST /api/profiles/:participantId/photo` — Upload profile photo
+- `DELETE /api/profiles/:participantId/photo` — Remove profile photo
+- `GET /api/tastings/:id/invites` — List invitations for a tasting
+- `POST /api/tastings/:id/invites` — Send invitations (emails + personal note)
+- `GET /api/invites/:token` — Look up invite by token
+- `POST /api/invites/:token/accept` — Accept an invite (joins tasting)
+- `GET /api/tastings/:id/roster` — Get attendee roster with profiles
+- `GET /api/smtp/status` — Check SMTP configuration status
 - Rating endpoints for upserting and querying evaluations
 
 ### Database
 - **PostgreSQL** via `DATABASE_URL` environment variable
 - **Drizzle ORM** with `drizzle-zod` for schema-to-validation integration
 - Schema push via `npm run db:push` (uses drizzle-kit)
-- Tables: `participants`, `tastings`, `tasting_participants` (join table), `whiskies`, `ratings`
+- Tables: `participants`, `tastings`, `tasting_participants` (join table), `whiskies`, `ratings`, `profiles`, `session_invites`
 - UUIDs generated via PostgreSQL's `gen_random_uuid()`
 - Storage layer (`server/storage.ts`) implements an `IStorage` interface with a `DatabaseStorage` class
 
 ### Database Schema
-- **participants**: id, name, pin (optional), language, createdAt
+- **participants**: id, name, pin (optional), email (optional), language, createdAt
 - **tastings**: id, title, date, location, hostId, code (join code), status, currentAct, hostReflection, createdAt
 - **tasting_participants**: id, tastingId, participantId, joinedAt
 - **whiskies**: id, tastingId, name, distillery, age, abv, type, notes, sortOrder, category, region, abvBand, ageBand, caskInfluence, peatLevel, ppm, whiskybaseId, imageUrl
 - **ratings**: id, participantId, whiskyId, tastingId, nose, taste, finish, balance, overall, notes
+- **profiles**: id, participantId, bio, favoriteWhisky, goToDram, preferredRegions, preferredPeatLevel, preferredCaskInfluence, photoUrl, createdAt, updatedAt
+- **session_invites**: id, tastingId, email, token, personalNote, status (invited/joined), acceptedAt, createdAt
 
 ### Build Process
 - `npm run dev` — Development server with Vite HMR
@@ -104,9 +117,13 @@ Preferred communication style: Simple, everyday language.
 10. **Whisky deletion**: Host can delete whiskies from a flight with a confirmation dialog (AlertDialog). Deletion cascades: removes all associated ratings, cleans up image files from disk, then deletes the whisky record.
 11. **Flight Board view**: Two-column menu-style layout in tasting room (tab navigation). Shows order number, thumbnail, name, distillery, age/ABV primary meta, and second meta line (region, cask, peat, ppm, whiskybase). Supports reorder (up/down) and delete per dram. Paginated at 12 items per page (6 per column).
 12. **PDF export**: jsPDF-based tasting menu PDF generation. Two-page layout: cover page (title, date, location, optional background image, optional quote, optional participants list) and lineup page (two-column list with thumbnails and second meta line). Configurable via dialog: title, date, quote, background image, include participants toggle, include photos toggle.
+13. **Participant profiles**: Optional profile page with photo upload, bio (400 chars max), favorite whisky, go-to dram, preferred regions/peat/cask. Profiles are public to other attendees in the same session. Profile photos use the same multer upload system as bottle photos.
+14. **Session invitations**: Hosts can invite participants by email. Uses nodemailer with SMTP env vars (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM_NAME, SMTP_FROM_EMAIL). Falls back to shareable invite links if SMTP is not configured. Invites use random 48-char hex tokens with status tracking (invited → joined). Invite acceptance auto-joins the tasting.
+15. **Attendee roster**: Shows participants in a tasting with profile photos and names. Clicking a participant opens a read-only profile card. Host badge for the session creator.
 
 ## External Dependencies
 
 - **PostgreSQL** — Primary database, required via `DATABASE_URL` environment variable
 - **Google Fonts** — Merriweather and Inter loaded from fonts.googleapis.com
-- **No external APIs** — The app is self-contained with no third-party service integrations currently active (though build config references @google/generative-ai, openai, stripe, and nodemailer as potential future integrations)
+- **Nodemailer** — Email sending for session invitations (requires SMTP configuration via environment variables; optional — falls back to copy links)
+- **No external APIs** — The app is self-contained with no third-party service integrations currently active (though build config references @google/generative-ai, openai, stripe as potential future integrations)
