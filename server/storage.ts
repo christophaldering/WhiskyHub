@@ -126,6 +126,11 @@ export interface IStorage {
 
   // Hard Delete (admin only)
   hardDeleteTasting(id: string): Promise<void>;
+
+  // Admin
+  getAllParticipants(): Promise<Participant[]>;
+  updateParticipantRole(id: string, role: string): Promise<Participant | undefined>;
+  deleteParticipant(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -559,6 +564,28 @@ export class DatabaseStorage implements IStorage {
     await db.delete(whiskies).where(eq(whiskies.tastingId, id));
     await db.delete(tastingParticipants).where(eq(tastingParticipants.tastingId, id));
     await db.delete(tastings).where(eq(tastings.id, id));
+  }
+
+  async getAllParticipants(): Promise<Participant[]> {
+    return db.select().from(participants).orderBy(participants.createdAt);
+  }
+
+  async updateParticipantRole(id: string, role: string): Promise<Participant | undefined> {
+    const [result] = await db.update(participants).set({ role }).where(eq(participants.id, id)).returning();
+    return result;
+  }
+
+  async deleteParticipant(id: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      await tx.delete(ratings).where(eq(ratings.participantId, id));
+      await tx.delete(journalEntries).where(eq(journalEntries.participantId, id));
+      await tx.delete(discussionEntries).where(eq(discussionEntries.participantId, id));
+      await tx.delete(reflectionEntries).where(eq(reflectionEntries.participantId, id));
+      await tx.delete(tastingParticipants).where(eq(tastingParticipants.participantId, id));
+      await tx.delete(whiskyFriends).where(sql`${whiskyFriends.participantId} = ${id} OR ${whiskyFriends.friendId} = ${id}`);
+      await tx.delete(profiles).where(eq(profiles.participantId, id));
+      await tx.delete(participants).where(eq(participants.id, id));
+    });
   }
 }
 

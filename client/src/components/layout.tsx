@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState } from "react";
@@ -79,6 +79,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       { href: "/activity", icon: Rss, label: t('nav.activity') },
       { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
       { href: "/badges", icon: Trophy, label: t('nav.badges') },
+      ...(currentParticipant?.role === "admin" ? [
+        { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
+      ] : []),
     ] : []),
   ];
 

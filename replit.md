@@ -76,6 +76,10 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 - `GET /api/tastings/:id/recap` — Tasting recap with top-rated, most divisive, averages, highlights
 - `GET /api/tastings/:id/pairings` — Smart pairing suggestions based on lineup analysis
 - `GET /api/leaderboard` — Global participant rankings across 4 metrics
+- `GET /api/admin/overview` — Admin overview of all participants, hosts, tastings with stats (admin-only)
+- `PATCH /api/admin/participants/:id/role` — Change participant role (admin-only)
+- `DELETE /api/admin/participants/:id` — Delete participant with all data (admin-only, transactional)
+- `DELETE /api/admin/tastings/:id` — Hard-delete tasting (admin-only)
 
 ## External Dependencies
 

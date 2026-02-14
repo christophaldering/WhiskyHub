@@ -1891,5 +1891,128 @@ export async function registerRoutes(
     }
   });
 
+  // ===== ADMIN =====
+
+  app.get("/api/admin/overview", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const [allParticipants, allTastings] = await Promise.all([
+        storage.getAllParticipants(),
+        storage.getAllTastings(),
+      ]);
+
+      const hostIds = new Set(allTastings.map(t => t.hostId));
+
+      const participantsWithStats = await Promise.all(
+        allParticipants.map(async (p) => {
+          const hostedTastings = allTastings.filter(t => t.hostId === p.id).length;
+          return {
+            id: p.id,
+            name: p.name,
+            email: p.email,
+            role: p.role || "user",
+            language: p.language,
+            createdAt: p.createdAt,
+            hostedTastings,
+            isHost: hostIds.has(p.id),
+          };
+        })
+      );
+
+      const tastingsWithDetails = await Promise.all(
+        allTastings.map(async (t) => {
+          const host = allParticipants.find(p => p.id === t.hostId);
+          const participants = await storage.getTastingParticipants(t.id);
+          const whiskies = await storage.getWhiskiesForTasting(t.id);
+          return {
+            id: t.id,
+            title: t.title,
+            date: t.date,
+            location: t.location,
+            status: t.status,
+            code: t.code,
+            hostName: host?.name || "Unknown",
+            hostId: t.hostId,
+            participantCount: participants.length,
+            whiskyCount: whiskies.length,
+            blindMode: t.blindMode,
+          };
+        })
+      );
+
+      res.json({
+        participants: participantsWithStats,
+        tastings: tastingsWithDetails,
+        stats: {
+          totalParticipants: allParticipants.length,
+          totalHosts: hostIds.size,
+          totalTastings: allTastings.length,
+          totalAdmins: allParticipants.filter(p => p.role === "admin").length,
+        },
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/admin/participants/:id/role", async (req, res) => {
+    try {
+      const requesterId = req.body.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const { role } = req.body;
+      if (!role || !["user", "admin", "host"].includes(role)) {
+        return res.status(400).json({ message: "Invalid role. Must be user, admin, or host." });
+      }
+      const updated = await storage.updateParticipantRole(req.params.id, role);
+      if (!updated) return res.status(404).json({ message: "Participant not found" });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/admin/participants/:id", async (req, res) => {
+    try {
+      const requesterId = req.query.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      if (req.params.id === requesterId) {
+        return res.status(400).json({ message: "Cannot delete yourself" });
+      }
+      await storage.deleteParticipant(req.params.id);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/admin/tastings/:id", async (req, res) => {
+    try {
+      const requesterId = req.query.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      await storage.hardDeleteTasting(req.params.id);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }

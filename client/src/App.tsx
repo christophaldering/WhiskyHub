@@ -27,6 +27,7 @@ import TastingRecap from "@/pages/tasting-recap";
 import FlavorWheel from "@/pages/flavor-wheel";
 import PairingSuggestions from "@/pages/pairing-suggestions";
 import Leaderboard from "@/pages/leaderboard";
+import AdminPanel from "@/pages/admin-panel";
 import Intro from "@/pages/intro";
 import { hasSeenIntro } from "@/pages/intro";
 import { BuildFooter } from "@/components/build-footer";
@@ -70,6 +71,7 @@ function Router() {
               <Route path="/recap" component={TastingRecap} />
               <Route path="/pairings" component={PairingSuggestions} />
               <Route path="/leaderboard" component={Leaderboard} />
+              <Route path="/admin" component={AdminPanel} />
               <Route path="/about-method" component={AboutMethod} />
               <Route path="/invite/:token" component={InviteAccept} />
               <Route component={NotFound} />

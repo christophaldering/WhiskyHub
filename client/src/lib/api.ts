@@ -266,3 +266,14 @@ export const pairingsApi = {
 export const leaderboardApi = {
   get: () => fetchJSON("/leaderboard"),
 };
+
+// ===== Admin =====
+export const adminApi = {
+  getOverview: (participantId: string) => fetchJSON(`/admin/overview?participantId=${participantId}`),
+  updateRole: (participantId: string, role: string, requesterId: string) =>
+    fetchJSON(`/admin/participants/${participantId}/role`, { method: "PATCH", body: JSON.stringify({ role, requesterId }) }),
+  deleteParticipant: (participantId: string, requesterId: string) =>
+    fetchJSON(`/admin/participants/${participantId}?requesterId=${requesterId}`, { method: "DELETE" }),
+  deleteTasting: (tastingId: string, requesterId: string) =>
+    fetchJSON(`/admin/tastings/${tastingId}?requesterId=${requesterId}`, { method: "DELETE" }),
+};

@@ -56,7 +56,8 @@ const resources = {
         hostDashboard: "Host Dashboard",
         recap: "Tasting Recap",
         pairings: "Pairing Suggestions",
-        leaderboard: "Leaderboard"
+        leaderboard: "Leaderboard",
+        admin: "Admin Panel"
       },
       theme: {
         dark: "Dark",
@@ -713,6 +714,43 @@ const resources = {
         characters: "chars",
         empty: "No leaderboard data available yet.",
         you: "You"
+      },
+      admin: {
+        title: "Admin Panel",
+        subtitle: "Manage all participants, hosts, and tastings in one place.",
+        loginRequired: "Please log in to access the admin panel.",
+        accessDenied: "You do not have admin privileges to access this page.",
+        tabParticipants: "Participants",
+        tabHosts: "Hosts",
+        tabTastings: "Tastings",
+        statParticipants: "Participants",
+        statHosts: "Hosts",
+        statTastings: "Tastings",
+        statAdmins: "Admins",
+        searchParticipants: "Search by name or email...",
+        searchTastings: "Search by title, host, or code...",
+        allRoles: "All Roles",
+        roleAdmin: "Admin",
+        roleHost: "Host",
+        roleUser: "User",
+        allStatuses: "All Statuses",
+        you: "You",
+        noEmail: "No email",
+        hostedTastings: "tastings hosted",
+        tastingsHosted: "tastings hosted",
+        role: "Role",
+        noResults: "No results found.",
+        noHosts: "No hosts found.",
+        roleUpdated: "Role updated successfully.",
+        participantDeleted: "Participant deleted successfully.",
+        tastingDeleted: "Tasting deleted permanently.",
+        error: "Error",
+        confirmDeleteParticipant: "Delete Participant?",
+        confirmDeleteParticipantDesc: "This will permanently delete {{name}} and all their ratings, journal entries, and other data. This cannot be undone.",
+        confirmDeleteTasting: "Delete Tasting?",
+        confirmDeleteTastingDesc: "This will permanently delete \"{{title}}\" including all ratings, whiskies, and participant data. This cannot be undone.",
+        cancel: "Cancel",
+        delete: "Delete"
       }
     }
   },
@@ -770,7 +808,8 @@ const resources = {
         hostDashboard: "Gastgeber-Dashboard",
         recap: "Tasting-Rückblick",
         pairings: "Pairing-Vorschläge",
-        leaderboard: "Rangliste"
+        leaderboard: "Rangliste",
+        admin: "Admin-Bereich"
       },
       theme: {
         dark: "Dunkel",
@@ -1427,6 +1466,43 @@ const resources = {
         characters: "Zeichen",
         empty: "Noch keine Ranglistendaten verfügbar.",
         you: "Du"
+      },
+      admin: {
+        title: "Admin-Bereich",
+        subtitle: "Verwalten Sie alle Teilnehmer, Gastgeber und Tastings an einem Ort.",
+        loginRequired: "Bitte melden Sie sich an, um den Admin-Bereich zu nutzen.",
+        accessDenied: "Sie haben keine Admin-Rechte für diese Seite.",
+        tabParticipants: "Teilnehmer",
+        tabHosts: "Gastgeber",
+        tabTastings: "Tastings",
+        statParticipants: "Teilnehmer",
+        statHosts: "Gastgeber",
+        statTastings: "Tastings",
+        statAdmins: "Admins",
+        searchParticipants: "Nach Name oder E-Mail suchen...",
+        searchTastings: "Nach Titel, Gastgeber oder Code suchen...",
+        allRoles: "Alle Rollen",
+        roleAdmin: "Admin",
+        roleHost: "Gastgeber",
+        roleUser: "Benutzer",
+        allStatuses: "Alle Status",
+        you: "Du",
+        noEmail: "Keine E-Mail",
+        hostedTastings: "Tastings geleitet",
+        tastingsHosted: "Tastings geleitet",
+        role: "Rolle",
+        noResults: "Keine Ergebnisse gefunden.",
+        noHosts: "Keine Gastgeber gefunden.",
+        roleUpdated: "Rolle erfolgreich aktualisiert.",
+        participantDeleted: "Teilnehmer erfolgreich gelöscht.",
+        tastingDeleted: "Tasting dauerhaft gelöscht.",
+        error: "Fehler",
+        confirmDeleteParticipant: "Teilnehmer löschen?",
+        confirmDeleteParticipantDesc: "Dies löscht {{name}} und alle zugehörigen Bewertungen, Tagebucheinträge und Daten dauerhaft. Dies kann nicht rückgängig gemacht werden.",
+        confirmDeleteTasting: "Tasting löschen?",
+        confirmDeleteTastingDesc: "Dies löscht \"{{title}}\" einschließlich aller Bewertungen, Whiskys und Teilnehmerdaten dauerhaft. Dies kann nicht rückgängig gemacht werden.",
+        cancel: "Abbrechen",
+        delete: "Löschen"
       }
     }
   }
