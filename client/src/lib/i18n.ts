@@ -88,12 +88,20 @@ const resources = {
         title: "CaskSense",
         tagline: "Where Tasting Becomes Reflection",
         subline: "Slow down. Taste deeply. Reflect together.",
-        whyTitle: "Why CaskSense",
+        discover: "Discover CaskSense",
+        skip: "Skip for now",
+        whyTitle: "Why CaskSense?",
         whyBody: "In a world of instant ratings and quick impressions, CaskSense creates space for mindful tasting and shared reflection.",
+        feature1Title: "Structured Tasting",
+        feature1Desc: "Evaluate nose, taste, finish and balance in a guided session with your group.",
+        feature2Title: "Personal Journal",
+        feature2Desc: "Build your private whisky diary with scores, moods and flavour notes over time.",
+        feature3Title: "Share & Compare",
+        feature3Desc: "Discover your flavour profile, compare with friends and explore recommendations.",
         notFaster: "Not faster judgement.",
         butClearer: "But deeper understanding.",
         enter: "Begin Your Reflection",
-        skip: "Skip for now"
+        back: "Back"
       },
       session: {
         status: {
@@ -849,12 +857,20 @@ const resources = {
         title: "CaskSense",
         tagline: "Where Tasting Becomes Reflection",
         subline: "Innehalten. Bewusst schmecken. Gemeinsam reflektieren.",
-        whyTitle: "Warum CaskSense",
+        discover: "CaskSense entdecken",
+        skip: "Überspringen",
+        whyTitle: "Warum CaskSense?",
         whyBody: "In einer Welt schneller Bewertungen und flüchtiger Eindrücke schafft CaskSense Raum für achtsames Verkosten und gemeinsame Reflexion.",
+        feature1Title: "Strukturiertes Tasting",
+        feature1Desc: "Bewerten Sie Nase, Geschmack, Abgang und Balance in einer geführten Verkostung mit Ihrer Gruppe.",
+        feature2Title: "Persönliches Tagebuch",
+        feature2Desc: "Führen Sie Ihr privates Whisky-Tagebuch mit Bewertungen, Stimmungen und Aromanotizen.",
+        feature3Title: "Teilen & Vergleichen",
+        feature3Desc: "Entdecken Sie Ihr Geschmacksprofil, vergleichen Sie mit Freunden und erhalten Sie Empfehlungen.",
         notFaster: "Nicht schnelleres Urteilen.",
         butClearer: "Sondern tieferes Verstehen.",
         enter: "Reflexion beginnen",
-        skip: "Später"
+        back: "Zurück"
       },
       session: {
         status: {
