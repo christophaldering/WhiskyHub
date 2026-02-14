@@ -58,7 +58,18 @@ const resources = {
         notes: "Personal Notes",
         save: "Save Evaluation",
         saved: "Saved",
-        locked: "Evaluation Locked"
+        locked: "Evaluation Locked",
+        noteGenerator: "Tasting Note Helper",
+        noteGeneratorHint: "Select flavors and aromas, then generate a tasting note",
+        noseAromas: "Nose / Aromas",
+        palateAromas: "Palate / Taste",
+        finishAromas: "Finish",
+        generateNote: "Generate Note",
+        insertNote: "Insert into Notes",
+        appendNote: "Append to Notes",
+        clearSelections: "Clear",
+        generatedNote: "Generated Note",
+        selectAtLeast: "Select at least one aroma or flavor"
       },
       taxonomy: {
         category: "Category",
@@ -407,7 +418,18 @@ const resources = {
         notes: "Pers\u00f6nliche Notizen",
         save: "Bewertung speichern",
         saved: "Gespeichert",
-        locked: "Bewertung gesperrt"
+        locked: "Bewertung gesperrt",
+        noteGenerator: "Verkostungsnotiz-Helfer",
+        noteGeneratorHint: "W\u00e4hlen Sie Aromen und Geschm\u00e4cker, dann generieren Sie eine Verkostungsnotiz",
+        noseAromas: "Nase / Aromen",
+        palateAromas: "Gaumen / Geschmack",
+        finishAromas: "Abgang",
+        generateNote: "Notiz erstellen",
+        insertNote: "In Notizen einf\u00fcgen",
+        appendNote: "An Notizen anh\u00e4ngen",
+        clearSelections: "Zur\u00fccksetzen",
+        generatedNote: "Erstellte Notiz",
+        selectAtLeast: "W\u00e4hlen Sie mindestens ein Aroma oder einen Geschmack"
       },
       taxonomy: {
         category: "Kategorie",
