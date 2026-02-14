@@ -168,6 +168,33 @@ const resources = {
         close: "Close",
         mappingPreview: "Image Mapping",
         mappingHint: "Review which image will be attached to each expression. You can change the selection manually."
+      },
+      flightBoard: {
+        title: "Flight Board",
+        empty: "No expressions in this flight yet.",
+        page: "Page {{current}} of {{total}}",
+        deleteConfirm: "Remove this expression from the flight? All ratings will be deleted.",
+        deleteTitle: "Remove from Flight",
+        cancel: "Cancel",
+        remove: "Remove"
+      },
+      pdfExport: {
+        title: "Export PDF",
+        subtitle: "Generate a tasting menu PDF with your flight lineup.",
+        sessionTitle: "Session Title",
+        sessionDate: "Date",
+        quoteText: "Quote / Motto",
+        quotePlaceholder: "e.g. \"The water of life...\"",
+        backgroundImage: "Background Image (optional)",
+        dropImage: "Click to select a background image",
+        imageSelected: "Image selected",
+        includeParticipants: "Include participants list",
+        includePhotos: "Include bottle photos",
+        generate: "Generate PDF",
+        generating: "Generating...",
+        lineup: "Lineup",
+        participants: "Participants",
+        noParticipants: "No participants yet."
       }
     }
   },
@@ -337,6 +364,33 @@ const resources = {
         close: "Schließen",
         mappingPreview: "Bildzuordnung",
         mappingHint: "\u00dcberpr\u00fcfen Sie, welches Bild jeder Expression zugeordnet wird. Sie k\u00f6nnen die Zuordnung manuell \u00e4ndern."
+      },
+      flightBoard: {
+        title: "Flight-Board",
+        empty: "Noch keine Expressions in diesem Flight.",
+        page: "Seite {{current}} von {{total}}",
+        deleteConfirm: "Diese Expression aus dem Flight entfernen? Alle Bewertungen werden gel\u00f6scht.",
+        deleteTitle: "Aus Flight entfernen",
+        cancel: "Abbrechen",
+        remove: "Entfernen"
+      },
+      pdfExport: {
+        title: "Als PDF exportieren",
+        subtitle: "Erstellen Sie ein Verkostungsmen\u00fc-PDF mit Ihrem Flight-Lineup.",
+        sessionTitle: "Sitzungstitel",
+        sessionDate: "Datum",
+        quoteText: "Zitat / Motto",
+        quotePlaceholder: "z.\u00a0B. \u201eDas Wasser des Lebens\u2026\u201c",
+        backgroundImage: "Hintergrundbild (optional)",
+        dropImage: "Klicken, um ein Hintergrundbild auszuw\u00e4hlen",
+        imageSelected: "Bild ausgew\u00e4hlt",
+        includeParticipants: "Teilnehmerliste einbeziehen",
+        includePhotos: "Flaschenfotos einbeziehen",
+        generate: "PDF erstellen",
+        generating: "Wird erstellt...",
+        lineup: "Lineup",
+        participants: "Teilnehmer",
+        noParticipants: "Noch keine Teilnehmer."
       }
     }
   }

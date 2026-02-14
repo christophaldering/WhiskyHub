@@ -5,9 +5,11 @@ import { RevealView } from "@/components/reveal-view";
 import { SessionControl } from "@/components/session-control";
 import { LoginDialog } from "@/components/login-dialog";
 import { ImportFlightDialog } from "@/components/import-flight-dialog";
+import { FlightBoard } from "@/components/flight-board";
+import { PdfExportDialog } from "@/components/pdf-export-dialog";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -585,6 +587,7 @@ export default function TastingRoom() {
   });
 
   const [activeWhiskyId, setActiveWhiskyId] = useState<string | null>(null);
+  const [viewTab, setViewTab] = useState<"tasting" | "board">("tasting");
 
   const reorderMutation = useMutation({
     mutationFn: (order: { id: string; sortOrder: number }[]) => whiskyApi.reorder(id!, order),
@@ -668,15 +671,42 @@ export default function TastingRoom() {
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-3">
+              <PdfExportDialog tasting={tasting} whiskies={whiskyList} />
               <span className="text-xs font-mono bg-secondary px-2 py-1 rounded text-muted-foreground">Code: {tasting.code}</span>
               <div className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm font-medium border border-border/50">
                 {t(`session.status.${tasting.status}`)}
               </div>
             </div>
+            <div className="flex items-center gap-1 mt-1">
+              <Button
+                variant={viewTab === "tasting" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewTab("tasting")}
+                className={cn("font-serif text-xs", viewTab === "tasting" ? "bg-primary text-primary-foreground" : "")}
+                data-testid="tab-tasting"
+              >
+                {t("nav.tastingRoom")}
+              </Button>
+              <Button
+                variant={viewTab === "board" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewTab("board")}
+                className={cn("font-serif text-xs", viewTab === "board" ? "bg-primary text-primary-foreground" : "")}
+                data-testid="tab-flight-board"
+              >
+                <LayoutList className="w-3.5 h-3.5 mr-1" />
+                {t("flightBoard.title")}
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
+      {viewTab === "board" && (
+        <FlightBoard tasting={tasting} whiskies={whiskyList} isHost={isHost} />
+      )}
+
+      {viewTab === "tasting" && <>
       {/* Flight Navigation */}
       <div className="space-y-3">
         <div className="flex items-center gap-4 flex-wrap">
@@ -860,6 +890,7 @@ export default function TastingRoom() {
           </div>
         </div>
       ) : null}
+      </>}
 
       {isHost && <SessionControl tasting={tasting} />}
     </div>
