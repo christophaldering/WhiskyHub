@@ -981,5 +981,142 @@ export async function registerRoutes(
     }
   });
 
+  // ===== BLIND MODE / REVEAL CONTROL =====
+
+  app.patch("/api/tastings/:id/blind-mode", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId } = req.body;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can change blind mode settings" });
+      const updates: any = {};
+      if (req.body.blindMode !== undefined) updates.blindMode = req.body.blindMode;
+      if (req.body.revealIndex !== undefined) updates.revealIndex = req.body.revealIndex;
+      if (req.body.revealStep !== undefined) updates.revealStep = req.body.revealStep;
+      if (req.body.reflectionEnabled !== undefined) updates.reflectionEnabled = req.body.reflectionEnabled;
+      if (req.body.reflectionMode !== undefined) updates.reflectionMode = req.body.reflectionMode;
+      if (req.body.reflectionVisibility !== undefined) updates.reflectionVisibility = req.body.reflectionVisibility;
+      if (req.body.customPrompts !== undefined) updates.customPrompts = req.body.customPrompts;
+      const updated = await storage.updateTastingBlindMode(req.params.id, updates);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/reveal-next", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId } = req.body;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can trigger reveals" });
+
+      const whiskies = await storage.getWhiskiesForTasting(req.params.id);
+      const totalExpressions = whiskies.length;
+      if (totalExpressions === 0) return res.status(400).json({ message: "No expressions to reveal" });
+
+      let revealIndex = tasting.revealIndex ?? 0;
+      let revealStep = tasting.revealStep ?? 0;
+
+      if (revealStep < 3) {
+        revealStep++;
+      } else {
+        if (revealIndex < totalExpressions - 1) {
+          revealIndex++;
+          revealStep = 1;
+        } else {
+          return res.json({ ...tasting, revealIndex, revealStep, allRevealed: true });
+        }
+      }
+
+      const updated = await storage.updateTastingBlindMode(req.params.id, { revealIndex, revealStep });
+      const allRevealed = revealIndex >= totalExpressions - 1 && revealStep >= 3;
+      res.json({ ...updated, allRevealed });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== DISCUSSION ENTRIES =====
+
+  app.get("/api/tastings/:id/discussions", async (req, res) => {
+    try {
+      const entries = await storage.getDiscussionEntries(req.params.id);
+      const participants = await storage.getTastingParticipants(req.params.id);
+      const participantMap = new Map(participants.map(tp => [tp.participantId, tp.participant.name]));
+      const enriched = entries.map(e => ({
+        ...e,
+        participantName: participantMap.get(e.participantId) || "Unknown",
+      }));
+      res.json(enriched);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/discussions", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.status !== "open") return res.status(400).json({ message: "Discussion is only available during active sessions" });
+      const { participantId, text } = req.body;
+      if (!participantId || !text?.trim()) return res.status(400).json({ message: "participantId and text required" });
+      const entry = await storage.createDiscussionEntry({ tastingId: req.params.id, participantId, text: text.trim() });
+      const participant = await storage.getParticipant(participantId);
+      res.json({ ...entry, participantName: participant?.name || "Unknown" });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== REFLECTION ENTRIES =====
+
+  app.get("/api/tastings/:id/reflections", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const entries = await storage.getReflectionEntries(req.params.id);
+      const participants = await storage.getTastingParticipants(req.params.id);
+      const participantMap = new Map(participants.map(tp => [tp.participantId, tp.participant.name]));
+      const enriched = entries.map(e => ({
+        ...e,
+        participantName: e.isAnonymous ? null : (participantMap.get(e.participantId) || "Unknown"),
+      }));
+      res.json(enriched);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/reflections", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.status !== "open") return res.status(400).json({ message: "Reflections only available during active sessions" });
+      const { participantId, promptText, text, isAnonymous } = req.body;
+      if (!participantId || !promptText || !text?.trim()) return res.status(400).json({ message: "participantId, promptText, and text required" });
+      const entry = await storage.createReflectionEntry({
+        tastingId: req.params.id,
+        participantId,
+        promptText,
+        text: text.trim(),
+        isAnonymous: isAnonymous || false,
+      });
+      const participant = await storage.getParticipant(participantId);
+      res.json({ ...entry, participantName: isAnonymous ? null : (participant?.name || "Unknown") });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/tastings/:id/reflections/mine/:participantId", async (req, res) => {
+    try {
+      const entries = await storage.getReflectionsByParticipant(req.params.id, req.params.participantId);
+      res.json(entries);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }

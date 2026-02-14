@@ -146,6 +146,42 @@ export const participantUpdateApi = {
     fetchJSON(`/participants/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
 };
 
+// ===== Blind Mode / Reveal =====
+export const blindModeApi = {
+  update: (tastingId: string, hostId: string, data: any) =>
+    fetchJSON(`/tastings/${tastingId}/blind-mode`, {
+      method: "PATCH",
+      body: JSON.stringify({ hostId, ...data }),
+    }),
+  revealNext: (tastingId: string, hostId: string) =>
+    fetchJSON(`/tastings/${tastingId}/reveal-next`, {
+      method: "POST",
+      body: JSON.stringify({ hostId }),
+    }),
+};
+
+// ===== Discussions =====
+export const discussionApi = {
+  get: (tastingId: string) => fetchJSON(`/tastings/${tastingId}/discussions`),
+  post: (tastingId: string, participantId: string, text: string) =>
+    fetchJSON(`/tastings/${tastingId}/discussions`, {
+      method: "POST",
+      body: JSON.stringify({ participantId, text }),
+    }),
+};
+
+// ===== Reflections =====
+export const reflectionApi = {
+  getAll: (tastingId: string) => fetchJSON(`/tastings/${tastingId}/reflections`),
+  getMine: (tastingId: string, participantId: string) =>
+    fetchJSON(`/tastings/${tastingId}/reflections/mine/${participantId}`),
+  post: (tastingId: string, data: { participantId: string; promptText: string; text: string; isAnonymous?: boolean }) =>
+    fetchJSON(`/tastings/${tastingId}/reflections`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
+
 // ===== Ratings =====
 export const ratingApi = {
   getForWhisky: (whiskyId: string) => fetchJSON(`/whiskies/${whiskyId}/ratings`),

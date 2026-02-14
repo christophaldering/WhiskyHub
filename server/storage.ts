@@ -2,7 +2,7 @@ import { eq, and, asc } from "drizzle-orm";
 import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
-  profiles, sessionInvites,
+  profiles, sessionInvites, discussionEntries, reflectionEntries,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -10,6 +10,8 @@ import {
   type InsertRating, type Rating,
   type InsertProfile, type Profile,
   type InsertSessionInvite, type SessionInvite,
+  type InsertDiscussionEntry, type DiscussionEntry,
+  type InsertReflectionEntry, type ReflectionEntry,
 } from "@shared/schema";
 
 export interface WhiskyOfTheDay {
@@ -64,6 +66,18 @@ export interface IStorage {
   getInvitesByTasting(tastingId: string): Promise<SessionInvite[]>;
   getInviteByToken(token: string): Promise<SessionInvite | undefined>;
   updateInviteStatus(id: string, status: string, acceptedAt?: Date): Promise<SessionInvite | undefined>;
+
+  // Blind Mode / Reveal
+  updateTastingBlindMode(id: string, data: { blindMode?: boolean; revealIndex?: number; revealStep?: number; reflectionEnabled?: boolean; reflectionMode?: string; reflectionVisibility?: string; customPrompts?: string }): Promise<Tasting | undefined>;
+
+  // Discussion Entries
+  getDiscussionEntries(tastingId: string): Promise<DiscussionEntry[]>;
+  createDiscussionEntry(data: InsertDiscussionEntry): Promise<DiscussionEntry>;
+
+  // Reflection Entries
+  getReflectionEntries(tastingId: string): Promise<ReflectionEntry[]>;
+  createReflectionEntry(data: InsertReflectionEntry): Promise<ReflectionEntry>;
+  getReflectionsByParticipant(tastingId: string, participantId: string): Promise<ReflectionEntry[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -257,6 +271,44 @@ export class DatabaseStorage implements IStorage {
     if (acceptedAt) updateData.acceptedAt = acceptedAt;
     const [result] = await db.update(sessionInvites).set(updateData).where(eq(sessionInvites.id, id)).returning();
     return result;
+  }
+
+  // --- Blind Mode / Reveal ---
+  async updateTastingBlindMode(id: string, data: { blindMode?: boolean; revealIndex?: number; revealStep?: number; reflectionEnabled?: boolean; reflectionMode?: string; reflectionVisibility?: string; customPrompts?: string }): Promise<Tasting | undefined> {
+    const updateObj: any = {};
+    if (data.blindMode !== undefined) updateObj.blindMode = data.blindMode;
+    if (data.revealIndex !== undefined) updateObj.revealIndex = data.revealIndex;
+    if (data.revealStep !== undefined) updateObj.revealStep = data.revealStep;
+    if (data.reflectionEnabled !== undefined) updateObj.reflectionEnabled = data.reflectionEnabled;
+    if (data.reflectionMode !== undefined) updateObj.reflectionMode = data.reflectionMode;
+    if (data.reflectionVisibility !== undefined) updateObj.reflectionVisibility = data.reflectionVisibility;
+    if (data.customPrompts !== undefined) updateObj.customPrompts = data.customPrompts;
+    const [result] = await db.update(tastings).set(updateObj).where(eq(tastings.id, id)).returning();
+    return result;
+  }
+
+  // --- Discussion Entries ---
+  async getDiscussionEntries(tastingId: string): Promise<DiscussionEntry[]> {
+    return db.select().from(discussionEntries).where(eq(discussionEntries.tastingId, tastingId)).orderBy(asc(discussionEntries.createdAt));
+  }
+
+  async createDiscussionEntry(data: InsertDiscussionEntry): Promise<DiscussionEntry> {
+    const [result] = await db.insert(discussionEntries).values(data).returning();
+    return result;
+  }
+
+  // --- Reflection Entries ---
+  async getReflectionEntries(tastingId: string): Promise<ReflectionEntry[]> {
+    return db.select().from(reflectionEntries).where(eq(reflectionEntries.tastingId, tastingId)).orderBy(asc(reflectionEntries.createdAt));
+  }
+
+  async createReflectionEntry(data: InsertReflectionEntry): Promise<ReflectionEntry> {
+    const [result] = await db.insert(reflectionEntries).values(data).returning();
+    return result;
+  }
+
+  async getReflectionsByParticipant(tastingId: string, participantId: string): Promise<ReflectionEntry[]> {
+    return db.select().from(reflectionEntries).where(and(eq(reflectionEntries.tastingId, tastingId), eq(reflectionEntries.participantId, participantId))).orderBy(asc(reflectionEntries.createdAt));
   }
 }
 
