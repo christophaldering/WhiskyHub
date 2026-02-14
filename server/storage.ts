@@ -2,11 +2,14 @@ import { eq, and, asc } from "drizzle-orm";
 import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
+  profiles, sessionInvites,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
   type InsertWhisky, type Whisky,
   type InsertRating, type Rating,
+  type InsertProfile, type Profile,
+  type InsertSessionInvite, type SessionInvite,
 } from "@shared/schema";
 
 export interface WhiskyOfTheDay {
@@ -20,7 +23,9 @@ export interface IStorage {
   // Participants
   getParticipant(id: string): Promise<Participant | undefined>;
   getParticipantByName(name: string): Promise<Participant | undefined>;
+  getParticipantByEmail(email: string): Promise<Participant | undefined>;
   createParticipant(data: InsertParticipant): Promise<Participant>;
+  updateParticipant(id: string, data: Partial<{name: string; email: string; pin: string}>): Promise<Participant | undefined>;
   updateParticipantLanguage(id: string, language: string): Promise<Participant | undefined>;
 
   // Tastings
@@ -49,6 +54,16 @@ export interface IStorage {
   getRatingsForTasting(tastingId: string): Promise<Rating[]>;
   getRatingByParticipantAndWhisky(participantId: string, whiskyId: string): Promise<Rating | undefined>;
   upsertRating(data: InsertRating): Promise<Rating>;
+
+  // Profiles
+  getProfile(participantId: string): Promise<Profile | undefined>;
+  upsertProfile(data: InsertProfile): Promise<Profile>;
+
+  // Session Invites
+  createInvite(data: InsertSessionInvite): Promise<SessionInvite>;
+  getInvitesByTasting(tastingId: string): Promise<SessionInvite[]>;
+  getInviteByToken(token: string): Promise<SessionInvite | undefined>;
+  updateInviteStatus(id: string, status: string, acceptedAt?: Date): Promise<SessionInvite | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -63,8 +78,18 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async getParticipantByEmail(email: string): Promise<Participant | undefined> {
+    const [result] = await db.select().from(participants).where(eq(participants.email, email));
+    return result;
+  }
+
   async createParticipant(data: InsertParticipant): Promise<Participant> {
     const [result] = await db.insert(participants).values(data).returning();
+    return result;
+  }
+
+  async updateParticipant(id: string, data: Partial<{name: string; email: string; pin: string}>): Promise<Participant | undefined> {
+    const [result] = await db.update(participants).set(data).where(eq(participants.id, id)).returning();
     return result;
   }
 
@@ -189,6 +214,48 @@ export class DatabaseStorage implements IStorage {
       return result;
     }
     const [result] = await db.insert(ratings).values(data).returning();
+    return result;
+  }
+
+  // --- Profiles ---
+  async getProfile(participantId: string): Promise<Profile | undefined> {
+    const [result] = await db.select().from(profiles).where(eq(profiles.participantId, participantId));
+    return result;
+  }
+
+  async upsertProfile(data: InsertProfile): Promise<Profile> {
+    const existing = await this.getProfile(data.participantId);
+    if (existing) {
+      const [result] = await db
+        .update(profiles)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(profiles.id, existing.id))
+        .returning();
+      return result;
+    }
+    const [result] = await db.insert(profiles).values(data).returning();
+    return result;
+  }
+
+  // --- Session Invites ---
+  async createInvite(data: InsertSessionInvite): Promise<SessionInvite> {
+    const [result] = await db.insert(sessionInvites).values(data).returning();
+    return result;
+  }
+
+  async getInvitesByTasting(tastingId: string): Promise<SessionInvite[]> {
+    return db.select().from(sessionInvites).where(eq(sessionInvites.tastingId, tastingId));
+  }
+
+  async getInviteByToken(token: string): Promise<SessionInvite | undefined> {
+    const [result] = await db.select().from(sessionInvites).where(eq(sessionInvites.token, token));
+    return result;
+  }
+
+  async updateInviteStatus(id: string, status: string, acceptedAt?: Date): Promise<SessionInvite | undefined> {
+    const updateData: any = { status };
+    if (acceptedAt) updateData.acceptedAt = acceptedAt;
+    const [result] = await db.update(sessionInvites).set(updateData).where(eq(sessionInvites.id, id)).returning();
     return result;
   }
 }

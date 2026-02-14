@@ -99,6 +99,53 @@ export const wotdApi = {
   get: () => fetchJSON("/whisky-of-the-day"),
 };
 
+// ===== Profiles =====
+export const profileApi = {
+  get: (participantId: string) => fetchJSON(`/profiles/${participantId}`),
+  update: (participantId: string, data: any) =>
+    fetchJSON(`/profiles/${participantId}`, { method: "PUT", body: JSON.stringify(data) }),
+  uploadPhoto: async (participantId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("photo", file);
+    const res = await fetch(`${API_BASE}/profiles/${participantId}/photo`, { method: "POST", body: formData });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Upload failed");
+    }
+    return res.json();
+  },
+  deletePhoto: (participantId: string) =>
+    fetchJSON(`/profiles/${participantId}/photo`, { method: "DELETE" }),
+};
+
+// ===== Invites =====
+export const inviteApi = {
+  getForTasting: (tastingId: string) => fetchJSON(`/tastings/${tastingId}/invites`),
+  sendInvites: (tastingId: string, emails: string[], personalNote?: string) =>
+    fetchJSON(`/tastings/${tastingId}/invites`, {
+      method: "POST",
+      body: JSON.stringify({ emails, personalNote }),
+    }),
+  getByToken: (token: string) => fetchJSON(`/invites/${token}`),
+  accept: (token: string, participantId: string) =>
+    fetchJSON(`/invites/${token}/accept`, {
+      method: "POST",
+      body: JSON.stringify({ participantId }),
+    }),
+  smtpStatus: () => fetchJSON(`/smtp/status`),
+};
+
+// ===== Roster =====
+export const rosterApi = {
+  get: (tastingId: string) => fetchJSON(`/tastings/${tastingId}/roster`),
+};
+
+// ===== Participant update =====
+export const participantUpdateApi = {
+  update: (id: string, data: any) =>
+    fetchJSON(`/participants/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+};
+
 // ===== Ratings =====
 export const ratingApi = {
   getForWhisky: (whiskyId: string) => fetchJSON(`/whiskies/${whiskyId}/ratings`),

@@ -4,6 +4,7 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 // @ts-ignore
 import * as XLSX from "xlsx";
 // @ts-ignore
@@ -12,6 +13,7 @@ import { storage } from "./storage";
 import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema } from "@shared/schema";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
+import { isSmtpConfigured, sendEmail, buildInviteEmail } from "./email";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -750,6 +752,233 @@ export async function registerRoutes(
       totalRatings: allRatings.length,
       participantCount: new Set(allRatings.map(r => r.participantId)).size,
     });
+  });
+
+  // ===== PROFILES =====
+
+  app.get("/api/profiles/:participantId", async (req, res) => {
+    try {
+      const profile = await storage.getProfile(req.params.participantId);
+      if (!profile) return res.json(null);
+      res.json(profile);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.put("/api/profiles/:participantId", async (req, res) => {
+    try {
+      const data = {
+        participantId: req.params.participantId,
+        bio: req.body.bio || null,
+        favoriteWhisky: req.body.favoriteWhisky || null,
+        goToDram: req.body.goToDram || null,
+        preferredRegions: req.body.preferredRegions || null,
+        preferredPeatLevel: req.body.preferredPeatLevel || null,
+        preferredCaskInfluence: req.body.preferredCaskInfluence || null,
+        photoUrl: req.body.photoUrl || null,
+      };
+      const profile = await storage.upsertProfile(data);
+      res.json(profile);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/profiles/:participantId/photo", upload.single("photo"), async (req: any, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+      const photoUrl = `/uploads/${req.file.filename}`;
+      const existing = await storage.getProfile(req.params.participantId);
+      if (existing && existing.photoUrl) {
+        const oldPath = path.join(uploadsDir, path.basename(existing.photoUrl));
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      const profile = await storage.upsertProfile({
+        participantId: req.params.participantId,
+        photoUrl,
+        ...(existing ? {} : {}),
+      });
+      res.json(profile);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/profiles/:participantId/photo", async (req, res) => {
+    try {
+      const existing = await storage.getProfile(req.params.participantId);
+      if (existing && existing.photoUrl) {
+        const oldPath = path.join(uploadsDir, path.basename(existing.photoUrl));
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      const profile = await storage.upsertProfile({
+        participantId: req.params.participantId,
+        photoUrl: null,
+      });
+      res.json(profile);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== PARTICIPANT UPDATE (email, name) =====
+
+  app.patch("/api/participants/:id", async (req, res) => {
+    try {
+      const updates: any = {};
+      if (req.body.name) updates.name = req.body.name;
+      if (req.body.email !== undefined) updates.email = req.body.email;
+      const participant = await storage.updateParticipant(req.params.id, updates);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      res.json(participant);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  // ===== SESSION INVITES =====
+
+  app.get("/api/tastings/:id/invites", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const invites = await storage.getInvitesByTasting(req.params.id);
+      res.json(invites);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/invites", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+      const { emails, personalNote } = req.body;
+      if (!emails || !Array.isArray(emails) || emails.length === 0) {
+        return res.status(400).json({ message: "At least one email required" });
+      }
+
+      const host = await storage.getParticipant(tasting.hostId);
+      const hostName = host?.name || "Your host";
+      const smtpReady = isSmtpConfigured();
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+      const results: { email: string; token: string; link: string; emailSent: boolean }[] = [];
+
+      for (const email of emails) {
+        const trimmed = email.trim().toLowerCase();
+        if (!trimmed || !trimmed.includes("@")) continue;
+
+        const token = crypto.randomBytes(24).toString("hex");
+        const invite = await storage.createInvite({
+          tastingId: tasting.id,
+          email: trimmed,
+          token,
+          personalNote: personalNote || null,
+          status: "invited",
+        });
+
+        const link = `${baseUrl}/invite/${token}`;
+
+        let emailSent = false;
+        if (smtpReady) {
+          const emailContent = buildInviteEmail({
+            hostName,
+            tastingTitle: tasting.title,
+            tastingDate: tasting.date,
+            tastingLocation: tasting.location,
+            inviteLink: link,
+            personalNote: personalNote || undefined,
+          });
+          emailSent = await sendEmail({
+            to: trimmed,
+            subject: emailContent.subject,
+            html: emailContent.html,
+          });
+        }
+
+        results.push({ email: trimmed, token, link, emailSent });
+      }
+
+      res.json({ invites: results, smtpConfigured: smtpReady });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/invites/:token", async (req, res) => {
+    try {
+      const invite = await storage.getInviteByToken(req.params.token);
+      if (!invite) return res.status(404).json({ message: "Invite not found or expired" });
+
+      const tasting = await storage.getTasting(invite.tastingId);
+      res.json({ invite, tasting });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/invites/:token/accept", async (req, res) => {
+    try {
+      const invite = await storage.getInviteByToken(req.params.token);
+      if (!invite) return res.status(404).json({ message: "Invite not found or expired" });
+
+      const { participantId } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+
+      await storage.updateInviteStatus(invite.id, "joined", new Date());
+
+      const alreadyJoined = await storage.isParticipantInTasting(invite.tastingId, participantId);
+      if (!alreadyJoined) {
+        await storage.addParticipantToTasting({
+          tastingId: invite.tastingId,
+          participantId,
+        });
+      }
+
+      const participant = await storage.getParticipant(participantId);
+      if (participant && !participant.email) {
+        await storage.updateParticipant(participantId, { email: invite.email });
+      }
+
+      res.json({ success: true, tastingId: invite.tastingId });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/smtp/status", async (_req, res) => {
+    res.json({ configured: isSmtpConfigured() });
+  });
+
+  // ===== ATTENDEE ROSTER (participants + profiles) =====
+
+  app.get("/api/tastings/:id/roster", async (req, res) => {
+    try {
+      const tps = await storage.getTastingParticipants(req.params.id);
+      const roster = await Promise.all(
+        tps.map(async (tp) => {
+          const profile = await storage.getProfile(tp.participantId);
+          return {
+            id: tp.participantId,
+            name: tp.participant.name,
+            photoUrl: profile?.photoUrl || null,
+            bio: profile?.bio || null,
+            favoriteWhisky: profile?.favoriteWhisky || null,
+            goToDram: profile?.goToDram || null,
+            preferredRegions: profile?.preferredRegions || null,
+            preferredPeatLevel: profile?.preferredPeatLevel || null,
+            preferredCaskInfluence: profile?.preferredCaskInfluence || null,
+            joinedAt: tp.joinedAt,
+          };
+        })
+      );
+      res.json(roster);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
   });
 
   return httpServer;
