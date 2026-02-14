@@ -75,6 +75,7 @@ export const whiskies = pgTable("whiskies", {
   peatLevel: text("peat_level"), // None, Light, Medium, Heavy
   ppm: real("ppm"), // phenol parts per million
   whiskybaseId: text("whiskybase_id"), // Whiskybase catalog number
+  wbScore: real("wb_score"), // Whiskybase community score (0-100)
   imageUrl: text("image_url"),
 });
 
@@ -194,6 +195,8 @@ export const journalEntries = pgTable("journal_entries", {
   tasteNotes: text("taste_notes"),
   finishNotes: text("finish_notes"),
   personalScore: real("personal_score"),
+  whiskybaseId: text("whiskybase_id"),
+  wbScore: real("wb_score"),
   mood: text("mood"),
   occasion: text("occasion"),
   body: text("body"),

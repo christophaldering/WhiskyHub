@@ -254,7 +254,7 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1.5">{t("import.exampleHeader")}</p>
                 <div className="overflow-x-auto">
                   <code className="text-[11px] font-mono text-primary/80 whitespace-nowrap block">
-                    name,distillery,age,abv,type,category,region,cask,peat,ppm,whiskybase_id,notes,order,image_filename,image_url
+                    name,distillery,age,abv,type,category,region,cask,peat,ppm,whiskybase_id,wb_score,notes,order,image_filename,image_url
                   </code>
                 </div>
               </div>
@@ -263,7 +263,7 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1.5">{t("import.exampleRow")}</p>
                 <div className="overflow-x-auto">
                   <code className="text-[11px] font-mono text-foreground/70 whitespace-nowrap block">
-                    Ardbeg Uigeadail,Ardbeg,NAS,54.2,Single Malt,Whisky,Islay,Sherry,Heavy,55,12345,"Dark chocolate, smoke",1,uigeadail.jpg,
+                    Ardbeg Uigeadail,Ardbeg,NAS,54.2,Single Malt,Whisky,Islay,Sherry,Heavy,55,12345,87.5,"Dark chocolate, smoke",1,uigeadail.jpg,
                   </code>
                 </div>
               </div>
@@ -283,6 +283,7 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
                     { key: "peat" },
                     { key: "ppm" },
                     { key: "whiskybase_id" },
+                    { key: "wb_score" },
                     { key: "notes" },
                     { key: "order" },
                     { key: "image_filename" },

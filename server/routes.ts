@@ -87,6 +87,7 @@ const COLUMN_MAP: Record<string, string> = {
   torf: "peatLevel", torfgehalt: "peatLevel",
   ppm: "ppm", phenol: "ppm", "phenol ppm": "ppm",
   whiskybase: "whiskybaseId", whiskybase_id: "whiskybaseId", "whiskybase id": "whiskybaseId", wb: "whiskybaseId",
+  wb_score: "wbScore", "wb score": "wbScore", wbscore: "wbScore", whiskybase_score: "wbScore", "whiskybase score": "wbScore",
   notes: "notes", notizen: "notes", anmerkungen: "notes",
   order: "sortOrder", reihenfolge: "sortOrder", sort: "sortOrder", sort_order: "sortOrder",
   image: "imageRef", image_url: "imageRef", image_filename: "imageRef", bild: "imageRef", foto: "imageRef",
@@ -697,6 +698,7 @@ export async function registerRoutes(
             peatLevel: row.peatLevel || null,
             ppm: row.ppm ? parseFloat(String(row.ppm).replace(",", ".")) : null,
             whiskybaseId: row.whiskybaseId || null,
+            wbScore: row.wbScore ? parseFloat(String(row.wbScore).replace(",", ".")) : null,
           };
 
           const whisky = await storage.createWhisky(whiskyData);

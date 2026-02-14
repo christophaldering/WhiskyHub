@@ -62,7 +62,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
   const [form, setForm] = useState({
     name: "", distillery: "", age: "", abv: "", type: "Single Malt",
     notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "",
-    caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "",
+    caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "", wbScore: "",
   });
 
   const createWhisky = useMutation({
@@ -81,7 +81,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
   });
 
   const resetForm = () => {
-    setForm({ name: "", distillery: "", age: "", abv: "", type: "Single Malt", notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "", caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "" });
+    setForm({ name: "", distillery: "", age: "", abv: "", type: "Single Malt", notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "", caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "", wbScore: "" });
     setImageFile(null);
     setImagePreview(null);
     setImageError("");
@@ -127,6 +127,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
       peatLevel: form.peatLevel || null,
       ppm: form.ppm ? parseFloat(form.ppm) : null,
       whiskybaseId: form.whiskybaseId.trim() || null,
+      wbScore: form.wbScore ? parseFloat(form.wbScore) : null,
     });
   };
 
@@ -264,6 +265,10 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
                 <Label className="text-xs text-muted-foreground">{t("whisky.ppm")}</Label>
                 <Input type="number" value={form.ppm} onChange={(e) => setForm(p => ({ ...p, ppm: e.target.value }))} placeholder="55" step="1" data-testid="input-whisky-ppm" />
               </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">{t("whisky.wbScore")}</Label>
+                <Input type="number" min={0} max={100} step={0.1} value={form.wbScore} onChange={(e) => setForm(p => ({ ...p, wbScore: e.target.value }))} placeholder="87.5" className="w-full" data-testid="input-whisky-wbscore" />
+              </div>
               <div className="space-y-1 col-span-2">
                 <Label className="text-xs text-muted-foreground">{t("whisky.whiskybaseId")}</Label>
                 <div className="flex gap-2">
@@ -310,7 +315,7 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
   const [form, setForm] = useState({
     name: "", distillery: "", age: "", abv: "", type: "Single Malt",
     notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "",
-    caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "",
+    caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "", wbScore: "",
   });
 
   const canEdit = isHost && (tastingStatus === "draft" || tastingStatus === "open");
@@ -331,6 +336,7 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
       peatLevel: whisky.peatLevel || "None",
       ppm: whisky.ppm != null ? String(whisky.ppm) : "",
       whiskybaseId: whisky.whiskybaseId || "",
+      wbScore: whisky.wbScore != null ? String(whisky.wbScore) : "",
     });
     setImageFile(null);
     setImagePreview(null);
@@ -392,6 +398,7 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
       peatLevel: form.peatLevel || null,
       ppm: form.ppm ? parseFloat(form.ppm) : null,
       whiskybaseId: form.whiskybaseId.trim() || null,
+      wbScore: form.wbScore ? parseFloat(form.wbScore) : null,
     });
   };
 
@@ -536,6 +543,10 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">{t("whisky.ppm")}</Label>
                 <Input type="number" value={form.ppm} onChange={(e) => setForm(p => ({ ...p, ppm: e.target.value }))} placeholder="55" step="1" data-testid="input-edit-whisky-ppm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">{t("whisky.wbScore")}</Label>
+                <Input type="number" min={0} max={100} step={0.1} value={form.wbScore} onChange={(e) => setForm(p => ({ ...p, wbScore: e.target.value }))} placeholder="87.5" className="w-full" data-testid="input-edit-whisky-wbscore" />
               </div>
               <div className="space-y-1 col-span-2">
                 <Label className="text-xs text-muted-foreground">{t("whisky.whiskybaseId")}</Label>
@@ -1025,6 +1036,12 @@ export default function TastingRoom() {
                           <div>
                             <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">PPM</span>
                             <span className="font-mono text-lg font-medium">{activeWhisky.ppm}</span>
+                          </div>
+                        )}
+                        {activeWhisky.wbScore != null && (
+                          <div>
+                            <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">WB Score</span>
+                            <span className="font-mono text-lg font-medium text-primary" data-testid="text-wb-score">{activeWhisky.wbScore.toFixed(1)}</span>
                           </div>
                         )}
                         {activeWhisky.whiskybaseId && (
