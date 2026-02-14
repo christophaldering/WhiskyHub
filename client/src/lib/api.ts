@@ -63,10 +63,12 @@ export const whiskyApi = {
 
 // ===== Flight Import =====
 export const importApi = {
-  parse: async (tastingId: string, spreadsheet: File, imagesZip?: File) => {
+  parse: async (tastingId: string, spreadsheet: File, imageFiles?: File[]) => {
     const formData = new FormData();
     formData.append("spreadsheet", spreadsheet);
-    if (imagesZip) formData.append("images", imagesZip);
+    if (imageFiles) {
+      for (const f of imageFiles) formData.append("images", f);
+    }
     const res = await fetch(`${API_BASE}/tastings/${tastingId}/import/parse`, { method: "POST", body: formData });
     if (!res.ok) {
       const error = await res.json().catch(() => ({ message: res.statusText }));
@@ -74,10 +76,15 @@ export const importApi = {
     }
     return res.json();
   },
-  confirm: async (tastingId: string, spreadsheet: File, imagesZip?: File) => {
+  confirm: async (tastingId: string, spreadsheet: File, imageFiles?: File[], imageMapping?: Record<string, string>) => {
     const formData = new FormData();
     formData.append("spreadsheet", spreadsheet);
-    if (imagesZip) formData.append("images", imagesZip);
+    if (imageFiles) {
+      for (const f of imageFiles) formData.append("images", f);
+    }
+    if (imageMapping) {
+      formData.append("imageMapping", JSON.stringify(imageMapping));
+    }
     const res = await fetch(`${API_BASE}/tastings/${tastingId}/import/confirm`, { method: "POST", body: formData });
     if (!res.ok) {
       const error = await res.json().catch(() => ({ message: res.statusText }));

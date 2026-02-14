@@ -406,9 +406,41 @@ export async function registerRoutes(
 
   // ===== FLIGHT IMPORT =====
 
+  function sanitizeForMatch(s: string): string {
+    return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  }
+
+  function matchImageToRow(
+    row: { name?: string; distillery?: string; imageRef?: string },
+    imageFileNames: string[]
+  ): { matched: string | null; method: string | null } {
+    if (row.imageRef && !/^https?:\/\//i.test(row.imageRef)) {
+      const refLower = row.imageRef.toLowerCase();
+      const exact = imageFileNames.find(f => f.toLowerCase() === refLower);
+      if (exact) return { matched: exact, method: "filename" };
+      const noExt = refLower.replace(/\.[^.]+$/, "");
+      const byBasename = imageFileNames.find(f => f.toLowerCase().replace(/\.[^.]+$/, "") === noExt);
+      if (byBasename) return { matched: byBasename, method: "filename" };
+    }
+
+    if (row.name) {
+      const sanitized = sanitizeForMatch(row.name);
+      const byName = imageFileNames.find(f => sanitizeForMatch(f.replace(/\.[^.]+$/, "")) === sanitized);
+      if (byName) return { matched: byName, method: "name" };
+    }
+
+    if (row.distillery && row.name) {
+      const combo = sanitizeForMatch(row.distillery + row.name);
+      const byCombo = imageFileNames.find(f => sanitizeForMatch(f.replace(/\.[^.]+$/, "")) === combo);
+      if (byCombo) return { matched: byCombo, method: "name" };
+    }
+
+    return { matched: null, method: null };
+  }
+
   app.post("/api/tastings/:id/import/parse", importUpload.fields([
     { name: "spreadsheet", maxCount: 1 },
-    { name: "images", maxCount: 1 },
+    { name: "images", maxCount: 50 },
   ]), async (req: any, res: any) => {
     try {
       const files = req.files as Record<string, any[]>;
@@ -418,16 +450,12 @@ export async function registerRoutes(
       const buffer = fs.readFileSync(spreadsheetFile.path);
       const { rows, errors } = parseSpreadsheetRows(buffer, spreadsheetFile.originalname);
 
-      let zipImageNames: string[] = [];
-      const zipFilePath = files?.images?.[0]?.path;
-      if (zipFilePath) {
-        try {
-          const zip = new AdmZip(zipFilePath);
-          zipImageNames = zip.getEntries()
-            .filter((e: any) => !e.isDirectory && /\.(jpe?g|png|webp|gif)$/i.test(e.entryName))
-            .map((e: any) => path.basename(e.entryName));
-        } catch {
-          errors.push("Could not read ZIP file");
+      const imageFiles: string[] = [];
+      if (files?.images) {
+        for (const f of files.images) {
+          if (/\.(jpe?g|png|webp|gif)$/i.test(f.originalname)) {
+            imageFiles.push(f.originalname);
+          }
         }
       }
 
@@ -436,24 +464,33 @@ export async function registerRoutes(
         if (!row.name) rowErrors.push("Missing name");
 
         let imageStatus: string | null = null;
-        if (row.imageRef) {
-          const ref = row.imageRef;
-          if (/^https?:\/\//i.test(ref)) {
-            imageStatus = "url";
-          } else if (zipImageNames.some(n => n.toLowerCase() === ref.toLowerCase())) {
-            imageStatus = "zip";
-          } else {
+        let matchedImage: string | null = null;
+
+        if (row.imageRef && /^https?:\/\//i.test(row.imageRef)) {
+          imageStatus = "url";
+        } else if (imageFiles.length > 0) {
+          const match = matchImageToRow(row, imageFiles);
+          if (match.matched) {
+            imageStatus = match.method === "filename" ? "file" : "auto";
+            matchedImage = match.matched;
+          } else if (row.imageRef) {
             imageStatus = "missing";
-            rowErrors.push(`Image file "${ref}" not found in ZIP`);
           }
+        } else if (row.imageRef && !/^https?:\/\//i.test(row.imageRef)) {
+          imageStatus = "missing";
         }
 
-        return { ...row, _row: idx + 2, _errors: rowErrors, _imageStatus: imageStatus };
+        return { ...row, _row: idx + 2, _errors: rowErrors, _imageStatus: imageStatus, _matchedImage: matchedImage };
       });
 
       fs.unlinkSync(spreadsheetFile.path);
+      if (files?.images) {
+        for (const f of files.images) {
+          if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
+        }
+      }
 
-      res.json({ preview, parseErrors: errors, zipAvailable: !!zipFilePath, zipImageNames });
+      res.json({ preview, parseErrors: errors, uploadedImages: imageFiles });
     } catch (e: any) {
       res.status(400).json({ message: e.message || "Failed to parse file" });
     }
@@ -461,7 +498,7 @@ export async function registerRoutes(
 
   app.post("/api/tastings/:id/import/confirm", importUpload.fields([
     { name: "spreadsheet", maxCount: 1 },
-    { name: "images", maxCount: 1 },
+    { name: "images", maxCount: 50 },
   ]), async (req: any, res: any) => {
     try {
       const tastingId = req.params.id;
@@ -475,22 +512,23 @@ export async function registerRoutes(
       const buffer = fs.readFileSync(spreadsheetFile.path);
       const { rows, errors: parseErrors } = parseSpreadsheetRows(buffer, spreadsheetFile.originalname);
 
-      let zipEntries: Map<string, any> = new Map();
-      const zipFilePath = files?.images?.[0]?.path;
-      if (zipFilePath) {
-        try {
-          const zip = new AdmZip(zipFilePath);
-          for (const entry of zip.getEntries()) {
-            if (!entry.isDirectory && /\.(jpe?g|png|webp|gif)$/i.test(entry.entryName)) {
-              zipEntries.set(path.basename(entry.entryName).toLowerCase(), entry);
-            }
+      let imageMappingRaw: Record<string, string> = {};
+      try {
+        if (req.body?.imageMapping) {
+          imageMappingRaw = JSON.parse(req.body.imageMapping);
+        }
+      } catch { /* ignore */ }
+
+      const imageFileMap: Map<string, string> = new Map();
+      if (files?.images) {
+        for (const f of files.images) {
+          if (/\.(jpe?g|png|webp|gif)$/i.test(f.originalname)) {
+            imageFileMap.set(f.originalname.toLowerCase(), f.path);
           }
-        } catch {
-          parseErrors.push("Could not read ZIP file");
         }
       }
 
-      const results: { row: number; name: string; success: boolean; error?: string; id?: string }[] = [];
+      const results: { row: number; name: string; success: boolean; error?: string; id?: string; imageAttached?: boolean }[] = [];
       const existingWhiskies = await storage.getWhiskiesForTasting(tastingId);
       const startOrder = existingWhiskies.length;
 
@@ -525,35 +563,43 @@ export async function registerRoutes(
           };
 
           const whisky = await storage.createWhisky(whiskyData);
+          let imageAttached = false;
 
-          if (imageRef) {
-            let imageUrl: string | null = null;
-            if (/^https?:\/\//i.test(imageRef)) {
-              imageUrl = await downloadImageFromUrl(imageRef);
-            } else {
-              const zipEntry = zipEntries.get(imageRef.toLowerCase());
-              if (zipEntry) {
-                const imgBuffer = zipEntry.getData();
-                const ext = path.extname(imageRef).toLowerCase();
-                const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
-                const filePath = path.join(uploadsDir, filename);
-                fs.writeFileSync(filePath, imgBuffer);
-                imageUrl = `/uploads/${filename}`;
-              }
-            }
-            if (imageUrl) {
-              await storage.updateWhisky(whisky.id, { imageUrl });
+          const rowKey = String(i + 2);
+          const mappedFilename = imageMappingRaw[rowKey];
+
+          if (mappedFilename) {
+            const filePath = imageFileMap.get(mappedFilename.toLowerCase());
+            if (filePath && fs.existsSync(filePath)) {
+              const ext = path.extname(mappedFilename).toLowerCase();
+              const newFilename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
+              const destPath = path.join(uploadsDir, newFilename);
+              fs.copyFileSync(filePath, destPath);
+              await storage.updateWhisky(whisky.id, { imageUrl: `/uploads/${newFilename}` });
+              imageAttached = true;
             }
           }
 
-          results.push({ row: i + 2, name: row.name, success: true, id: whisky.id });
+          if (!imageAttached && imageRef && /^https?:\/\//i.test(imageRef)) {
+            const imageUrl = await downloadImageFromUrl(imageRef);
+            if (imageUrl) {
+              await storage.updateWhisky(whisky.id, { imageUrl });
+              imageAttached = true;
+            }
+          }
+
+          results.push({ row: i + 2, name: row.name, success: true, id: whisky.id, imageAttached });
         } catch (e: any) {
           results.push({ row: i + 2, name: row.name || "(unknown)", success: false, error: e.message });
         }
       }
 
       fs.unlinkSync(spreadsheetFile.path);
-      if (zipFilePath && fs.existsSync(zipFilePath)) fs.unlinkSync(zipFilePath);
+      if (files?.images) {
+        for (const f of files.images) {
+          if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
+        }
+      }
 
       const successCount = results.filter(r => r.success).length;
       const errorCount = results.filter(r => !r.success).length;

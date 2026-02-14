@@ -119,13 +119,14 @@ const resources = {
       },
       import: {
         title: "Import Flight",
-        subtitle: "Import multiple expressions from a spreadsheet. Optionally include bottle photos via ZIP or URL.",
+        subtitle: "Import multiple expressions from a spreadsheet. Optionally attach bottle photos by selecting image files.",
         spreadsheet: "Spreadsheet File",
         dropSpreadsheet: "Click to select a spreadsheet",
         formats: "Supported: Excel (.xlsx), CSV (.csv), Text (.txt)",
-        imagesZip: "Bottle Photos (optional)",
-        dropZip: "Click to select a ZIP archive",
-        zipHint: "ZIP file with images referenced by filename in the spreadsheet",
+        bottlePhotos: "Bottle Photos (optional)",
+        dropImages: "Click to select image files",
+        imagesHint: "Select multiple JPG, PNG, WebP or GIF files. Filenames are matched to the image_filename column in your spreadsheet, or auto-matched by whisky name.",
+        imagesSelected: "{{count}} image(s) selected",
         templateHint: "Expected Columns",
         columns: "name (required), distillery, age, abv, type, category, region, cask, peat, notes, order, image_filename / image_url",
         exampleHeader: "Example Header Row",
@@ -145,7 +146,7 @@ const resources = {
           order: "Position in flight (1, 2, 3...)",
           ppm: "Phenol level in ppm, e.g. 55",
           whiskybase_id: "Whiskybase catalog number, e.g. 12345",
-          image_filename: "Filename in ZIP, e.g. uigeadail.jpg",
+          image_filename: "Image filename, e.g. uigeadail.jpg",
           image_url: "URL to bottle image"
         },
         parsePreview: "Parse & Preview",
@@ -158,10 +159,15 @@ const resources = {
         summary: "{{success}} expressions imported successfully. {{errors}} errors.",
         errorDetails: "Errors",
         successDetails: "Imported",
-        imageMissing: "Not found",
+        imageMissing: "No image",
+        imageMatched: "Matched",
+        imageAutoMatched: "Auto-matched",
+        imageUrl: "URL",
+        imageManualPick: "Pick image...",
+        imageNone: "None",
         close: "Close",
-        zipInvalid: "The ZIP file could not be read. Please check it is a valid ZIP archive.",
-        zipImageNotFound: "Image \"{{filename}}\" not found in ZIP archive"
+        mappingPreview: "Image Mapping",
+        mappingHint: "Review which image will be attached to each expression. You can change the selection manually."
       }
     }
   },
@@ -282,13 +288,14 @@ const resources = {
       },
       import: {
         title: "Flight importieren",
-        subtitle: "Importieren Sie mehrere Expressions aus einer Tabelle. Optional mit Flaschenfotos per ZIP oder URL.",
+        subtitle: "Importieren Sie mehrere Expressions aus einer Tabelle. Optional mit Flaschenfotos durch Auswahl von Bilddateien.",
         spreadsheet: "Tabellendatei",
         dropSpreadsheet: "Klicken, um eine Tabelle auszuw\u00e4hlen",
         formats: "Unterst\u00fctzt: Excel (.xlsx), CSV (.csv), Text (.txt)",
-        imagesZip: "Flaschenfotos (optional)",
-        dropZip: "Klicken, um ein ZIP-Archiv auszuw\u00e4hlen",
-        zipHint: "ZIP-Datei mit Bildern, referenziert durch Dateiname in der Tabelle",
+        bottlePhotos: "Flaschenfotos (optional)",
+        dropImages: "Klicken, um Bilddateien auszuw\u00e4hlen",
+        imagesHint: "W\u00e4hlen Sie mehrere JPG, PNG, WebP oder GIF Dateien. Dateinamen werden mit der Spalte image_filename abgeglichen, oder automatisch anhand des Whisky-Namens zugeordnet.",
+        imagesSelected: "{{count}} Bild(er) ausgew\u00e4hlt",
         templateHint: "Erwartete Spalten",
         columns: "name (erforderlich), distillery, age, abv, type, category, region, cask, peat, notes, order, image_filename / image_url",
         exampleHeader: "Beispiel-Kopfzeile",
@@ -308,7 +315,7 @@ const resources = {
           order: "Position im Flight (1, 2, 3\u2026)",
           ppm: "Phenolgehalt in ppm, z.\u00a0B. 55",
           whiskybase_id: "Whiskybase-Katalognummer, z.\u00a0B. 12345",
-          image_filename: "Dateiname im ZIP, z.\u00a0B. uigeadail.jpg",
+          image_filename: "Bild-Dateiname, z.\u00a0B. uigeadail.jpg",
           image_url: "URL zum Flaschenbild"
         },
         parsePreview: "Analysieren & Vorschau",
@@ -321,10 +328,15 @@ const resources = {
         summary: "{{success}} Expressions erfolgreich importiert. {{errors}} Fehler.",
         errorDetails: "Fehler",
         successDetails: "Importiert",
-        imageMissing: "Nicht gefunden",
+        imageMissing: "Kein Bild",
+        imageMatched: "Zugeordnet",
+        imageAutoMatched: "Automatisch",
+        imageUrl: "URL",
+        imageManualPick: "Bild w\u00e4hlen...",
+        imageNone: "Keins",
         close: "Schließen",
-        zipInvalid: "Die ZIP-Datei konnte nicht gelesen werden. Bitte prüfen Sie, ob es ein gültiges ZIP-Archiv ist.",
-        zipImageNotFound: "Bild \"{{filename}}\" nicht im ZIP-Archiv gefunden"
+        mappingPreview: "Bildzuordnung",
+        mappingHint: "\u00dcberpr\u00fcfen Sie, welches Bild jeder Expression zugeordnet wird. Sie k\u00f6nnen die Zuordnung manuell \u00e4ndern."
       }
     }
   }
