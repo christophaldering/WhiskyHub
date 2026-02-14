@@ -79,7 +79,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const NavContent = () => (
     <div className="flex flex-col h-full bg-card border-r border-border/40">
-      <div className="p-8 border-b border-border/40">
+      <div className="p-5 border-b border-border/40">
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-serif font-black tracking-tight text-primary">
@@ -93,14 +93,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       
-      <nav className="flex-1 p-6 space-y-1">
+      <nav className="flex-1 overflow-y-auto p-4 space-y-0.5">
         {navItems.map((item) => {
           const isActive = location === item.href;
           return (
             <Link key={item.href} href={item.href}>
               <div
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-300 cursor-pointer group",
+                  "flex items-center gap-3 px-4 py-2 rounded-sm transition-all duration-300 cursor-pointer group",
                   isActive
                     ? "bg-secondary text-primary border-l-2 border-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
@@ -117,7 +117,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Link href="/lexicon">
           <div
             className={cn(
-              "flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-300 cursor-pointer",
+              "flex items-center gap-3 px-4 py-2 rounded-sm transition-all duration-300 cursor-pointer",
               location === "/lexicon"
                 ? "bg-secondary text-primary border-l-2 border-primary"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
@@ -133,7 +133,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Link href="/tasting-templates">
           <div
             className={cn(
-              "flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-300 cursor-pointer",
+              "flex items-center gap-3 px-4 py-2 rounded-sm transition-all duration-300 cursor-pointer",
               location === "/tasting-templates"
                 ? "bg-secondary text-primary border-l-2 border-primary"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
@@ -149,7 +149,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Link href="/calendar">
           <div
             className={cn(
-              "flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-300 cursor-pointer",
+              "flex items-center gap-3 px-4 py-2 rounded-sm transition-all duration-300 cursor-pointer",
               location === "/calendar"
                 ? "bg-secondary text-primary border-l-2 border-primary"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
@@ -165,7 +165,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Link href="/about-method">
           <div
             className={cn(
-              "flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-300 cursor-pointer",
+              "flex items-center gap-3 px-4 py-2 rounded-sm transition-all duration-300 cursor-pointer",
               location === "/about-method"
                 ? "bg-secondary text-primary border-l-2 border-primary"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
@@ -181,7 +181,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Link href="/intro">
           <div
             className={cn(
-              "flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-300 cursor-pointer",
+              "flex items-center gap-3 px-4 py-2 rounded-sm transition-all duration-300 cursor-pointer",
               location === "/intro"
                 ? "bg-secondary text-primary border-l-2 border-primary"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
