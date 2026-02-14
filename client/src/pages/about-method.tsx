@@ -2,19 +2,29 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
+import aboutNose from "@/assets/images/about-nose.png";
+import aboutTaste from "@/assets/images/about-taste.png";
+import aboutReflect from "@/assets/images/about-reflect.png";
+import aboutJournal from "@/assets/images/about-journal.png";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0 },
 };
 
+const sectionImages = [aboutNose, aboutTaste, aboutReflect, aboutJournal];
+
 function Section({
+  image,
   title,
   paragraphs,
+  reverse,
   index,
 }: {
+  image: string;
   title: string;
   paragraphs: string[];
+  reverse?: boolean;
   index: number;
 }) {
   return (
@@ -24,22 +34,35 @@ function Section({
       whileInView="visible"
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.7, delay: 0.1 }}
-      className="py-12 md:py-16 border-b border-border/20 last:border-b-0"
+      className="py-16 md:py-24"
       data-testid={`section-about-${index}`}
     >
-      <div className="max-w-2xl mx-auto">
-        <h2 className="text-xl md:text-2xl font-serif font-bold text-primary tracking-tight mb-6">
-          {title}
-        </h2>
-        <div className="space-y-5">
-          {paragraphs.map((p, i) => (
-            <p
-              key={i}
-              className="text-muted-foreground font-serif leading-relaxed text-base md:text-[1.05rem]"
-            >
-              {p}
-            </p>
-          ))}
+      <div className={`flex flex-col ${reverse ? "md:flex-row-reverse" : "md:flex-row"} gap-8 md:gap-14 items-center`}>
+        <div className="w-full md:w-1/2">
+          <div className="relative rounded-lg overflow-hidden shadow-2xl">
+            <img
+              src={image}
+              alt={title}
+              className="w-full h-auto object-cover"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+          </div>
+        </div>
+        <div className="w-full md:w-1/2 space-y-5">
+          <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary tracking-tight">
+            {title}
+          </h2>
+          <div className="space-y-4">
+            {paragraphs.map((p, i) => (
+              <p
+                key={i}
+                className="text-muted-foreground font-serif leading-relaxed text-base md:text-lg"
+              >
+                {p}
+              </p>
+            ))}
+          </div>
         </div>
       </div>
     </motion.section>
@@ -58,7 +81,7 @@ export default function AboutMethod() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="relative py-20 md:py-28 text-center overflow-hidden"
+        className="relative py-20 md:py-32 text-center overflow-hidden"
       >
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
         <div className="relative z-10 max-w-3xl mx-auto px-6">
@@ -88,14 +111,16 @@ export default function AboutMethod() {
         </div>
       </motion.div>
 
-      <div className="max-w-3xl mx-auto px-6">
+      <div className="max-w-5xl mx-auto px-6">
         {sectionKeys.map((key, i) => {
           const paragraphs = (t(`aboutMethod.${key}Paragraphs`, { returnObjects: true }) as string[]);
           return (
             <Section
               key={key}
+              image={sectionImages[i]}
               title={t(`aboutMethod.${key}Title`)}
               paragraphs={paragraphs}
+              reverse={i % 2 === 1}
               index={i + 1}
             />
           );
@@ -107,7 +132,7 @@ export default function AboutMethod() {
           whileInView="visible"
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="py-16 md:py-20 text-center"
+          className="py-20 md:py-28 text-center border-t border-border/30"
         >
           <button
             onClick={() => navigate("/")}
