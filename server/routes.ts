@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import { createServer, type Server } from "http";
 // @ts-ignore
 import multer from "multer";
@@ -25,9 +25,9 @@ const upload = multer({
   }),
   limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (_req: any, file: any, cb: any) => {
-    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Only JPG, PNG, and WebP images are allowed"));
+    else cb(new Error("Only JPG, PNG, WebP, and GIF images are allowed"));
   },
 });
 
@@ -179,7 +179,7 @@ async function downloadImageFromUrl(url: string): Promise<string | null> {
     const response = await fetch(url);
     if (!response.ok) return null;
     const contentType = response.headers.get("content-type") || "";
-    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!allowed.some(a => contentType.includes(a))) return null;
 
     const buffer = Buffer.from(await response.arrayBuffer());
@@ -188,6 +188,7 @@ async function downloadImageFromUrl(url: string): Promise<string | null> {
     let ext = ".jpg";
     if (contentType.includes("png")) ext = ".png";
     else if (contentType.includes("webp")) ext = ".webp";
+    else if (contentType.includes("gif")) ext = ".gif";
 
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
     const filePath = path.join(uploadsDir, filename);
@@ -335,7 +336,20 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
-  app.post("/api/whiskies/:id/image", upload.single("image"), async (req: any, res: any) => {
+  app.post("/api/whiskies/:id/image", (req: any, res: any, next: any) => {
+    upload.single("image")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ message: "Image must be under 2 MB / Bild muss kleiner als 2 MB sein" });
+        }
+        if (err.message) {
+          return res.status(415).json({ message: err.message });
+        }
+        return res.status(400).json({ message: "Upload failed" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
     try {
       if (!req.file) return res.status(400).json({ message: "No image file provided" });
       const imageUrl = `/uploads/${req.file.filename}`;
@@ -358,7 +372,7 @@ export async function registerRoutes(
     res.json(updated);
   });
 
-  app.use("/uploads", (await import("express")).default.static(uploadsDir));
+  app.use("/uploads", express.static(uploadsDir));
 
   // ===== FLIGHT IMPORT =====
 

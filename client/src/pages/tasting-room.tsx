@@ -7,7 +7,7 @@ import { LoginDialog } from "@/components/login-dialog";
 import { ImportFlightDialog } from "@/components/import-flight-dialog";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Plus, Camera, X, ImageIcon, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Camera, X, ImageIcon, ExternalLink, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,15 +21,17 @@ import { queryClient } from "@/lib/queryClient";
 import type { Whisky, Tasting } from "@shared/schema";
 
 function WhiskyThumbnail({ whisky, size = "sm" }: { whisky: Whisky; size?: "sm" | "lg" }) {
+  const [imgError, setImgError] = useState(false);
   const dim = size === "lg" ? "w-40 h-40" : "w-10 h-10";
   const iconSize = size === "lg" ? "w-12 h-12" : "w-4 h-4";
 
-  if (whisky.imageUrl) {
+  if (whisky.imageUrl && !imgError) {
     return (
       <img
         src={whisky.imageUrl}
         alt={whisky.name}
         className={cn(dim, "object-cover rounded-full border border-border/50")}
+        onError={() => setImgError(true)}
         data-testid={`img-whisky-${whisky.id}`}
       />
     );
@@ -82,7 +84,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
     if (!file) return;
     setImageError("");
 
-    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!allowed.includes(file.type)) {
       setImageError(t("whisky.photoInvalidType"));
       return;
@@ -156,7 +158,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="image/*"
                   onChange={handleImageSelect}
                   className="hidden"
                   data-testid="input-whisky-image"
@@ -267,14 +269,14 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
                       if (form.whiskybaseId.trim()) {
                         window.open(`https://www.whiskybase.com/whiskies/whisky/${form.whiskybaseId.trim()}`, "_blank");
                       } else {
-                        const q = [form.name, form.distillery].filter(Boolean).join(" ");
-                        window.open(`https://www.whiskybase.com/search?q=${encodeURIComponent(q)}`, "_blank");
+                        const parts = [form.name, form.distillery, form.age, form.abv ? `${form.abv}%` : ""].filter(Boolean);
+                        window.open(`https://www.whiskybase.com/search?q=${encodeURIComponent(parts.join(" "))}`, "_blank");
                       }
                     }}
                     data-testid="button-search-whiskybase"
                   >
                     <ExternalLink className="w-3 h-3 mr-1" />
-                    {t("whisky.searchWhiskybase")}
+                    {form.whiskybaseId.trim() ? t("whisky.viewWhiskybase") : t("whisky.findWhiskybase")}
                   </Button>
                 </div>
               </div>
@@ -282,6 +284,279 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
           </div>
           <Button onClick={handleSubmit} disabled={createWhisky.isPending || !form.name.trim()} className="w-full bg-primary text-primary-foreground font-serif" data-testid="button-submit-whisky">
             {createWhisky.isPending ? "Adding..." : t("whisky.addToFlight")}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky: Whisky; tastingId: string; isHost: boolean; tastingStatus: string }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageError, setImageError] = useState("");
+  const [removeExistingImage, setRemoveExistingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [form, setForm] = useState({
+    name: "", distillery: "", age: "", abv: "", type: "Single Malt",
+    notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "",
+    caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "",
+  });
+
+  const canEdit = isHost && (tastingStatus === "draft" || tastingStatus === "open");
+
+  const populateForm = () => {
+    setForm({
+      name: whisky.name || "",
+      distillery: whisky.distillery || "",
+      age: whisky.age || "",
+      abv: whisky.abv != null ? String(whisky.abv) : "",
+      type: whisky.type || "Single Malt",
+      notes: whisky.notes || "",
+      category: whisky.category || "Single Malt",
+      region: whisky.region || "",
+      abvBand: whisky.abvBand || "",
+      ageBand: whisky.ageBand || "",
+      caskInfluence: whisky.caskInfluence || "",
+      peatLevel: whisky.peatLevel || "None",
+      ppm: whisky.ppm != null ? String(whisky.ppm) : "",
+      whiskybaseId: whisky.whiskybaseId || "",
+    });
+    setImageFile(null);
+    setImagePreview(null);
+    setImageError("");
+    setRemoveExistingImage(false);
+  };
+
+  const updateWhisky = useMutation({
+    mutationFn: async (data: any) => {
+      const updated = await whiskyApi.update(whisky.id, data);
+      if (removeExistingImage && !imageFile) {
+        await whiskyApi.deleteImage(whisky.id);
+      }
+      if (imageFile) {
+        await whiskyApi.uploadImage(whisky.id, imageFile);
+      }
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+      setOpen(false);
+    },
+  });
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageError("");
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type)) {
+      setImageError(t("whisky.photoInvalidType"));
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setImageError(t("whisky.photoTooLarge"));
+      return;
+    }
+    setImageFile(file);
+    setRemoveExistingImage(false);
+    const reader = new FileReader();
+    reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = () => {
+    if (!form.name.trim()) return;
+    updateWhisky.mutate({
+      name: form.name.trim(),
+      distillery: form.distillery.trim() || null,
+      age: form.age.trim() || null,
+      abv: form.abv ? parseFloat(form.abv) : null,
+      type: form.type || null,
+      notes: form.notes.trim() || null,
+      category: form.category || null,
+      region: form.region.trim() || null,
+      abvBand: form.abvBand || null,
+      ageBand: form.ageBand || null,
+      caskInfluence: form.caskInfluence.trim() || null,
+      peatLevel: form.peatLevel || null,
+      ppm: form.ppm ? parseFloat(form.ppm) : null,
+      whiskybaseId: form.whiskybaseId.trim() || null,
+    });
+  };
+
+  if (!canEdit) return null;
+
+  const currentImageUrl = removeExistingImage ? null : (imagePreview || whisky.imageUrl);
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (v) populateForm(); setOpen(v); }}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" data-testid="button-edit-whisky">
+          <Pencil className="w-4 h-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-2xl text-primary">{t("whisky.editExpression")}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("whisky.bottlePhoto")}</Label>
+            <div className="flex items-center gap-4">
+              {currentImageUrl ? (
+                <div className="relative">
+                  <img src={currentImageUrl} alt="Preview" className="w-20 h-20 object-cover rounded-lg border border-border/50" />
+                  <button
+                    onClick={() => {
+                      setImageFile(null);
+                      setImagePreview(null);
+                      setRemoveExistingImage(true);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                    className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                    data-testid="button-remove-edit-preview"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-20 h-20 rounded-lg bg-secondary/20 border border-dashed border-border flex items-center justify-center">
+                  <Camera className="w-6 h-6 text-muted-foreground/40" />
+                </div>
+              )}
+              <div className="flex-1 space-y-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                  data-testid="input-edit-whisky-image"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs"
+                  data-testid="button-edit-upload-photo"
+                >
+                  <Camera className="w-3 h-3 mr-1" />
+                  {currentImageUrl ? t("whisky.replacePhoto") : t("whisky.uploadPhoto")}
+                </Button>
+                <p className="text-xs text-muted-foreground">{t("whisky.photoHint")}</p>
+                {imageError && <p className="text-xs text-destructive">{imageError}</p>}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Name *</Label>
+              <Input value={form.name} onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))} data-testid="input-edit-whisky-name" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Distillery</Label>
+              <Input value={form.distillery} onChange={(e) => setForm(p => ({ ...p, distillery: e.target.value }))} />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Age</Label>
+              <Input value={form.age} onChange={(e) => setForm(p => ({ ...p, age: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">ABV %</Label>
+              <Input type="number" value={form.abv} onChange={(e) => setForm(p => ({ ...p, abv: e.target.value }))} step="0.1" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Type</Label>
+              <Select value={form.type} onValueChange={(v) => setForm(p => ({ ...p, type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Single Malt">Single Malt</SelectItem>
+                  <SelectItem value="Blended Malt">Blended Malt</SelectItem>
+                  <SelectItem value="Blended">Blended</SelectItem>
+                  <SelectItem value="Bourbon">Bourbon</SelectItem>
+                  <SelectItem value="Rye">Rye</SelectItem>
+                  <SelectItem value="Irish">Irish</SelectItem>
+                  <SelectItem value="Japanese">Japanese</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="border-t border-border/30 pt-4">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3 font-bold">Taxonomy</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Region</Label>
+                <Input value={form.region} onChange={(e) => setForm(p => ({ ...p, region: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Cask Influence</Label>
+                <Input value={form.caskInfluence} onChange={(e) => setForm(p => ({ ...p, caskInfluence: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Peat Level</Label>
+                <Select value={form.peatLevel} onValueChange={(v) => setForm(p => ({ ...p, peatLevel: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="None">None</SelectItem>
+                    <SelectItem value="Light">Light</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="Heavy">Heavy</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Age Band</Label>
+                <Select value={form.ageBand} onValueChange={(v) => setForm(p => ({ ...p, ageBand: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NAS">NAS</SelectItem>
+                    <SelectItem value="Young (3-9)">Young (3-9)</SelectItem>
+                    <SelectItem value="Classic (10-17)">Classic (10-17)</SelectItem>
+                    <SelectItem value="Mature (18-25)">Mature (18-25)</SelectItem>
+                    <SelectItem value="Old (25+)">Old (25+)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">{t("whisky.ppm")}</Label>
+                <Input type="number" value={form.ppm} onChange={(e) => setForm(p => ({ ...p, ppm: e.target.value }))} placeholder="55" step="1" data-testid="input-edit-whisky-ppm" />
+              </div>
+              <div className="space-y-1 col-span-2">
+                <Label className="text-xs text-muted-foreground">{t("whisky.whiskybaseId")}</Label>
+                <div className="flex gap-2">
+                  <Input value={form.whiskybaseId} onChange={(e) => setForm(p => ({ ...p, whiskybaseId: e.target.value }))} placeholder="12345" className="flex-1" data-testid="input-edit-whisky-wbid" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs flex-shrink-0"
+                    onClick={() => {
+                      if (form.whiskybaseId.trim()) {
+                        window.open(`https://www.whiskybase.com/whiskies/whisky/${form.whiskybaseId.trim()}`, "_blank");
+                      } else {
+                        const parts = [form.name, form.distillery, form.age, form.abv ? `${form.abv}%` : ""].filter(Boolean);
+                        window.open(`https://www.whiskybase.com/search?q=${encodeURIComponent(parts.join(" "))}`, "_blank");
+                      }
+                    }}
+                    data-testid="button-edit-search-whiskybase"
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    {form.whiskybaseId.trim() ? t("whisky.viewWhiskybase") : t("whisky.findWhiskybase")}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <Button onClick={handleSubmit} disabled={updateWhisky.isPending || !form.name.trim()} className="w-full bg-primary text-primary-foreground font-serif" data-testid="button-save-whisky">
+            {updateWhisky.isPending ? t("whisky.saving") : t("whisky.saveChanges")}
           </Button>
         </div>
       </DialogContent>
@@ -429,7 +704,10 @@ export default function TastingRoom() {
                 <div className="mx-auto mb-6">
                   <WhiskyThumbnail whisky={activeWhisky} size="lg" />
                 </div>
-                <h3 className="font-serif text-3xl font-bold mb-2 text-primary">{activeWhisky.name}</h3>
+                <div className="flex items-center justify-center gap-2">
+                  <h3 className="font-serif text-3xl font-bold text-primary">{activeWhisky.name}</h3>
+                  <EditWhiskyDialog whisky={activeWhisky} tastingId={tasting.id} isHost={isHost} tastingStatus={tasting.status} />
+                </div>
                 <p className="text-muted-foreground font-serif italic mb-6 text-lg">{activeWhisky.distillery || "Unknown"}</p>
                 <div className="grid grid-cols-2 gap-4 text-left mt-8 pt-8 border-t border-border/30">
                   <div>
