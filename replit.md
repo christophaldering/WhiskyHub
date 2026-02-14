@@ -72,7 +72,7 @@ Preferred communication style: Simple, everyday language.
 - **participants**: id, name, pin (optional), language, createdAt
 - **tastings**: id, title, date, location, hostId, code (join code), status, currentAct, hostReflection, createdAt
 - **tasting_participants**: id, tastingId, participantId, joinedAt
-- **whiskies**: id, tastingId, name, distillery, age, abv, type, notes, sortOrder, category, region, abvBand, ageBand, caskInfluence, peatLevel
+- **whiskies**: id, tastingId, name, distillery, age, abv, type, notes, sortOrder, category, region, abvBand, ageBand, caskInfluence, peatLevel, ppm, whiskybaseId, imageUrl
 - **ratings**: id, participantId, whiskyId, tastingId, nose, taste, finish, balance, overall, notes
 
 ### Build Process
@@ -87,6 +87,9 @@ Preferred communication style: Simple, everyday language.
 3. **Session state machine**: Tastings progress through draft → open → closed → reveal (with 4 acts) → archived, controlled by the host.
 4. **Real-time-ish updates**: Uses React Query polling (refetchInterval) rather than WebSockets for simplicity.
 5. **Flight import**: Hosts can bulk-import whiskies from Excel (.xlsx), CSV, or TXT files. Supports image attachment via URL column or ZIP archive with image_filename references. Uses SheetJS (xlsx) for Excel parsing and adm-zip for ZIP extraction. Two-step flow: parse → preview → confirm.
+6. **Bottle photo uploads**: Multer-based image upload (JPG, PNG, WebP, GIF, max 2 MB) stored in `/uploads` directory, served via express.static. Supports upload during creation and editing. Graceful error handling with bilingual messages.
+7. **Whiskybase integration**: Non-scraping external link integration. "Find on Whiskybase" button auto-constructs search queries from name + distillery + age + ABV. Direct page link when whiskybaseId is present.
+8. **EditWhiskyDialog**: Host can edit existing whiskies (when session is draft/open) with full form + photo replace/remove functionality.
 
 ## External Dependencies
 
