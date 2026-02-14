@@ -878,6 +878,24 @@ export async function registerRoutes(
       const updates: any = {};
       if (req.body.name) updates.name = req.body.name;
       if (req.body.email !== undefined) updates.email = req.body.email;
+
+      if (req.body.pin !== undefined) {
+        if (!req.body.pin || req.body.pin.length < 4) {
+          return res.status(400).json({ message: "PIN must be at least 4 characters" });
+        }
+        const existing = await storage.getParticipant(req.params.id);
+        if (!existing) return res.status(404).json({ message: "Not found" });
+        if (existing.pin) {
+          if (!req.body.currentPin) {
+            return res.status(400).json({ message: "Current PIN is required to change PIN" });
+          }
+          if (existing.pin !== req.body.currentPin) {
+            return res.status(401).json({ message: "Current PIN is incorrect" });
+          }
+        }
+        updates.pin = req.body.pin;
+      }
+
       const participant = await storage.updateParticipant(req.params.id, updates);
       if (!participant) return res.status(404).json({ message: "Not found" });
       res.json(participant);
