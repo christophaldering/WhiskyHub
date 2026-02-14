@@ -26,18 +26,24 @@ function WhiskyThumbnailSmall({ whisky }: { whisky: Whisky }) {
   const [err, setErr] = useState(false);
   if (whisky.imageUrl && !err) {
     return (
-      <img
-        src={whisky.imageUrl}
-        alt={whisky.name}
-        className="w-10 h-10 object-cover rounded-full border border-border/50 flex-shrink-0"
-        onError={() => setErr(true)}
-        data-testid={`img-board-${whisky.id}`}
-      />
+      <div className="flex-shrink-0 flex flex-col items-center gap-1 w-[60px]">
+        <img
+          src={whisky.imageUrl}
+          alt={whisky.name}
+          className="w-[60px] h-[60px] object-cover rounded-lg border border-border/50"
+          onError={() => setErr(true)}
+          data-testid={`img-board-${whisky.id}`}
+        />
+        <span className="text-[9px] text-muted-foreground text-center leading-tight line-clamp-2 w-full font-serif">{whisky.name}</span>
+      </div>
     );
   }
   return (
-    <div className="w-10 h-10 rounded-full bg-secondary/30 border border-secondary flex items-center justify-center flex-shrink-0">
-      <ImageIcon className="w-4 h-4 text-muted-foreground/40" />
+    <div className="flex-shrink-0 flex flex-col items-center gap-1 w-[60px]">
+      <div className="w-[60px] h-[60px] rounded-lg bg-secondary/30 border border-secondary flex items-center justify-center">
+        <ImageIcon className="w-5 h-5 text-muted-foreground/40" />
+      </div>
+      <span className="text-[9px] text-muted-foreground text-center leading-tight line-clamp-2 w-full font-serif">{whisky.name}</span>
     </div>
   );
 }
