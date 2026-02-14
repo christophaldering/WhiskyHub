@@ -46,6 +46,8 @@ export const whiskyApi = {
   create: (data: any) => fetchJSON("/whiskies", { method: "POST", body: JSON.stringify(data) }),
   update: (id: string, data: any) => fetchJSON(`/whiskies/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (id: string) => fetchJSON(`/whiskies/${id}`, { method: "DELETE" }),
+  reorder: (tastingId: string, order: { id: string; sortOrder: number }[]) =>
+    fetchJSON(`/tastings/${tastingId}/reorder`, { method: "PATCH", body: JSON.stringify({ order }) }),
   uploadImage: async (id: string, file: File) => {
     const formData = new FormData();
     formData.append("image", file);

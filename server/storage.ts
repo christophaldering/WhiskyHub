@@ -157,6 +157,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteWhisky(id: string): Promise<void> {
+    await db.delete(ratings).where(eq(ratings.whiskyId, id));
     await db.delete(whiskies).where(eq(whiskies.id, id));
   }
 

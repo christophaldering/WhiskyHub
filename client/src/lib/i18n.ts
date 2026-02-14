@@ -96,7 +96,15 @@ const resources = {
         whiskybaseHint: "Whiskybase catalog number",
         searchWhiskybase: "Search Whiskybase",
         findWhiskybase: "Find on Whiskybase",
-        viewWhiskybase: "View on Whiskybase"
+        viewWhiskybase: "View on Whiskybase",
+        deleteExpression: "Delete Expression",
+        deleteConfirm: "Are you sure you want to remove this whisky from the flight? This will also delete all ratings for it.",
+        deleteConfirmTitle: "Delete Expression",
+        deleting: "Deleting...",
+        deleted: "Expression removed",
+        moveUp: "Move Up",
+        moveDown: "Move Down",
+        reorderHint: "Drag or use arrows to reorder"
       },
       wotd: {
         title: "Whisky of the Day",
@@ -151,7 +159,9 @@ const resources = {
         errorDetails: "Errors",
         successDetails: "Imported",
         imageMissing: "Not found",
-        close: "Close"
+        close: "Close",
+        zipInvalid: "The ZIP file could not be read. Please check it is a valid ZIP archive.",
+        zipImageNotFound: "Image \"{{filename}}\" not found in ZIP archive"
       }
     }
   },
@@ -249,7 +259,15 @@ const resources = {
         whiskybaseHint: "Whiskybase-Katalognummer",
         searchWhiskybase: "Whiskybase suchen",
         findWhiskybase: "Auf Whiskybase suchen",
-        viewWhiskybase: "Auf Whiskybase ansehen"
+        viewWhiskybase: "Auf Whiskybase ansehen",
+        deleteExpression: "Expression löschen",
+        deleteConfirm: "Möchten Sie diesen Whisky wirklich aus dem Flight entfernen? Alle zugehörigen Bewertungen werden ebenfalls gelöscht.",
+        deleteConfirmTitle: "Expression löschen",
+        deleting: "Wird gelöscht...",
+        deleted: "Expression entfernt",
+        moveUp: "Nach oben",
+        moveDown: "Nach unten",
+        reorderHint: "Pfeile nutzen zum Umsortieren"
       },
       wotd: {
         title: "Whisky des Tages",
@@ -304,7 +322,9 @@ const resources = {
         errorDetails: "Fehler",
         successDetails: "Importiert",
         imageMissing: "Nicht gefunden",
-        close: "Schlie\u00dfen"
+        close: "Schließen",
+        zipInvalid: "Die ZIP-Datei konnte nicht gelesen werden. Bitte prüfen Sie, ob es ein gültiges ZIP-Archiv ist.",
+        zipImageNotFound: "Bild \"{{filename}}\" nicht im ZIP-Archiv gefunden"
       }
     }
   }

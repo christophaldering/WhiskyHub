@@ -331,9 +331,39 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  app.patch("/api/tastings/:id/reorder", async (req, res) => {
+    try {
+      const tastingId = req.params.id;
+      const tasting = await storage.getTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      
+      const { order } = req.body;
+      if (!Array.isArray(order)) return res.status(400).json({ message: "Invalid order data" });
+      
+      for (const item of order) {
+        await storage.updateWhisky(item.id, { sortOrder: item.sortOrder });
+      }
+      
+      const updated = await storage.getWhiskiesForTasting(tastingId);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.delete("/api/whiskies/:id", async (req, res) => {
-    await storage.deleteWhisky(req.params.id);
-    res.status(204).send();
+    try {
+      const whisky = await storage.getWhisky(req.params.id);
+      if (!whisky) return res.status(404).json({ message: "Not found" });
+      if (whisky.imageUrl) {
+        const filePath = path.join(process.cwd(), whisky.imageUrl);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
+      await storage.deleteWhisky(req.params.id);
+      res.status(204).send();
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
   });
 
   app.post("/api/whiskies/:id/image", (req: any, res: any, next: any) => {
@@ -394,7 +424,7 @@ export async function registerRoutes(
         try {
           const zip = new AdmZip(zipFilePath);
           zipImageNames = zip.getEntries()
-            .filter((e: any) => !e.isDirectory && /\.(jpe?g|png|webp)$/i.test(e.entryName))
+            .filter((e: any) => !e.isDirectory && /\.(jpe?g|png|webp|gif)$/i.test(e.entryName))
             .map((e: any) => path.basename(e.entryName));
         } catch {
           errors.push("Could not read ZIP file");
@@ -451,7 +481,7 @@ export async function registerRoutes(
         try {
           const zip = new AdmZip(zipFilePath);
           for (const entry of zip.getEntries()) {
-            if (!entry.isDirectory && /\.(jpe?g|png|webp)$/i.test(entry.entryName)) {
+            if (!entry.isDirectory && /\.(jpe?g|png|webp|gif)$/i.test(entry.entryName)) {
               zipEntries.set(path.basename(entry.entryName).toLowerCase(), entry);
             }
           }
