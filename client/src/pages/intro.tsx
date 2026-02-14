@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import whiskyBg from "@assets/PNG-Bild_1771095178148.png";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const INTRO_SEEN_KEY = "casksense_intro_seen";
 
@@ -80,8 +81,9 @@ function PageOne({ onNext, onSkip }: { onNext: () => void; onSkip: () => void })
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5, duration: 0.8 }}
-        className="pb-8"
+        className="pb-8 flex items-center gap-3"
       >
+        <IntroLanguageToggle />
         <AmbientToggle variant="intro" />
       </motion.div>
     </motion.div>
@@ -188,11 +190,29 @@ function PageTwo({ onEnter, onBack }: { onEnter: () => void; onBack: () => void 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.6, duration: 0.7 }}
-        className="pb-8"
+        className="pb-8 flex items-center gap-3"
       >
+        <IntroLanguageToggle />
         <AmbientToggle variant="intro" />
       </motion.div>
     </motion.div>
+  );
+}
+
+function IntroLanguageToggle() {
+  const { i18n } = useTranslation();
+  const toggle = () => i18n.changeLanguage(i18n.language === "en" ? "de" : "en");
+
+  return (
+    <button
+      onClick={toggle}
+      className="font-mono text-xs tracking-wider border border-white/20 rounded-sm px-3 py-1.5 hover:bg-white/10 transition-colors"
+      data-testid="intro-language-toggle"
+    >
+      <span className={cn(i18n.language === "en" ? "font-bold text-white/90" : "text-white/40")}>EN</span>
+      <span className="mx-1 text-white/20">|</span>
+      <span className={cn(i18n.language === "de" ? "font-bold text-white/90" : "text-white/40")}>DE</span>
+    </button>
   );
 }
 
