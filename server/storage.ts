@@ -40,6 +40,8 @@ export interface IStorage {
   createTasting(data: InsertTasting): Promise<Tasting>;
   updateTastingStatus(id: string, status: string, currentAct?: string): Promise<Tasting | undefined>;
   updateTastingReflection(id: string, reflection: string): Promise<Tasting | undefined>;
+  updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string }>): Promise<Tasting | undefined>;
+  duplicateTasting(id: string, hostId: string): Promise<Tasting>;
 
   // Tasting Participants
   getTastingParticipants(tastingId: string): Promise<(TastingParticipant & { participant: Participant })[]>;
@@ -200,6 +202,62 @@ export class DatabaseStorage implements IStorage {
   async updateTastingReflection(id: string, reflection: string): Promise<Tasting | undefined> {
     const [result] = await db.update(tastings).set({ hostReflection: reflection }).where(eq(tastings.id, id)).returning();
     return result;
+  }
+
+  async updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string }>): Promise<Tasting | undefined> {
+    const updateData: any = {};
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.date !== undefined) updateData.date = data.date;
+    if (data.location !== undefined) updateData.location = data.location;
+    if (data.blindMode !== undefined) updateData.blindMode = data.blindMode;
+    if (data.reflectionEnabled !== undefined) updateData.reflectionEnabled = data.reflectionEnabled;
+    if (data.reflectionMode !== undefined) updateData.reflectionMode = data.reflectionMode;
+    if (data.reflectionVisibility !== undefined) updateData.reflectionVisibility = data.reflectionVisibility;
+    if (Object.keys(updateData).length === 0) return this.getTasting(id);
+    const [result] = await db.update(tastings).set(updateData).where(eq(tastings.id, id)).returning();
+    return result;
+  }
+
+  async duplicateTasting(sourceId: string, hostId: string): Promise<Tasting> {
+    const source = await this.getTasting(sourceId);
+    if (!source) throw new Error("Source tasting not found");
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const today = new Date().toISOString().split("T")[0];
+    const [newTasting] = await db.insert(tastings).values({
+      title: `${source.title} (Copy)`,
+      date: today,
+      location: source.location,
+      hostId,
+      code,
+      status: "draft",
+      blindMode: source.blindMode,
+      reflectionEnabled: source.reflectionEnabled,
+      reflectionMode: source.reflectionMode,
+      reflectionVisibility: source.reflectionVisibility,
+    }).returning();
+    const sourceWhiskies = await this.getWhiskiesForTasting(sourceId);
+    for (const w of sourceWhiskies) {
+      await db.insert(whiskies).values({
+        tastingId: newTasting.id,
+        name: w.name,
+        distillery: w.distillery,
+        age: w.age,
+        abv: w.abv,
+        type: w.type,
+        notes: w.notes,
+        sortOrder: w.sortOrder,
+        category: w.category,
+        region: w.region,
+        abvBand: w.abvBand,
+        ageBand: w.ageBand,
+        caskInfluence: w.caskInfluence,
+        peatLevel: w.peatLevel,
+        ppm: w.ppm,
+        whiskybaseId: w.whiskybaseId,
+        imageUrl: w.imageUrl,
+      });
+    }
+    return newTasting;
   }
 
   // --- Tasting Participants ---

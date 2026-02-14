@@ -36,6 +36,10 @@ export const tastingApi = {
     fetchJSON(`/tastings/${id}/reflection`, { method: "PATCH", body: JSON.stringify({ reflection }) }),
   hardDelete: (id: string, participantId: string) =>
     fetchJSON(`/tastings/${id}`, { method: "DELETE", body: JSON.stringify({ participantId }) }),
+  updateDetails: (id: string, hostId: string, data: any) =>
+    fetchJSON(`/tastings/${id}/details`, { method: "PATCH", body: JSON.stringify({ hostId, ...data }) }),
+  duplicate: (id: string, hostId: string) =>
+    fetchJSON(`/tastings/${id}/duplicate`, { method: "POST", body: JSON.stringify({ hostId }) }),
   getParticipants: (id: string) => fetchJSON(`/tastings/${id}/participants`),
   join: (id: string, participantId: string) =>
     fetchJSON(`/tastings/${id}/join`, { method: "POST", body: JSON.stringify({ participantId }) }),

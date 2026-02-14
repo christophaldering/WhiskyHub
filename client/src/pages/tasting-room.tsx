@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "wouter";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { EvaluationForm } from "@/components/evaluation-form";
 import { RevealView } from "@/components/reveal-view";
 import { SessionControl } from "@/components/session-control";
@@ -14,7 +14,7 @@ import DiscussionPanel from "@/components/discussion-panel";
 import ReflectionPanel from "@/components/reflection-panel";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -572,6 +572,101 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
   );
 }
 
+function EditTastingDialog({ tasting }: { tasting: Tasting }) {
+  const { t } = useTranslation();
+  const { currentParticipant } = useAppStore();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ title: "", date: "", location: "" });
+
+  useEffect(() => {
+    if (open && tasting) {
+      setForm({ title: tasting.title, date: tasting.date, location: tasting.location });
+    }
+  }, [open, tasting]);
+
+  const updateMutation = useMutation({
+    mutationFn: (data: any) => tastingApi.updateDetails(tasting.id, currentParticipant!.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", tasting.id] });
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+      setOpen(false);
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="border-primary/30 text-primary font-serif" data-testid="button-edit-tasting">
+          <Settings className="w-4 h-4 mr-1" /> {t("session.actions.editDetails")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-2xl text-primary">{t("session.actions.editDetailsTitle")}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 mt-4">
+          <div>
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.actions.editTitle")}</Label>
+            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="bg-secondary/20" data-testid="input-edit-title" />
+          </div>
+          <div>
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.actions.editDate")}</Label>
+            <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="bg-secondary/20" data-testid="input-edit-date" />
+          </div>
+          <div>
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.actions.editLocation")}</Label>
+            <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className="bg-secondary/20" data-testid="input-edit-location" />
+          </div>
+          <Button
+            onClick={() => updateMutation.mutate(form)}
+            disabled={updateMutation.isPending || !form.title.trim()}
+            className="w-full bg-primary text-primary-foreground font-serif"
+            data-testid="button-save-tasting-details"
+          >
+            {updateMutation.isPending ? "..." : t("session.actions.editSave")}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DuplicateTastingButton({ tasting }: { tasting: Tasting }) {
+  const { t } = useTranslation();
+  const { currentParticipant } = useAppStore();
+  const [, navigate] = useLocation();
+
+  const duplicateMutation = useMutation({
+    mutationFn: () => tastingApi.duplicate(tasting.id, currentParticipant!.id),
+    onSuccess: (newTasting: any) => {
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+      navigate(`/tasting/${newTasting.id}`);
+    },
+  });
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" size="sm" className="border-primary/30 text-primary font-serif" data-testid="button-duplicate-tasting">
+          <Copy className="w-4 h-4 mr-1" /> {t("session.actions.duplicateTasting")}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="font-serif">{t("session.actions.duplicateConfirmTitle")}</AlertDialogTitle>
+          <AlertDialogDescription>{t("session.actions.duplicateConfirmMessage")}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("session.actions.deleteCancel")}</AlertDialogCancel>
+          <AlertDialogAction onClick={() => duplicateMutation.mutate()} disabled={duplicateMutation.isPending} data-testid="button-confirm-duplicate">
+            {duplicateMutation.isPending ? "..." : t("session.actions.duplicateConfirm")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 export default function TastingRoom() {
   const { id } = useParams();
   const { t } = useTranslation();
@@ -690,7 +785,9 @@ export default function TastingRoom() {
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              {isHost && (tasting.status === "draft" || tasting.status === "open") && <EditTastingDialog tasting={tasting} />}
+              <DuplicateTastingButton tasting={tasting} />
               <PdfExportDialog tasting={tasting} whiskies={whiskyList} />
               {isHost && <BriefingNotes whiskies={whiskyList} tastingTitle={tasting.title} />}
               <span className="text-xs font-mono bg-secondary px-2 py-1 rounded text-muted-foreground">Code: {tasting.code}</span>

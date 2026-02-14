@@ -349,6 +349,34 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  app.patch("/api/tastings/:id/details", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId, ...details } = req.body;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can edit tasting details" });
+      const updated = await storage.updateTastingDetails(req.params.id, details);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/duplicate", async (req, res) => {
+    try {
+      const { hostId } = req.body;
+      if (!hostId) return res.status(400).json({ message: "hostId required" });
+      const participant = await storage.getParticipant(hostId);
+      if (!participant) return res.status(404).json({ message: "Participant not found" });
+      const source = await storage.getTasting(req.params.id);
+      if (!source) return res.status(404).json({ message: "Source tasting not found" });
+      const newTasting = await storage.duplicateTasting(req.params.id, hostId);
+      res.status(201).json(newTasting);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.delete("/api/tastings/:id", async (req, res) => {
     try {
       const { participantId } = req.body;

@@ -127,7 +127,19 @@ const resources = {
           permanentDeleteTitle: "Permanently Delete Session",
           permanentDeleteMessage: "This will permanently remove this session and all its data (ratings, discussions, reflections, invites, lineup). This action is irreversible.",
           permanentDeleteTypeName: "Type the session name to confirm:",
-          permanentDeleteConfirm: "Delete Forever"
+          permanentDeleteConfirm: "Delete Forever",
+          editDetails: "Edit Tasting",
+          editDetailsTitle: "Edit Tasting Details",
+          duplicateTasting: "Use as Template",
+          duplicateSuccess: "Tasting duplicated as draft",
+          duplicateConfirmTitle: "Duplicate Tasting?",
+          duplicateConfirmMessage: "This will create a new draft tasting with the same whisky lineup. You can then customize it.",
+          duplicateConfirm: "Create Copy",
+          editSave: "Save Changes",
+          editSaved: "Changes saved",
+          editTitle: "Title",
+          editDate: "Date",
+          editLocation: "Location"
         }
       },
       evaluation: {
@@ -896,7 +908,19 @@ const resources = {
           permanentDeleteTitle: "Tasting endg\u00fcltig l\u00f6schen",
           permanentDeleteMessage: "Dies l\u00f6scht das Tasting und alle zugeh\u00f6rigen Daten (Bewertungen, Diskussionen, Reflexionen, Einladungen, Lineup) unwiderruflich.",
           permanentDeleteTypeName: "Geben Sie den Tasting-Namen zur Best\u00e4tigung ein:",
-          permanentDeleteConfirm: "Unwiderruflich l\u00f6schen"
+          permanentDeleteConfirm: "Unwiderruflich l\u00f6schen",
+          editDetails: "Tasting bearbeiten",
+          editDetailsTitle: "Tasting-Details bearbeiten",
+          duplicateTasting: "Als Vorlage nutzen",
+          duplicateSuccess: "Tasting als Entwurf dupliziert",
+          duplicateConfirmTitle: "Tasting duplizieren?",
+          duplicateConfirmMessage: "Es wird ein neuer Entwurf mit der gleichen Whisky-Auswahl erstellt. Sie k\u00f6nnen ihn dann anpassen.",
+          duplicateConfirm: "Kopie erstellen",
+          editSave: "\u00c4nderungen speichern",
+          editSaved: "\u00c4nderungen gespeichert",
+          editTitle: "Titel",
+          editDate: "Datum",
+          editLocation: "Ort"
         }
       },
       evaluation: {
