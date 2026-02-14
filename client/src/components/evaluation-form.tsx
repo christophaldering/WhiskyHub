@@ -13,6 +13,7 @@ import { ratingApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import type { Whisky, Tasting } from "@shared/schema";
+import { TastingNoteGenerator } from "./tasting-note-generator";
 
 interface EvaluationFormProps {
   whisky: Whisky;
@@ -169,6 +170,11 @@ export function EvaluationForm({ whisky, tasting }: EvaluationFormProps) {
             onChange={(e) => { setNotes(e.target.value); setIsDirty(true); }}
             disabled={isLocked}
             data-testid="textarea-notes"
+          />
+          <TastingNoteGenerator
+            currentNotes={notes}
+            onInsertNote={(note) => { setNotes(note); setIsDirty(true); }}
+            disabled={isLocked}
           />
         </div>
       </CardContent>
