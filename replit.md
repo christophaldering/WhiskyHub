@@ -86,12 +86,14 @@ Preferred communication style: Simple, everyday language.
 2. **Shared schema**: Drizzle schema in `shared/` ensures type safety across the full stack without duplication.
 3. **Session state machine**: Tastings progress through draft → open → closed → reveal (with 4 acts) → archived, controlled by the host.
 4. **Real-time-ish updates**: Uses React Query polling (refetchInterval) rather than WebSockets for simplicity.
-5. **Flight import**: Hosts can bulk-import whiskies from Excel (.xlsx), CSV, or TXT files. Supports image attachment via URL column or ZIP archive with image_filename references (case-insensitive, folder paths stripped). ZIP supports JPG/JPEG/PNG/WebP/GIF. Uses SheetJS (xlsx) for Excel parsing and adm-zip for ZIP extraction. Two-step flow: parse → preview → confirm.
+5. **Flight import**: Hosts can bulk-import whiskies from Excel (.xlsx), CSV, or TXT files. Supports image attachment via URL column or multi-file upload with smart filename matching (case-insensitive exact match, whisky name auto-matching). Uses SheetJS (xlsx) for Excel parsing. Two-step flow: parse → preview with image mapping → confirm.
 6. **Bottle photo uploads**: Multer-based image upload (JPG, PNG, WebP, GIF, max 2 MB) stored in `/uploads` directory, served via express.static. Supports upload during creation and editing. Graceful error handling with bilingual messages.
 7. **Whiskybase integration**: Non-scraping external link integration. "Find on Whiskybase" button auto-constructs search queries from name + distillery + age + ABV. Direct page link when whiskybaseId is present.
 8. **EditWhiskyDialog**: Host can edit existing whiskies (when session is draft/open) with full form + photo replace/remove functionality.
 9. **Whisky reorder**: Host can reorder whiskies in a flight using up/down arrow buttons. Batch reorder endpoint (`PATCH /api/tastings/:id/reorder`) updates sortOrder for all items in a single request.
 10. **Whisky deletion**: Host can delete whiskies from a flight with a confirmation dialog (AlertDialog). Deletion cascades: removes all associated ratings, cleans up image files from disk, then deletes the whisky record.
+11. **Flight Board view**: Two-column menu-style layout in tasting room (tab navigation). Shows order number, thumbnail, name, distillery, age/ABV primary meta, and second meta line (region, cask, peat, ppm, whiskybase). Supports reorder (up/down) and delete per dram. Paginated at 12 items per page (6 per column).
+12. **PDF export**: jsPDF-based tasting menu PDF generation. Two-page layout: cover page (title, date, location, optional background image, optional quote, optional participants list) and lineup page (two-column list with thumbnails and second meta line). Configurable via dialog: title, date, quote, background image, include participants toggle, include photos toggle.
 
 ## External Dependencies
 
