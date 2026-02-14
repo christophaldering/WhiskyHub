@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { APP_NAME, getVersionInfo } from "@shared/version";
 
 const app = express();
 const httpServer = createServer(app);
@@ -97,7 +98,10 @@ app.use((req, res, next) => {
       reusePort: true,
     },
     () => {
+      const v = getVersionInfo();
+      log(`${APP_NAME} v${v.version} (build ${v.gitSha}) [${v.env}]`);
       log(`serving on port ${port}`);
+      log(`Build time: ${v.buildTime}`);
     },
   );
 })();

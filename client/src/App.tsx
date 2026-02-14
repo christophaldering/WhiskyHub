@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Layout from "@/components/layout";
 import Home from "@/pages/home";
 import TastingRoom from "@/pages/tasting-room";
+import { BuildFooter } from "@/components/build-footer";
 import "@/lib/i18n";
 
 function Router() {
@@ -27,6 +28,7 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
+        <BuildFooter />
       </TooltipProvider>
     </QueryClientProvider>
   );

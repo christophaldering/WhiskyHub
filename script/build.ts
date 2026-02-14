@@ -1,9 +1,16 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
 import { rm, readFile } from "fs/promises";
+import { execSync } from "child_process";
 
-// server deps to bundle to reduce openat(2) syscalls
-// which helps cold start times
+function getGitSha(): string {
+  try {
+    return execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
+  } catch {
+    return "unknown";
+  }
+}
+
 const allowlist = [
   "@google/generative-ai",
   "axios",
@@ -46,6 +53,9 @@ async function buildAll() {
   ];
   const externals = allDeps.filter((dep) => !allowlist.includes(dep));
 
+  const gitSha = getGitSha();
+  const buildTime = new Date().toISOString();
+
   await esbuild({
     entryPoints: ["server/index.ts"],
     platform: "node",
@@ -54,6 +64,8 @@ async function buildAll() {
     outfile: "dist/index.cjs",
     define: {
       "process.env.NODE_ENV": '"production"',
+      "process.env.GIT_SHA": JSON.stringify(gitSha),
+      "process.env.BUILD_TIME": JSON.stringify(buildTime),
     },
     minify: true,
     external: externals,

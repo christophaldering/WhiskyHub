@@ -11,6 +11,7 @@ import AdmZip from "adm-zip";
 import { storage } from "./storage";
 import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema } from "@shared/schema";
 import { z } from "zod";
+import { APP_VERSION, getVersionInfo } from "@shared/version";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -203,6 +204,17 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ===== HEALTH & VERSION =====
+
+  app.get("/health", (_req, res) => {
+    res.json({ status: "ok" });
+  });
+
+  app.get("/version", (_req, res) => {
+    const info = getVersionInfo();
+    res.json(info);
+  });
 
   // ===== PARTICIPANTS =====
   
