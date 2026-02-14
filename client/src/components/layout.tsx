@@ -28,14 +28,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ? currentParticipant.name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
     : "";
 
-  const ProfileAvatar = ({ size = 36 }: { size?: number }) => {
+  const ProfileAvatar = ({ size = 36, showName = false }: { size?: number; showName?: boolean }) => {
     if (!currentParticipant) return null;
     const photoUrl = profile?.photoUrl;
     return (
       <Link href="/profile">
         <div
           title={t("profile.title")}
-          className="cursor-pointer"
+          className="cursor-pointer flex flex-col items-center gap-1"
           data-testid="avatar-profile"
         >
           {photoUrl ? (
@@ -52,6 +52,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             >
               {initials || <User className="w-4 h-4 text-muted-foreground" />}
             </div>
+          )}
+          {showName && (
+            <span className="text-xs text-muted-foreground font-serif truncate max-w-[80px] text-center leading-tight">{currentParticipant.name}</span>
           )}
         </div>
       </Link>
@@ -75,7 +78,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <h1 className="text-2xl font-serif font-black tracking-tight text-primary">
               {t('app.name')}
             </h1>
-            <ProfileAvatar size={36} />
+            <ProfileAvatar size={54} showName />
           </div>
           <p className="text-xs text-muted-foreground uppercase tracking-widest font-sans">
             {t('app.tagline')}
@@ -164,7 +167,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <span className="font-serif font-bold text-lg text-primary">{t('app.name')}</span>
         </div>
         <div className="flex items-center gap-2">
-          <ProfileAvatar size={32} />
+          <ProfileAvatar size={48} showName />
           <LanguageToggle />
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
