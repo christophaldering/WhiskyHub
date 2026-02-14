@@ -13,6 +13,9 @@ import { useAppStore } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
 import { profileApi } from "@/lib/api";
 
+type NavItem = { href: string; icon: any; label: string; match?: (loc: string) => boolean };
+type NavGroup = { label: string; items: NavItem[] };
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
@@ -62,26 +65,67 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const navItems = [
-    { href: "/", icon: Home, label: t('nav.lobby') },
-    { href: "/sessions", icon: Wine, label: t('nav.sessions') },
+  const navGroups: NavGroup[] = [
+    {
+      label: t('navGroup.main'),
+      items: [
+        { href: "/", icon: Home, label: t('nav.lobby') },
+        { href: "/sessions", icon: Wine, label: t('nav.sessions') },
+        { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
+      ],
+    },
     ...(currentParticipant ? [
-      { href: "/profile", icon: User, label: t('profile.title') },
-      { href: "/friends", icon: Users, label: t('nav.friends') },
-      { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
-      { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
-      { href: "/flavor-wheel", icon: CircleDot, label: t('nav.flavorWheel') },
-      { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
-      { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
-      { href: "/export-notes", icon: Download, label: t('nav.exportNotes') },
-      { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
-      { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
-      { href: "/activity", icon: Rss, label: t('nav.activity') },
-      { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
-      { href: "/badges", icon: Trophy, label: t('nav.badges') },
-      ...(currentParticipant?.role === "admin" ? [
-        { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
-      ] : []),
+      {
+        label: t('navGroup.myWhisky'),
+        items: [
+          { href: "/profile", icon: User, label: t('profile.title') },
+          { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
+          { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
+          { href: "/flavor-wheel", icon: CircleDot, label: t('nav.flavorWheel') },
+          { href: "/badges", icon: Trophy, label: t('nav.badges') },
+        ],
+      },
+      {
+        label: t('navGroup.tools'),
+        items: [
+          { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
+          { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
+          { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
+          { href: "/export-notes", icon: Download, label: t('nav.exportNotes') },
+          { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
+        ],
+      },
+      {
+        label: t('navGroup.community'),
+        items: [
+          { href: "/friends", icon: Users, label: t('nav.friends') },
+          { href: "/activity", icon: Rss, label: t('nav.activity') },
+          { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
+        ],
+      },
+      {
+        label: t('navGroup.host'),
+        items: [
+          { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
+          { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
+        ],
+      },
+    ] : []),
+    {
+      label: t('navGroup.reference'),
+      items: [
+        { href: "/lexicon", icon: Library, label: t('nav.lexicon') },
+        { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
+        { href: "/intro", icon: Info, label: t('nav.about') },
+      ],
+    },
+    ...(currentParticipant?.role === "admin" ? [
+      {
+        label: t('navGroup.admin'),
+        items: [
+          { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
+        ],
+      },
     ] : []),
   ];
 
@@ -101,127 +145,41 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       
-      <nav className="flex-1 overflow-y-auto p-4 space-y-0.5">
-        {navItems.map((item) => {
-          const isActive = location === item.href;
-          return (
-            <Link key={item.href} href={item.href}>
-              <div
-                className={cn(
-                  "flex items-center gap-3 px-4 py-2 rounded-sm transition-all duration-300 cursor-pointer group",
-                  isActive
-                    ? "bg-secondary text-primary border-l-2 border-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                )}
-                onClick={() => setOpen(false)}
-              >
-                <item.icon className={cn("w-4 h-4", isActive && "text-primary")} />
-                <span className={cn("text-sm font-medium", isActive && "font-semibold")}>{item.label}</span>
-              </div>
-            </Link>
-          );
-        })}
-
-        <Link href="/lexicon">
-          <div
-            className={cn(
-              "flex items-center gap-3 px-4 py-2 rounded-sm transition-all duration-300 cursor-pointer",
-              location === "/lexicon"
-                ? "bg-secondary text-primary border-l-2 border-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-            )}
-            onClick={() => setOpen(false)}
-            data-testid="nav-lexicon"
-          >
-            <Library className="w-4 h-4" />
-            <span className="text-sm font-medium">{t('nav.lexicon')}</span>
+      <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+        {navGroups.map((group, gi) => (
+          <div key={gi}>
+            {gi > 0 && <div className="border-t border-border/30 my-2" />}
+            <div className="px-3 pt-1 pb-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                {group.label}
+              </span>
+            </div>
+            {group.items.map((item) => {
+              const isActive = item.match ? item.match(location) : location === item.href;
+              return (
+                <Link key={item.href} href={item.href}>
+                  <div
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-1.5 rounded-sm transition-all duration-300 cursor-pointer group",
+                      isActive
+                        ? "bg-secondary text-primary border-l-2 border-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                    )}
+                    onClick={() => setOpen(false)}
+                  >
+                    <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-primary")} />
+                    <span className={cn("text-sm font-medium truncate", isActive && "font-semibold")}>{item.label}</span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
-        </Link>
-
-        <Link href="/tasting-templates">
-          <div
-            className={cn(
-              "flex items-center gap-3 px-4 py-2 rounded-sm transition-all duration-300 cursor-pointer",
-              location === "/tasting-templates"
-                ? "bg-secondary text-primary border-l-2 border-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-            )}
-            onClick={() => setOpen(false)}
-            data-testid="nav-templates"
-          >
-            <FileText className="w-4 h-4" />
-            <span className="text-sm font-medium">{t('nav.templates')}</span>
-          </div>
-        </Link>
-
-        <Link href="/calendar">
-          <div
-            className={cn(
-              "flex items-center gap-3 px-4 py-2 rounded-sm transition-all duration-300 cursor-pointer",
-              location === "/calendar"
-                ? "bg-secondary text-primary border-l-2 border-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-            )}
-            onClick={() => setOpen(false)}
-            data-testid="nav-calendar"
-          >
-            <Calendar className="w-4 h-4" />
-            <span className="text-sm font-medium">{t('nav.calendar')}</span>
-          </div>
-        </Link>
-
-        <Link href="/recap">
-          <div
-            className={cn(
-              "flex items-center gap-3 px-4 py-2 rounded-sm transition-all duration-300 cursor-pointer",
-              location === "/recap" || location.startsWith("/recap/")
-                ? "bg-secondary text-primary border-l-2 border-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-            )}
-            onClick={() => setOpen(false)}
-            data-testid="nav-recap"
-          >
-            <ClipboardList className="w-4 h-4" />
-            <span className="text-sm font-medium">{t('nav.recap')}</span>
-          </div>
-        </Link>
-
-        <Link href="/about-method">
-          <div
-            className={cn(
-              "flex items-center gap-3 px-4 py-2 rounded-sm transition-all duration-300 cursor-pointer",
-              location === "/about-method"
-                ? "bg-secondary text-primary border-l-2 border-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-            )}
-            onClick={() => setOpen(false)}
-            data-testid="nav-about-method"
-          >
-            <BookOpen className="w-4 h-4" />
-            <span className="text-sm font-medium">{t('nav.aboutMethod')}</span>
-          </div>
-        </Link>
-
-        <Link href="/intro">
-          <div
-            className={cn(
-              "flex items-center gap-3 px-4 py-2 rounded-sm transition-all duration-300 cursor-pointer",
-              location === "/intro"
-                ? "bg-secondary text-primary border-l-2 border-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-            )}
-            onClick={() => setOpen(false)}
-            data-testid="nav-about"
-          >
-            <Info className="w-4 h-4" />
-            <span className="text-sm font-medium">{t('nav.about')}</span>
-          </div>
-        </Link>
+        ))}
       </nav>
 
-      <div className="p-6 border-t border-border/40 space-y-4">
+      <div className="p-4 border-t border-border/40 space-y-3">
         {currentParticipant && (
-          <div className="text-xs text-muted-foreground px-4 mb-2">
+          <div className="text-xs text-muted-foreground px-3 mb-1">
             Signed in as <span className="font-semibold text-foreground">{currentParticipant.name}</span>
           </div>
         )}
@@ -233,7 +191,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {currentParticipant && (
           <button
             onClick={() => setParticipant(null)}
-            className="flex items-center gap-3 px-4 py-2 w-full text-left text-muted-foreground hover:text-destructive transition-colors rounded-sm hover:bg-destructive/5 text-sm"
+            className="flex items-center gap-3 px-3 py-1.5 w-full text-left text-muted-foreground hover:text-destructive transition-colors rounded-sm hover:bg-destructive/5 text-sm"
           >
             <LogOut className="w-4 h-4" />
             <span>{t('nav.leave')}</span>

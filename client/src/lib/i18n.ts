@@ -59,6 +59,15 @@ const resources = {
         leaderboard: "Leaderboard",
         admin: "Admin Panel"
       },
+      navGroup: {
+        main: "Main",
+        myWhisky: "My Whisky",
+        tools: "Tools",
+        community: "Community",
+        host: "Host",
+        reference: "Reference",
+        admin: "Administration"
+      },
       theme: {
         dark: "Dark",
         light: "Light",
@@ -810,6 +819,15 @@ const resources = {
         pairings: "Pairing-Vorschläge",
         leaderboard: "Rangliste",
         admin: "Admin-Bereich"
+      },
+      navGroup: {
+        main: "Übersicht",
+        myWhisky: "Mein Whisky",
+        tools: "Werkzeuge",
+        community: "Community",
+        host: "Gastgeber",
+        reference: "Nachschlagewerk",
+        admin: "Verwaltung"
       },
       theme: {
         dark: "Dunkel",
