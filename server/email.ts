@@ -1,5 +1,5 @@
 import { log } from "./index";
-import nodemailer from "nodemailer";
+import { google } from "googleapis";
 
 interface EmailOptions {
   to: string;
@@ -7,60 +7,118 @@ interface EmailOptions {
   html: string;
 }
 
-let transporter: nodemailer.Transporter | null = null;
+// Gmail integration via Replit connector
+let connectionSettings: any;
 
-function getTransporter(): nodemailer.Transporter | null {
-  if (transporter) return transporter;
-
-  const host = process.env.SMTP_HOST;
-  const port = process.env.SMTP_PORT;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  if (!host || !user || !pass) {
-    return null;
-  }
-
+async function getAccessToken(): Promise<string | null> {
   try {
-    transporter = nodemailer.createTransport({
-      host,
-      port: parseInt(port || "587", 10),
-      secure: parseInt(port || "587", 10) === 465,
-      auth: { user, pass },
-    });
-    log("SMTP transport configured", "email");
-    return transporter;
+    if (
+      connectionSettings &&
+      connectionSettings.settings?.expires_at &&
+      new Date(connectionSettings.settings.expires_at).getTime() > Date.now()
+    ) {
+      return connectionSettings.settings.access_token;
+    }
+
+    const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+    const xReplitToken = process.env.REPL_IDENTITY
+      ? "repl " + process.env.REPL_IDENTITY
+      : process.env.WEB_REPL_RENEWAL
+        ? "depl " + process.env.WEB_REPL_RENEWAL
+        : null;
+
+    if (!hostname || !xReplitToken) {
+      return null;
+    }
+
+    const resp = await fetch(
+      "https://" +
+        hostname +
+        "/api/v2/connection?include_secrets=true&connector_names=google-mail",
+      {
+        headers: {
+          Accept: "application/json",
+          X_REPLIT_TOKEN: xReplitToken,
+        },
+      }
+    );
+    const data = await resp.json();
+    connectionSettings = data.items?.[0];
+
+    const accessToken =
+      connectionSettings?.settings?.access_token ||
+      connectionSettings?.settings?.oauth?.credentials?.access_token;
+
+    if (!connectionSettings || !accessToken) {
+      return null;
+    }
+    return accessToken;
   } catch (e) {
-    log("Failed to configure SMTP transport: " + (e as Error).message, "email");
+    log("Failed to get Gmail access token: " + (e as Error).message, "email");
     return null;
   }
+}
+
+async function getGmailClient() {
+  const accessToken = await getAccessToken();
+  if (!accessToken) return null;
+
+  const oauth2Client = new google.auth.OAuth2();
+  oauth2Client.setCredentials({ access_token: accessToken });
+
+  return google.gmail({ version: "v1", auth: oauth2Client });
 }
 
 export function isSmtpConfigured(): boolean {
-  const t = getTransporter();
-  return t !== null;
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY || process.env.WEB_REPL_RENEWAL;
+  return !!(hostname && xReplitToken);
+}
+
+function buildRawEmail(to: string, subject: string, html: string): string {
+  const boundary = "boundary_" + Date.now().toString(36);
+  const lines = [
+    `To: ${to}`,
+    `Subject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`,
+    "MIME-Version: 1.0",
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    "",
+    `--${boundary}`,
+    "Content-Type: text/html; charset=UTF-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    Buffer.from(html).toString("base64"),
+    "",
+    `--${boundary}--`,
+  ];
+  const raw = lines.join("\r\n");
+  return Buffer.from(raw)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
-  const t = getTransporter();
-  if (!t) {
-    log(`SMTP not configured — skipping email to ${options.to}`, "email");
+  const gmail = await getGmailClient();
+  if (!gmail) {
+    log(`Gmail not connected — skipping email to ${options.to}`, "email");
     return false;
   }
 
   try {
-    const fromName = process.env.SMTP_FROM_NAME || "CaskSense";
-    const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || "noreply@casksense.app";
-    await t.sendMail({
-      from: `"${fromName}" <${fromEmail}>`,
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
+    const raw = buildRawEmail(options.to, options.subject, options.html);
+    await gmail.users.messages.send({
+      userId: "me",
+      requestBody: { raw },
     });
-    log(`Email sent to ${options.to}`, "email");
+    log(`Email sent to ${options.to} via Gmail`, "email");
     return true;
   } catch (e) {
-    log(`Failed to send email to ${options.to}: ${(e as Error).message}`, "email");
+    log(
+      `Failed to send email to ${options.to}: ${(e as Error).message}`,
+      "email"
+    );
     return false;
   }
 }
@@ -73,7 +131,14 @@ export function buildInviteEmail(params: {
   inviteLink: string;
   personalNote?: string;
 }): { subject: string; html: string } {
-  const { hostName, tastingTitle, tastingDate, tastingLocation, inviteLink, personalNote } = params;
+  const {
+    hostName,
+    tastingTitle,
+    tastingDate,
+    tastingLocation,
+    inviteLink,
+    personalNote,
+  } = params;
 
   const subject = `You're invited: ${tastingTitle} — CaskSense`;
 
