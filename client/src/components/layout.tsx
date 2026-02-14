@@ -256,6 +256,51 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/40 safe-area-bottom">
+        <div className="flex items-center justify-around px-1 py-1.5">
+          {[
+            { href: "/", icon: Home, label: t('nav.lobby') },
+            { href: "/sessions", icon: Wine, label: t('nav.sessions') },
+            ...(currentParticipant ? [
+              { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
+              { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
+            ] : []),
+            { href: "/more", icon: Menu, label: t('nav.more'), isMore: true },
+          ].map((item) => {
+            const isActive = location === item.href;
+            if ((item as any).isMore) {
+              return (
+                <button
+                  key="more"
+                  onClick={() => setOpen(true)}
+                  className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px] text-muted-foreground hover:text-foreground transition-colors"
+                  data-testid="bottom-nav-more"
+                >
+                  <Menu className="w-5 h-5" />
+                  <span className="text-[10px] leading-tight">{item.label}</span>
+                </button>
+              );
+            }
+            return (
+              <Link key={item.href} href={item.href}>
+                <div
+                  className={cn(
+                    "flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px] transition-colors",
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  data-testid={`bottom-nav-${item.href.replace("/", "") || "home"}`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className={cn("text-[10px] leading-tight", isActive && "font-semibold")}>{item.label}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

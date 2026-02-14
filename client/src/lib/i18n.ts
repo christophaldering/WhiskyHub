@@ -49,7 +49,8 @@ const resources = {
         templates: "Note Templates",
         activity: "Friend Activity",
         calendar: "Tasting Calendar",
-        about: "About"
+        about: "About",
+        more: "More"
       },
       theme: {
         dark: "Dark",
@@ -666,7 +667,8 @@ const resources = {
         templates: "Notiz-Vorlagen",
         activity: "Freunde-Aktivität",
         calendar: "Tasting-Kalender",
-        about: "Über"
+        about: "Über",
+        more: "Mehr"
       },
       theme: {
         dark: "Dunkel",
