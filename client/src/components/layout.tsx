@@ -1,62 +1,67 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { GlassWater, BarChart3, Home, Users, Wine, LogOut, Menu } from "lucide-react";
+import { GlassWater, BarChart3, Home, Users, BookOpen, LogOut, Menu } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { LanguageToggle } from "@/components/language-toggle";
+import { useTranslation } from "react-i18next";
 // @ts-ignore
-import bgImage from "@/assets/whisky-bg.png";
+import bgImage from "@/assets/cask-bg.png"; // Fallback if image generation failed, or use solid color
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
 
   const navItems = [
-    { href: "/", icon: Home, label: "Lobby" },
-    { href: "/tasting/t1", icon: GlassWater, label: "Tasting Room" },
-    { href: "/results/t1", icon: BarChart3, label: "Live Stats" },
-    { href: "/admin", icon: Users, label: "Host Admin" },
+    { href: "/", icon: Home, label: t('nav.lobby') },
+    { href: "/tasting/t1", icon: GlassWater, label: t('nav.tastingRoom') },
+    // Insight Mode is separate in CaskSense, maybe shown only when active
+    { href: "/results/t1", icon: BarChart3, label: t('nav.insight') },
+    { href: "/admin", icon: Users, label: t('nav.host') },
   ];
 
   const NavContent = () => (
-    <div className="flex flex-col h-full bg-card/95 backdrop-blur-md border-r border-border/50">
-      <div className="p-6 border-b border-border/50">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/20 rounded-full border border-primary/30">
-            <Wine className="w-6 h-6 text-primary" />
-          </div>
-          <h1 className="text-xl font-serif font-bold tracking-tight text-primary">
-            Dram & Data
+    <div className="flex flex-col h-full bg-card/95 backdrop-blur-md border-r border-border/50 shadow-sm">
+      <div className="p-8 border-b border-border/50">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-serif font-black tracking-tight text-primary">
+            {t('app.name')}
           </h1>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-sans">
+            {t('app.tagline')}
+          </p>
         </div>
       </div>
       
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-6 space-y-1">
         {navItems.map((item) => {
           const isActive = location === item.href;
           return (
             <Link key={item.href} href={item.href}>
               <div
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-300 cursor-pointer group",
+                  "flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-300 cursor-pointer group",
                   isActive
-                    ? "bg-primary/10 text-primary border border-primary/20 shadow-[0_0_15px_-3px_rgba(255,190,0,0.1)]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    ? "bg-secondary text-primary border-l-2 border-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                 )}
                 onClick={() => setOpen(false)}
               >
-                <item.icon className={cn("w-5 h-5 transition-transform group-hover:scale-110", isActive && "text-primary")} />
-                <span className={cn("font-medium", isActive && "font-semibold")}>{item.label}</span>
+                <item.icon className={cn("w-4 h-4", isActive && "text-primary")} />
+                <span className={cn("text-sm font-medium", isActive && "font-semibold")}>{item.label}</span>
               </div>
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-border/50">
-        <button className="flex items-center gap-3 px-4 py-3 w-full text-left text-muted-foreground hover:text-destructive transition-colors rounded-md hover:bg-destructive/10">
-          <LogOut className="w-5 h-5" />
-          <span className="font-medium">Leave Tasting</span>
+      <div className="p-6 border-t border-border/50 space-y-4">
+        <LanguageToggle />
+        <button className="flex items-center gap-3 px-4 py-2 w-full text-left text-muted-foreground hover:text-destructive transition-colors rounded-sm hover:bg-destructive/5 text-sm">
+          <LogOut className="w-4 h-4" />
+          <span>{t('nav.leave')}</span>
         </button>
       </div>
     </div>
@@ -64,29 +69,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden font-sans">
-      {/* Background with overlay */}
-      <div 
-        className="fixed inset-0 z-0 bg-cover bg-center pointer-events-none opacity-20"
-        style={{ backgroundImage: `url(${bgImage})` }}
-      />
-      <div className="fixed inset-0 z-0 bg-gradient-to-br from-background via-background/95 to-background/80 pointer-events-none" />
-
+      {/* Background - Clean Paper Style */}
+      <div className="fixed inset-0 z-0 bg-[#F9F9F7]" /> {/* Warm paper fallback */}
+      
       {/* Mobile Header */}
-      <header className="md:hidden sticky top-0 z-50 flex items-center justify-between p-4 border-b border-border bg-background/80 backdrop-blur-lg">
+      <header className="md:hidden sticky top-0 z-50 flex items-center justify-between p-4 border-b border-border bg-card/80 backdrop-blur-lg">
         <div className="flex items-center gap-2">
-          <Wine className="w-5 h-5 text-primary" />
-          <span className="font-serif font-bold text-lg">Dram & Data</span>
+          <span className="font-serif font-bold text-lg text-primary">{t('app.name')}</span>
         </div>
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/10 hover:text-primary">
-              <Menu className="w-6 h-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0 border-r-border/50 w-72 bg-card">
-            <NavContent />
-          </SheetContent>
-        </Sheet>
+        <div className="flex items-center gap-2">
+          <LanguageToggle />
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-primary hover:bg-secondary">
+                <Menu className="w-5 h-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 border-r-border/50 w-72 bg-card">
+              <NavContent />
+            </SheetContent>
+          </Sheet>
+        </div>
       </header>
 
       <div className="flex relative z-10 h-screen overflow-hidden">
@@ -96,8 +99,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="container max-w-6xl mx-auto p-4 md:p-8 pb-24 md:pb-8 animate-in fade-in duration-500">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
+          <div className="container max-w-5xl mx-auto p-6 md:p-12 pb-24 md:pb-12 animate-in fade-in duration-700">
             {children}
           </div>
         </main>

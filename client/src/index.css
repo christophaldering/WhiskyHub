@@ -33,36 +33,65 @@
 }
 
 :root {
-  /* Dark Moody Theme by default for this app type */
-  --background: 20 10% 8%; /* Deep almost black brown */
-  --foreground: 35 30% 90%; /* Off-white parchment */
+  /* CaskSense Calm European Theme */
+  /* Soft, warm greys and muted blues */
+  --background: 210 20% 98%; /* Off-white/Paper */
+  --foreground: 210 20% 20%; /* Charcoal */
   
-  --card: 20 15% 12%;
-  --card-foreground: 35 30% 90%;
+  --card: 0 0% 100%; /* Pure White */
+  --card-foreground: 210 20% 20%;
   
-  --popover: 20 15% 12%;
-  --popover-foreground: 35 30% 90%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 20% 20%;
   
-  --primary: 35 90% 50%; /* Rich Amber Gold */
-  --primary-foreground: 20 20% 10%;
+  --primary: 215 30% 40%; /* Muted Slate Blue - Sophisticated */
+  --primary-foreground: 0 0% 100%;
   
-  --secondary: 20 15% 20%;
-  --secondary-foreground: 35 30% 90%;
+  --secondary: 35 30% 90%; /* Very light beige/cream */
+  --secondary-foreground: 215 30% 30%;
   
-  --muted: 20 10% 20%;
-  --muted-foreground: 35 10% 60%;
+  --muted: 210 10% 90%;
+  --muted-foreground: 210 10% 50%;
   
-  --accent: 35 90% 50%;
-  --accent-foreground: 20 20% 10%;
+  --accent: 35 40% 50%; /* Muted Gold/Amber for Whisky accents */
+  --accent-foreground: 0 0% 100%;
   
   --destructive: 0 60% 40%;
   --destructive-foreground: 0 0% 100%;
   
-  --border: 20 20% 20%;
-  --input: 20 20% 20%;
-  --ring: 35 90% 50%;
+  --border: 210 10% 85%;
+  --input: 210 10% 90%;
+  --ring: 215 30% 40%;
   
   --radius: 0.5rem;
+}
+
+.dark {
+  /* Optional Dark Mode - Deep Slate */
+  --background: 215 25% 15%;
+  --foreground: 210 20% 90%;
+  
+  --card: 215 25% 18%;
+  --card-foreground: 210 20% 90%;
+  
+  --popover: 215 25% 18%;
+  --popover-foreground: 210 20% 90%;
+  
+  --primary: 215 30% 60%; 
+  --primary-foreground: 215 25% 10%;
+  
+  --secondary: 215 20% 25%;
+  --secondary-foreground: 210 20% 90%;
+  
+  --muted: 215 20% 25%;
+  --muted-foreground: 210 10% 60%;
+  
+  --accent: 35 50% 60%;
+  --accent-foreground: 215 25% 10%;
+  
+  --border: 215 20% 30%;
+  --input: 215 20% 30%;
+  --ring: 215 30% 60%;
 }
 
 @layer base {
@@ -70,9 +99,9 @@
     @apply border-border;
   }
   body {
-    @apply font-sans antialiased bg-background text-foreground selection:bg-primary/30;
+    @apply font-sans antialiased bg-background text-foreground;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif tracking-tight;
+    @apply font-serif tracking-tight text-primary;
   }
 }

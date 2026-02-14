@@ -2,52 +2,52 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
-import { Wine, ArrowRight, UserPlus, Plus } from "lucide-react";
+import { BookOpen, ArrowRight, UserPlus, Plus } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import { useSessionStore } from "@/lib/store";
 
 export default function Home() {
+  const { t } = useTranslation();
+  const { currentUser } = useSessionStore();
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] w-full max-w-2xl mx-auto space-y-12 py-10">
+    <div className="flex flex-col items-center justify-center min-h-[70vh] w-full max-w-3xl mx-auto space-y-16 py-10">
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="text-center space-y-6"
+        transition={{ duration: 1 }}
+        className="text-center space-y-8"
       >
-        <div className="inline-block p-4 rounded-full bg-primary/10 border border-primary/20 mb-4 animate-pulse">
-           <Wine className="w-12 h-12 text-primary" />
-        </div>
-        <h1 className="text-5xl md:text-7xl font-serif font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-primary via-orange-300 to-amber-700 pb-2">
-          Dram & Data
+        <div className="w-16 h-1 bg-primary mx-auto mb-8 opacity-50"></div>
+        <h1 className="text-5xl md:text-7xl font-serif font-black tracking-tighter text-primary pb-2">
+          {t('app.name')}
         </h1>
-        <p className="text-xl text-muted-foreground max-w-lg mx-auto font-light leading-relaxed">
-          The gentleman's companion for tracking, rating, and analyzing whisky tastings in real-time.
+        <p className="text-xl text-muted-foreground max-w-lg mx-auto font-light leading-relaxed font-serif italic">
+          "{t('app.tagline')}"
         </p>
       </motion.div>
 
-      <div className="grid md:grid-cols-2 gap-6 w-full">
+      <div className="grid md:grid-cols-2 gap-8 w-full">
         <motion.div
-           initial={{ opacity: 0, x: -20 }}
-           animate={{ opacity: 1, x: 0 }}
-           transition={{ delay: 0.2 }}
+           initial={{ opacity: 0, y: 20 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ delay: 0.2, duration: 0.8 }}
         >
-          <Card className="h-full border-primary/20 bg-card/60 backdrop-blur-sm hover:border-primary/50 transition-colors group">
+          <Card className="h-full border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-500">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-serif text-2xl text-primary">
-                <UserPlus className="w-6 h-6" /> Join Tasting
+              <CardTitle className="flex items-center gap-3 font-serif text-2xl text-primary">
+                <UserPlus className="w-5 h-5 text-accent" /> Join Session
               </CardTitle>
-              <CardDescription>Enter a code to join an existing session.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <Input placeholder="Enter Code (e.g. DRAMS25)" className="font-mono uppercase" />
-              </div>
+            <CardContent className="space-y-4">
+              <Input placeholder="Access Code (e.g. CASK26)" className="font-mono uppercase tracking-widest bg-secondary/30 border-border/50" />
             </CardContent>
             <CardFooter>
               <Link href="/tasting/t1">
-                <Button className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                  Enter Room <ArrowRight className="w-4 h-4 ml-2" />
+                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-serif tracking-wide">
+                  Enter Tasting Room
                 </Button>
               </Link>
             </CardFooter>
@@ -55,41 +55,29 @@ export default function Home() {
         </motion.div>
 
         <motion.div
-           initial={{ opacity: 0, x: 20 }}
-           animate={{ opacity: 1, x: 0 }}
-           transition={{ delay: 0.3 }}
+           initial={{ opacity: 0, y: 20 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ delay: 0.4, duration: 0.8 }}
         >
-          <Card className="h-full border-border/50 bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors">
+          <Card className="h-full border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-500">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-serif text-2xl">
-                <Plus className="w-6 h-6 text-muted-foreground" /> Host Session
+              <CardTitle className="flex items-center gap-3 font-serif text-2xl text-primary">
+                <Plus className="w-5 h-5 text-accent" /> Host Session
               </CardTitle>
-              <CardDescription>Create a new tasting event for your guests.</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Set up a flight, invite guests via link, and watch live analytics as they rate your selection.
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Curate a flight, guide the ritual, and reveal collective insights.
               </p>
             </CardContent>
             <CardFooter className="mt-auto">
-              <Button variant="outline" className="w-full border-primary/20 hover:border-primary text-primary hover:bg-primary/10">
-                Create Event
+              <Button variant="outline" className="w-full border-primary/20 hover:border-primary text-primary hover:bg-secondary font-serif tracking-wide">
+                Create New Event
               </Button>
             </CardFooter>
           </Card>
         </motion.div>
       </div>
-
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="text-center"
-      >
-        <p className="text-sm text-muted-foreground/50 font-serif italic">
-          "Too much of anything is bad, but too much good whiskey is barely enough." — Mark Twain
-        </p>
-      </motion.div>
     </div>
   );
 }
