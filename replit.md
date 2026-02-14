@@ -120,6 +120,22 @@ Preferred communication style: Simple, everyday language.
 13. **Participant profiles**: Optional profile page with photo upload, bio (400 chars max), favorite whisky, go-to dram, preferred regions/peat/cask. Profiles are public to other attendees in the same session. Profile photos use the same multer upload system as bottle photos.
 14. **Session invitations**: Hosts can invite participants by email. Uses nodemailer with SMTP env vars (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM_NAME, SMTP_FROM_EMAIL). Falls back to shareable invite links if SMTP is not configured. Invites use random 48-char hex tokens with status tracking (invited → joined). Invite acceptance auto-joins the tasting.
 15. **Attendee roster**: Shows participants in a tasting with profile photos and names. Clicking a participant opens a read-only profile card. Host badge for the session creator.
+16. **Blind Mode**: Host can enable blind tasting during session creation. In blind mode, whisky identities (name, details, image) are hidden from participants. Host controls a sequential reveal: each "Reveal Next" step progresses through name → meta → image for each expression in order. Uses `revealIndex` (which expression) and `revealStep` (0=blind, 1=name, 2=meta, 3=image). Sidebar and navigation pills respect blind state.
+17. **Discussion panel**: Real-time chat panel visible during active (open) sessions. Uses React Query polling (3s interval). Participants post messages with their name and timestamp. Locked when session is not open.
+18. **Reflection phase**: Optional post-tasting reflection enabled at session creation. Supports standard 4 prompts or custom host-defined prompts (1–5). Three visibility modes: named, anonymous, or optional (participant chooses). Uses `reflection_entries` table. Panel shows per-prompt submission with all reflections aggregated.
+
+### Database Schema (additions)
+- **discussion_entries**: id, tastingId, participantId, participantName, text, createdAt
+- **reflection_entries**: id, tastingId, participantId, participantName, promptText, text, isAnonymous, createdAt
+
+### API Structure (additions)
+- `PATCH /api/tastings/:id/blind-mode` — Update blind mode settings (host only)
+- `POST /api/tastings/:id/reveal-next` — Advance blind reveal (host only)
+- `GET /api/tastings/:id/discussions` — List discussion entries
+- `POST /api/tastings/:id/discussions` — Post discussion entry
+- `GET /api/tastings/:id/reflections` — List all reflections
+- `GET /api/tastings/:id/reflections/mine/:participantId` — Get participant's reflections
+- `POST /api/tastings/:id/reflections` — Post a reflection
 
 ## External Dependencies
 
