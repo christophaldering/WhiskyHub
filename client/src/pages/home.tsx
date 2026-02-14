@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useLocation } from "wouter";
-import { UserPlus, Plus, ArrowRight, Star, Wine, ImageIcon } from "lucide-react";
+import { UserPlus, Plus, ArrowRight, Star, Wine, ImageIcon, Glasses, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
@@ -22,10 +23,11 @@ export default function Home() {
   const [showLogin, setShowLogin] = useState(false);
   const [joinError, setJoinError] = useState("");
 
-  // Create tasting state
   const [newTitle, setNewTitle] = useState("");
   const [newLocation, setNewLocation] = useState("");
   const [newDate, setNewDate] = useState(new Date().toISOString().split("T")[0]);
+  const [blindMode, setBlindMode] = useState(false);
+  const [reflectionEnabled, setReflectionEnabled] = useState(false);
 
   const { data: tastings } = useQuery({
     queryKey: ["tastings"],
@@ -77,6 +79,8 @@ export default function Home() {
       code,
       status: "draft",
       currentAct: "act1",
+      blindMode,
+      reflectionEnabled,
     });
   };
 
@@ -154,6 +158,28 @@ export default function Home() {
                 <div className="space-y-1">
                   <Label className="text-xs uppercase tracking-widest text-muted-foreground">Location</Label>
                   <Input placeholder="The Library" value={newLocation} onChange={(e) => setNewLocation(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-location" />
+                </div>
+              </div>
+              <div className="border-t border-border/30 pt-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Glasses className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <Label className="text-xs font-medium">{t("sessionSettings.blindMode")}</Label>
+                      <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.blindModeDesc")}</p>
+                    </div>
+                  </div>
+                  <Switch checked={blindMode} onCheckedChange={setBlindMode} data-testid="switch-blind-mode" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <Label className="text-xs font-medium">{t("sessionSettings.reflectionPhase")}</Label>
+                      <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.reflectionDesc")}</p>
+                    </div>
+                  </div>
+                  <Switch checked={reflectionEnabled} onCheckedChange={setReflectionEnabled} data-testid="switch-reflection" />
                 </div>
               </div>
             </CardContent>

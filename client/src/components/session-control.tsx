@@ -1,21 +1,29 @@
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { Play, Lock, Eye, Archive, ChevronRight } from "lucide-react";
+import { Play, Lock, Eye, Archive, ChevronRight, Glasses } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { tastingApi } from "@/lib/api";
+import { tastingApi, blindModeApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import type { Tasting } from "@shared/schema";
 
 interface SessionControlProps {
   tasting: Tasting;
+  totalWhiskies: number;
 }
 
-export function SessionControl({ tasting }: SessionControlProps) {
+export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) {
   const { t } = useTranslation();
 
   const updateStatus = useMutation({
     mutationFn: (params: { status: string; currentAct?: string }) =>
       tastingApi.updateStatus(tasting.id, params.status, params.currentAct),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", tasting.id] });
+    },
+  });
+
+  const revealNext = useMutation({
+    mutationFn: () => blindModeApi.revealNext(tasting.id, tasting.hostId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasting", tasting.id] });
     },
@@ -47,6 +55,18 @@ export function SessionControl({ tasting }: SessionControlProps) {
 
   const { label, icon: Icon } = getButtonConfig();
 
+  const showBlindControls = tasting.blindMode && (tasting.status === "open" || tasting.status === "closed");
+  const revealIndex = tasting.revealIndex ?? 0;
+  const revealStep = tasting.revealStep ?? 0;
+  const allRevealed = revealIndex >= totalWhiskies;
+
+  const getStepLabel = () => {
+    if (revealStep === 1) return t("blind.stepName");
+    if (revealStep === 2) return t("blind.stepMeta");
+    if (revealStep === 3) return t("blind.stepImage");
+    return null;
+  };
+
   if (tasting.status === "archived") return null;
 
   return (
@@ -69,6 +89,29 @@ export function SessionControl({ tasting }: SessionControlProps) {
         >
           <Icon className="w-4 h-4 mr-2" /> {label}
         </Button>
+        {showBlindControls && (
+          <div className="mt-3 pt-3 border-t border-border/50 flex flex-col gap-2">
+            <div className="text-xs text-muted-foreground font-mono" data-testid="text-blind-progress">
+              {allRevealed
+                ? t("blind.allRevealed")
+                : t("blind.revealProgress", { current: revealIndex + 1, total: totalWhiskies })}
+            </div>
+            {!allRevealed && revealStep > 0 && (
+              <div className="text-xs text-muted-foreground/80" data-testid="text-blind-step">
+                {getStepLabel()}
+              </div>
+            )}
+            <Button
+              onClick={() => revealNext.mutate()}
+              disabled={revealNext.isPending || allRevealed}
+              variant="outline"
+              className="w-full"
+              data-testid="button-reveal-next"
+            >
+              <Glasses className="w-4 h-4 mr-2" /> {t("blind.revealNext")}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
