@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -6,7 +6,8 @@ import { importApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Upload, FileSpreadsheet, Archive, CheckCircle2, XCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Upload, FileSpreadsheet, ImageIcon, CheckCircle2, XCircle, AlertTriangle, Loader2 } from "lucide-react";
 
 type ImportStep = "upload" | "preview" | "importing" | "done";
 
@@ -24,6 +25,7 @@ interface PreviewRow {
   _row: number;
   _errors: string[];
   _imageStatus: string | null;
+  _matchedImage: string | null;
 }
 
 interface ImportResult {
@@ -39,26 +41,50 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<ImportStep>("upload");
   const [spreadsheetFile, setSpreadsheetFile] = useState<File | null>(null);
-  const [imagesZip, setImagesZip] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [uploadedImageNames, setUploadedImageNames] = useState<string[]>([]);
   const [preview, setPreview] = useState<PreviewRow[]>([]);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [results, setResults] = useState<ImportResult[]>([]);
   const [summarySuccess, setSummarySuccess] = useState(0);
   const [summaryErrors, setSummaryErrors] = useState(0);
+  const [imageMapping, setImageMapping] = useState<Record<number, string>>({});
   const spreadsheetRef = useRef<HTMLInputElement>(null);
-  const zipRef = useRef<HTMLInputElement>(null);
+  const imagesRef = useRef<HTMLInputElement>(null);
 
   const parseMutation = useMutation({
-    mutationFn: () => importApi.parse(tastingId, spreadsheetFile!, imagesZip || undefined),
+    mutationFn: () => importApi.parse(tastingId, spreadsheetFile!, imageFiles.length > 0 ? imageFiles : undefined),
     onSuccess: (data) => {
       setPreview(data.preview || []);
       setParseErrors(data.parseErrors || []);
+      setUploadedImageNames(data.uploadedImages || []);
+
+      const initialMapping: Record<number, string> = {};
+      (data.preview || []).forEach((row: PreviewRow) => {
+        if (row._matchedImage) {
+          initialMapping[row._row] = row._matchedImage;
+        }
+      });
+      setImageMapping(initialMapping);
       setStep("preview");
     },
   });
 
   const confirmMutation = useMutation({
-    mutationFn: () => importApi.confirm(tastingId, spreadsheetFile!, imagesZip || undefined),
+    mutationFn: () => {
+      const mappingForApi: Record<string, string> = {};
+      Object.entries(imageMapping).forEach(([rowNum, filename]) => {
+        if (filename && filename !== "__none__") {
+          mappingForApi[rowNum] = filename;
+        }
+      });
+      return importApi.confirm(
+        tastingId,
+        spreadsheetFile!,
+        imageFiles.length > 0 ? imageFiles : undefined,
+        Object.keys(mappingForApi).length > 0 ? mappingForApi : undefined
+      );
+    },
     onSuccess: (data) => {
       setResults(data.results || []);
       setSummarySuccess(data.successCount || 0);
@@ -71,31 +97,30 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
   const reset = () => {
     setStep("upload");
     setSpreadsheetFile(null);
-    setImagesZip(null);
+    setImageFiles([]);
+    setUploadedImageNames([]);
     setPreview([]);
     setParseErrors([]);
     setResults([]);
     setSummarySuccess(0);
     setSummaryErrors(0);
+    setImageMapping({});
     if (spreadsheetRef.current) spreadsheetRef.current.value = "";
-    if (zipRef.current) zipRef.current.value = "";
+    if (imagesRef.current) imagesRef.current.value = "";
   };
 
   const handleSpreadsheetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const ext = file.name.split(".").pop()?.toLowerCase();
-    if (!["xlsx", "xls", "csv", "txt"].includes(ext || "")) {
-      return;
-    }
+    if (!["xlsx", "xls", "csv", "txt"].includes(ext || "")) return;
     setSpreadsheetFile(file);
   };
 
-  const handleZipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.name.toLowerCase().endsWith(".zip")) {
-      setImagesZip(file);
-    }
+  const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const valid = files.filter(f => /\.(jpe?g|png|webp|gif)$/i.test(f.name));
+    setImageFiles(valid);
   };
 
   const handleParse = () => {
@@ -109,7 +134,40 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
     confirmMutation.mutate();
   };
 
+  const handleMappingChange = (rowNum: number, value: string) => {
+    setImageMapping(prev => {
+      const next = { ...prev };
+      if (value === "__none__") {
+        delete next[rowNum];
+      } else {
+        next[rowNum] = value;
+      }
+      return next;
+    });
+  };
+
   const validRows = preview.filter(r => r._errors.length === 0);
+
+  const imageBadge = (row: PreviewRow) => {
+    if (row._imageStatus === "url") {
+      return <span className="text-primary text-[10px] bg-primary/10 px-1.5 py-0.5 rounded">{t("import.imageUrl")}</span>;
+    }
+    const mapped = imageMapping[row._row];
+    if (mapped) {
+      const isAuto = row._imageStatus === "auto";
+      return (
+        <span className={cn("text-[10px] px-1.5 py-0.5 rounded", isAuto ? "text-amber-700 bg-amber-100" : "text-primary bg-primary/10")}>
+          {isAuto ? t("import.imageAutoMatched") : t("import.imageMatched")}
+        </span>
+      );
+    }
+    if (row._imageStatus === "missing") {
+      return <span className="text-destructive text-[10px] bg-destructive/10 px-1.5 py-0.5 rounded">{t("import.imageMissing")}</span>;
+    }
+    return <span className="text-muted-foreground/40 text-[10px]">{t("import.imageNone")}</span>;
+  };
+
+  const hasImages = uploadedImageNames.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
@@ -157,30 +215,31 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
             </div>
 
             <div className="space-y-3">
-              <label className="text-xs uppercase tracking-widest text-muted-foreground font-bold block">{t("import.imagesZip")}</label>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground font-bold block">{t("import.bottlePhotos")}</label>
               <div
-                onClick={() => zipRef.current?.click()}
+                onClick={() => imagesRef.current?.click()}
                 className={cn(
                   "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors hover:border-primary/50",
-                  imagesZip ? "border-primary/30 bg-primary/5" : "border-border"
+                  imageFiles.length > 0 ? "border-primary/30 bg-primary/5" : "border-border"
                 )}
                 data-testid="dropzone-images"
               >
                 <input
-                  ref={zipRef}
+                  ref={imagesRef}
                   type="file"
-                  accept=".zip"
-                  onChange={handleZipChange}
+                  accept=".jpg,.jpeg,.png,.webp,.gif"
+                  multiple
+                  onChange={handleImagesChange}
                   className="hidden"
-                  data-testid="input-import-zip"
+                  data-testid="input-import-images"
                 />
-                <Archive className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                {imagesZip ? (
-                  <p className="text-sm font-medium text-primary">{imagesZip.name}</p>
+                <ImageIcon className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                {imageFiles.length > 0 ? (
+                  <p className="text-sm font-medium text-primary">{t("import.imagesSelected", { count: imageFiles.length })}</p>
                 ) : (
                   <>
-                    <p className="text-sm font-medium text-muted-foreground">{t("import.dropZip")}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{t("import.zipHint")}</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t("import.dropImages")}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t("import.imagesHint")}</p>
                   </>
                 )}
               </div>
@@ -289,7 +348,6 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
                       <th className="px-2 py-2 text-left font-bold text-muted-foreground">Distillery</th>
                       <th className="px-2 py-2 text-left font-bold text-muted-foreground">ABV</th>
                       <th className="px-2 py-2 text-left font-bold text-muted-foreground">Age</th>
-                      <th className="px-2 py-2 text-left font-bold text-muted-foreground">Region</th>
                       <th className="px-2 py-2 text-left font-bold text-muted-foreground">Image</th>
                       <th className="px-2 py-2 text-left font-bold text-muted-foreground">Status</th>
                     </tr>
@@ -298,16 +356,35 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
                     {preview.map((row, idx) => (
                       <tr key={idx} className={cn("border-t border-border/20", row._errors.length > 0 && "bg-destructive/5")}>
                         <td className="px-2 py-1.5 text-muted-foreground">{row._row}</td>
-                        <td className="px-2 py-1.5 font-medium">{row.name || "—"}</td>
-                        <td className="px-2 py-1.5 text-muted-foreground">{row.distillery || "—"}</td>
-                        <td className="px-2 py-1.5 text-muted-foreground font-mono">{row.abv ? `${row.abv}%` : "—"}</td>
-                        <td className="px-2 py-1.5 text-muted-foreground">{row.age || "—"}</td>
-                        <td className="px-2 py-1.5 text-muted-foreground">{row.region || "—"}</td>
+                        <td className="px-2 py-1.5 font-medium">{row.name || "\u2014"}</td>
+                        <td className="px-2 py-1.5 text-muted-foreground">{row.distillery || "\u2014"}</td>
+                        <td className="px-2 py-1.5 text-muted-foreground font-mono">{row.abv ? `${row.abv}%` : "\u2014"}</td>
+                        <td className="px-2 py-1.5 text-muted-foreground">{row.age || "\u2014"}</td>
                         <td className="px-2 py-1.5">
-                          {row._imageStatus === "url" && <span className="text-primary text-[10px] bg-primary/10 px-1.5 py-0.5 rounded">URL</span>}
-                          {row._imageStatus === "zip" && <span className="text-primary text-[10px] bg-primary/10 px-1.5 py-0.5 rounded">ZIP</span>}
-                          {row._imageStatus === "missing" && <span className="text-destructive text-[10px] bg-destructive/10 px-1.5 py-0.5 rounded">{t("import.imageMissing")}</span>}
-                          {!row._imageStatus && <span className="text-muted-foreground/40">—</span>}
+                          {row._imageStatus === "url" ? (
+                            imageBadge(row)
+                          ) : hasImages ? (
+                            <Select
+                              value={imageMapping[row._row] || "__none__"}
+                              onValueChange={(v) => handleMappingChange(row._row, v)}
+                            >
+                              <SelectTrigger className="h-7 text-[10px] w-[140px] border-border/50" data-testid={`select-image-${row._row}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__" className="text-xs text-muted-foreground">
+                                  {t("import.imageNone")}
+                                </SelectItem>
+                                {uploadedImageNames.map(name => (
+                                  <SelectItem key={name} value={name} className="text-xs">
+                                    {name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            imageBadge(row)
+                          )}
                         </td>
                         <td className="px-2 py-1.5">
                           {row._errors.length > 0 ? (
@@ -324,6 +401,13 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
                 </table>
               </div>
             </div>
+
+            {hasImages && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="text-xs text-amber-800 font-medium">{t("import.mappingPreview")}</p>
+                <p className="text-[10px] text-amber-700 mt-0.5">{t("import.mappingHint")}</p>
+              </div>
+            )}
 
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => { reset(); }} className="flex-1 font-serif" data-testid="button-import-back">
@@ -369,7 +453,7 @@ export function ImportFlightDialog({ tastingId }: { tastingId: string }) {
                       <XCircle className="w-3 h-3 text-destructive flex-shrink-0" />
                       <span className="text-muted-foreground">Row {r.row}:</span>
                       <span className="font-medium">{r.name}</span>
-                      <span className="text-destructive">— {r.error}</span>
+                      <span className="text-destructive">&mdash; {r.error}</span>
                     </div>
                   ))}
                 </div>
