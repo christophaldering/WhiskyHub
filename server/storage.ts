@@ -124,6 +124,7 @@ export interface IStorage {
       rating: Rating;
     }>;
     allWhiskies: Whisky[];
+    sources: { tastingRatings: number; journalEntries: number };
   }>;
 
   // Hard Delete (admin only)
@@ -543,6 +544,7 @@ export class DatabaseStorage implements IStorage {
     categoryBreakdown: Record<string, { count: number; avgScore: number }>;
     ratedWhiskies: Array<{ whisky: typeof whiskies.$inferSelect; rating: typeof ratings.$inferSelect }>;
     allWhiskies: Array<typeof whiskies.$inferSelect>;
+    sources: { tastingRatings: number; journalEntries: number };
   }> {
     const allRatings = await db.select().from(ratings).where(eq(ratings.participantId, participantId));
     const whiskyIds = [...new Set(allRatings.map(r => r.whiskyId))];
@@ -581,7 +583,31 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    const n = allRatings.length || 1;
+    const journal = await db.select().from(journalEntries).where(eq(journalEntries.participantId, participantId));
+    let journalScoreCount = 0;
+
+    for (const j of journal) {
+      const score = j.personalScore;
+      if (score != null && score > 0) {
+        sumOverall += score;
+        journalScoreCount++;
+
+        if (j.region) {
+          if (!regionAcc[j.region]) regionAcc[j.region] = { total: 0, count: 0 };
+          regionAcc[j.region].total += score; regionAcc[j.region].count++;
+        }
+        if (j.caskType) {
+          if (!caskAcc[j.caskType]) caskAcc[j.caskType] = { total: 0, count: 0 };
+          caskAcc[j.caskType].total += score; caskAcc[j.caskType].count++;
+        }
+      }
+    }
+
+    const ratingCount = allRatings.length;
+    const totalOverallCount = ratingCount + journalScoreCount;
+    const n = ratingCount || 1;
+    const nOverall = totalOverallCount || 1;
+
     const toBreakdown = (acc: Record<string, { total: number; count: number }>) => {
       const result: Record<string, { count: number; avgScore: number }> = {};
       for (const [k, v] of Object.entries(acc)) {
@@ -603,7 +629,7 @@ export class DatabaseStorage implements IStorage {
         taste: Math.round((sumTaste / n) * 10) / 10,
         finish: Math.round((sumFinish / n) * 10) / 10,
         balance: Math.round((sumBalance / n) * 10) / 10,
-        overall: Math.round((sumOverall / n) * 10) / 10,
+        overall: Math.round((sumOverall / nOverall) * 10) / 10,
       },
       regionBreakdown: toBreakdown(regionAcc),
       caskBreakdown: toBreakdown(caskAcc),
@@ -611,6 +637,7 @@ export class DatabaseStorage implements IStorage {
       categoryBreakdown: toBreakdown(categoryAcc),
       ratedWhiskies: ratedWhiskiesResult,
       allWhiskies: allWhiskyRows,
+      sources: { tastingRatings: ratingCount, journalEntries: journalScoreCount },
     };
   }
 

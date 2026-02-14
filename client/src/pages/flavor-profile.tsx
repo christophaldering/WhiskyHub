@@ -21,6 +21,7 @@ interface FlavorProfileData {
   categoryBreakdown: Record<string, BreakdownEntry>;
   ratedWhiskies: RatedWhisky[];
   allWhiskies: any[];
+  sources?: { tastingRatings: number; journalEntries: number };
 }
 
 export default function FlavorProfile() {
@@ -80,11 +81,12 @@ export default function FlavorProfile() {
     : [];
 
   const totalRatings = profile?.ratedWhiskies?.length || 0;
+  const totalJournalScores = profile?.sources?.journalEntries || 0;
   const topWhiskies = profile?.ratedWhiskies
     ? [...profile.ratedWhiskies].sort((a, b) => b.rating.overall - a.rating.overall).slice(0, 5)
     : [];
 
-  const hasData = totalRatings > 0;
+  const hasData = totalRatings > 0 || totalJournalScores > 0;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8" data-testid="flavor-profile-page">
@@ -95,7 +97,17 @@ export default function FlavorProfile() {
             {t("flavorProfile.title")}
           </h1>
         </div>
-        <p className="text-sm text-muted-foreground mb-8">{t("flavorProfile.subtitle")}</p>
+        <p className="text-sm text-muted-foreground mb-2">{t("flavorProfile.subtitle")}</p>
+        {profile?.sources && (profile.sources.tastingRatings > 0 || profile.sources.journalEntries > 0) && (
+          <p className="text-xs text-muted-foreground/70 mb-8" data-testid="text-flavor-sources">
+            {isDE
+              ? `Basierend auf ${profile.sources.tastingRatings} Tasting-Bewertung${profile.sources.tastingRatings !== 1 ? "en" : ""} und ${profile.sources.journalEntries} Journal-Eintr${profile.sources.journalEntries !== 1 ? "ägen" : "ag"}`
+              : `Based on ${profile.sources.tastingRatings} tasting rating${profile.sources.tastingRatings !== 1 ? "s" : ""} and ${profile.sources.journalEntries} journal entr${profile.sources.journalEntries !== 1 ? "ies" : "y"}`}
+          </p>
+        )}
+        {!(profile?.sources && (profile.sources.tastingRatings > 0 || profile.sources.journalEntries > 0)) && (
+          <div className="mb-8" />
+        )}
 
         {!hasData ? (
           <div className="text-center py-16 text-muted-foreground">
