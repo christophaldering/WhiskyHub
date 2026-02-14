@@ -7,12 +7,13 @@ import { LoginDialog } from "@/components/login-dialog";
 import { ImportFlightDialog } from "@/components/import-flight-dialog";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Plus, Camera, X, ImageIcon, ExternalLink, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi } from "@/lib/api";
@@ -585,6 +586,43 @@ export default function TastingRoom() {
 
   const [activeWhiskyId, setActiveWhiskyId] = useState<string | null>(null);
 
+  const reorderMutation = useMutation({
+    mutationFn: (order: { id: string; sortOrder: number }[]) => whiskyApi.reorder(id!, order),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", id] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (whiskyId: string) => whiskyApi.delete(whiskyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", id] });
+    },
+  });
+
+  const handleMoveWhisky = (whiskyId: string, direction: "up" | "down") => {
+    const idx = whiskyList.findIndex((w: Whisky) => w.id === whiskyId);
+    if (idx < 0) return;
+    const newIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (newIdx < 0 || newIdx >= whiskyList.length) return;
+
+    const newOrder = whiskyList.map((w: Whisky, i: number) => {
+      if (i === idx) return { id: w.id, sortOrder: newIdx };
+      if (i === newIdx) return { id: w.id, sortOrder: idx };
+      return { id: w.id, sortOrder: i };
+    });
+    reorderMutation.mutate(newOrder);
+  };
+
+  const handleDeleteWhisky = (whiskyId: string) => {
+    if (activeWhiskyId === whiskyId) {
+      const idx = whiskyList.findIndex((w: Whisky) => w.id === whiskyId);
+      const next = whiskyList[idx + 1] || whiskyList[idx - 1];
+      setActiveWhiskyId(next?.id || null);
+    }
+    deleteMutation.mutate(whiskyId);
+  };
+
   if (!currentParticipant) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
@@ -640,32 +678,91 @@ export default function TastingRoom() {
       </header>
 
       {/* Flight Navigation */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="flex overflow-x-auto gap-3 flex-1 no-scrollbar items-center">
-          {whiskyList.map((w: Whisky, idx: number) => (
-            <button
-              key={w.id}
-              onClick={() => setActiveWhiskyId(w.id)}
-              className={cn(
-                "flex flex-col items-center justify-center min-w-[60px] h-[60px] rounded-full border transition-all duration-500 relative overflow-hidden",
-                (activeWhisky?.id === w.id)
-                  ? "border-primary scale-110 shadow-lg z-10 ring-2 ring-primary"
-                  : "bg-background border-border hover:border-primary/50 text-muted-foreground"
-              )}
-              data-testid={`button-whisky-${w.id}`}
-            >
-              {w.imageUrl ? (
-                <img src={w.imageUrl} alt={w.name} className="w-full h-full object-cover rounded-full" />
-              ) : (
-                <span className="font-serif font-bold text-lg">{idx + 1}</span>
-              )}
-            </button>
-          ))}
+      <div className="space-y-3">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex overflow-x-auto gap-3 flex-1 no-scrollbar items-center">
+            {whiskyList.map((w: Whisky, idx: number) => (
+              <button
+                key={w.id}
+                onClick={() => setActiveWhiskyId(w.id)}
+                className={cn(
+                  "flex flex-col items-center justify-center min-w-[60px] h-[60px] rounded-full border transition-all duration-500 relative overflow-hidden",
+                  (activeWhisky?.id === w.id)
+                    ? "border-primary scale-110 shadow-lg z-10 ring-2 ring-primary"
+                    : "bg-background border-border hover:border-primary/50 text-muted-foreground"
+                )}
+                data-testid={`button-whisky-${w.id}`}
+              >
+                {w.imageUrl ? (
+                  <img src={w.imageUrl} alt={w.name} className="w-full h-full object-cover rounded-full" />
+                ) : (
+                  <span className="font-serif font-bold text-lg">{idx + 1}</span>
+                )}
+              </button>
+            ))}
+          </div>
+          {isHost && (tasting.status === "draft" || tasting.status === "open") && (
+            <div className="flex gap-2">
+              <AddWhiskyDialog tastingId={tasting.id} />
+              <ImportFlightDialog tastingId={tasting.id} />
+            </div>
+          )}
         </div>
-        {isHost && (tasting.status === "draft" || tasting.status === "open") && (
-          <div className="flex gap-2">
-            <AddWhiskyDialog tastingId={tasting.id} />
-            <ImportFlightDialog tastingId={tasting.id} />
+
+        {isHost && (tasting.status === "draft" || tasting.status === "open") && whiskyList.length > 0 && activeWhisky && (
+          <div className="flex items-center gap-2 px-1">
+            <span className="text-xs text-muted-foreground font-serif mr-1">{activeWhisky.name}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 w-7 p-0"
+              disabled={whiskyList[0]?.id === activeWhisky.id || reorderMutation.isPending}
+              onClick={() => handleMoveWhisky(activeWhisky.id, "up")}
+              data-testid="button-move-up"
+            >
+              <ChevronUp className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 w-7 p-0"
+              disabled={whiskyList[whiskyList.length - 1]?.id === activeWhisky.id || reorderMutation.isPending}
+              onClick={() => handleMoveWhisky(activeWhisky.id, "down")}
+              data-testid="button-move-down"
+            >
+              <ChevronDown className="w-4 h-4" />
+            </Button>
+            <span className="text-[10px] text-muted-foreground/60 italic ml-1">{t("whisky.reorderHint")}</span>
+            <div className="flex-1" />
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                  data-testid="button-delete-whisky"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1" />
+                  <span className="text-xs">{t("whisky.deleteExpression")}</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="font-serif text-primary">{t("whisky.deleteConfirmTitle")}</AlertDialogTitle>
+                  <AlertDialogDescription>{t("whisky.deleteConfirm")}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="font-serif">{t("import.back")}</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => handleDeleteWhisky(activeWhisky.id)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-serif"
+                    data-testid="button-confirm-delete"
+                  >
+                    {deleteMutation.isPending ? t("whisky.deleting") : t("whisky.deleteExpression")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
       </div>
