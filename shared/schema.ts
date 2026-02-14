@@ -152,6 +152,7 @@ export const whiskyFriends = pgTable("whisky_friends", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email").notNull(),
+  status: text("status").notNull().default("accepted"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
