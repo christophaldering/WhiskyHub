@@ -109,13 +109,48 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
         }
       }
 
-      let coverY = bgDataUrl ? pageH * 0.48 : 60;
+      const ornW = 50;
+      if (!bgDataUrl) {
+        doc.setDrawColor(71, 85, 105);
+        doc.setLineWidth(0.5);
+        doc.rect(12, 12, pageW - 24, pageH - 24);
+        doc.setLineWidth(0.2);
+        doc.rect(14, 14, pageW - 28, pageH - 28);
+
+        doc.setDrawColor(148, 163, 184);
+        doc.setLineWidth(0.15);
+        const ornY = 40;
+        doc.line(pageW / 2 - ornW, ornY, pageW / 2 + ornW, ornY);
+        doc.line(pageW / 2 - ornW, ornY + 0.8, pageW / 2 + ornW, ornY + 0.8);
+        doc.setFillColor(148, 163, 184);
+        doc.circle(pageW / 2, ornY + 0.4, 1.5, "F");
+        doc.circle(pageW / 2 - ornW, ornY + 0.4, 0.6, "F");
+        doc.circle(pageW / 2 + ornW, ornY + 0.4, 0.6, "F");
+      }
+
+      let coverY = bgDataUrl ? pageH * 0.48 : 56;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...MUTED_COLOR);
+      doc.text("C A S K S E N S E", pageW / 2, coverY, { align: "center" });
+      coverY += 6;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7);
+      doc.text("Where Tasting Becomes Reflection", pageW / 2, coverY, { align: "center" });
+      coverY += bgDataUrl ? 16 : 24;
+
+      doc.setDrawColor(...MUTED_COLOR);
+      doc.setLineWidth(0.2);
+      doc.line(marginX + 50, coverY, pageW - marginX - 50, coverY);
+      coverY += bgDataUrl ? 14 : 20;
 
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(28);
+      doc.setFontSize(30);
       doc.setTextColor(...DARK_COLOR);
-      doc.text(title, pageW / 2, coverY, { align: "center" });
-      coverY += 12;
+      const titleLines = doc.splitTextToSize(title, contentW - 20);
+      doc.text(titleLines, pageW / 2, coverY, { align: "center" });
+      coverY += titleLines.length * 12 + 6;
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
@@ -125,30 +160,57 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
           return new Date(date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
         } catch { return date; }
       })();
-      doc.text(displayDate + (tasting.location && tasting.location !== "\u2014" ? `  \u2022  ${tasting.location}` : ""), pageW / 2, coverY, { align: "center" });
-      coverY += 16;
+      doc.text(displayDate, pageW / 2, coverY, { align: "center" });
+      coverY += 6;
+      if (tasting.location && tasting.location !== "\u2014") {
+        doc.text(tasting.location, pageW / 2, coverY, { align: "center" });
+        coverY += 8;
+      }
+      coverY += 6;
+
+      doc.setDrawColor(...MUTED_COLOR);
+      doc.setLineWidth(0.2);
+      doc.line(marginX + 50, coverY, pageW - marginX - 50, coverY);
+      coverY += 12;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(...PRIMARY_COLOR);
+      const statsLine = `${whiskies.length} ${whiskies.length === 1 ? "Expression" : "Expressions"}`;
+      doc.text(statsLine, pageW / 2, coverY, { align: "center" });
+      coverY += 8;
+
+      const regionSet = new Set<string>();
+      whiskies.forEach(w => { if (w.region) regionSet.add(w.region); });
+      if (regionSet.size > 0) {
+        doc.setFontSize(8);
+        doc.setTextColor(...MUTED_COLOR);
+        doc.text(Array.from(regionSet).join("  \u2022  "), pageW / 2, coverY, { align: "center" });
+        coverY += 10;
+      }
 
       if (quote) {
+        coverY += 6;
         doc.setFont("helvetica", "italic");
         doc.setFontSize(11);
         doc.setTextColor(...MUTED_COLOR);
-        const quoteLines = doc.splitTextToSize(`\u201c${quote}\u201d`, contentW - 20);
+        const quoteLines = doc.splitTextToSize(`\u201c${quote}\u201d`, contentW - 30);
         doc.text(quoteLines, pageW / 2, coverY, { align: "center" });
         coverY += quoteLines.length * 6 + 10;
       }
 
       if (includeParticipants && participants.length > 0) {
-        coverY += 8;
+        coverY += 4;
         doc.setDrawColor(...MUTED_COLOR);
-        doc.setLineWidth(0.3);
-        doc.line(marginX + 30, coverY, pageW - marginX - 30, coverY);
+        doc.setLineWidth(0.2);
+        doc.line(marginX + 50, coverY, pageW - marginX - 50, coverY);
         coverY += 10;
 
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
+        doc.setFontSize(8);
         doc.setTextColor(...PRIMARY_COLOR);
         doc.text(t("pdfExport.participants").toUpperCase(), pageW / 2, coverY, { align: "center" });
-        coverY += 8;
+        coverY += 7;
 
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
@@ -157,6 +219,18 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
         const namesStr = names.join("  \u2022  ");
         const nameLines = doc.splitTextToSize(namesStr, contentW - 20);
         doc.text(nameLines, pageW / 2, coverY, { align: "center" });
+      }
+
+      if (!bgDataUrl) {
+        const bottomOrnY = pageH - 35;
+        doc.setDrawColor(148, 163, 184);
+        doc.setLineWidth(0.15);
+        doc.line(pageW / 2 - ornW, bottomOrnY, pageW / 2 + ornW, bottomOrnY);
+        doc.line(pageW / 2 - ornW, bottomOrnY + 0.8, pageW / 2 + ornW, bottomOrnY + 0.8);
+        doc.setFillColor(148, 163, 184);
+        doc.circle(pageW / 2, bottomOrnY + 0.4, 1.5, "F");
+        doc.circle(pageW / 2 - ornW, bottomOrnY + 0.4, 0.6, "F");
+        doc.circle(pageW / 2 + ornW, bottomOrnY + 0.4, 0.6, "F");
       }
 
       doc.addPage();

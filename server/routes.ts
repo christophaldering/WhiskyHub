@@ -2067,6 +2067,60 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/global-whisky-database", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester) return res.status(403).json({ message: "Access denied" });
+
+      const allTastings = await storage.getAllTastings();
+      const isAdmin = requester.role === "admin";
+      const isHost = allTastings.some(t => t.hostId === participantId);
+      if (!isAdmin && !isHost) {
+        return res.status(403).json({ message: "Admin or host access required" });
+      }
+
+      const allWhiskies: any[] = [];
+      for (const tasting of allTastings) {
+        const whiskies = await storage.getWhiskiesForTasting(tasting.id);
+        const ratings = await storage.getRatingsForTasting(tasting.id);
+        const host = await storage.getParticipant(tasting.hostId);
+
+        for (const w of whiskies) {
+          const whiskyRatings = ratings.filter(r => r.whiskyId === w.id);
+          const overallScores = whiskyRatings.map(r => r.overall).filter((v): v is number => v != null);
+          const avgScore = overallScores.length > 0 ? overallScores.reduce((a, b) => a + b, 0) / overallScores.length : null;
+          allWhiskies.push({
+            id: w.id,
+            name: w.name,
+            distillery: w.distillery,
+            age: w.age,
+            abv: w.abv,
+            type: w.type,
+            region: w.region,
+            category: w.category,
+            caskInfluence: w.caskInfluence,
+            peatLevel: w.peatLevel,
+            wbScore: w.wbScore,
+            whiskybaseId: w.whiskybaseId,
+            imageUrl: w.imageUrl,
+            tastingId: tasting.id,
+            tastingTitle: tasting.title,
+            tastingDate: tasting.date,
+            hostName: host?.name || "Unknown",
+            ratingCount: whiskyRatings.length,
+            avgScore: avgScore ? Math.round(avgScore * 10) / 10 : null,
+          });
+        }
+      }
+
+      res.json(allWhiskies);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.delete("/api/admin/tastings/:id", async (req, res) => {
     try {
       const requesterId = req.query.requesterId as string;

@@ -28,6 +28,8 @@ import FlavorWheel from "@/pages/flavor-wheel";
 import PairingSuggestions from "@/pages/pairing-suggestions";
 import Leaderboard from "@/pages/leaderboard";
 import AdminPanel from "@/pages/admin-panel";
+import DistilleryEncyclopedia from "@/pages/distillery-encyclopedia";
+import WhiskyDatabase from "@/pages/whisky-database";
 import Intro from "@/pages/intro";
 import { hasSeenIntro } from "@/pages/intro";
 import { BuildFooter } from "@/components/build-footer";
@@ -72,6 +74,8 @@ function Router() {
               <Route path="/pairings" component={PairingSuggestions} />
               <Route path="/leaderboard" component={Leaderboard} />
               <Route path="/admin" component={AdminPanel} />
+              <Route path="/distilleries" component={DistilleryEncyclopedia} />
+              <Route path="/whisky-database" component={WhiskyDatabase} />
               <Route path="/about-method" component={AboutMethod} />
               <Route path="/invite/:token" component={InviteAccept} />
               <Route component={NotFound} />

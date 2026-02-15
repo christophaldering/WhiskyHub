@@ -5,6 +5,7 @@ import { RevealView } from "@/components/reveal-view";
 import { SessionControl } from "@/components/session-control";
 import { LoginDialog } from "@/components/login-dialog";
 import { ImportFlightDialog } from "@/components/import-flight-dialog";
+import { CurationWizard } from "@/components/curation-wizard";
 import { FlightBoard } from "@/components/flight-board";
 import { PdfExportDialog } from "@/components/pdf-export-dialog";
 import { BriefingNotes } from "@/components/briefing-notes";
@@ -904,6 +905,7 @@ export default function TastingRoom() {
             <div className="flex gap-2">
               <AddWhiskyDialog tastingId={tasting.id} />
               <ImportFlightDialog tastingId={tasting.id} />
+              <CurationWizard />
             </div>
           )}
         </div>

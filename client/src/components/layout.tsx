@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState } from "react";
@@ -108,6 +108,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         items: [
           { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
           { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
+          { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
         ],
       },
     ] : []),
@@ -115,6 +116,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: t('navGroup.reference'),
       items: [
         { href: "/lexicon", icon: Library, label: t('nav.lexicon') },
+        { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
         { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
         { href: "/intro", icon: Info, label: t('nav.about') },
       ],
