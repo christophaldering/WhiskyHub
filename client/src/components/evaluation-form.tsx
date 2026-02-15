@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Check, Lock, ChevronRight } from "lucide-react";
+import { Check, Lock, ChevronRight, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
@@ -102,6 +102,17 @@ export function EvaluationForm({ whisky, tasting }: EvaluationFormProps) {
               {whisky.abv && <span>• {whisky.abv}%</span>}
               {whisky.category && <span>• {whisky.category}</span>}
             </div>
+            {whisky.whiskybaseId && (
+              <a
+                href={`https://www.whiskybase.com/whiskies/whisky/${whisky.whiskybaseId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors mt-1 font-mono"
+                data-testid="link-whiskybase-eval"
+              >
+                Whiskybase #{whisky.whiskybaseId} <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
           </div>
           {isLocked && (
             <div className="bg-secondary px-3 py-1 rounded-full flex items-center gap-2 text-xs font-medium text-muted-foreground">
