@@ -11,7 +11,7 @@ import { WelcomeOverlay } from "@/components/welcome-overlay";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
-import { profileApi } from "@/lib/api";
+import { profileApi, tastingApi } from "@/lib/api";
 
 type NavItem = { href: string; icon: any; label: string; match?: (loc: string) => boolean };
 type NavGroup = { label: string; items: NavItem[] };
@@ -27,6 +27,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     queryFn: () => profileApi.get(currentParticipant!.id),
     enabled: !!currentParticipant,
   });
+
+  const { data: allTastings = [] } = useQuery({
+    queryKey: ["tastings"],
+    queryFn: () => tastingApi.getAll(),
+    enabled: !!currentParticipant,
+  });
+
+  const isHost = currentParticipant && allTastings.some((t: any) => t.hostId === currentParticipant.id);
+  const isAdmin = currentParticipant?.role === "admin";
 
   const initials = currentParticipant?.name
     ? currentParticipant.name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
@@ -117,6 +126,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
         ],
       },
+    ] : []),
+    ...((isHost || isAdmin) ? [
       {
         label: t('navGroup.host'),
         items: [
