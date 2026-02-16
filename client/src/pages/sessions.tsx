@@ -1,17 +1,35 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { tastingApi } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowRight } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { useAppStore } from "@/lib/store";
+import { ArrowRight, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Sessions() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const { currentParticipant } = useAppStore();
+  const { toast } = useToast();
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
 
   const { data: tastings = [], isLoading } = useQuery({
     queryKey: ["tastings"],
     queryFn: tastingApi.getAll,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (tasting: any) =>
+      tastingApi.updateStatus(tasting.id, "deleted", undefined, currentParticipant!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+      setDeleteTarget(null);
+      toast({ title: t("session.actions.deleted") });
+    },
   });
 
   const active = tastings.filter((s: any) => s.status === "open" || s.status === "closed" || s.status === "reveal");
@@ -24,24 +42,40 @@ export default function Sessions() {
   drafts.sort(sortByDate);
   archived.sort(sortByDate);
 
+  const isHostOf = (tasting: any) => currentParticipant && tasting.hostId === currentParticipant.id;
+  const canDelete = (tasting: any) => tasting.status !== "open" && isHostOf(tasting);
+
   const SessionCard = ({ tasting }: { tasting: any }) => (
-    <button
-      onClick={() => navigate(`/tasting/${tasting.id}`)}
+    <div
       className="w-full text-left p-4 bg-card border border-border/50 rounded-lg hover:shadow-sm transition-all flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 group"
       data-testid={`card-tasting-${tasting.id}`}
     >
-      <div className="min-w-0">
+      <button
+        onClick={() => navigate(`/tasting/${tasting.id}`)}
+        className="flex-1 text-left min-w-0"
+        data-testid={`link-tasting-${tasting.id}`}
+      >
         <div className="font-serif font-bold text-primary group-hover:underline truncate">{tasting.title}</div>
         <div className="text-sm text-muted-foreground">{tasting.location} &bull; {new Date(tasting.date).toLocaleDateString()}</div>
-      </div>
+      </button>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs bg-secondary px-2 py-1 rounded-full text-secondary-foreground font-mono uppercase">
           {t(`session.status.${tasting.status}`)}
         </span>
         <span className="text-xs font-mono text-muted-foreground">Code: {tasting.code}</span>
+        {canDelete(tasting) && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setDeleteTarget(tasting); }}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+            title={t("session.actions.deleteSession")}
+            data-testid={`btn-delete-tasting-${tasting.id}`}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
         <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" />
       </div>
-    </button>
+    </div>
   );
 
   const SessionGroup = ({ title, sessions, delay }: { title: string; sessions: any[]; delay: number }) => {
@@ -100,6 +134,25 @@ export default function Sessions() {
           <SessionGroup title={t("nav.sessionsArchived")} sessions={archived} delay={0.3} />
         </div>
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-serif">{t("session.actions.deleteConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("session.actions.deleteConfirmMessage")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="btn-cancel-delete">{t("journal.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="btn-confirm-delete"
+            >
+              {t("session.actions.deleteSession")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

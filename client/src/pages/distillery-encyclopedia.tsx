@@ -35,7 +35,7 @@ function MiniMap({ lat, lng, name }: { lat: number; lng: number; name: string })
         touchZoom={false}
         key={name}
       >
-        <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+        <TileLayer url="https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png" />
         <Marker position={[lat, lng]} icon={miniMapIcon} />
       </MapContainer>
     </div>
