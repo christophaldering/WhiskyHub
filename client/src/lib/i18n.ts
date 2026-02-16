@@ -79,7 +79,8 @@ const resources = {
         admin: "Admin Panel",
         distilleries: "Distilleries",
         distilleryMap: "Distillery Map",
-        whiskyDatabase: "Whisky Database"
+        whiskyDatabase: "Whisky Database",
+        donate: "Donate"
       },
       navGroup: {
         main: "Main",
@@ -277,6 +278,17 @@ const resources = {
         subtitle: "A reference glossary for whisky tasting terms, flavors, regions, and production methods.",
         searchPlaceholder: "Search terms, definitions...",
         noResults: "No matching entries found. Try a different search term.",
+      },
+      donate: {
+        title: "Support CaskSense",
+        whyTitle: "Why Donate?",
+        whyText: "CaskSense is free and always will be. No ads, no premium tiers, no hidden costs. But developing and running the app takes time and resources. Your donation helps keep the lights on and supports a good cause.",
+        charityTitle: "100% Goes to Charity",
+        charityText: "Every donation is forwarded in full to {{name}} — an organization dedicated to hospice and palliative care in Germany. We believe in giving back, and your generosity directly helps those in need of compassionate end-of-life care.",
+        transparencyTitle: "Full Transparency",
+        transparencyText: "We publish the total amount donated on this page. Donor names are never shared — your privacy is respected. Only the cumulative total is made visible so you can see the collective impact.",
+        donateButton: "Donate via PayPal",
+        disclaimer: "CaskSense does not retain any portion of the donations. All contributions are forwarded to the charitable organization mentioned above.",
       },
       aboutMethod: {
         heroTitle: "About the Method",
@@ -1025,7 +1037,8 @@ const resources = {
         admin: "Admin-Bereich",
         distilleries: "Destillerien",
         distilleryMap: "Destillerie-Karte",
-        whiskyDatabase: "Whisky-Datenbank"
+        whiskyDatabase: "Whisky-Datenbank",
+        donate: "Spenden"
       },
       navGroup: {
         main: "Übersicht",
@@ -1223,6 +1236,17 @@ const resources = {
         subtitle: "Ein Nachschlagewerk für Verkostungsbegriffe, Aromen, Regionen und Herstellungsverfahren.",
         searchPlaceholder: "Begriffe, Definitionen suchen...",
         noResults: "Keine passenden Einträge gefunden. Versuchen Sie einen anderen Suchbegriff.",
+      },
+      donate: {
+        title: "CaskSense unterstützen",
+        whyTitle: "Warum spenden?",
+        whyText: "CaskSense ist kostenlos und wird es immer bleiben. Keine Werbung, keine Premium-Stufen, keine versteckten Kosten. Aber Entwicklung und Betrieb der App kosten Zeit und Ressourcen. Ihre Spende hilft, den Betrieb aufrechtzuerhalten und unterstützt einen guten Zweck.",
+        charityTitle: "100% gehen an die Wohltätigkeit",
+        charityText: "Jede Spende wird vollständig an den {{name}} weitergeleitet — eine Organisation, die sich der Hospiz- und Palliativversorgung in Deutschland widmet. Ihre Großzügigkeit hilft direkt Menschen, die mitfühlende Begleitung am Lebensende benötigen.",
+        transparencyTitle: "Volle Transparenz",
+        transparencyText: "Wir veröffentlichen den Gesamtbetrag der Spenden auf dieser Seite. Spendernamen werden nie weitergegeben — Ihre Privatsphäre wird respektiert. Nur die Gesamtsumme wird sichtbar gemacht, damit Sie die gemeinsame Wirkung sehen können.",
+        donateButton: "Über PayPal spenden",
+        disclaimer: "CaskSense behält keinen Teil der Spenden ein. Alle Beiträge werden an die oben genannte gemeinnützige Organisation weitergeleitet.",
       },
       aboutMethod: {
         heroTitle: "Über die Methode",
