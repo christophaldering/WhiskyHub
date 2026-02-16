@@ -246,6 +246,7 @@ export async function registerRoutes(
   app.post("/api/participants", async (req, res) => {
     try {
       const data = insertParticipantSchema.parse(req.body);
+      const ADMIN_EMAIL = "christoph.aldering@googlemail.com";
       const existing = await storage.getParticipantByName(data.name);
       if (existing) {
         if (!data.pin) {
@@ -253,11 +254,19 @@ export async function registerRoutes(
         }
         if (!existing.pin) {
           await storage.updateParticipantPin(existing.id, data.pin);
+          if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
+            await storage.updateParticipantRole(existing.id, "admin");
+          }
           const updated = await storage.getParticipant(existing.id);
           return res.json(updated);
         }
         if (data.pin !== existing.pin) {
           return res.status(401).json({ message: "Invalid PIN" });
+        }
+        if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
+          await storage.updateParticipantRole(existing.id, "admin");
+          const updated = await storage.getParticipant(existing.id);
+          return res.json(updated);
         }
         return res.json(existing);
       }
@@ -268,6 +277,10 @@ export async function registerRoutes(
         return res.status(400).json({ message: "A valid email is required" });
       }
       const participant = await storage.createParticipant(data);
+
+      if (participant.email?.toLowerCase() === ADMIN_EMAIL && participant.role !== "admin") {
+        await storage.updateParticipantRole(participant.id, "admin");
+      }
 
       if (participant.email) {
         try {
@@ -296,7 +309,8 @@ export async function registerRoutes(
         }
       }
 
-      res.status(201).json(participant);
+      const finalParticipant = await storage.getParticipant(participant.id);
+      res.status(201).json(finalParticipant);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
     }
