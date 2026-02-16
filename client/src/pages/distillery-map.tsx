@@ -6,9 +6,39 @@ import L from "leaflet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Calendar, ExternalLink, MapPin, Filter, Maximize2 } from "lucide-react";
+import { Search, Calendar, ExternalLink, MapPin, Filter, Maximize2, Layers } from "lucide-react";
 import { distilleries, type Distillery } from "@/data/distilleries";
 import "leaflet/dist/leaflet.css";
+
+const TILE_LAYERS = {
+  osm: {
+    name: "OpenStreetMap",
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  },
+  voyager: {
+    name: "CARTO Voyager",
+    url: "https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+  },
+  cartoDark: {
+    name: "CARTO Dark",
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+  },
+  cartoLight: {
+    name: "CARTO Light",
+    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+  },
+  topoMap: {
+    name: "Topo Map",
+    url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  },
+} as const;
+
+type TileLayerKey = keyof typeof TILE_LAYERS;
 
 const defaultIcon = L.divIcon({
   className: "",
@@ -67,6 +97,11 @@ export default function DistilleryMap() {
   const [hoveredName, setHoveredName] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [fitKey, setFitKey] = useState(0);
+  const [tileLayer, setTileLayer] = useState<TileLayerKey>(() => {
+    const saved = localStorage.getItem("casksense-map-tiles");
+    return (saved && saved in TILE_LAYERS) ? saved as TileLayerKey : "osm";
+  });
+  const [showTilePicker, setShowTilePicker] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
 
   const countries = useMemo(() => Array.from(new Set(distilleries.map(d => d.country))).sort(), []);
@@ -96,6 +131,12 @@ export default function DistilleryMap() {
     setFitKey(k => k + 1);
   }, [selectedCountry, selectedRegion, search]);
 
+  const switchTileLayer = (key: TileLayerKey) => {
+    setTileLayer(key);
+    localStorage.setItem("casksense-map-tiles", key);
+    setShowTilePicker(false);
+  };
+
   const flyTo = (d: Distillery) => {
     if (mapRef.current) {
       mapRef.current.flyTo([d.lat, d.lng], 13, { duration: 1.2 });
@@ -107,6 +148,8 @@ export default function DistilleryMap() {
     setHoveredName(null);
     setFitKey(k => k + 1);
   }, []);
+
+  const currentTile = TILE_LAYERS[tileLayer];
 
   return (
     <div className="space-y-4" data-testid="distillery-map-page">
@@ -183,15 +226,42 @@ export default function DistilleryMap() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
         <div className="rounded-lg overflow-hidden border border-border/50 bg-card relative" style={{ height: "65vh", minHeight: 400 }}>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="absolute top-3 right-3 z-[1000] shadow-md text-xs"
-            onClick={resetView}
-            data-testid="button-reset-view"
-          >
-            <Maximize2 className="w-3.5 h-3.5 mr-1" /> {t("distilleryMap.resetView")}
-          </Button>
+          <div className="absolute top-3 right-3 z-[1000] flex gap-2">
+            <div className="relative">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="shadow-md text-xs"
+                onClick={() => setShowTilePicker(!showTilePicker)}
+                data-testid="button-tile-picker"
+              >
+                <Layers className="w-3.5 h-3.5 mr-1" /> {t("distilleryMap.mapStyle")}
+              </Button>
+              {showTilePicker && (
+                <div className="absolute top-full right-0 mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden min-w-[160px]">
+                  {(Object.keys(TILE_LAYERS) as TileLayerKey[]).map(key => (
+                    <button
+                      key={key}
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-primary/10 transition-colors ${tileLayer === key ? "bg-primary/15 font-semibold text-primary" : "text-foreground"}`}
+                      onClick={() => switchTileLayer(key)}
+                      data-testid={`tile-option-${key}`}
+                    >
+                      {TILE_LAYERS[key].name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="shadow-md text-xs"
+              onClick={resetView}
+              data-testid="button-reset-view"
+            >
+              <Maximize2 className="w-3.5 h-3.5 mr-1" /> {t("distilleryMap.resetView")}
+            </Button>
+          </div>
           <MapContainer
             center={[54.5, -4]}
             zoom={5}
@@ -200,8 +270,9 @@ export default function DistilleryMap() {
             scrollWheelZoom={true}
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
-              url="https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png"
+              key={tileLayer}
+              attribution={currentTile.attribution}
+              url={currentTile.url}
             />
             <FitBounds markers={filtered} fitKey={fitKey} />
             {filtered.map(d => (

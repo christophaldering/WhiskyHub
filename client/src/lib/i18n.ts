@@ -850,7 +850,8 @@ const resources = {
         searchPlaceholder: "Search distilleries...",
         filters: "Filters",
         viewEncyclopedia: "Encyclopedia",
-        resetView: "Show All"
+        resetView: "Show All",
+        mapStyle: "Map Style"
       },
       whiskyDb: {
         title: "Whisky Database",
@@ -1808,7 +1809,8 @@ const resources = {
         searchPlaceholder: "Destillerien suchen...",
         filters: "Filter",
         viewEncyclopedia: "Enzyklopädie",
-        resetView: "Alle anzeigen"
+        resetView: "Alle anzeigen",
+        mapStyle: "Kartenstil"
       },
       whiskyDb: {
         title: "Whisky-Datenbank",
