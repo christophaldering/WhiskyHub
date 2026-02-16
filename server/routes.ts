@@ -2744,5 +2744,176 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
     }
   });
 
+  // ============================================================
+  // PHOTO TASTING - Upload bottle photos + AI identification
+  // ============================================================
+
+  app.post("/api/photo-tasting/identify", docUpload.array("photos", 20), async (req: Request, res: Response) => {
+    try {
+      const participantId = req.body.participantId as string;
+      const auth = await verifyHostOrAdmin(participantId);
+      if (!auth) return res.status(403).json({ message: "Only hosts and admins can use photo tasting creation" });
+
+      const files = (req as any).files as Express.Multer.File[];
+      if (!files || files.length === 0) return res.status(400).json({ message: "No photos uploaded" });
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const allWhiskies = await storage.getAllWhiskies();
+      const benchmarks = await storage.getBenchmarkEntries();
+
+      const dbWhiskyNames = [...new Set(allWhiskies.map(w => w.name))].slice(0, 200);
+      const benchmarkNames = [...new Set(benchmarks.map(b => b.whiskyName))].slice(0, 200);
+      const knownWhiskies = [...new Set([...dbWhiskyNames, ...benchmarkNames])];
+
+      const results = [];
+      for (const file of files) {
+        const base64 = file.buffer.toString("base64");
+
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: `You are a whisky bottle identification expert. Analyze the photo of a whisky bottle and identify it. Return a JSON object with these fields:
+- name (string, required - full whisky name as on the label)
+- distillery (string or null)
+- region (string or null, e.g. Islay, Speyside, Highland, Lowland, Campbeltown, Kentucky, Tennessee)
+- country (string or null, e.g. Scotland, Ireland, Japan, USA)
+- age (string or null, e.g. "12", "18", "NAS")
+- abv (number or null, e.g. 46.0)
+- type (string or null, e.g. "Single Malt Scotch Whisky", "Bourbon", "Blended")
+- category (string or null, e.g. "Single Malt", "Blended Malt", "Bourbon", "Rye")
+- caskInfluence (string or null, e.g. "Bourbon", "Sherry", "Port", "Wine")
+- peatLevel (string or null, "None", "Light", "Medium", "Heavy")
+- notes (string or null, any interesting details from the label)
+- confidence (string, "high", "medium", or "low")
+- matchedExisting (string or null - if name closely matches one from the known list, return the matched name)
+
+Known whiskies in the database (try to match if possible):
+${knownWhiskies.slice(0, 100).join(", ")}
+
+Return ONLY valid JSON object. If you cannot identify the bottle, return {"name": "Unknown Whisky", "confidence": "low"}.`,
+            },
+            {
+              role: "user",
+              content: [
+                { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${base64}` } },
+                { type: "text", text: "Identify this whisky bottle. Read the label carefully." },
+              ],
+            },
+          ],
+          max_tokens: 2048,
+        });
+
+        const content = response.choices[0]?.message?.content || "{}";
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        let identified: any;
+        try {
+          identified = jsonMatch ? JSON.parse(jsonMatch[0]) : { name: "Unknown Whisky", confidence: "low" };
+        } catch {
+          identified = { name: "Unknown Whisky", confidence: "low" };
+        }
+        if (!identified.name) identified.name = "Unknown Whisky";
+
+        const matchedWhisky = allWhiskies.find(w =>
+          w.name.toLowerCase() === (identified.matchedExisting || identified.name || "").toLowerCase()
+        );
+        const matchedBenchmark = benchmarks.find(b =>
+          b.whiskyName.toLowerCase() === (identified.matchedExisting || identified.name || "").toLowerCase()
+        );
+
+        if (matchedWhisky) {
+          identified = {
+            ...identified,
+            distillery: identified.distillery || matchedWhisky.distillery,
+            region: identified.region || matchedWhisky.region,
+            country: identified.country || matchedWhisky.country,
+            age: identified.age || matchedWhisky.age,
+            abv: identified.abv || matchedWhisky.abv,
+            type: identified.type || matchedWhisky.type,
+            category: identified.category || matchedWhisky.category,
+            caskInfluence: identified.caskInfluence || matchedWhisky.caskInfluence,
+            peatLevel: identified.peatLevel || matchedWhisky.peatLevel,
+            dbMatch: true,
+            dbWhiskyId: matchedWhisky.id,
+          };
+        } else if (matchedBenchmark) {
+          identified = {
+            ...identified,
+            distillery: identified.distillery || matchedBenchmark.distillery,
+            region: identified.region || matchedBenchmark.region,
+            country: identified.country || matchedBenchmark.country,
+            age: identified.age || matchedBenchmark.age,
+            abv: identified.abv != null ? identified.abv : (matchedBenchmark.abv ? parseFloat(matchedBenchmark.abv) : null),
+            caskInfluence: identified.caskInfluence || matchedBenchmark.caskType,
+            category: identified.category || matchedBenchmark.category,
+            benchmarkMatch: true,
+          };
+        }
+
+        results.push({
+          ...identified,
+          fileName: file.originalname,
+        });
+      }
+
+      res.json({ whiskies: results });
+    } catch (e: any) {
+      console.error("Photo tasting identify error:", e);
+      res.status(500).json({ message: e.message || "Identification failed" });
+    }
+  });
+
+  app.post("/api/photo-tasting/create", async (req: Request, res: Response) => {
+    try {
+      const { participantId, title, date, location, whiskies: whiskiesList } = req.body;
+      if (!participantId || !title || !whiskiesList || !Array.isArray(whiskiesList)) {
+        return res.status(400).json({ message: "participantId, title, and whiskies array required" });
+      }
+      const auth = await verifyHostOrAdmin(participantId);
+      if (!auth) return res.status(403).json({ message: "Only hosts and admins can create tastings" });
+
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const tasting = await storage.createTasting({
+        title,
+        date: date || new Date().toISOString().split("T")[0],
+        location: location || "",
+        hostId: participantId,
+        code,
+        status: "draft",
+      });
+
+      const createdWhiskies = [];
+      for (let i = 0; i < whiskiesList.length; i++) {
+        const w = whiskiesList[i];
+        const whisky = await storage.createWhisky({
+          tastingId: tasting.id,
+          name: w.name || "Unknown",
+          distillery: w.distillery || null,
+          age: w.age || null,
+          abv: w.abv != null ? parseFloat(w.abv) : null,
+          type: w.type || null,
+          country: w.country || null,
+          category: w.category || null,
+          region: w.region || null,
+          caskInfluence: w.caskInfluence || null,
+          peatLevel: w.peatLevel || null,
+          notes: w.notes || null,
+          sortOrder: i,
+        });
+        createdWhiskies.push(whisky);
+      }
+
+      res.json({ tasting, whiskies: createdWhiskies });
+    } catch (e: any) {
+      console.error("Photo tasting create error:", e);
+      res.status(500).json({ message: e.message || "Failed to create tasting" });
+    }
+  });
+
   return httpServer;
 }

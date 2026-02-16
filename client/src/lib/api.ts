@@ -304,6 +304,26 @@ export const benchmarkApi = {
     fetchJSON(`/benchmark/${id}?participantId=${participantId}`, { method: "DELETE" }),
 };
 
+// ===== Photo Tasting =====
+export const photoTastingApi = {
+  identify: async (photos: File[], participantId: string) => {
+    const formData = new FormData();
+    photos.forEach(p => formData.append("photos", p));
+    formData.append("participantId", participantId);
+    const res = await fetch(`${API_BASE}/photo-tasting/identify`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Identification failed");
+    }
+    return res.json();
+  },
+  createTasting: (data: { participantId: string; title: string; date: string; location: string; whiskies: any[] }) =>
+    fetchJSON("/photo-tasting/create", { method: "POST", body: JSON.stringify(data) }),
+};
+
 // ===== Admin =====
 export const adminApi = {
   getOverview: (participantId: string) => fetchJSON(`/admin/overview?participantId=${participantId}`),
