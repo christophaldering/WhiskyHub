@@ -22,6 +22,10 @@ export const participantApi = {
   get: (id: string) => fetchJSON(`/participants/${id}`),
   setLanguage: (id: string, language: string) =>
     fetchJSON(`/participants/${id}/language`, { method: "PATCH", body: JSON.stringify({ language }) }),
+  verify: (id: string, code: string) =>
+    fetchJSON(`/participants/${id}/verify`, { method: "POST", body: JSON.stringify({ code }) }),
+  resendVerification: (id: string) =>
+    fetchJSON(`/participants/${id}/resend-verification`, { method: "POST", body: JSON.stringify({}) }),
 };
 
 // ===== Tastings =====

@@ -11,10 +11,13 @@ export const participants = pgTable("participants", {
   email: text("email"),
   role: text("role").default("user"),
   language: text("language").default("en"),
+  emailVerified: boolean("email_verified").default(false),
+  verificationCode: text("verification_code"),
+  verificationExpiry: timestamp("verification_expiry"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertParticipantSchema = createInsertSchema(participants).omit({ id: true, createdAt: true });
+export const insertParticipantSchema = createInsertSchema(participants).omit({ id: true, createdAt: true, emailVerified: true, verificationCode: true, verificationExpiry: true });
 export type InsertParticipant = z.infer<typeof insertParticipantSchema>;
 export type Participant = typeof participants.$inferSelect;
 

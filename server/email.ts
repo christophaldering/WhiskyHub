@@ -123,6 +123,45 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
   }
 }
 
+export function buildVerificationEmail(params: {
+  name: string;
+  code: string;
+}): { subject: string; html: string } {
+  const { name, code } = params;
+  const subject = `Your CaskSense verification code: ${code}`;
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:'Georgia',serif;background:#f9f9f7;color:#333;">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border:1px solid #e5e5e0;border-radius:4px;overflow:hidden;">
+    <div style="padding:32px 32px 16px;border-bottom:1px solid #e5e5e0;">
+      <h1 style="margin:0;font-size:24px;color:#4a5568;font-weight:700;letter-spacing:-0.5px;">CaskSense</h1>
+      <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a0aec0;">Email Verification</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">
+        Hello <strong>${name}</strong>,
+      </p>
+      <p style="font-size:15px;line-height:1.6;margin:0 0 24px;color:#555;">
+        Please enter the following code to verify your email address and complete your registration:
+      </p>
+      <div style="margin:24px 0;padding:20px;background:#fafaf8;border:1px solid #e5e5e0;border-radius:4px;text-align:center;">
+        <div style="font-size:36px;font-weight:700;color:#4a5568;letter-spacing:8px;font-family:monospace;">${code}</div>
+      </div>
+      <p style="font-size:13px;color:#a0aec0;margin:16px 0 0;line-height:1.5;">
+        This code expires in 15 minutes. If you didn't request this, you can safely ignore this email.
+      </p>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid #e5e5e0;background:#fafaf8;">
+      <p style="margin:0;font-size:11px;color:#a0aec0;text-align:center;">CaskSense — Where Tasting Becomes Reflection</p>
+    </div>
+  </div>
+</body>
+</html>`;
+  return { subject, html };
+}
+
 export function buildInviteEmail(params: {
   hostName: string;
   tastingTitle: string;

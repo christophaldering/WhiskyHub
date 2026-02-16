@@ -32,6 +32,8 @@ export interface IStorage {
   updateParticipant(id: string, data: Partial<{name: string; email: string; pin: string}>): Promise<Participant | undefined>;
   updateParticipantLanguage(id: string, language: string): Promise<Participant | undefined>;
   updateParticipantPin(id: string, pin: string): Promise<Participant | undefined>;
+  setVerificationCode(id: string, code: string, expiry: Date): Promise<Participant | undefined>;
+  verifyEmail(id: string): Promise<Participant | undefined>;
 
   // Tastings
   getTasting(id: string): Promise<Tasting | undefined>;
@@ -176,6 +178,16 @@ export class DatabaseStorage implements IStorage {
 
   async updateParticipantPin(id: string, pin: string): Promise<Participant | undefined> {
     const [result] = await db.update(participants).set({ pin }).where(eq(participants.id, id)).returning();
+    return result;
+  }
+
+  async setVerificationCode(id: string, code: string, expiry: Date): Promise<Participant | undefined> {
+    const [result] = await db.update(participants).set({ verificationCode: code, verificationExpiry: expiry }).where(eq(participants.id, id)).returning();
+    return result;
+  }
+
+  async verifyEmail(id: string): Promise<Participant | undefined> {
+    const [result] = await db.update(participants).set({ emailVerified: true, verificationCode: null, verificationExpiry: null }).where(eq(participants.id, id)).returning();
     return result;
   }
 

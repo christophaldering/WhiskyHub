@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { useTranslation } from "react-i18next";
+import { Mail, ArrowLeft } from "lucide-react";
 
 interface LoginDialogProps {
   open: boolean;
@@ -21,6 +22,14 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isReturning, setIsReturning] = useState(false);
+
+  const [verifyMode, setVerifyMode] = useState(false);
+  const [pendingParticipant, setPendingParticipant] = useState<{ id: string; name: string; role?: string; email?: string } | null>(null);
+  const [verifyCode, setVerifyCode] = useState("");
+  const [verifyError, setVerifyError] = useState("");
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -55,14 +64,132 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
         pin,
         isReturning ? undefined : email.trim()
       );
-      setParticipant({ id: participant.id, name: participant.name, role: participant.role });
-      onClose();
+
+      if (!participant.emailVerified) {
+        setPendingParticipant({ id: participant.id, name: participant.name, role: participant.role, email: participant.email });
+        setVerifyMode(true);
+        setVerifyCode("");
+        setVerifyError("");
+      } else {
+        setParticipant({ id: participant.id, name: participant.name, role: participant.role });
+        onClose();
+      }
     } catch (e: any) {
       setError(e.message || "Failed to join");
     } finally {
       setLoading(false);
     }
   };
+
+  const handleVerify = async () => {
+    if (!pendingParticipant) return;
+    if (!verifyCode.trim()) {
+      setVerifyError(t('verify.codeRequired'));
+      return;
+    }
+    setVerifyLoading(true);
+    setVerifyError("");
+    try {
+      const verified = await participantApi.verify(pendingParticipant.id, verifyCode.trim());
+      setParticipant({ id: verified.id, name: verified.name, role: verified.role });
+      setVerifyMode(false);
+      setPendingParticipant(null);
+      onClose();
+    } catch (e: any) {
+      setVerifyError(e.message || t('verify.invalidCode'));
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!pendingParticipant) return;
+    setResendLoading(true);
+    setResendSuccess(false);
+    try {
+      await participantApi.resendVerification(pendingParticipant.id);
+      setResendSuccess(true);
+      setTimeout(() => setResendSuccess(false), 5000);
+    } catch (e: any) {
+      setVerifyError(e.message || "Failed to resend code");
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
+  const handleBackToLogin = () => {
+    setVerifyMode(false);
+    setPendingParticipant(null);
+    setVerifyCode("");
+    setVerifyError("");
+  };
+
+  if (verifyMode && pendingParticipant) {
+    return (
+      <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+              <Mail className="w-6 h-6" />
+              {t('verify.title')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('verify.subtitle', { email: pendingParticipant.email })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('verify.codeLabel')}</Label>
+              <Input
+                value={verifyCode}
+                onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder={t('verify.codePlaceholder')}
+                className="bg-secondary/20 text-center text-2xl tracking-[0.5em] font-mono"
+                maxLength={6}
+                inputMode="numeric"
+                autoFocus
+                data-testid="input-verify-code"
+                onKeyDown={(e) => e.key === "Enter" && handleVerify()}
+              />
+              <p className="text-xs text-muted-foreground">{t('verify.codeHint')}</p>
+            </div>
+
+            {verifyError && <p className="text-sm text-destructive" data-testid="text-verify-error">{verifyError}</p>}
+
+            <Button
+              onClick={handleVerify}
+              disabled={verifyLoading || verifyCode.length < 6}
+              className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
+              data-testid="button-verify"
+            >
+              {verifyLoading ? t('verify.verifying') : t('verify.confirm')}
+            </Button>
+
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={handleBackToLogin}
+                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                data-testid="button-back-to-login"
+              >
+                <ArrowLeft className="w-3 h-3" />
+                {t('verify.backToLogin')}
+              </button>
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendLoading}
+                className="text-xs text-muted-foreground hover:text-primary underline transition-colors disabled:opacity-50"
+                data-testid="button-resend-code"
+              >
+                {resendLoading ? t('verify.resending') : resendSuccess ? t('verify.resent') : t('verify.resend')}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>

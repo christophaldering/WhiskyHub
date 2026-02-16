@@ -13,7 +13,7 @@ import { storage } from "./storage";
 import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, type Participant } from "@shared/schema";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
-import { isSmtpConfigured, sendEmail, buildInviteEmail } from "./email";
+import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail } from "./email";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -309,6 +309,16 @@ export async function registerRoutes(
         }
       }
 
+      if (participant.email) {
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiry = new Date(Date.now() + 15 * 60 * 1000);
+        await storage.setVerificationCode(participant.id, code, expiry);
+        const emailContent = buildVerificationEmail({ name: participant.name, code });
+        sendEmail({ to: participant.email, ...emailContent }).catch(err =>
+          console.error("Failed to send verification email:", err)
+        );
+      }
+
       const finalParticipant = await storage.getParticipant(participant.id);
       res.status(201).json(finalParticipant);
     } catch (e: any) {
@@ -320,6 +330,47 @@ export async function registerRoutes(
     const participant = await storage.getParticipant(req.params.id);
     if (!participant) return res.status(404).json({ message: "Not found" });
     res.json(participant);
+  });
+
+  app.post("/api/participants/:id/verify", async (req, res) => {
+    try {
+      const { code } = req.body;
+      if (!code) return res.status(400).json({ message: "Verification code is required" });
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      if (participant.emailVerified) return res.json(participant);
+      if (!participant.verificationCode || !participant.verificationExpiry) {
+        return res.status(400).json({ message: "No verification pending" });
+      }
+      if (new Date() > new Date(participant.verificationExpiry)) {
+        return res.status(400).json({ message: "Verification code has expired. Please request a new one." });
+      }
+      if (code !== participant.verificationCode) {
+        return res.status(400).json({ message: "Invalid verification code" });
+      }
+      const verified = await storage.verifyEmail(participant.id);
+      res.json(verified);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/participants/:id/resend-verification", async (req, res) => {
+    try {
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      if (participant.emailVerified) return res.json({ message: "Already verified" });
+      if (!participant.email) return res.status(400).json({ message: "No email on file" });
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiry = new Date(Date.now() + 15 * 60 * 1000);
+      await storage.setVerificationCode(participant.id, code, expiry);
+      const emailContent = buildVerificationEmail({ name: participant.name, code });
+      const sent = await sendEmail({ to: participant.email, ...emailContent });
+      if (!sent) return res.status(500).json({ message: "Failed to send email. Please try again." });
+      res.json({ message: "Verification code sent" });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
   });
 
   app.patch("/api/participants/:id/language", async (req, res) => {

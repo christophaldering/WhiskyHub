@@ -27,6 +27,21 @@ const resources = {
         pinRequired: "PIN is required",
         invalidEmail: "Please enter a valid email address"
       },
+      verify: {
+        title: "Verify Your Email",
+        subtitle: "We sent a 6-digit code to {{email}}. Please enter it below.",
+        codeLabel: "Verification Code",
+        codePlaceholder: "000000",
+        codeHint: "Check your inbox (and spam folder) for the code.",
+        codeRequired: "Please enter the verification code",
+        confirm: "Verify Email",
+        verifying: "Verifying...",
+        invalidCode: "Invalid verification code",
+        resend: "Resend Code",
+        resending: "Sending...",
+        resent: "Code sent!",
+        backToLogin: "Back"
+      },
       nav: {
         lobby: "Lobby",
         sessions: "Sessions",
@@ -938,6 +953,21 @@ const resources = {
         emailRequired: "E-Mail ist erforderlich",
         pinRequired: "PIN ist erforderlich",
         invalidEmail: "Bitte geben Sie eine gültige E-Mail-Adresse ein"
+      },
+      verify: {
+        title: "E-Mail bestätigen",
+        subtitle: "Wir haben einen 6-stelligen Code an {{email}} gesendet. Bitte geben Sie ihn unten ein.",
+        codeLabel: "Bestätigungscode",
+        codePlaceholder: "000000",
+        codeHint: "Prüfen Sie Ihren Posteingang (und Spam-Ordner) für den Code.",
+        codeRequired: "Bitte geben Sie den Bestätigungscode ein",
+        confirm: "E-Mail bestätigen",
+        verifying: "Wird überprüft...",
+        invalidCode: "Ungültiger Bestätigungscode",
+        resend: "Code erneut senden",
+        resending: "Wird gesendet...",
+        resent: "Code gesendet!",
+        backToLogin: "Zurück"
       },
       nav: {
         lobby: "Lobby",
