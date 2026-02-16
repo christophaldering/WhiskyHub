@@ -1462,6 +1462,19 @@ export async function registerRoutes(
     }
   });
 
+  // ===== RATING NOTES =====
+
+  app.get("/api/participants/:id/rating-notes", async (req, res) => {
+    try {
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      const notes = await storage.getRatingNotes(req.params.id);
+      res.json(notes.filter(r => r.notes && r.notes.trim().length > 0));
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== FLAVOR PROFILE =====
 
   app.get("/api/participants/:id/flavor-profile", async (req, res) => {

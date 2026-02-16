@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
-import { journalApi } from "@/lib/api";
+import { journalApi, ratingNotesApi } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { CircleDot, X } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -167,12 +167,29 @@ export default function FlavorWheel() {
     enabled: !!currentParticipant,
   });
 
+  const { data: ratingNotes } = useQuery<Array<{ id: string; notes: string | null }>>({
+    queryKey: ["rating-notes", currentParticipant?.id],
+    queryFn: () => ratingNotesApi.get(currentParticipant!.id),
+    enabled: !!currentParticipant,
+  });
+
   const { categoryFreqs, subFreqs, totalMentions, topCategory, mostUniqueFlavor, innerData, outerData } = useMemo(() => {
-    if (!journalEntries || journalEntries.length === 0) {
+    const combinedEntries = [
+      ...(journalEntries || []),
+      ...(ratingNotes || []).map(r => ({
+        id: r.id,
+        noseNotes: null,
+        tasteNotes: null,
+        finishNotes: null,
+        body: r.notes,
+      })),
+    ];
+
+    if (combinedEntries.length === 0) {
       return { categoryFreqs: {}, subFreqs: {}, totalMentions: 0, topCategory: null, mostUniqueFlavor: null, innerData: [], outerData: [] };
     }
 
-    const { categoryFreqs, subFreqs } = computeFlavorFrequencies(journalEntries, isDE);
+    const { categoryFreqs, subFreqs } = computeFlavorFrequencies(combinedEntries, isDE);
     const totalMentions = Object.values(categoryFreqs).reduce((s, v) => s + v, 0);
 
     let topCategory: FlavorCategory | null = null;
@@ -219,7 +236,7 @@ export default function FlavorWheel() {
     }
 
     return { categoryFreqs, subFreqs, totalMentions, topCategory, mostUniqueFlavor, innerData, outerData };
-  }, [journalEntries, isDE]);
+  }, [journalEntries, ratingNotes, isDE]);
 
   if (!currentParticipant) {
     return (
@@ -253,7 +270,10 @@ export default function FlavorWheel() {
             {t("flavorWheel.title")}
           </h1>
         </div>
-        <p className="text-sm text-muted-foreground mb-8">{t("flavorWheel.subtitle")}</p>
+        <p className="text-sm text-muted-foreground mb-2">{t("flavorWheel.subtitle")}</p>
+        <p className="text-xs text-muted-foreground mb-8" data-testid="text-flavor-wheel-source-count">
+          {t("flavorWheel.sourceCount", { journals: journalEntries?.length || 0, ratings: ratingNotes?.length || 0 })}
+        </p>
 
         {!hasData ? (
           <div className="text-center py-16 text-muted-foreground">

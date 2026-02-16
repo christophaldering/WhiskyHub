@@ -725,7 +725,8 @@ const resources = {
         totalMentions: "Total Mentions",
         topCategory: "Top Category",
         mostUnique: "Rarest Flavor",
-        mentions: "mentions"
+        mentions: "mentions",
+        sourceCount: "Based on {{journals}} journal entries and {{ratings}} tasting notes"
       },
       pairings: {
         title: "Smart Pairing Suggestions",
@@ -1634,7 +1635,8 @@ const resources = {
         totalMentions: "Erwähnungen gesamt",
         topCategory: "Top-Kategorie",
         mostUnique: "Seltenste Note",
-        mentions: "Erwähnungen"
+        mentions: "Erwähnungen",
+        sourceCount: "Basierend auf {{journals}} Tagebucheinträgen und {{ratings}} Verkostungsnotizen"
       },
       pairings: {
         title: "Smarte Pairing-Vorschläge",

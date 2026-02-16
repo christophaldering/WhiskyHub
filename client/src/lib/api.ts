@@ -226,6 +226,11 @@ export const flavorProfileApi = {
   get: (participantId: string) => fetchJSON(`/participants/${participantId}/flavor-profile`),
 };
 
+// ===== Rating Notes =====
+export const ratingNotesApi = {
+  get: (participantId: string) => fetchJSON(`/participants/${participantId}/rating-notes`),
+};
+
 // ===== Friend Activity Feed =====
 export const activityApi = {
   getFriendActivity: (participantId: string) => fetchJSON(`/participants/${participantId}/friend-activity`),

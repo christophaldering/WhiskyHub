@@ -94,6 +94,9 @@ export interface IStorage {
   deleteWhiskyFriend(id: string, participantId: string): Promise<void>;
   updateWhiskyFriend(id: string, participantId: string, data: { firstName: string; lastName: string; email: string }): Promise<WhiskyFriend | undefined>;
 
+  // Rating Notes
+  getRatingNotes(participantId: string): Promise<Array<{ id: string; notes: string | null }>>;
+
   // Journal Entries
   getJournalEntries(participantId: string): Promise<JournalEntry[]>;
   getJournalEntry(id: string, participantId: string): Promise<JournalEntry | undefined>;
@@ -129,6 +132,9 @@ export interface IStorage {
 
   // Hard Delete (admin only)
   hardDeleteTasting(id: string): Promise<void>;
+
+  // Global Averages
+  getGlobalAverages(): Promise<{ nose: number; taste: number; finish: number; balance: number; overall: number; totalRatings: number; totalParticipants: number }>;
 
   // Admin
   getAllParticipants(): Promise<Participant[]>;
@@ -462,6 +468,11 @@ export class DatabaseStorage implements IStorage {
   async updateWhiskyFriend(id: string, participantId: string, data: { firstName: string; lastName: string; email: string }): Promise<WhiskyFriend | undefined> {
     const [result] = await db.update(whiskyFriends).set(data).where(and(eq(whiskyFriends.id, id), eq(whiskyFriends.participantId, participantId))).returning();
     return result;
+  }
+
+  // --- Rating Notes ---
+  async getRatingNotes(participantId: string): Promise<Array<{ id: string; notes: string | null }>> {
+    return db.select({ id: ratings.id, notes: ratings.notes }).from(ratings).where(eq(ratings.participantId, participantId));
   }
 
   // --- Journal Entries ---
