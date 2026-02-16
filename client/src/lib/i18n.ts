@@ -834,7 +834,8 @@ const resources = {
         subtitle: "Explore distilleries around the world",
         searchPlaceholder: "Search distilleries...",
         filters: "Filters",
-        viewEncyclopedia: "Encyclopedia"
+        viewEncyclopedia: "Encyclopedia",
+        resetView: "Show All"
       },
       whiskyDb: {
         title: "Whisky Database",
@@ -1776,7 +1777,8 @@ const resources = {
         subtitle: "Destillerien weltweit erkunden",
         searchPlaceholder: "Destillerien suchen...",
         filters: "Filter",
-        viewEncyclopedia: "Enzyklopädie"
+        viewEncyclopedia: "Enzyklopädie",
+        resetView: "Alle anzeigen"
       },
       whiskyDb: {
         title: "Whisky-Datenbank",

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
@@ -6,7 +6,7 @@ import L from "leaflet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Calendar, ExternalLink, MapPin, Filter } from "lucide-react";
+import { Search, Calendar, ExternalLink, MapPin, Filter, Maximize2 } from "lucide-react";
 import { distilleries, type Distillery } from "@/data/distilleries";
 import "leaflet/dist/leaflet.css";
 
@@ -45,13 +45,17 @@ const countryColors: Record<string, string> = {
   "England": "bg-teal-500/10 text-teal-400 border-teal-500/20",
 };
 
-function FitBounds({ markers }: { markers: Distillery[] }) {
+function FitBounds({ markers, fitKey }: { markers: Distillery[]; fitKey: number }) {
   const map = useMap();
   useEffect(() => {
     if (markers.length === 0) return;
+    if (markers.length === 1) {
+      map.setView([markers[0].lat, markers[0].lng], 10);
+      return;
+    }
     const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng]));
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
-  }, [markers, map]);
+  }, [fitKey]);
   return null;
 }
 
@@ -62,6 +66,7 @@ export default function DistilleryMap() {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [hoveredName, setHoveredName] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [fitKey, setFitKey] = useState(0);
   const mapRef = useRef<L.Map | null>(null);
 
   const countries = useMemo(() => Array.from(new Set(distilleries.map(d => d.country))).sort(), []);
@@ -87,12 +92,21 @@ export default function DistilleryMap() {
     return result.sort((a, b) => a.name.localeCompare(b.name));
   }, [search, selectedRegion, selectedCountry]);
 
+  useEffect(() => {
+    setFitKey(k => k + 1);
+  }, [selectedCountry, selectedRegion, search]);
+
   const flyTo = (d: Distillery) => {
     if (mapRef.current) {
       mapRef.current.flyTo([d.lat, d.lng], 13, { duration: 1.2 });
     }
     setHoveredName(d.name);
   };
+
+  const resetView = useCallback(() => {
+    setHoveredName(null);
+    setFitKey(k => k + 1);
+  }, []);
 
   return (
     <div className="space-y-4" data-testid="distillery-map-page">
@@ -168,7 +182,16 @@ export default function DistilleryMap() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-        <div className="rounded-lg overflow-hidden border border-border/50 bg-card" style={{ height: "65vh", minHeight: 400 }}>
+        <div className="rounded-lg overflow-hidden border border-border/50 bg-card relative" style={{ height: "65vh", minHeight: 400 }}>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="absolute top-3 right-3 z-[1000] shadow-md text-xs"
+            onClick={resetView}
+            data-testid="button-reset-view"
+          >
+            <Maximize2 className="w-3.5 h-3.5 mr-1" /> {t("distilleryMap.resetView")}
+          </Button>
           <MapContainer
             center={[54.5, -4]}
             zoom={5}
@@ -180,7 +203,7 @@ export default function DistilleryMap() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
             />
-            <FitBounds markers={filtered} />
+            <FitBounds markers={filtered} fitKey={fitKey} />
             {filtered.map(d => (
               <Marker
                 key={d.name}
