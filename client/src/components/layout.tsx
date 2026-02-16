@@ -160,13 +160,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ] : []),
   ];
 
-  const navRef = useRef<HTMLElement>(null);
+  const desktopNavRef = useRef<HTMLElement>(null);
+  const mobileNavRef = useRef<HTMLElement>(null);
 
-  const scrollToActive = useCallback(() => {
+  const scrollNavToActive = useCallback((navEl: HTMLElement | null) => {
+    if (!navEl) return;
     requestAnimationFrame(() => {
-      const nav = navRef.current;
-      if (!nav) return;
-      const active = nav.querySelector('[data-nav-active="true"]');
+      const active = navEl.querySelector('[data-nav-active="true"]');
       if (active) {
         active.scrollIntoView({ block: "center", behavior: "instant" });
       }
@@ -174,10 +174,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (open) scrollToActive();
-  }, [open, scrollToActive]);
+    if (open) scrollNavToActive(mobileNavRef.current);
+  }, [open, scrollNavToActive]);
 
-  const NavContent = () => (
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollNavToActive(desktopNavRef.current);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [location, scrollNavToActive]);
+
+  const NavContent = ({ navInnerRef }: { navInnerRef?: React.RefObject<HTMLElement | null> }) => (
     <div className="flex flex-col h-full bg-card border-r border-border/40">
       <div className="p-5 border-b border-border/40">
         <div className="flex flex-col gap-1">
@@ -193,7 +200,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       
-      <nav ref={navRef} className="flex-1 overflow-y-auto p-3 space-y-1">
+      <nav ref={navInnerRef} className="flex-1 overflow-y-auto p-3 space-y-1">
         {navGroups.map((group, gi) => (
           <div key={gi}>
             {gi > 0 && <div className="border-t border-border/30 my-2" />}
@@ -273,7 +280,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 border-r-border/40 w-72 bg-card">
-              <NavContent />
+              <NavContent navInnerRef={mobileNavRef} />
             </SheetContent>
           </Sheet>
         </div>
@@ -281,7 +288,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <div className="flex relative z-10 h-screen overflow-hidden">
         <aside className="hidden md:block w-72 h-full">
-          <NavContent />
+          <NavContent navInnerRef={desktopNavRef} />
         </aside>
         <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
           <div className="container max-w-5xl mx-auto p-6 md:p-12 pb-24 md:pb-12 animate-in fade-in duration-700">
