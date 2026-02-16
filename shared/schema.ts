@@ -205,6 +205,7 @@ export const journalEntries = pgTable("journal_entries", {
   wbScore: real("wb_score"),
   mood: text("mood"),
   occasion: text("occasion"),
+  imageUrl: text("image_url"),
   body: text("body"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

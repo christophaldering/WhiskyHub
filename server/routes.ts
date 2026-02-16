@@ -1505,7 +1505,7 @@ export async function registerRoutes(
 
   app.patch("/api/journal/:participantId/:id", async (req, res) => {
     try {
-      const allowed = ["title", "whiskyName", "distillery", "region", "age", "abv", "caskType", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "mood", "occasion", "body"];
+      const allowed = ["title", "whiskyName", "distillery", "region", "age", "abv", "caskType", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "mood", "occasion", "body", "imageUrl"];
       const filtered: any = {};
       for (const key of allowed) {
         if (req.body[key] !== undefined) filtered[key] = req.body[key];
@@ -1522,6 +1522,31 @@ export async function registerRoutes(
     try {
       await storage.deleteJournalEntry(req.params.id, req.params.participantId);
       res.status(204).end();
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/journal/:participantId/:id/image", (req: any, res: any, next: any) => {
+    memUpload.single("image")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ message: "Image must be under 2 MB" });
+        }
+        if (err.message) {
+          return res.status(415).json({ message: err.message });
+        }
+        return res.status(400).json({ message: "Upload failed" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: "No image file provided" });
+      const imageUrl = await uploadBufferToObjectStorage(objectStorage, req.file.buffer, req.file.mimetype);
+      const entry = await storage.updateJournalEntry(req.params.id, req.params.participantId, { imageUrl });
+      if (!entry) return res.status(404).json({ message: "Journal entry not found" });
+      res.json(entry);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

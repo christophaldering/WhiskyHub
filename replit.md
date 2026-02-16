@@ -47,12 +47,12 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 14. **Discussion Panel**: A basic real-time discussion feature for active sessions using polling.
 15. **Tasting Note Generator**: An interactive tool to assist participants in crafting structured tasting notes using predefined flavor categories.
 16. **Reflection Phase**: An optional post-tasting reflection feature with configurable prompts and visibility settings.
-17. **Whisky Journal**: Private tasting diary with CRUD operations, rich metadata, personal scores, mood/occasion tracking.
+17. **Whisky Journal**: Private tasting diary with CRUD operations, rich metadata, personal scores, mood/occasion tracking, and bottle photo uploads via object storage.
 18. **Dark/Light Theme**: Togglable dark (warm whisky) and light (cream/amber) themes with localStorage persistence and no-flash initialization.
 19. **Ambient Soundscapes**: Web Audio API procedural sound engine with three soundscapes (fireplace, rain, night), volume control, centralized state via Zustand.
 20. **Whisky Lexicon**: Reference glossary with 53 bilingual entries across 5 categories, searchable with accordion sections.
 21. **Host Briefing Notes**: Auto-generated summary cards for whiskies in a tasting, with print support.
-22. **Achievement Badges**: 15 milestone badges computed client-side from participant stats API, with progress tracking.
+22. **Achievement Badges**: 37 milestone badges (15 beginner + 22 expert tier) computed client-side from participant stats API, with progress tracking and thresholds up to 1000+ ratings.
 23. **Personal Flavor Profile**: Radar charts showing taste dimension averages, region/cask/peat breakdowns, and top-rated whiskies.
 24. **Whisky Recommendations**: Algorithm scoring unrated whiskies based on region (40%), cask (30%), and peat (30%) preferences.
 25. **Side-by-Side Comparison**: Compare 2-3 rated whiskies with overlaid radar charts, score tables, notes, and details.

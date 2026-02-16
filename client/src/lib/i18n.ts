@@ -268,6 +268,8 @@ const resources = {
         created: "Created",
         updated: "Last updated",
         loginRequired: "Please sign in to access your journal.",
+        bottlePhoto: "Bottle Photo",
+        addPhoto: "Add Photo",
       },
       lexicon: {
         title: "Whisky Lexicon",
@@ -1211,6 +1213,8 @@ const resources = {
         created: "Erstellt",
         updated: "Zuletzt aktualisiert",
         loginRequired: "Bitte melden Sie sich an, um auf Ihr Tagebuch zuzugreifen.",
+        bottlePhoto: "Flaschenfoto",
+        addPhoto: "Foto hinzufügen",
       },
       lexicon: {
         title: "Whisky-Lexikon",

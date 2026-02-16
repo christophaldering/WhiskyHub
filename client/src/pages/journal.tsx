@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, ArrowLeft, Pencil, Trash2, BookOpen, Wine, Calendar } from "lucide-react";
+import { Plus, ArrowLeft, Pencil, Trash2, BookOpen, Wine, Calendar, Camera, X, Loader2 } from "lucide-react";
 import { TastingNoteGenerator } from "@/components/tasting-note-generator";
 import type { JournalEntry } from "@shared/schema";
 
@@ -39,22 +39,53 @@ export default function Journal() {
     enabled: !!currentParticipant,
   });
 
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
+  const [removeExistingImage, setRemoveExistingImage] = useState(false);
+
+  const uploadImage = async (participantId: string, entryId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    const resp = await fetch(`/api/journal/${participantId}/${entryId}/image`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!resp.ok) throw new Error("Image upload failed");
+    return resp.json();
+  };
+
   const createMutation = useMutation({
-    mutationFn: (data: any) => journalApi.create(currentParticipant!.id, data),
+    mutationFn: async (data: any) => {
+      const entry = await journalApi.create(currentParticipant!.id, data);
+      if (pendingImage && entry.id) {
+        await uploadImage(currentParticipant!.id, entry.id, pendingImage);
+      }
+      return entry;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["journal"] });
       setView("list");
       setEditingEntry(null);
+      setPendingImage(null);
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      journalApi.update(currentParticipant!.id, id, data),
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      if (removeExistingImage && !pendingImage) {
+        data.imageUrl = null;
+      }
+      const entry = await journalApi.update(currentParticipant!.id, id, data);
+      if (pendingImage) {
+        await uploadImage(currentParticipant!.id, id, pendingImage);
+      }
+      return entry;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["journal"] });
       setView("list");
       setEditingEntry(null);
+      setPendingImage(null);
+      setRemoveExistingImage(false);
     },
   });
 
@@ -82,11 +113,15 @@ export default function Journal() {
 
   const handleNew = () => {
     setEditingEntry(null);
+    setPendingImage(null);
+    setRemoveExistingImage(false);
     setView("form");
   };
 
   const handleEdit = (entry: JournalEntry) => {
     setEditingEntry(entry);
+    setPendingImage(null);
+    setRemoveExistingImage(false);
     setView("form");
   };
 
@@ -154,6 +189,11 @@ export default function Journal() {
                     data-testid={`card-journal-entry-${entry.id}`}
                   >
                     <div className="flex items-start justify-between gap-4">
+                      {entry.imageUrl && (
+                        <div className="w-12 h-16 rounded overflow-hidden border border-border/30 bg-secondary/30 flex-shrink-0">
+                          <img src={entry.imageUrl} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-serif font-semibold text-foreground truncate">
                           {entry.title}
@@ -231,6 +271,10 @@ export default function Journal() {
                 }
               }}
               isSaving={createMutation.isPending || updateMutation.isPending}
+              pendingImage={pendingImage}
+              onImageChange={setPendingImage}
+              removeExistingImage={removeExistingImage}
+              onRemoveExistingImage={setRemoveExistingImage}
               t={t}
             />
           </motion.div>
@@ -311,7 +355,12 @@ function EntryDetail({
 
       <div className="bg-card border border-border/40 rounded-lg p-6 md:p-8 space-y-6">
         <div className="flex items-start justify-between gap-4">
-          <div>
+          {entry.imageUrl && (
+            <div className="w-20 h-28 md:w-24 md:h-32 rounded-lg overflow-hidden border border-border/40 bg-secondary/30 flex-shrink-0">
+              <img src={entry.imageUrl} alt={entry.whiskyName || entry.title} className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
             <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary">{entry.title}</h1>
             {entry.whiskyName && (
               <p className="text-lg text-foreground/80 font-serif mt-1">{entry.whiskyName}</p>
@@ -393,12 +442,20 @@ function EntryForm({
   onBack,
   onSave,
   isSaving,
+  pendingImage,
+  onImageChange,
+  removeExistingImage,
+  onRemoveExistingImage,
   t,
 }: {
   entry: JournalEntry | null;
   onBack: () => void;
   onSave: (data: any) => void;
   isSaving: boolean;
+  pendingImage: File | null;
+  onImageChange: (file: File | null) => void;
+  removeExistingImage: boolean;
+  onRemoveExistingImage: (v: boolean) => void;
   t: (key: string) => string;
 }) {
   const [form, setForm] = useState({
@@ -497,6 +554,56 @@ function EntryForm({
               <Label htmlFor="caskType" className="text-sm">{t("journal.caskType")}</Label>
               <Input id="caskType" value={form.caskType} onChange={set("caskType")} placeholder={t("journal.caskTypePlaceholder")} className="mt-1 bg-background/50" data-testid="input-journal-cask-type" />
             </div>
+          </div>
+        </div>
+
+        <div className="border-t border-border/30 pt-6">
+          <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider mb-4">
+            {t("journal.bottlePhoto")}
+          </h3>
+          <div className="flex items-start gap-4">
+            {(pendingImage || (entry?.imageUrl && !removeExistingImage)) && (
+              <div className="relative w-24 h-32 rounded-lg overflow-hidden border border-border/40 bg-secondary/30 flex-shrink-0">
+                <img
+                  src={pendingImage ? URL.createObjectURL(pendingImage) : entry!.imageUrl!}
+                  alt="Bottle"
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (pendingImage) {
+                      onImageChange(null);
+                    } else {
+                      onRemoveExistingImage(true);
+                    }
+                  }}
+                  className="absolute top-1 right-1 p-0.5 rounded-full bg-background/80 hover:bg-background transition-colors"
+                  data-testid="button-remove-journal-image"
+                >
+                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              </div>
+            )}
+            <label
+              className="flex flex-col items-center justify-center w-24 h-32 rounded-lg border-2 border-dashed border-border/50 hover:border-primary/40 cursor-pointer transition-colors bg-secondary/20"
+              data-testid="button-upload-journal-image"
+            >
+              <Camera className="w-5 h-5 text-muted-foreground mb-1" />
+              <span className="text-[10px] text-muted-foreground text-center leading-tight">
+                {t("journal.addPhoto")}
+              </span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) onImageChange(file);
+                  e.target.value = "";
+                }}
+              />
+            </label>
           </div>
         </div>
 
