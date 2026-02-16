@@ -622,7 +622,9 @@ const resources = {
         regionSubtitle: "Average scores by whisky region",
         peatTitle: "Peat Level Affinity",
         caskTitle: "Cask Influence Affinity",
-        topTitle: "Your Top-Rated Whiskies"
+        topTitle: "Your Top-Rated Whiskies",
+        personalVsGlobal: "Your Taste vs. Everyone",
+        globalBasedOn: "Global averages based on {{ratings}} ratings from {{participants}} tasters",
       },
       recommendations: {
         title: "Recommendations",
@@ -1532,7 +1534,9 @@ const resources = {
         regionSubtitle: "Durchschnittsbewertungen nach Whisky-Region",
         peatTitle: "Torf-Affinität",
         caskTitle: "Fass-Affinität",
-        topTitle: "Ihre bestbewerteten Whiskys"
+        topTitle: "Ihre bestbewerteten Whiskys",
+        personalVsGlobal: "Dein Geschmack vs. Alle",
+        globalBasedOn: "Globale Durchschnitte basierend auf {{ratings}} Bewertungen von {{participants}} Verkostern",
       },
       recommendations: {
         title: "Empfehlungen",

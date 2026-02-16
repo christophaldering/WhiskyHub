@@ -1488,6 +1488,17 @@ export async function registerRoutes(
     }
   });
 
+  // ===== GLOBAL AVERAGES =====
+
+  app.get("/api/flavor-profile/global", async (_req, res) => {
+    try {
+      const averages = await storage.getGlobalAverages();
+      res.json(averages);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== PARTICIPANT STATS (for badges) =====
 
   app.get("/api/participants/:id/stats", async (req, res) => {

@@ -510,7 +510,7 @@ export class DatabaseStorage implements IStorage {
   }> {
     const allRatings = await db.select().from(ratings).where(eq(ratings.participantId, participantId));
 
-    const whiskyIds = [...new Set(allRatings.map(r => r.whiskyId))];
+    const whiskyIds = Array.from(new Set(allRatings.map(r => r.whiskyId)));
     const allWhiskies = whiskyIds.length > 0
       ? await db.select().from(whiskies).where(inArray(whiskies.id, whiskyIds))
       : [];
@@ -558,7 +558,7 @@ export class DatabaseStorage implements IStorage {
     sources: { tastingRatings: number; journalEntries: number };
   }> {
     const allRatings = await db.select().from(ratings).where(eq(ratings.participantId, participantId));
-    const whiskyIds = [...new Set(allRatings.map(r => r.whiskyId))];
+    const whiskyIds = Array.from(new Set(allRatings.map(r => r.whiskyId)));
     const ratedWhiskyRows = whiskyIds.length > 0
       ? await db.select().from(whiskies).where(inArray(whiskies.id, whiskyIds))
       : [];
@@ -662,6 +662,30 @@ export class DatabaseStorage implements IStorage {
     await db.delete(tastings).where(eq(tastings.id, id));
   }
 
+  async getGlobalAverages(): Promise<{ nose: number; taste: number; finish: number; balance: number; overall: number; totalRatings: number; totalParticipants: number }> {
+    const allRatings = await db.select().from(ratings);
+    if (allRatings.length === 0) {
+      return { nose: 0, taste: 0, finish: 0, balance: 0, overall: 0, totalRatings: 0, totalParticipants: 0 };
+    }
+    let sumNose = 0, sumTaste = 0, sumFinish = 0, sumBalance = 0, sumOverall = 0;
+    const participantIds: string[] = [];
+    for (const r of allRatings) {
+      sumNose += r.nose; sumTaste += r.taste; sumFinish += r.finish;
+      sumBalance += r.balance; sumOverall += r.overall;
+      if (!participantIds.includes(r.participantId)) participantIds.push(r.participantId);
+    }
+    const n = allRatings.length;
+    return {
+      nose: Math.round((sumNose / n) * 10) / 10,
+      taste: Math.round((sumTaste / n) * 10) / 10,
+      finish: Math.round((sumFinish / n) * 10) / 10,
+      balance: Math.round((sumBalance / n) * 10) / 10,
+      overall: Math.round((sumOverall / n) * 10) / 10,
+      totalRatings: n,
+      totalParticipants: participantIds.length,
+    };
+  }
+
   async getAllParticipants(): Promise<Participant[]> {
     return db.select().from(participants).orderBy(participants.createdAt);
   }
@@ -678,7 +702,7 @@ export class DatabaseStorage implements IStorage {
       await tx.delete(discussionEntries).where(eq(discussionEntries.participantId, id));
       await tx.delete(reflectionEntries).where(eq(reflectionEntries.participantId, id));
       await tx.delete(tastingParticipants).where(eq(tastingParticipants.participantId, id));
-      await tx.delete(whiskyFriends).where(sql`${whiskyFriends.participantId} = ${id} OR ${whiskyFriends.friendId} = ${id}`);
+      await tx.delete(whiskyFriends).where(eq(whiskyFriends.participantId, id));
       await tx.delete(profiles).where(eq(profiles.participantId, id));
       await tx.delete(participants).where(eq(participants.id, id));
     });

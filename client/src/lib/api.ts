@@ -224,6 +224,7 @@ export const statsApi = {
 // ===== Flavor Profile =====
 export const flavorProfileApi = {
   get: (participantId: string) => fetchJSON(`/participants/${participantId}/flavor-profile`),
+  getGlobal: () => fetchJSON(`/flavor-profile/global`),
 };
 
 // ===== Rating Notes =====

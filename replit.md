@@ -75,6 +75,9 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 42. **Reveal Confirmation**: Confirmation dialog before transitioning to reveal phase.
 43. **Tasting Note Free Text**: Custom free text inputs in each flavor section of the tasting note generator.
 44. **Words of Wisdom**: Curated real whisky industry quotes from famous figures on the home page.
+45. **PWA Support**: Progressive Web App with manifest, service worker (network-first caching), Apple touch icon, and offline fallback. Installable on iOS/Android home screens.
+46. **Flavor Wheel Ratings Integration**: Flavor wheel now analyzes both journal entries and tasting rating notes for keyword frequency mapping.
+47. **Personal vs Global Statistics**: Flavor profile shows overlaid radar chart comparing personal averages with global averages from all participants, plus detailed comparison table.
 
 ### Key Endpoints (continued)
 - `GET /api/participants/:id/flavor-profile` — Aggregated flavor profile with radar data, breakdowns, and whisky lists
@@ -89,6 +92,8 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 - `PATCH /api/admin/participants/:id/role` — Change participant role (admin-only)
 - `DELETE /api/admin/participants/:id` — Delete participant with all data (admin-only, transactional)
 - `DELETE /api/admin/tastings/:id` — Hard-delete tasting (admin-only)
+- `GET /api/flavor-profile/global` — Global average scores across all participants
+- `GET /api/participants/:id/rating-notes` — All rating notes for a participant (for flavor wheel)
 
 ## External Dependencies
 

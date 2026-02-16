@@ -35,6 +35,15 @@ export default function FlavorProfile() {
     enabled: !!currentParticipant,
   });
 
+  const { data: globalAvg } = useQuery<{
+    nose: number; taste: number; finish: number; balance: number; overall: number;
+    totalRatings: number; totalParticipants: number;
+  }>({
+    queryKey: ["global-averages"],
+    queryFn: () => flavorProfileApi.getGlobal(),
+    enabled: !!currentParticipant,
+  });
+
   if (!currentParticipant) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -55,11 +64,11 @@ export default function FlavorProfile() {
   }
 
   const radarData = profile?.avgScores ? [
-    { dimension: isDE ? "Nase" : "Nose", value: profile.avgScores.nose, fullMark: 100 },
-    { dimension: isDE ? "Geschmack" : "Taste", value: profile.avgScores.taste, fullMark: 100 },
-    { dimension: isDE ? "Abgang" : "Finish", value: profile.avgScores.finish, fullMark: 100 },
-    { dimension: isDE ? "Balance" : "Balance", value: profile.avgScores.balance, fullMark: 100 },
-    { dimension: isDE ? "Gesamt" : "Overall", value: profile.avgScores.overall, fullMark: 100 },
+    { dimension: isDE ? "Nase" : "Nose", value: profile.avgScores.nose, global: globalAvg?.nose ?? 0, fullMark: 100 },
+    { dimension: isDE ? "Geschmack" : "Taste", value: profile.avgScores.taste, global: globalAvg?.taste ?? 0, fullMark: 100 },
+    { dimension: isDE ? "Abgang" : "Finish", value: profile.avgScores.finish, global: globalAvg?.finish ?? 0, fullMark: 100 },
+    { dimension: isDE ? "Balance" : "Balance", value: profile.avgScores.balance, global: globalAvg?.balance ?? 0, fullMark: 100 },
+    { dimension: isDE ? "Gesamt" : "Overall", value: profile.avgScores.overall, global: globalAvg?.overall ?? 0, fullMark: 100 },
   ] : [];
 
   const regionData = profile?.regionBreakdown
@@ -127,10 +136,45 @@ export default function FlavorProfile() {
                     <PolarGrid stroke="hsl(var(--border))" />
                     <PolarAngleAxis dataKey="dimension" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12, fontFamily: "serif" }} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                    <Radar name={isDE ? "Alle" : "Everyone"} dataKey="global" stroke="#9ca3af" fill="#9ca3af" fillOpacity={0.1} strokeDasharray="4 4" />
                     <Radar name="Profile" dataKey="value" stroke="#c8a864" fill="#c8a864" fillOpacity={0.3} strokeWidth={2} />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
+              {profile?.avgScores && globalAvg && globalAvg.totalRatings > 0 && (
+                <div className="mt-6 pt-4 border-t border-border/20">
+                  <h3 className="text-sm font-serif font-bold text-muted-foreground uppercase tracking-widest mb-3">
+                    {t("flavorProfile.personalVsGlobal")}
+                  </h3>
+                  <div className="text-xs text-muted-foreground mb-3">
+                    {t("flavorProfile.globalBasedOn", { ratings: globalAvg.totalRatings, participants: globalAvg.totalParticipants })}
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      { key: "nose", label: isDE ? "Nase" : "Nose", personal: profile.avgScores.nose, global: globalAvg.nose },
+                      { key: "taste", label: isDE ? "Geschmack" : "Taste", personal: profile.avgScores.taste, global: globalAvg.taste },
+                      { key: "finish", label: isDE ? "Abgang" : "Finish", personal: profile.avgScores.finish, global: globalAvg.finish },
+                      { key: "balance", label: "Balance", personal: profile.avgScores.balance, global: globalAvg.balance },
+                      { key: "overall", label: isDE ? "Gesamt" : "Overall", personal: profile.avgScores.overall, global: globalAvg.overall },
+                    ].map(({ key, label, personal, global }) => {
+                      const diff = Math.round((personal - global) * 10) / 10;
+                      return (
+                        <div key={key} className="flex items-center justify-between text-sm">
+                          <span className="font-serif text-muted-foreground w-20">{label}</span>
+                          <div className="flex items-center gap-4 flex-1 justify-end">
+                            <span className="font-mono text-foreground font-medium">{personal.toFixed(1)}</span>
+                            <span className="text-muted-foreground/50">vs</span>
+                            <span className="font-mono text-muted-foreground">{global.toFixed(1)}</span>
+                            <span className={`font-mono text-xs w-14 text-right ${diff > 0 ? "text-green-500" : diff < 0 ? "text-red-400" : "text-muted-foreground"}`}>
+                              {diff > 0 ? `+${diff}` : diff.toString()}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {regionData.length > 0 && (
