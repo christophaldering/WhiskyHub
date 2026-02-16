@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Wand2, ChevronDown, ChevronUp, RotateCcw, Plus, Replace } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -135,11 +136,14 @@ export function TastingNoteGenerator({ currentNotes, onInsertNote, disabled }: T
   const [noseSelected, setNoseSelected] = useState<string[]>([]);
   const [palateSelected, setPalateSelected] = useState<string[]>([]);
   const [finishSelected, setFinishSelected] = useState<string[]>([]);
+  const [noseCustom, setNoseCustom] = useState("");
+  const [palateCustom, setPalateCustom] = useState("");
+  const [finishCustom, setFinishCustom] = useState("");
   const [generatedNote, setGeneratedNote] = useState("");
 
   const categories = isGerman ? FLAVOR_CATEGORIES_DE : FLAVOR_CATEGORIES;
 
-  const hasSelections = noseSelected.length > 0 || palateSelected.length > 0 || finishSelected.length > 0;
+  const hasSelections = noseSelected.length > 0 || palateSelected.length > 0 || finishSelected.length > 0 || noseCustom.trim() !== "" || palateCustom.trim() !== "" || finishCustom.trim() !== "";
 
   const toggleFlavor = (section: "nose" | "palate" | "finish", flavor: string) => {
     const setters = { nose: setNoseSelected, palate: setPalateSelected, finish: setFinishSelected };
@@ -152,14 +156,23 @@ export function TastingNoteGenerator({ currentNotes, onInsertNote, disabled }: T
     setNoseSelected([]);
     setPalateSelected([]);
     setFinishSelected([]);
+    setNoseCustom("");
+    setPalateCustom("");
+    setFinishCustom("");
     setGeneratedNote("");
   };
 
   const handleGenerate = () => {
-    if (!hasSelections) return;
+    const noseAll = [...noseSelected];
+    const palateAll = [...palateSelected];
+    const finishAll = [...finishSelected];
+    if (noseCustom.trim()) noseAll.push(noseCustom.trim());
+    if (palateCustom.trim()) palateAll.push(palateCustom.trim());
+    if (finishCustom.trim()) finishAll.push(finishCustom.trim());
+    if (noseAll.length === 0 && palateAll.length === 0 && finishAll.length === 0) return;
     const note = isGerman
-      ? generateGermanNote(noseSelected, palateSelected, finishSelected)
-      : generateEnglishNote(noseSelected, palateSelected, finishSelected);
+      ? generateGermanNote(noseAll, palateAll, finishAll)
+      : generateEnglishNote(noseAll, palateAll, finishAll);
     setGeneratedNote(note);
   };
 
@@ -214,6 +227,19 @@ export function TastingNoteGenerator({ currentNotes, onInsertNote, disabled }: T
             </div>
           </div>
         ))}
+        <div className="mt-2">
+          <Input
+            placeholder={t('evaluation.customFlavorPlaceholder')}
+            value={sectionKey === "nose" ? noseCustom : sectionKey === "palate" ? palateCustom : finishCustom}
+            onChange={(e) => {
+              const setter = { nose: setNoseCustom, palate: setPalateCustom, finish: setFinishCustom }[sectionKey];
+              setter(e.target.value);
+            }}
+            className="h-8 text-xs font-serif"
+            data-testid={`input-custom-flavor-${sectionKey}`}
+            disabled={disabled}
+          />
+        </div>
       </div>
     );
   };

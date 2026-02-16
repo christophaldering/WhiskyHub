@@ -64,6 +64,7 @@ export const whiskies = pgTable("whiskies", {
   age: text("age"),
   abv: real("abv"),
   type: text("type"),
+  country: text("country"),
   notes: text("notes"),
   sortOrder: integer("sort_order").notNull().default(0),
   // Taxonomy backbone
@@ -173,6 +174,8 @@ export const ratings = pgTable("ratings", {
   balance: real("balance").notNull().default(50),
   overall: real("overall").notNull().default(50),
   notes: text("notes").default(""),
+  guessAbv: real("guess_abv"),
+  guessAge: text("guess_age"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

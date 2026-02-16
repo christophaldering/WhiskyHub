@@ -354,7 +354,7 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
           <FileDown className="w-4 h-4 mr-1" /> {t("pdfExport.title")}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl text-primary">{t("pdfExport.title")}</DialogTitle>
           <DialogDescription className="text-muted-foreground">{t("pdfExport.subtitle")}</DialogDescription>

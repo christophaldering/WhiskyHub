@@ -1,0 +1,239 @@
+🛠 REPLIT IMPLEMENTATION INSTRUCTION
+
+Project: CaskSense
+
+Source: External UX Feedback Round 1 (Dirk)
+
+⸻
+
+🔴 PRIORITY 1 – Critical UX & Functional Fixes
+
+1️⃣ Lobby – Mobile Layout Fix
+
+Issue:
+	•	Date and location bubbles overlap on mobile.
+	•	“Add Expression” modal not fully usable in portrait mode on iPhone.
+	•	Close icon not reachable.
+
+Tasks:
+	•	Fix responsive layout for Host Session bubbles (use flex-wrap or vertical stacking below 480px width).
+	•	Ensure modals are:
+	•	max-height: 90vh
+	•	overflow-y: auto
+	•	close button sticky top-right
+	•	Test on iPhone viewport 390x844.
+
+⸻
+
+2️⃣ Add Expression – Field Structure Optimization
+
+A) Whiskybase ID Placement
+
+Change:
+	•	Move “Whiskybase ID” field to the top of the form.
+	•	If WB ID is entered → auto-fetch metadata (if legally permissible).
+
+If API scraping not allowed:
+	•	Use manual “Fetch Data” button.
+	•	Or remove auto fetch but keep ID as reference field.
+
+⸻
+
+B) Typology Structure Correction
+
+Problem:
+Single Malt vs Japanese not logically exclusive.
+
+Refactor form structure:
+
+Split into:
+	•	Country (dropdown)
+	•	Category (Single Malt, Blended Malt, Grain, Bourbon, Rye, etc.)
+
+Remove current “Typ” ambiguity.
+
+⸻
+
+3️⃣ Percentage Display Bug
+
+Issue:
+Percentages displayed 100x too high (2 powers of ten).
+
+Fix:
+Audit ABV and percentage formatting.
+Ensure:
+	•	0.567 → 56.7%
+	•	Not 5670%
+
+Check formatting pipeline in:
+	•	Rating calculations
+	•	Flavor profile
+	•	Session display
+
+⸻
+
+4️⃣ Host Control – No Way Back After Reveal
+
+Issue:
+After clicking “Reveal”, cannot return to Host Control.
+
+Solution:
+	•	Host panel must remain accessible at all times.
+	•	Add confirmation modal before Reveal.
+	•	Add “Undo Reveal (within 10 seconds)” safeguard.
+
+⸻
+
+5️⃣ Whisky Bottle Click → Full Info View
+
+Feature Request:
+User should be able to click bottle image and see full whisky details.
+
+Implement:
+	•	Add modal or side panel:
+	•	Name
+	•	Distillery
+	•	Age
+	•	ABV
+	•	Cask
+	•	WB ID
+	•	Notes
+	•	Accessible for both Host and Participants.
+
+⸻
+
+⸻
+
+🟡 PRIORITY 2 – Functional Enhancements
+
+6️⃣ Blind Tasting Extensions
+
+Add optional guessing fields for participants:
+	•	Guess ABV
+	•	Guess Age
+
+Visible only during Blind Phase.
+
+After Reveal:
+	•	Show comparison: Actual vs Guess.
+
+⸻
+
+7️⃣ Tasting Note Helper
+
+Issue:
+Feels incomplete.
+
+Improve:
+	•	Add free text field under each aroma/taste section.
+	•	Avoid feeling of forced taxonomy.
+
+⸻
+
+8️⃣ Whisky of the Day Logic
+
+Clarify behavior:
+	•	Is it random?
+	•	Is it drawn from user’s tastings?
+	•	Is it global?
+
+Define logic explicitly.
+If random → allow toggle off in settings.
+
+⸻
+
+9️⃣ Remove “Whisky Wisdom”
+
+Feedback: Too basic for informed target audience.
+
+Replace with:
+	•	Quote Series (curated industry quotes)
+Example:
+“Billy Walker on finishes: …”
+
+Make it subtle, not motivational.
+
+⸻
+
+⸻
+
+🟢 PRIORITY 3 – Journal & Tools
+
+10️⃣ Whisky Journal – WB Integration
+	•	Allow selecting whisky via WB ID.
+	•	Fix disappearing helper note popup.
+	•	Keep confirmation visible until dismissed.
+
+⸻
+
+11️⃣ Flavor Profile
+
+No change required – positive feedback.
+
+⸻
+
+12️⃣ Tasting Calendar
+
+No change required – positive feedback.
+
+⸻
+
+13️⃣ Achievements
+
+Keep as optional feature.
+
+Consider:
+	•	Allow toggle off in Settings.
+
+⸻
+
+⸻
+
+🔵 DESIGN REVIEW TASK
+
+Ritual Mode Consistency Check
+
+Review Session screen against 4.0 principles:
+	•	Is Dram visually dominant?
+	•	Is system logic hidden?
+	•	Are phases separated?
+	•	Are host controls discreet?
+
+Adjust UI accordingly.
+
+⸻
+
+⸻
+
+🔘 OPTIONAL CHECK
+
+Music Feature
+
+User did not hear music.
+
+Check:
+	•	Is autoplay blocked by browser?
+	•	Is it muted by default?
+	•	Is toggle visible?
+
+Ensure compliance with browser audio policies.
+
+⸻
+
+⸻
+
+🧭 Overall Evaluation (From Feedback)
+
+Strengths confirmed:
+	•	Strong conceptual architecture
+	•	Good bilingual implementation
+	•	Rating sliders excellent
+	•	Flavor profile praised
+	•	Calendar praised
+
+Primary work needed:
+	•	Mobile responsiveness
+	•	Data clarity (Type vs Country)
+	•	Blind extension features
+	•	Host UX refinement
+	•	WB integration improvement

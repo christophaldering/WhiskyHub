@@ -61,7 +61,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
   const [imageError, setImageError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
-    name: "", distillery: "", age: "", abv: "", type: "Single Malt",
+    name: "", distillery: "", age: "", abv: "", country: "",
     notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "",
     caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "", wbScore: "",
   });
@@ -82,7 +82,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
   });
 
   const resetForm = () => {
-    setForm({ name: "", distillery: "", age: "", abv: "", type: "Single Malt", notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "", caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "", wbScore: "" });
+    setForm({ name: "", distillery: "", age: "", abv: "", country: "", notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "", caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "", wbScore: "" });
     setImageFile(null);
     setImagePreview(null);
     setImageError("");
@@ -117,7 +117,8 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
       distillery: form.distillery.trim() || null,
       age: form.age.trim() || null,
       abv: form.abv ? parseFloat(form.abv) : null,
-      type: form.type || null,
+      type: form.category || null,
+      country: form.country || null,
       notes: form.notes.trim() || null,
       sortOrder: 0,
       category: form.category || null,
@@ -190,6 +191,31 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
             </div>
           </div>
 
+          <div className="space-y-1">
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("whisky.whiskybaseId")}</Label>
+            <div className="flex gap-2">
+              <Input value={form.whiskybaseId} onChange={(e) => setForm(p => ({ ...p, whiskybaseId: e.target.value }))} placeholder="12345" className="flex-1" data-testid="input-whisky-wbid" />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs flex-shrink-0"
+                onClick={() => {
+                  if (form.whiskybaseId.trim()) {
+                    window.open(`https://www.whiskybase.com/whiskies/whisky/${form.whiskybaseId.trim()}`, "_blank");
+                  } else {
+                    const parts = [form.name, form.distillery, form.age, form.abv ? `${form.abv}%` : ""].filter(Boolean);
+                    window.open(`https://www.whiskybase.com/search?q=${encodeURIComponent(parts.join(" "))}`, "_blank");
+                  }
+                }}
+                data-testid="button-search-whiskybase"
+              >
+                <ExternalLink className="w-3 h-3 mr-1" />
+                {form.whiskybaseId.trim() ? t("whisky.viewWhiskybase") : t("whisky.findWhiskybase")}
+              </Button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs uppercase tracking-widest text-muted-foreground">Name *</Label>
@@ -200,7 +226,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
               <Input value={form.distillery} onChange={(e) => setForm(p => ({ ...p, distillery: e.target.value }))} placeholder="Ardbeg" />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs uppercase tracking-widest text-muted-foreground">Age</Label>
               <Input value={form.age} onChange={(e) => setForm(p => ({ ...p, age: e.target.value }))} placeholder="NAS or 18" />
@@ -209,18 +235,35 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
               <Label className="text-xs uppercase tracking-widest text-muted-foreground">ABV %</Label>
               <Input type="number" value={form.abv} onChange={(e) => setForm(p => ({ ...p, abv: e.target.value }))} placeholder="46.0" step="0.1" />
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Type</Label>
-              <Select value={form.type} onValueChange={(v) => setForm(p => ({ ...p, type: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Country</Label>
+              <Select value={form.country} onValueChange={(v) => setForm(p => ({ ...p, country: v }))}>
+                <SelectTrigger data-testid="select-whisky-country"><SelectValue placeholder="Select country" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Scotland">Scotland</SelectItem>
+                  <SelectItem value="Ireland">Ireland</SelectItem>
+                  <SelectItem value="Japan">Japan</SelectItem>
+                  <SelectItem value="USA">USA</SelectItem>
+                  <SelectItem value="Canada">Canada</SelectItem>
+                  <SelectItem value="India">India</SelectItem>
+                  <SelectItem value="Taiwan">Taiwan</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Category</Label>
+              <Select value={form.category} onValueChange={(v) => setForm(p => ({ ...p, category: v }))}>
+                <SelectTrigger data-testid="select-whisky-category"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Single Malt">Single Malt</SelectItem>
                   <SelectItem value="Blended Malt">Blended Malt</SelectItem>
                   <SelectItem value="Blended">Blended</SelectItem>
+                  <SelectItem value="Grain">Grain</SelectItem>
                   <SelectItem value="Bourbon">Bourbon</SelectItem>
                   <SelectItem value="Rye">Rye</SelectItem>
-                  <SelectItem value="Irish">Irish</SelectItem>
-                  <SelectItem value="Japanese">Japanese</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -270,30 +313,6 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
                 <Label className="text-xs text-muted-foreground">{t("whisky.wbScore")}</Label>
                 <Input type="number" min={0} max={100} step={0.1} value={form.wbScore} onChange={(e) => setForm(p => ({ ...p, wbScore: e.target.value }))} placeholder="87.5" className="w-full" data-testid="input-whisky-wbscore" />
               </div>
-              <div className="space-y-1 col-span-2">
-                <Label className="text-xs text-muted-foreground">{t("whisky.whiskybaseId")}</Label>
-                <div className="flex gap-2">
-                  <Input value={form.whiskybaseId} onChange={(e) => setForm(p => ({ ...p, whiskybaseId: e.target.value }))} placeholder="12345" className="flex-1" data-testid="input-whisky-wbid" />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs flex-shrink-0"
-                    onClick={() => {
-                      if (form.whiskybaseId.trim()) {
-                        window.open(`https://www.whiskybase.com/whiskies/whisky/${form.whiskybaseId.trim()}`, "_blank");
-                      } else {
-                        const parts = [form.name, form.distillery, form.age, form.abv ? `${form.abv}%` : ""].filter(Boolean);
-                        window.open(`https://www.whiskybase.com/search?q=${encodeURIComponent(parts.join(" "))}`, "_blank");
-                      }
-                    }}
-                    data-testid="button-search-whiskybase"
-                  >
-                    <ExternalLink className="w-3 h-3 mr-1" />
-                    {form.whiskybaseId.trim() ? t("whisky.viewWhiskybase") : t("whisky.findWhiskybase")}
-                  </Button>
-                </div>
-              </div>
             </div>
           </div>
           <Button onClick={handleSubmit} disabled={createWhisky.isPending || !form.name.trim()} className="w-full bg-primary text-primary-foreground font-serif" data-testid="button-submit-whisky">
@@ -314,7 +333,7 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
   const [removeExistingImage, setRemoveExistingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
-    name: "", distillery: "", age: "", abv: "", type: "Single Malt",
+    name: "", distillery: "", age: "", abv: "", country: "",
     notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "",
     caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "", wbScore: "",
   });
@@ -327,9 +346,9 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
       distillery: whisky.distillery || "",
       age: whisky.age || "",
       abv: whisky.abv != null ? String(whisky.abv) : "",
-      type: whisky.type || "Single Malt",
+      country: (whisky as any).country || "",
       notes: whisky.notes || "",
-      category: whisky.category || "Single Malt",
+      category: whisky.category || whisky.type || "Single Malt",
       region: whisky.region || "",
       abvBand: whisky.abvBand || "",
       ageBand: whisky.ageBand || "",
@@ -389,7 +408,8 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
       distillery: form.distillery.trim() || null,
       age: form.age.trim() || null,
       abv: form.abv ? parseFloat(form.abv) : null,
-      type: form.type || null,
+      type: form.category || null,
+      country: form.country || null,
       notes: form.notes.trim() || null,
       category: form.category || null,
       region: form.region.trim() || null,
@@ -469,6 +489,31 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
             </div>
           </div>
 
+          <div className="space-y-1">
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("whisky.whiskybaseId")}</Label>
+            <div className="flex gap-2">
+              <Input value={form.whiskybaseId} onChange={(e) => setForm(p => ({ ...p, whiskybaseId: e.target.value }))} placeholder="12345" className="flex-1" data-testid="input-edit-whisky-wbid" />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs flex-shrink-0"
+                onClick={() => {
+                  if (form.whiskybaseId.trim()) {
+                    window.open(`https://www.whiskybase.com/whiskies/whisky/${form.whiskybaseId.trim()}`, "_blank");
+                  } else {
+                    const parts = [form.name, form.distillery, form.age, form.abv ? `${form.abv}%` : ""].filter(Boolean);
+                    window.open(`https://www.whiskybase.com/search?q=${encodeURIComponent(parts.join(" "))}`, "_blank");
+                  }
+                }}
+                data-testid="button-edit-search-whiskybase"
+              >
+                <ExternalLink className="w-3 h-3 mr-1" />
+                {form.whiskybaseId.trim() ? t("whisky.viewWhiskybase") : t("whisky.findWhiskybase")}
+              </Button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs uppercase tracking-widest text-muted-foreground">Name *</Label>
@@ -479,7 +524,7 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
               <Input value={form.distillery} onChange={(e) => setForm(p => ({ ...p, distillery: e.target.value }))} />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs uppercase tracking-widest text-muted-foreground">Age</Label>
               <Input value={form.age} onChange={(e) => setForm(p => ({ ...p, age: e.target.value }))} />
@@ -488,18 +533,35 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
               <Label className="text-xs uppercase tracking-widest text-muted-foreground">ABV %</Label>
               <Input type="number" value={form.abv} onChange={(e) => setForm(p => ({ ...p, abv: e.target.value }))} step="0.1" />
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Type</Label>
-              <Select value={form.type} onValueChange={(v) => setForm(p => ({ ...p, type: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Country</Label>
+              <Select value={form.country} onValueChange={(v) => setForm(p => ({ ...p, country: v }))}>
+                <SelectTrigger data-testid="select-edit-whisky-country"><SelectValue placeholder="Select country" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Scotland">Scotland</SelectItem>
+                  <SelectItem value="Ireland">Ireland</SelectItem>
+                  <SelectItem value="Japan">Japan</SelectItem>
+                  <SelectItem value="USA">USA</SelectItem>
+                  <SelectItem value="Canada">Canada</SelectItem>
+                  <SelectItem value="India">India</SelectItem>
+                  <SelectItem value="Taiwan">Taiwan</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Category</Label>
+              <Select value={form.category} onValueChange={(v) => setForm(p => ({ ...p, category: v }))}>
+                <SelectTrigger data-testid="select-edit-whisky-category"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Single Malt">Single Malt</SelectItem>
                   <SelectItem value="Blended Malt">Blended Malt</SelectItem>
                   <SelectItem value="Blended">Blended</SelectItem>
+                  <SelectItem value="Grain">Grain</SelectItem>
                   <SelectItem value="Bourbon">Bourbon</SelectItem>
                   <SelectItem value="Rye">Rye</SelectItem>
-                  <SelectItem value="Irish">Irish</SelectItem>
-                  <SelectItem value="Japanese">Japanese</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -549,30 +611,6 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
                 <Label className="text-xs text-muted-foreground">{t("whisky.wbScore")}</Label>
                 <Input type="number" min={0} max={100} step={0.1} value={form.wbScore} onChange={(e) => setForm(p => ({ ...p, wbScore: e.target.value }))} placeholder="87.5" className="w-full" data-testid="input-edit-whisky-wbscore" />
               </div>
-              <div className="space-y-1 col-span-2">
-                <Label className="text-xs text-muted-foreground">{t("whisky.whiskybaseId")}</Label>
-                <div className="flex gap-2">
-                  <Input value={form.whiskybaseId} onChange={(e) => setForm(p => ({ ...p, whiskybaseId: e.target.value }))} placeholder="12345" className="flex-1" data-testid="input-edit-whisky-wbid" />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs flex-shrink-0"
-                    onClick={() => {
-                      if (form.whiskybaseId.trim()) {
-                        window.open(`https://www.whiskybase.com/whiskies/whisky/${form.whiskybaseId.trim()}`, "_blank");
-                      } else {
-                        const parts = [form.name, form.distillery, form.age, form.abv ? `${form.abv}%` : ""].filter(Boolean);
-                        window.open(`https://www.whiskybase.com/search?q=${encodeURIComponent(parts.join(" "))}`, "_blank");
-                      }
-                    }}
-                    data-testid="button-edit-search-whiskybase"
-                  >
-                    <ExternalLink className="w-3 h-3 mr-1" />
-                    {form.whiskybaseId.trim() ? t("whisky.viewWhiskybase") : t("whisky.findWhiskybase")}
-                  </Button>
-                </div>
-              </div>
             </div>
           </div>
           <Button onClick={handleSubmit} disabled={updateWhisky.isPending || !form.name.trim()} className="w-full bg-primary text-primary-foreground font-serif" data-testid="button-save-whisky">
@@ -612,7 +650,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
           <Settings className="w-4 h-4 mr-1" /> {t("session.actions.editDetails")}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl text-primary">{t("session.actions.editDetailsTitle")}</DialogTitle>
         </DialogHeader>

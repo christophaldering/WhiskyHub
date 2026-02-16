@@ -39,6 +39,7 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
   const { currentParticipant } = useAppStore();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPermanentDeleteDialog, setShowPermanentDeleteDialog] = useState(false);
+  const [showRevealConfirm, setShowRevealConfirm] = useState(false);
   const [confirmName, setConfirmName] = useState("");
 
   const isAdmin = currentParticipant?.role === "admin";
@@ -76,7 +77,7 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
 
     if (status === "draft") updateStatus.mutate({ status: "open" });
     else if (status === "open") updateStatus.mutate({ status: "closed" });
-    else if (status === "closed") updateStatus.mutate({ status: "reveal", currentAct: "act1" });
+    else if (status === "closed") setShowRevealConfirm(true);
     else if (status === "reveal") {
       if (currentAct === "act1") updateStatus.mutate({ status: "reveal", currentAct: "act2" });
       else if (currentAct === "act2") updateStatus.mutate({ status: "reveal", currentAct: "act3" });
@@ -148,9 +149,34 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
     </AlertDialog>
   );
 
+  const RevealConfirmDialog = () => (
+    <AlertDialog open={showRevealConfirm} onOpenChange={setShowRevealConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('session.actions.revealConfirmTitle')}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('session.actions.revealConfirmMessage')}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t('session.actions.deleteCancel')}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              updateStatus.mutate({ status: "reveal", currentAct: "act1" });
+              setShowRevealConfirm(false);
+            }}
+            data-testid="button-confirm-reveal"
+          >
+            {t('session.actions.revealConfirmAction')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   const PermanentDeleteDialog = () => (
     <Dialog open={showPermanentDeleteDialog} onOpenChange={(open) => { setShowPermanentDeleteDialog(open); if (!open) setConfirmName(""); }}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <AlertTriangle className="w-5 h-5" />
@@ -308,6 +334,7 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
       </div>
 
       <SoftDeleteDialog />
+      <RevealConfirmDialog />
     </div>
   );
 }

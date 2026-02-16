@@ -43,7 +43,7 @@ export function ProfileCardDialog({ participant, open, onClose }: ProfileCardDia
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="sm:max-w-sm" data-testid="dialog-profile-card">
+      <DialogContent className="sm:max-w-sm max-h-[90vh] overflow-y-auto" data-testid="dialog-profile-card">
         <DialogHeader>
           <DialogTitle className="sr-only">{participant.name}</DialogTitle>
         </DialogHeader>

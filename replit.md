@@ -66,6 +66,15 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 33. **Flavor Wheel Visualization**: Interactive sunburst-style radial chart mapping flavor keywords from journal entries across 8 categories (Fruity, Floral, Sweet, Spicy, Woody, Smoky, Malty, Maritime).
 34. **Smart Whisky Pairing Suggestions**: Algorithm analyzing a tasting lineup's regions/casks/peat levels and suggesting complementary whiskies from the database with reasoning.
 35. **Participant Leaderboard**: Global rankings across 4 metrics: most active (ratings count), most detailed notes, highest rated, most consistent (lowest variance).
+36. **Distillery Encyclopedia**: Reference page with ~100 distillery entries including history, descriptions, country, region, and founding year.
+37. **Global Whisky Database**: Admin/host-only view of all whiskies ever tasted with ratings, filterable and searchable.
+38. **Tasting Curation Wizard**: Multi-step wizard for planning flights by theme, region, style, or age with Whiskybase integration.
+39. **Enhanced PDF Export**: Stylish themed cover page with customizable layouts for tasting menus.
+40. **Whisky Detail Modal**: Click any whisky thumbnail/name in flight board to see full details in a modal.
+41. **Blind Tasting Guesses**: ABV and age guess fields during blind tastings with post-reveal comparison.
+42. **Reveal Confirmation**: Confirmation dialog before transitioning to reveal phase.
+43. **Tasting Note Free Text**: Custom free text inputs in each flavor section of the tasting note generator.
+44. **Words of Wisdom**: Curated real whisky industry quotes from famous figures on the home page.
 
 ### Key Endpoints (continued)
 - `GET /api/participants/:id/flavor-profile` — Aggregated flavor profile with radar data, breakdowns, and whisky lists

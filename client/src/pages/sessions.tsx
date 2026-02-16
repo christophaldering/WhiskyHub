@@ -27,19 +27,19 @@ export default function Sessions() {
   const SessionCard = ({ tasting }: { tasting: any }) => (
     <button
       onClick={() => navigate(`/tasting/${tasting.id}`)}
-      className="w-full text-left p-4 bg-card border border-border/50 rounded-lg hover:shadow-sm transition-all flex justify-between items-center group"
+      className="w-full text-left p-4 bg-card border border-border/50 rounded-lg hover:shadow-sm transition-all flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 group"
       data-testid={`card-tasting-${tasting.id}`}
     >
-      <div>
-        <div className="font-serif font-bold text-primary group-hover:underline">{tasting.title}</div>
+      <div className="min-w-0">
+        <div className="font-serif font-bold text-primary group-hover:underline truncate">{tasting.title}</div>
         <div className="text-sm text-muted-foreground">{tasting.location} &bull; {new Date(tasting.date).toLocaleDateString()}</div>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs bg-secondary px-2 py-1 rounded-full text-secondary-foreground font-mono uppercase">
           {t(`session.status.${tasting.status}`)}
         </span>
         <span className="text-xs font-mono text-muted-foreground">Code: {tasting.code}</span>
-        <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" />
       </div>
     </button>
   );

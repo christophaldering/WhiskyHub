@@ -66,7 +66,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md bg-card border-border">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl text-primary">{t('login.title')}</DialogTitle>
           <DialogDescription>

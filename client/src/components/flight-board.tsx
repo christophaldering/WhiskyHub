@@ -6,6 +6,7 @@ import { whiskyApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChevronUp, ChevronDown, Trash2, ChevronLeft, ChevronRight, ImageIcon } from "lucide-react";
 import type { Whisky, Tasting } from "@shared/schema";
 
@@ -57,6 +58,7 @@ interface FlightBoardProps {
 export function FlightBoard({ tasting, whiskies, isHost }: FlightBoardProps) {
   const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(0);
+  const [detailWhisky, setDetailWhisky] = useState<Whisky | null>(null);
   const canEdit = isHost && (tasting.status === "draft" || tasting.status === "open");
 
   const totalPages = Math.max(1, Math.ceil(whiskies.length / ITEMS_PER_PAGE));
@@ -115,11 +117,13 @@ export function FlightBoard({ tasting, whiskies, isHost }: FlightBoardProps) {
           <span className="font-serif text-lg font-bold text-primary/60">{globalIdx + 1}</span>
         </div>
 
-        <WhiskyThumbnailSmall whisky={w} />
+        <button onClick={() => setDetailWhisky(w)} className="cursor-pointer" data-testid={`button-detail-${w.id}`}>
+          <WhiskyThumbnailSmall whisky={w} />
+        </button>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2">
-            <h4 className="font-serif font-bold text-base text-foreground truncate">{w.name}</h4>
+            <h4 className="font-serif font-bold text-base text-foreground truncate cursor-pointer hover:text-primary transition-colors" onClick={() => setDetailWhisky(w)}>{w.name}</h4>
           </div>
           {w.distillery && (
             <p className="text-sm text-muted-foreground font-serif italic truncate">{w.distillery}</p>
@@ -227,6 +231,66 @@ export function FlightBoard({ tasting, whiskies, isHost }: FlightBoardProps) {
           </Button>
         </div>
       )}
+
+      <Dialog open={!!detailWhisky} onOpenChange={(open) => !open && setDetailWhisky(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl text-primary">{detailWhisky?.name}</DialogTitle>
+          </DialogHeader>
+          {detailWhisky && (
+            <div className="space-y-4">
+              {detailWhisky.imageUrl && (
+                <div className="flex justify-center">
+                  <img src={detailWhisky.imageUrl} alt={detailWhisky.name} className="max-h-64 rounded-lg border border-border/50 object-contain" data-testid="img-detail-whisky" />
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {detailWhisky.distillery && (
+                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailDistillery")}</span><p className="font-serif">{detailWhisky.distillery}</p></div>
+                )}
+                {detailWhisky.age && (
+                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailAge")}</span><p className="font-serif">{detailWhisky.age === "NAS" || detailWhisky.age === "n.a.s." ? "NAS" : `${detailWhisky.age} years`}</p></div>
+                )}
+                {detailWhisky.abv != null && (
+                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailAbv")}</span><p className="font-serif">{detailWhisky.abv}%</p></div>
+                )}
+                {detailWhisky.country && (
+                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCountry")}</span><p className="font-serif">{detailWhisky.country}</p></div>
+                )}
+                {(detailWhisky.category || detailWhisky.type) && (
+                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCategory")}</span><p className="font-serif">{detailWhisky.category || detailWhisky.type}</p></div>
+                )}
+                {detailWhisky.region && (
+                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailRegion")}</span><p className="font-serif">{detailWhisky.region}</p></div>
+                )}
+                {detailWhisky.caskInfluence && (
+                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCask")}</span><p className="font-serif">{detailWhisky.caskInfluence}</p></div>
+                )}
+                {detailWhisky.peatLevel && detailWhisky.peatLevel !== "None" && (
+                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailPeat")}</span><p className="font-serif">{detailWhisky.peatLevel}{detailWhisky.ppm != null ? ` (${detailWhisky.ppm} ppm)` : ""}</p></div>
+                )}
+                {detailWhisky.bottler && (
+                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailBottler")}</span><p className="font-serif">{detailWhisky.bottler}</p></div>
+                )}
+                {detailWhisky.vintage && (
+                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailVintage")}</span><p className="font-serif">{detailWhisky.vintage}</p></div>
+                )}
+              </div>
+              {detailWhisky.notes && (
+                <div>
+                  <span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailNotes")}</span>
+                  <p className="font-serif text-sm mt-1 leading-relaxed">{detailWhisky.notes}</p>
+                </div>
+              )}
+              {detailWhisky.whiskybaseId && (
+                <a href={`https://www.whiskybase.com/whiskies/whisky/${detailWhisky.whiskybaseId}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary font-mono" data-testid="link-detail-whiskybase">
+                  Whiskybase #{detailWhisky.whiskybaseId}
+                </a>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

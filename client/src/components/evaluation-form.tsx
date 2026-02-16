@@ -35,6 +35,8 @@ export function EvaluationForm({ whisky, tasting }: EvaluationFormProps) {
     nose: 50.0, taste: 50.0, finish: 50.0, balance: 50.0, overall: 50.0,
   });
   const [notes, setNotes] = useState("");
+  const [guessAbv, setGuessAbv] = useState<number | null>(null);
+  const [guessAge, setGuessAge] = useState("");
   const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
@@ -47,10 +49,14 @@ export function EvaluationForm({ whisky, tasting }: EvaluationFormProps) {
         overall: existingRating.overall,
       });
       setNotes(existingRating.notes || "");
+      setGuessAbv(existingRating.guessAbv ?? null);
+      setGuessAge(existingRating.guessAge || "");
       setIsDirty(false);
     } else {
       setScores({ nose: 50.0, taste: 50.0, finish: 50.0, balance: 50.0, overall: 50.0 });
       setNotes("");
+      setGuessAbv(null);
+      setGuessAge("");
       setIsDirty(false);
     }
   }, [existingRating, whisky.id]);
@@ -78,6 +84,8 @@ export function EvaluationForm({ whisky, tasting }: EvaluationFormProps) {
       participantId,
       ...scores,
       notes,
+      guessAbv: guessAbv ?? undefined,
+      guessAge: guessAge || undefined,
     });
   };
 
@@ -187,6 +195,60 @@ export function EvaluationForm({ whisky, tasting }: EvaluationFormProps) {
             onInsertNote={(note) => { setNotes(note); setIsDirty(true); }}
             disabled={isLocked}
           />
+          {tasting.blindMode && (tasting.status === "open" || tasting.status === "draft") && (
+            <div className="space-y-3 p-4 bg-amber-500/5 rounded-lg border border-amber-500/20" data-testid="div-blind-guesses">
+              <h4 className="text-xs font-serif font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">{t('evaluation.blindGuesses')}</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">{t('evaluation.guessAbv')}</Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g. 46.0"
+                    value={guessAbv ?? ""}
+                    onChange={(e) => { setGuessAbv(e.target.value ? parseFloat(e.target.value) : null); setIsDirty(true); }}
+                    step={0.1} min={20} max={70}
+                    disabled={isLocked}
+                    className="font-mono h-8"
+                    data-testid="input-guess-abv"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">{t('evaluation.guessAge')}</Label>
+                  <Input
+                    placeholder="e.g. 12, NAS"
+                    value={guessAge}
+                    onChange={(e) => { setGuessAge(e.target.value); setIsDirty(true); }}
+                    disabled={isLocked}
+                    className="font-mono h-8"
+                    data-testid="input-guess-age"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          {tasting.blindMode && (tasting.status === "reveal" || tasting.status === "archived") && existingRating && (existingRating.guessAbv || existingRating.guessAge) && (
+            <div className="space-y-2 p-4 bg-secondary/20 rounded-lg border border-border/30" data-testid="div-blind-results">
+              <h4 className="text-xs font-serif font-bold text-muted-foreground uppercase tracking-widest">{t('evaluation.blindResults')}</h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                {existingRating.guessAbv != null && (
+                  <div>
+                    <span className="text-muted-foreground text-xs">{t('evaluation.guessAbv')}</span>
+                    <p className="font-mono">
+                      {t('evaluation.guessVsActual', { guess: existingRating.guessAbv, actual: whisky.abv ?? '?' })}
+                    </p>
+                  </div>
+                )}
+                {existingRating.guessAge && (
+                  <div>
+                    <span className="text-muted-foreground text-xs">{t('evaluation.guessAge')}</span>
+                    <p className="font-mono">
+                      {t('evaluation.guessVsActual', { guess: existingRating.guessAge, actual: whisky.age ?? '?' })}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
 
