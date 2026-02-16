@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 
 const PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=PLACEHOLDER";
 
-const HOSPIZ_NAME = "Deutscher Hospiz- und PalliativVerband e.V.";
-const HOSPIZ_URL = "https://www.dhpv.de";
+const HOSPIZ_NAME = "Christina-Kleintjes-Hospiz-Stiftung";
+const HOSPIZ_URL = "https://c-kleintjes-hospiz-stiftung.de";
 
 export default function Donate() {
   const { t } = useTranslation();
