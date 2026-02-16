@@ -241,3 +241,23 @@ export const benchmarkEntries = pgTable("benchmark_entries", {
 export const insertBenchmarkEntrySchema = createInsertSchema(benchmarkEntries).omit({ id: true, createdAt: true });
 export type InsertBenchmarkEntry = z.infer<typeof insertBenchmarkEntrySchema>;
 export type BenchmarkEntry = typeof benchmarkEntries.$inferSelect;
+
+// --- Wishlist Entries (whiskies the user wants to try) ---
+export const wishlistEntries = pgTable("wishlist_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  whiskyName: text("whisky_name").notNull(),
+  distillery: text("distillery"),
+  region: text("region"),
+  age: text("age"),
+  abv: text("abv"),
+  caskType: text("cask_type"),
+  notes: text("notes"),
+  priority: text("priority").default("medium"),
+  source: text("source"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertWishlistEntrySchema = createInsertSchema(wishlistEntries).omit({ id: true, createdAt: true });
+export type InsertWishlistEntry = z.infer<typeof insertWishlistEntrySchema>;
+export type WishlistEntry = typeof wishlistEntries.$inferSelect;

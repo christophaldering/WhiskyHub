@@ -1569,6 +1569,49 @@ export async function registerRoutes(
     }
   });
 
+  // ===== WISHLIST =====
+
+  app.get("/api/wishlist/:participantId", async (req, res) => {
+    try {
+      const entries = await storage.getWishlistEntries(req.params.participantId);
+      res.json(entries);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/wishlist/:participantId", async (req, res) => {
+    try {
+      const data = { ...req.body, participantId: req.params.participantId };
+      const entry = await storage.createWishlistEntry(data);
+      res.status(201).json(entry);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/wishlist/:participantId/:id", async (req, res) => {
+    try {
+      const { whiskyName, distillery, region, age, abv, caskType, notes, priority, source } = req.body;
+      const entry = await storage.updateWishlistEntry(req.params.id, req.params.participantId, {
+        whiskyName, distillery, region, age, abv, caskType, notes, priority, source,
+      });
+      if (!entry) return res.status(404).json({ message: "Wishlist entry not found" });
+      res.json(entry);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/wishlist/:participantId/:id", async (req, res) => {
+    try {
+      await storage.deleteWishlistEntry(req.params.id, req.params.participantId);
+      res.status(204).end();
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== RATING NOTES =====
 
   app.get("/api/participants/:id/rating-notes", async (req, res) => {

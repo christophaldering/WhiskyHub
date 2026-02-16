@@ -2,7 +2,7 @@ import { eq, ne, and, asc, desc, sql, inArray } from "drizzle-orm";
 import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
-  profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, journalEntries, benchmarkEntries,
+  profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, journalEntries, benchmarkEntries, wishlistEntries,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -15,6 +15,7 @@ import {
   type InsertWhiskyFriend, type WhiskyFriend,
   type InsertJournalEntry, type JournalEntry,
   type InsertBenchmarkEntry, type BenchmarkEntry,
+  type InsertWishlistEntry, type WishlistEntry,
 } from "@shared/schema";
 
 export interface WhiskyOfTheDay {
@@ -151,6 +152,12 @@ export interface IStorage {
   createBenchmarkEntry(data: InsertBenchmarkEntry): Promise<BenchmarkEntry>;
   createBenchmarkEntries(data: InsertBenchmarkEntry[]): Promise<BenchmarkEntry[]>;
   deleteBenchmarkEntry(id: string): Promise<void>;
+
+  // Wishlist Entries
+  getWishlistEntries(participantId: string): Promise<WishlistEntry[]>;
+  createWishlistEntry(data: InsertWishlistEntry): Promise<WishlistEntry>;
+  updateWishlistEntry(id: string, participantId: string, data: Partial<InsertWishlistEntry>): Promise<WishlistEntry | undefined>;
+  deleteWishlistEntry(id: string, participantId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -732,6 +739,7 @@ export class DatabaseStorage implements IStorage {
       await tx.delete(reflectionEntries).where(eq(reflectionEntries.participantId, id));
       await tx.delete(tastingParticipants).where(eq(tastingParticipants.participantId, id));
       await tx.delete(whiskyFriends).where(eq(whiskyFriends.participantId, id));
+      await tx.delete(wishlistEntries).where(eq(wishlistEntries.participantId, id));
       await tx.delete(profiles).where(eq(profiles.participantId, id));
       await tx.delete(participants).where(eq(participants.id, id));
     });
@@ -754,6 +762,31 @@ export class DatabaseStorage implements IStorage {
 
   async deleteBenchmarkEntry(id: string): Promise<void> {
     await db.delete(benchmarkEntries).where(eq(benchmarkEntries.id, id));
+  }
+
+  // --- Wishlist Entries ---
+  async getWishlistEntries(participantId: string): Promise<WishlistEntry[]> {
+    return db.select().from(wishlistEntries)
+      .where(eq(wishlistEntries.participantId, participantId))
+      .orderBy(desc(wishlistEntries.createdAt));
+  }
+
+  async createWishlistEntry(data: InsertWishlistEntry): Promise<WishlistEntry> {
+    const [result] = await db.insert(wishlistEntries).values(data).returning();
+    return result;
+  }
+
+  async updateWishlistEntry(id: string, participantId: string, data: Partial<InsertWishlistEntry>): Promise<WishlistEntry | undefined> {
+    const { participantId: _, ...updateData } = data as any;
+    const [result] = await db.update(wishlistEntries).set(updateData)
+      .where(and(eq(wishlistEntries.id, id), eq(wishlistEntries.participantId, participantId)))
+      .returning();
+    return result;
+  }
+
+  async deleteWishlistEntry(id: string, participantId: string): Promise<void> {
+    await db.delete(wishlistEntries)
+      .where(and(eq(wishlistEntries.id, id), eq(wishlistEntries.participantId, participantId)));
   }
 }
 
