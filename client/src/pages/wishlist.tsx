@@ -26,8 +26,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ArrowLeft, Pencil, Trash2, Star, Wine, Calendar, Flame, Sparkles, Clock, Camera, Loader2, ScanLine } from "lucide-react";
-import { wishlistScanApi } from "@/lib/api";
+import { Plus, ArrowLeft, Pencil, Trash2, Star, Wine, Calendar, Flame, Sparkles, Clock, Camera, Loader2, ScanLine, Type, Send } from "lucide-react";
+import { wishlistScanApi, textExtractApi } from "@/lib/api";
 import type { WishlistEntry } from "@shared/schema";
 
 type View = "list" | "form";
@@ -306,6 +306,9 @@ function WishlistForm({
   const [source, setSource] = useState(entry?.source || "");
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
+  const [showTextExtract, setShowTextExtract] = useState(false);
+  const [extractText, setExtractText] = useState("");
+  const [extracting, setExtracting] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -399,6 +402,81 @@ function WishlistForm({
           <div className="mt-3 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
             {scanError}
           </div>
+        )}
+      </div>
+
+      <div className="mb-6 p-4 bg-secondary/20 border border-border/30 rounded-lg">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs text-muted-foreground">{t("wishlist.extractHint")}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowTextExtract(!showTextExtract)}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            showTextExtract
+              ? "bg-primary/20 text-primary"
+              : "bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground"
+          }`}
+          data-testid="button-text-extract-wishlist"
+        >
+          <Type className="w-4 h-4" />
+          {t("wishlist.extractText")}
+        </button>
+        {showTextExtract && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mt-3"
+          >
+            <Textarea
+              value={extractText}
+              onChange={(e) => setExtractText(e.target.value)}
+              placeholder={t("wishlist.textPlaceholder")}
+              rows={3}
+              className="bg-background/50 text-sm mb-2"
+              data-testid="textarea-extract-wishlist"
+            />
+            <button
+              type="button"
+              disabled={extracting || extractText.trim().length < 3}
+              onClick={async () => {
+                if (!participantId || extractText.trim().length < 3) return;
+                setExtracting(true);
+                setScanError("");
+                try {
+                  const result = await textExtractApi.extract(extractText.trim(), participantId);
+                  if (result.whiskyName && result.whiskyName !== "Unknown Whisky") {
+                    setWhiskyName(result.whiskyName);
+                    if (result.distillery) setDistillery(result.distillery);
+                    if (result.region) setRegion(result.region);
+                    if (result.age) setAge(result.age);
+                    if (result.abv) setAbv(result.abv);
+                    if (result.caskType) setCaskType(result.caskType);
+                    if (result.notes && !notes) setNotes(result.notes);
+                    if (result.source && !source) setSource(result.source);
+                    setShowTextExtract(false);
+                    setExtractText("");
+                  } else {
+                    setScanError(t("wishlist.scanFailed"));
+                  }
+                } catch (err: any) {
+                  setScanError(err.message || t("wishlist.scanFailed"));
+                } finally {
+                  setExtracting(false);
+                }
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                extracting ? "bg-primary/20 text-primary" : "bg-primary text-primary-foreground hover:bg-primary/90"
+              }`}
+              data-testid="button-extract-submit-wishlist"
+            >
+              {extracting ? (
+                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("wishlist.extracting")}</>
+              ) : (
+                <><Send className="w-3.5 h-3.5" /> {t("wishlist.extractButton")}</>
+              )}
+            </button>
+          </motion.div>
         )}
       </div>
 

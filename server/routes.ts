@@ -1686,6 +1686,66 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  app.post("/api/extract-whisky-text", async (req: Request, res: Response) => {
+    try {
+      const { text, participantId } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      if (!text || typeof text !== "string" || text.trim().length < 3) return res.status(400).json({ message: "Text required (min 3 characters)" });
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(404).json({ message: "Participant not found" });
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a whisky identification expert. Extract whisky details from the provided text. The text may be:
+- A whisky name or description
+- A review or tasting note
+- A menu listing
+- An article excerpt
+- Any text mentioning a whisky
+
+Return a JSON object with these fields:
+- whiskyName (string, required - full whisky name)
+- distillery (string or null)
+- region (string or null, e.g. Islay, Speyside, Highland, Lowland, Campbeltown, Kentucky, Tennessee, Japan)
+- age (string or null, just the number e.g. "12", "18", or "NAS")
+- abv (string or null, e.g. "46.0")
+- caskType (string or null, e.g. "Bourbon Cask", "Sherry Cask", "Port Finish")
+- notes (string or null - any tasting notes or interesting context extracted)
+- source (string or null - describe where this info seems to come from)
+- confidence (string, "high", "medium", or "low")
+
+Return ONLY valid JSON object. If you cannot identify any whisky, return {"whiskyName": "Unknown Whisky", "confidence": "low"}.`,
+          },
+          { role: "user", content: text.trim() },
+        ],
+        max_tokens: 512,
+      });
+
+      const content = response.choices[0]?.message?.content || "{}";
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      let identified: any;
+      try {
+        identified = jsonMatch ? JSON.parse(jsonMatch[0]) : { whiskyName: "Unknown Whisky", confidence: "low" };
+      } catch {
+        identified = { whiskyName: "Unknown Whisky", confidence: "low" };
+      }
+      if (!identified.whiskyName) identified.whiskyName = "Unknown Whisky";
+
+      res.json(identified);
+    } catch (e: any) {
+      console.error("Text extraction error:", e);
+      res.status(500).json({ message: e.message || "Extraction failed" });
+    }
+  });
+
   // ===== RATING NOTES =====
 
   app.get("/api/participants/:id/rating-notes", async (req, res) => {

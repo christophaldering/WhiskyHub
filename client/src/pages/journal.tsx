@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { journalApi, journalBottleApi } from "@/lib/api";
+import { journalApi, journalBottleApi, textExtractApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, ArrowLeft, Pencil, Trash2, BookOpen, Wine, Calendar, Camera, X, Loader2, ScanLine, ExternalLink } from "lucide-react";
+import { Plus, ArrowLeft, Pencil, Trash2, BookOpen, Wine, Calendar, Camera, X, Loader2, ScanLine, ExternalLink, Type, Send } from "lucide-react";
 import { TastingNoteGenerator } from "@/components/tasting-note-generator";
 import type { JournalEntry } from "@shared/schema";
 
@@ -480,6 +480,9 @@ function EntryForm({
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
   const [scanError, setScanError] = useState("");
+  const [showTextExtract, setShowTextExtract] = useState(false);
+  const [extractText, setExtractText] = useState("");
+  const [extracting, setExtracting] = useState(false);
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -629,6 +632,84 @@ function EntryForm({
             </motion.div>
           )}
 
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              type="button"
+              onClick={() => setShowTextExtract(!showTextExtract)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                showTextExtract
+                  ? "bg-primary/20 text-primary"
+                  : "bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid="button-text-extract-journal"
+            >
+              <Type className="w-3.5 h-3.5" />
+              {t("journal.extractText")}
+            </button>
+          </div>
+
+          {showTextExtract && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4 p-3 bg-secondary/20 border border-border/30 rounded-lg"
+            >
+              <p className="text-xs text-muted-foreground mb-2">{t("journal.extractHint")}</p>
+              <Textarea
+                value={extractText}
+                onChange={(e) => setExtractText(e.target.value)}
+                placeholder={t("journal.textPlaceholder")}
+                rows={3}
+                className="bg-background/50 text-sm mb-2"
+                data-testid="textarea-extract-journal"
+              />
+              <button
+                type="button"
+                disabled={extracting || extractText.trim().length < 3}
+                onClick={async () => {
+                  if (!participantId || extractText.trim().length < 3) return;
+                  setExtracting(true);
+                  setScanError("");
+                  try {
+                    const result = await textExtractApi.extract(extractText.trim(), participantId);
+                    if (result.whiskyName && result.whiskyName !== "Unknown Whisky") {
+                      setScanResult(result);
+                      setForm(prev => ({
+                        ...prev,
+                        whiskyName: result.whiskyName || prev.whiskyName,
+                        distillery: result.distillery || prev.distillery,
+                        region: result.region || prev.region,
+                        age: result.age || prev.age,
+                        abv: result.abv || prev.abv,
+                        caskType: result.caskType || prev.caskType,
+                        title: prev.title || result.whiskyName || prev.title,
+                      }));
+                      setShowTextExtract(false);
+                      setExtractText("");
+                    } else {
+                      setScanError(t("journal.scanFailed"));
+                    }
+                  } catch (err: any) {
+                    setScanError(err.message || t("journal.scanFailed"));
+                  } finally {
+                    setExtracting(false);
+                  }
+                }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  extracting ? "bg-primary/20 text-primary" : "bg-primary text-primary-foreground hover:bg-primary/90"
+                }`}
+                data-testid="button-extract-submit-journal"
+              >
+                {extracting ? (
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("journal.extracting")}</>
+                ) : (
+                  <><Send className="w-3.5 h-3.5" /> {t("journal.extractButton")}</>
+                )}
+              </button>
+            </motion.div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="whiskyName" className="text-sm">{t("journal.whiskyName")}</Label>
@@ -697,10 +778,34 @@ function EntryForm({
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 className="hidden"
-                onChange={(e) => {
+                onChange={async (e) => {
                   const file = e.target.files?.[0];
-                  if (file) onImageChange(file);
                   e.target.value = "";
+                  if (!file) return;
+                  onImageChange(file);
+                  if (participantId && !form.whiskyName) {
+                    setScanning(true);
+                    setScanError("");
+                    setScanResult(null);
+                    try {
+                      const result = await journalBottleApi.identify(file, participantId);
+                      setScanResult(result);
+                      setForm(prev => ({
+                        ...prev,
+                        whiskyName: result.whiskyName || prev.whiskyName,
+                        distillery: result.distillery || prev.distillery,
+                        region: result.region || prev.region,
+                        age: result.age || prev.age,
+                        abv: result.abv || prev.abv,
+                        caskType: result.caskType || prev.caskType,
+                        title: prev.title || result.whiskyName || prev.title,
+                      }));
+                    } catch (err: any) {
+                      setScanError(err.message || t("journal.scanFailed"));
+                    } finally {
+                      setScanning(false);
+                    }
+                  }
                 }}
               />
             </label>

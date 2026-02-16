@@ -371,6 +371,12 @@ export const wishlistScanApi = {
   },
 };
 
+// ===== Text-based Whisky Extraction =====
+export const textExtractApi = {
+  extract: (text: string, participantId: string) =>
+    fetchJSON("/extract-whisky-text", { method: "POST", body: JSON.stringify({ text, participantId }) }),
+};
+
 // ===== Admin =====
 export const adminApi = {
   getOverview: (participantId: string) => fetchJSON(`/admin/overview?participantId=${participantId}`),
