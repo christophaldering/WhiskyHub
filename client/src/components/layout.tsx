@@ -32,36 +32,50 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ? currentParticipant.name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
     : "";
 
-  const ProfileAvatar = ({ size = 36, showName = false }: { size?: number; showName?: boolean }) => {
+  const ProfileAvatar = ({ size = 36, showName = false, showSignOut = false }: { size?: number; showName?: boolean; showSignOut?: boolean }) => {
     if (!currentParticipant) return null;
     const photoUrl = profile?.photoUrl;
     return (
-      <Link href="/profile">
-        <div
-          title={t("profile.title")}
-          className="cursor-pointer flex flex-col items-center gap-1"
-          data-testid="avatar-profile"
-        >
-          {photoUrl ? (
-            <img
-              src={photoUrl}
-              alt={currentParticipant.name}
-              className="rounded-full object-cover border-2 border-border/60"
-              style={{ width: size, height: size }}
-            />
-          ) : (
-            <div
-              className="rounded-full bg-secondary border-2 border-border/60 flex items-center justify-center text-primary font-serif font-bold"
-              style={{ width: size, height: size, fontSize: size * 0.38 }}
-            >
-              {initials || <User className="w-4 h-4 text-muted-foreground" />}
-            </div>
-          )}
-          {showName && (
-            <span className="text-xs text-muted-foreground font-serif truncate max-w-[80px] text-center leading-tight">{currentParticipant.name}</span>
-          )}
-        </div>
-      </Link>
+      <div className="flex items-center gap-2">
+        <Link href="/profile">
+          <div
+            title={t("profile.title")}
+            className="cursor-pointer flex flex-col items-center gap-1"
+            data-testid="avatar-profile"
+          >
+            {photoUrl ? (
+              <img
+                src={photoUrl}
+                alt={currentParticipant.name}
+                className="rounded-full object-cover border-2 border-border/60"
+                style={{ width: size, height: size }}
+              />
+            ) : (
+              <div
+                className="rounded-full bg-secondary border-2 border-border/60 flex items-center justify-center text-primary font-serif font-bold"
+                style={{ width: size, height: size, fontSize: size * 0.38 }}
+              >
+                {initials || <User className="w-4 h-4 text-muted-foreground" />}
+              </div>
+            )}
+            {showName && (
+              <span className="text-xs text-muted-foreground font-serif truncate max-w-[80px] text-center leading-tight">{currentParticipant.name}</span>
+            )}
+          </div>
+        </Link>
+        {showSignOut && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setParticipant(null)}
+            title={t('nav.leave')}
+            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            data-testid="button-signout-mobile"
+          >
+            <LogOut className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
     );
   };
 
@@ -191,13 +205,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <AmbientToggle />
         </div>
         {currentParticipant && (
-          <button
-            onClick={() => setParticipant(null)}
-            className="flex items-center gap-3 px-3 py-1.5 w-full text-left text-muted-foreground hover:text-destructive transition-colors rounded-sm hover:bg-destructive/5 text-sm"
+          <Button
+            variant="outline"
+            onClick={() => { setParticipant(null); setOpen(false); }}
+            className="w-full flex items-center gap-2 text-muted-foreground hover:text-destructive hover:border-destructive/40 hover:bg-destructive/5 transition-colors"
+            data-testid="button-signout-sidebar"
           >
             <LogOut className="w-4 h-4" />
             <span>{t('nav.leave')}</span>
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -214,7 +230,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <span className="font-serif font-bold text-lg text-primary">{t('app.name')}</span>
         </div>
         <div className="flex items-center gap-2">
-          <ProfileAvatar size={48} showName />
+          <ProfileAvatar size={48} showName showSignOut />
           <LanguageToggle />
           <ThemeToggle />
           <Sheet open={open} onOpenChange={setOpen}>
