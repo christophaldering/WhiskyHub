@@ -415,7 +415,7 @@ function WishlistForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label className="font-serif text-sm">{t("wishlist.distillery")}</Label>
             <Input
@@ -438,7 +438,7 @@ function WishlistForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <Label className="font-serif text-sm">{t("wishlist.age")}</Label>
             <Input

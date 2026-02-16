@@ -13,7 +13,7 @@ export function BuildFooter() {
 
   return (
     <footer
-      className="fixed bottom-0 left-0 right-0 z-[9999] pointer-events-none flex justify-center pb-1"
+      className="hidden md:flex fixed bottom-0 left-0 right-0 z-[9999] pointer-events-none justify-center pb-1"
       data-testid="footer-build-info"
     >
       <span className="text-[10px] text-muted-foreground/40 font-mono tracking-wide select-none">
