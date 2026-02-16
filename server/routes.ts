@@ -1612,6 +1612,80 @@ export async function registerRoutes(
     }
   });
 
+  // ===== WISHLIST PHOTO IDENTIFY =====
+
+  app.post("/api/wishlist/identify", docUpload.single("photo"), async (req: Request, res: Response) => {
+    try {
+      const participantId = req.body.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(404).json({ message: "Participant not found" });
+
+      const file = (req as any).file as Express.Multer.File;
+      if (!file) return res.status(400).json({ message: "No photo uploaded" });
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const base64 = file.buffer.toString("base64");
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are a whisky identification expert. You will receive a photo that may be:
+- A whisky bottle (read the label)
+- A newspaper or magazine article/review about a whisky
+- A tasting note card or scorecard
+- A menu or price list featuring whiskies
+- A screenshot of a website or social media post about a whisky
+- Any other image containing whisky information
+
+Extract the whisky details from whatever is shown. Return a JSON object with these fields:
+- whiskyName (string, required - full whisky name)
+- distillery (string or null)
+- region (string or null, e.g. Islay, Speyside, Highland, Lowland, Campbeltown, Kentucky, Tennessee, Japan)
+- age (string or null, just the number e.g. "12", "18", or "NAS")
+- abv (string or null, e.g. "46.0")
+- caskType (string or null, e.g. "Bourbon Cask", "Sherry Cask", "Port Finish")
+- notes (string or null - any tasting notes, review text, or interesting context from the source)
+- source (string or null - describe what the image shows, e.g. "Bottle label", "Newspaper review", "Magazine article", "Menu")
+- confidence (string, "high", "medium", or "low")
+
+If the image contains multiple whiskies, identify the most prominent one.
+Return ONLY valid JSON object. If you cannot identify any whisky, return {"whiskyName": "Unknown Whisky", "confidence": "low"}.`,
+          },
+          {
+            role: "user",
+            content: [
+              { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${base64}` } },
+              { type: "text", text: "Identify the whisky in this image. It could be a bottle photo, newspaper clipping, magazine review, menu, or any other source. Extract all whisky details you can find." },
+            ],
+          },
+        ],
+        max_tokens: 1024,
+      });
+
+      const content = response.choices[0]?.message?.content || "{}";
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      let identified: any;
+      try {
+        identified = jsonMatch ? JSON.parse(jsonMatch[0]) : { whiskyName: "Unknown Whisky", confidence: "low" };
+      } catch {
+        identified = { whiskyName: "Unknown Whisky", confidence: "low" };
+      }
+      if (!identified.whiskyName) identified.whiskyName = "Unknown Whisky";
+
+      res.json(identified);
+    } catch (e: any) {
+      console.error("Wishlist identify error:", e);
+      res.status(500).json({ message: e.message || "Identification failed" });
+    }
+  });
+
   // ===== RATING NOTES =====
 
   app.get("/api/participants/:id/rating-notes", async (req, res) => {

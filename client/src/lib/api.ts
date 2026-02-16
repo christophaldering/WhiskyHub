@@ -353,6 +353,24 @@ export const wishlistApi = {
     fetchJSON(`/wishlist/${participantId}/${id}`, { method: "DELETE" }),
 };
 
+// ===== Wishlist Photo Identification =====
+export const wishlistScanApi = {
+  identify: async (photo: File, participantId: string) => {
+    const formData = new FormData();
+    formData.append("photo", photo);
+    formData.append("participantId", participantId);
+    const res = await fetch(`${API_BASE}/wishlist/identify`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Identification failed");
+    }
+    return res.json();
+  },
+};
+
 // ===== Admin =====
 export const adminApi = {
   getOverview: (participantId: string) => fetchJSON(`/admin/overview?participantId=${participantId}`),

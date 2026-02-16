@@ -26,7 +26,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ArrowLeft, Pencil, Trash2, Star, Wine, Calendar, Flame, Sparkles, Clock } from "lucide-react";
+import { Plus, ArrowLeft, Pencil, Trash2, Star, Wine, Calendar, Flame, Sparkles, Clock, Camera, Loader2, ScanLine } from "lucide-react";
+import { wishlistScanApi } from "@/lib/api";
 import type { WishlistEntry } from "@shared/schema";
 
 type View = "list" | "form";
@@ -250,6 +251,7 @@ export default function Wishlist() {
                 }
               }}
               isSaving={createMutation.isPending || updateMutation.isPending}
+              participantId={currentParticipant?.id}
               t={t}
             />
           </motion.div>
@@ -283,12 +285,14 @@ function WishlistForm({
   onBack,
   onSave,
   isSaving,
+  participantId,
   t,
 }: {
   entry: WishlistEntry | null;
   onBack: () => void;
   onSave: (data: any) => void;
   isSaving: boolean;
+  participantId?: string;
   t: any;
 }) {
   const [whiskyName, setWhiskyName] = useState(entry?.whiskyName || "");
@@ -300,6 +304,8 @@ function WishlistForm({
   const [notes, setNotes] = useState(entry?.notes || "");
   const [priority, setPriority] = useState(entry?.priority || "medium");
   const [source, setSource] = useState(entry?.source || "");
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -332,6 +338,69 @@ function WishlistForm({
       <h2 className="text-xl font-serif font-bold text-primary mb-6" data-testid="text-wishlist-form-title">
         {entry ? t("wishlist.editEntry") : t("wishlist.addWhisky")}
       </h2>
+
+      <div className="mb-6 p-4 bg-secondary/20 border border-border/30 rounded-lg">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs text-muted-foreground">{t("wishlist.scanHint")}</p>
+        </div>
+        <label
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-all ${
+            scanning
+              ? "bg-primary/20 text-primary"
+              : "bg-primary text-primary-foreground hover:bg-primary/90"
+          }`}
+          data-testid="button-scan-wishlist"
+        >
+          {scanning ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {t("wishlist.scanning")}
+            </>
+          ) : (
+            <>
+              <Camera className="w-4 h-4" />
+              {t("wishlist.scanPhoto")}
+            </>
+          )}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="hidden"
+            disabled={scanning}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (!file || !participantId) return;
+              setScanning(true);
+              setScanError("");
+              try {
+                const result = await wishlistScanApi.identify(file, participantId);
+                if (result.whiskyName && result.whiskyName !== "Unknown Whisky") {
+                  setWhiskyName(result.whiskyName);
+                  if (result.distillery) setDistillery(result.distillery);
+                  if (result.region) setRegion(result.region);
+                  if (result.age) setAge(result.age);
+                  if (result.abv) setAbv(result.abv);
+                  if (result.caskType) setCaskType(result.caskType);
+                  if (result.notes && !notes) setNotes(result.notes);
+                  if (result.source && !source) setSource(result.source);
+                } else {
+                  setScanError(t("wishlist.scanFailed"));
+                }
+              } catch (err: any) {
+                setScanError(err.message || t("wishlist.scanFailed"));
+              } finally {
+                setScanning(false);
+              }
+            }}
+          />
+        </label>
+        {scanError && (
+          <div className="mt-3 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+            {scanError}
+          </div>
+        )}
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-5" data-testid="form-wishlist">
         <div>

@@ -315,6 +315,11 @@ const resources = {
         loginRequired: "Please sign in to manage your wishlist.",
         added: "Added",
         total: "{{count}} whiskies on your list",
+        scanPhoto: "Scan Photo",
+        scanning: "Scanning...",
+        scanHint: "Take a photo of a bottle, newspaper article, magazine review, or any whisky mention",
+        scanSuccess: "Identified: {{name}}",
+        scanFailed: "Could not identify the whisky. Please try again or fill in manually.",
       },
       lexicon: {
         title: "Whisky Lexicon",
@@ -1497,6 +1502,11 @@ const resources = {
         loginRequired: "Bitte melde dich an, um deine Wunschliste zu verwalten.",
         added: "Hinzugefügt",
         total: "{{count}} Whiskys auf deiner Liste",
+        scanPhoto: "Foto scannen",
+        scanning: "Wird gescannt...",
+        scanHint: "Fotografiere eine Flasche, einen Zeitungsartikel, eine Magazin-Rezension oder jede Whisky-Erwähnung",
+        scanSuccess: "Erkannt: {{name}}",
+        scanFailed: "Konnte den Whisky nicht identifizieren. Bitte versuche es erneut oder fülle die Felder manuell aus.",
       },
       lexicon: {
         title: "Whisky-Lexikon",
