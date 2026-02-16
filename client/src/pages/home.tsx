@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useLocation } from "wouter";
-import { UserPlus, Plus, ArrowRight, Star, Wine, ImageIcon, Glasses, BookOpen, Lightbulb } from "lucide-react";
+import { UserPlus, Plus, ArrowRight, Star, Wine, ImageIcon, Glasses, BookOpen, Lightbulb, Camera } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
@@ -178,7 +178,7 @@ export default function Home() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="mt-auto">
+            <CardFooter className="mt-auto flex-col gap-2">
               <Button
                 variant="outline"
                 onClick={handleCreate}
@@ -187,6 +187,21 @@ export default function Home() {
                 data-testid="button-create-tasting"
               >
                 {createTasting.isPending ? "Creating..." : "Create New Event"}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (!currentParticipant) {
+                    setShowLogin(true);
+                    return;
+                  }
+                  navigate("/photo-tasting");
+                }}
+                className="w-full text-xs gap-2 text-muted-foreground hover:text-primary"
+                data-testid="button-create-from-photos"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                {t("home.createFromPhotos")}
               </Button>
             </CardFooter>
           </Card>

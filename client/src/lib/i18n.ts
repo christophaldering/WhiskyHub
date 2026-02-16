@@ -59,7 +59,7 @@ const resources = {
         leave: "Sign Out",
         aboutMethod: "About the Method",
         friends: "My Whisky Friends",
-        journal: "Whisky Journal",
+        journal: "My Whisky Diary",
         lexicon: "Whisky Lexicon",
         badges: "Achievements",
         flavorProfile: "Flavor Profile",
@@ -230,7 +230,7 @@ const resources = {
         enter: "Enter the Circle"
       },
       journal: {
-        title: "Whisky Journal",
+        title: "My Whisky Diary",
         subtitle: "Your private tasting diary",
         empty: "Your journal is empty. Start documenting your whisky journey.",
         newEntry: "New Entry",
@@ -305,7 +305,7 @@ const resources = {
           discussion: "Live Discussion",
           noteGenerator: "Note Generator",
           qrInvites: "QR Code Invites",
-          journal: "Whisky Journal",
+          journal: "My Whisky Diary",
           flavorProfile: "Flavor Profile",
           flavorWheel: "Flavor Wheel",
           badges: "Achievement Badges",
@@ -784,6 +784,9 @@ const resources = {
         noReflections: "No reflections shared yet.",
         locked: "Reflection phase is closed."
       },
+      home: {
+        createFromPhotos: "Or create from bottle photos",
+      },
       sessionSettings: {
         blindMode: "Blind Mode",
         blindModeDesc: "Participants see only expression numbers. You control when identities are revealed.",
@@ -1200,7 +1203,7 @@ const resources = {
         leave: "Abmelden",
         aboutMethod: "\u00dcber die Methode",
         friends: "Meine Whisky-Freunde",
-        journal: "Whisky-Tagebuch",
+        journal: "Mein Whisky-Tagebuch",
         lexicon: "Whisky-Lexikon",
         badges: "Erfolge",
         flavorProfile: "Geschmacksprofil",
@@ -1371,7 +1374,7 @@ const resources = {
         enter: "Den Kreis betreten"
       },
       journal: {
-        title: "Whisky-Tagebuch",
+        title: "Mein Whisky-Tagebuch",
         subtitle: "Ihr privates Verkostungstagebuch",
         empty: "Ihr Tagebuch ist leer. Beginnen Sie, Ihre Whisky-Reise zu dokumentieren.",
         newEntry: "Neuer Eintrag",
@@ -1446,7 +1449,7 @@ const resources = {
           discussion: "Live-Diskussion",
           noteGenerator: "Notiz-Generator",
           qrInvites: "QR-Code-Einladungen",
-          journal: "Whisky-Tagebuch",
+          journal: "Mein Whisky-Tagebuch",
           flavorProfile: "Geschmacksprofil",
           flavorWheel: "Aromarad",
           badges: "Auszeichnungen",
@@ -1924,6 +1927,9 @@ const resources = {
         allReflections: "Alle Reflexionen",
         noReflections: "Noch keine Reflexionen geteilt.",
         locked: "Reflexionsphase ist geschlossen."
+      },
+      home: {
+        createFromPhotos: "Oder aus Flaschenfotos erstellen",
       },
       sessionSettings: {
         blindMode: "Blindverkostung",

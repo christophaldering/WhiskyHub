@@ -26,6 +26,7 @@ const featureGroups: { groupKey: string; features: Feature[] }[] = [
       { icon: MessageSquare, titleKey: "discussion", descKey: "discussionDesc", color: "text-sky-600 dark:text-sky-400" },
       { icon: Lightbulb, titleKey: "noteGenerator", descKey: "noteGeneratorDesc", color: "text-yellow-600 dark:text-yellow-400" },
       { icon: QrCode, titleKey: "qrInvites", descKey: "qrInvitesDesc", color: "text-teal-600 dark:text-teal-400" },
+      { icon: Camera, titleKey: "photoTasting", descKey: "photoTastingDesc", color: "text-amber-600 dark:text-amber-400" },
     ],
   },
   {
@@ -61,7 +62,6 @@ const featureGroups: { groupKey: string; features: Feature[] }[] = [
     groupKey: "hosting",
     features: [
       { icon: LayoutDashboard, titleKey: "hostDashboard", descKey: "hostDashboardDesc", color: "text-teal-600 dark:text-teal-400" },
-      { icon: Camera, titleKey: "photoTasting", descKey: "photoTastingDesc", color: "text-amber-600 dark:text-amber-400" },
       { icon: ClipboardList, titleKey: "recap", descKey: "recapDesc", color: "text-fuchsia-600 dark:text-fuchsia-400" },
       { icon: Database, titleKey: "whiskyDatabase", descKey: "whiskyDatabaseDesc", color: "text-stone-600 dark:text-stone-400" },
     ],
