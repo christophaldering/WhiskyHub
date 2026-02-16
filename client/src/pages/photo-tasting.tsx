@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useState, useCallback } from "react";
-import { Camera, Upload, Loader2, Check, AlertTriangle, X, Wine, Plus, Trash2, Edit2, CheckCircle2, Database, ArrowRight } from "lucide-react";
+import { Camera, Upload, Loader2, Check, AlertTriangle, X, Wine, Plus, Trash2, Edit2, CheckCircle2, Database, ArrowRight, ExternalLink, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,8 @@ type IdentifiedWhisky = {
   confidence?: string;
   dbMatch?: boolean;
   benchmarkMatch?: boolean;
+  whiskybaseSearch?: string | null;
+  whiskybaseUrl?: string | null;
   fileName?: string;
   selected: boolean;
   editing: boolean;
@@ -352,6 +354,30 @@ export default function PhotoTasting() {
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium">
                           {t("photoTasting.benchmarkMatch")}
                         </span>
+                      )}
+                      {!w.dbMatch && !w.benchmarkMatch && (
+                        w.whiskybaseUrl ? (
+                          <a
+                            href={w.whiskybaseUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium inline-flex items-center gap-1 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Whiskybase <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        ) : w.whiskybaseSearch ? (
+                          <a
+                            href={`https://www.whiskybase.com/search?q=${encodeURIComponent(w.whiskybaseSearch)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium inline-flex items-center gap-1 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Search className="w-2.5 h-2.5" />
+                            {t("photoTasting.searchWhiskybase")}
+                          </a>
+                        ) : null
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-0.5">

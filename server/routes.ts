@@ -2745,6 +2745,79 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
   });
 
   // ============================================================
+  // JOURNAL BOTTLE IDENTIFICATION - Single photo AI scan for journal entries
+  // ============================================================
+
+  app.post("/api/journal/identify-bottle", docUpload.single("photo"), async (req: Request, res: Response) => {
+    try {
+      const participantId = req.body.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(404).json({ message: "Participant not found" });
+
+      const file = (req as any).file as Express.Multer.File;
+      if (!file) return res.status(400).json({ message: "No photo uploaded" });
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const base64 = file.buffer.toString("base64");
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are a whisky bottle identification expert. Analyze the photo of a whisky bottle and identify it from the label. Return a JSON object with these fields:
+- whiskyName (string, required - full whisky name as on the label)
+- distillery (string or null)
+- region (string or null, e.g. Islay, Speyside, Highland, Lowland, Campbeltown, Kentucky, Tennessee, Japan)
+- age (string or null, just the number e.g. "12", "18", or "NAS")
+- abv (string or null, e.g. "46.0")
+- caskType (string or null, e.g. "Bourbon Cask", "Sherry Cask", "Port Finish", "Ex-Bourbon")
+- country (string or null)
+- category (string or null, e.g. "Single Malt", "Blended Malt", "Bourbon", "Rye")
+- whiskybaseUrl (string or null - if you know the Whiskybase URL or can construct it, provide it. Format: https://www.whiskybase.com/whiskies/whisky/XXXXX)
+- whiskybaseSearch (string - a search query for Whiskybase to find this whisky, e.g. "Lagavulin 16")
+- confidence (string, "high", "medium", or "low")
+
+Return ONLY valid JSON object. If you cannot identify the bottle, return {"whiskyName": "Unknown Whisky", "confidence": "low"}.`,
+          },
+          {
+            role: "user",
+            content: [
+              { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${base64}` } },
+              { type: "text", text: "Identify this whisky bottle. Read the label carefully and extract all details." },
+            ],
+          },
+        ],
+        max_tokens: 1024,
+      });
+
+      const content = response.choices[0]?.message?.content || "{}";
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      let identified: any;
+      try {
+        identified = jsonMatch ? JSON.parse(jsonMatch[0]) : { whiskyName: "Unknown Whisky", confidence: "low" };
+      } catch {
+        identified = { whiskyName: "Unknown Whisky", confidence: "low" };
+      }
+      if (!identified.whiskyName) identified.whiskyName = "Unknown Whisky";
+
+      if (!identified.whiskybaseSearch) {
+        identified.whiskybaseSearch = [identified.whiskyName, identified.distillery].filter(Boolean).join(" ");
+      }
+
+      res.json(identified);
+    } catch (e: any) {
+      console.error("Journal bottle identify error:", e);
+      res.status(500).json({ message: e.message || "Identification failed" });
+    }
+  });
+
+  // ============================================================
   // PHOTO TASTING - Upload bottle photos + AI identification
   // ============================================================
 
@@ -2792,6 +2865,8 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
 - notes (string or null, any interesting details from the label)
 - confidence (string, "high", "medium", or "low")
 - matchedExisting (string or null - if name closely matches one from the known list, return the matched name)
+- whiskybaseSearch (string - a search query for Whiskybase to find this whisky, e.g. "Lagavulin 16")
+- whiskybaseUrl (string or null - if you know the Whiskybase URL, provide it. Format: https://www.whiskybase.com/whiskies/whisky/XXXXX)
 
 Known whiskies in the database (try to match if possible):
 ${knownWhiskies.slice(0, 100).join(", ")}
@@ -2853,6 +2928,10 @@ Return ONLY valid JSON object. If you cannot identify the bottle, return {"name"
             category: identified.category || matchedBenchmark.category,
             benchmarkMatch: true,
           };
+        }
+
+        if (!identified.whiskybaseSearch) {
+          identified.whiskybaseSearch = [identified.name, identified.distillery].filter(Boolean).join(" ");
         }
 
         results.push({

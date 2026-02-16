@@ -304,6 +304,24 @@ export const benchmarkApi = {
     fetchJSON(`/benchmark/${id}?participantId=${participantId}`, { method: "DELETE" }),
 };
 
+// ===== Journal Bottle Identification =====
+export const journalBottleApi = {
+  identify: async (photo: File, participantId: string) => {
+    const formData = new FormData();
+    formData.append("photo", photo);
+    formData.append("participantId", participantId);
+    const res = await fetch(`${API_BASE}/journal/identify-bottle`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Identification failed");
+    }
+    return res.json();
+  },
+};
+
 // ===== Photo Tasting =====
 export const photoTastingApi = {
   identify: async (photos: File[], participantId: string) => {

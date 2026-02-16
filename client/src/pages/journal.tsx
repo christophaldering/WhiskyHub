@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { journalApi } from "@/lib/api";
+import { journalApi, journalBottleApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, ArrowLeft, Pencil, Trash2, BookOpen, Wine, Calendar, Camera, X, Loader2 } from "lucide-react";
+import { Plus, ArrowLeft, Pencil, Trash2, BookOpen, Wine, Calendar, Camera, X, Loader2, ScanLine, ExternalLink } from "lucide-react";
 import { TastingNoteGenerator } from "@/components/tasting-note-generator";
 import type { JournalEntry } from "@shared/schema";
 
@@ -275,6 +275,7 @@ export default function Journal() {
               onImageChange={setPendingImage}
               removeExistingImage={removeExistingImage}
               onRemoveExistingImage={setRemoveExistingImage}
+              participantId={currentParticipant?.id}
               t={t}
             />
           </motion.div>
@@ -446,6 +447,7 @@ function EntryForm({
   onImageChange,
   removeExistingImage,
   onRemoveExistingImage,
+  participantId,
   t,
 }: {
   entry: JournalEntry | null;
@@ -456,6 +458,7 @@ function EntryForm({
   onImageChange: (file: File | null) => void;
   removeExistingImage: boolean;
   onRemoveExistingImage: (v: boolean) => void;
+  participantId: string | undefined;
   t: (key: string) => string;
 }) {
   const [form, setForm] = useState({
@@ -474,6 +477,9 @@ function EntryForm({
     occasion: entry?.occasion || "",
     body: entry?.body || "",
   });
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<any>(null);
+  const [scanError, setScanError] = useState("");
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -528,7 +534,101 @@ function EntryForm({
         </div>
 
         <div className="border-t border-border/30 pt-6">
-          <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider mb-4">Whisky</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider">Whisky</h3>
+            <label
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all ${
+                scanning
+                  ? "bg-primary/20 text-primary"
+                  : "bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid="button-scan-bottle"
+            >
+              {scanning ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  {t("journal.scanning")}
+                </>
+              ) : (
+                <>
+                  <ScanLine className="w-3.5 h-3.5" />
+                  {t("journal.scanBottle")}
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                disabled={scanning}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!file || !participantId) return;
+                  setScanning(true);
+                  setScanError("");
+                  setScanResult(null);
+                  try {
+                    const result = await journalBottleApi.identify(file, participantId);
+                    setScanResult(result);
+                    setForm(prev => ({
+                      ...prev,
+                      whiskyName: result.whiskyName || prev.whiskyName,
+                      distillery: result.distillery || prev.distillery,
+                      region: result.region || prev.region,
+                      age: result.age || prev.age,
+                      abv: result.abv || prev.abv,
+                      caskType: result.caskType || prev.caskType,
+                      title: prev.title || result.whiskyName || prev.title,
+                    }));
+                    onImageChange(file);
+                  } catch (err: any) {
+                    setScanError(err.message || "Scan failed");
+                  } finally {
+                    setScanning(false);
+                  }
+                }}
+              />
+            </label>
+          </div>
+
+          {scanError && (
+            <div className="mb-3 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+              {scanError}
+            </div>
+          )}
+
+          {scanResult && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 rounded-lg px-3 py-2 text-xs text-green-700 dark:text-green-400 flex items-center justify-between gap-2"
+            >
+              <span className="flex items-center gap-1.5">
+                <ScanLine className="w-3.5 h-3.5" />
+                {t("journal.scanSuccess", { name: scanResult.whiskyName || "Unknown Whisky" })}
+              </span>
+              {scanResult.whiskybaseUrl && scanResult.whiskybaseUrl.startsWith("http") ? (
+                <a
+                  href={scanResult.whiskybaseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:underline shrink-0"
+                >
+                  Whiskybase <ExternalLink className="w-3 h-3" />
+                </a>
+              ) : scanResult.whiskybaseSearch && scanResult.whiskybaseSearch.trim() ? (
+                <a
+                  href={`https://www.whiskybase.com/search?q=${encodeURIComponent(scanResult.whiskybaseSearch)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:underline shrink-0"
+                >
+                  {t("journal.searchWhiskybase")} <ExternalLink className="w-3 h-3" />
+                </a>
+              ) : null}
+            </motion.div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="whiskyName" className="text-sm">{t("journal.whiskyName")}</Label>
