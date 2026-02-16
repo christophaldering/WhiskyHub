@@ -13,6 +13,16 @@ interface AmbientState {
   ambientVolume: number;
 }
 
+interface WishlistTransfer {
+  wishlistEntryId: string;
+  whiskyName: string;
+  distillery?: string;
+  region?: string;
+  age?: string;
+  abv?: string;
+  caskType?: string;
+}
+
 interface AppState extends AmbientState {
   currentParticipant: { id: string; name: string; role?: string } | null;
   setParticipant: (participant: { id: string; name: string; role?: string } | null) => void;
@@ -24,6 +34,8 @@ interface AppState extends AmbientState {
   setAmbientPlaying: (playing: boolean) => void;
   setAmbientSoundscape: (soundscape: Soundscape) => void;
   setAmbientVolume: (volume: number) => void;
+  wishlistTransfer: WishlistTransfer | null;
+  setWishlistTransfer: (data: WishlistTransfer | null) => void;
 }
 
 function applyTheme(theme: Theme) {
@@ -48,6 +60,8 @@ export const useAppStore = create<AppState>()(
       setAmbientPlaying: (playing) => set({ ambientPlaying: playing }),
       setAmbientSoundscape: (soundscape) => set({ ambientSoundscape: soundscape }),
       setAmbientVolume: (volume) => set({ ambientVolume: volume }),
+      wishlistTransfer: null,
+      setWishlistTransfer: (data) => set({ wishlistTransfer: data }),
       theme: "dark" as Theme,
       setTheme: (theme) => {
         applyTheme(theme);
@@ -62,6 +76,10 @@ export const useAppStore = create<AppState>()(
     {
       name: 'casksense-app',
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => {
+        const { wishlistTransfer, ...rest } = state;
+        return rest;
+      },
       onRehydrateStorage: () => (state) => {
         if (state?.theme) applyTheme(state.theme);
       },

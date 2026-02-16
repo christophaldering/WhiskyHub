@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { journalApi, journalBottleApi, textExtractApi } from "@/lib/api";
+import { journalApi, journalBottleApi, textExtractApi, wishlistApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -27,11 +27,20 @@ type View = "list" | "form" | "detail";
 
 export default function Journal() {
   const { t } = useTranslation();
-  const { currentParticipant } = useAppStore();
+  const { currentParticipant, wishlistTransfer, setWishlistTransfer } = useAppStore();
   const [view, setView] = useState<View>("list");
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<JournalEntry | null>(null);
+  const [fromWishlistId, setFromWishlistId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (wishlistTransfer && currentParticipant) {
+      setEditingEntry(null);
+      setFromWishlistId(wishlistTransfer.wishlistEntryId);
+      setView("form");
+    }
+  }, [wishlistTransfer, currentParticipant]);
 
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ["journal", currentParticipant?.id],
@@ -59,13 +68,21 @@ export default function Journal() {
       if (pendingImage && entry.id) {
         await uploadImage(currentParticipant!.id, entry.id, pendingImage);
       }
+      if (fromWishlistId && currentParticipant) {
+        try {
+          await wishlistApi.delete(currentParticipant.id, fromWishlistId);
+        } catch {}
+      }
       return entry;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["journal"] });
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
       setView("list");
       setEditingEntry(null);
       setPendingImage(null);
+      setFromWishlistId(null);
+      setWishlistTransfer(null);
     },
   });
 
@@ -262,7 +279,13 @@ export default function Journal() {
           >
             <EntryForm
               entry={editingEntry}
-              onBack={handleBack}
+              onBack={() => {
+                handleBack();
+                if (wishlistTransfer) {
+                  setFromWishlistId(null);
+                  setWishlistTransfer(null);
+                }
+              }}
               onSave={(data) => {
                 if (editingEntry) {
                   updateMutation.mutate({ id: editingEntry.id, data });
@@ -277,6 +300,14 @@ export default function Journal() {
               onRemoveExistingImage={setRemoveExistingImage}
               participantId={currentParticipant?.id}
               t={t}
+              prefill={wishlistTransfer ? {
+                whiskyName: wishlistTransfer.whiskyName,
+                distillery: wishlistTransfer.distillery,
+                region: wishlistTransfer.region,
+                age: wishlistTransfer.age,
+                abv: wishlistTransfer.abv,
+                caskType: wishlistTransfer.caskType,
+              } : undefined}
             />
           </motion.div>
         )}
@@ -449,6 +480,7 @@ function EntryForm({
   onRemoveExistingImage,
   participantId,
   t,
+  prefill,
 }: {
   entry: JournalEntry | null;
   onBack: () => void;
@@ -460,15 +492,23 @@ function EntryForm({
   onRemoveExistingImage: (v: boolean) => void;
   participantId: string | undefined;
   t: (key: string) => string;
+  prefill?: {
+    whiskyName?: string;
+    distillery?: string;
+    region?: string;
+    age?: string;
+    abv?: string;
+    caskType?: string;
+  };
 }) {
   const [form, setForm] = useState({
-    title: entry?.title || "",
-    whiskyName: entry?.whiskyName || "",
-    distillery: entry?.distillery || "",
-    region: entry?.region || "",
-    age: entry?.age || "",
-    abv: entry?.abv || "",
-    caskType: entry?.caskType || "",
+    title: entry?.title || prefill?.whiskyName || "",
+    whiskyName: entry?.whiskyName || prefill?.whiskyName || "",
+    distillery: entry?.distillery || prefill?.distillery || "",
+    region: entry?.region || prefill?.region || "",
+    age: entry?.age || prefill?.age || "",
+    abv: entry?.abv || prefill?.abv || "",
+    caskType: entry?.caskType || prefill?.caskType || "",
     noseNotes: entry?.noseNotes || "",
     tasteNotes: entry?.tasteNotes || "",
     finishNotes: entry?.finishNotes || "",

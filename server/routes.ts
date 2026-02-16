@@ -1630,39 +1630,49 @@ export async function registerRoutes(
       });
 
       const base64 = file.buffer.toString("base64");
+      console.log(`Wishlist scan: file=${file.originalname}, size=${(file.size / 1024).toFixed(0)}KB, type=${file.mimetype}`);
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
+        response_format: { type: "json_object" },
         messages: [
           {
             role: "system",
             content: `You are a whisky identification expert. You will receive a photo that may be:
-- A whisky bottle (read the label)
+- A whisky bottle (read the label carefully — zoom in on all text)
 - A newspaper or magazine article/review about a whisky
 - A tasting note card or scorecard
 - A menu or price list featuring whiskies
 - A screenshot of a website or social media post about a whisky
 - Any other image containing whisky information
 
-Extract the whisky details from whatever is shown. Return a JSON object with these fields:
-- whiskyName (string, required - full whisky name)
-- distillery (string or null)
+Read ALL text visible on the label or in the image. Pay close attention to:
+- The brand name and expression name
+- Age statement (look for "Aged X Years")
+- ABV percentage (usually on the lower part of the label)
+- Cask type / maturation info
+- Region of origin
+- Distillery name
+
+Extract the whisky details from whatever is shown. You MUST return a JSON object with these fields:
+- whiskyName (string, required - full whisky name including expression, e.g. "The GlenDronach Parliament Aged 21 Years")
+- distillery (string or null - the distillery name, e.g. "GlenDronach")
 - region (string or null, e.g. Islay, Speyside, Highland, Lowland, Campbeltown, Kentucky, Tennessee, Japan)
-- age (string or null, just the number e.g. "12", "18", or "NAS")
-- abv (string or null, e.g. "46.0")
-- caskType (string or null, e.g. "Bourbon Cask", "Sherry Cask", "Port Finish")
+- age (string or null, just the number e.g. "12", "18", "21", or "NAS" if no age statement)
+- abv (string or null, e.g. "48.0" - look carefully on the label for the % vol)
+- caskType (string or null, e.g. "Oloroso & PX Sherry Casks", "Bourbon Cask", "Sherry Cask", "Port Finish")
 - notes (string or null - any tasting notes, review text, or interesting context from the source)
 - source (string or null - describe what the image shows, e.g. "Bottle label", "Newspaper review", "Magazine article", "Menu")
 - confidence (string, "high", "medium", or "low")
 
 If the image contains multiple whiskies, identify the most prominent one.
-Return ONLY valid JSON object. If you cannot identify any whisky, return {"whiskyName": "Unknown Whisky", "confidence": "low"}.`,
+If you cannot identify any whisky, return {"whiskyName": "Unknown Whisky", "confidence": "low"}.`,
           },
           {
             role: "user",
             content: [
-              { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${base64}` } },
-              { type: "text", text: "Identify the whisky in this image. It could be a bottle photo, newspaper clipping, magazine review, menu, or any other source. Extract all whisky details you can find." },
+              { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${base64}`, detail: "high" } },
+              { type: "text", text: "Identify the whisky in this image. Read every word on the label or in the text carefully. Extract all whisky details you can find." },
             ],
           },
         ],
@@ -1670,12 +1680,17 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       });
 
       const content = response.choices[0]?.message?.content || "{}";
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      console.log("Wishlist scan AI response:", content.substring(0, 500));
       let identified: any;
       try {
-        identified = jsonMatch ? JSON.parse(jsonMatch[0]) : { whiskyName: "Unknown Whisky", confidence: "low" };
+        identified = JSON.parse(content);
       } catch {
-        identified = { whiskyName: "Unknown Whisky", confidence: "low" };
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        try {
+          identified = jsonMatch ? JSON.parse(jsonMatch[0]) : { whiskyName: "Unknown Whisky", confidence: "low" };
+        } catch {
+          identified = { whiskyName: "Unknown Whisky", confidence: "low" };
+        }
       }
       if (!identified.whiskyName) identified.whiskyName = "Unknown Whisky";
 
@@ -2941,32 +2956,44 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
       });
 
       const base64 = file.buffer.toString("base64");
+      console.log(`Journal scan: file=${file.originalname}, size=${(file.size / 1024).toFixed(0)}KB, type=${file.mimetype}`);
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
+        response_format: { type: "json_object" },
         messages: [
           {
             role: "system",
-            content: `You are a whisky bottle identification expert. Analyze the photo of a whisky bottle and identify it from the label. Return a JSON object with these fields:
-- whiskyName (string, required - full whisky name as on the label)
+            content: `You are a whisky bottle identification expert. Analyze the photo of a whisky bottle and identify it from the label.
+
+Read ALL text visible on the label. Pay close attention to:
+- The brand name and expression name (e.g. "The GlenDronach Parliament")
+- Age statement (look for "Aged X Years")
+- ABV percentage (usually on the lower part of the label, e.g. "48% vol")
+- Cask type / maturation info (e.g. "Oloroso and Pedro Ximenez Sherry Casks")
+- Region of origin (e.g. "Highland Single Malt Scotch Whisky")
+- Distillery name
+
+You MUST return a JSON object with these fields:
+- whiskyName (string, required - full whisky name as on the label, including expression name)
 - distillery (string or null)
 - region (string or null, e.g. Islay, Speyside, Highland, Lowland, Campbeltown, Kentucky, Tennessee, Japan)
-- age (string or null, just the number e.g. "12", "18", or "NAS")
-- abv (string or null, e.g. "46.0")
-- caskType (string or null, e.g. "Bourbon Cask", "Sherry Cask", "Port Finish", "Ex-Bourbon")
+- age (string or null, just the number e.g. "12", "18", "21", or "NAS")
+- abv (string or null, e.g. "48.0" - look carefully on the label for the % vol)
+- caskType (string or null, e.g. "Oloroso & PX Sherry Casks", "Bourbon Cask", "Sherry Cask", "Port Finish", "Ex-Bourbon")
 - country (string or null)
 - category (string or null, e.g. "Single Malt", "Blended Malt", "Bourbon", "Rye")
-- whiskybaseUrl (string or null - if you know the Whiskybase URL or can construct it, provide it. Format: https://www.whiskybase.com/whiskies/whisky/XXXXX)
-- whiskybaseSearch (string - a search query for Whiskybase to find this whisky, e.g. "Lagavulin 16")
+- whiskybaseUrl (string or null - if you know the Whiskybase URL or can construct it, provide it)
+- whiskybaseSearch (string - a search query for Whiskybase to find this whisky, e.g. "GlenDronach 21 Parliament")
 - confidence (string, "high", "medium", or "low")
 
-Return ONLY valid JSON object. If you cannot identify the bottle, return {"whiskyName": "Unknown Whisky", "confidence": "low"}.`,
+If you cannot identify the bottle, return {"whiskyName": "Unknown Whisky", "confidence": "low"}.`,
           },
           {
             role: "user",
             content: [
-              { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${base64}` } },
-              { type: "text", text: "Identify this whisky bottle. Read the label carefully and extract all details." },
+              { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${base64}`, detail: "high" } },
+              { type: "text", text: "Identify this whisky bottle. Read every word on the label carefully and extract all details including ABV, age, cask type, and region." },
             ],
           },
         ],
@@ -2974,12 +3001,17 @@ Return ONLY valid JSON object. If you cannot identify the bottle, return {"whisk
       });
 
       const content = response.choices[0]?.message?.content || "{}";
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      console.log("Journal scan AI response:", content.substring(0, 500));
       let identified: any;
       try {
-        identified = jsonMatch ? JSON.parse(jsonMatch[0]) : { whiskyName: "Unknown Whisky", confidence: "low" };
+        identified = JSON.parse(content);
       } catch {
-        identified = { whiskyName: "Unknown Whisky", confidence: "low" };
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        try {
+          identified = jsonMatch ? JSON.parse(jsonMatch[0]) : { whiskyName: "Unknown Whisky", confidence: "low" };
+        } catch {
+          identified = { whiskyName: "Unknown Whisky", confidence: "low" };
+        }
       }
       if (!identified.whiskyName) identified.whiskyName = "Unknown Whisky";
 
@@ -3022,13 +3054,19 @@ Return ONLY valid JSON object. If you cannot identify the bottle, return {"whisk
       const results = [];
       for (const file of files) {
         const base64 = file.buffer.toString("base64");
+        console.log(`Photo tasting scan: file=${file.originalname}, size=${(file.size / 1024).toFixed(0)}KB`);
 
         const response = await openai.chat.completions.create({
           model: "gpt-4o",
+          response_format: { type: "json_object" },
           messages: [
             {
               role: "system",
-              content: `You are a whisky bottle identification expert. Analyze the photo of a whisky bottle and identify it. Return a JSON object with these fields:
+              content: `You are a whisky bottle identification expert. Analyze the photo of a whisky bottle and identify it.
+
+Read ALL text visible on the label. Pay close attention to brand name, expression, age statement, ABV, cask type, and region.
+
+You MUST return a JSON object with these fields:
 - name (string, required - full whisky name as on the label)
 - distillery (string or null)
 - region (string or null, e.g. Islay, Speyside, Highland, Lowland, Campbeltown, Kentucky, Tennessee)
@@ -3053,8 +3091,8 @@ Return ONLY valid JSON object. If you cannot identify the bottle, return {"name"
             {
               role: "user",
               content: [
-                { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${base64}` } },
-                { type: "text", text: "Identify this whisky bottle. Read the label carefully." },
+                { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${base64}`, detail: "high" } },
+                { type: "text", text: "Identify this whisky bottle. Read every word on the label carefully and extract all details." },
               ],
             },
           ],
@@ -3062,12 +3100,17 @@ Return ONLY valid JSON object. If you cannot identify the bottle, return {"name"
         });
 
         const content = response.choices[0]?.message?.content || "{}";
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        console.log("Photo tasting scan AI response:", content.substring(0, 300));
         let identified: any;
         try {
-          identified = jsonMatch ? JSON.parse(jsonMatch[0]) : { name: "Unknown Whisky", confidence: "low" };
+          identified = JSON.parse(content);
         } catch {
-          identified = { name: "Unknown Whisky", confidence: "low" };
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          try {
+            identified = jsonMatch ? JSON.parse(jsonMatch[0]) : { name: "Unknown Whisky", confidence: "low" };
+          } catch {
+            identified = { name: "Unknown Whisky", confidence: "low" };
+          }
         }
         if (!identified.name) identified.name = "Unknown Whisky";
 

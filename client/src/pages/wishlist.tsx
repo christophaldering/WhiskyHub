@@ -26,8 +26,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ArrowLeft, Pencil, Trash2, Star, Wine, Calendar, Flame, Sparkles, Clock, Camera, Loader2, ScanLine, Type, Send } from "lucide-react";
+import { Plus, ArrowLeft, Pencil, Trash2, Star, Wine, Calendar, Flame, Sparkles, Clock, Camera, Loader2, ScanLine, Type, Send, GlassWater } from "lucide-react";
 import { wishlistScanApi, textExtractApi } from "@/lib/api";
+import { useLocation } from "wouter";
 import type { WishlistEntry } from "@shared/schema";
 
 type View = "list" | "form";
@@ -40,7 +41,8 @@ const PRIORITY_CONFIG = {
 
 export default function Wishlist() {
   const { t } = useTranslation();
-  const { currentParticipant } = useAppStore();
+  const { currentParticipant, setWishlistTransfer } = useAppStore();
+  const [, navigate] = useLocation();
   const [view, setView] = useState<View>("list");
   const [editingEntry, setEditingEntry] = useState<WishlistEntry | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<WishlistEntry | null>(null);
@@ -101,6 +103,19 @@ export default function Wishlist() {
   const handleBack = () => {
     setView("list");
     setEditingEntry(null);
+  };
+
+  const handleTastedIt = (entry: WishlistEntry) => {
+    setWishlistTransfer({
+      wishlistEntryId: entry.id,
+      whiskyName: entry.whiskyName,
+      distillery: entry.distillery || undefined,
+      region: entry.region || undefined,
+      age: entry.age || undefined,
+      abv: entry.abv || undefined,
+      caskType: entry.caskType || undefined,
+    });
+    navigate("/journal");
   };
 
   const sortedEntries = [...entries].sort((a: WishlistEntry, b: WishlistEntry) => {
@@ -203,11 +218,21 @@ export default function Wishlist() {
                             </p>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-1 text-green-500 hover:text-green-400 hover:bg-green-500/10 text-xs font-medium"
+                            onClick={() => handleTastedIt(entry)}
+                            data-testid={`button-tasted-wishlist-${entry.id}`}
+                          >
+                            <GlassWater className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">{t("wishlist.tastedIt")}</span>
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={() => handleEdit(entry)}
                             data-testid={`button-edit-wishlist-${entry.id}`}
                           >
@@ -216,7 +241,7 @@ export default function Wishlist() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            className="h-8 w-8 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={() => setDeleteTarget(entry)}
                             data-testid={`button-delete-wishlist-${entry.id}`}
                           >
