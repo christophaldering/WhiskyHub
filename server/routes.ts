@@ -2250,5 +2250,208 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/tasting-details/:id", async (req, res) => {
+    try {
+      const requesterId = req.query.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+      const [whiskiesData, ratingsData, participantsData, host] = await Promise.all([
+        storage.getWhiskiesForTasting(tasting.id),
+        storage.getRatingsForTasting(tasting.id),
+        storage.getTastingParticipants(tasting.id),
+        storage.getParticipant(tasting.hostId),
+      ]);
+
+      const allParticipants = await storage.getAllParticipants();
+      const participantMap = new Map(allParticipants.map(p => [p.id, p.name]));
+
+      const whiskyDetails = whiskiesData.map(w => {
+        const wRatings = ratingsData.filter(r => r.whiskyId === w.id);
+        const overallScores = wRatings.map(r => r.overall).filter((v): v is number => v != null);
+        const avgOverall = overallScores.length > 0 ? overallScores.reduce((a, b) => a + b, 0) / overallScores.length : null;
+
+        return {
+          id: w.id,
+          name: w.name,
+          distillery: w.distillery,
+          age: w.age,
+          abv: w.abv,
+          region: w.region,
+          caskInfluence: w.caskInfluence,
+          peatLevel: w.peatLevel,
+          imageUrl: w.imageUrl,
+          avgOverall: avgOverall ? Math.round(avgOverall * 10) / 10 : null,
+          ratingCount: wRatings.length,
+          ratings: wRatings.map(r => ({
+            participantName: participantMap.get(r.participantId) || "Unknown",
+            participantId: r.participantId,
+            nose: r.nose,
+            taste: r.taste,
+            finish: r.finish,
+            balance: r.balance,
+            overall: r.overall,
+            notes: r.notes,
+          })),
+        };
+      });
+
+      res.json({
+        id: tasting.id,
+        title: tasting.title,
+        date: tasting.date,
+        location: tasting.location,
+        status: tasting.status,
+        hostName: host?.name || "Unknown",
+        participantCount: participantsData.length,
+        participants: participantsData.map(p => ({ id: p.id, name: p.name })),
+        whiskies: whiskyDetails,
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/all-journals", async (req, res) => {
+    try {
+      const requesterId = req.query.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const [allEntries, allParticipants] = await Promise.all([
+        storage.getAllJournalEntries(),
+        storage.getAllParticipants(),
+      ]);
+
+      const participantMap = new Map(allParticipants.map(p => [p.id, p.name]));
+
+      const entriesWithNames = allEntries.map(e => ({
+        ...e,
+        participantName: participantMap.get(e.participantId) || "Unknown",
+      }));
+
+      res.json(entriesWithNames);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/analytics", async (req, res) => {
+    try {
+      const requesterId = req.query.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const [allTastings, allParticipants, allWhiskies, allRatings] = await Promise.all([
+        storage.getAllTastings(),
+        storage.getAllParticipants(),
+        storage.getAllWhiskies(),
+        storage.getAllRatings(),
+      ]);
+
+      const participantMap = new Map(allParticipants.map(p => [p.id, p.name]));
+      const whiskyMap = new Map(allWhiskies.map(w => [w.id, w]));
+      const tastingMap = new Map(allTastings.map(t => [t.id, t]));
+
+      const scoreDistribution = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+      const participantRatings: Record<string, { name: string; count: number; totalScore: number; scores: number[] }> = {};
+      const whiskyScores: Record<string, { name: string; distillery: string | null; scores: number[]; tastingTitle: string }> = {};
+
+      for (const r of allRatings) {
+        if (r.overall != null) {
+          const bucket = Math.min(Math.floor(r.overall / 10), 9);
+          scoreDistribution[bucket]++;
+
+          const pName = participantMap.get(r.participantId) || "Unknown";
+          if (!participantRatings[r.participantId]) {
+            participantRatings[r.participantId] = { name: pName, count: 0, totalScore: 0, scores: [] };
+          }
+          participantRatings[r.participantId].count++;
+          participantRatings[r.participantId].totalScore += r.overall;
+          participantRatings[r.participantId].scores.push(r.overall);
+
+          const w = whiskyMap.get(r.whiskyId);
+          const t = tastingMap.get(r.tastingId);
+          if (w) {
+            if (!whiskyScores[r.whiskyId]) {
+              whiskyScores[r.whiskyId] = { name: w.name, distillery: w.distillery, scores: [], tastingTitle: t?.title || "" };
+            }
+            whiskyScores[r.whiskyId].scores.push(r.overall);
+          }
+        }
+      }
+
+      const topWhiskies = Object.entries(whiskyScores)
+        .map(([id, data]) => ({
+          id,
+          name: data.name,
+          distillery: data.distillery,
+          tastingTitle: data.tastingTitle,
+          avgScore: Math.round((data.scores.reduce((a, b) => a + b, 0) / data.scores.length) * 10) / 10,
+          ratingCount: data.scores.length,
+        }))
+        .sort((a, b) => b.avgScore - a.avgScore)
+        .slice(0, 20);
+
+      const participantStats = Object.entries(participantRatings)
+        .map(([id, data]) => {
+          const avg = data.totalScore / data.count;
+          const variance = data.scores.reduce((sum, s) => sum + Math.pow(s - avg, 2), 0) / data.count;
+          return {
+            id,
+            name: data.name,
+            count: data.count,
+            avgScore: Math.round(avg * 10) / 10,
+            stdDev: Math.round(Math.sqrt(variance) * 10) / 10,
+            minScore: Math.min(...data.scores),
+            maxScore: Math.max(...data.scores),
+          };
+        })
+        .sort((a, b) => b.count - a.count);
+
+      const regionCounts: Record<string, number> = {};
+      for (const w of allWhiskies) {
+        if (w.region) regionCounts[w.region] = (regionCounts[w.region] || 0) + 1;
+      }
+
+      const tastingsPerMonth: Record<string, number> = {};
+      for (const t of allTastings) {
+        if (t.date) {
+          const month = t.date.substring(0, 7);
+          tastingsPerMonth[month] = (tastingsPerMonth[month] || 0) + 1;
+        }
+      }
+
+      res.json({
+        totalRatings: allRatings.length,
+        totalWhiskies: allWhiskies.length,
+        totalTastings: allTastings.length,
+        totalParticipants: allParticipants.length,
+        scoreDistribution: scoreDistribution.map((count, i) => ({
+          range: `${i * 10}-${i * 10 + 9}`,
+          count,
+        })),
+        topWhiskies,
+        participantStats,
+        regionCounts: Object.entries(regionCounts).sort((a, b) => b[1] - a[1]),
+        tastingsPerMonth: Object.entries(tastingsPerMonth).sort((a, b) => a[0].localeCompare(b[0])),
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }

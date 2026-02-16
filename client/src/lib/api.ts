@@ -290,4 +290,10 @@ export const adminApi = {
     fetchJSON(`/admin/participants/${participantId}?requesterId=${requesterId}`, { method: "DELETE" }),
   deleteTasting: (tastingId: string, requesterId: string) =>
     fetchJSON(`/admin/tastings/${tastingId}?requesterId=${requesterId}`, { method: "DELETE" }),
+  getTastingDetails: (tastingId: string, requesterId: string) =>
+    fetchJSON(`/admin/tasting-details/${tastingId}?requesterId=${requesterId}`),
+  getAllJournals: (requesterId: string) =>
+    fetchJSON(`/admin/all-journals?requesterId=${requesterId}`),
+  getAnalytics: (requesterId: string) =>
+    fetchJSON(`/admin/analytics?requesterId=${requesterId}`),
 };

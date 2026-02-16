@@ -1,4 +1,4 @@
-import { eq, ne, and, asc, sql, inArray } from "drizzle-orm";
+import { eq, ne, and, asc, desc, sql, inArray } from "drizzle-orm";
 import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
@@ -61,6 +61,7 @@ export interface IStorage {
   // Ratings
   getRatingsForWhisky(whiskyId: string): Promise<Rating[]>;
   getRatingsForTasting(tastingId: string): Promise<Rating[]>;
+  getAllRatings(): Promise<Rating[]>;
   getRatingByParticipantAndWhisky(participantId: string, whiskyId: string): Promise<Rating | undefined>;
   upsertRating(data: InsertRating): Promise<Rating>;
 
@@ -100,6 +101,7 @@ export interface IStorage {
   getRatingNotes(participantId: string): Promise<Array<{ id: string; notes: string | null }>>;
 
   // Journal Entries
+  getAllJournalEntries(): Promise<JournalEntry[]>;
   getJournalEntries(participantId: string): Promise<JournalEntry[]>;
   getJournalEntry(id: string, participantId: string): Promise<JournalEntry | undefined>;
   createJournalEntry(data: InsertJournalEntry): Promise<JournalEntry>;
@@ -344,6 +346,10 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(ratings).where(eq(ratings.tastingId, tastingId));
   }
 
+  async getAllRatings(): Promise<Rating[]> {
+    return db.select().from(ratings);
+  }
+
   async getRatingByParticipantAndWhisky(participantId: string, whiskyId: string): Promise<Rating | undefined> {
     const [result] = await db
       .select()
@@ -488,6 +494,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // --- Journal Entries ---
+  async getAllJournalEntries(): Promise<JournalEntry[]> {
+    return db.select().from(journalEntries).orderBy(desc(journalEntries.createdAt));
+  }
+
   async getJournalEntries(participantId: string): Promise<JournalEntry[]> {
     return db.select().from(journalEntries).where(eq(journalEntries.participantId, participantId)).orderBy(asc(journalEntries.createdAt));
   }

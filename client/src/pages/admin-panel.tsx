@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { adminApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash } from "lucide-react";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,78 @@ interface AdminOverview {
   };
 }
 
+interface TastingDetail {
+  id: string;
+  title: string;
+  date: string;
+  location: string;
+  status: string;
+  hostName: string;
+  participantCount: number;
+  participants: { id: string; name: string }[];
+  whiskies: WhiskyDetail[];
+}
+
+interface WhiskyDetail {
+  id: string;
+  name: string;
+  distillery: string | null;
+  age: string | null;
+  abv: number | null;
+  region: string | null;
+  caskInfluence: string | null;
+  peatLevel: string | null;
+  imageUrl: string | null;
+  avgOverall: number | null;
+  ratingCount: number;
+  ratings: IndividualRating[];
+}
+
+interface IndividualRating {
+  participantName: string;
+  participantId: string;
+  nose: number;
+  taste: number;
+  finish: number;
+  balance: number;
+  overall: number;
+  notes: string | null;
+}
+
+interface JournalEntryAdmin {
+  id: string;
+  participantId: string;
+  participantName: string;
+  title: string;
+  whiskyName: string | null;
+  distillery: string | null;
+  region: string | null;
+  age: string | null;
+  abv: string | null;
+  caskType: string | null;
+  noseNotes: string | null;
+  tasteNotes: string | null;
+  finishNotes: string | null;
+  personalScore: number | null;
+  mood: string | null;
+  occasion: string | null;
+  body: string | null;
+  imageUrl: string | null;
+  createdAt: string | null;
+}
+
+interface AnalyticsData {
+  totalRatings: number;
+  totalWhiskies: number;
+  totalTastings: number;
+  totalParticipants: number;
+  scoreDistribution: { range: string; count: number }[];
+  topWhiskies: { id: string; name: string; distillery: string | null; tastingTitle: string; avgScore: number; ratingCount: number }[];
+  participantStats: { id: string; name: string; count: number; avgScore: number; stdDev: number; minScore: number; maxScore: number }[];
+  regionCounts: [string, number][];
+  tastingsPerMonth: [string, number][];
+}
+
 const roleIcon = (role: string) => {
   switch (role) {
     case "admin": return <Shield className="w-4 h-4 text-amber-500" />;
@@ -91,10 +163,31 @@ export default function AdminPanel() {
   const [searchTastings, setSearchTastings] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [expandedTastingId, setExpandedTastingId] = useState<string | null>(null);
+  const [searchJournals, setSearchJournals] = useState("");
+  const [expandedJournalId, setExpandedJournalId] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery<AdminOverview>({
     queryKey: ["admin-overview", currentParticipant?.id],
     queryFn: () => adminApi.getOverview(currentParticipant!.id),
+    enabled: !!currentParticipant,
+  });
+
+  const { data: tastingDetail, isLoading: isLoadingDetail } = useQuery<TastingDetail>({
+    queryKey: ["admin-tasting-detail", expandedTastingId],
+    queryFn: () => adminApi.getTastingDetails(expandedTastingId!, currentParticipant!.id),
+    enabled: !!expandedTastingId && !!currentParticipant,
+  });
+
+  const { data: journalsData, isLoading: isLoadingJournals } = useQuery<JournalEntryAdmin[]>({
+    queryKey: ["admin-all-journals", currentParticipant?.id],
+    queryFn: () => adminApi.getAllJournals(currentParticipant!.id),
+    enabled: !!currentParticipant,
+  });
+
+  const { data: analyticsData, isLoading: isLoadingAnalytics } = useQuery<AnalyticsData>({
+    queryKey: ["admin-analytics", currentParticipant?.id],
+    queryFn: () => adminApi.getAnalytics(currentParticipant!.id),
     enabled: !!currentParticipant,
   });
 
@@ -176,6 +269,20 @@ export default function AdminPanel() {
 
   const hosts = data.participants.filter(p => p.isHost);
 
+  const filteredJournals = (journalsData || []).filter(j => {
+    const q = searchJournals.toLowerCase();
+    if (!q) return true;
+    return (
+      j.participantName.toLowerCase().includes(q) ||
+      j.title.toLowerCase().includes(q) ||
+      (j.whiskyName?.toLowerCase().includes(q))
+    );
+  });
+
+  const maxDistribution = analyticsData?.scoreDistribution
+    ? Math.max(...analyticsData.scoreDistribution.map(d => d.count), 1)
+    : 1;
+
   return (
     <motion.div
       className="max-w-5xl mx-auto px-4 py-8"
@@ -228,15 +335,24 @@ export default function AdminPanel() {
       </div>
 
       <Tabs defaultValue="participants" data-testid="admin-tabs">
-        <TabsList className="grid grid-cols-3 w-full mb-6">
-          <TabsTrigger value="participants" data-testid="tab-participants">
-            <Users className="w-4 h-4 mr-1" /> {t("admin.tabParticipants")}
+        <TabsList className="flex flex-wrap w-full mb-6 h-auto gap-1">
+          <TabsTrigger value="participants" data-testid="tab-participants" className="flex-1 min-w-0">
+            <Users className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">{t("admin.tabParticipants")}</span>
           </TabsTrigger>
-          <TabsTrigger value="hosts" data-testid="tab-hosts">
-            <Crown className="w-4 h-4 mr-1" /> {t("admin.tabHosts")}
+          <TabsTrigger value="hosts" data-testid="tab-hosts" className="flex-1 min-w-0">
+            <Crown className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">{t("admin.tabHosts")}</span>
           </TabsTrigger>
-          <TabsTrigger value="tastings" data-testid="tab-tastings">
-            <Wine className="w-4 h-4 mr-1" /> {t("admin.tabTastings")}
+          <TabsTrigger value="tastings" data-testid="tab-tastings" className="flex-1 min-w-0">
+            <Wine className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">{t("admin.tabTastings")}</span>
+          </TabsTrigger>
+          <TabsTrigger value="sessions" data-testid="tab-sessions" className="flex-1 min-w-0">
+            <Eye className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">Session Details</span>
+          </TabsTrigger>
+          <TabsTrigger value="journals" data-testid="tab-journals" className="flex-1 min-w-0">
+            <BookOpen className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">All Journals</span>
+          </TabsTrigger>
+          <TabsTrigger value="analytics" data-testid="tab-analytics" className="flex-1 min-w-0">
+            <BarChart3 className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">Analytics</span>
           </TabsTrigger>
         </TabsList>
 
@@ -473,6 +589,472 @@ export default function AdminPanel() {
               ))
             )}
           </div>
+        </TabsContent>
+
+        {/* Session Details Tab */}
+        <TabsContent value="sessions">
+          <div className="space-y-2" data-testid="sessions-list">
+            {data.tastings.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No sessions found</p>
+            ) : (
+              data.tastings.map((tasting, i) => (
+                <motion.div
+                  key={tasting.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                >
+                  <Card data-testid={`session-card-${tasting.id}`}>
+                    <CardContent className="p-4">
+                      <button
+                        className="w-full text-left"
+                        onClick={() => setExpandedTastingId(expandedTastingId === tasting.id ? null : tasting.id)}
+                        data-testid={`btn-expand-session-${tasting.id}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="min-w-0">
+                            <div className="font-serif font-semibold truncate flex items-center gap-2">
+                              {expandedTastingId === tasting.id ? <ChevronDown className="w-4 h-4 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 flex-shrink-0" />}
+                              {tasting.title}
+                              {statusBadge(tasting.status)}
+                            </div>
+                            <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 mt-1 ml-6">
+                              <span className="flex items-center gap-1"><Crown className="w-3 h-3" /> {tasting.hostName}</span>
+                              <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {tasting.date}</span>
+                              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {tasting.location}</span>
+                              <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {tasting.participantCount}</span>
+                              <span className="flex items-center gap-1"><Wine className="w-3 h-3" /> {tasting.whiskyCount}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+
+                      {expandedTastingId === tasting.id && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          transition={{ duration: 0.3 }}
+                          className="mt-4 border-t pt-4"
+                          data-testid={`session-detail-${tasting.id}`}
+                        >
+                          {isLoadingDetail ? (
+                            <div className="space-y-3">
+                              {[1, 2].map(i => (
+                                <div key={i} className="h-12 bg-muted/50 rounded-lg animate-pulse" />
+                              ))}
+                            </div>
+                          ) : tastingDetail ? (
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                                <div><span className="text-muted-foreground">Host:</span> {tastingDetail.hostName}</div>
+                                <div><span className="text-muted-foreground">Date:</span> {tastingDetail.date}</div>
+                                <div><span className="text-muted-foreground">Location:</span> {tastingDetail.location}</div>
+                                <div><span className="text-muted-foreground">Status:</span> {statusBadge(tastingDetail.status)}</div>
+                                <div><span className="text-muted-foreground">Participants:</span> {tastingDetail.participantCount}</div>
+                              </div>
+
+                              {tastingDetail.participants.length > 0 && (
+                                <div>
+                                  <h4 className="text-sm font-semibold font-serif mb-2">Participants</h4>
+                                  <div className="flex flex-wrap gap-1">
+                                    {tastingDetail.participants.map(p => (
+                                      <span key={p.id} className="text-xs bg-muted px-2 py-1 rounded-full" data-testid={`session-participant-${p.id}`}>
+                                        {p.name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {tastingDetail.whiskies.length > 0 && (
+                                <div className="space-y-4">
+                                  <h4 className="text-sm font-semibold font-serif">Whiskies</h4>
+                                  {tastingDetail.whiskies.map(whisky => (
+                                    <Card key={whisky.id} className="bg-muted/30" data-testid={`session-whisky-${whisky.id}`}>
+                                      <CardContent className="p-4">
+                                        <div className="flex gap-4">
+                                          {whisky.imageUrl && (
+                                            <img
+                                              src={whisky.imageUrl}
+                                              alt={whisky.name}
+                                              className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                                              data-testid={`img-whisky-${whisky.id}`}
+                                            />
+                                          )}
+                                          <div className="flex-1 min-w-0">
+                                            <div className="font-serif font-semibold">{whisky.name}</div>
+                                            <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                                              {whisky.distillery && <span>Distillery: {whisky.distillery}</span>}
+                                              {whisky.age && <span>Age: {whisky.age}</span>}
+                                              {whisky.abv != null && <span>ABV: {whisky.abv}%</span>}
+                                              {whisky.region && <span>Region: {whisky.region}</span>}
+                                              {whisky.caskInfluence && <span>Cask: {whisky.caskInfluence}</span>}
+                                              {whisky.peatLevel && <span>Peat: {whisky.peatLevel}</span>}
+                                            </div>
+                                            <div className="flex items-center gap-3 mt-2 text-sm">
+                                              {whisky.avgOverall != null && (
+                                                <span className="font-semibold text-primary">Avg Score: {whisky.avgOverall.toFixed(1)}</span>
+                                              )}
+                                              <span className="text-muted-foreground">{whisky.ratingCount} ratings</span>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {whisky.ratings.length > 0 && (
+                                          <div className="mt-3 overflow-x-auto">
+                                            <table className="w-full text-xs" data-testid={`ratings-table-${whisky.id}`}>
+                                              <thead>
+                                                <tr className="border-b text-muted-foreground">
+                                                  <th className="text-left py-1 pr-2">Name</th>
+                                                  <th className="text-center py-1 px-1">Nose</th>
+                                                  <th className="text-center py-1 px-1">Taste</th>
+                                                  <th className="text-center py-1 px-1">Finish</th>
+                                                  <th className="text-center py-1 px-1">Balance</th>
+                                                  <th className="text-center py-1 px-1">Overall</th>
+                                                  <th className="text-left py-1 pl-2">Notes</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                {whisky.ratings.map(r => (
+                                                  <tr key={r.participantId} className="border-b border-muted/50" data-testid={`rating-row-${whisky.id}-${r.participantId}`}>
+                                                    <td className="py-1.5 pr-2 font-medium">{r.participantName}</td>
+                                                    <td className="text-center py-1.5 px-1">{r.nose}</td>
+                                                    <td className="text-center py-1.5 px-1">{r.taste}</td>
+                                                    <td className="text-center py-1.5 px-1">{r.finish}</td>
+                                                    <td className="text-center py-1.5 px-1">{r.balance}</td>
+                                                    <td className="text-center py-1.5 px-1 font-semibold text-primary">{r.overall}</td>
+                                                    <td className="py-1.5 pl-2 text-muted-foreground max-w-[200px] truncate">{r.notes || "—"}</td>
+                                                  </tr>
+                                                ))}
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                        )}
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No details available</p>
+                          )}
+                        </motion.div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        {/* All Journals Tab */}
+        <TabsContent value="journals">
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search journals by participant, title, whisky..."
+                value={searchJournals}
+                onChange={(e) => setSearchJournals(e.target.value)}
+                className="pl-9"
+                data-testid="input-search-journals"
+              />
+            </div>
+          </div>
+
+          {isLoadingJournals ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-16 bg-muted/50 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2" data-testid="journals-list">
+              {filteredJournals.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No journal entries found</p>
+              ) : (
+                filteredJournals.map((journal, i) => (
+                  <motion.div
+                    key={journal.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                  >
+                    <Card data-testid={`journal-card-${journal.id}`}>
+                      <CardContent className="p-4">
+                        <button
+                          className="w-full text-left"
+                          onClick={() => setExpandedJournalId(expandedJournalId === journal.id ? null : journal.id)}
+                          data-testid={`btn-expand-journal-${journal.id}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            {journal.imageUrl && (
+                              <img
+                                src={journal.imageUrl}
+                                alt={journal.title}
+                                className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
+                                data-testid={`img-journal-${journal.id}`}
+                              />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                {expandedJournalId === journal.id ? <ChevronDown className="w-4 h-4 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 flex-shrink-0" />}
+                                <span className="font-serif font-semibold truncate">{journal.title}</span>
+                                {journal.personalScore != null && (
+                                  <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full flex-shrink-0">
+                                    {journal.personalScore}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 mt-1 ml-6">
+                                <span className="flex items-center gap-1"><User className="w-3 h-3" /> {journal.participantName}</span>
+                                {journal.whiskyName && <span>{journal.whiskyName}</span>}
+                                {journal.distillery && <span>{journal.distillery}</span>}
+                                {journal.createdAt && <span>{new Date(journal.createdAt).toLocaleDateString()}</span>}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+
+                        {expandedJournalId === journal.id && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            transition={{ duration: 0.3 }}
+                            className="mt-4 border-t pt-4 ml-6"
+                            data-testid={`journal-detail-${journal.id}`}
+                          >
+                            <div className="space-y-3 text-sm">
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {journal.region && <div><span className="text-muted-foreground">Region:</span> {journal.region}</div>}
+                                {journal.age && <div><span className="text-muted-foreground">Age:</span> {journal.age}</div>}
+                                {journal.abv && <div><span className="text-muted-foreground">ABV:</span> {journal.abv}</div>}
+                                {journal.caskType && <div><span className="text-muted-foreground">Cask:</span> {journal.caskType}</div>}
+                                {journal.mood && <div><span className="text-muted-foreground">Mood:</span> {journal.mood}</div>}
+                                {journal.occasion && <div><span className="text-muted-foreground">Occasion:</span> {journal.occasion}</div>}
+                              </div>
+                              {journal.noseNotes && (
+                                <div>
+                                  <span className="text-muted-foreground font-medium">Nose:</span>
+                                  <p className="mt-0.5">{journal.noseNotes}</p>
+                                </div>
+                              )}
+                              {journal.tasteNotes && (
+                                <div>
+                                  <span className="text-muted-foreground font-medium">Taste:</span>
+                                  <p className="mt-0.5">{journal.tasteNotes}</p>
+                                </div>
+                              )}
+                              {journal.finishNotes && (
+                                <div>
+                                  <span className="text-muted-foreground font-medium">Finish:</span>
+                                  <p className="mt-0.5">{journal.finishNotes}</p>
+                                </div>
+                              )}
+                              {journal.body && (
+                                <div>
+                                  <span className="text-muted-foreground font-medium">Notes:</span>
+                                  <p className="mt-0.5">{journal.body}</p>
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))
+              )}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Analytics Tab */}
+        <TabsContent value="analytics">
+          {isLoadingAnalytics ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-16 bg-muted/50 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          ) : analyticsData ? (
+            <div className="space-y-6" data-testid="analytics-content">
+              {/* Summary Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="analytics-summary">
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <TrendingUp className="w-5 h-5 mx-auto mb-1 text-primary" />
+                    <div className="text-2xl font-bold font-serif">{analyticsData.totalRatings}</div>
+                    <div className="text-xs text-muted-foreground">Total Ratings</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <Wine className="w-5 h-5 mx-auto mb-1 text-amber-500" />
+                    <div className="text-2xl font-bold font-serif">{analyticsData.totalWhiskies}</div>
+                    <div className="text-xs text-muted-foreground">Total Whiskies</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <Calendar className="w-5 h-5 mx-auto mb-1 text-blue-500" />
+                    <div className="text-2xl font-bold font-serif">{analyticsData.totalTastings}</div>
+                    <div className="text-xs text-muted-foreground">Total Tastings</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <Users className="w-5 h-5 mx-auto mb-1 text-green-500" />
+                    <div className="text-2xl font-bold font-serif">{analyticsData.totalParticipants}</div>
+                    <div className="text-xs text-muted-foreground">Total Participants</div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Score Distribution */}
+              {analyticsData.scoreDistribution.length > 0 && (
+                <Card data-testid="analytics-score-distribution">
+                  <CardContent className="p-4">
+                    <h3 className="font-serif font-semibold text-lg mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5 text-primary" />
+                      Score Distribution
+                    </h3>
+                    <div className="space-y-2">
+                      {analyticsData.scoreDistribution.map(d => (
+                        <div key={d.range} className="flex items-center gap-3" data-testid={`score-range-${d.range}`}>
+                          <span className="text-xs text-muted-foreground w-12 text-right flex-shrink-0">{d.range}</span>
+                          <div className="flex-1 bg-muted rounded-full h-5 overflow-hidden">
+                            <div
+                              className="bg-primary/70 h-full rounded-full transition-all duration-500"
+                              style={{ width: `${(d.count / maxDistribution) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium w-8 flex-shrink-0">{d.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Top 20 Whiskies */}
+              {analyticsData.topWhiskies.length > 0 && (
+                <Card data-testid="analytics-top-whiskies">
+                  <CardContent className="p-4">
+                    <h3 className="font-serif font-semibold text-lg mb-4 flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-primary" />
+                      Top 20 Whiskies
+                    </h3>
+                    <div className="space-y-2">
+                      {analyticsData.topWhiskies.map((w, i) => (
+                        <div key={w.id} className="flex items-center gap-3 py-1.5 border-b border-muted/50 last:border-0" data-testid={`top-whisky-${w.id}`}>
+                          <span className="text-xs text-muted-foreground w-6 text-right font-medium">#{i + 1}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-serif font-medium text-sm truncate">{w.name}</div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {w.distillery && `${w.distillery} · `}{w.tastingTitle}
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className="font-semibold text-sm text-primary">{w.avgScore.toFixed(1)}</div>
+                            <div className="text-xs text-muted-foreground">{w.ratingCount} ratings</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Participant Stats */}
+              {analyticsData.participantStats.length > 0 && (
+                <Card data-testid="analytics-participant-stats">
+                  <CardContent className="p-4">
+                    <h3 className="font-serif font-semibold text-lg mb-4 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-primary" />
+                      Participant Stats
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b text-muted-foreground text-xs">
+                            <th className="text-left py-2 pr-2">Name</th>
+                            <th className="text-center py-2 px-2">Ratings</th>
+                            <th className="text-center py-2 px-2">Avg Score</th>
+                            <th className="text-center py-2 px-2">Std Dev</th>
+                            <th className="text-center py-2 px-2">Min</th>
+                            <th className="text-center py-2 px-2">Max</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {analyticsData.participantStats.map(ps => (
+                            <tr key={ps.id} className="border-b border-muted/50" data-testid={`participant-stat-${ps.id}`}>
+                              <td className="py-2 pr-2 font-medium font-serif">{ps.name}</td>
+                              <td className="text-center py-2 px-2">{ps.count}</td>
+                              <td className="text-center py-2 px-2 font-semibold text-primary">{ps.avgScore.toFixed(1)}</td>
+                              <td className="text-center py-2 px-2 text-muted-foreground">{ps.stdDev.toFixed(1)}</td>
+                              <td className="text-center py-2 px-2">{ps.minScore}</td>
+                              <td className="text-center py-2 px-2">{ps.maxScore}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Region Breakdown */}
+              {analyticsData.regionCounts.length > 0 && (
+                <Card data-testid="analytics-regions">
+                  <CardContent className="p-4">
+                    <h3 className="font-serif font-semibold text-lg mb-4 flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-primary" />
+                      Region Breakdown
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {analyticsData.regionCounts.map(([region, count]) => (
+                        <div key={region} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2" data-testid={`region-${region}`}>
+                          <span className="text-sm font-medium">{region}</span>
+                          <span className="text-sm font-bold text-primary">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Tastings per Month */}
+              {analyticsData.tastingsPerMonth.length > 0 && (
+                <Card data-testid="analytics-timeline">
+                  <CardContent className="p-4">
+                    <h3 className="font-serif font-semibold text-lg mb-4 flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-primary" />
+                      Tastings per Month
+                    </h3>
+                    <div className="space-y-1">
+                      {analyticsData.tastingsPerMonth.map(([month, count]) => (
+                        <div key={month} className="flex items-center gap-3" data-testid={`month-${month}`}>
+                          <span className="text-xs text-muted-foreground w-20 flex-shrink-0">{month}</span>
+                          <div className="flex-1 bg-muted rounded-full h-4 overflow-hidden">
+                            <div
+                              className="bg-blue-500/70 h-full rounded-full transition-all duration-500"
+                              style={{ width: `${(count / Math.max(...analyticsData.tastingsPerMonth.map(m => m[1]), 1)) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium w-6 flex-shrink-0">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-8">No analytics data available</p>
+          )}
         </TabsContent>
       </Tabs>
     </motion.div>
