@@ -13,6 +13,7 @@ import Sessions from "@/pages/sessions";
 import InviteAccept from "@/pages/invite-accept";
 import AboutMethod from "@/pages/about-method";
 import Journal from "@/pages/journal";
+import Wishlist from "@/pages/wishlist";
 import Badges from "@/pages/badges";
 import Lexicon from "@/pages/lexicon";
 import FlavorProfile from "@/pages/flavor-profile";
@@ -63,6 +64,7 @@ function Router() {
               <Route path="/profile" component={Profile} />
               <Route path="/friends" component={WhiskyFriends} />
               <Route path="/journal" component={Journal} />
+              <Route path="/wishlist" component={Wishlist} />
               <Route path="/badges" component={Badges} />
               <Route path="/lexicon" component={Lexicon} />
               <Route path="/flavor-profile" component={FlavorProfile} />

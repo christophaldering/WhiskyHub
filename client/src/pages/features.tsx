@@ -6,7 +6,7 @@ import {
   FileText, Download, Puzzle, Users, Rss, Medal, Calendar, LayoutDashboard,
   ClipboardList, Database, Brain, Library, Landmark, Map, BookOpen, Heart,
   ShieldAlert, Eye, EyeOff, MessageSquare, Lightbulb, QrCode, Volume2,
-  Sun, Moon, Globe, Smartphone, X, Camera
+  Sun, Moon, Globe, Smartphone, X, Camera, Star
 } from "lucide-react";
 
 type Feature = {
@@ -38,6 +38,7 @@ const featureGroups: { groupKey: string; features: Feature[] }[] = [
       { icon: Trophy, titleKey: "badges", descKey: "badgesDesc", color: "text-amber-600 dark:text-amber-400" },
       { icon: FileText, titleKey: "templates", descKey: "templatesDesc", color: "text-slate-600 dark:text-slate-400" },
       { icon: Download, titleKey: "exportNotes", descKey: "exportNotesDesc", color: "text-blue-600 dark:text-blue-400" },
+      { icon: Star, titleKey: "wishlist", descKey: "wishlistDesc", color: "text-yellow-600 dark:text-yellow-400" },
     ],
   },
   {

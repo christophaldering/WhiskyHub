@@ -97,6 +97,10 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 - `GET /api/flavor-profile/global` — Global average scores across all participants
 - `GET /api/participants/:id/rating-notes` — All rating notes for a participant (for flavor wheel)
 - `POST /api/journal/identify-bottle` — Single bottle photo AI identification for journal entries (any participant)
+- `GET /api/wishlist/:participantId` — List all wishlist entries for a participant
+- `POST /api/wishlist/:participantId` — Create a wishlist entry
+- `PATCH /api/wishlist/:participantId/:id` — Update a wishlist entry
+- `DELETE /api/wishlist/:participantId/:id` — Delete a wishlist entry
 
 ## External Dependencies
 
