@@ -1,11 +1,46 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import L from "leaflet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, MapPin, Calendar, Landmark, Star, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, MapPin, Calendar, Star, ExternalLink, ChevronDown, ChevronUp, Map } from "lucide-react";
 import { distilleries, type Distillery } from "@/data/distilleries";
+import "leaflet/dist/leaflet.css";
+
+const miniMapIcon = L.divIcon({
+  className: "",
+  html: `<div style="width:22px;height:22px;border-radius:50%;background:hsl(25,70%,45%);border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+  </div>`,
+  iconSize: [22, 22],
+  iconAnchor: [11, 22],
+});
+
+function MiniMap({ lat, lng, name }: { lat: number; lng: number; name: string }) {
+  return (
+    <div className="rounded-md overflow-hidden border border-border/30" style={{ height: 160, width: "100%" }} onClick={(e) => e.stopPropagation()}>
+      <MapContainer
+        center={[lat, lng]}
+        zoom={10}
+        style={{ height: "100%", width: "100%" }}
+        scrollWheelZoom={false}
+        dragging={false}
+        zoomControl={false}
+        attributionControl={false}
+        doubleClickZoom={false}
+        touchZoom={false}
+        key={name}
+      >
+        <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+        <Marker position={[lat, lng]} icon={miniMapIcon} />
+      </MapContainer>
+    </div>
+  );
+}
 
 export default function DistilleryEncyclopedia() {
   const { t } = useTranslation();
@@ -58,9 +93,16 @@ export default function DistilleryEncyclopedia() {
 
   return (
     <div className="space-y-8" data-testid="distillery-encyclopedia">
-      <header>
-        <h1 className="text-4xl font-serif font-black text-primary tracking-tight">{t("distillery.title")}</h1>
-        <p className="text-muted-foreground font-serif italic mt-2 text-lg">{t("distillery.subtitle")}</p>
+      <header className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-4xl font-serif font-black text-primary tracking-tight">{t("distillery.title")}</h1>
+          <p className="text-muted-foreground font-serif italic mt-2 text-lg">{t("distillery.subtitle")}</p>
+        </div>
+        <Link href="/distillery-map">
+          <Button variant="outline" size="sm" data-testid="link-distillery-map">
+            <Map className="w-4 h-4 mr-1" /> {t("distillery.viewOnMap")}
+          </Button>
+        </Link>
       </header>
 
       <div className="space-y-4">
@@ -133,7 +175,7 @@ export default function DistilleryEncyclopedia() {
           </p>
           <div className="flex gap-1">
             <Button variant={sortBy === "name" ? "secondary" : "ghost"} size="sm" onClick={() => setSortBy("name")} className="text-xs">
-              A–Z
+              A-Z
             </Button>
             <Button variant={sortBy === "founded" ? "secondary" : "ghost"} size="sm" onClick={() => setSortBy("founded")} className="text-xs">
               <Calendar className="w-3 h-3 mr-1" /> {t("distillery.sortFounded")}
@@ -203,6 +245,12 @@ export default function DistilleryEncyclopedia() {
                             <div className="flex items-start gap-2 bg-primary/5 rounded-md p-3">
                               <Star className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                               <p className="text-sm text-primary/90 italic">{d.feature}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+                                <MapPin className="w-3 h-3" /> {t("distillery.location")}
+                              </p>
+                              <MiniMap lat={d.lat} lng={d.lng} name={d.name} />
                             </div>
                           </div>
                         </motion.div>

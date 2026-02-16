@@ -29,6 +29,7 @@ import PairingSuggestions from "@/pages/pairing-suggestions";
 import Leaderboard from "@/pages/leaderboard";
 import AdminPanel from "@/pages/admin-panel";
 import DistilleryEncyclopedia from "@/pages/distillery-encyclopedia";
+import DistilleryMap from "@/pages/distillery-map";
 import WhiskyDatabase from "@/pages/whisky-database";
 import Intro from "@/pages/intro";
 import { hasSeenIntro } from "@/pages/intro";
@@ -75,6 +76,7 @@ function Router() {
               <Route path="/leaderboard" component={Leaderboard} />
               <Route path="/admin" component={AdminPanel} />
               <Route path="/distilleries" component={DistilleryEncyclopedia} />
+              <Route path="/distillery-map" component={DistilleryMap} />
               <Route path="/whisky-database" component={WhiskyDatabase} />
               <Route path="/about-method" component={AboutMethod} />
               <Route path="/invite/:token" component={InviteAccept} />

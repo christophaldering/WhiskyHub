@@ -78,6 +78,7 @@ const resources = {
         leaderboard: "Leaderboard",
         admin: "Admin Panel",
         distilleries: "Distilleries",
+        distilleryMap: "Distillery Map",
         whiskyDatabase: "Whisky Database"
       },
       navGroup: {
@@ -824,7 +825,16 @@ const resources = {
         allRegions: "All Regions",
         results: "Results",
         sortFounded: "Founded",
-        est: "Est."
+        est: "Est.",
+        viewOnMap: "View on Map",
+        location: "Location"
+      },
+      distilleryMap: {
+        title: "Distillery Map",
+        subtitle: "Explore distilleries around the world",
+        searchPlaceholder: "Search distilleries...",
+        filters: "Filters",
+        viewEncyclopedia: "Encyclopedia"
       },
       whiskyDb: {
         title: "Whisky Database",
@@ -1010,6 +1020,7 @@ const resources = {
         leaderboard: "Rangliste",
         admin: "Admin-Bereich",
         distilleries: "Destillerien",
+        distilleryMap: "Destillerie-Karte",
         whiskyDatabase: "Whisky-Datenbank"
       },
       navGroup: {
@@ -1756,7 +1767,16 @@ const resources = {
         allRegions: "Alle Regionen",
         results: "Ergebnisse",
         sortFounded: "Gründung",
-        est: "Gegr."
+        est: "Gegr.",
+        viewOnMap: "Auf Karte anzeigen",
+        location: "Standort"
+      },
+      distilleryMap: {
+        title: "Destillerie-Karte",
+        subtitle: "Destillerien weltweit erkunden",
+        searchPlaceholder: "Destillerien suchen...",
+        filters: "Filter",
+        viewEncyclopedia: "Enzyklopädie"
       },
       whiskyDb: {
         title: "Whisky-Datenbank",
