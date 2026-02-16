@@ -195,7 +195,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="font-serif text-2xl text-primary">{t('login.title')}</DialogTitle>
+          <DialogTitle className="font-serif text-2xl text-primary">{isReturning ? t('login.titleReturning') : t('login.title')}</DialogTitle>
           <DialogDescription>
             {isReturning ? t('login.returningSubtitle') : t('login.subtitle')}
           </DialogDescription>
@@ -250,7 +250,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
             className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
             data-testid="button-join"
           >
-            {loading ? t('login.joining') : t('login.enter')}
+            {loading ? t('login.joining') : (isReturning ? t('login.enterReturning') : t('login.enter'))}
           </Button>
 
           <div className="text-center">
@@ -260,7 +260,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
               className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
               data-testid="button-toggle-returning"
             >
-              {isReturning ? t('login.subtitle') : t('login.returningSubtitle')}
+              {isReturning ? t('login.toggleToNew') : t('login.toggleToReturning')}
             </button>
           </div>
         </div>
