@@ -70,8 +70,13 @@ export function InvitePanel({ tastingId }: InvitePanelProps) {
   const sendMutation = useMutation({
     mutationFn: ({ emailList, note }: { emailList: string[]; note?: string }) =>
       inviteApi.sendInvites(tastingId, emailList, note),
-    onSuccess: (data: { results: InviteResult[] }) => {
-      setResults(data.results);
+    onSuccess: (data: { invites: any[]; smtpConfigured: boolean }) => {
+      const mapped: InviteResult[] = (data.invites || []).map((inv: any) => ({
+        email: inv.email,
+        status: inv.emailSent ? "sent" : "link-only",
+        link: inv.link,
+      }));
+      setResults(mapped);
       setEmails("");
       setPersonalNote("");
       setSelectedFriends(new Set());

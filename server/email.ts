@@ -69,6 +69,16 @@ async function getGmailClient() {
   return google.gmail({ version: "v1", auth: oauth2Client });
 }
 
+export async function warmupGmailToken(): Promise<void> {
+  try {
+    const token = await getAccessToken();
+    if (token) {
+      console.log("Gmail token pre-fetched successfully");
+    }
+  } catch {
+  }
+}
+
 export function isSmtpConfigured(): boolean {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY || process.env.WEB_REPL_RENEWAL;
