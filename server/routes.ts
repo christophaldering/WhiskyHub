@@ -343,6 +343,26 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/participants/guest", async (req, res) => {
+    try {
+      const { name } = req.body;
+      if (!name || typeof name !== "string" || name.trim().length < 1) {
+        return res.status(400).json({ message: "Name is required" });
+      }
+      const existing = await storage.getParticipantByName(name.trim());
+      if (existing) {
+        if (existing.pin) {
+          return res.status(409).json({ message: "This name is already taken by a registered user. Please sign in or choose a different name." });
+        }
+        return res.json({ id: existing.id, name: existing.name, role: existing.role, guest: true });
+      }
+      const participant = await storage.createParticipant({ name: name.trim() });
+      res.status(201).json({ id: participant.id, name: participant.name, role: participant.role, guest: true });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.get("/api/participants/:id", async (req, res) => {
     const participant = await storage.getParticipant(req.params.id);
     if (!participant) return res.status(404).json({ message: "Not found" });
@@ -1698,6 +1718,70 @@ If you cannot identify any whisky, return {"whiskyName": "Unknown Whisky", "conf
     } catch (e: any) {
       console.error("Wishlist identify error:", e);
       res.status(500).json({ message: e.message || "Identification failed" });
+    }
+  });
+
+  // ===== WISHLIST AI SUMMARY ("Why it's an interesting dram") =====
+
+  app.post("/api/wishlist/generate-summary", async (req: Request, res: Response) => {
+    try {
+      const { participantId, whiskyName, distillery, region, age, abv, caskType, notes } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
+
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(404).json({ message: "Participant not found" });
+
+      let flavorProfile: any = null;
+      try {
+        flavorProfile = await storage.getFlavorProfile(participantId);
+      } catch {}
+
+      const profileContext = flavorProfile && flavorProfile.radar && flavorProfile.radar.length > 0
+        ? `The taster's personal flavor profile (average scores out of 10):
+${flavorProfile.radar.map((r: any) => `- ${r.dimension}: ${r.average}`).join("\n")}
+${flavorProfile.topRegions?.length ? `Preferred regions: ${flavorProfile.topRegions.map((r: any) => r.region).join(", ")}` : ""}
+${flavorProfile.topCaskTypes?.length ? `Preferred cask types: ${flavorProfile.topCaskTypes.map((c: any) => c.caskType).join(", ")}` : ""}
+${flavorProfile.topWhiskies?.length ? `Top-rated whiskies: ${flavorProfile.topWhiskies.slice(0, 5).map((w: any) => `${w.name} (${w.score})`).join(", ")}` : ""}`
+        : "The taster has no established flavor profile yet — they are exploring whisky.";
+
+      const whiskyDesc = [
+        whiskyName,
+        distillery ? `Distillery: ${distillery}` : null,
+        region ? `Region: ${region}` : null,
+        age ? `Age: ${age} years` : null,
+        abv ? `ABV: ${abv}%` : null,
+        caskType ? `Cask: ${caskType}` : null,
+        notes ? `Notes: ${notes}` : null,
+      ].filter(Boolean).join("\n");
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a knowledgeable whisky sommelier. Given a whisky and a taster's personal flavor profile, write a brief, engaging summary (3-4 sentences max) explaining why this whisky is an interesting dram for THIS specific taster. Compare it to their known preferences — highlight what aligns with their taste, and what might be a new or exciting discovery. Be warm and encouraging, like a friend recommending a dram. Do not use bullet points. Write in flowing prose.`,
+          },
+          {
+            role: "user",
+            content: `Whisky on the wishlist:\n${whiskyDesc}\n\nTaster's profile:\n${profileContext}`,
+          },
+        ],
+        max_tokens: 300,
+      });
+
+      const summary = response.choices[0]?.message?.content?.trim() || "";
+      const summaryDate = new Date();
+
+      res.json({ summary, summaryDate: summaryDate.toISOString() });
+    } catch (e: any) {
+      console.error("Wishlist summary error:", e);
+      res.status(500).json({ message: e.message || "Summary generation failed" });
     }
   });
 

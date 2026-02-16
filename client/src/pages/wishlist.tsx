@@ -217,6 +217,22 @@ export default function Wishlist() {
                               {entry.source}
                             </p>
                           )}
+                          {entry.aiSummary && (
+                            <div className="mt-3 p-3 bg-amber-500/5 border border-amber-500/15 rounded-md">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <Sparkles className="w-3 h-3 text-amber-500" />
+                                <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">{t("wishlist.whyInteresting")}</span>
+                              </div>
+                              <p className="text-xs text-foreground/80 leading-relaxed" data-testid={`text-summary-${entry.id}`}>
+                                {entry.aiSummary}
+                              </p>
+                              {entry.aiSummaryDate && (
+                                <p className="text-[9px] text-muted-foreground/50 mt-1.5 italic">
+                                  {t("wishlist.summaryDate", { date: new Date(entry.aiSummaryDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) })}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <Button
@@ -334,6 +350,28 @@ function WishlistForm({
   const [showTextExtract, setShowTextExtract] = useState(false);
   const [extractText, setExtractText] = useState("");
   const [extracting, setExtracting] = useState(false);
+  const [aiSummary, setAiSummary] = useState(entry?.aiSummary || "");
+  const [aiSummaryDate, setAiSummaryDate] = useState(entry?.aiSummaryDate || "");
+  const [generatingSummary, setGeneratingSummary] = useState(false);
+
+  const generateSummary = async (whisky: { whiskyName: string; distillery?: string; region?: string; age?: string; abv?: string; caskType?: string; notes?: string }) => {
+    if (!participantId || !whisky.whiskyName) return;
+    setGeneratingSummary(true);
+    try {
+      const result = await wishlistScanApi.generateSummary({
+        participantId,
+        ...whisky,
+      });
+      if (result.summary) {
+        setAiSummary(result.summary);
+        setAiSummaryDate(result.summaryDate);
+      }
+    } catch (err: any) {
+      console.error("AI summary error:", err);
+    } finally {
+      setGeneratingSummary(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -348,6 +386,8 @@ function WishlistForm({
       notes: notes.trim() || null,
       priority,
       source: source.trim() || null,
+      aiSummary: aiSummary || null,
+      aiSummaryDate: aiSummaryDate ? new Date(aiSummaryDate).toISOString() : null,
     });
   };
 
@@ -412,6 +452,15 @@ function WishlistForm({
                   if (result.caskType) setCaskType(result.caskType);
                   if (result.notes && !notes) setNotes(result.notes);
                   if (result.source && !source) setSource(result.source);
+                  generateSummary({
+                    whiskyName: result.whiskyName,
+                    distillery: result.distillery,
+                    region: result.region,
+                    age: result.age,
+                    abv: result.abv,
+                    caskType: result.caskType,
+                    notes: result.notes,
+                  });
                 } else {
                   setScanError(t("wishlist.scanFailed"));
                 }
@@ -481,6 +530,15 @@ function WishlistForm({
                     if (result.source && !source) setSource(result.source);
                     setShowTextExtract(false);
                     setExtractText("");
+                    generateSummary({
+                      whiskyName: result.whiskyName,
+                      distillery: result.distillery,
+                      region: result.region,
+                      age: result.age,
+                      abv: result.abv,
+                      caskType: result.caskType,
+                      notes: result.notes,
+                    });
                   } else {
                     setScanError(t("wishlist.scanFailed"));
                   }
@@ -625,6 +683,37 @@ function WishlistForm({
             data-testid="input-wishlist-notes"
           />
         </div>
+
+        {(generatingSummary || aiSummary) && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 rounded-lg"
+            data-testid="section-ai-summary"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span className="text-sm font-serif font-semibold text-primary">{t("wishlist.whyInteresting")}</span>
+            </div>
+            {generatingSummary ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {t("wishlist.generatingSummary")}
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-foreground/90 leading-relaxed" data-testid="text-ai-summary">
+                  {aiSummary}
+                </p>
+                {aiSummaryDate && (
+                  <p className="text-[10px] text-muted-foreground/60 mt-2 italic" data-testid="text-ai-summary-date">
+                    {t("wishlist.summaryDate", { date: new Date(aiSummaryDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) })}
+                  </p>
+                )}
+              </>
+            )}
+          </motion.div>
+        )}
 
         <div className="flex gap-3 pt-4">
           <Button

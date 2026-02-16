@@ -47,7 +47,7 @@ const resources = {
         backToLogin: "Back"
       },
       nav: {
-        lobby: "Lobby",
+        lobby: "Home",
         sessions: "Sessions",
         sessionsActive: "Active Sessions",
         sessionsDraft: "Draft Sessions",
@@ -331,6 +331,9 @@ const resources = {
         extractHint: "Paste a review, description, or any text mentioning a whisky",
         textPlaceholder: "Paste whisky description, review, or name here...",
         extractButton: "Extract Details",
+        whyInteresting: "Why it's an interesting dram",
+        generatingSummary: "Analyzing against your flavor profile...",
+        summaryDate: "Based on your profile as of {{date}}",
       },
       lexicon: {
         title: "Whisky Lexicon",
@@ -840,6 +843,18 @@ const resources = {
       },
       home: {
         createFromPhotos: "Or create from bottle photos",
+        quickJoinTitle: "Join the Tasting",
+        quickJoinDesc: "Just tell us your name — no account needed. You can create one later if you'd like.",
+        yourName: "Your Name",
+        namePlaceholder: "e.g. Alex",
+        joinNow: "Join Now",
+        joining: "Joining...",
+        haveAccount: "Already have an account? Sign in",
+        nameTaken: "This name belongs to a registered user. Please sign in or use a different name.",
+        joinFailed: "Could not join. Please try again.",
+        sessionNotFound: "Session not found",
+        noCodeNeeded: "No sign-in needed to join",
+        hostDesc: "Create and manage your own tasting event",
       },
       sessionSettings: {
         blindMode: "Blind Mode",
@@ -1245,7 +1260,7 @@ const resources = {
         backToLogin: "Zurück"
       },
       nav: {
-        lobby: "Lobby",
+        lobby: "Home",
         sessions: "Tastings",
         sessionsActive: "Aktive Tastings",
         sessionsDraft: "Entwürfe",
@@ -1529,6 +1544,9 @@ const resources = {
         extractHint: "Füge eine Rezension, Beschreibung oder einen Text über einen Whisky ein",
         textPlaceholder: "Whisky-Beschreibung, Rezension oder Name hier einfügen...",
         extractButton: "Details extrahieren",
+        whyInteresting: "Warum es ein interessanter Dram ist",
+        generatingSummary: "Wird mit deinem Geschmacksprofil abgeglichen...",
+        summaryDate: "Basierend auf deinem Profil vom {{date}}",
       },
       lexicon: {
         title: "Whisky-Lexikon",
@@ -2038,6 +2056,18 @@ const resources = {
       },
       home: {
         createFromPhotos: "Oder aus Flaschenfotos erstellen",
+        quickJoinTitle: "An der Verkostung teilnehmen",
+        quickJoinDesc: "Sag uns einfach deinen Namen — kein Konto nötig. Du kannst später eins erstellen.",
+        yourName: "Dein Name",
+        namePlaceholder: "z.B. Alex",
+        joinNow: "Jetzt beitreten",
+        joining: "Beitritt...",
+        haveAccount: "Bereits ein Konto? Anmelden",
+        nameTaken: "Dieser Name gehört einem registrierten Benutzer. Bitte melde dich an oder wähle einen anderen Namen.",
+        joinFailed: "Beitritt fehlgeschlagen. Bitte versuche es erneut.",
+        sessionNotFound: "Sitzung nicht gefunden",
+        noCodeNeeded: "Kein Konto nötig zum Beitreten",
+        hostDesc: "Erstelle und verwalte dein eigenes Tasting-Event",
       },
       sessionSettings: {
         blindMode: "Blindverkostung",

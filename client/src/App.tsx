@@ -43,7 +43,7 @@ import "@/lib/i18n";
 
 function IntroRedirect() {
   const [location] = useLocation();
-  if (!hasSeenIntro() && location !== "/intro") {
+  if (!hasSeenIntro() && location !== "/intro" && !location.startsWith("/invite/")) {
     return <Redirect to="/intro" />;
   }
   return null;

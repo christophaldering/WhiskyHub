@@ -19,6 +19,8 @@ async function fetchJSON(url: string, options?: RequestInit) {
 export const participantApi = {
   loginOrCreate: (name: string, pin?: string, email?: string) =>
     fetchJSON("/participants", { method: "POST", body: JSON.stringify({ name, pin, email }) }),
+  guestJoin: (name: string) =>
+    fetchJSON("/participants/guest", { method: "POST", body: JSON.stringify({ name }) }),
   get: (id: string) => fetchJSON(`/participants/${id}`),
   setLanguage: (id: string, language: string) =>
     fetchJSON(`/participants/${id}/language`, { method: "PATCH", body: JSON.stringify({ language }) }),
@@ -369,6 +371,8 @@ export const wishlistScanApi = {
     }
     return res.json();
   },
+  generateSummary: (data: { participantId: string; whiskyName: string; distillery?: string; region?: string; age?: string; abv?: string; caskType?: string; notes?: string }) =>
+    fetchJSON("/wishlist/generate-summary", { method: "POST", body: JSON.stringify(data) }),
 };
 
 // ===== Text-based Whisky Extraction =====

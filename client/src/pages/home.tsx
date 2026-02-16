@@ -4,12 +4,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useLocation } from "wouter";
-import { UserPlus, Plus, ArrowRight, Star, Wine, ImageIcon, Glasses, BookOpen, Lightbulb, Camera } from "lucide-react";
+import { UserPlus, Plus, ArrowRight, Star, Wine, ImageIcon, Glasses, BookOpen, Lightbulb, Camera, User, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, wotdApi } from "@/lib/api";
+import { tastingApi, participantApi, wotdApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { LoginDialog } from "@/components/login-dialog";
 import { queryClient } from "@/lib/queryClient";
@@ -23,6 +24,12 @@ export default function Home() {
   const [showLogin, setShowLogin] = useState(false);
   const [joinError, setJoinError] = useState("");
 
+  const [showQuickJoin, setShowQuickJoin] = useState(false);
+  const [quickName, setQuickName] = useState("");
+  const [quickJoinLoading, setQuickJoinLoading] = useState(false);
+  const [quickJoinError, setQuickJoinError] = useState("");
+
+  const [showHostForm, setShowHostForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newLocation, setNewLocation] = useState("");
   const [newDate, setNewDate] = useState(new Date().toISOString().split("T")[0]);
@@ -43,19 +50,45 @@ export default function Home() {
     },
   });
 
-  const handleJoin = async () => {
-    if (!currentParticipant) {
-      setShowLogin(true);
-      return;
-    }
+  const doJoinSession = async (participantId: string) => {
     if (!joinCode.trim()) return;
     setJoinError("");
     try {
       const tasting = await tastingApi.getByCode(joinCode.trim().toUpperCase());
-      await tastingApi.join(tasting.id, currentParticipant.id);
+      await tastingApi.join(tasting.id, participantId);
       navigate(`/tasting/${tasting.id}`);
     } catch (e: any) {
-      setJoinError(e.message || "Session not found");
+      setJoinError(e.message || t("home.sessionNotFound"));
+    }
+  };
+
+  const handleJoin = async () => {
+    if (!joinCode.trim()) return;
+    if (!currentParticipant) {
+      setShowQuickJoin(true);
+      return;
+    }
+    await doJoinSession(currentParticipant.id);
+  };
+
+  const handleQuickJoin = async () => {
+    if (!quickName.trim()) return;
+    setQuickJoinLoading(true);
+    setQuickJoinError("");
+    try {
+      const guest = await participantApi.guestJoin(quickName.trim());
+      setParticipant({ id: guest.id, name: guest.name, role: guest.role });
+      setShowQuickJoin(false);
+      setQuickName("");
+      await doJoinSession(guest.id);
+    } catch (e: any) {
+      if (e.message?.includes("already taken")) {
+        setQuickJoinError(t("home.nameTaken"));
+      } else {
+        setQuickJoinError(e.message || t("home.joinFailed"));
+      }
+    } finally {
+      setQuickJoinLoading(false);
     }
   };
 
@@ -83,6 +116,53 @@ export default function Home() {
     <div className="flex flex-col items-center justify-center min-h-[70vh] w-full max-w-3xl mx-auto space-y-12 py-10">
       <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
 
+      <Dialog open={showQuickJoin} onOpenChange={(v) => { if (!v) { setShowQuickJoin(false); setQuickJoinError(""); } }}>
+        <DialogContent className="sm:max-w-sm bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+              <User className="w-5 h-5" />
+              {t("home.quickJoinTitle")}
+            </DialogTitle>
+            <DialogDescription>
+              {t("home.quickJoinDesc")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t("home.yourName")}</Label>
+              <Input
+                value={quickName}
+                onChange={(e) => setQuickName(e.target.value)}
+                placeholder={t("home.namePlaceholder")}
+                className="bg-secondary/20"
+                autoFocus
+                data-testid="input-quick-name"
+                onKeyDown={(e) => e.key === "Enter" && handleQuickJoin()}
+              />
+            </div>
+            {quickJoinError && <p className="text-sm text-destructive" data-testid="text-quick-join-error">{quickJoinError}</p>}
+            <Button
+              onClick={handleQuickJoin}
+              disabled={quickJoinLoading || !quickName.trim()}
+              className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
+              data-testid="button-quick-join"
+            >
+              {quickJoinLoading ? t("home.joining") : t("home.joinNow")}
+            </Button>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => { setShowQuickJoin(false); setShowLogin(true); }}
+                className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
+                data-testid="button-switch-to-signin"
+              >
+                {t("home.haveAccount")}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -101,9 +181,14 @@ export default function Home() {
             Signed in as <span className="font-semibold text-primary">{currentParticipant.name}</span>
           </p>
         ) : (
-          <Button variant="outline" onClick={() => setShowLogin(true)} className="font-serif border-primary/30 text-primary" data-testid="button-login">
-            Sign In to Begin
-          </Button>
+          <button
+            type="button"
+            onClick={() => setShowLogin(true)}
+            className="text-sm text-muted-foreground hover:text-primary underline transition-colors"
+            data-testid="button-login"
+          >
+            {t("home.haveAccount")}
+          </button>
         )}
       </motion.div>
 
@@ -114,6 +199,11 @@ export default function Home() {
               <CardTitle className="flex items-center gap-3 font-serif text-2xl text-primary">
                 <UserPlus className="w-5 h-5 text-accent" /> Join Session
               </CardTitle>
+              {!currentParticipant && (
+                <CardDescription className="text-xs text-muted-foreground/80">
+                  {t("home.noCodeNeeded")}
+                </CardDescription>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <Input
@@ -121,6 +211,7 @@ export default function Home() {
                 className="font-mono uppercase tracking-widest bg-secondary/30 border-border/50"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === "Enter" && handleJoin()}
                 data-testid="input-join-code"
               />
               {joinError && <p className="text-xs text-destructive">{joinError}</p>}
@@ -135,75 +226,89 @@ export default function Home() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.8 }}>
           <Card className="h-full border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-500">
-            <CardHeader>
+            <CardHeader
+              className="cursor-pointer select-none"
+              onClick={() => setShowHostForm(!showHostForm)}
+              data-testid="button-toggle-host-form"
+            >
               <CardTitle className="flex items-center gap-3 font-serif text-2xl text-primary">
                 <Plus className="w-5 h-5 text-accent" /> Host Session
+                <ChevronDown className={`w-4 h-4 ml-auto text-muted-foreground transition-transform duration-300 ${showHostForm ? "rotate-180" : ""}`} />
               </CardTitle>
+              {!showHostForm && (
+                <CardDescription className="text-xs text-muted-foreground/80">
+                  {t("home.hostDesc")}
+                </CardDescription>
+              )}
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-1">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Title</Label>
-                <Input placeholder="Friday Night Drams" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-title" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs uppercase tracking-widest text-muted-foreground">Date</Label>
-                  <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-date" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs uppercase tracking-widest text-muted-foreground">Location</Label>
-                  <Input placeholder="The Library" value={newLocation} onChange={(e) => setNewLocation(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-location" />
-                </div>
-              </div>
-              <div className="border-t border-border/30 pt-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Glasses className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <Label className="text-xs font-medium">{t("sessionSettings.blindMode")}</Label>
-                      <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.blindModeDesc")}</p>
+            {showHostForm && (
+              <>
+                <CardContent className="space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs uppercase tracking-widest text-muted-foreground">Title</Label>
+                    <Input placeholder="Friday Night Drams" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-title" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">Date</Label>
+                      <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-date" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">Location</Label>
+                      <Input placeholder="The Library" value={newLocation} onChange={(e) => setNewLocation(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-location" />
                     </div>
                   </div>
-                  <Switch checked={blindMode} onCheckedChange={setBlindMode} data-testid="switch-blind-mode" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <Label className="text-xs font-medium">{t("sessionSettings.reflectionPhase")}</Label>
-                      <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.reflectionDesc")}</p>
+                  <div className="border-t border-border/30 pt-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Glasses className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <Label className="text-xs font-medium">{t("sessionSettings.blindMode")}</Label>
+                          <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.blindModeDesc")}</p>
+                        </div>
+                      </div>
+                      <Switch checked={blindMode} onCheckedChange={setBlindMode} data-testid="switch-blind-mode" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <Label className="text-xs font-medium">{t("sessionSettings.reflectionPhase")}</Label>
+                          <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.reflectionDesc")}</p>
+                        </div>
+                      </div>
+                      <Switch checked={reflectionEnabled} onCheckedChange={setReflectionEnabled} data-testid="switch-reflection" />
                     </div>
                   </div>
-                  <Switch checked={reflectionEnabled} onCheckedChange={setReflectionEnabled} data-testid="switch-reflection" />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="mt-auto flex-col gap-2">
-              <Button
-                variant="outline"
-                onClick={handleCreate}
-                disabled={createTasting.isPending || !newTitle.trim()}
-                className="w-full border-primary/20 hover:border-primary text-primary hover:bg-secondary font-serif tracking-wide"
-                data-testid="button-create-tasting"
-              >
-                {createTasting.isPending ? "Creating..." : "Create New Event"}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  if (!currentParticipant) {
-                    setShowLogin(true);
-                    return;
-                  }
-                  navigate("/photo-tasting");
-                }}
-                className="w-full text-xs gap-2 text-muted-foreground hover:text-primary"
-                data-testid="button-create-from-photos"
-              >
-                <Camera className="w-3.5 h-3.5" />
-                {t("home.createFromPhotos")}
-              </Button>
-            </CardFooter>
+                </CardContent>
+                <CardFooter className="mt-auto flex-col gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleCreate}
+                    disabled={createTasting.isPending || !newTitle.trim()}
+                    className="w-full border-primary/20 hover:border-primary text-primary hover:bg-secondary font-serif tracking-wide"
+                    data-testid="button-create-tasting"
+                  >
+                    {createTasting.isPending ? "Creating..." : "Create New Event"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      if (!currentParticipant) {
+                        setShowLogin(true);
+                        return;
+                      }
+                      navigate("/photo-tasting");
+                    }}
+                    className="w-full text-xs gap-2 text-muted-foreground hover:text-primary"
+                    data-testid="button-create-from-photos"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    {t("home.createFromPhotos")}
+                  </Button>
+                </CardFooter>
+              </>
+            )}
           </Card>
         </motion.div>
       </div>

@@ -255,6 +255,8 @@ export const wishlistEntries = pgTable("wishlist_entries", {
   notes: text("notes"),
   priority: text("priority").default("medium"),
   source: text("source"),
+  aiSummary: text("ai_summary"),
+  aiSummaryDate: timestamp("ai_summary_date"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
