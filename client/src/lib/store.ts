@@ -5,7 +5,7 @@ export type SessionStatus = 'draft' | 'open' | 'closed' | 'reveal' | 'archived';
 export type RevealAct = 'act1' | 'act2' | 'act3' | 'act4';
 
 type Theme = 'dark' | 'light';
-type Soundscape = 'fireplace' | 'rain' | 'night';
+type Soundscape = 'fireplace' | 'rain' | 'night' | 'bagpipe';
 
 interface AmbientState {
   ambientPlaying: boolean;

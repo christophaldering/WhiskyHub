@@ -97,6 +97,7 @@ const resources = {
         fireplace: "Fireplace",
         rain: "Rain",
         night: "Night",
+        bagpipe: "Bagpipes",
         volume: "Volume",
         play: "Play",
         stop: "Stop"
@@ -1024,6 +1025,7 @@ const resources = {
         fireplace: "Kaminfeuer",
         rain: "Regen",
         night: "Nacht",
+        bagpipe: "Dudelsack",
         volume: "Lautst\u00E4rke",
         play: "Abspielen",
         stop: "Stopp"

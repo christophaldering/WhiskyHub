@@ -1,4 +1,4 @@
-export type Soundscape = 'fireplace' | 'rain' | 'night';
+export type Soundscape = 'fireplace' | 'rain' | 'night' | 'bagpipe';
 
 let audioCtx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
@@ -215,6 +215,94 @@ function createNight(ctx: AudioContext, gain: GainNode) {
   activeNodes.push(cricketSource, cricketGain);
 }
 
+function createBagpipe(ctx: AudioContext, gain: GainNode) {
+  const droneFreqs = [130.81, 196.0, 261.63];
+  droneFreqs.forEach((freq, idx) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.value = freq;
+
+    const oscGain = ctx.createGain();
+    oscGain.gain.value = idx === 0 ? 0.18 : 0.09;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 600 + idx * 200;
+    filter.Q.value = 2;
+
+    osc.connect(filter);
+    filter.connect(oscGain);
+    oscGain.connect(gain);
+    osc.start();
+    activeNodes.push(osc, filter, oscGain);
+  });
+
+  const melodyNotes = [392, 440, 494, 523, 587, 523, 494, 440, 392, 349, 330, 349, 392, 440, 494, 523];
+  const noteDuration = 0.6;
+  const totalDuration = melodyNotes.length * noteDuration;
+  const bufferLength = Math.ceil(ctx.sampleRate * totalDuration);
+  const melodyBuffer = ctx.createBuffer(1, bufferLength, ctx.sampleRate);
+  const data = melodyBuffer.getChannelData(0);
+
+  for (let n = 0; n < melodyNotes.length; n++) {
+    const freq = melodyNotes[n];
+    const startSample = Math.floor(n * noteDuration * ctx.sampleRate);
+    const endSample = Math.floor((n + 1) * noteDuration * ctx.sampleRate);
+    for (let i = startSample; i < endSample && i < bufferLength; i++) {
+      const t = (i - startSample) / ctx.sampleRate;
+      const notePos = (i - startSample) / (endSample - startSample);
+      const env = Math.min(1, notePos * 20) * Math.min(1, (1 - notePos) * 8);
+      const saw = 2 * ((t * freq) % 1) - 1;
+      const harmonic = Math.sin(2 * Math.PI * freq * 2 * t) * 0.3;
+      data[i] = (saw + harmonic) * env * 0.12;
+    }
+  }
+
+  const melodySource = ctx.createBufferSource();
+  melodySource.buffer = melodyBuffer;
+  melodySource.loop = true;
+
+  const melodyFilter = ctx.createBiquadFilter();
+  melodyFilter.type = 'bandpass';
+  melodyFilter.frequency.value = 800;
+  melodyFilter.Q.value = 1.5;
+
+  const melodyGain = ctx.createGain();
+  melodyGain.gain.value = 0.55;
+
+  melodySource.connect(melodyFilter);
+  melodyFilter.connect(melodyGain);
+  melodyGain.connect(gain);
+  melodySource.start();
+  activeNodes.push(melodySource, melodyFilter, melodyGain);
+
+  const breathBuffer = ctx.createBuffer(2, 2 * ctx.sampleRate, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const chData = breathBuffer.getChannelData(ch);
+    let last = 0;
+    for (let i = 0; i < breathBuffer.length; i++) {
+      const white = Math.random() * 2 - 1;
+      chData[i] = (last + 0.015 * white) / 1.015;
+      last = chData[i];
+      chData[i] *= 1.5;
+    }
+  }
+  const breathSource = ctx.createBufferSource();
+  breathSource.buffer = breathBuffer;
+  breathSource.loop = true;
+  const breathFilter = ctx.createBiquadFilter();
+  breathFilter.type = 'bandpass';
+  breathFilter.frequency.value = 400;
+  breathFilter.Q.value = 0.8;
+  const breathGain = ctx.createGain();
+  breathGain.gain.value = 0.06;
+  breathSource.connect(breathFilter);
+  breathFilter.connect(breathGain);
+  breathGain.connect(gain);
+  breathSource.start();
+  activeNodes.push(breathSource, breathFilter, breathGain);
+}
+
 export function playSoundscape(soundscape: Soundscape) {
   const ctx = getContext();
   cleanup();
@@ -228,6 +316,9 @@ export function playSoundscape(soundscape: Soundscape) {
       break;
     case 'night':
       createNight(ctx, masterGain!);
+      break;
+    case 'bagpipe':
+      createBagpipe(ctx, masterGain!);
       break;
   }
 

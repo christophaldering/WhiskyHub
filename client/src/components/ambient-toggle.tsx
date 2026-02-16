@@ -12,6 +12,7 @@ const soundscapeIcons: Record<Soundscape, string> = {
   fireplace: "\uD83D\uDD25",
   rain: "\uD83C\uDF27",
   night: "\uD83C\uDF19",
+  bagpipe: "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F",
 };
 
 export function AmbientToggle({ variant = "default" }: { variant?: "default" | "intro" }) {
@@ -101,7 +102,7 @@ export function AmbientToggle({ variant = "default" }: { variant?: "default" | "
             {t("ambient.title")}
           </p>
           <div className="flex gap-1.5">
-            {(["fireplace", "rain", "night"] as Soundscape[]).map((s) => (
+            {(["fireplace", "rain", "night", "bagpipe"] as Soundscape[]).map((s) => (
               <button
                 key={s}
                 onClick={() => selectSoundscape(s)}
