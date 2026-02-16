@@ -1,9 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
@@ -92,6 +92,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     {
       label: t('navGroup.main'),
       items: [
+        { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         { href: "/", icon: Home, label: t('nav.lobby') },
         { href: "/sessions", icon: Wine, label: t('nav.sessions') },
         { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
@@ -159,6 +160,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ] : []),
   ];
 
+  const navRef = useRef<HTMLElement>(null);
+
+  const scrollToActive = useCallback(() => {
+    requestAnimationFrame(() => {
+      const nav = navRef.current;
+      if (!nav) return;
+      const active = nav.querySelector('[data-nav-active="true"]');
+      if (active) {
+        active.scrollIntoView({ block: "center", behavior: "instant" });
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (open) scrollToActive();
+  }, [open, scrollToActive]);
+
   const NavContent = () => (
     <div className="flex flex-col h-full bg-card border-r border-border/40">
       <div className="p-5 border-b border-border/40">
@@ -175,7 +193,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       
-      <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+      <nav ref={navRef} className="flex-1 overflow-y-auto p-3 space-y-1">
         {navGroups.map((group, gi) => (
           <div key={gi}>
             {gi > 0 && <div className="border-t border-border/30 my-2" />}
@@ -189,6 +207,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               return (
                 <Link key={item.href} href={item.href}>
                   <div
+                    data-nav-active={isActive ? "true" : undefined}
                     className={cn(
                       "flex items-center gap-3 px-3 py-1.5 rounded-sm transition-all duration-300 cursor-pointer group",
                       isActive
