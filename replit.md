@@ -102,3 +102,4 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Nodemailer**: Employed for sending email invitations (optional, requires SMTP configuration).
 -   **SheetJS (xlsx)**: Used for parsing Excel files during bulk whisky import.
 -   **qrcode**: Generates QR code data URLs for tasting session invitations.
+-   **Leaflet / React-Leaflet**: Interactive maps for distillery locations using free CARTO dark tiles (no API key).
