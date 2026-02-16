@@ -342,6 +342,17 @@ export const photoTastingApi = {
     fetchJSON("/photo-tasting/create", { method: "POST", body: JSON.stringify(data) }),
 };
 
+// ===== Wishlist =====
+export const wishlistApi = {
+  getAll: (participantId: string) => fetchJSON(`/wishlist/${participantId}`),
+  create: (participantId: string, data: any) =>
+    fetchJSON(`/wishlist/${participantId}`, { method: "POST", body: JSON.stringify(data) }),
+  update: (participantId: string, id: string, data: any) =>
+    fetchJSON(`/wishlist/${participantId}/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  delete: (participantId: string, id: string) =>
+    fetchJSON(`/wishlist/${participantId}/${id}`, { method: "DELETE" }),
+};
+
 // ===== Admin =====
 export const adminApi = {
   getOverview: (participantId: string) => fetchJSON(`/admin/overview?participantId=${participantId}`),
