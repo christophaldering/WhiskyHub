@@ -281,6 +281,29 @@ export const leaderboardApi = {
   get: () => fetchJSON("/leaderboard"),
 };
 
+// ===== Benchmark =====
+export const benchmarkApi = {
+  getAll: (participantId: string) => fetchJSON(`/benchmark?participantId=${participantId}`),
+  analyze: async (file: File, participantId: string) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("participantId", participantId);
+    const res = await fetch(`${API_BASE}/benchmark/analyze`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Analysis failed");
+    }
+    return res.json();
+  },
+  saveEntries: (entries: any[], participantId: string) =>
+    fetchJSON("/benchmark", { method: "POST", body: JSON.stringify({ entries, participantId }) }),
+  deleteEntry: (id: string, participantId: string) =>
+    fetchJSON(`/benchmark/${id}?participantId=${participantId}`, { method: "DELETE" }),
+};
+
 // ===== Admin =====
 export const adminApi = {
   getOverview: (participantId: string) => fetchJSON(`/admin/overview?participantId=${participantId}`),

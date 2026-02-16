@@ -2,7 +2,7 @@ import { eq, ne, and, asc, desc, sql, inArray } from "drizzle-orm";
 import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
-  profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, journalEntries,
+  profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, journalEntries, benchmarkEntries,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -14,6 +14,7 @@ import {
   type InsertReflectionEntry, type ReflectionEntry,
   type InsertWhiskyFriend, type WhiskyFriend,
   type InsertJournalEntry, type JournalEntry,
+  type InsertBenchmarkEntry, type BenchmarkEntry,
 } from "@shared/schema";
 
 export interface WhiskyOfTheDay {
@@ -144,6 +145,12 @@ export interface IStorage {
   getAllParticipants(): Promise<Participant[]>;
   updateParticipantRole(id: string, role: string): Promise<Participant | undefined>;
   deleteParticipant(id: string): Promise<void>;
+
+  // Benchmark Entries
+  getBenchmarkEntries(): Promise<BenchmarkEntry[]>;
+  createBenchmarkEntry(data: InsertBenchmarkEntry): Promise<BenchmarkEntry>;
+  createBenchmarkEntries(data: InsertBenchmarkEntry[]): Promise<BenchmarkEntry[]>;
+  deleteBenchmarkEntry(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -728,6 +735,25 @@ export class DatabaseStorage implements IStorage {
       await tx.delete(profiles).where(eq(profiles.participantId, id));
       await tx.delete(participants).where(eq(participants.id, id));
     });
+  }
+  // --- Benchmark Entries ---
+  async getBenchmarkEntries(): Promise<BenchmarkEntry[]> {
+    return db.select().from(benchmarkEntries).orderBy(desc(benchmarkEntries.createdAt));
+  }
+
+  async createBenchmarkEntry(data: InsertBenchmarkEntry): Promise<BenchmarkEntry> {
+    const [result] = await db.insert(benchmarkEntries).values(data).returning();
+    return result;
+  }
+
+  async createBenchmarkEntries(data: InsertBenchmarkEntry[]): Promise<BenchmarkEntry[]> {
+    if (data.length === 0) return [];
+    const results = await db.insert(benchmarkEntries).values(data).returning();
+    return results;
+  }
+
+  async deleteBenchmarkEntry(id: string): Promise<void> {
+    await db.delete(benchmarkEntries).where(eq(benchmarkEntries.id, id));
   }
 }
 

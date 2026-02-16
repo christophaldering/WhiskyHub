@@ -32,6 +32,7 @@ import DistilleryEncyclopedia from "@/pages/distillery-encyclopedia";
 import DistilleryMap from "@/pages/distillery-map";
 import WhiskyDatabase from "@/pages/whisky-database";
 import Donate from "@/pages/donate";
+import BenchmarkAnalyzer from "@/pages/benchmark-analyzer";
 import Intro from "@/pages/intro";
 import { hasSeenIntro } from "@/pages/intro";
 import { BuildFooter } from "@/components/build-footer";
@@ -80,6 +81,7 @@ function Router() {
               <Route path="/distillery-map" component={DistilleryMap} />
               <Route path="/whisky-database" component={WhiskyDatabase} />
               <Route path="/donate" component={Donate} />
+              <Route path="/benchmark" component={BenchmarkAnalyzer} />
               <Route path="/about-method" component={AboutMethod} />
               <Route path="/invite/:token" component={InviteAccept} />
               <Route component={NotFound} />

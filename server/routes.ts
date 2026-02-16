@@ -10,7 +10,8 @@ import * as XLSX from "xlsx";
 // @ts-ignore
 import AdmZip from "adm-zip";
 import { storage } from "./storage";
-import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, type Participant } from "@shared/schema";
+import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant } from "@shared/schema";
+import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail } from "./email";
@@ -54,6 +55,22 @@ const importUpload = multer({
     },
   }),
   limits: { fileSize: 20 * 1024 * 1024 },
+});
+
+const docUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req: any, file: any, cb: any) => {
+    const allowed = [
+      "application/pdf",
+      "text/plain", "text/csv",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
+      "image/jpeg", "image/png", "image/webp",
+    ];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Unsupported file type. Allowed: PDF, TXT, CSV, Excel, JPG, PNG, WebP"));
+  },
 });
 
 async function uploadBufferToObjectStorage(
@@ -2450,6 +2467,280 @@ export async function registerRoutes(
       });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ============================================================
+  // BENCHMARK ANALYZER - Document upload + AI extraction
+  // ============================================================
+
+  async function verifyHostOrAdmin(participantId: string | undefined): Promise<{ participant: Participant; isHost: boolean; isAdmin: boolean } | null> {
+    if (!participantId) return null;
+    const participant = await storage.getParticipant(participantId);
+    if (!participant) return null;
+    const allTastings = await storage.getAllTastings();
+    const isHost = allTastings.some(t => t.hostId === participantId);
+    const isAdmin = participant.role === "admin";
+    if (!isHost && !isAdmin) return null;
+    return { participant, isHost, isAdmin };
+  }
+
+  // Get all benchmark entries
+  app.get("/api/benchmark", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.query.participantId as string;
+      const auth = await verifyHostOrAdmin(participantId);
+      if (!auth) return res.status(403).json({ message: "Only hosts and admins can access benchmark data" });
+
+      const entries = await storage.getBenchmarkEntries();
+      res.json(entries);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // Save approved benchmark entries (batch)
+  app.post("/api/benchmark", async (req: Request, res: Response) => {
+    try {
+      const { entries, participantId } = req.body;
+      if (!entries || !Array.isArray(entries) || !participantId) {
+        return res.status(400).json({ message: "entries array and participantId required" });
+      }
+      const auth = await verifyHostOrAdmin(participantId);
+      if (!auth) return res.status(403).json({ message: "Only hosts can save benchmark entries" });
+
+      const entrySchema = z.object({
+        whiskyName: z.string().min(1),
+        distillery: z.string().nullable().optional(),
+        region: z.string().nullable().optional(),
+        country: z.string().nullable().optional(),
+        age: z.string().nullable().optional(),
+        abv: z.string().nullable().optional(),
+        caskType: z.string().nullable().optional(),
+        category: z.string().nullable().optional(),
+        noseNotes: z.string().nullable().optional(),
+        tasteNotes: z.string().nullable().optional(),
+        finishNotes: z.string().nullable().optional(),
+        overallNotes: z.string().nullable().optional(),
+        score: z.number().nullable().optional(),
+        scoreScale: z.string().nullable().optional(),
+        sourceDocument: z.string().nullable().optional(),
+        sourceAuthor: z.string().nullable().optional(),
+      });
+
+      const validated = [];
+      for (const e of entries) {
+        const parsed = entrySchema.safeParse(e);
+        if (!parsed.success) continue;
+        validated.push({
+          ...parsed.data,
+          uploadedBy: participantId,
+        });
+      }
+
+      if (validated.length === 0) {
+        return res.status(400).json({ message: "No valid entries to save" });
+      }
+
+      const saved = await storage.createBenchmarkEntries(validated);
+      res.json(saved);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // Delete a benchmark entry
+  app.delete("/api/benchmark/:id", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.query.participantId as string;
+      const auth = await verifyHostOrAdmin(participantId);
+      if (!auth) return res.status(403).json({ message: "Only hosts and admins can delete benchmark entries" });
+
+      await storage.deleteBenchmarkEntry(req.params.id);
+      res.status(204).send();
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // AI document analysis endpoint
+  app.post("/api/benchmark/analyze", docUpload.single("file"), async (req: Request, res: Response) => {
+    try {
+      const participantId = req.body.participantId as string;
+      const auth = await verifyHostOrAdmin(participantId);
+      if (!auth) return res.status(403).json({ message: "Only hosts and admins can analyze documents" });
+
+      const file = (req as any).file;
+      if (!file) return res.status(400).json({ message: "No file uploaded" });
+
+      let textContent = "";
+      const isImage = file.mimetype.startsWith("image/");
+
+      if (isImage) {
+        // For images, send directly to GPT vision
+        const base64 = file.buffer.toString("base64");
+        const openai = new OpenAI({
+          apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+          baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+        });
+
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: `You are a whisky tasting notes extraction expert. Analyze the image and extract ALL whisky tasting information you can find. Return a JSON array of objects, each with these fields:
+- whiskyName (string, required)
+- distillery (string or null)
+- region (string or null, e.g. Islay, Speyside, Highland)
+- country (string or null)
+- age (string or null, e.g. "12", "NAS")
+- abv (string or null, e.g. "46%")
+- caskType (string or null, e.g. "Sherry", "Bourbon")
+- category (string or null, e.g. "Single Malt", "Blended")
+- noseNotes (string or null)
+- tasteNotes (string or null)
+- finishNotes (string or null)
+- overallNotes (string or null)
+- score (number or null, normalized to 0-100 scale)
+- scoreScale (string or null, original scale e.g. "0-100", "1-5 stars")
+- sourceAuthor (string or null, reviewer/author name if visible)
+
+Return ONLY valid JSON array. If no whisky data found, return [].`,
+            },
+            {
+              role: "user",
+              content: [
+                { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${base64}` } },
+                { type: "text", text: "Extract all whisky tasting notes and scores from this image." },
+              ],
+            },
+          ],
+          max_tokens: 4096,
+        });
+
+        const content = response.choices[0]?.message?.content || "[]";
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
+        const entries = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+        return res.json({ entries, fileName: file.originalname });
+      }
+
+      // Text-based files
+      if (file.mimetype === "text/plain" || file.mimetype === "text/csv") {
+        textContent = file.buffer.toString("utf-8");
+      } else if (file.mimetype === "application/pdf") {
+        // Extract text from PDF using simple approach
+        const pdfText = file.buffer.toString("utf-8");
+        // Try to extract readable text from PDF binary
+        const textChunks: string[] = [];
+        const matches = pdfText.match(/\(([^)]+)\)/g);
+        if (matches) {
+          textChunks.push(...matches.map((m: string) => m.slice(1, -1)));
+        }
+        // Also try stream-based extraction
+        const streamMatches = pdfText.match(/BT[\s\S]*?ET/g);
+        if (streamMatches) {
+          for (const block of streamMatches) {
+            const tjMatches = block.match(/\(([^)]*)\)\s*Tj/g);
+            if (tjMatches) {
+              textChunks.push(...tjMatches.map((m: string) => {
+                const inner = m.match(/\(([^)]*)\)/);
+                return inner ? inner[1] : "";
+              }));
+            }
+          }
+        }
+        textContent = textChunks.join(" ").trim();
+        if (!textContent || textContent.length < 20) {
+          // Fallback: send as base64 to GPT vision for scanned PDFs
+          const base64 = file.buffer.toString("base64");
+          const openai = new OpenAI({
+            apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+            baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+          });
+
+          const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "system",
+                content: `You are a whisky tasting notes extraction expert. The user will provide PDF content as base64. Try to interpret any text content. Extract ALL whisky tasting information. Return a JSON array of objects with fields: whiskyName, distillery, region, country, age, abv, caskType, category, noseNotes, tasteNotes, finishNotes, overallNotes, score (normalized 0-100), scoreScale, sourceAuthor. Return ONLY valid JSON array.`,
+              },
+              {
+                role: "user",
+                content: `This is a PDF document (base64 encoded, first 50000 chars): ${base64.slice(0, 50000)}\n\nExtract all whisky tasting data.`,
+              },
+            ],
+            max_tokens: 4096,
+          });
+
+          const content = response.choices[0]?.message?.content || "[]";
+          const jsonMatch = content.match(/\[[\s\S]*\]/);
+          const entries = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+          return res.json({ entries, fileName: file.originalname });
+        }
+      } else if (file.mimetype.includes("spreadsheet") || file.mimetype.includes("excel")) {
+        const workbook = XLSX.read(file.buffer, { type: "buffer" });
+        const allText: string[] = [];
+        for (const sheetName of workbook.SheetNames) {
+          const sheet = workbook.Sheets[sheetName];
+          const csv = XLSX.utils.sheet_to_csv(sheet);
+          allText.push(`Sheet: ${sheetName}\n${csv}`);
+        }
+        textContent = allText.join("\n\n");
+      }
+
+      if (!textContent || textContent.trim().length < 5) {
+        return res.status(400).json({ message: "Could not extract text from the uploaded file" });
+      }
+
+      // Send extracted text to GPT for structured extraction
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const truncatedText = textContent.slice(0, 60000);
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are a whisky tasting notes extraction expert. Analyze the provided document text and extract ALL whisky tasting information. Return a JSON array of objects, each with these fields:
+- whiskyName (string, required)
+- distillery (string or null)
+- region (string or null, e.g. Islay, Speyside, Highland, Lowland, Campbeltown)
+- country (string or null)
+- age (string or null, e.g. "12", "NAS")
+- abv (string or null, e.g. "46%")
+- caskType (string or null, e.g. "Sherry", "Bourbon", "Port")
+- category (string or null, e.g. "Single Malt", "Blended Malt", "Bourbon")
+- noseNotes (string or null)
+- tasteNotes (string or null)
+- finishNotes (string or null)
+- overallNotes (string or null)
+- score (number or null, normalized to 0-100 scale)
+- scoreScale (string or null, original scale e.g. "0-100", "1-5 stars", "A-F")
+- sourceAuthor (string or null, reviewer/author name)
+
+Return ONLY a valid JSON array. If no whisky data is found, return [].`,
+          },
+          {
+            role: "user",
+            content: `Extract all whisky tasting data from this document:\n\n${truncatedText}`,
+          },
+        ],
+        max_tokens: 4096,
+      });
+
+      const content = response.choices[0]?.message?.content || "[]";
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      const entries = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+      res.json({ entries, fileName: file.originalname });
+    } catch (e: any) {
+      console.error("Benchmark analyze error:", e);
+      res.status(500).json({ message: e.message || "Analysis failed" });
     }
   });
 

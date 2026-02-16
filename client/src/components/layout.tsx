@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState } from "react";
@@ -134,6 +134,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
           { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
           { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
+          { href: "/benchmark", icon: Brain, label: t('nav.benchmark') },
         ],
       },
     ] : []),

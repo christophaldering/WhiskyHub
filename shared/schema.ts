@@ -214,3 +214,30 @@ export const journalEntries = pgTable("journal_entries", {
 export const insertJournalEntrySchema = createInsertSchema(journalEntries).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
 export type JournalEntry = typeof journalEntries.$inferSelect;
+
+// --- Benchmark Entries (AI-extracted tasting data from documents) ---
+export const benchmarkEntries = pgTable("benchmark_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  whiskyName: text("whisky_name").notNull(),
+  distillery: text("distillery"),
+  region: text("region"),
+  country: text("country"),
+  age: text("age"),
+  abv: text("abv"),
+  caskType: text("cask_type"),
+  category: text("category"),
+  noseNotes: text("nose_notes"),
+  tasteNotes: text("taste_notes"),
+  finishNotes: text("finish_notes"),
+  overallNotes: text("overall_notes"),
+  score: real("score"),
+  scoreScale: text("score_scale"),
+  sourceDocument: text("source_document"),
+  sourceAuthor: text("source_author"),
+  uploadedBy: varchar("uploaded_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertBenchmarkEntrySchema = createInsertSchema(benchmarkEntries).omit({ id: true, createdAt: true });
+export type InsertBenchmarkEntry = z.infer<typeof insertBenchmarkEntrySchema>;
+export type BenchmarkEntry = typeof benchmarkEntries.$inferSelect;
