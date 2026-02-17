@@ -78,6 +78,10 @@ const countryColors: Record<string, string> = {
 function FitBounds({ markers, fitKey }: { markers: Distillery[]; fitKey: number }) {
   const map = useMap();
   useEffect(() => {
+    setTimeout(() => map.invalidateSize(), 100);
+    setTimeout(() => map.invalidateSize(), 500);
+  }, [map]);
+  useEffect(() => {
     if (markers.length === 0) return;
     if (markers.length === 1) {
       map.setView([markers[0].lat, markers[0].lng], 10);
@@ -225,7 +229,7 @@ export default function DistilleryMap() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-        <div className="rounded-lg overflow-hidden border border-border/50 bg-card relative" style={{ height: "65vh", minHeight: 400 }}>
+        <div className="rounded-lg overflow-hidden border border-border/50 bg-card relative" style={{ height: "calc(100svh - 280px)", minHeight: 350 }}>
           <div className="absolute top-3 right-3 z-[1000] flex gap-2">
             <div className="relative">
               <Button
@@ -304,7 +308,7 @@ export default function DistilleryMap() {
           </MapContainer>
         </div>
 
-        <div className="border border-border/50 bg-card rounded-lg overflow-hidden flex flex-col" style={{ height: "65vh", minHeight: 400 }}>
+        <div className="border border-border/50 bg-card rounded-lg overflow-hidden flex flex-col" style={{ height: "calc(100svh - 280px)", minHeight: 350 }}>
           <div className="p-3 border-b border-border/30 text-sm text-muted-foreground font-medium">
             {filtered.length} {t("distillery.results")}
           </div>

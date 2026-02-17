@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,9 +20,19 @@ const miniMapIcon = L.divIcon({
   iconAnchor: [11, 22],
 });
 
+function InvalidateSizeOnMount() {
+  const map = useMap();
+  useEffect(() => {
+    const timer = setTimeout(() => map.invalidateSize(), 100);
+    const timer2 = setTimeout(() => map.invalidateSize(), 400);
+    return () => { clearTimeout(timer); clearTimeout(timer2); };
+  }, [map]);
+  return null;
+}
+
 function MiniMap({ lat, lng, name }: { lat: number; lng: number; name: string }) {
   return (
-    <div className="rounded-md overflow-hidden border border-border/30" style={{ height: 160, width: "100%" }} onClick={(e) => e.stopPropagation()}>
+    <div className="rounded-md overflow-hidden border border-border/30" style={{ height: 180, width: "100%" }} onClick={(e) => e.stopPropagation()}>
       <MapContainer
         center={[lat, lng]}
         zoom={10}
@@ -35,6 +45,7 @@ function MiniMap({ lat, lng, name }: { lat: number; lng: number; name: string })
         touchZoom={false}
         key={name}
       >
+        <InvalidateSizeOnMount />
         <TileLayer url="https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png" />
         <Marker position={[lat, lng]} icon={miniMapIcon} />
       </MapContainer>
