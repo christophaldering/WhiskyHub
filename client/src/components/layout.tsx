@@ -94,8 +94,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       items: [
         { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         { href: "/", icon: Home, label: t('nav.lobby') },
-        ...(currentParticipant ? [{ href: "/sessions", icon: Wine, label: t('nav.sessions') }] : []),
-        { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
+        ...(currentParticipant ? [
+          { href: "/sessions", icon: Wine, label: t('nav.sessions') },
+          { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
+        ] : []),
       ],
     },
     ...(currentParticipant ? [
