@@ -859,6 +859,7 @@ const resources = {
         introHeadline: "Your complete whisky companion — from the first wish to the last sip.",
         introFooter: "Completely free. No ads. Built by whisky lovers, for whisky lovers.",
         showFeatures: "Discover what CaskSense can do",
+        showFeaturesHint: "50+ features for whisky enthusiasts",
         hideFeatures: "Hide overview",
       },
       features: {
@@ -2122,6 +2123,7 @@ const resources = {
         introHeadline: "Dein kompletter Whisky-Begleiter — vom ersten Wunsch bis zum letzten Schluck.",
         introFooter: "Komplett kostenlos. Keine Werbung. Von Whisky-Liebhabern für Whisky-Liebhaber.",
         showFeatures: "Entdecke was CaskSense kann",
+        showFeaturesHint: "50+ Features für Whisky-Enthusiasten",
         hideFeatures: "Übersicht ausblenden",
       },
       features: {

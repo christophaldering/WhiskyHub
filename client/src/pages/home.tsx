@@ -411,14 +411,23 @@ export default function Home() {
       >
         <button
           onClick={() => setShowFeatures(!showFeatures)}
-          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg border border-border/40 bg-card hover:bg-card/80 transition-all group"
+          className="w-full relative rounded-xl bg-gradient-to-r from-amber-600/20 via-amber-500/10 to-amber-600/20 p-[1px] shadow-md hover:shadow-lg hover:shadow-amber-500/10 transition-all duration-300 group"
           data-testid="button-toggle-features"
         >
-          <Eye className="w-4 h-4 text-primary" />
-          <span className="text-sm font-serif font-medium text-primary">
-            {showFeatures ? t("home.hideFeatures") : t("home.showFeatures")}
-          </span>
-          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${showFeatures ? "rotate-180" : ""}`} />
+          <div className="flex flex-col items-center gap-1 py-4 px-6 rounded-[11px] bg-card/95 backdrop-blur-sm">
+            <div className="flex items-center gap-2.5">
+              <Eye className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <span className="text-base font-serif font-semibold text-primary">
+                {showFeatures ? t("home.hideFeatures") : t("home.showFeatures")}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-amber-600 dark:text-amber-400 transition-transform duration-300 ${showFeatures ? "rotate-180" : "animate-bounce"}`} />
+            </div>
+            {!showFeatures && (
+              <span className="text-[11px] text-muted-foreground/60 font-serif tracking-wide mt-0.5">
+                {t("home.showFeaturesHint")}
+              </span>
+            )}
+          </div>
         </button>
 
         <AnimatePresence>
