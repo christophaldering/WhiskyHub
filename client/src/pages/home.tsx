@@ -208,7 +208,26 @@ export default function Home() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.8 }}
+        transition={{ delay: 0.2, duration: 0.8 }}
+        className="w-full"
+      >
+        <div className="bg-card border border-border/40 rounded-lg p-5 md:p-7 space-y-3" data-testid="card-intro-description">
+          <p className="text-sm md:text-base text-foreground/90 leading-relaxed">
+            {t("home.introLine1")}
+          </p>
+          <p className="text-sm md:text-base text-foreground/90 leading-relaxed">
+            {t("home.introLine2")}
+          </p>
+          <p className="text-xs text-muted-foreground italic leading-relaxed">
+            {t("home.introLine3")}
+          </p>
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35, duration: 0.8 }}
         className="w-full"
       >
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory -mx-2 px-2">

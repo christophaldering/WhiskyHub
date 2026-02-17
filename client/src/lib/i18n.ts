@@ -855,6 +855,9 @@ const resources = {
         sessionNotFound: "Session not found",
         noCodeNeeded: "No sign-in needed to join",
         hostDesc: "Create and manage your own tasting event",
+        introLine1: "CaskSense is your all-in-one companion for the entire whisky journey — from discovering new bottles on your wishlist, through structured blind tastings with friends, to capturing every dram in your personal journal. AI-powered bottle scanning identifies whiskies from a photo, and smart recommendations match new expressions to your unique flavor profile.",
+        introLine2: "Explore rich personal and group statistics: radar charts of your taste preferences, flavor wheels, leaderboards, and side-by-side comparisons. Share the experience with your community through discussion panels, friend activity feeds, and a shared tasting calendar. Whether you're a curious beginner or a seasoned collector — CaskSense turns every sip into insight.",
+        introLine3: "Completely free. No ads. Built by whisky lovers, for whisky lovers.",
       },
       highlights: {
         blind: "Blind Tastings",
@@ -2080,6 +2083,9 @@ const resources = {
         sessionNotFound: "Sitzung nicht gefunden",
         noCodeNeeded: "Kein Konto nötig zum Beitreten",
         hostDesc: "Erstelle und verwalte dein eigenes Tasting-Event",
+        introLine1: "CaskSense ist dein Allround-Begleiter für die gesamte Whisky-Reise — vom Entdecken neuer Flaschen auf deiner Wunschliste, über strukturierte Blindverkostungen mit Freunden, bis hin zum Festhalten jedes Drams in deinem persönlichen Tagebuch. KI-gestütztes Flaschen-Scanning erkennt Whiskys anhand eines Fotos, und smarte Empfehlungen finden neue Abfüllungen passend zu deinem Geschmacksprofil.",
+        introLine2: "Entdecke umfangreiche persönliche und Gruppen-Statistiken: Radar-Charts deiner Geschmacksvorlieben, Flavor Wheels, Bestenlisten und Seite-an-Seite-Vergleiche. Teile das Erlebnis mit deiner Community über Diskussionspanels, Freundes-Aktivitätsfeeds und einen gemeinsamen Tasting-Kalender. Ob neugieriger Einsteiger oder erfahrener Sammler — CaskSense macht jeden Schluck zur Erkenntnis.",
+        introLine3: "Komplett kostenlos. Keine Werbung. Von Whisky-Liebhabern für Whisky-Liebhaber.",
       },
       highlights: {
         blind: "Blindverkostung",
