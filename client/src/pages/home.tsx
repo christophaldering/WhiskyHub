@@ -6,15 +6,195 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useLocation, Link } from "wouter";
-import { UserPlus, Plus, ArrowRight, Star, Wine, ImageIcon, Glasses, BookOpen, Lightbulb, Camera, User, ChevronDown, Activity, NotebookPen, Calendar, ScanLine } from "lucide-react";
+import { UserPlus, Plus, ArrowRight, Star, Wine, Glasses, BookOpen, Camera, User, ChevronDown, Eye, Sparkles, BarChart3, Users, MapPin, NotebookPen, ScanLine, Heart, Zap, Globe } from "lucide-react";
 import heroImage from "@/assets/images/hero-whisky.png";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, participantApi, wotdApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { LoginDialog } from "@/components/login-dialog";
 import { queryClient } from "@/lib/queryClient";
+
+function JourneyFlowGraphic({ steps }: { steps: string[] }) {
+  return (
+    <div className="flex items-center justify-center gap-1 py-3">
+      {steps.map((step, i) => (
+        <div key={i} className="flex items-center gap-1">
+          <div className="relative">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+              i === 0 ? "bg-amber-500/20 text-amber-400 border-2 border-amber-500/40" :
+              i === 1 ? "bg-primary/20 text-primary border-2 border-primary/40" :
+              "bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/40"
+            }`}>
+              {i === 0 ? <Heart className="w-5 h-5" /> : i === 1 ? <Wine className="w-5 h-5" /> : <NotebookPen className="w-5 h-5" />}
+            </div>
+            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground whitespace-nowrap font-medium">{step}</span>
+          </div>
+          {i < steps.length - 1 && (
+            <div className="flex items-center gap-0.5 text-muted-foreground/50">
+              <div className="w-5 h-0.5 bg-gradient-to-r from-muted-foreground/30 to-muted-foreground/10 rounded" />
+              <ArrowRight className="w-3 h-3" />
+              <div className="w-5 h-0.5 bg-gradient-to-r from-muted-foreground/10 to-muted-foreground/30 rounded" />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MiniRadarChart() {
+  const points = [
+    { angle: 0, value: 0.85 },
+    { angle: 72, value: 0.7 },
+    { angle: 144, value: 0.9 },
+    { angle: 216, value: 0.6 },
+    { angle: 288, value: 0.75 },
+  ];
+  const cx = 50, cy = 50, r = 38;
+  const toXY = (angle: number, val: number) => ({
+    x: cx + r * val * Math.cos((angle - 90) * Math.PI / 180),
+    y: cy + r * val * Math.sin((angle - 90) * Math.PI / 180),
+  });
+  const gridLevels = [0.33, 0.66, 1];
+  return (
+    <svg viewBox="0 0 100 100" className="w-full h-full">
+      {gridLevels.map(level => (
+        <polygon
+          key={level}
+          points={points.map(p => toXY(p.angle, level)).map(pt => `${pt.x},${pt.y}`).join(" ")}
+          fill="none" stroke="currentColor" className="text-border/40" strokeWidth="0.5"
+        />
+      ))}
+      {points.map(p => {
+        const end = toXY(p.angle, 1);
+        return <line key={p.angle} x1={cx} y1={cy} x2={end.x} y2={end.y} stroke="currentColor" className="text-border/30" strokeWidth="0.3" />;
+      })}
+      <polygon
+        points={points.map(p => toXY(p.angle, p.value)).map(pt => `${pt.x},${pt.y}`).join(" ")}
+        fill="hsl(25, 70%, 45%)" fillOpacity="0.25" stroke="hsl(25, 70%, 50%)" strokeWidth="1.5"
+      />
+      {points.map(p => {
+        const pt = toXY(p.angle, p.value);
+        return <circle key={p.angle} cx={pt.x} cy={pt.y} r="2" fill="hsl(25, 70%, 50%)" />;
+      })}
+    </svg>
+  );
+}
+
+function MiniBarChart({ categories }: { categories: string[] }) {
+  const values = [82, 74, 88, 70];
+  return (
+    <div className="flex items-end justify-center gap-2 h-20 pt-2">
+      {categories.map((cat, i) => (
+        <div key={i} className="flex flex-col items-center gap-1">
+          <span className="text-[9px] font-mono text-primary/80">{values[i]}</span>
+          <motion.div
+            initial={{ height: 0 }}
+            animate={{ height: `${values[i] * 0.55}px` }}
+            transition={{ delay: 0.3 + i * 0.1, duration: 0.6, ease: "easeOut" }}
+            className="w-7 rounded-t bg-gradient-to-t from-primary/60 to-primary/30"
+          />
+          <span className="text-[8px] text-muted-foreground truncate max-w-[40px]">{cat}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AiPipelineGraphic({ labels }: { labels: [string, string, string] }) {
+  return (
+    <div className="flex items-center justify-center gap-2 py-2">
+      {labels.map((label, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2 + i * 0.15 }}
+            className="flex flex-col items-center gap-1"
+          >
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+              i === 0 ? "bg-violet-500/15 border border-violet-500/30" :
+              i === 1 ? "bg-blue-500/15 border border-blue-500/30" :
+              "bg-emerald-500/15 border border-emerald-500/30"
+            }`}>
+              {i === 0 ? <ScanLine className="w-5 h-5 text-violet-400" /> :
+               i === 1 ? <Sparkles className="w-5 h-5 text-blue-400" /> :
+               <Zap className="w-5 h-5 text-emerald-400" />}
+            </div>
+            <span className="text-[9px] text-muted-foreground font-medium">{label}</span>
+          </motion.div>
+          {i < 2 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 + i * 0.15 }}
+              className="text-muted-foreground/40"
+            >
+              <ArrowRight className="w-3 h-3" />
+            </motion.div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CommunityGraphic({ metrics }: { metrics: string[] }) {
+  const values = [24, 12, 186];
+  return (
+    <div className="flex items-center justify-center gap-4 py-2">
+      {metrics.map((metric, i) => (
+        <motion.div
+          key={i}
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 + i * 0.1 }}
+          className="flex flex-col items-center"
+        >
+          <span className="text-xl font-mono font-bold text-primary">{values[i]}</span>
+          <span className="text-[9px] text-muted-foreground">{metric}</span>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+function WorldMapDots({ regions }: { regions: string[] }) {
+  const dots = [
+    { x: 30, y: 25, label: regions[0] },
+    { x: 82, y: 35, label: regions[1] },
+    { x: 25, y: 30, label: regions[2] },
+    { x: 15, y: 35, label: regions[3] },
+    { x: 85, y: 40, label: regions[4] },
+  ];
+  return (
+    <svg viewBox="0 0 100 60" className="w-full h-full">
+      <ellipse cx="50" cy="32" rx="45" ry="24" fill="none" stroke="currentColor" className="text-border/20" strokeWidth="0.5" strokeDasharray="2 2" />
+      <ellipse cx="50" cy="32" rx="30" ry="16" fill="none" stroke="currentColor" className="text-border/15" strokeWidth="0.3" strokeDasharray="2 2" />
+      {dots.map((dot, i) => (
+        <g key={i}>
+          <motion.circle
+            cx={dot.x} cy={dot.y} r="2.5"
+            fill="hsl(25, 70%, 50%)" fillOpacity="0.7"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.3 + i * 0.1 }}
+          />
+          <motion.circle
+            cx={dot.x} cy={dot.y} r="5"
+            fill="none" stroke="hsl(25, 70%, 50%)" strokeOpacity="0.3" strokeWidth="0.5"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.4 + i * 0.1 }}
+          />
+          <text x={dot.x} y={dot.y + 9} textAnchor="middle" className="fill-muted-foreground" fontSize="4" fontWeight="500">{dot.label}</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
 
 export default function Home() {
   const { t } = useTranslation();
@@ -36,6 +216,7 @@ export default function Home() {
   const [newDate, setNewDate] = useState(new Date().toISOString().split("T")[0]);
   const [blindMode, setBlindMode] = useState(false);
   const [reflectionEnabled, setReflectionEnabled] = useState(false);
+  const [showFeatures, setShowFeatures] = useState(false);
 
   const { data: wotd } = useQuery({
     queryKey: ["whisky-of-the-day"],
@@ -113,8 +294,13 @@ export default function Home() {
     });
   };
 
+  const journeySteps = t("features.journeySteps", { returnObjects: true }) as string[];
+  const tastingCategories = t("features.tastingCategories", { returnObjects: true }) as string[];
+  const communityMetrics = t("features.communityMetrics", { returnObjects: true }) as string[];
+  const encyclopediaRegions = t("features.encyclopediaRegions", { returnObjects: true }) as string[];
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] w-full max-w-3xl mx-auto space-y-12 py-10">
+    <div className="flex flex-col items-center justify-center min-h-[70vh] w-full max-w-3xl mx-auto space-y-10 py-10">
       <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
 
       <Dialog open={showQuickJoin} onOpenChange={(v) => { if (!v) { setShowQuickJoin(false); setQuickJoinError(""); } }}>
@@ -164,6 +350,7 @@ export default function Home() {
         </DialogContent>
       </Dialog>
 
+      {/* Hero Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -205,30 +392,151 @@ export default function Home() {
         </div>
       </motion.div>
 
+      {/* Collapsible Feature Showcase */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.8 }}
         className="w-full"
       >
-        <div className="bg-card border border-border/40 rounded-lg p-5 md:p-7" data-testid="card-intro-description">
-          <p className="text-sm md:text-base text-foreground/90 leading-relaxed mb-4">
-            {t("home.introHeadline")}
-          </p>
-          <ul className="space-y-2.5 text-sm text-foreground/85">
-            {(t("home.bullets", { returnObjects: true }) as string[]).map((bullet, i) => (
-              <li key={i} className="flex items-start gap-2.5">
-                <span className="text-primary mt-0.5 flex-shrink-0">&#x2022;</span>
-                <span className="leading-snug">{bullet}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-xs text-muted-foreground italic mt-4">
-            {t("home.introFooter")}
-          </p>
-        </div>
+        <button
+          onClick={() => setShowFeatures(!showFeatures)}
+          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg border border-border/40 bg-card hover:bg-card/80 transition-all group"
+          data-testid="button-toggle-features"
+        >
+          <Eye className="w-4 h-4 text-primary" />
+          <span className="text-sm font-serif font-medium text-primary">
+            {showFeatures ? t("home.hideFeatures") : t("home.showFeatures")}
+          </span>
+          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${showFeatures ? "rotate-180" : ""}`} />
+        </button>
+
+        <AnimatePresence>
+          {showFeatures && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <div className="pt-4 space-y-4">
+                <p className="text-center text-sm text-foreground/90 font-serif italic px-4">
+                  {t("home.introHeadline")}
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Journey Feature */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                    data-testid="card-feature-journey"
+                  >
+                    <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                      <ArrowRight className="w-4 h-4" />
+                      {t("features.journey")}
+                    </h3>
+                    <JourneyFlowGraphic steps={journeySteps} />
+                    <p className="text-xs text-muted-foreground leading-relaxed pt-3">{t("features.journeyDesc")}</p>
+                  </motion.div>
+
+                  {/* AI Feature */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                    className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                    data-testid="card-feature-ai"
+                  >
+                    <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      {t("features.ai")}
+                    </h3>
+                    <AiPipelineGraphic labels={[t("features.aiScan"), t("features.aiMatch"), t("features.aiRec")]} />
+                    <p className="text-xs text-muted-foreground leading-relaxed">{t("features.aiDesc")}</p>
+                  </motion.div>
+
+                  {/* Tasting Feature */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                    data-testid="card-feature-tasting"
+                  >
+                    <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                      <Glasses className="w-4 h-4" />
+                      {t("features.tasting")}
+                    </h3>
+                    <MiniBarChart categories={tastingCategories} />
+                    <p className="text-xs text-muted-foreground leading-relaxed">{t("features.tastingDesc")}</p>
+                  </motion.div>
+
+                  {/* Stats Feature */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 }}
+                    className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                    data-testid="card-feature-stats"
+                  >
+                    <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4" />
+                      {t("features.stats")}
+                    </h3>
+                    <div className="w-24 h-24 mx-auto">
+                      <MiniRadarChart />
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{t("features.statsDesc")}</p>
+                  </motion.div>
+
+                  {/* Community Feature */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                    data-testid="card-feature-community"
+                  >
+                    <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      {t("features.community")}
+                    </h3>
+                    <CommunityGraphic metrics={communityMetrics} />
+                    <p className="text-xs text-muted-foreground leading-relaxed">{t("features.communityDesc")}</p>
+                  </motion.div>
+
+                  {/* Encyclopedia Feature */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.35 }}
+                    className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                    data-testid="card-feature-encyclopedia"
+                  >
+                    <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                      <Globe className="w-4 h-4" />
+                      {t("features.encyclopedia")}
+                    </h3>
+                    <div className="h-20">
+                      <WorldMapDots regions={encyclopediaRegions} />
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{t("features.encyclopediaDesc")}</p>
+                  </motion.div>
+                </div>
+
+                <p className="text-center text-xs text-muted-foreground italic pt-1">
+                  {t("home.introFooter")}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
+      {/* Join / Host Cards */}
       <div className="grid md:grid-cols-2 gap-8 w-full">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.8 }}>
           <Card className="h-full border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-500">
@@ -438,7 +746,7 @@ export default function Home() {
             <div className="bg-card border border-border/50 rounded-lg overflow-hidden shadow-sm" data-testid="card-wisdom">
               <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent px-6 py-3 border-b border-border/30">
                 <div className="flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-accent" />
+                  <Star className="w-4 h-4 text-accent" />
                   <h2 className="text-sm font-serif font-bold text-primary uppercase tracking-widest">{t("wisdom.title")}</h2>
                 </div>
               </div>
