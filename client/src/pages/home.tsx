@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { useLocation } from "wouter";
-import { UserPlus, Plus, ArrowRight, Star, Wine, ImageIcon, Glasses, BookOpen, Lightbulb, Camera, User, ChevronDown } from "lucide-react";
+import { useLocation, Link } from "wouter";
+import { UserPlus, Plus, ArrowRight, Star, Wine, ImageIcon, Glasses, BookOpen, Lightbulb, Camera, User, ChevronDown, Activity, NotebookPen, Calendar, ScanLine } from "lucide-react";
 import heroImage from "@/assets/images/hero-whisky.png";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -202,6 +202,34 @@ export default function Home() {
               {t("home.haveAccount")}
             </button>
           )}
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.8 }}
+        className="w-full"
+      >
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory -mx-2 px-2">
+          {[
+            { icon: Glasses, label: t("highlights.blind"), desc: t("highlights.blindDesc") },
+            { icon: Activity, label: t("highlights.flavor"), desc: t("highlights.flavorDesc") },
+            { icon: ScanLine, label: t("highlights.scanner"), desc: t("highlights.scannerDesc") },
+            { icon: NotebookPen, label: t("highlights.journal"), desc: t("highlights.journalDesc") },
+            { icon: Calendar, label: t("highlights.calendar"), desc: t("highlights.calendarDesc") },
+          ].map((feat, i) => (
+            <Link key={i} href="/features">
+              <div
+                className="snap-start flex-shrink-0 w-40 md:w-44 bg-card border border-border/40 rounded-lg p-4 hover:border-primary/40 hover:shadow-sm transition-all duration-300 cursor-pointer group"
+                data-testid={`card-highlight-${i}`}
+              >
+                <feat.icon className="w-5 h-5 text-primary mb-2 group-hover:scale-110 transition-transform" />
+                <p className="text-sm font-serif font-semibold text-primary leading-tight">{feat.label}</p>
+                <p className="text-[11px] text-muted-foreground leading-snug mt-1">{feat.desc}</p>
+              </div>
+            </Link>
+          ))}
         </div>
       </motion.div>
 
