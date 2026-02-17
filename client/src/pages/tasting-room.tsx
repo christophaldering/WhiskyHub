@@ -861,8 +861,8 @@ export default function TastingRoom() {
       <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
 
       <header className="mb-8 border-b border-border/50 pb-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="min-w-0 flex-1">
+        <div className="flex flex-col gap-4">
+          <div className="min-w-0 w-full">
             <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{tasting.title}</h1>
             <div className="flex items-center gap-2 text-muted-foreground font-serif italic mt-2 text-base sm:text-lg flex-wrap">
               <span>{tasting.location}</span>
