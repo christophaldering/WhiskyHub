@@ -917,7 +917,15 @@ const resources = {
         generating: "Generating...",
         lineup: "Lineup",
         participants: "Participants",
-        noParticipants: "No participants yet."
+        noParticipants: "No participants yet.",
+        coverTheme: "Cover Theme",
+        autoTheme: "Auto-detect from whiskies",
+        themeIslay: "Islay / Smoky",
+        themeSpeyside: "Speyside / Elegant",
+        themeHighland: "Highland / Bold",
+        themeSherry: "Sherry Cask / Rich",
+        themeBourbon: "Bourbon Cask / Golden",
+        themeMixed: "Mixed / Classic"
       },
       briefing: {
         title: "Host Briefing Notes",
@@ -1123,7 +1131,9 @@ const resources = {
         confirmDeleteTasting: "Delete Tasting?",
         confirmDeleteTastingDesc: "This will permanently delete \"{{title}}\" including all ratings, whiskies, and participant data. This cannot be undone.",
         cancel: "Cancel",
-        delete: "Delete"
+        delete: "Delete",
+        dbAccessUpdated: "Whisky database access updated",
+        whiskyDbAccess: "Whisky Database Access"
       },
       distillery: {
         title: "Distillery Encyclopedia",
@@ -1262,7 +1272,16 @@ const resources = {
           mature: "Mature (18–25 years)",
           oldRare: "Old & Rare (25+)",
           mixed: "Mixed Ages"
-        }
+        },
+        stepSuggestions: "Suggestions",
+        suggestionsDesc: "Whiskies from your tasting history that match your criteria",
+        noSuggestions: "No matching whiskies found in your tasting history yet.",
+        suggestionsHint: "Use these as inspiration — or avoid repeats for a fresh experience.",
+        matchCount: "matches found",
+        fromTasting: "From:",
+        avgRating: "Avg:",
+        ratings: "ratings",
+        topRated: "Top rated"
       }
     }
   },
@@ -2181,7 +2200,15 @@ const resources = {
         generating: "Wird erstellt...",
         lineup: "Lineup",
         participants: "Teilnehmer",
-        noParticipants: "Noch keine Teilnehmer."
+        noParticipants: "Noch keine Teilnehmer.",
+        coverTheme: "Cover-Thema",
+        autoTheme: "Automatisch aus Whiskys erkennen",
+        themeIslay: "Islay / Rauchig",
+        themeSpeyside: "Speyside / Elegant",
+        themeHighland: "Highland / Kräftig",
+        themeSherry: "Sherryfass / Reichhaltig",
+        themeBourbon: "Bourbonfass / Golden",
+        themeMixed: "Gemischt / Klassisch"
       },
       briefing: {
         title: "Gastgeber-Notizen",
@@ -2387,7 +2414,9 @@ const resources = {
         confirmDeleteTasting: "Tasting löschen?",
         confirmDeleteTastingDesc: "Dies löscht \"{{title}}\" einschließlich aller Bewertungen, Whiskys und Teilnehmerdaten dauerhaft. Dies kann nicht rückgängig gemacht werden.",
         cancel: "Abbrechen",
-        delete: "Löschen"
+        delete: "Löschen",
+        dbAccessUpdated: "Whisky-Datenbank-Zugang aktualisiert",
+        whiskyDbAccess: "Whisky-Datenbank-Zugang"
       },
       distillery: {
         title: "Destillerie-Enzyklopädie",
@@ -2526,7 +2555,16 @@ const resources = {
           mature: "Gereift (18–25 Jahre)",
           oldRare: "Alt & Selten (25+)",
           mixed: "Gemischte Jahrgänge"
-        }
+        },
+        stepSuggestions: "Vorschläge",
+        suggestionsDesc: "Whiskys aus eurer Tasting-Geschichte, die zu euren Kriterien passen",
+        noSuggestions: "Noch keine passenden Whiskys in eurer Tasting-Geschichte gefunden.",
+        suggestionsHint: "Nutzt diese als Inspiration — oder vermeidet Wiederholungen für ein frisches Erlebnis.",
+        matchCount: "Treffer gefunden",
+        fromTasting: "Aus:",
+        avgRating: "Ø:",
+        ratings: "Bewertungen",
+        topRated: "Spitzenbewertung"
       }
     }
   }

@@ -137,7 +137,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         items: [
           { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
           { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
-          { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
+          ...((isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
+            { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
+          ] : []),
           { href: "/benchmark", icon: Brain, label: t('nav.benchmark') },
         ],
       },

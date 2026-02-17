@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { tastingApi } from "@/lib/api";
@@ -8,14 +8,138 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileDown, ImageIcon, Loader2 } from "lucide-react";
 import type { Whisky, Tasting, Participant } from "@shared/schema";
 import jsPDF from "jspdf";
 
-const PRIMARY_COLOR: [number, number, number] = [71, 85, 105];
-const MUTED_COLOR: [number, number, number] = [148, 163, 184];
-const BG_COLOR: [number, number, number] = [248, 250, 252];
-const DARK_COLOR: [number, number, number] = [30, 41, 59];
+type RGB = [number, number, number];
+
+interface TastingTheme {
+  theme: string;
+  tagline: string;
+  colors: { primary: RGB; secondary: RGB; accent: RGB };
+  moodText: string;
+}
+
+const THEME_PRESETS: Record<string, TastingTheme> = {
+  islay: {
+    theme: "islay",
+    tagline: "Smoke, Sea & Spirit",
+    colors: {
+      primary: [45, 45, 48],
+      secondary: [90, 90, 95],
+      accent: [120, 130, 140],
+    },
+    moodText: "A journey through peat and maritime influence",
+  },
+  speyside: {
+    theme: "speyside",
+    tagline: "The Heart of Scotland",
+    colors: {
+      primary: [153, 102, 0],
+      secondary: [184, 138, 61],
+      accent: [200, 160, 80],
+    },
+    moodText: "Elegant expressions from the golden valley",
+  },
+  highland: {
+    theme: "highland",
+    tagline: "Wild & Untamed",
+    colors: {
+      primary: [40, 80, 55],
+      secondary: [80, 110, 85],
+      accent: [100, 130, 100],
+    },
+    moodText: "Bold spirits from Scotland's rugged north",
+  },
+  sherry: {
+    theme: "sherry",
+    tagline: "Dark Fruit & Oak",
+    colors: {
+      primary: [120, 30, 40],
+      secondary: [150, 60, 70],
+      accent: [170, 80, 50],
+    },
+    moodText: "Rich, sherried expressions of depth and complexity",
+  },
+  bourbon: {
+    theme: "bourbon",
+    tagline: "American Oak Influence",
+    colors: {
+      primary: [180, 130, 30],
+      secondary: [200, 160, 60],
+      accent: [210, 170, 80],
+    },
+    moodText: "Vanilla, honey and butterscotch from bourbon barrels",
+  },
+  mixed: {
+    theme: "mixed",
+    tagline: "A Curated Selection",
+    colors: {
+      primary: [71, 85, 105],
+      secondary: [148, 163, 184],
+      accent: [100, 116, 139],
+    },
+    moodText: "A diverse flight exploring whisky's many facets",
+  },
+};
+
+function detectTastingTheme(whiskies: Whisky[]): TastingTheme {
+  if (whiskies.length === 0) return THEME_PRESETS.mixed;
+
+  const total = whiskies.length;
+  const threshold = total / 2;
+
+  const regionCounts: Record<string, number> = {};
+  let sherryCaskCount = 0;
+  let peatedCount = 0;
+
+  for (const w of whiskies) {
+    if (w.region) {
+      const r = w.region.toLowerCase();
+      regionCounts[r] = (regionCounts[r] || 0) + 1;
+    }
+    if (w.caskInfluence) {
+      const cask = w.caskInfluence.toLowerCase();
+      if (cask.includes("sherry") || cask.includes("oloroso") || cask.includes("pedro") || cask.includes("px")) {
+        sherryCaskCount++;
+      }
+    }
+    if (w.peatLevel) {
+      const peat = w.peatLevel.toLowerCase();
+      if (peat.includes("peated") || peat.includes("heavily") || peat === "heavy" || peat === "high") {
+        peatedCount++;
+      }
+    }
+  }
+
+  for (const [region, count] of Object.entries(regionCounts)) {
+    if (count > threshold) {
+      if (region === "islay") return THEME_PRESETS.islay;
+      if (region === "speyside") return THEME_PRESETS.speyside;
+      if (region === "highland" || region === "highlands") return THEME_PRESETS.highland;
+    }
+  }
+
+  if (sherryCaskCount > threshold) return THEME_PRESETS.sherry;
+
+  if (peatedCount > threshold) return THEME_PRESETS.islay;
+
+  const bourbonCaskCount = whiskies.filter(w => {
+    if (!w.caskInfluence) return false;
+    const c = w.caskInfluence.toLowerCase();
+    return c.includes("bourbon") || c.includes("american oak");
+  }).length;
+  if (bourbonCaskCount > threshold) return THEME_PRESETS.bourbon;
+
+  return THEME_PRESETS.mixed;
+}
+
+const PRIMARY_COLOR: RGB = [71, 85, 105];
+const MUTED_COLOR: RGB = [148, 163, 184];
+const BG_COLOR: RGB = [248, 250, 252];
+const DARK_COLOR: RGB = [30, 41, 59];
 
 function buildMetaLine(w: Whisky): string {
   const parts: string[] = [];
@@ -66,7 +190,15 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
   const [bgFile, setBgFile] = useState<File | null>(null);
   const [includeParticipants, setIncludeParticipants] = useState(true);
   const [includePhotos, setIncludePhotos] = useState(true);
+  const [themeOverride, setThemeOverride] = useState("auto");
   const bgRef = useRef<HTMLInputElement>(null);
+
+  const activeTheme = useMemo(() => {
+    if (themeOverride !== "auto" && THEME_PRESETS[themeOverride]) {
+      return THEME_PRESETS[themeOverride];
+    }
+    return detectTastingTheme(whiskies);
+  }, [themeOverride, whiskies]);
 
   const { data: participants = [] } = useQuery({
     queryKey: ["participants", tasting.id],
@@ -109,20 +241,22 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
         }
       }
 
+      const themeColors = activeTheme.colors;
+
       const ornW = 50;
       if (!bgDataUrl) {
-        doc.setDrawColor(71, 85, 105);
+        doc.setDrawColor(...themeColors.primary);
         doc.setLineWidth(0.5);
         doc.rect(12, 12, pageW - 24, pageH - 24);
         doc.setLineWidth(0.2);
         doc.rect(14, 14, pageW - 28, pageH - 28);
 
-        doc.setDrawColor(148, 163, 184);
+        doc.setDrawColor(...themeColors.secondary);
         doc.setLineWidth(0.15);
         const ornY = 40;
         doc.line(pageW / 2 - ornW, ornY, pageW / 2 + ornW, ornY);
         doc.line(pageW / 2 - ornW, ornY + 0.8, pageW / 2 + ornW, ornY + 0.8);
-        doc.setFillColor(148, 163, 184);
+        doc.setFillColor(...themeColors.secondary);
         doc.circle(pageW / 2, ornY + 0.4, 1.5, "F");
         doc.circle(pageW / 2 - ornW, ornY + 0.4, 0.6, "F");
         doc.circle(pageW / 2 + ornW, ornY + 0.4, 0.6, "F");
@@ -132,7 +266,7 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
-      doc.setTextColor(...MUTED_COLOR);
+      doc.setTextColor(...themeColors.accent);
       doc.text("C A S K S E N S E", pageW / 2, coverY, { align: "center" });
       coverY += 6;
       doc.setFont("helvetica", "italic");
@@ -140,21 +274,33 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
       doc.text("Where Tasting Becomes Reflection", pageW / 2, coverY, { align: "center" });
       coverY += bgDataUrl ? 16 : 24;
 
-      doc.setDrawColor(...MUTED_COLOR);
+      doc.setDrawColor(...themeColors.secondary);
       doc.setLineWidth(0.2);
       doc.line(marginX + 50, coverY, pageW - marginX - 50, coverY);
       coverY += bgDataUrl ? 14 : 20;
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(30);
-      doc.setTextColor(...DARK_COLOR);
+      doc.setTextColor(...themeColors.primary);
       const titleLines = doc.splitTextToSize(title, contentW - 20);
       doc.text(titleLines, pageW / 2, coverY, { align: "center" });
       coverY += titleLines.length * 12 + 6;
 
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(11);
+      doc.setTextColor(...themeColors.secondary);
+      doc.text(activeTheme.tagline, pageW / 2, coverY, { align: "center" });
+      coverY += 8;
+
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8);
+      doc.setTextColor(...themeColors.accent);
+      doc.text(activeTheme.moodText, pageW / 2, coverY, { align: "center" });
+      coverY += 10;
+
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
-      doc.setTextColor(...MUTED_COLOR);
+      doc.setTextColor(...themeColors.secondary);
       const displayDate = (() => {
         try {
           return new Date(date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
@@ -168,14 +314,14 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
       }
       coverY += 6;
 
-      doc.setDrawColor(...MUTED_COLOR);
+      doc.setDrawColor(...themeColors.secondary);
       doc.setLineWidth(0.2);
       doc.line(marginX + 50, coverY, pageW - marginX - 50, coverY);
       coverY += 12;
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.setTextColor(...PRIMARY_COLOR);
+      doc.setTextColor(...themeColors.primary);
       const statsLine = `${whiskies.length} ${whiskies.length === 1 ? "Expression" : "Expressions"}`;
       doc.text(statsLine, pageW / 2, coverY, { align: "center" });
       coverY += 8;
@@ -184,7 +330,7 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
       whiskies.forEach(w => { if (w.region) regionSet.add(w.region); });
       if (regionSet.size > 0) {
         doc.setFontSize(8);
-        doc.setTextColor(...MUTED_COLOR);
+        doc.setTextColor(...themeColors.secondary);
         doc.text(Array.from(regionSet).join("  \u2022  "), pageW / 2, coverY, { align: "center" });
         coverY += 10;
       }
@@ -193,7 +339,7 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
         coverY += 6;
         doc.setFont("helvetica", "italic");
         doc.setFontSize(11);
-        doc.setTextColor(...MUTED_COLOR);
+        doc.setTextColor(...themeColors.secondary);
         const quoteLines = doc.splitTextToSize(`\u201c${quote}\u201d`, contentW - 30);
         doc.text(quoteLines, pageW / 2, coverY, { align: "center" });
         coverY += quoteLines.length * 6 + 10;
@@ -201,20 +347,20 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
 
       if (includeParticipants && participants.length > 0) {
         coverY += 4;
-        doc.setDrawColor(...MUTED_COLOR);
+        doc.setDrawColor(...themeColors.secondary);
         doc.setLineWidth(0.2);
         doc.line(marginX + 50, coverY, pageW - marginX - 50, coverY);
         coverY += 10;
 
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8);
-        doc.setTextColor(...PRIMARY_COLOR);
+        doc.setTextColor(...themeColors.primary);
         doc.text(t("pdfExport.participants").toUpperCase(), pageW / 2, coverY, { align: "center" });
         coverY += 7;
 
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
-        doc.setTextColor(...MUTED_COLOR);
+        doc.setTextColor(...themeColors.secondary);
         const names = participants.map((p: any) => p.participant?.name || p.name || "").filter(Boolean);
         const namesStr = names.join("  \u2022  ");
         const nameLines = doc.splitTextToSize(namesStr, contentW - 20);
@@ -223,11 +369,11 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
 
       if (!bgDataUrl) {
         const bottomOrnY = pageH - 35;
-        doc.setDrawColor(148, 163, 184);
+        doc.setDrawColor(...themeColors.secondary);
         doc.setLineWidth(0.15);
         doc.line(pageW / 2 - ornW, bottomOrnY, pageW / 2 + ornW, bottomOrnY);
         doc.line(pageW / 2 - ornW, bottomOrnY + 0.8, pageW / 2 + ornW, bottomOrnY + 0.8);
-        doc.setFillColor(148, 163, 184);
+        doc.setFillColor(...themeColors.secondary);
         doc.circle(pageW / 2, bottomOrnY + 0.4, 1.5, "F");
         doc.circle(pageW / 2 - ornW, bottomOrnY + 0.4, 0.6, "F");
         doc.circle(pageW / 2 + ornW, bottomOrnY + 0.4, 0.6, "F");
@@ -390,6 +536,24 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
               className="font-serif italic"
               data-testid="input-pdf-quote"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground font-bold">{t("pdfExport.coverTheme")}</Label>
+            <Select value={themeOverride} onValueChange={setThemeOverride} data-testid="select-cover-theme">
+              <SelectTrigger data-testid="select-trigger-cover-theme">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto" data-testid="select-theme-auto">{t("pdfExport.autoTheme")}</SelectItem>
+                <SelectItem value="islay" data-testid="select-theme-islay">{t("pdfExport.themeIslay")}</SelectItem>
+                <SelectItem value="speyside" data-testid="select-theme-speyside">{t("pdfExport.themeSpeyside")}</SelectItem>
+                <SelectItem value="highland" data-testid="select-theme-highland">{t("pdfExport.themeHighland")}</SelectItem>
+                <SelectItem value="sherry" data-testid="select-theme-sherry">{t("pdfExport.themeSherry")}</SelectItem>
+                <SelectItem value="bourbon" data-testid="select-theme-bourbon">{t("pdfExport.themeBourbon")}</SelectItem>
+                <SelectItem value="mixed" data-testid="select-theme-mixed">{t("pdfExport.themeMixed")}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

@@ -4,12 +4,13 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { adminApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight } from "lucide-react";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -32,6 +33,7 @@ interface AdminParticipant {
   createdAt: string | null;
   hostedTastings: number;
   isHost: boolean;
+  canAccessWhiskyDb: boolean;
 }
 
 interface AdminTasting {
@@ -207,6 +209,16 @@ export default function AdminPanel() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
       toast({ title: t("admin.participantDeleted") });
+    },
+    onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
+  });
+
+  const dbAccessMutation = useMutation({
+    mutationFn: ({ participantId, canAccess }: { participantId: string; canAccess: boolean }) =>
+      adminApi.updateWhiskyDbAccess(participantId, canAccess, currentParticipant!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      toast({ title: t("admin.dbAccessUpdated") });
     },
     onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
   });
@@ -427,6 +439,17 @@ export default function AdminPanel() {
                               <SelectItem value="admin">{t("admin.roleAdmin")}</SelectItem>
                             </SelectContent>
                           </Select>
+                          {p.isHost && p.role !== "admin" && (
+                            <div className="flex items-center gap-1" title={t("admin.whiskyDbAccess")}>
+                              <Database className="w-3 h-3 text-muted-foreground" />
+                              <Switch
+                                checked={p.canAccessWhiskyDb}
+                                onCheckedChange={(checked) => dbAccessMutation.mutate({ participantId: p.id, canAccess: checked })}
+                                className="scale-75"
+                                data-testid={`switch-db-access-${p.id}`}
+                              />
+                            </div>
+                          )}
                           {p.id !== currentParticipant?.id && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>

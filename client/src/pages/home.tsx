@@ -269,7 +269,7 @@ export default function Home() {
     setQuickJoinError("");
     try {
       const guest = await participantApi.guestJoin(quickName.trim());
-      setParticipant({ id: guest.id, name: guest.name, role: guest.role });
+      setParticipant({ id: guest.id, name: guest.name, role: guest.role, canAccessWhiskyDb: guest.canAccessWhiskyDb });
       setShowQuickJoin(false);
       setQuickName("");
       await doJoinSession(guest.id);

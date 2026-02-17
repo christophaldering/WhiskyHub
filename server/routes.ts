@@ -354,10 +354,10 @@ export async function registerRoutes(
         if (existing.pin) {
           return res.status(409).json({ message: "This name is already taken by a registered user. Please sign in or choose a different name." });
         }
-        return res.json({ id: existing.id, name: existing.name, role: existing.role, guest: true });
+        return res.json({ id: existing.id, name: existing.name, role: existing.role, canAccessWhiskyDb: existing.canAccessWhiskyDb || false, guest: true });
       }
       const participant = await storage.createParticipant({ name: name.trim() });
-      res.status(201).json({ id: participant.id, name: participant.name, role: participant.role, guest: true });
+      res.status(201).json({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb || false, guest: true });
     } catch (e: any) {
       res.status(400).json({ message: e.message });
     }
@@ -2396,6 +2396,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             createdAt: p.createdAt,
             hostedTastings,
             isHost: hostIds.has(p.id),
+            canAccessWhiskyDb: p.canAccessWhiskyDb || false,
           };
         })
       );
@@ -2474,6 +2475,106 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  app.patch("/api/admin/participants/:id/whisky-db-access", async (req, res) => {
+    try {
+      const requesterId = req.body.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const { canAccess } = req.body;
+      if (typeof canAccess !== "boolean") {
+        return res.status(400).json({ message: "canAccess must be boolean" });
+      }
+      const result = await storage.updateWhiskyDbAccess(req.params.id, canAccess);
+      if (!result) return res.status(404).json({ message: "Participant not found" });
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/curation/suggestions", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      const regionsParam = req.query.regions as string;
+      const stylesParam = req.query.styles as string;
+      const ageRange = req.query.ageRange as string;
+
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+
+      const allTastings = await storage.getAllTastings();
+      const allWhiskies: any[] = [];
+
+      for (const tasting of allTastings) {
+        const whiskies = await storage.getWhiskiesForTasting(tasting.id);
+        const ratings = await storage.getRatingsForTasting(tasting.id);
+
+        for (const w of whiskies) {
+          const whiskyRatings = ratings.filter(r => r.whiskyId === w.id);
+          const overallScores = whiskyRatings.map(r => r.overall).filter((v): v is number => v != null);
+          const avgScore = overallScores.length > 0 ? overallScores.reduce((a, b) => a + b, 0) / overallScores.length : null;
+          allWhiskies.push({
+            id: w.id,
+            name: w.name,
+            distillery: w.distillery,
+            age: w.age,
+            abv: w.abv,
+            region: w.region,
+            caskInfluence: w.caskInfluence,
+            peatLevel: w.peatLevel,
+            imageUrl: w.imageUrl,
+            tastingTitle: tasting.title,
+            tastingDate: tasting.date,
+            ratingCount: whiskyRatings.length,
+            avgScore: avgScore ? Math.round(avgScore * 10) / 10 : null,
+          });
+        }
+      }
+
+      let filtered = allWhiskies;
+      if (regionsParam) {
+        const regionKeys = regionsParam.split(",").map(r => r.toLowerCase());
+        filtered = filtered.filter(w => {
+          if (!w.region) return false;
+          const wr = w.region.toLowerCase();
+          return regionKeys.some(rk => wr.includes(rk));
+        });
+      }
+      if (stylesParam) {
+        const styleKeys = stylesParam.split(",").map(s => s.toLowerCase());
+        filtered = filtered.filter(w => {
+          const cask = (w.caskInfluence || "").toLowerCase();
+          const peat = (w.peatLevel || "").toLowerCase();
+          return styleKeys.some(sk => {
+            if (sk.includes("peat") && peat !== "none" && peat !== "") return true;
+            if (sk.includes("sherr") && cask.includes("sherr")) return true;
+            if (sk.includes("bourbon") && cask.includes("bourbon")) return true;
+            if (sk.includes("wine") && (cask.includes("wine") || cask.includes("port") || cask.includes("rum"))) return true;
+            return false;
+          });
+        });
+      }
+
+      const unique = new Map<string, any>();
+      for (const w of filtered) {
+        const key = `${w.name}-${w.distillery}`;
+        if (!unique.has(key) || (w.avgScore || 0) > (unique.get(key).avgScore || 0)) {
+          unique.set(key, w);
+        }
+      }
+
+      const results = Array.from(unique.values())
+        .sort((a, b) => (b.avgScore || 0) - (a.avgScore || 0))
+        .slice(0, 20);
+
+      res.json({ suggestions: results, totalMatches: unique.size });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.get("/api/global-whisky-database", async (req, res) => {
     try {
       const participantId = req.query.participantId as string;
@@ -2483,9 +2584,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
       const allTastings = await storage.getAllTastings();
       const isAdmin = requester.role === "admin";
-      const isHost = allTastings.some(t => t.hostId === participantId);
-      if (!isAdmin && !isHost) {
-        return res.status(403).json({ message: "Admin or host access required" });
+      const hasDbAccess = requester.canAccessWhiskyDb === true;
+      if (!isAdmin && !hasDbAccess) {
+        return res.status(403).json({ message: "Access denied. Admin approval required." });
       }
 
       const allWhiskies: any[] = [];

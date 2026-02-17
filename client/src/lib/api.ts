@@ -396,4 +396,6 @@ export const adminApi = {
     fetchJSON(`/admin/all-journals?requesterId=${requesterId}`),
   getAnalytics: (requesterId: string) =>
     fetchJSON(`/admin/analytics?requesterId=${requesterId}`),
+  updateWhiskyDbAccess: (participantId: string, canAccess: boolean, requesterId: string) =>
+    fetchJSON(`/admin/participants/${participantId}/whisky-db-access`, { method: "PATCH", body: JSON.stringify({ canAccess, requesterId }) }),
 };

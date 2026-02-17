@@ -1,20 +1,35 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, ExternalLink, ChevronRight, ChevronLeft, Copy, Check, Lightbulb } from "lucide-react";
+import { Wand2, ExternalLink, ChevronRight, ChevronLeft, Copy, Check, Lightbulb, Star } from "lucide-react";
+import { useAppStore } from "@/lib/store";
 
 const REGION_KEYS = ["islay", "speyside", "highland", "lowland", "campbeltown", "islands", "ireland", "japan", "usa", "world"] as const;
 const STYLE_KEYS = ["heavilyPeated", "lightlyPeated", "unpeated", "sherried", "bourbonCask", "wineCask", "exoticCask", "caskStrength", "singleCask"] as const;
 const AGE_KEYS = ["nas", "young", "classic", "mature", "oldRare", "mixed"] as const;
 const THEME_KEYS = ["region", "distillery", "style", "blind", "age", "cask", "custom"] as const;
 
+const STYLE_API_MAP: Record<string, string> = {
+  heavilyPeated: "peated",
+  lightlyPeated: "peated",
+  unpeated: "unpeated",
+  sherried: "sherried",
+  bourbonCask: "bourbon",
+  wineCask: "wine",
+  exoticCask: "exotic",
+  caskStrength: "caskStrength",
+  singleCask: "singleCask",
+};
+
 export function CurationWizard() {
   const { t } = useTranslation();
+  const currentParticipant = useAppStore((s) => s.currentParticipant);
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -90,12 +105,29 @@ export function CurationWizard() {
     return parts.join("\n");
   };
 
-  const suggestions = [
+  const curatorTips = [
     { title: t("curation.tipRegionalTitle"), desc: t("curation.tipRegionalDesc") },
     { title: t("curation.tipAgeTitle"), desc: t("curation.tipAgeDesc") },
     { title: t("curation.tipCaskTitle"), desc: t("curation.tipCaskDesc") },
     { title: t("curation.tipContrastTitle"), desc: t("curation.tipContrastDesc") },
   ];
+
+  const regionsParam = config.regions.join(",");
+  const stylesParam = [...new Set(config.styles.map((s) => STYLE_API_MAP[s] || s))].join(",");
+
+  const { data: matchedWhiskies, isLoading: suggestionsLoading } = useQuery<any[]>({
+    queryKey: ["curation-suggestions", currentParticipant?.id, regionsParam, stylesParam],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (currentParticipant?.id) params.set("participantId", currentParticipant.id);
+      if (regionsParam) params.set("regions", regionsParam);
+      if (stylesParam) params.set("styles", stylesParam);
+      const res = await fetch(`/api/curation/suggestions?${params.toString()}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: open && step >= 3 && !!currentParticipant?.id && (config.regions.length > 0 || config.styles.length > 0),
+  });
 
   const steps = [
     <div key="theme" className="space-y-4">
@@ -194,6 +226,80 @@ export function CurationWizard() {
       </div>
     </div>,
 
+    <div key="suggestions" className="space-y-4">
+      <p className="text-sm text-muted-foreground">{t("curation.suggestionsDesc")}</p>
+      {suggestionsLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
+        </div>
+      ) : !matchedWhiskies || matchedWhiskies.length === 0 ? (
+        <div className="bg-secondary/30 rounded-lg p-4 text-center">
+          <p className="text-sm text-muted-foreground">{t("curation.noSuggestions")}</p>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs" data-testid="badge-match-count">
+              {matchedWhiskies.length} {t("curation.matchCount")}
+            </Badge>
+          </div>
+          <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
+            {matchedWhiskies.map((w: any, i: number) => (
+              <div
+                key={w.id || i}
+                className="bg-secondary/20 rounded-lg p-3 space-y-1 border border-border/20"
+                data-testid={`card-suggestion-${w.id || i}`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{w.name}</p>
+                    {w.distillery && (
+                      <p className="text-xs text-muted-foreground">{w.distillery}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {w.avgScore != null && Number(w.avgScore) > 8 && (
+                      <Badge variant="default" className="text-[10px] px-1.5 py-0 gap-0.5" data-testid={`badge-top-rated-${w.id || i}`}>
+                        <Star className="w-3 h-3" />
+                        {t("curation.topRated")}
+                      </Badge>
+                    )}
+                    <a
+                      href={`https://www.whiskybase.com/search?q=${encodeURIComponent(w.name)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:text-primary/80"
+                      data-testid={`link-wb-suggestion-${w.id || i}`}
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                  {w.avgScore != null && (
+                    <span data-testid={`text-avg-score-${w.id || i}`}>
+                      {t("curation.avgRating")} {Number(w.avgScore).toFixed(1)}
+                    </span>
+                  )}
+                  {w.ratingCount != null && (
+                    <span>
+                      {w.ratingCount} {t("curation.ratings")}
+                    </span>
+                  )}
+                  {w.tastingName && (
+                    <span className="truncate max-w-[200px]">
+                      {t("curation.fromTasting")} {w.tastingName}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      <p className="text-xs text-muted-foreground italic mt-2">{t("curation.suggestionsHint")}</p>
+    </div>,
+
     <div key="result" className="space-y-5">
       <div className="bg-secondary/30 rounded-lg p-4 space-y-2">
         <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("curation.yourPlan")}</p>
@@ -238,7 +344,7 @@ export function CurationWizard() {
           <Lightbulb className="w-4 h-4 text-primary" />
           <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("curation.tips")}</p>
         </div>
-        {suggestions.map((s, i) => (
+        {curatorTips.map((s, i) => (
           <div key={i} className="bg-primary/5 rounded-md p-3">
             <p className="text-xs font-semibold text-primary">{s.title}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
@@ -252,6 +358,7 @@ export function CurationWizard() {
     t("curation.stepTheme"),
     t("curation.stepFocus"),
     t("curation.stepDetails"),
+    t("curation.stepSuggestions"),
     t("curation.stepResult"),
   ];
 
