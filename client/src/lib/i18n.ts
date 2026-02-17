@@ -31,6 +31,25 @@ const resources = {
         pinRequired: "PIN is required",
         invalidEmail: "Please enter a valid email address"
       },
+      forgotPin: {
+        link: "Forgot PIN?",
+        title: "Reset Your PIN",
+        subtitle: "Enter your name and email to receive a reset code",
+        nameEmailRequired: "Name and email are required",
+        sendCode: "Send Reset Code",
+        sending: "Sending...",
+        verifyTitle: "Enter Reset Code",
+        verifySubtitle: "Enter the code sent to your email and choose a new PIN",
+        codeAndPinRequired: "Code and new PIN are required",
+        pinTooShort: "PIN must be at least 4 characters",
+        newPin: "New PIN",
+        newPinPlaceholder: "Choose a new PIN",
+        resetPin: "Reset PIN",
+        resetting: "Resetting...",
+        success: "PIN reset successfully! You can now log in with your new PIN.",
+        backToLogin: "Back to Login",
+        noAccount: "No account found with that name and email"
+      },
       verify: {
         title: "Verify Your Email",
         subtitle: "We sent a 6-digit code to {{email}}. Please enter it below.",
@@ -500,6 +519,14 @@ const resources = {
         searchSaved: "Search saved entries...",
         noSavedEntries: "No benchmark entries saved yet.",
         nose: "Nose",
+        uploadedBy: "Uploaded by",
+        uploadedAt: "Uploaded",
+        deleteEntry: "Delete Analysis",
+        confirmDelete: "Are you sure you want to delete this analysis?",
+        addToDb: "Add to Database",
+        removeFromDb: "Remove from Database",
+        inDatabase: "In Database",
+        deleted: "Analysis deleted",
         field: {
           whiskyName: "Whisky Name",
           distillery: "Distillery",
@@ -1281,7 +1308,9 @@ const resources = {
         fromTasting: "From:",
         avgRating: "Avg:",
         ratings: "ratings",
-        topRated: "Top rated"
+        topRated: "Top rated",
+        addToTasting: "Add to Tasting",
+        added: "Added"
       }
     }
   },
@@ -1313,6 +1342,25 @@ const resources = {
         emailRequired: "E-Mail ist erforderlich",
         pinRequired: "PIN ist erforderlich",
         invalidEmail: "Bitte geben Sie eine gültige E-Mail-Adresse ein"
+      },
+      forgotPin: {
+        link: "PIN vergessen?",
+        title: "PIN zurücksetzen",
+        subtitle: "Geben Sie Ihren Namen und E-Mail ein, um einen Reset-Code zu erhalten",
+        nameEmailRequired: "Name und E-Mail sind erforderlich",
+        sendCode: "Reset-Code senden",
+        sending: "Wird gesendet...",
+        verifyTitle: "Reset-Code eingeben",
+        verifySubtitle: "Geben Sie den Code ein, der an Ihre E-Mail gesendet wurde, und wählen Sie eine neue PIN",
+        codeAndPinRequired: "Code und neue PIN sind erforderlich",
+        pinTooShort: "PIN muss mindestens 4 Zeichen lang sein",
+        newPin: "Neue PIN",
+        newPinPlaceholder: "Neue PIN wählen",
+        resetPin: "PIN zurücksetzen",
+        resetting: "Wird zurückgesetzt...",
+        success: "PIN erfolgreich zurückgesetzt! Sie können sich jetzt mit Ihrer neuen PIN anmelden.",
+        backToLogin: "Zurück zum Login",
+        noAccount: "Kein Konto mit diesem Namen und dieser E-Mail gefunden"
       },
       verify: {
         title: "E-Mail bestätigen",
@@ -1783,6 +1831,14 @@ const resources = {
         searchSaved: "Gespeicherte Einträge durchsuchen...",
         noSavedEntries: "Noch keine Benchmark-Einträge gespeichert.",
         nose: "Nase",
+        uploadedBy: "Hochgeladen von",
+        uploadedAt: "Hochgeladen am",
+        deleteEntry: "Analyse löschen",
+        confirmDelete: "Möchten Sie diese Analyse wirklich löschen?",
+        addToDb: "Zur Datenbank hinzufügen",
+        removeFromDb: "Aus Datenbank entfernen",
+        inDatabase: "In Datenbank",
+        deleted: "Analyse gelöscht",
         field: {
           whiskyName: "Whisky-Name",
           distillery: "Destillerie",
@@ -2564,7 +2620,9 @@ const resources = {
         fromTasting: "Aus:",
         avgRating: "Ø:",
         ratings: "Bewertungen",
-        topRated: "Spitzenbewertung"
+        topRated: "Spitzenbewertung",
+        addToTasting: "Zum Tasting hinzufügen",
+        added: "Hinzugefügt"
       }
     }
   }

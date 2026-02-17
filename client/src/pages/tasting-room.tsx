@@ -943,7 +943,7 @@ export default function TastingRoom() {
             <div className="flex gap-2">
               <AddWhiskyDialog tastingId={tasting.id} />
               <ImportFlightDialog tastingId={tasting.id} />
-              <CurationWizard />
+              <CurationWizard tastingId={tasting.id} />
             </div>
           )}
         </div>

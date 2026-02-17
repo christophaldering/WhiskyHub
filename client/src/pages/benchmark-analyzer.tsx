@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Upload, FileText, Loader2, Check, X, Trash2, Save, Brain, AlertCircle, ChevronDown, ChevronUp, Search
+  Upload, FileText, Loader2, Check, X, Trash2, Save, Brain, AlertCircle, ChevronDown, ChevronUp, Search, Database, User, Clock
 } from "lucide-react";
 
 interface ExtractedEntry {
@@ -28,6 +28,7 @@ interface ExtractedEntry {
   scoreScale?: string | null;
   sourceAuthor?: string | null;
   selected?: boolean;
+  addToDb?: boolean;
 }
 
 export default function BenchmarkAnalyzer() {
@@ -43,6 +44,7 @@ export default function BenchmarkAnalyzer() {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [searchDb, setSearchDb] = useState("");
   const [showSaved, setShowSaved] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const { data: allTastings } = useQuery({
     queryKey: ["/api/tastings"],
@@ -78,6 +80,7 @@ export default function BenchmarkAnalyzer() {
     mutationFn: (id: string) => benchmarkApi.deleteEntry(id, currentParticipant!.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/benchmark"] });
+      setDeleteConfirmId(null);
     },
   });
 
@@ -95,6 +98,7 @@ export default function BenchmarkAnalyzer() {
       const entries = (result.entries || []).map((entry: ExtractedEntry) => ({
         ...entry,
         selected: true,
+        addToDb: false,
       }));
       setExtractedEntries(entries);
       if (entries.length === 0) {
@@ -110,6 +114,10 @@ export default function BenchmarkAnalyzer() {
 
   const toggleSelect = (idx: number) => {
     setExtractedEntries(prev => prev.map((e, i) => i === idx ? { ...e, selected: !e.selected } : e));
+  };
+
+  const toggleAddToDb = (idx: number) => {
+    setExtractedEntries(prev => prev.map((e, i) => i === idx ? { ...e, addToDb: !e.addToDb } : e));
   };
 
   const toggleSelectAll = () => {
@@ -131,7 +139,21 @@ export default function BenchmarkAnalyzer() {
     saveMutation.mutate(selected);
   };
 
+  const handleDeleteConfirm = (id: string) => {
+    deleteMutation.mutate(id);
+  };
+
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return "—";
+    try {
+      return new Date(dateStr).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    } catch {
+      return "—";
+    }
+  };
+
   const selectedCount = extractedEntries.filter(e => e.selected).length;
+  const dbCount = extractedEntries.filter(e => e.addToDb).length;
 
   const filteredSaved = (savedEntries || []).filter((e: any) => {
     if (!searchDb.trim()) return true;
@@ -140,7 +162,8 @@ export default function BenchmarkAnalyzer() {
       e.whiskyName?.toLowerCase().includes(q) ||
       e.distillery?.toLowerCase().includes(q) ||
       e.region?.toLowerCase().includes(q) ||
-      e.sourceDocument?.toLowerCase().includes(q)
+      e.sourceDocument?.toLowerCase().includes(q) ||
+      e.uploaderName?.toLowerCase().includes(q)
     );
   });
 
@@ -257,6 +280,32 @@ export default function BenchmarkAnalyzer() {
               </div>
             </div>
 
+            {currentParticipant && (
+              <div className="flex items-center gap-4 text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
+                <span className="flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5" />
+                  {t("benchmark.uploadedBy")}: <span className="font-medium text-foreground">{currentParticipant.name}</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  {t("benchmark.uploadedAt")}: <span className="font-medium text-foreground">{new Date().toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5" />
+                  {fileName}
+                </span>
+              </div>
+            )}
+
+            {dbCount > 0 && (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 flex items-center gap-2">
+                <Database className="w-4 h-4 text-green-500" />
+                <span className="text-sm text-green-600 dark:text-green-400">
+                  {dbCount} {t("benchmark.entries")} {t("benchmark.inDatabase")}
+                </span>
+              </div>
+            )}
+
             {saveMutation.isSuccess && (
               <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-500" />
@@ -268,7 +317,13 @@ export default function BenchmarkAnalyzer() {
               {extractedEntries.map((entry, idx) => (
                 <div
                   key={idx}
-                  className={`border rounded-lg transition-colors ${entry.selected ? "border-primary/30 bg-primary/5" : "border-border/30 bg-card opacity-60"}`}
+                  className={`border rounded-lg transition-colors ${
+                    entry.addToDb
+                      ? "border-green-500/40 bg-green-500/5 ring-1 ring-green-500/20"
+                      : entry.selected
+                        ? "border-primary/30 bg-primary/5"
+                        : "border-border/30 bg-card opacity-60"
+                  }`}
                   data-testid={`benchmark-entry-${idx}`}
                 >
                   <div className="flex items-center gap-3 p-3 cursor-pointer" onClick={() => setExpandedIdx(expandedIdx === idx ? null : idx)}>
@@ -289,6 +344,12 @@ export default function BenchmarkAnalyzer() {
                           </Badge>
                         )}
                         {entry.region && <Badge variant="outline" className="text-[10px]">{entry.region}</Badge>}
+                        {entry.addToDb && (
+                          <Badge className="text-[10px] bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30">
+                            <Database className="w-2.5 h-2.5 mr-1" />
+                            {t("benchmark.inDatabase")}
+                          </Badge>
+                        )}
                       </div>
                       {entry.noseNotes && (
                         <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-lg">
@@ -297,6 +358,16 @@ export default function BenchmarkAnalyzer() {
                       )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant={entry.addToDb ? "default" : "outline"}
+                        size="sm"
+                        className={`h-7 text-[10px] gap-1 ${entry.addToDb ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
+                        onClick={(e) => { e.stopPropagation(); toggleAddToDb(idx); }}
+                        data-testid={`button-add-to-db-${idx}`}
+                      >
+                        <Database className="w-3 h-3" />
+                        {entry.addToDb ? t("benchmark.removeFromDb") : t("benchmark.addToDb")}
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); removeEntry(idx); }}>
                         <X className="w-3.5 h-3.5" />
                       </Button>
@@ -388,6 +459,8 @@ export default function BenchmarkAnalyzer() {
                           <th className="text-left p-2 font-medium">{t("benchmark.field.region")}</th>
                           <th className="text-left p-2 font-medium">{t("benchmark.field.score")}</th>
                           <th className="text-left p-2 font-medium">{t("benchmark.field.source")}</th>
+                          <th className="text-left p-2 font-medium">{t("benchmark.uploadedBy")}</th>
+                          <th className="text-left p-2 font-medium">{t("benchmark.uploadedAt")}</th>
                           <th className="p-2 w-10"></th>
                         </tr>
                       </thead>
@@ -399,16 +472,53 @@ export default function BenchmarkAnalyzer() {
                             <td className="p-2 text-muted-foreground">{entry.region || "—"}</td>
                             <td className="p-2">{entry.score != null ? <Badge variant="secondary" className="text-[10px]">{entry.score}</Badge> : "—"}</td>
                             <td className="p-2 text-muted-foreground truncate max-w-[150px]">{entry.sourceDocument || "—"}</td>
+                            <td className="p-2 text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <User className="w-3 h-3" />
+                                {entry.uploaderName || "—"}
+                              </span>
+                            </td>
+                            <td className="p-2 text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {formatDate(entry.createdAt)}
+                              </span>
+                            </td>
                             <td className="p-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => deleteMutation.mutate(entry.id)}
-                                data-testid={`button-delete-${entry.id}`}
-                              >
-                                <Trash2 className="w-3 h-3 text-destructive" />
-                              </Button>
+                              {deleteConfirmId === entry.id ? (
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => handleDeleteConfirm(entry.id)}
+                                    disabled={deleteMutation.isPending}
+                                    data-testid={`button-confirm-delete-${entry.id}`}
+                                  >
+                                    {deleteMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => setDeleteConfirmId(null)}
+                                    data-testid={`button-cancel-delete-${entry.id}`}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => setDeleteConfirmId(entry.id)}
+                                  title={t("benchmark.deleteEntry")}
+                                  data-testid={`button-delete-${entry.id}`}
+                                >
+                                  <Trash2 className="w-3 h-3 text-destructive" />
+                                </Button>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -418,6 +528,13 @@ export default function BenchmarkAnalyzer() {
                   <div className="p-2 bg-muted/30 text-xs text-muted-foreground text-center">
                     {filteredSaved.length} {t("benchmark.entries")}
                   </div>
+                </div>
+              )}
+
+              {deleteMutation.isSuccess && (
+                <div className="mt-2 bg-green-500/10 border border-green-500/30 rounded-lg p-3 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-green-500" />
+                  <span className="text-sm text-green-600 dark:text-green-400">{t("benchmark.deleted")}</span>
                 </div>
               )}
             </motion.div>

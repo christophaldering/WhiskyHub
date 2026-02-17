@@ -7,7 +7,12 @@ export function LanguageToggle() {
 
   const toggleLanguage = () => {
     const newLang = i18n.language === "en" ? "de" : "en";
-    i18n.changeLanguage(newLang);
+    const scrollY = window.scrollY;
+    i18n.changeLanguage(newLang).then(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, scrollY);
+      });
+    });
   };
 
   return (

@@ -409,150 +409,147 @@ export default function Home() {
         transition={{ delay: 0.2, duration: 0.8 }}
         className="w-full"
       >
-        <button
-          onClick={() => setShowFeatures(!showFeatures)}
-          className="w-full relative rounded-xl bg-gradient-to-r from-amber-600/20 via-amber-500/10 to-amber-600/20 p-[1px] shadow-md hover:shadow-lg hover:shadow-amber-500/10 transition-all duration-300 group"
-          data-testid="button-toggle-features"
-        >
-          <div className="flex flex-col items-center gap-1 py-4 px-6 rounded-[11px] bg-card/95 backdrop-blur-sm">
-            <div className="flex items-center gap-2.5">
-              <Eye className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              <span className="text-base font-serif font-semibold text-primary">
-                {showFeatures ? t("home.hideFeatures") : t("home.showFeatures")}
-              </span>
-              <ChevronDown className={`w-4 h-4 text-amber-600 dark:text-amber-400 transition-transform duration-300 ${showFeatures ? "rotate-180" : "animate-bounce"}`} />
-            </div>
+        <Card className="border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-500">
+          <CardHeader
+            className="cursor-pointer select-none"
+            onClick={() => setShowFeatures(!showFeatures)}
+            data-testid="button-toggle-features"
+          >
+            <CardTitle className="flex items-center gap-3 font-serif text-2xl text-primary">
+              <Eye className="w-5 h-5 text-accent" />
+              {showFeatures ? t("home.hideFeatures") : t("home.showFeatures")}
+              <ChevronDown className={`w-4 h-4 ml-auto text-muted-foreground transition-transform duration-300 ${showFeatures ? "rotate-180" : ""}`} />
+            </CardTitle>
             {!showFeatures && (
-              <span className="text-[11px] text-muted-foreground/60 font-serif tracking-wide mt-0.5">
+              <CardDescription className="text-xs text-muted-foreground/80">
                 {t("home.showFeaturesHint")}
-              </span>
+              </CardDescription>
             )}
-          </div>
-        </button>
+          </CardHeader>
+          <AnimatePresence>
+            {showFeatures && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <CardContent className="space-y-4">
+                  <p className="text-center text-sm text-foreground/90 font-serif italic px-4">
+                    {t("home.introHeadline")}
+                  </p>
 
-        <AnimatePresence>
-          {showFeatures && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.4, ease: "easeInOut" }}
-              className="overflow-hidden"
-            >
-              <div className="pt-4 space-y-4">
-                <p className="text-center text-sm text-foreground/90 font-serif italic px-4">
-                  {t("home.introHeadline")}
-                </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* Journey Feature */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                      data-testid="card-feature-journey"
+                    >
+                      <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                        <ArrowRight className="w-4 h-4" />
+                        {t("features.journey")}
+                      </h3>
+                      <JourneyFlowGraphic steps={journeySteps} />
+                      <p className="text-xs text-muted-foreground leading-relaxed pt-3">{t("features.journeyDesc")}</p>
+                    </motion.div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {/* Journey Feature */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
-                    data-testid="card-feature-journey"
-                  >
-                    <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
-                      <ArrowRight className="w-4 h-4" />
-                      {t("features.journey")}
-                    </h3>
-                    <JourneyFlowGraphic steps={journeySteps} />
-                    <p className="text-xs text-muted-foreground leading-relaxed pt-3">{t("features.journeyDesc")}</p>
-                  </motion.div>
+                    {/* AI Feature */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 }}
+                      className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                      data-testid="card-feature-ai"
+                    >
+                      <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                        <Sparkles className="w-4 h-4" />
+                        {t("features.ai")}
+                      </h3>
+                      <AiPipelineGraphic labels={[t("features.aiScan"), t("features.aiMatch"), t("features.aiRec")]} />
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t("features.aiDesc")}</p>
+                    </motion.div>
 
-                  {/* AI Feature */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15 }}
-                    className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
-                    data-testid="card-feature-ai"
-                  >
-                    <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" />
-                      {t("features.ai")}
-                    </h3>
-                    <AiPipelineGraphic labels={[t("features.aiScan"), t("features.aiMatch"), t("features.aiRec")]} />
-                    <p className="text-xs text-muted-foreground leading-relaxed">{t("features.aiDesc")}</p>
-                  </motion.div>
+                    {/* Tasting Feature */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                      data-testid="card-feature-tasting"
+                    >
+                      <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                        <Glasses className="w-4 h-4" />
+                        {t("features.tasting")}
+                      </h3>
+                      <MiniBarChart categories={tastingCategories} />
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t("features.tastingDesc")}</p>
+                    </motion.div>
 
-                  {/* Tasting Feature */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
-                    data-testid="card-feature-tasting"
-                  >
-                    <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
-                      <Glasses className="w-4 h-4" />
-                      {t("features.tasting")}
-                    </h3>
-                    <MiniBarChart categories={tastingCategories} />
-                    <p className="text-xs text-muted-foreground leading-relaxed">{t("features.tastingDesc")}</p>
-                  </motion.div>
+                    {/* Stats Feature */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25 }}
+                      className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                      data-testid="card-feature-stats"
+                    >
+                      <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4" />
+                        {t("features.stats")}
+                      </h3>
+                      <div className="w-24 h-24 mx-auto">
+                        <MiniRadarChart />
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t("features.statsDesc")}</p>
+                    </motion.div>
 
-                  {/* Stats Feature */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.25 }}
-                    className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
-                    data-testid="card-feature-stats"
-                  >
-                    <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4" />
-                      {t("features.stats")}
-                    </h3>
-                    <div className="w-24 h-24 mx-auto">
-                      <MiniRadarChart />
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{t("features.statsDesc")}</p>
-                  </motion.div>
+                    {/* Community Feature */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                      data-testid="card-feature-community"
+                    >
+                      <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        {t("features.community")}
+                      </h3>
+                      <CommunityGraphic metrics={communityMetrics} />
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t("features.communityDesc")}</p>
+                    </motion.div>
 
-                  {/* Community Feature */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
-                    data-testid="card-feature-community"
-                  >
-                    <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      {t("features.community")}
-                    </h3>
-                    <CommunityGraphic metrics={communityMetrics} />
-                    <p className="text-xs text-muted-foreground leading-relaxed">{t("features.communityDesc")}</p>
-                  </motion.div>
+                    {/* Encyclopedia Feature */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.35 }}
+                      className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                      data-testid="card-feature-encyclopedia"
+                    >
+                      <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        {t("features.encyclopedia")}
+                      </h3>
+                      <div className="h-20">
+                        <WorldMapDots regions={encyclopediaRegions} />
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t("features.encyclopediaDesc")}</p>
+                    </motion.div>
+                  </div>
 
-                  {/* Encyclopedia Feature */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.35 }}
-                    className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
-                    data-testid="card-feature-encyclopedia"
-                  >
-                    <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
-                      <Globe className="w-4 h-4" />
-                      {t("features.encyclopedia")}
-                    </h3>
-                    <div className="h-20">
-                      <WorldMapDots regions={encyclopediaRegions} />
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{t("features.encyclopediaDesc")}</p>
-                  </motion.div>
-                </div>
-
-                <p className="text-center text-xs text-muted-foreground italic pt-1">
-                  {t("home.introFooter")}
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  <p className="text-center text-xs text-muted-foreground italic pt-1">
+                    {t("home.introFooter")}
+                  </p>
+                </CardContent>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Card>
       </motion.div>
 
       {/* Join / Host Cards */}

@@ -23,9 +23,20 @@ const miniMapIcon = L.divIcon({
 function InvalidateSizeOnMount() {
   const map = useMap();
   useEffect(() => {
-    const timer = setTimeout(() => map.invalidateSize(), 100);
-    const timer2 = setTimeout(() => map.invalidateSize(), 400);
-    return () => { clearTimeout(timer); clearTimeout(timer2); };
+    const timers = [
+      setTimeout(() => map.invalidateSize(), 200),
+      setTimeout(() => map.invalidateSize(), 500),
+      setTimeout(() => map.invalidateSize(), 1000),
+    ];
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    observer.observe(container);
+    return () => {
+      timers.forEach(clearTimeout);
+      observer.disconnect();
+    };
   }, [map]);
   return null;
 }

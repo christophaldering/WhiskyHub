@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { useTranslation } from "react-i18next";
-import { Mail, ArrowLeft } from "lucide-react";
+import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
 
 interface LoginDialogProps {
   open: boolean;
@@ -30,6 +30,16 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+
+  const [forgotPinMode, setForgotPinMode] = useState(false);
+  const [resetName, setResetName] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [resetStep, setResetStep] = useState<"request" | "verify" | "done">("request");
+  const [resetError, setResetError] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetParticipantId, setResetParticipantId] = useState("");
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -124,6 +134,73 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     setVerifyError("");
   };
 
+  const handleForgotPinRequest = async () => {
+    if (!resetName.trim() || !resetEmail.trim()) {
+      setResetError(t('forgotPin.nameEmailRequired'));
+      return;
+    }
+    setResetLoading(true);
+    setResetError("");
+    try {
+      const res = await fetch("/api/participants/forgot-pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: resetName.trim(), email: resetEmail.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed");
+      }
+      const data = await res.json();
+      setResetParticipantId(data.participantId);
+      setResetStep("verify");
+    } catch (e: any) {
+      setResetError(e.message || "Failed to send reset code");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleForgotPinVerify = async () => {
+    if (!resetCode.trim() || !newPin.trim()) {
+      setResetError(t('forgotPin.codeAndPinRequired'));
+      return;
+    }
+    if (newPin.length < 4) {
+      setResetError(t('forgotPin.pinTooShort'));
+      return;
+    }
+    setResetLoading(true);
+    setResetError("");
+    try {
+      const res = await fetch("/api/participants/reset-pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ participantId: resetParticipantId, code: resetCode.trim(), newPin: newPin }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed");
+      }
+      setResetStep("done");
+    } catch (e: any) {
+      setResetError(e.message || "Failed to reset PIN");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleBackFromForgot = () => {
+    setForgotPinMode(false);
+    setResetStep("request");
+    setResetName("");
+    setResetEmail("");
+    setResetCode("");
+    setNewPin("");
+    setResetError("");
+    setResetParticipantId("");
+  };
+
   if (verifyMode && pendingParticipant) {
     return (
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -191,6 +268,125 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     );
   }
 
+  if (forgotPinMode) {
+    return (
+      <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+              <Mail className="w-6 h-6" />
+              {resetStep === "done" ? t('forgotPin.backToLogin') : resetStep === "verify" ? t('forgotPin.verifyTitle') : t('forgotPin.title')}
+            </DialogTitle>
+            <DialogDescription>
+              {resetStep === "done" ? "" : resetStep === "verify" ? t('forgotPin.verifySubtitle') : t('forgotPin.subtitle')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {resetStep === "request" && (
+              <>
+                <div className="space-y-2">
+                  <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.name')}</Label>
+                  <Input
+                    value={resetName}
+                    onChange={(e) => setResetName(e.target.value)}
+                    placeholder={t('login.namePlaceholder')}
+                    className="bg-secondary/20"
+                    data-testid="input-reset-name"
+                    autoFocus
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.email')}</Label>
+                  <Input
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder={t('login.emailPlaceholder')}
+                    className="bg-secondary/20"
+                    data-testid="input-reset-email"
+                    onKeyDown={(e) => e.key === "Enter" && handleForgotPinRequest()}
+                  />
+                </div>
+
+                {resetError && <p className="text-sm text-destructive" data-testid="text-reset-error">{resetError}</p>}
+
+                <Button
+                  onClick={handleForgotPinRequest}
+                  disabled={resetLoading}
+                  className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
+                  data-testid="button-send-reset-code"
+                >
+                  {resetLoading ? t('forgotPin.sending') : t('forgotPin.sendCode')}
+                </Button>
+              </>
+            )}
+
+            {resetStep === "verify" && (
+              <>
+                <div className="space-y-2">
+                  <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('verify.codeLabel')}</Label>
+                  <Input
+                    value={resetCode}
+                    onChange={(e) => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder={t('verify.codePlaceholder')}
+                    className="bg-secondary/20 text-center text-2xl tracking-[0.5em] font-mono"
+                    maxLength={6}
+                    inputMode="numeric"
+                    autoFocus
+                    data-testid="input-reset-code"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('forgotPin.newPin')}</Label>
+                  <Input
+                    type="password"
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value)}
+                    placeholder={t('forgotPin.newPinPlaceholder')}
+                    maxLength={6}
+                    className="bg-secondary/20"
+                    data-testid="input-new-pin"
+                    onKeyDown={(e) => e.key === "Enter" && handleForgotPinVerify()}
+                  />
+                </div>
+
+                {resetError && <p className="text-sm text-destructive" data-testid="text-reset-error">{resetError}</p>}
+
+                <Button
+                  onClick={handleForgotPinVerify}
+                  disabled={resetLoading || resetCode.length < 6}
+                  className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
+                  data-testid="button-reset-pin"
+                >
+                  {resetLoading ? t('forgotPin.resetting') : t('forgotPin.resetPin')}
+                </Button>
+              </>
+            )}
+
+            {resetStep === "done" && (
+              <div className="text-center space-y-4 py-4">
+                <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
+                <p className="text-sm text-muted-foreground" data-testid="text-reset-success">{t('forgotPin.success')}</p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-start">
+              <button
+                type="button"
+                onClick={handleBackFromForgot}
+                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                data-testid="button-back-from-forgot"
+              >
+                <ArrowLeft className="w-3 h-3" />
+                {t('forgotPin.backToLogin')}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
@@ -240,6 +436,14 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
             {!isReturning && (
               <p className="text-xs text-muted-foreground">{t('login.pinHint')}</p>
             )}
+            <button
+              type="button"
+              onClick={() => setForgotPinMode(true)}
+              className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
+              data-testid="button-forgot-pin"
+            >
+              {t('forgotPin.link')}
+            </button>
           </div>
 
           {error && <p className="text-sm text-destructive" data-testid="text-login-error">{error}</p>}

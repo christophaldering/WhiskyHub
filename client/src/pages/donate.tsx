@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Heart, ExternalLink, HandHeart, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=PLACEHOLDER";
+const PAYPAL_DONATE_URL = "https://paypal.me/ChristophAldering";
 
 const HOSPIZ_NAME = "Christina-Kleintjes-Hospiz-Stiftung";
 const HOSPIZ_URL = "https://c-kleintjes-hospiz-stiftung.de";

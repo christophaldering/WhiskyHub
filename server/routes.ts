@@ -417,6 +417,48 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  app.post("/api/participants/forgot-pin", async (req, res) => {
+    try {
+      const { name, email } = req.body;
+      if (!name || !email) return res.status(400).json({ message: "Name and email are required" });
+      const participant = await storage.getParticipantByName(name.trim());
+      if (!participant || !participant.email || participant.email.toLowerCase() !== email.trim().toLowerCase()) {
+        return res.status(404).json({ message: "No account found with that name and email" });
+      }
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiry = new Date(Date.now() + 15 * 60 * 1000);
+      await storage.setVerificationCode(participant.id, code, expiry);
+      const emailContent = buildVerificationEmail({ name: participant.name, code });
+      sendEmail({ to: participant.email, ...emailContent }).catch(err =>
+        console.error("Failed to send PIN reset email:", err)
+      );
+      res.json({ participantId: participant.id });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/participants/reset-pin", async (req, res) => {
+    try {
+      const { participantId, code, newPin } = req.body;
+      if (!participantId || !code || !newPin) return res.status(400).json({ message: "All fields are required" });
+      if (newPin.length < 4) return res.status(400).json({ message: "PIN must be at least 4 characters" });
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      if (!participant.verificationCode || participant.verificationCode !== code) {
+        return res.status(400).json({ message: "Invalid verification code" });
+      }
+      if (participant.verificationExpiry && new Date() > new Date(participant.verificationExpiry)) {
+        return res.status(400).json({ message: "Verification code has expired. Please request a new one." });
+      }
+      await storage.updateParticipantPin(participant.id, newPin);
+      await storage.setVerificationCode(participant.id, "", new Date(0));
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== TASTINGS =====
 
   app.get("/api/tastings", async (_req, res) => {
@@ -2870,7 +2912,15 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       if (!auth) return res.status(403).json({ message: "Only hosts and admins can access benchmark data" });
 
       const entries = await storage.getBenchmarkEntries();
-      res.json(entries);
+      const enriched = await Promise.all(entries.map(async (entry) => {
+        let uploaderName = null;
+        if (entry.uploadedBy) {
+          const uploader = await storage.getParticipant(entry.uploadedBy);
+          uploaderName = uploader?.name || null;
+        }
+        return { ...entry, uploaderName };
+      }));
+      res.json(enriched);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

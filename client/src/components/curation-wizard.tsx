@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, ExternalLink, ChevronRight, ChevronLeft, Copy, Check, Lightbulb, Star } from "lucide-react";
+import { Wand2, ExternalLink, ChevronRight, ChevronLeft, Copy, Check, Lightbulb, Star, Plus } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 
 const REGION_KEYS = ["islay", "speyside", "highland", "lowland", "campbeltown", "islands", "ireland", "japan", "usa", "world"] as const;
@@ -27,10 +27,12 @@ const STYLE_API_MAP: Record<string, string> = {
   singleCask: "singleCask",
 };
 
-export function CurationWizard() {
+export function CurationWizard({ tastingId }: { tastingId?: string }) {
   const { t } = useTranslation();
   const currentParticipant = useAppStore((s) => s.currentParticipant);
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [step, setStep] = useState(0);
   const [copied, setCopied] = useState(false);
   const [config, setConfig] = useState({
@@ -50,7 +52,32 @@ export function CurationWizard() {
     setStep(0);
     setConfig({ theme: "", regions: [], styles: [], ageRange: "", flightSize: "6", budget: "", notes: "" });
     setCopied(false);
+    setAddedIds(new Set());
   };
+
+  const addWhiskyMutation = useMutation({
+    mutationFn: async (whisky: any) => {
+      const res = await fetch(`/api/tastings/${tastingId}/whiskies`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: whisky.name,
+          distillery: whisky.distillery || "",
+          age: whisky.age || "",
+          abv: whisky.abv || "",
+          region: whisky.region || "",
+          caskInfluence: whisky.caskInfluence || "",
+          peatLevel: whisky.peatLevel || "",
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to add whisky");
+      return res.json();
+    },
+    onSuccess: (_data, whisky) => {
+      setAddedIds(prev => new Set(prev).add(whisky.id));
+      queryClient.invalidateQueries({ queryKey: ["/api/tastings"] });
+    },
+  });
 
   const regionLabel = (key: string) => t(`curation.regionOpts.${key}` as any);
   const styleLabel = (key: string) => t(`curation.styleOpts.${key}` as any);
@@ -293,6 +320,26 @@ export function CurationWizard() {
                     </span>
                   )}
                 </div>
+                {tastingId && (
+                  <div className="mt-1.5 flex justify-end">
+                    {addedIds.has(w.id) ? (
+                      <span className="text-xs text-green-600 flex items-center gap-1">
+                        <Check className="w-3 h-3" /> {t("curation.added")}
+                      </span>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-xs text-primary"
+                        onClick={() => addWhiskyMutation.mutate(w)}
+                        disabled={addWhiskyMutation.isPending}
+                        data-testid={`btn-add-suggestion-${w.id || i}`}
+                      >
+                        <Plus className="w-3 h-3 mr-1" /> {t("curation.addToTasting")}
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
