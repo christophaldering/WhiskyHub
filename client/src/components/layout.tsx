@@ -94,7 +94,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       items: [
         { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         { href: "/", icon: Home, label: t('nav.lobby') },
-        { href: "/sessions", icon: Wine, label: t('nav.sessions') },
+        ...(currentParticipant ? [{ href: "/sessions", icon: Wine, label: t('nav.sessions') }] : []),
         { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
       ],
     },
@@ -302,8 +302,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center justify-around px-1 py-1.5">
           {[
             { href: "/", icon: Home, label: t('nav.lobby') },
-            { href: "/sessions", icon: Wine, label: t('nav.sessions') },
             ...(currentParticipant ? [
+              { href: "/sessions", icon: Wine, label: t('nav.sessions') },
               { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
               { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
             ] : []),
