@@ -80,6 +80,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 47. **Personal vs Global Statistics**: Flavor profile shows overlaid radar chart comparing personal averages with global averages from all participants, plus detailed comparison table.
 48. **Journal Bottle Scanner**: AI-powered bottle identification in the whisky journal. Upload a photo of any bottle and GPT-4o reads the label to auto-fill whisky name, distillery, region, age, ABV, and cask type. Includes Whiskybase search link for external research.
 49. **Whiskybase Research**: Photo Tasting and Journal scanner provide Whiskybase search links for whiskies not found in the internal database, enabling external verification and research.
+50. **Independent Bottlers Encyclopedia**: Reference page with 20 independent bottler entries (Gordon & MacPhail, Signatory, Brühler Whiskyhaus, Douglas Laing, Compass Box, SMWS, etc.) including descriptions, specialties, and notable releases. Searchable with country filtering and sort options.
 
 ### Key Endpoints (continued)
 - `GET /api/participants/:id/flavor-profile` — Aggregated flavor profile with radar data, breakdowns, and whisky lists

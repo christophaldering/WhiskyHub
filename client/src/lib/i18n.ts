@@ -84,7 +84,8 @@ const resources = {
         benchmark: "Benchmark Analyzer",
         features: "Features",
         photoTasting: "Photo Tasting",
-        wishlist: "Whisky Wishlist"
+        wishlist: "Whisky Wishlist",
+        bottlers: "Bottlers"
       },
       navGroup: {
         main: "Main",
@@ -1135,6 +1136,18 @@ const resources = {
         viewOnMap: "View on Map",
         location: "Location"
       },
+      bottler: {
+        title: "Independent Bottlers",
+        subtitle: "The art of selecting and bottling exceptional whiskies from distilleries around the world",
+        whatIsTitle: "What is an Independent Bottler?",
+        whatIsDesc: "Independent bottlers are companies that purchase casks of whisky from distilleries and bottle them under their own label. Unlike distillery-owned 'official bottlings', independent bottlers offer unique single cask selections, often at cask strength, without chill-filtration or artificial coloring. They provide access to rare and unusual expressions that would otherwise never be tasted by the public.",
+        searchPlaceholder: "Search for a bottler...",
+        allCountries: "All Countries",
+        results: "Results",
+        sortFounded: "Founded",
+        est: "Est.",
+        notableReleases: "Notable Releases"
+      },
       distilleryMap: {
         title: "Distillery Map",
         subtitle: "Explore distilleries around the world",
@@ -1334,7 +1347,8 @@ const resources = {
         benchmark: "Benchmark-Analyse",
         features: "Funktionen",
         photoTasting: "Foto-Verkostung",
-        wishlist: "Whisky-Wunschliste"
+        wishlist: "Whisky-Wunschliste",
+        bottlers: "Abfüller"
       },
       navGroup: {
         main: "Übersicht",
@@ -2384,6 +2398,18 @@ const resources = {
         est: "Gegr.",
         viewOnMap: "Auf Karte anzeigen",
         location: "Standort"
+      },
+      bottler: {
+        title: "Unabhängige Abfüller",
+        subtitle: "Die Kunst, außergewöhnliche Whiskys aus Destillerien weltweit auszuwählen und abzufüllen",
+        whatIsTitle: "Was ist ein unabhängiger Abfüller?",
+        whatIsDesc: "Unabhängige Abfüller sind Unternehmen, die Fässer von Destillerien kaufen und unter eigenem Label abfüllen. Anders als die 'offiziellen Abfüllungen' der Destillerien bieten unabhängige Abfüller einzigartige Einzelfassauswahlen, oft in Fassstärke, ohne Kältefiltration oder künstliche Färbung. Sie ermöglichen Zugang zu seltenen und ungewöhnlichen Abfüllungen, die sonst nie öffentlich verkostet werden könnten.",
+        searchPlaceholder: "Nach Abfüller suchen...",
+        allCountries: "Alle Länder",
+        results: "Ergebnisse",
+        sortFounded: "Gründung",
+        est: "Gegr.",
+        notableReleases: "Bekannte Abfüllungen"
       },
       distilleryMap: {
         title: "Destillerie-Karte",
