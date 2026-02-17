@@ -147,11 +147,10 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: resetName.trim(), email: resetEmail.trim() }),
       });
+      const data = await res.json().catch(() => ({ message: "Request failed" }));
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.message || "Failed");
       }
-      const data = await res.json();
       setResetParticipantId(data.participantId);
       setResetStep("verify");
     } catch (e: any) {
@@ -178,8 +177,8 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ participantId: resetParticipantId, code: resetCode.trim(), newPin: newPin }),
       });
+      const data = await res.json().catch(() => ({ message: "Request failed" }));
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.message || "Failed");
       }
       setResetStep("done");

@@ -74,7 +74,8 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
       return res.json();
     },
     onSuccess: (_data, whisky) => {
-      setAddedIds(prev => new Set(prev).add(whisky.id));
+      const key = whisky.id || `${whisky.name}-${whisky.distillery || ""}`;
+      setAddedIds(prev => new Set(prev).add(key));
       queryClient.invalidateQueries({ queryKey: ["/api/tastings"] });
     },
   });
@@ -322,7 +323,7 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
                 </div>
                 {tastingId && (
                   <div className="mt-1.5 flex justify-end">
-                    {addedIds.has(w.id) ? (
+                    {addedIds.has(w.id || `${w.name}-${w.distillery || ""}`) ? (
                       <span className="text-xs text-green-600 flex items-center gap-1">
                         <Check className="w-3 h-3" /> {t("curation.added")}
                       </span>
