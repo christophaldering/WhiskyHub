@@ -1,0 +1,19 @@
+Some adjustments:
+Please adjust the Enterprise Cockpit page by adding a menu bar at the top where users can select: Projects & Assessment or Tools or Governance (Governance and Tools, i.e., separate).
+Under Tools, then the two menu items Module & Exercise Library or Advanced Intelligence
+Then adjust the page as follows: split into two, with the selected menu item on the left and an illustration of what it contains on the right.
+Please ensure that existing exercises (documents can be uploaded, analyzed, and then adapted to the respective workspace-specific corporate design. Save and make available the original version as well as the new version.
+Please provide the following exercises or types: interview guide, case study, fact-finding simulation, presentation, behavior, simulation, psychometric test, other.
+Please provide the following levels:
+Se – Level/Executive Board, Director/Head of Department,
+Manager, 
+Manager,
+Expert.
+If a new exercise is to be generated, offer the option of developing it further on the basis of an existing exercise. Important: provide the option of creating a link to the results of a requirements analysis in a specific project and then extracting the relevant competencies from it, generating a short description, and also specifying the context. And when the exercise is generated, ensure that the process is visualized in some form. Because up to now, when you click on "Generate exercise," you don't see what happens.
+In any case, it is important that there is an option to upload existing exercises in Word, PowerPoint, or PDF format, which can then be analyzed and stored or transferred to the corporate design.
+
+Then, in connection with the creation of a new concrete project:
+After the requirements analysis, offer the option of compiling relevant exercises:
+In a first step, compile a list of useful assessment areas (based on DIN 33430 and the MTMM approach), then check whether corresponding exercises are already available in the toolbox, then allow selection based on the assessment made (usefulness in the specific project), and, if necessary, make suggestions for adaptation or regeneration.
+
+One addition: the toolbox must also have a menu item for observation preferences (also with the option to upload existing ones and have them adapted to the design).
