@@ -855,9 +855,18 @@ const resources = {
         sessionNotFound: "Session not found",
         noCodeNeeded: "No sign-in needed to join",
         hostDesc: "Create and manage your own tasting event",
-        introLine1: "CaskSense is your all-in-one companion for the entire whisky journey — from discovering new bottles on your wishlist, through structured blind tastings with friends, to capturing every dram in your personal journal. AI-powered bottle scanning identifies whiskies from a photo, and smart recommendations match new expressions to your unique flavor profile.",
-        introLine2: "Explore rich personal and group statistics: radar charts of your taste preferences, flavor wheels, leaderboards, and side-by-side comparisons. Share the experience with your community through discussion panels, friend activity feeds, and a shared tasting calendar. Whether you're a curious beginner or a seasoned collector — CaskSense turns every sip into insight.",
-        introLine3: "Completely free. No ads. Built by whisky lovers, for whisky lovers.",
+        introHeadline: "Your complete whisky companion — from the first wish to the last sip.",
+        bullets: [
+          "Wishlist \u2192 Tasting \u2192 Journal: track your entire whisky journey in one place",
+          "AI-powered bottle scanner: snap a photo, get instant whisky details",
+          "Blind & guided tastings: host structured sessions with friends",
+          "Smart recommendations: AI matches new whiskies to your flavor profile",
+          "Personal stats: radar charts, flavor wheels, and taste evolution over time",
+          "Group analytics: leaderboards, side-by-side comparisons, and tasting recaps",
+          "Community: discussion panels, friend feeds, and a shared tasting calendar",
+          "Distillery encyclopedia & interactive map with 100+ distilleries"
+        ],
+        introFooter: "Completely free. No ads. Built by whisky lovers, for whisky lovers.",
       },
       highlights: {
         blind: "Blind Tastings",
@@ -2083,9 +2092,18 @@ const resources = {
         sessionNotFound: "Sitzung nicht gefunden",
         noCodeNeeded: "Kein Konto nötig zum Beitreten",
         hostDesc: "Erstelle und verwalte dein eigenes Tasting-Event",
-        introLine1: "CaskSense ist dein Allround-Begleiter für die gesamte Whisky-Reise — vom Entdecken neuer Flaschen auf deiner Wunschliste, über strukturierte Blindverkostungen mit Freunden, bis hin zum Festhalten jedes Drams in deinem persönlichen Tagebuch. KI-gestütztes Flaschen-Scanning erkennt Whiskys anhand eines Fotos, und smarte Empfehlungen finden neue Abfüllungen passend zu deinem Geschmacksprofil.",
-        introLine2: "Entdecke umfangreiche persönliche und Gruppen-Statistiken: Radar-Charts deiner Geschmacksvorlieben, Flavor Wheels, Bestenlisten und Seite-an-Seite-Vergleiche. Teile das Erlebnis mit deiner Community über Diskussionspanels, Freundes-Aktivitätsfeeds und einen gemeinsamen Tasting-Kalender. Ob neugieriger Einsteiger oder erfahrener Sammler — CaskSense macht jeden Schluck zur Erkenntnis.",
-        introLine3: "Komplett kostenlos. Keine Werbung. Von Whisky-Liebhabern für Whisky-Liebhaber.",
+        introHeadline: "Dein kompletter Whisky-Begleiter — vom ersten Wunsch bis zum letzten Schluck.",
+        bullets: [
+          "Wunschliste \u2192 Tasting \u2192 Tagebuch: deine gesamte Whisky-Reise an einem Ort",
+          "KI-Flaschenscanner: Foto machen, sofort Whisky-Details erhalten",
+          "Blind- & geführte Verkostungen: strukturierte Sessions mit Freunden",
+          "Smarte Empfehlungen: KI findet neue Whiskys passend zu deinem Geschmacksprofil",
+          "Persönliche Statistiken: Radar-Charts, Flavor Wheels und Geschmacksentwicklung",
+          "Gruppen-Analysen: Bestenlisten, Seite-an-Seite-Vergleiche und Tasting-Rückblicke",
+          "Community: Diskussionspanels, Freundes-Feeds und gemeinsamer Tasting-Kalender",
+          "Brennerei-Enzyklopädie & interaktive Karte mit über 100 Brennereien"
+        ],
+        introFooter: "Komplett kostenlos. Keine Werbung. Von Whisky-Liebhabern für Whisky-Liebhaber.",
       },
       highlights: {
         blind: "Blindverkostung",

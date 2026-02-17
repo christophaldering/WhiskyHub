@@ -211,44 +211,21 @@ export default function Home() {
         transition={{ delay: 0.2, duration: 0.8 }}
         className="w-full"
       >
-        <div className="bg-card border border-border/40 rounded-lg p-5 md:p-7 space-y-3" data-testid="card-intro-description">
-          <p className="text-sm md:text-base text-foreground/90 leading-relaxed">
-            {t("home.introLine1")}
+        <div className="bg-card border border-border/40 rounded-lg p-5 md:p-7" data-testid="card-intro-description">
+          <p className="text-sm md:text-base text-foreground/90 leading-relaxed mb-4">
+            {t("home.introHeadline")}
           </p>
-          <p className="text-sm md:text-base text-foreground/90 leading-relaxed">
-            {t("home.introLine2")}
+          <ul className="space-y-2.5 text-sm text-foreground/85">
+            {(t("home.bullets", { returnObjects: true }) as string[]).map((bullet, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <span className="text-primary mt-0.5 flex-shrink-0">&#x2022;</span>
+                <span className="leading-snug">{bullet}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground italic mt-4">
+            {t("home.introFooter")}
           </p>
-          <p className="text-xs text-muted-foreground italic leading-relaxed">
-            {t("home.introLine3")}
-          </p>
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35, duration: 0.8 }}
-        className="w-full"
-      >
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory -mx-2 px-2">
-          {[
-            { icon: Glasses, label: t("highlights.blind"), desc: t("highlights.blindDesc") },
-            { icon: Activity, label: t("highlights.flavor"), desc: t("highlights.flavorDesc") },
-            { icon: ScanLine, label: t("highlights.scanner"), desc: t("highlights.scannerDesc") },
-            { icon: NotebookPen, label: t("highlights.journal"), desc: t("highlights.journalDesc") },
-            { icon: Calendar, label: t("highlights.calendar"), desc: t("highlights.calendarDesc") },
-          ].map((feat, i) => (
-            <Link key={i} href="/features">
-              <div
-                className="snap-start flex-shrink-0 w-40 md:w-44 bg-card border border-border/40 rounded-lg p-4 hover:border-primary/40 hover:shadow-sm transition-all duration-300 cursor-pointer group"
-                data-testid={`card-highlight-${i}`}
-              >
-                <feat.icon className="w-5 h-5 text-primary mb-2 group-hover:scale-110 transition-transform" />
-                <p className="text-sm font-serif font-semibold text-primary leading-tight">{feat.label}</p>
-                <p className="text-[11px] text-muted-foreground leading-snug mt-1">{feat.desc}</p>
-              </div>
-            </Link>
-          ))}
         </div>
       </motion.div>
 
