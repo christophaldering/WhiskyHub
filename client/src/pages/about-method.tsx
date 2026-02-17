@@ -76,7 +76,7 @@ export default function AboutMethod() {
   const sectionKeys = ["section1", "section2", "section3", "section4"];
 
   return (
-    <div className="min-h-screen bg-background" data-testid="about-method-page">
+    <div className="min-h-screen bg-background min-w-0 overflow-x-hidden" data-testid="about-method-page">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

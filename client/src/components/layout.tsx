@@ -295,7 +295,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <NavContent navInnerRef={desktopNavRef} />
         </aside>
         <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
-          <div className="container max-w-5xl mx-auto p-6 md:p-12 pb-24 md:pb-12 animate-in fade-in duration-700">
+          <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-12 py-6 md:py-12 pb-24 md:pb-12 animate-in fade-in duration-700 min-w-0">
             {children}
           </div>
         </main>

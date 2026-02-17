@@ -262,7 +262,7 @@ export default function FlavorWheel() {
   const selectedCatData = selectedCategory ? FLAVOR_WHEEL_DATA.find((c) => c.id === selectedCategory) : null;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8" data-testid="flavor-wheel-page">
+    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="flavor-wheel-page">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-3 mb-2">
           <CircleDot className="w-7 h-7 text-primary" />
@@ -282,7 +282,7 @@ export default function FlavorWheel() {
           </div>
         ) : (
           <div className="space-y-8">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <motion.div
                 className="bg-card rounded-lg border border-border/40 p-4 text-center"
                 initial={{ opacity: 0, scale: 0.9 }}

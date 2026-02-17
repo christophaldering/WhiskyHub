@@ -456,7 +456,7 @@ export default function Badges() {
   const earnedCount = BADGES.filter((b) => b.check(s)).length;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8" data-testid="badges-page">
+    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="badges-page">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

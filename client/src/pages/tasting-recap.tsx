@@ -186,7 +186,7 @@ export default function TastingRecap() {
     : null;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 print:p-0" data-testid="recap-page">
+    <div className="max-w-4xl mx-auto px-4 py-8 print:p-0 min-w-0 overflow-x-hidden" data-testid="recap-page">
       <style>{`
         @media print {
           body * { visibility: hidden; }
@@ -204,7 +204,7 @@ export default function TastingRecap() {
               {t("recap.title")}
             </h1>
           </div>
-          <div className="flex gap-2 print:hidden">
+          <div className="flex gap-2 print:hidden flex-wrap">
             {!params.id && (
               <Button variant="ghost" size="sm" onClick={() => setSelectedTastingId(null)} data-testid="button-recap-back">
                 {t("recap.back")}

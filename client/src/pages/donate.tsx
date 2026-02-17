@@ -12,13 +12,13 @@ export default function Donate() {
   const { t } = useTranslation();
 
   return (
-    <div className="max-w-2xl mx-auto space-y-10">
+    <div className="max-w-2xl mx-auto space-y-10 min-w-0 overflow-x-hidden">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1 className="text-4xl font-serif font-black text-primary tracking-tight" data-testid="text-donate-title">
+        <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight" data-testid="text-donate-title">
           {t("donate.title")}
         </h1>
         <div className="w-12 h-1 bg-primary/50 mt-3" />

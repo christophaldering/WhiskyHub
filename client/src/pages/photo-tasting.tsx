@@ -188,16 +188,16 @@ export default function PhotoTasting() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8 min-w-0 overflow-x-hidden">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <h1 className="text-4xl font-serif font-black text-primary tracking-tight" data-testid="text-photo-tasting-title">
+        <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight" data-testid="text-photo-tasting-title">
           {t("photoTasting.title")}
         </h1>
         <p className="text-muted-foreground mt-2 max-w-2xl">{t("photoTasting.subtitle")}</p>
         <div className="w-12 h-1 bg-primary/50 mt-3" />
       </motion.div>
 
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
         {["upload", "review", "details"].map((s, i) => (
           <div key={s} className="flex items-center gap-2">
             {i > 0 && <ArrowRight className="w-4 h-4 text-muted-foreground/50" />}

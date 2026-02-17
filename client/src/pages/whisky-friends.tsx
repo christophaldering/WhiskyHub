@@ -137,7 +137,7 @@ export default function WhiskyFriends() {
   }
 
   return (
-    <div className="flex flex-col items-center w-full max-w-2xl mx-auto py-10 px-4 space-y-6">
+    <div className="flex flex-col items-center w-full max-w-2xl mx-auto py-10 px-4 space-y-6 min-w-0 overflow-x-hidden">
       {pendingRequests.length > 0 && (
         <Card className="w-full border-primary/30 bg-primary/5 shadow-sm" data-testid="card-pending-requests">
           <CardHeader>
@@ -204,7 +204,7 @@ export default function WhiskyFriends() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="font-serif text-3xl text-primary tracking-tight flex items-center gap-3" data-testid="text-friends-title">
+              <h1 className="font-serif text-xl sm:text-3xl text-primary tracking-tight flex items-center gap-3" data-testid="text-friends-title">
                 <Users className="w-7 h-7" />
                 {t("friends.title")}
               </h1>

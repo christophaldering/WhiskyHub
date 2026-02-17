@@ -192,10 +192,10 @@ export default function Profile() {
   }
 
   return (
-    <div className="flex flex-col items-center w-full max-w-2xl mx-auto py-10 px-4 space-y-6">
+    <div className="flex flex-col items-center w-full max-w-2xl mx-auto py-10 px-4 space-y-6 min-w-0 overflow-x-hidden">
       <Card className="w-full border-border/50 bg-card shadow-sm">
         <CardHeader>
-          <h1 className="font-serif text-3xl text-primary tracking-tight" data-testid="text-profile-title">
+          <h1 className="font-serif text-xl sm:text-3xl text-primary tracking-tight" data-testid="text-profile-title">
             {t("profile.title")}
           </h1>
         </CardHeader>

@@ -161,9 +161,9 @@ export default function BenchmarkAnalyzer() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6" data-testid="benchmark-analyzer-page">
+    <div className="max-w-5xl mx-auto space-y-6 min-w-0 overflow-x-hidden" data-testid="benchmark-analyzer-page">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <h1 className="text-3xl font-serif font-black text-primary tracking-tight" data-testid="text-benchmark-title">
+        <h1 className="text-xl sm:text-3xl font-serif font-black text-primary tracking-tight" data-testid="text-benchmark-title">
           {t("benchmark.title")}
         </h1>
         <p className="text-muted-foreground font-serif italic mt-1 text-sm">{t("benchmark.subtitle")}</p>

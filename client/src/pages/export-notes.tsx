@@ -97,7 +97,7 @@ export default function ExportNotes() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8" data-testid="export-notes-page">
+    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="export-notes-page">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-3 mb-2">
           <FileText className="w-7 h-7 text-primary" />
@@ -141,7 +141,7 @@ export default function ExportNotes() {
               <p className="text-sm text-muted-foreground">
                 {t("exportNotes.notesCount", { count: notesData.notes?.length || 0 })}
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" onClick={handleCopyText} data-testid="button-copy-text">
                   <Copy className="w-4 h-4 mr-2" />
                   {t("exportNotes.copyText")}
@@ -194,7 +194,7 @@ export default function ExportNotes() {
                             .join(" · ")}
                         </p>
 
-                        <div className="grid grid-cols-5 gap-2 mb-3">
+                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3">
                           {(["nose", "taste", "finish", "balance", "overall"] as const).map((dim) => (
                             <div key={dim} className="text-center">
                               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t(`evaluation.${dim}`)}</p>

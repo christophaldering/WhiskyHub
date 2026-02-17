@@ -103,11 +103,11 @@ export default function DistilleryEncyclopedia() {
   };
 
   return (
-    <div className="space-y-8" data-testid="distillery-encyclopedia">
+    <div className="space-y-8 min-w-0 overflow-x-hidden" data-testid="distillery-encyclopedia">
       <header className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-4xl font-serif font-black text-primary tracking-tight">{t("distillery.title")}</h1>
-          <p className="text-muted-foreground font-serif italic mt-2 text-lg">{t("distillery.subtitle")}</p>
+          <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("distillery.title")}</h1>
+          <p className="text-muted-foreground font-serif italic mt-2 text-base sm:text-lg">{t("distillery.subtitle")}</p>
         </div>
         <Link href="/distillery-map">
           <Button variant="outline" size="sm" data-testid="link-distillery-map">

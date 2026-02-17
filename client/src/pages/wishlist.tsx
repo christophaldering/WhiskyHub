@@ -127,7 +127,7 @@ export default function Wishlist() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8" data-testid="wishlist-page">
+    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="wishlist-page">
       <AnimatePresence mode="wait">
         {view === "list" && (
           <motion.div

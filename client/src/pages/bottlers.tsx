@@ -42,10 +42,10 @@ export default function Bottlers() {
   };
 
   return (
-    <div className="space-y-8" data-testid="bottler-encyclopedia">
+    <div className="space-y-8 min-w-0 overflow-x-hidden" data-testid="bottler-encyclopedia">
       <header>
-        <h1 className="text-4xl font-serif font-black text-primary tracking-tight">{t("bottler.title")}</h1>
-        <p className="text-muted-foreground font-serif italic mt-2 text-lg max-w-3xl">{t("bottler.subtitle")}</p>
+        <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("bottler.title")}</h1>
+        <p className="text-muted-foreground font-serif italic mt-2 text-base sm:text-lg">{t("bottler.subtitle")}</p>
       </header>
 
       <div className="bg-card border border-border/50 rounded-lg p-4 space-y-2">
@@ -127,11 +127,11 @@ export default function Bottlers() {
                   onClick={() => setExpandedId(isExpanded ? null : b.name)}
                   data-testid={`card-bottler-${b.name.toLowerCase().replace(/\s+/g, "-")}`}
                 >
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-3">
+                  <div className="p-3 sm:p-4">
+                    <div className="flex items-start justify-between gap-2 sm:gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-serif font-bold text-lg text-primary">{b.name}</h3>
+                          <h3 className="font-serif font-bold text-base sm:text-lg text-primary truncate max-w-[200px] sm:max-w-none">{b.name}</h3>
                           <Badge variant="outline" className={`text-[10px] ${countryColors[b.country] || "bg-secondary text-muted-foreground"}`}>
                             {b.country}
                           </Badge>

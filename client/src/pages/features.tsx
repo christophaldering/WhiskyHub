@@ -93,13 +93,13 @@ export default function Features() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8 min-w-0 overflow-x-hidden">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="text-4xl font-serif font-black text-primary tracking-tight" data-testid="text-features-title">
+        <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight" data-testid="text-features-title">
           {t("features.title")}
         </h1>
         <p className="text-muted-foreground mt-2 max-w-2xl">{t("features.subtitle")}</p>
@@ -113,7 +113,7 @@ export default function Features() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: gi * 0.07, duration: 0.5 }}
         >
-          <h2 className="text-lg font-serif font-bold text-primary/80 mb-3">
+          <h2 className="text-base sm:text-lg font-serif font-bold text-primary/80 mb-3">
             {t(`features.group.${group.groupKey}`)}
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">

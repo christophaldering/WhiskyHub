@@ -118,7 +118,7 @@ export default function TastingCalendar() {
   }, [events]);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8" data-testid="calendar-page">
+    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="calendar-page">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-3 mb-2">
           <CalendarIcon className="w-7 h-7 text-primary" />

@@ -101,7 +101,7 @@ export default function Recommendations() {
   const hasRatings = (profile?.ratedWhiskies?.length || 0) > 0;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8" data-testid="recommendations-page">
+    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="recommendations-page">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-3 mb-2">
           <Sparkles className="w-7 h-7 text-primary" />

@@ -154,7 +154,7 @@ export default function Journal() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8" data-testid="journal-page">
+    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="journal-page">
       <AnimatePresence mode="wait">
         {view === "list" && (
           <motion.div

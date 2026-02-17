@@ -152,7 +152,7 @@ export default function Leaderboard() {
   ];
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8" data-testid="leaderboard-page">
+    <div className="max-w-3xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="leaderboard-page">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -176,7 +176,7 @@ export default function Leaderboard() {
           </div>
         ) : (
           <Tabs defaultValue="mostActive" data-testid="leaderboard-tabs">
-            <TabsList className="w-full grid grid-cols-4 mb-4" data-testid="leaderboard-tabs-list">
+            <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 mb-4" data-testid="leaderboard-tabs-list">
               {categories.map((cat) => (
                 <TabsTrigger
                   key={cat.key}

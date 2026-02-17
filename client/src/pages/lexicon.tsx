@@ -243,7 +243,7 @@ export default function Lexicon() {
     : undefined;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8" data-testid="lexicon-page">
+    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="lexicon-page">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

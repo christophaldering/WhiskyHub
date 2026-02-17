@@ -108,7 +108,7 @@ export default function WhiskyDatabase() {
     return (
       <div className="text-center py-20 space-y-4">
         <ShieldAlert className="w-12 h-12 mx-auto text-destructive" />
-        <p className="text-lg font-serif text-destructive">{t("whiskyDb.accessDenied")}</p>
+        <p className="text-base sm:text-lg font-serif text-destructive">{t("whiskyDb.accessDenied")}</p>
         <p className="text-sm text-muted-foreground">{t("whiskyDb.accessDeniedDesc")}</p>
       </div>
     );
@@ -120,10 +120,10 @@ export default function WhiskyDatabase() {
     : null;
 
   return (
-    <div className="space-y-8" data-testid="whisky-database">
+    <div className="space-y-8 min-w-0 overflow-x-hidden" data-testid="whisky-database">
       <header>
-        <h1 className="text-4xl font-serif font-black text-primary tracking-tight">{t("whiskyDb.title")}</h1>
-        <p className="text-muted-foreground font-serif italic mt-2 text-lg">{t("whiskyDb.subtitle")}</p>
+        <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("whiskyDb.title")}</h1>
+        <p className="text-muted-foreground font-serif italic mt-2 text-base sm:text-lg">{t("whiskyDb.subtitle")}</p>
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

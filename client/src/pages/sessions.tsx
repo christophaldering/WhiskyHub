@@ -106,13 +106,13 @@ export default function Sessions() {
   }
 
   return (
-    <div className="space-y-10 max-w-4xl mx-auto">
+    <div className="space-y-10 max-w-4xl mx-auto min-w-0 overflow-x-hidden">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1 className="text-4xl font-serif font-black text-primary tracking-tight">{t("nav.sessions")}</h1>
+        <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("nav.sessions")}</h1>
         <div className="w-12 h-1 bg-primary/50 mt-3" />
       </motion.div>
 
@@ -123,7 +123,7 @@ export default function Sessions() {
           transition={{ delay: 0.2 }}
           className="text-center py-16"
         >
-          <p className="text-muted-foreground font-serif text-lg italic" data-testid="text-no-sessions">
+          <p className="text-muted-foreground font-serif text-base sm:text-lg italic" data-testid="text-no-sessions">
             {t("nav.noSessions")}
           </p>
         </motion.div>
