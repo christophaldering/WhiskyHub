@@ -81,6 +81,9 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 48. **Journal Bottle Scanner**: AI-powered bottle identification in the whisky journal. Upload a photo of any bottle and GPT-4o reads the label to auto-fill whisky name, distillery, region, age, ABV, and cask type. Includes Whiskybase search link for external research.
 49. **Whiskybase Research**: Photo Tasting and Journal scanner provide Whiskybase search links for whiskies not found in the internal database, enabling external verification and research.
 50. **Independent Bottlers Encyclopedia**: Reference page with 20 independent bottler entries (Gordon & MacPhail, Signatory, Brühler Whiskyhaus, Douglas Laing, Compass Box, SMWS, etc.) including descriptions, specialties, and notable releases. Searchable with country filtering and sort options.
+51. **Curation Wizard "Add to Tasting"**: Suggestions from the curation wizard can be directly transferred to the current tasting session via "Add to Tasting" buttons with visual confirmation.
+52. **Forgot PIN Recovery**: Users who forgot their PIN can reset it via email verification code flow (request → verify → set new PIN).
+53. **Benchmark Analyzer Enhancements**: Upload metadata display (uploader, timestamp, filename), inline delete with confirmation, and whisky-to-database selection toggle with visual distinction.
 
 ### Key Endpoints (continued)
 - `GET /api/participants/:id/flavor-profile` — Aggregated flavor profile with radar data, breakdowns, and whisky lists
@@ -102,6 +105,8 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 - `POST /api/wishlist/:participantId` — Create a wishlist entry
 - `PATCH /api/wishlist/:participantId/:id` — Update a wishlist entry
 - `DELETE /api/wishlist/:participantId/:id` — Delete a wishlist entry
+- `POST /api/participants/forgot-pin` — Request PIN reset via email verification code
+- `POST /api/participants/reset-pin` — Reset PIN with verification code and new PIN
 
 ## External Dependencies
 
