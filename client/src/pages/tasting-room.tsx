@@ -857,21 +857,21 @@ export default function TastingRoom() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-8 max-w-7xl mx-auto overflow-x-hidden">
       <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
 
       <header className="mb-8 border-b border-border/50 pb-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-serif font-black text-primary tracking-tight">{tasting.title}</h1>
-            <div className="flex items-center gap-2 text-muted-foreground font-serif italic mt-2 text-lg">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{tasting.title}</h1>
+            <div className="flex items-center gap-2 text-muted-foreground font-serif italic mt-2 text-base sm:text-lg flex-wrap">
               <span>{tasting.location}</span>
               <span>•</span>
               <span>{new Date(tasting.date).toLocaleDateString()}</span>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex flex-col items-start sm:items-end gap-2 min-w-0 w-full md:w-auto">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {isHost && (tasting.status === "draft" || tasting.status === "open") && <EditTastingDialog tasting={tasting} />}
               <DuplicateTastingButton tasting={tasting} />
               {isHost && tasting.status !== "deleted" && <DeleteTastingButton tasting={tasting} />}
@@ -949,8 +949,8 @@ export default function TastingRoom() {
         </div>
 
         {isHost && (tasting.status === "draft" || tasting.status === "open") && whiskyList.length > 0 && activeWhisky && (
-          <div className="flex items-center gap-2 px-1">
-            <span className="text-xs text-muted-foreground font-serif mr-1">{activeWhisky.name}</span>
+          <div className="flex items-center gap-2 px-1 flex-wrap">
+            <span className="text-xs text-muted-foreground font-serif mr-1 truncate max-w-[120px] sm:max-w-none">{activeWhisky.name}</span>
             <Button
               variant="outline"
               size="sm"
@@ -1014,7 +1014,7 @@ export default function TastingRoom() {
           )}
         </div>
       ) : activeWhisky ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12">
           <div className="lg:col-span-8">
             {(() => {
               const activeIdx = whiskyList.findIndex((w: Whisky) => w.id === activeWhisky.id);
