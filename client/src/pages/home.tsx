@@ -770,6 +770,12 @@ export default function Home() {
         })()}
       </motion.div>
 
+      <div className="text-center pt-8 pb-2">
+        <p className="text-xs text-muted-foreground/40 font-mono tracking-wide" data-testid="text-version-hint">
+          v2.8.0 &middot; Feb 17, 2026, 14:30 UTC
+        </p>
+      </div>
+
     </div>
   );
 }
