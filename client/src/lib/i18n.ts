@@ -863,7 +863,7 @@ const resources = {
       },
       features: {
         journey: "Your Whisky Journey",
-        journeyDesc: "Wishlist → Tasting → Journal — track every dram from first wish to final notes",
+        journeyDesc: "Wishlist, Tasting & Journal — all connected. Start anywhere, each enriches the others.",
         journeySteps: ["Wishlist", "Tasting", "Journal"],
         ai: "AI-Powered",
         aiDesc: "Snap a bottle photo and AI reads the label. Get smart recommendations matched to your palate.",
@@ -2126,7 +2126,7 @@ const resources = {
       },
       features: {
         journey: "Deine Whisky-Reise",
-        journeyDesc: "Wunschliste → Tasting → Tagebuch — verfolge jeden Dram vom ersten Wunsch bis zur letzten Notiz",
+        journeyDesc: "Wunschliste, Tasting & Tagebuch — alles verbunden. Starte wo du willst, jedes bereichert die anderen.",
         journeySteps: ["Wunschliste", "Tasting", "Tagebuch"],
         ai: "KI-gestützt",
         aiDesc: "Fotografiere eine Flasche und die KI liest das Etikett. Erhalte smarte Empfehlungen passend zu deinem Gaumen.",
