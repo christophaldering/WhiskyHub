@@ -113,7 +113,7 @@ export function CurationWizard() {
   ];
 
   const regionsParam = config.regions.join(",");
-  const stylesParam = [...new Set(config.styles.map((s) => STYLE_API_MAP[s] || s))].join(",");
+  const stylesParam = Array.from(new Set(config.styles.map((s) => STYLE_API_MAP[s] || s))).join(",");
 
   const { data: matchedWhiskies, isLoading: suggestionsLoading } = useQuery<any[]>({
     queryKey: ["curation-suggestions", currentParticipant?.id, regionsParam, stylesParam],
@@ -124,7 +124,8 @@ export function CurationWizard() {
       if (stylesParam) params.set("styles", stylesParam);
       const res = await fetch(`/api/curation/suggestions?${params.toString()}`);
       if (!res.ok) return [];
-      return res.json();
+      const data = await res.json();
+      return data.suggestions || [];
     },
     enabled: open && step >= 3 && !!currentParticipant?.id && (config.regions.length > 0 || config.styles.length > 0),
   });
@@ -286,9 +287,9 @@ export function CurationWizard() {
                       {w.ratingCount} {t("curation.ratings")}
                     </span>
                   )}
-                  {w.tastingName && (
+                  {w.tastingTitle && (
                     <span className="truncate max-w-[200px]">
-                      {t("curation.fromTasting")} {w.tastingName}
+                      {t("curation.fromTasting")} {w.tastingTitle}
                     </span>
                   )}
                 </div>
