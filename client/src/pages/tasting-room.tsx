@@ -29,10 +29,10 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import type { Whisky, Tasting } from "@shared/schema";
 
-function WhiskyThumbnail({ whisky, size = "sm" }: { whisky: Whisky; size?: "sm" | "lg" }) {
+function WhiskyThumbnail({ whisky, size = "sm" }: { whisky: Whisky; size?: "sm" | "md" | "lg" }) {
   const [imgError, setImgError] = useState(false);
-  const dim = size === "lg" ? "w-40 h-40" : "w-10 h-10";
-  const iconSize = size === "lg" ? "w-12 h-12" : "w-4 h-4";
+  const dim = size === "lg" ? "w-40 h-40" : size === "md" ? "w-20 h-20" : "w-10 h-10";
+  const iconSize = size === "lg" ? "w-12 h-12" : size === "md" ? "w-8 h-8" : "w-4 h-4";
 
   if (whisky.imageUrl && !imgError) {
     return (
@@ -1016,6 +1016,41 @@ export default function TastingRoom() {
       ) : activeWhisky ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           <div className="lg:col-span-8">
+            {(() => {
+              const activeIdx = whiskyList.findIndex((w: Whisky) => w.id === activeWhisky.id);
+              const blind = getBlindState(activeIdx);
+              return (
+                <div className="flex items-center gap-4 mb-6 p-4 bg-card border border-border/50 rounded-lg lg:hidden" data-testid="inline-whisky-header">
+                  <div className="flex-shrink-0">
+                    {blind.showImage ? (
+                      <WhiskyThumbnail whisky={activeWhisky} size="md" />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-secondary/30 border border-secondary flex items-center justify-center">
+                        <span className="font-serif font-bold text-2xl text-muted-foreground">{activeIdx + 1}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-serif text-xl font-bold text-primary truncate">
+                      {blind.showName ? activeWhisky.name : `${t("blind.expressionLabel")} ${activeIdx + 1}`}
+                    </h3>
+                    {blind.showName && activeWhisky.distillery && (
+                      <p className="text-sm text-muted-foreground font-serif italic truncate">{activeWhisky.distillery}</p>
+                    )}
+                    {blind.showMeta && (
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {activeWhisky.age && <span className="text-xs font-mono text-muted-foreground">{activeWhisky.age === "NAS" || activeWhisky.age === "n.a.s." ? "NAS" : `${activeWhisky.age}y`}</span>}
+                        {activeWhisky.abv != null && <span className="text-xs font-mono text-muted-foreground">{activeWhisky.abv}%</span>}
+                        {activeWhisky.region && <span className="text-xs text-muted-foreground/70">{activeWhisky.region}</span>}
+                      </div>
+                    )}
+                    {!blind.showName && isBlind && (
+                      <p className="text-xs text-muted-foreground font-serif italic">{t("blind.hidden")}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
             <AnimatePresence mode="wait">
               <motion.div
                 key={`${activeWhisky.id}-${tasting.status}`}

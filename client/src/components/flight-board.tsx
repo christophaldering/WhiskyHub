@@ -269,11 +269,11 @@ export function FlightBoard({ tasting, whiskies, isHost }: FlightBoardProps) {
                 {detailWhisky.peatLevel && detailWhisky.peatLevel !== "None" && (
                   <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailPeat")}</span><p className="font-serif">{detailWhisky.peatLevel}{detailWhisky.ppm != null ? ` (${detailWhisky.ppm} ppm)` : ""}</p></div>
                 )}
-                {detailWhisky.bottler && (
-                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailBottler")}</span><p className="font-serif">{detailWhisky.bottler}</p></div>
+                {(detailWhisky as any).bottler && (
+                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailBottler")}</span><p className="font-serif">{(detailWhisky as any).bottler}</p></div>
                 )}
-                {detailWhisky.vintage && (
-                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailVintage")}</span><p className="font-serif">{detailWhisky.vintage}</p></div>
+                {(detailWhisky as any).vintage && (
+                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailVintage")}</span><p className="font-serif">{(detailWhisky as any).vintage}</p></div>
                 )}
               </div>
               {detailWhisky.notes && (
