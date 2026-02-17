@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useLocation } from "wouter";
 import { UserPlus, Plus, ArrowRight, Star, Wine, ImageIcon, Glasses, BookOpen, Lightbulb, Camera, User, ChevronDown } from "lucide-react";
+import heroImage from "@/assets/images/hero-whisky.png";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
@@ -167,29 +168,41 @@ export default function Home() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1 }}
-        className="text-center space-y-6"
+        className="w-full space-y-0"
       >
-        <div className="w-16 h-1 bg-primary mx-auto mb-6 opacity-50"></div>
-        <h1 className="text-5xl md:text-7xl font-serif font-black tracking-tighter text-primary pb-2">
-          {t('app.name')}
-        </h1>
-        <p className="text-xl text-muted-foreground max-w-lg mx-auto font-light leading-relaxed font-serif italic">
-          "{t('app.tagline')}"
-        </p>
-        {currentParticipant ? (
-          <p className="text-sm text-muted-foreground">
-            Signed in as <span className="font-semibold text-primary">{currentParticipant.name}</span>
-          </p>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowLogin(true)}
-            className="text-sm text-muted-foreground hover:text-primary underline transition-colors"
-            data-testid="button-login"
-          >
-            {t("home.haveAccount")}
-          </button>
-        )}
+        <div className="relative w-full rounded-xl overflow-hidden shadow-lg">
+          <img
+            src={heroImage}
+            alt="Whisky tasting atmosphere"
+            className="w-full h-48 md:h-72 object-cover"
+            data-testid="img-hero"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
+            <h1 className="text-4xl md:text-6xl font-serif font-black tracking-tighter text-white drop-shadow-lg pb-1">
+              {t('app.name')}
+            </h1>
+            <p className="text-base md:text-lg text-white/80 max-w-lg font-light leading-relaxed font-serif italic drop-shadow">
+              "{t('app.tagline')}"
+            </p>
+          </div>
+        </div>
+        <div className="text-center pt-4">
+          {currentParticipant ? (
+            <p className="text-sm text-muted-foreground">
+              Signed in as <span className="font-semibold text-primary">{currentParticipant.name}</span>
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowLogin(true)}
+              className="text-sm text-muted-foreground hover:text-primary underline transition-colors"
+              data-testid="button-login"
+            >
+              {t("home.haveAccount")}
+            </button>
+          )}
+        </div>
       </motion.div>
 
       <div className="grid md:grid-cols-2 gap-8 w-full">
