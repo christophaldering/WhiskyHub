@@ -133,6 +133,19 @@ html, body {
   overscroll-behavior-x: none;
 }
 
+iframe, img, video, embed, object, canvas, svg, table, pre {
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+iframe {
+  border: 0;
+}
+
+* {
+  min-width: 0;
+}
 
 .scrollbar-hide {
   -ms-overflow-style: none;

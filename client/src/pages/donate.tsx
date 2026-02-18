@@ -87,18 +87,20 @@ export default function Donate() {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.6 }}
-        className="flex justify-center"
+        className="flex justify-center overflow-hidden w-full"
         data-testid="donate-paypal-iframe"
       >
-        <iframe
-          src="https://www.paypal.com/giving/campaigns?campaign_id=XGB4YN3CQEMFE"
-          title="PayPal donate campaign card"
-          frameBorder="0"
-          width={382}
-          height={550}
-          scrolling="no"
-          className="rounded-xl border-0 max-w-full"
-        />
+        <div className="w-full max-w-[382px]">
+          <iframe
+            src="https://www.paypal.com/giving/campaigns?campaign_id=XGB4YN3CQEMFE"
+            title="PayPal donate campaign card"
+            frameBorder="0"
+            width="100%"
+            height={550}
+            scrolling="no"
+            className="rounded-xl border-0"
+          />
+        </div>
       </motion.div>
 
       <motion.p
