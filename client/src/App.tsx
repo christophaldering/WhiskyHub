@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect, useLocation } from "wouter";
+import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -41,22 +41,12 @@ import PhotoTasting from "@/pages/photo-tasting";
 import Reminders from "@/pages/reminders";
 import About from "@/pages/about";
 import Intro from "@/pages/intro";
-import { hasSeenIntro } from "@/pages/intro";
 import { BuildFooter } from "@/components/build-footer";
 import "@/lib/i18n";
-
-function IntroRedirect() {
-  const [location] = useLocation();
-  if (!hasSeenIntro() && location !== "/intro" && !location.startsWith("/invite/")) {
-    return <Redirect to="/intro" />;
-  }
-  return null;
-}
 
 function Router() {
   return (
     <>
-      <IntroRedirect />
       <Switch>
         <Route path="/intro" component={Intro} />
         <Route>
