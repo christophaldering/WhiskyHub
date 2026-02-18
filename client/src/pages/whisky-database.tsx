@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ArrowUpDown, ExternalLink, Wine, ShieldAlert, Star } from "lucide-react";
+import { Search, ArrowUpDown, ExternalLink, Wine, ShieldAlert, Star, Database } from "lucide-react";
 import { Link } from "wouter";
 
 interface DbWhisky {
@@ -106,10 +106,12 @@ export default function WhiskyDatabase() {
 
   if (error) {
     return (
-      <div className="text-center py-20 space-y-4">
-        <ShieldAlert className="w-12 h-12 mx-auto text-destructive" />
-        <p className="text-base sm:text-lg font-serif text-destructive">{t("whiskyDb.accessDenied")}</p>
-        <p className="text-sm text-muted-foreground">{t("whiskyDb.accessDeniedDesc")}</p>
+      <div className="text-center py-20 space-y-6 max-w-md mx-auto">
+        <Database className="w-14 h-14 mx-auto text-primary/40" />
+        <div className="space-y-2">
+          <p className="text-base sm:text-lg font-serif font-semibold text-primary">{t("whiskyDb.accessDenied")}</p>
+          <p className="text-sm text-muted-foreground font-serif leading-relaxed">{t("whiskyDb.accessDeniedDesc")}</p>
+        </div>
       </div>
     );
   }
@@ -125,6 +127,11 @@ export default function WhiskyDatabase() {
         <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("whiskyDb.title")}</h1>
         <p className="text-muted-foreground font-serif italic mt-2 text-base sm:text-lg">{t("whiskyDb.subtitle")}</p>
       </header>
+
+      <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4" data-testid="banner-exclusive-access">
+        <Database className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+        <p className="text-sm font-serif text-primary/80">{t("whiskyDb.exclusiveAccess")}</p>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-card border border-border/50 rounded-lg p-4 text-center">

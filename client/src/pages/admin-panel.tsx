@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -444,15 +445,23 @@ export default function AdminPanel() {
                             </SelectContent>
                           </Select>
                           {p.isHost && p.role !== "admin" && (
-                            <div className="flex items-center gap-1" title={t("admin.whiskyDbAccess")}>
-                              <Database className="w-3 h-3 text-muted-foreground" />
-                              <Switch
-                                checked={p.canAccessWhiskyDb}
-                                onCheckedChange={(checked) => dbAccessMutation.mutate({ participantId: p.id, canAccess: checked })}
-                                className="scale-75"
-                                data-testid={`switch-db-access-${p.id}`}
-                              />
-                            </div>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1">
+                                  <Database className="w-3 h-3 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground font-serif">DB</span>
+                                  <Switch
+                                    checked={p.canAccessWhiskyDb}
+                                    onCheckedChange={(checked) => dbAccessMutation.mutate({ participantId: p.id, canAccess: checked })}
+                                    className="scale-75"
+                                    data-testid={`switch-db-access-${p.id}`}
+                                  />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t("admin.whiskyDbAccessTooltip")}</p>
+                              </TooltipContent>
+                            </Tooltip>
                           )}
                           {p.id !== currentParticipant?.id && (
                             <AlertDialog>
