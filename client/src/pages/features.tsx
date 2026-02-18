@@ -6,7 +6,7 @@ import {
   FileText, Download, Puzzle, Users, Rss, Medal, Calendar, LayoutDashboard,
   ClipboardList, Database, Brain, Library, Landmark, Map, BookOpen, Heart,
   ShieldAlert, Eye, EyeOff, MessageSquare, Lightbulb, QrCode, Volume2,
-  Sun, Moon, Globe, Smartphone, X, Camera, Star, Archive
+  Sun, Moon, Globe, Smartphone, X, Camera, Star, Archive, Bell
 } from "lucide-react";
 
 type Feature = {
@@ -58,6 +58,7 @@ const featureGroups: { groupKey: string; features: Feature[] }[] = [
       { icon: Rss, titleKey: "activityFeed", descKey: "activityFeedDesc", color: "text-green-600 dark:text-green-400" },
       { icon: Medal, titleKey: "leaderboard", descKey: "leaderboardDesc", color: "text-yellow-600 dark:text-yellow-400" },
       { icon: Calendar, titleKey: "calendar", descKey: "calendarDesc", color: "text-red-600 dark:text-red-400" },
+      { icon: Bell, titleKey: "remindersFeature", descKey: "remindersFeatureDesc", color: "text-violet-600 dark:text-violet-400" },
     ],
   },
   {

@@ -3,7 +3,8 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { APP_NAME, getVersionInfo } from "@shared/version";
-import { warmupGmailToken } from "./email";
+import { warmupGmailToken, sendEmail, buildReminderEmail } from "./email";
+import { storage } from "./storage";
 
 const app = express();
 const httpServer = createServer(app);
@@ -104,6 +105,32 @@ app.use((req, res, next) => {
       log(`serving on port ${port}`);
       log(`Build time: ${v.buildTime}`);
       warmupGmailToken();
+
+      setInterval(async () => {
+        try {
+          const pending = await storage.getUpcomingRemindersToSend();
+          for (const { reminder, tasting, participant } of pending) {
+            const { subject, html } = buildReminderEmail({
+              name: participant.name,
+              tastingTitle: tasting.title,
+              tastingDate: tasting.date,
+              tastingLocation: tasting.location,
+              offsetMinutes: reminder.offsetMinutes,
+              language: participant.language || "en",
+            });
+            const sent = await sendEmail({ to: participant.email!, subject, html });
+            if (sent) {
+              await storage.logReminderSent(participant.id, tasting.id, reminder.offsetMinutes);
+              log(`Reminder sent to ${participant.name} for "${tasting.title}" (${reminder.offsetMinutes}min)`, "scheduler");
+            }
+          }
+          if (pending.length > 0) {
+            log(`Processed ${pending.length} reminder(s)`, "scheduler");
+          }
+        } catch (e) {
+          log(`Reminder scheduler error: ${(e as Error).message}`, "scheduler");
+        }
+      }, 5 * 60 * 1000);
     },
   );
 })();

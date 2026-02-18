@@ -3,7 +3,7 @@ import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, journalEntries, benchmarkEntries, wishlistEntries,
-  newsletters, newsletterRecipients, whiskybaseCollection,
+  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -19,6 +19,7 @@ import {
   type InsertWishlistEntry, type WishlistEntry,
   type InsertNewsletter, type Newsletter,
   type InsertWhiskybaseCollection, type WhiskybaseCollectionItem,
+  type InsertTastingReminder, type TastingReminder,
 } from "@shared/schema";
 
 export interface WhiskyOfTheDay {
@@ -169,6 +170,15 @@ export interface IStorage {
   createNewsletter(data: InsertNewsletter): Promise<Newsletter>;
   addNewsletterRecipients(newsletterId: string, recipients: { participantId: string; email: string }[]): Promise<void>;
   getNewsletterRecipients(newsletterId: string): Promise<{ participantId: string; email: string; sentAt: Date | null }[]>;
+
+  // Tasting Reminders
+  getRemindersForParticipant(participantId: string): Promise<TastingReminder[]>;
+  setReminder(data: InsertTastingReminder): Promise<TastingReminder>;
+  deleteReminder(id: string, participantId: string): Promise<void>;
+  deleteRemindersForTasting(tastingId: string, participantId: string): Promise<void>;
+  getUpcomingRemindersToSend(): Promise<{ reminder: TastingReminder; tasting: any; participant: any }[]>;
+  logReminderSent(participantId: string, tastingId: string, offsetMinutes: number): Promise<void>;
+  hasReminderBeenSent(participantId: string, tastingId: string, offsetMinutes: number): Promise<boolean>;
 
   // Whiskybase Collection
   getWhiskybaseCollection(participantId: string): Promise<WhiskybaseCollectionItem[]>;
@@ -873,6 +883,113 @@ export class DatabaseStorage implements IStorage {
 
   async deleteWhiskybaseCollection(participantId: string): Promise<void> {
     await db.delete(whiskybaseCollection).where(eq(whiskybaseCollection.participantId, participantId));
+  }
+
+  // --- Tasting Reminders ---
+
+  async getRemindersForParticipant(participantId: string): Promise<TastingReminder[]> {
+    return db.select().from(tastingReminders).where(eq(tastingReminders.participantId, participantId));
+  }
+
+  async setReminder(data: InsertTastingReminder): Promise<TastingReminder> {
+    if (data.tastingId) {
+      const existing = await db.select().from(tastingReminders).where(
+        and(
+          eq(tastingReminders.participantId, data.participantId),
+          eq(tastingReminders.tastingId, data.tastingId),
+          sql`${tastingReminders.offsetMinutes} = ${data.offsetMinutes}`
+        )
+      );
+      if (existing.length > 0) {
+        const [updated] = await db.update(tastingReminders)
+          .set({ enabled: data.enabled })
+          .where(eq(tastingReminders.id, existing[0].id))
+          .returning();
+        return updated;
+      }
+    } else {
+      const existing = await db.select().from(tastingReminders).where(
+        and(
+          eq(tastingReminders.participantId, data.participantId),
+          sql`${tastingReminders.tastingId} IS NULL`,
+          sql`${tastingReminders.offsetMinutes} = ${data.offsetMinutes}`
+        )
+      );
+      if (existing.length > 0) {
+        const [updated] = await db.update(tastingReminders)
+          .set({ enabled: data.enabled })
+          .where(eq(tastingReminders.id, existing[0].id))
+          .returning();
+        return updated;
+      }
+    }
+    const [result] = await db.insert(tastingReminders).values(data).returning();
+    return result;
+  }
+
+  async deleteReminder(id: string, participantId: string): Promise<void> {
+    await db.delete(tastingReminders).where(and(
+      eq(tastingReminders.id, id),
+      eq(tastingReminders.participantId, participantId)
+    ));
+  }
+
+  async deleteRemindersForTasting(tastingId: string, participantId: string): Promise<void> {
+    await db.delete(tastingReminders).where(and(
+      eq(tastingReminders.tastingId, tastingId),
+      eq(tastingReminders.participantId, participantId)
+    ));
+  }
+
+  async getUpcomingRemindersToSend(): Promise<{ reminder: TastingReminder; tasting: any; participant: any }[]> {
+    const now = new Date();
+    const allReminders = await db.select().from(tastingReminders).where(eq(tastingReminders.enabled, true));
+    const results: { reminder: TastingReminder; tasting: any; participant: any }[] = [];
+
+    for (const reminder of allReminders) {
+      const pId = reminder.participantId;
+      const participant = await this.getParticipant(pId);
+      if (!participant?.email || !participant.emailVerified) continue;
+
+      let tastingIds: string[] = [];
+      if (reminder.tastingId) {
+        tastingIds = [reminder.tastingId];
+      } else {
+        const joined = await db.select().from(tastingParticipants).where(eq(tastingParticipants.participantId, pId));
+        tastingIds = joined.map(j => j.tastingId);
+      }
+
+      for (const tId of tastingIds) {
+        const tasting = await this.getTasting(tId);
+        if (!tasting || tasting.status === "archived") continue;
+
+        const tastingDate = new Date(tasting.date + "T18:00:00");
+        const reminderTime = new Date(tastingDate.getTime() - reminder.offsetMinutes * 60 * 1000);
+
+        if (now >= reminderTime && now < tastingDate) {
+          const alreadySent = await this.hasReminderBeenSent(pId, tId, reminder.offsetMinutes);
+          if (!alreadySent) {
+            results.push({ reminder, tasting, participant });
+          }
+        }
+      }
+    }
+    return results;
+  }
+
+  async logReminderSent(participantId: string, tastingId: string, offsetMinutes: number): Promise<void> {
+    await db.insert(reminderLog).values({ participantId, tastingId, offsetMinutes });
+  }
+
+  async hasReminderBeenSent(participantId: string, tastingId: string, offsetMinutes: number): Promise<boolean> {
+    const rows = await db.select().from(reminderLog).where(
+      and(
+        eq(reminderLog.participantId, participantId),
+        eq(reminderLog.tastingId, tastingId),
+        eq(reminderLog.offsetMinutes, offsetMinutes)
+      )
+    );
+    return rows.length > 0;
   }
 }
 

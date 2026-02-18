@@ -172,6 +172,65 @@ export function buildVerificationEmail(params: {
   return { subject, html };
 }
 
+export function buildReminderEmail(params: {
+  name: string;
+  tastingTitle: string;
+  tastingDate: string;
+  tastingLocation: string;
+  offsetMinutes: number;
+  language: string;
+}): { subject: string; html: string } {
+  const { name, tastingTitle, tastingDate, tastingLocation, offsetMinutes, language } = params;
+  const isDE = language === "de";
+
+  const timeLabel = offsetMinutes >= 1440
+    ? (isDE ? `${Math.round(offsetMinutes / 1440)} Tag(e)` : `${Math.round(offsetMinutes / 1440)} day(s)`)
+    : offsetMinutes >= 60
+    ? (isDE ? `${Math.round(offsetMinutes / 60)} Stunde(n)` : `${Math.round(offsetMinutes / 60)} hour(s)`)
+    : (isDE ? `${offsetMinutes} Minuten` : `${offsetMinutes} minutes`);
+
+  const subject = isDE
+    ? `Erinnerung: ${tastingTitle} in ${timeLabel}`
+    : `Reminder: ${tastingTitle} in ${timeLabel}`;
+
+  const greeting = isDE ? `Hallo <strong>${name}</strong>,` : `Hello <strong>${name}</strong>,`;
+  const body = isDE
+    ? `deine Verkostung <strong>${tastingTitle}</strong> beginnt in ${timeLabel}. Hier sind die Details:`
+    : `your tasting session <strong>${tastingTitle}</strong> starts in ${timeLabel}. Here are the details:`;
+  const dateLabel = isDE ? "Datum" : "Date";
+  const locationLabel = isDE ? "Ort" : "Location";
+  const footer = isDE ? "Wir freuen uns auf dich!" : "Looking forward to seeing you there!";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:'Georgia',serif;background:#f9f9f7;color:#333;">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border:1px solid #e5e5e0;border-radius:4px;overflow:hidden;">
+    <div style="padding:32px 32px 16px;border-bottom:1px solid #e5e5e0;">
+      <h1 style="margin:0;font-size:24px;color:#4a5568;font-weight:700;letter-spacing:-0.5px;">CaskSense</h1>
+      <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a0aec0;">${isDE ? "Verkostungserinnerung" : "Tasting Reminder"}</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">${greeting}</p>
+      <p style="font-size:15px;line-height:1.6;margin:0 0 24px;color:#555;">${body}</p>
+      <div style="margin:20px 0;padding:16px;background:#fafaf8;border:1px solid #e5e5e0;border-radius:4px;">
+        <div style="font-size:18px;font-weight:700;color:#4a5568;margin-bottom:8px;">${tastingTitle}</div>
+        <div style="font-size:14px;color:#718096;">${dateLabel}: ${tastingDate}</div>
+        <div style="font-size:14px;color:#718096;">${locationLabel}: ${tastingLocation}</div>
+      </div>
+      <p style="font-size:15px;color:#555;margin:16px 0 0;line-height:1.5;">${footer}</p>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid #e5e5e0;background:#fafaf8;">
+      <p style="margin:0;font-size:11px;color:#a0aec0;text-align:center;">CaskSense — ${isDE ? "Wo Verkostung zur Reflexion wird" : "Where Tasting Becomes Reflection"}</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  return { subject, html };
+}
+
 export function buildInviteEmail(params: {
   hostName: string;
   tastingTitle: string;

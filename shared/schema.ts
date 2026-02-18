@@ -326,3 +326,26 @@ export const whiskybaseCollection = pgTable("whiskybase_collection", {
 export const insertWhiskybaseCollectionSchema = createInsertSchema(whiskybaseCollection).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertWhiskybaseCollection = z.infer<typeof insertWhiskybaseCollectionSchema>;
 export type WhiskybaseCollectionItem = typeof whiskybaseCollection.$inferSelect;
+
+// --- Tasting Reminders ---
+
+export const tastingReminders = pgTable("tasting_reminders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  tastingId: varchar("tasting_id"),
+  enabled: boolean("enabled").default(true),
+  offsetMinutes: integer("offset_minutes").notNull().default(1440),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTastingReminderSchema = createInsertSchema(tastingReminders).omit({ id: true, createdAt: true });
+export type InsertTastingReminder = z.infer<typeof insertTastingReminderSchema>;
+export type TastingReminder = typeof tastingReminders.$inferSelect;
+
+export const reminderLog = pgTable("reminder_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  tastingId: varchar("tasting_id").notNull(),
+  offsetMinutes: integer("offset_minutes").notNull(),
+  sentAt: timestamp("sent_at").defaultNow(),
+});

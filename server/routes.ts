@@ -1552,6 +1552,62 @@ export async function registerRoutes(
     }
   });
 
+  // --- Tasting Reminders ---
+
+  app.get("/api/reminders/:participantId", async (req: Request, res: Response) => {
+    try {
+      const reminders = await storage.getRemindersForParticipant(req.params.participantId as string);
+      res.json(reminders);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/reminders/:participantId", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.params.participantId as string;
+      const VALID_OFFSETS = [30, 60, 360, 1440];
+      const { tastingId, enabled, offsetMinutes } = req.body;
+      const parsedOffset = Number(offsetMinutes);
+      if (!VALID_OFFSETS.includes(parsedOffset)) {
+        return res.status(400).json({ message: `offsetMinutes must be one of: ${VALID_OFFSETS.join(", ")}` });
+      }
+      if (typeof enabled !== "boolean" && enabled !== undefined) {
+        return res.status(400).json({ message: "enabled must be a boolean" });
+      }
+      if (tastingId !== undefined && tastingId !== null && typeof tastingId !== "string") {
+        return res.status(400).json({ message: "tastingId must be a string or null" });
+      }
+      const reminder = await storage.setReminder({
+        participantId,
+        tastingId: tastingId || null,
+        enabled: enabled !== false,
+        offsetMinutes: parsedOffset,
+      });
+      res.json(reminder);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/reminders/:participantId/:id", async (req: Request, res: Response) => {
+    try {
+      await storage.deleteReminder(req.params.id as string, req.params.participantId as string);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/reminders/:participantId/tasting/:tastingId", async (req: Request, res: Response) => {
+    try {
+      await storage.deleteRemindersForTasting(req.params.tastingId as string, req.params.participantId as string);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // --- Whiskybase Collection ---
   
   app.get("/api/collection/:participantId", async (req: Request, res: Response) => {

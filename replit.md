@@ -30,7 +30,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Tasting Features**: Includes whisky management, flight board view, PDF export of tasting menus, blind mode, discussion panel, and a tasting note generator.
 -   **Personalization & Analytics**: Participant profiles, whisky journal, achievement badges, personal flavor profiles (radar charts), whisky recommendations, side-by-side comparisons, and flavor wheel visualization.
 -   **Host Tools**: Host briefing notes, tasting curation wizard, calendar view, and dashboard summary.
--   **Communication**: Session invitations via email (Nodemailer) or QR codes, and a friend activity feed.
+-   **Communication**: Session invitations via email (Nodemailer) or QR codes, and a friend activity feed. Tasting Reminders via email with configurable timing offsets.
 -   **Knowledge Base**: Whisky Lexicon, Distillery Encyclopedia, and Independent Bottlers Encyclopedia.
 -   **AI Integration**: AI-powered bottle identification for journal entries (GPT-4o) and AI-powered newsletter content generation.
 

@@ -38,6 +38,7 @@ import Donate from "@/pages/donate";
 import BenchmarkAnalyzer from "@/pages/benchmark-analyzer";
 import Features from "@/pages/features";
 import PhotoTasting from "@/pages/photo-tasting";
+import Reminders from "@/pages/reminders";
 import Intro from "@/pages/intro";
 import { hasSeenIntro } from "@/pages/intro";
 import { BuildFooter } from "@/components/build-footer";
@@ -92,6 +93,7 @@ function Router() {
               <Route path="/benchmark" component={BenchmarkAnalyzer} />
               <Route path="/features" component={Features} />
               <Route path="/photo-tasting" component={PhotoTasting} />
+              <Route path="/reminders" component={Reminders} />
               <Route path="/about-method" component={AboutMethod} />
               <Route path="/invite/:token" component={InviteAccept} />
               <Route component={NotFound} />
