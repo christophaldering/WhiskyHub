@@ -6,6 +6,7 @@ import { adminApi } from "@/lib/api";
 import { apiRequest } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
 import type { EncyclopediaSuggestion } from "@shared/schema";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -336,13 +337,13 @@ function NewsletterManagement({ participants, currentParticipantId, t }: {
                 data-testid="div-newsletter-preview"
               />
             ) : (
-              <textarea
-                className="w-full mt-1 p-2 text-sm bg-secondary/20 border border-border/50 rounded-md resize-y min-h-[200px] font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary/50"
-                value={contentHtml}
-                onChange={(e) => setContentHtml(e.target.value)}
-                placeholder="<h2>Hello!</h2><p>Newsletter content...</p>"
-                data-testid="input-newsletter-content"
-              />
+              <div className="mt-1" data-testid="input-newsletter-content">
+                <RichTextEditor
+                  content={contentHtml}
+                  onChange={setContentHtml}
+                  placeholder="Newsletter content..."
+                />
+              </div>
             )}
           </div>
 
