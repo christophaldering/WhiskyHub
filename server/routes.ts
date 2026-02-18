@@ -1686,6 +1686,12 @@ export async function registerRoutes(
       const file = (req as any).file as Express.Multer.File;
       if (!file) return res.status(400).json({ message: "No photo uploaded" });
 
+      const allWhiskies = await storage.getAllWhiskies();
+      const benchmarks = await storage.getBenchmarkEntries();
+      const dbWhiskyNames = Array.from(new Set(allWhiskies.map(w => w.name))).slice(0, 200);
+      const benchmarkNames = Array.from(new Set(benchmarks.map(b => b.whiskyName))).slice(0, 200);
+      const knownWhiskies = Array.from(new Set([...dbWhiskyNames, ...benchmarkNames]));
+
       const openai = new OpenAI({
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
@@ -1720,12 +1726,20 @@ Extract the whisky details from whatever is shown. You MUST return a JSON object
 - whiskyName (string, required - full whisky name including expression, e.g. "The GlenDronach Parliament Aged 21 Years")
 - distillery (string or null - the distillery name, e.g. "GlenDronach")
 - region (string or null, e.g. Islay, Speyside, Highland, Lowland, Campbeltown, Kentucky, Tennessee, Japan)
+- country (string or null, e.g. Scotland, Ireland, Japan, USA, Taiwan)
 - age (string or null, just the number e.g. "12", "18", "21", or "NAS" if no age statement)
 - abv (string or null, e.g. "48.0" - look carefully on the label for the % vol)
 - caskType (string or null, e.g. "Oloroso & PX Sherry Casks", "Bourbon Cask", "Sherry Cask", "Port Finish")
+- category (string or null, e.g. "Single Malt", "Blended Malt", "Bourbon", "Rye", "Blended Scotch")
 - notes (string or null - any tasting notes, review text, or interesting context from the source)
 - source (string or null - describe what the image shows, e.g. "Bottle label", "Newspaper review", "Magazine article", "Menu")
 - confidence (string, "high", "medium", or "low")
+- matchedExisting (string or null - if name closely matches one from the known whiskies list below, return the matched name exactly as listed)
+- whiskybaseSearch (string - a search query for Whiskybase to find this whisky, e.g. "GlenDronach 21 Parliament")
+- whiskybaseUrl (string or null - if you know the Whiskybase URL, provide it. Format: https://www.whiskybase.com/whiskies/whisky/XXXXX)
+
+Known whiskies in the database (try to match if possible):
+${knownWhiskies.slice(0, 100).join(", ")}
 
 If the image contains multiple whiskies, identify the most prominent one.
 If you cannot identify any whisky, return {"whiskyName": "Unknown Whisky", "confidence": "low"}.`,
@@ -1755,6 +1769,35 @@ If you cannot identify any whisky, return {"whiskyName": "Unknown Whisky", "conf
         }
       }
       if (!identified.whiskyName) identified.whiskyName = "Unknown Whisky";
+
+      if (!identified.whiskybaseSearch) {
+        identified.whiskybaseSearch = [identified.whiskyName, identified.distillery].filter(Boolean).join(" ");
+      }
+
+      const matchedWhisky = allWhiskies.find(w =>
+        w.name.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
+      );
+      const matchedBenchmark = benchmarks.find(b =>
+        b.whiskyName.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
+      );
+
+      if (matchedWhisky) {
+        identified.distillery = identified.distillery || matchedWhisky.distillery;
+        identified.region = identified.region || matchedWhisky.region;
+        identified.country = identified.country || matchedWhisky.country;
+        identified.age = identified.age || matchedWhisky.age;
+        identified.abv = identified.abv || (matchedWhisky.abv ? String(matchedWhisky.abv) : null);
+        identified.caskType = identified.caskType || matchedWhisky.caskInfluence;
+        identified.matchedInDb = true;
+      } else if (matchedBenchmark) {
+        identified.distillery = identified.distillery || matchedBenchmark.distillery;
+        identified.region = identified.region || matchedBenchmark.region;
+        identified.country = identified.country || matchedBenchmark.country;
+        identified.age = identified.age || matchedBenchmark.age;
+        identified.abv = identified.abv || matchedBenchmark.abv;
+        identified.caskType = identified.caskType || matchedBenchmark.caskType;
+        identified.matchedInDb = true;
+      }
 
       res.json(identified);
     } catch (e: any) {
@@ -1835,6 +1878,12 @@ ${flavorProfile.topWhiskies?.length ? `Top-rated whiskies: ${flavorProfile.topWh
       const participant = await storage.getParticipant(participantId);
       if (!participant) return res.status(404).json({ message: "Participant not found" });
 
+      const allWhiskies = await storage.getAllWhiskies();
+      const benchmarks = await storage.getBenchmarkEntries();
+      const dbWhiskyNames = Array.from(new Set(allWhiskies.map(w => w.name))).slice(0, 200);
+      const benchmarkNames = Array.from(new Set(benchmarks.map(b => b.whiskyName))).slice(0, 200);
+      const knownWhiskies = Array.from(new Set([...dbWhiskyNames, ...benchmarkNames]));
+
       const openai = new OpenAI({
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
@@ -1856,12 +1905,20 @@ Return a JSON object with these fields:
 - whiskyName (string, required - full whisky name)
 - distillery (string or null)
 - region (string or null, e.g. Islay, Speyside, Highland, Lowland, Campbeltown, Kentucky, Tennessee, Japan)
+- country (string or null, e.g. Scotland, Ireland, Japan, USA, Taiwan)
 - age (string or null, just the number e.g. "12", "18", or "NAS")
 - abv (string or null, e.g. "46.0")
 - caskType (string or null, e.g. "Bourbon Cask", "Sherry Cask", "Port Finish")
+- category (string or null, e.g. "Single Malt", "Blended Malt", "Bourbon", "Rye", "Blended Scotch")
 - notes (string or null - any tasting notes or interesting context extracted)
 - source (string or null - describe where this info seems to come from)
 - confidence (string, "high", "medium", or "low")
+- matchedExisting (string or null - if name closely matches one from the known whiskies list below, return the matched name exactly as listed)
+- whiskybaseSearch (string - a search query for Whiskybase to find this whisky, e.g. "GlenDronach 21 Parliament")
+- whiskybaseUrl (string or null - if you know the Whiskybase URL, provide it. Format: https://www.whiskybase.com/whiskies/whisky/XXXXX)
+
+Known whiskies in the database (try to match if possible):
+${knownWhiskies.slice(0, 100).join(", ")}
 
 Return ONLY valid JSON object. If you cannot identify any whisky, return {"whiskyName": "Unknown Whisky", "confidence": "low"}.`,
           },
@@ -1879,6 +1936,35 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         identified = { whiskyName: "Unknown Whisky", confidence: "low" };
       }
       if (!identified.whiskyName) identified.whiskyName = "Unknown Whisky";
+
+      if (!identified.whiskybaseSearch) {
+        identified.whiskybaseSearch = [identified.whiskyName, identified.distillery].filter(Boolean).join(" ");
+      }
+
+      const matchedWhisky = allWhiskies.find(w =>
+        w.name.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
+      );
+      const matchedBenchmark = benchmarks.find(b =>
+        b.whiskyName.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
+      );
+
+      if (matchedWhisky) {
+        identified.distillery = identified.distillery || matchedWhisky.distillery;
+        identified.region = identified.region || matchedWhisky.region;
+        identified.country = identified.country || matchedWhisky.country;
+        identified.age = identified.age || matchedWhisky.age;
+        identified.abv = identified.abv || (matchedWhisky.abv ? String(matchedWhisky.abv) : null);
+        identified.caskType = identified.caskType || matchedWhisky.caskInfluence;
+        identified.matchedInDb = true;
+      } else if (matchedBenchmark) {
+        identified.distillery = identified.distillery || matchedBenchmark.distillery;
+        identified.region = identified.region || matchedBenchmark.region;
+        identified.country = identified.country || matchedBenchmark.country;
+        identified.age = identified.age || matchedBenchmark.age;
+        identified.abv = identified.abv || matchedBenchmark.abv;
+        identified.caskType = identified.caskType || matchedBenchmark.caskType;
+        identified.matchedInDb = true;
+      }
 
       res.json(identified);
     } catch (e: any) {
@@ -3000,6 +3086,46 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const file = (req as any).file;
       if (!file) return res.status(400).json({ message: "No file uploaded" });
 
+      const allWhiskies = await storage.getAllWhiskies();
+      const benchmarks = await storage.getBenchmarkEntries();
+
+      const enrichEntries = (entries: any[]) => {
+        return entries.map((entry: any) => {
+          if (!entry.whiskyName) return entry;
+          
+          if (!entry.whiskybaseSearch) {
+            entry.whiskybaseSearch = [entry.whiskyName, entry.distillery].filter(Boolean).join(" ");
+          }
+          
+          const matchedWhisky = allWhiskies.find(w =>
+            w.name.toLowerCase() === (entry.whiskyName || "").toLowerCase()
+          );
+          const matchedBenchmark = benchmarks.find(b =>
+            b.whiskyName.toLowerCase() === (entry.whiskyName || "").toLowerCase()
+          );
+          
+          if (matchedWhisky) {
+            entry.distillery = entry.distillery || matchedWhisky.distillery;
+            entry.region = entry.region || matchedWhisky.region;
+            entry.country = entry.country || matchedWhisky.country;
+            entry.age = entry.age || matchedWhisky.age;
+            entry.abv = entry.abv || (matchedWhisky.abv ? String(matchedWhisky.abv) : null);
+            entry.caskType = entry.caskType || matchedWhisky.caskInfluence;
+            entry.matchedInDb = true;
+          } else if (matchedBenchmark) {
+            entry.distillery = entry.distillery || matchedBenchmark.distillery;
+            entry.region = entry.region || matchedBenchmark.region;
+            entry.country = entry.country || matchedBenchmark.country;
+            entry.age = entry.age || matchedBenchmark.age;
+            entry.abv = entry.abv || matchedBenchmark.abv;
+            entry.caskType = entry.caskType || matchedBenchmark.caskType;
+            entry.matchedInDb = true;
+          }
+          
+          return entry;
+        });
+      };
+
       let textContent = "";
       const isImage = file.mimetype.startsWith("image/");
 
@@ -3032,6 +3158,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 - score (number or null, normalized to 0-100 scale)
 - scoreScale (string or null, original scale e.g. "0-100", "1-5 stars")
 - sourceAuthor (string or null, reviewer/author name if visible)
+- whiskybaseSearch (string or null - a search query for Whiskybase to find this whisky, e.g. "Lagavulin 16")
 
 Return ONLY valid JSON array. If no whisky data found, return [].`,
             },
@@ -3049,7 +3176,7 @@ Return ONLY valid JSON array. If no whisky data found, return [].`,
         const content = response.choices[0]?.message?.content || "[]";
         const jsonMatch = content.match(/\[[\s\S]*\]/);
         const entries = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-        return res.json({ entries, fileName: file.originalname });
+        return res.json({ entries: enrichEntries(entries), fileName: file.originalname });
       }
 
       // Text-based files
@@ -3091,7 +3218,7 @@ Return ONLY valid JSON array. If no whisky data found, return [].`,
             messages: [
               {
                 role: "system",
-                content: `You are a whisky tasting notes extraction expert. The user will provide PDF content as base64. Try to interpret any text content. Extract ALL whisky tasting information. Return a JSON array of objects with fields: whiskyName, distillery, region, country, age, abv, caskType, category, noseNotes, tasteNotes, finishNotes, overallNotes, score (normalized 0-100), scoreScale, sourceAuthor. Return ONLY valid JSON array.`,
+                content: `You are a whisky tasting notes extraction expert. The user will provide PDF content as base64. Try to interpret any text content. Extract ALL whisky tasting information. Return a JSON array of objects with fields: whiskyName, distillery, region, country, age, abv, caskType, category, noseNotes, tasteNotes, finishNotes, overallNotes, score (normalized 0-100), scoreScale, sourceAuthor, whiskybaseSearch (a search query for Whiskybase e.g. "Lagavulin 16"). Return ONLY valid JSON array.`,
               },
               {
                 role: "user",
@@ -3104,7 +3231,7 @@ Return ONLY valid JSON array. If no whisky data found, return [].`,
           const content = response.choices[0]?.message?.content || "[]";
           const jsonMatch = content.match(/\[[\s\S]*\]/);
           const entries = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-          return res.json({ entries, fileName: file.originalname });
+          return res.json({ entries: enrichEntries(entries), fileName: file.originalname });
         }
       } else if (file.mimetype.includes("spreadsheet") || file.mimetype.includes("excel")) {
         const workbook = XLSX.read(file.buffer, { type: "buffer" });
@@ -3150,6 +3277,7 @@ Return ONLY valid JSON array. If no whisky data found, return [].`,
 - score (number or null, normalized to 0-100 scale)
 - scoreScale (string or null, original scale e.g. "0-100", "1-5 stars", "A-F")
 - sourceAuthor (string or null, reviewer/author name)
+- whiskybaseSearch (string or null - a search query for Whiskybase to find this whisky, e.g. "Lagavulin 16")
 
 Return ONLY a valid JSON array. If no whisky data is found, return [].`,
           },
@@ -3164,7 +3292,7 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
       const content = response.choices[0]?.message?.content || "[]";
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       const entries = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-      res.json({ entries, fileName: file.originalname });
+      res.json({ entries: enrichEntries(entries), fileName: file.originalname });
     } catch (e: any) {
       console.error("Benchmark analyze error:", e);
       res.status(500).json({ message: e.message || "Analysis failed" });
@@ -3185,6 +3313,12 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
       const file = (req as any).file as Express.Multer.File;
       if (!file) return res.status(400).json({ message: "No photo uploaded" });
 
+      const allWhiskies = await storage.getAllWhiskies();
+      const benchmarks = await storage.getBenchmarkEntries();
+      const dbWhiskyNames = Array.from(new Set(allWhiskies.map(w => w.name))).slice(0, 200);
+      const benchmarkNames = Array.from(new Set(benchmarks.map(b => b.whiskyName))).slice(0, 200);
+      const knownWhiskies = Array.from(new Set([...dbWhiskyNames, ...benchmarkNames]));
+
       const openai = new OpenAI({
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
@@ -3199,9 +3333,15 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
         messages: [
           {
             role: "system",
-            content: `You are a whisky bottle identification expert. Analyze the photo of a whisky bottle and identify it from the label.
+            content: `You are a whisky identification expert. Analyze the photo and identify the whisky shown. The image may be:
+- A whisky bottle (read the label carefully — zoom in on all text)
+- A newspaper or magazine article/review about a whisky
+- A tasting note card or scorecard
+- A menu or price list featuring whiskies
+- A screenshot of a website or social media post about a whisky
+- Any other image containing whisky information
 
-Read ALL text visible on the label. Pay close attention to:
+Read ALL text visible on the label or in the image. Pay close attention to:
 - The brand name and expression name (e.g. "The GlenDronach Parliament")
 - Age statement (look for "Aged X Years")
 - ABV percentage (usually on the lower part of the label, e.g. "48% vol")
@@ -3213,16 +3353,21 @@ You MUST return a JSON object with these fields:
 - whiskyName (string, required - full whisky name as on the label, including expression name)
 - distillery (string or null)
 - region (string or null, e.g. Islay, Speyside, Highland, Lowland, Campbeltown, Kentucky, Tennessee, Japan)
+- country (string or null, e.g. Scotland, Ireland, Japan, USA, Taiwan)
 - age (string or null, just the number e.g. "12", "18", "21", or "NAS")
 - abv (string or null, e.g. "48.0" - look carefully on the label for the % vol)
 - caskType (string or null, e.g. "Oloroso & PX Sherry Casks", "Bourbon Cask", "Sherry Cask", "Port Finish", "Ex-Bourbon")
-- country (string or null)
 - category (string or null, e.g. "Single Malt", "Blended Malt", "Bourbon", "Rye")
 - whiskybaseUrl (string or null - if you know the Whiskybase URL or can construct it, provide it)
 - whiskybaseSearch (string - a search query for Whiskybase to find this whisky, e.g. "GlenDronach 21 Parliament")
 - confidence (string, "high", "medium", or "low")
+- matchedExisting (string or null - if name closely matches one from the known whiskies list below, return the matched name exactly as listed)
 
-If you cannot identify the bottle, return {"whiskyName": "Unknown Whisky", "confidence": "low"}.`,
+Known whiskies in the database (try to match if possible):
+${knownWhiskies.slice(0, 100).join(", ")}
+
+If the image contains multiple whiskies, identify the most prominent one.
+If you cannot identify the whisky, return {"whiskyName": "Unknown Whisky", "confidence": "low"}.`,
           },
           {
             role: "user",
@@ -3249,6 +3394,31 @@ If you cannot identify the bottle, return {"whiskyName": "Unknown Whisky", "conf
         }
       }
       if (!identified.whiskyName) identified.whiskyName = "Unknown Whisky";
+
+      const matchedWhisky = allWhiskies.find(w =>
+        w.name.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
+      );
+      const matchedBenchmark = benchmarks.find(b =>
+        b.whiskyName.toLowerCase() === (identified.matchedExisting || identified.whiskyName || "").toLowerCase()
+      );
+
+      if (matchedWhisky) {
+        identified.distillery = identified.distillery || matchedWhisky.distillery;
+        identified.region = identified.region || matchedWhisky.region;
+        identified.country = identified.country || matchedWhisky.country;
+        identified.age = identified.age || matchedWhisky.age;
+        identified.abv = identified.abv || (matchedWhisky.abv ? String(matchedWhisky.abv) : null);
+        identified.caskType = identified.caskType || matchedWhisky.caskInfluence;
+        identified.matchedInDb = true;
+      } else if (matchedBenchmark) {
+        identified.distillery = identified.distillery || matchedBenchmark.distillery;
+        identified.region = identified.region || matchedBenchmark.region;
+        identified.country = identified.country || matchedBenchmark.country;
+        identified.age = identified.age || matchedBenchmark.age;
+        identified.abv = identified.abv || matchedBenchmark.abv;
+        identified.caskType = identified.caskType || matchedBenchmark.caskType;
+        identified.matchedInDb = true;
+      }
 
       if (!identified.whiskybaseSearch) {
         identified.whiskybaseSearch = [identified.whiskyName, identified.distillery].filter(Boolean).join(" ");

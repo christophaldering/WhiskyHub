@@ -26,7 +26,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ArrowLeft, Pencil, Trash2, Star, Wine, Calendar, Flame, Sparkles, Clock, Camera, Loader2, ScanLine, Type, Send, GlassWater } from "lucide-react";
+import { Plus, ArrowLeft, Pencil, Trash2, Star, Wine, Calendar, Flame, Sparkles, Clock, Camera, Loader2, ScanLine, Type, Send, GlassWater, ExternalLink, Check } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { wishlistScanApi, textExtractApi } from "@/lib/api";
 import { useLocation } from "wouter";
 import type { WishlistEntry } from "@shared/schema";
@@ -353,6 +354,7 @@ function WishlistForm({
   const [aiSummary, setAiSummary] = useState(entry?.aiSummary || "");
   const [aiSummaryDate, setAiSummaryDate] = useState(entry?.aiSummaryDate || "");
   const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [scanResult, setScanResult] = useState<any>(null);
 
   const generateSummary = async (whisky: { whiskyName: string; distillery?: string; region?: string; age?: string; abv?: string; caskType?: string; notes?: string }) => {
     if (!participantId || !whisky.whiskyName) return;
@@ -441,8 +443,10 @@ function WishlistForm({
               if (!file || !participantId) return;
               setScanning(true);
               setScanError("");
+              setScanResult(null);
               try {
                 const result = await wishlistScanApi.identify(file, participantId);
+                setScanResult(result);
                 if (result.whiskyName && result.whiskyName !== "Unknown Whisky") {
                   setWhiskyName(result.whiskyName);
                   if (result.distillery) setDistillery(result.distillery);
@@ -476,6 +480,42 @@ function WishlistForm({
           <div className="mt-3 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
             {scanError}
           </div>
+        )}
+        {scanResult && scanResult.whiskyName && scanResult.whiskyName !== "Unknown Whisky" && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 rounded-lg px-3 py-2 text-xs text-green-700 dark:text-green-400 flex items-center justify-between gap-2"
+          >
+            <span className="flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5" />
+              {t("wishlist.scanSuccess", { name: scanResult.whiskyName })}
+              {scanResult.matchedInDb && (
+                <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-1">{t("wishlist.foundInDb")}</Badge>
+              )}
+            </span>
+            {scanResult.whiskybaseUrl && scanResult.whiskybaseUrl.startsWith("http") ? (
+              <a
+                href={scanResult.whiskybaseUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:underline shrink-0"
+                data-testid="link-wishlist-whiskybase"
+              >
+                Whiskybase <ExternalLink className="w-3 h-3" />
+              </a>
+            ) : scanResult.whiskybaseSearch && scanResult.whiskybaseSearch.trim() ? (
+              <a
+                href={`https://www.whiskybase.com/search?q=${encodeURIComponent(scanResult.whiskybaseSearch)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:underline shrink-0"
+                data-testid="link-wishlist-whiskybase-search"
+              >
+                {t("wishlist.searchWhiskybase")} <ExternalLink className="w-3 h-3" />
+              </a>
+            ) : null}
+          </motion.div>
         )}
       </div>
 
@@ -519,6 +559,7 @@ function WishlistForm({
                 setScanError("");
                 try {
                   const result = await textExtractApi.extract(extractText.trim(), participantId);
+                  setScanResult(result);
                   if (result.whiskyName && result.whiskyName !== "Unknown Whisky") {
                     setWhiskyName(result.whiskyName);
                     if (result.distillery) setDistillery(result.distillery);
