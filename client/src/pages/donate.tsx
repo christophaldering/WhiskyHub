@@ -33,7 +33,7 @@ export default function Donate() {
           </div>
           <div className="space-y-2">
             <h2 className="text-xl font-serif font-bold text-primary">{t("donate.whyTitle")}</h2>
-            <p className="text-muted-foreground leading-relaxed">{t("donate.whyText")}</p>
+            <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{t("donate.whyText")}</p>
           </div>
         </div>
       </motion.div>

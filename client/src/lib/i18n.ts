@@ -650,7 +650,7 @@ const resources = {
       donate: {
         title: "Support CaskSense",
         whyTitle: "Why Donate?",
-        whyText: "CaskSense is free and always will be. No ads, no premium tiers, no hidden costs. But developing and running the app takes time and resources. Your donation helps keep the lights on and supports a good cause.",
+        whyText: "CaskSense is free and will stay that way. No ads, no premium tiers, no hidden costs. Development and operation of the app take time and resources — which the developer happily invests*, because he enjoys it.\n\nStill: a small token of appreciation in the form of a donation is always welcome. 100 % of it goes to a good cause.\n\n*Hoping that hosting fees and computing costs won't overwhelm him someday. But he'll let you know in time! Promise :-)",
         charityTitle: "100% Goes to Charity",
         charityText: "Every donation is forwarded in full to {{name}} — a foundation building a residential hospice in Emmerich, Germany, providing compassionate care, comfort, and dignity to the terminally ill in their final days.",
         transparencyTitle: "Full Transparency",
@@ -2083,7 +2083,7 @@ const resources = {
       donate: {
         title: "CaskSense unterstützen",
         whyTitle: "Warum spenden?",
-        whyText: "CaskSense ist kostenlos und wird es immer bleiben. Keine Werbung, keine Premium-Stufen, keine versteckten Kosten. Aber Entwicklung und Betrieb der App kosten Zeit und Ressourcen. Ihre Spende hilft, den Betrieb aufrechtzuerhalten und unterstützt einen guten Zweck.",
+        whyText: "CaskSense ist kostenlos und wird es bleiben. Keine Werbung, keine Premium-Stufen, keine versteckten Kosten. Entwicklung und Betrieb der App kosten Zeit und Ressourcen — die werden vom Entwickler gerne investiert*, weil es ihm Spaß macht.\n\nDennoch: eine kleine Wertschätzung in Form einer Spende wird natürlich gerne gesehen. Die wird zu 100 % für einen guten Zweck verwendet.\n\n*In der Hoffnung, dass ihn die Hosting-Gebühren und die Kosten für Rechenleistung nicht doch irgendwann überfordern. Dann meldet er sich aber rechtzeitig! Versprochen :-)",
         charityTitle: "100% gehen an die Wohltätigkeit",
         charityText: "Jede Spende wird vollständig an die {{name}} weitergeleitet — eine Stiftung, die in Emmerich ein stationäres Hospiz baut und schwerstkranken Menschen in ihrer letzten Lebensphase Zuwendung, Geborgenheit und würdevolle Begleitung bietet.",
         transparencyTitle: "Volle Transparenz",
