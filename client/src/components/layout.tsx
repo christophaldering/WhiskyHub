@@ -106,8 +106,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     {
       label: t('navGroup.main'),
       items: [
-        { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         { href: "/", icon: Home, label: t('nav.lobby') },
+        { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         ...(currentParticipant ? [
           { href: "/sessions", icon: Wine, label: t('nav.sessions') },
           { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
@@ -325,7 +325,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               { href: "/sessions", icon: Wine, label: t('nav.sessions') },
               { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
               { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
-            ] : []),
+            ] : [
+              { href: "/features", icon: LayoutGrid, label: t('nav.features') },
+              { href: "/lexicon", icon: Library, label: t('nav.lexicon') },
+            ]),
             { href: "/more", icon: Menu, label: t('nav.more'), isMore: true },
           ].map((item) => {
             const isActive = location === item.href;
