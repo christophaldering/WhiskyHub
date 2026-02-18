@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, MapPin, Calendar, Star, ExternalLink, ChevronDown, ChevronUp, Package } from "lucide-react";
 import { bottlers, type Bottler } from "@/data/bottlers";
+import { SuggestEntryDialog } from "@/components/suggest-entry-dialog";
 
 export default function Bottlers() {
   const { t } = useTranslation();
@@ -43,9 +44,12 @@ export default function Bottlers() {
 
   return (
     <div className="space-y-8 min-w-0 overflow-x-hidden" data-testid="bottler-encyclopedia">
-      <header>
-        <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("bottler.title")}</h1>
-        <p className="text-muted-foreground font-serif italic mt-2 text-base sm:text-lg">{t("bottler.subtitle")}</p>
+      <header className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("bottler.title")}</h1>
+          <p className="text-muted-foreground font-serif italic mt-2 text-base sm:text-lg">{t("bottler.subtitle")}</p>
+        </div>
+        <SuggestEntryDialog type="bottler" />
       </header>
 
       <div className="bg-card border border-border/50 rounded-lg p-4 space-y-2">

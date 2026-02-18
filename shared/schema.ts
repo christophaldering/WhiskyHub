@@ -349,3 +349,26 @@ export const reminderLog = pgTable("reminder_log", {
   offsetMinutes: integer("offset_minutes").notNull(),
   sentAt: timestamp("sent_at").defaultNow(),
 });
+
+// --- Encyclopedia Suggestions ---
+
+export const encyclopediaSuggestions = pgTable("encyclopedia_suggestions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: text("type").notNull(),
+  name: text("name").notNull(),
+  country: text("country").notNull(),
+  region: text("region").notNull(),
+  founded: integer("founded"),
+  description: text("description"),
+  feature: text("feature"),
+  website: text("website"),
+  status: text("status").default("pending").notNull(),
+  submittedBy: varchar("submitted_by"),
+  submitterName: text("submitter_name"),
+  adminNote: text("admin_note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertEncyclopediaSuggestionSchema = createInsertSchema(encyclopediaSuggestions).omit({ id: true, createdAt: true, status: true, adminNote: true });
+export type InsertEncyclopediaSuggestion = z.infer<typeof insertEncyclopediaSuggestionSchema>;
+export type EncyclopediaSuggestion = typeof encyclopediaSuggestions.$inferSelect;

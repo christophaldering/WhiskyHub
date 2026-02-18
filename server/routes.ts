@@ -4107,5 +4107,68 @@ Return ONLY valid JSON object. If you cannot identify the bottle, return {"name"
     }
   });
 
+  // --- Encyclopedia Suggestions ---
+
+  app.get("/api/encyclopedia-suggestions", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester) return res.status(404).json({ message: "Participant not found" });
+      if (requester.role === "admin") {
+        const status = req.query.status as string | undefined;
+        const suggestions = await storage.getEncyclopediaSuggestions(status);
+        res.json(suggestions);
+      } else {
+        const all = await storage.getEncyclopediaSuggestions();
+        res.json(all.filter(s => s.submittedBy === participantId));
+      }
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/encyclopedia-suggestions", async (req: Request, res: Response) => {
+    try {
+      const { type, name, country, region, founded, description, feature, website, submittedBy, submitterName } = req.body;
+      if (!type || !name || !country || !region) {
+        return res.status(400).json({ message: "type, name, country, and region are required" });
+      }
+      if (!["distillery", "bottler"].includes(type)) {
+        return res.status(400).json({ message: "type must be 'distillery' or 'bottler'" });
+      }
+      const suggestion = await storage.createEncyclopediaSuggestion({
+        type, name, country, region,
+        founded: founded ? Number(founded) : null,
+        description: description || null,
+        feature: feature || null,
+        website: website || null,
+        submittedBy: submittedBy || null,
+        submitterName: submitterName || null,
+      });
+      res.json(suggestion);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/encyclopedia-suggestions/:id", async (req: Request, res: Response) => {
+    try {
+      const { status, adminNote, participantId } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      if (!["approved", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "status must be 'approved' or 'rejected'" });
+      }
+      const updated = await storage.updateSuggestionStatus(req.params.id as string, status, adminNote);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }

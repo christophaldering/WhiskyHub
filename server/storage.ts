@@ -3,7 +3,7 @@ import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, journalEntries, benchmarkEntries, wishlistEntries,
-  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog,
+  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -20,6 +20,7 @@ import {
   type InsertNewsletter, type Newsletter,
   type InsertWhiskybaseCollection, type WhiskybaseCollectionItem,
   type InsertTastingReminder, type TastingReminder,
+  type InsertEncyclopediaSuggestion, type EncyclopediaSuggestion,
 } from "@shared/schema";
 
 export interface WhiskyOfTheDay {
@@ -185,6 +186,11 @@ export interface IStorage {
   upsertWhiskybaseCollectionItem(data: InsertWhiskybaseCollection): Promise<WhiskybaseCollectionItem>;
   deleteWhiskybaseCollectionItem(id: string, participantId: string): Promise<void>;
   deleteWhiskybaseCollection(participantId: string): Promise<void>;
+
+  // Encyclopedia Suggestions
+  getEncyclopediaSuggestions(status?: string): Promise<EncyclopediaSuggestion[]>;
+  createEncyclopediaSuggestion(data: InsertEncyclopediaSuggestion): Promise<EncyclopediaSuggestion>;
+  updateSuggestionStatus(id: string, status: string, adminNote?: string): Promise<EncyclopediaSuggestion>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -990,6 +996,26 @@ export class DatabaseStorage implements IStorage {
       )
     );
     return rows.length > 0;
+  }
+
+  // --- Encyclopedia Suggestions ---
+  async getEncyclopediaSuggestions(status?: string): Promise<EncyclopediaSuggestion[]> {
+    if (status) {
+      return db.select().from(encyclopediaSuggestions).where(eq(encyclopediaSuggestions.status, status)).orderBy(desc(encyclopediaSuggestions.createdAt));
+    }
+    return db.select().from(encyclopediaSuggestions).orderBy(desc(encyclopediaSuggestions.createdAt));
+  }
+
+  async createEncyclopediaSuggestion(data: InsertEncyclopediaSuggestion): Promise<EncyclopediaSuggestion> {
+    const [result] = await db.insert(encyclopediaSuggestions).values(data).returning();
+    return result;
+  }
+
+  async updateSuggestionStatus(id: string, status: string, adminNote?: string): Promise<EncyclopediaSuggestion> {
+    const updateData: any = { status };
+    if (adminNote !== undefined) updateData.adminNote = adminNote;
+    const [result] = await db.update(encyclopediaSuggestions).set(updateData).where(eq(encyclopediaSuggestions.id, id)).returning();
+    return result;
   }
 }
 

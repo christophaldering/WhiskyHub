@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, MapPin, Calendar, Star, ExternalLink, ChevronDown, ChevronUp, Map } from "lucide-react";
 import { distilleries, type Distillery } from "@/data/distilleries";
+import { SuggestEntryDialog } from "@/components/suggest-entry-dialog";
 import "leaflet/dist/leaflet.css";
 
 const miniMapIcon = L.divIcon({
@@ -120,11 +121,14 @@ export default function DistilleryEncyclopedia() {
           <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("distillery.title")}</h1>
           <p className="text-muted-foreground font-serif italic mt-2 text-base sm:text-lg">{t("distillery.subtitle")}</p>
         </div>
-        <Link href="/distillery-map">
-          <Button variant="outline" size="sm" data-testid="link-distillery-map">
-            <Map className="w-4 h-4 mr-1" /> {t("distillery.viewOnMap")}
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <SuggestEntryDialog type="distillery" />
+          <Link href="/distillery-map">
+            <Button variant="outline" size="sm" data-testid="link-distillery-map">
+              <Map className="w-4 h-4 mr-1" /> {t("distillery.viewOnMap")}
+            </Button>
+          </Link>
+        </div>
       </header>
 
       <div className="space-y-4">

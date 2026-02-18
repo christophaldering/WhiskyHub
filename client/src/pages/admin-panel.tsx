@@ -3,12 +3,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { adminApi } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2 } from "lucide-react";
+import type { EncyclopediaSuggestion } from "@shared/schema";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -516,6 +519,7 @@ export default function AdminPanel() {
   const [expandedTastingId, setExpandedTastingId] = useState<string | null>(null);
   const [searchJournals, setSearchJournals] = useState("");
   const [expandedJournalId, setExpandedJournalId] = useState<string | null>(null);
+  const [suggestionFilter, setSuggestionFilter] = useState<string>("all");
 
   const { data, isLoading, error } = useQuery<AdminOverview>({
     queryKey: ["admin-overview", currentParticipant?.id],
@@ -539,6 +543,28 @@ export default function AdminPanel() {
     queryKey: ["admin-analytics", currentParticipant?.id],
     queryFn: () => adminApi.getAnalytics(currentParticipant!.id),
     enabled: !!currentParticipant,
+  });
+
+  const { data: suggestionsData } = useQuery<EncyclopediaSuggestion[]>({
+    queryKey: ["encyclopedia-suggestions"],
+    queryFn: async () => {
+      const res = await fetch(`/api/encyclopedia-suggestions?participantId=${currentParticipant!.id}`);
+      if (!res.ok) throw new Error("Failed to fetch suggestions");
+      return res.json();
+    },
+    enabled: !!currentParticipant,
+  });
+
+  const suggestionMutation = useMutation({
+    mutationFn: async ({ id, status, adminNote }: { id: string; status: string; adminNote?: string }) => {
+      const res = await apiRequest("PATCH", `/api/encyclopedia-suggestions/${id}`, { status, adminNote, participantId: currentParticipant!.id });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["encyclopedia-suggestions"] });
+      toast({ title: t("admin.roleUpdated") });
+    },
+    onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
   });
 
   const roleMutation = useMutation({
@@ -716,6 +742,15 @@ export default function AdminPanel() {
           </TabsTrigger>
           <TabsTrigger value="newsletter" data-testid="tab-newsletter" className="flex-1 min-w-0">
             <Mail className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">{t("admin.newsletterManagement")}</span>
+          </TabsTrigger>
+          <TabsTrigger value="suggestions" data-testid="tab-suggestions" className="flex-1 min-w-0">
+            <Lightbulb className="w-4 h-4 mr-1 flex-shrink-0" />
+            <span className="truncate">{t("encyclopedia.suggestions")}</span>
+            {suggestionsData && suggestionsData.filter(s => s.status === "pending").length > 0 && (
+              <Badge variant="destructive" className="ml-1 text-[10px] px-1.5 py-0 min-w-0" data-testid="badge-pending-suggestions">
+                {suggestionsData.filter(s => s.status === "pending").length}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -1445,6 +1480,86 @@ export default function AdminPanel() {
             currentParticipantId={currentParticipant?.id || ""}
             t={t}
           />
+        </TabsContent>
+
+        <TabsContent value="suggestions">
+          <div className="flex flex-wrap gap-2 mb-4">
+            {["all", "pending", "approved", "rejected"].map(f => (
+              <Button
+                key={f}
+                variant={suggestionFilter === f ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSuggestionFilter(f)}
+                data-testid={`filter-suggestion-${f}`}
+              >
+                {f === "all" ? "All" : t(`encyclopedia.${f}`)}
+              </Button>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {(() => {
+              const filtered = (suggestionsData || []).filter(s => suggestionFilter === "all" || s.status === suggestionFilter);
+              if (filtered.length === 0) {
+                return <p className="text-center text-muted-foreground py-8" data-testid="text-no-suggestions">{t("encyclopedia.noSuggestions")}</p>;
+              }
+              return filtered.map((s, i) => (
+                <motion.div
+                  key={s.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                >
+                  <Card data-testid={`suggestion-row-${s.id}`}>
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="font-serif font-semibold truncate flex items-center gap-2">
+                            {s.name}
+                            <Badge variant="outline" className="text-xs">{s.type}</Badge>
+                            <Badge
+                              variant={s.status === "approved" ? "default" : s.status === "rejected" ? "destructive" : "secondary"}
+                              className="text-xs"
+                            >
+                              {t(`encyclopedia.${s.status}`)}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                            <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {s.country}, {s.region}</span>
+                            {s.submitterName && <span className="flex items-center gap-1"><User className="w-3 h-3" /> {s.submitterName}</span>}
+                            {s.createdAt && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(s.createdAt).toLocaleDateString()}</span>}
+                          </div>
+                          {s.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{s.description}</p>}
+                          {s.feature && <p className="text-xs text-muted-foreground mt-1 italic">{s.feature}</p>}
+                        </div>
+                        {s.status === "pending" && (
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-green-500 hover:bg-green-500/10"
+                              onClick={() => suggestionMutation.mutate({ id: s.id, status: "approved" })}
+                              data-testid={`btn-approve-${s.id}`}
+                            >
+                              <CheckCircle className="w-5 h-5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-500 hover:bg-red-500/10"
+                              onClick={() => suggestionMutation.mutate({ id: s.id, status: "rejected" })}
+                              data-testid={`btn-reject-${s.id}`}
+                            >
+                              <XCircle className="w-5 h-5" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ));
+            })()}
+          </div>
         </TabsContent>
       </Tabs>
     </motion.div>
