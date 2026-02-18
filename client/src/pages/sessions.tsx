@@ -6,9 +6,11 @@ import { tastingApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
-import { ArrowRight, Trash2 } from "lucide-react";
+import { ArrowRight, Trash2, KeyRound, Loader2 } from "lucide-react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function Sessions() {
   const { t } = useTranslation();
@@ -16,10 +18,13 @@ export default function Sessions() {
   const { currentParticipant } = useAppStore();
   const { toast } = useToast();
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [joinCode, setJoinCode] = useState("");
+  const [joinLoading, setJoinLoading] = useState(false);
 
   const { data: tastings = [], isLoading } = useQuery({
-    queryKey: ["tastings"],
-    queryFn: tastingApi.getAll,
+    queryKey: ["tastings", currentParticipant?.id],
+    queryFn: () => tastingApi.getAll(currentParticipant?.id),
+    enabled: !!currentParticipant,
   });
 
   const deleteMutation = useMutation({
@@ -31,6 +36,28 @@ export default function Sessions() {
       toast({ title: t("session.actions.deleted") });
     },
   });
+
+  const handleJoinByCode = async () => {
+    const code = joinCode.trim().toUpperCase();
+    if (!code || !currentParticipant) return;
+    setJoinLoading(true);
+    try {
+      const tasting = await tastingApi.getByCode(code);
+      if (!tasting) {
+        toast({ title: t("session.codeNotFound"), variant: "destructive" });
+        return;
+      }
+      await tastingApi.join(tasting.id, currentParticipant.id, code);
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+      setJoinCode("");
+      toast({ title: t("session.joinedSuccess") });
+      navigate(`/tasting/${tasting.id}`);
+    } catch (e: any) {
+      toast({ title: e?.message || t("session.joinError"), variant: "destructive" });
+    } finally {
+      setJoinLoading(false);
+    }
+  };
 
   const active = tastings.filter((s: any) => s.status === "open" || s.status === "closed" || s.status === "reveal");
   const drafts = tastings.filter((s: any) => s.status === "draft");
@@ -62,7 +89,9 @@ export default function Sessions() {
         <span className="text-xs bg-secondary px-2 py-1 rounded-full text-secondary-foreground font-mono uppercase">
           {t(`session.status.${tasting.status}`)}
         </span>
-        <span className="text-xs font-mono text-muted-foreground">Code: {tasting.code}</span>
+        {isHostOf(tasting) && (
+          <span className="text-xs font-mono text-muted-foreground">Code: {tasting.code}</span>
+        )}
         {canDelete(tasting) && (
           <button
             onClick={(e) => { e.stopPropagation(); setDeleteTarget(tasting); }}
@@ -114,6 +143,38 @@ export default function Sessions() {
       >
         <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("nav.sessions")}</h1>
         <div className="w-12 h-1 bg-primary/50 mt-3" />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.6 }}
+        className="bg-card border border-border/50 rounded-lg p-5 space-y-3"
+        data-testid="join-by-code-section"
+      >
+        <div className="flex items-center gap-2">
+          <KeyRound className="w-4 h-4 text-primary" />
+          <h2 className="text-sm font-serif font-bold text-primary">{t("session.joinSessionTitle")}</h2>
+        </div>
+        <p className="text-xs text-muted-foreground">{t("session.joinSessionSubtitle")}</p>
+        <div className="flex gap-2">
+          <Input
+            value={joinCode}
+            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+            placeholder={t("session.codePlaceholder")}
+            className="font-mono uppercase tracking-wider max-w-[200px]"
+            onKeyDown={(e) => e.key === "Enter" && handleJoinByCode()}
+            data-testid="input-join-code"
+          />
+          <Button
+            onClick={handleJoinByCode}
+            disabled={!joinCode.trim() || joinLoading}
+            size="sm"
+            data-testid="button-join-by-code"
+          >
+            {joinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("session.joinButton")}
+          </Button>
+        </div>
       </motion.div>
 
       {tastings.length === 0 ? (

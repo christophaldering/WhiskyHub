@@ -47,6 +47,7 @@ export interface IStorage {
   getTasting(id: string): Promise<Tasting | undefined>;
   getTastingByCode(code: string): Promise<Tasting | undefined>;
   getAllTastings(): Promise<Tasting[]>;
+  getTastingsForParticipant(participantId: string): Promise<Tasting[]>;
   createTasting(data: InsertTasting): Promise<Tasting>;
   updateTastingStatus(id: string, status: string, currentAct?: string): Promise<Tasting | undefined>;
   updateTastingReflection(id: string, reflection: string): Promise<Tasting | undefined>;
@@ -253,6 +254,24 @@ export class DatabaseStorage implements IStorage {
 
   async getAllTastings(): Promise<Tasting[]> {
     return db.select().from(tastings).where(ne(tastings.status, "deleted"));
+  }
+
+  async getTastingsForParticipant(participantId: string): Promise<Tasting[]> {
+    const joinedTastingIds = db
+      .select({ tastingId: tastingParticipants.tastingId })
+      .from(tastingParticipants)
+      .where(eq(tastingParticipants.participantId, participantId));
+
+    const results = await db
+      .select()
+      .from(tastings)
+      .where(
+        and(
+          ne(tastings.status, "deleted"),
+          sql`(${tastings.hostId} = ${participantId} OR ${tastings.id} IN (${joinedTastingIds}))`
+        )
+      );
+    return results;
   }
 
   async createTasting(data: InsertTasting): Promise<Tasting> {

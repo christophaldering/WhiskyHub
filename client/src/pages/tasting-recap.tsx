@@ -40,8 +40,8 @@ export default function TastingRecap() {
   const tastingId = params.id || selectedTastingId;
 
   const { data: tastings } = useQuery<any[]>({
-    queryKey: ["tastings"],
-    queryFn: () => tastingApi.getAll(),
+    queryKey: ["tastings", currentParticipant?.id],
+    queryFn: () => tastingApi.getAll(currentParticipant?.id),
     enabled: !params.id,
   });
 

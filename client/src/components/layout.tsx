@@ -29,8 +29,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   });
 
   const { data: allTastings = [] } = useQuery({
-    queryKey: ["tastings"],
-    queryFn: () => tastingApi.getAll(),
+    queryKey: ["tastings", currentParticipant?.id],
+    queryFn: () => tastingApi.getAll(currentParticipant?.id),
     enabled: !!currentParticipant,
   });
 

@@ -31,7 +31,8 @@ export default function Reminders() {
   });
 
   const { data: tastings = [] } = useQuery<any[]>({
-    queryKey: ["/api/tastings"],
+    queryKey: ["/api/tastings", currentParticipant?.id],
+    queryFn: () => fetch(`/api/tastings?participantId=${currentParticipant?.id}`).then(r => r.json()),
     enabled: !!currentParticipant?.id,
   });
 

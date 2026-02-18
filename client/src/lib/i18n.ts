@@ -196,7 +196,14 @@ const resources = {
           editTitle: "Title",
           editDate: "Date",
           editLocation: "Location"
-        }
+        },
+        joinSessionTitle: "Join a Tasting Session",
+        joinSessionSubtitle: "Got an access code? Enter it below to join instantly.",
+        joinButton: "Join",
+        codePlaceholder: "e.g. ABC123",
+        codeNotFound: "No session found with this code",
+        joinedSuccess: "Successfully joined the session!",
+        joinError: "Could not join this session. Check the code and try again."
       },
       evaluation: {
         nose: "Nose",
@@ -1656,7 +1663,14 @@ const resources = {
           editTitle: "Titel",
           editDate: "Datum",
           editLocation: "Ort"
-        }
+        },
+        joinSessionTitle: "Einer Session beitreten",
+        joinSessionSubtitle: "Du hast einen Zugangscode? Gib ihn unten ein, um sofort beizutreten.",
+        joinButton: "Beitreten",
+        codePlaceholder: "z.B. ABC123",
+        codeNotFound: "Keine Session mit diesem Code gefunden",
+        joinedSuccess: "Erfolgreich beigetreten!",
+        joinError: "Beitritt nicht m\u00f6glich. Pr\u00fcfe den Code und versuche es erneut."
       },
       evaluation: {
         nose: "Nase",

@@ -32,7 +32,7 @@ export const participantApi = {
 
 // ===== Tastings =====
 export const tastingApi = {
-  getAll: () => fetchJSON("/tastings"),
+  getAll: (participantId?: string) => fetchJSON(participantId ? `/tastings?participantId=${participantId}` : "/tastings"),
   get: (id: string) => fetchJSON(`/tastings/${id}`),
   getByCode: (code: string) => fetchJSON(`/tastings/code/${code}`),
   create: (data: any) => fetchJSON("/tastings", { method: "POST", body: JSON.stringify(data) }),
@@ -47,8 +47,8 @@ export const tastingApi = {
   duplicate: (id: string, hostId: string) =>
     fetchJSON(`/tastings/${id}/duplicate`, { method: "POST", body: JSON.stringify({ hostId }) }),
   getParticipants: (id: string) => fetchJSON(`/tastings/${id}/participants`),
-  join: (id: string, participantId: string) =>
-    fetchJSON(`/tastings/${id}/join`, { method: "POST", body: JSON.stringify({ participantId }) }),
+  join: (id: string, participantId: string, code?: string) =>
+    fetchJSON(`/tastings/${id}/join`, { method: "POST", body: JSON.stringify({ participantId, code }) }),
   getAnalytics: (id: string) => fetchJSON(`/tastings/${id}/analytics`),
 };
 

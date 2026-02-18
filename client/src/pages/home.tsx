@@ -229,8 +229,8 @@ export default function Home() {
   const [showFeatures, setShowFeatures] = useState(!currentParticipant);
 
   const { data: tastings } = useQuery({
-    queryKey: ["tastings"],
-    queryFn: tastingApi.getAll,
+    queryKey: ["tastings", currentParticipant?.id],
+    queryFn: () => tastingApi.getAll(currentParticipant?.id),
     enabled: !!currentParticipant,
   });
 
@@ -254,8 +254,9 @@ export default function Home() {
     if (!joinCode.trim()) return;
     setJoinError("");
     try {
-      const tasting = await tastingApi.getByCode(joinCode.trim().toUpperCase());
-      await tastingApi.join(tasting.id, participantId);
+      const code = joinCode.trim().toUpperCase();
+      const tasting = await tastingApi.getByCode(code);
+      await tastingApi.join(tasting.id, participantId, code);
       navigate(`/tasting/${tasting.id}`);
     } catch (e: any) {
       setJoinError(e.message || t("home.sessionNotFound"));

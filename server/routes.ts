@@ -461,9 +461,21 @@ export async function registerRoutes(
 
   // ===== TASTINGS =====
 
-  app.get("/api/tastings", async (_req, res) => {
-    const all = await storage.getAllTastings();
-    res.json(all);
+  app.get("/api/tastings", async (req, res) => {
+    const participantId = req.query.participantId as string | undefined;
+    if (!participantId) {
+      return res.json([]);
+    }
+    const participant = await storage.getParticipant(participantId);
+    if (!participant) {
+      return res.json([]);
+    }
+    if (participant.role === "admin") {
+      const all = await storage.getAllTastings();
+      return res.json(all);
+    }
+    const filtered = await storage.getTastingsForParticipant(participantId);
+    return res.json(filtered);
   });
 
   app.get("/api/tastings/:id", async (req, res) => {
@@ -573,7 +585,7 @@ export async function registerRoutes(
 
   app.post("/api/tastings/:id/join", async (req, res) => {
     try {
-      const { participantId } = req.body;
+      const { participantId, code } = req.body;
       const tastingId = req.params.id;
 
       const tasting = await storage.getTasting(tastingId);
@@ -581,6 +593,26 @@ export async function registerRoutes(
 
       const already = await storage.isParticipantInTasting(tastingId, participantId);
       if (already) return res.json({ message: "Already joined" });
+
+      if (tasting.hostId === participantId) {
+        const tp = await storage.addParticipantToTasting({ tastingId, participantId });
+        return res.status(201).json(tp);
+      }
+
+      const participant = await storage.getParticipant(participantId);
+      if (participant?.role === "admin") {
+        const tp = await storage.addParticipantToTasting({ tastingId, participantId });
+        return res.status(201).json(tp);
+      }
+
+      const hasInvite = await storage.getInvitesByTasting(tastingId);
+      const invited = hasInvite.some(inv =>
+        inv.email && participant?.email && inv.email.toLowerCase() === participant.email.toLowerCase()
+      );
+
+      if (!invited && (!code || tasting.code !== code)) {
+        return res.status(403).json({ message: "A valid session code or invitation is required to join" });
+      }
 
       const tp = await storage.addParticipantToTasting({ tastingId, participantId });
       res.status(201).json(tp);

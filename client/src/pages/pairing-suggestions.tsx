@@ -56,8 +56,8 @@ export default function PairingSuggestions() {
   const [selectedTastingId, setSelectedTastingId] = useState<string>("");
 
   const { data: tastings, isLoading: tastingsLoading } = useQuery({
-    queryKey: ["tastings"],
-    queryFn: () => tastingApi.getAll(),
+    queryKey: ["tastings", currentParticipant?.id],
+    queryFn: () => tastingApi.getAll(currentParticipant?.id),
     enabled: !!currentParticipant,
   });
 

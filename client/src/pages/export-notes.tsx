@@ -45,8 +45,8 @@ export default function ExportNotes() {
   const [selectedTastingId, setSelectedTastingId] = useState<string>(urlTastingId || "");
 
   const { data: tastings, isLoading: tastingsLoading } = useQuery<any[]>({
-    queryKey: ["tastings"],
-    queryFn: () => tastingApi.getAll(),
+    queryKey: ["tastings", currentParticipant?.id],
+    queryFn: () => tastingApi.getAll(currentParticipant?.id),
     enabled: !!currentParticipant,
   });
 

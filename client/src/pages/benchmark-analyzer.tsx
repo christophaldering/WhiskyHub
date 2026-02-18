@@ -47,8 +47,8 @@ export default function BenchmarkAnalyzer() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const { data: allTastings } = useQuery({
-    queryKey: ["/api/tastings"],
-    queryFn: () => tastingApi.getAll(),
+    queryKey: ["/api/tastings", currentParticipant?.id],
+    queryFn: () => tastingApi.getAll(currentParticipant?.id),
     enabled: !!currentParticipant,
   });
 
