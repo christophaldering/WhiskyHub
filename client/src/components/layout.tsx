@@ -169,7 +169,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
         { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
         { href: "/donate", icon: Heart, label: t('nav.donate') },
-        { href: "/intro", icon: Info, label: t('nav.about') },
+        { href: "/about", icon: Info, label: t('nav.about') },
       ],
     },
     ...(currentParticipant?.role === "admin" ? [
