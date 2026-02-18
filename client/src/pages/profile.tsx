@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Camera, X, User, KeyRound } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Camera, X, User, KeyRound, Mail } from "lucide-react";
 
 const REGIONS = [
   "Speyside", "Highlands", "Islay", "Lowlands", "Campbeltown",
@@ -44,6 +45,7 @@ export default function Profile() {
   const [currentPin, setCurrentPin] = useState("");
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile", currentParticipant?.id],
@@ -72,6 +74,7 @@ export default function Profile() {
     if (participant) {
       setDisplayName(participant.name || "");
       setEmail(participant.email || "");
+      setNewsletterOptIn(participant.newsletterOptIn || false);
     }
   }, [participant]);
 
@@ -101,6 +104,9 @@ export default function Profile() {
       }
       if (email !== (participant?.email || "")) {
         participantUpdates.email = email;
+      }
+      if (newsletterOptIn !== (participant?.newsletterOptIn || false)) {
+        participantUpdates.newsletterOptIn = newsletterOptIn;
       }
 
       if (newPin) {
@@ -353,6 +359,32 @@ export default function Profile() {
                 {t("profile.pinMismatch")}
               </p>
             )}
+          </div>
+
+          <div className="border-t border-border/30 pt-6">
+            <h2 className="font-serif text-lg text-primary mb-4 flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              {t("profile.newsletterLabel")}
+            </h2>
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="newsletter-profile"
+                checked={newsletterOptIn}
+                onCheckedChange={(checked) => setNewsletterOptIn(checked === true)}
+                data-testid="checkbox-newsletter-profile"
+              />
+              <div className="grid gap-0.5 leading-none">
+                <label
+                  htmlFor="newsletter-profile"
+                  className="text-sm font-medium leading-none cursor-pointer"
+                >
+                  {t("profile.newsletterOptIn")}
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  {t("profile.newsletterHint")}
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="border-t border-border/30 pt-6 space-y-6">

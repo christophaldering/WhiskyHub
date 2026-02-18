@@ -15,6 +15,7 @@ export const participants = pgTable("participants", {
   verificationCode: text("verification_code"),
   verificationExpiry: timestamp("verification_expiry"),
   canAccessWhiskyDb: boolean("can_access_whisky_db").default(false),
+  newsletterOptIn: boolean("newsletter_opt_in").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

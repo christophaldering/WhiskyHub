@@ -84,6 +84,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 51. **Curation Wizard "Add to Tasting"**: Suggestions from the curation wizard can be directly transferred to the current tasting session via "Add to Tasting" buttons with visual confirmation.
 52. **Forgot PIN Recovery**: Users who forgot their PIN can reset it via email verification code flow (request → verify → set new PIN).
 53. **Benchmark Analyzer Enhancements**: Upload metadata display (uploader, timestamp, filename), inline delete with confirmation, and whisky-to-database selection toggle with visual distinction.
+54. **Newsletter Opt-In**: Optional newsletter signup during registration (checkbox visible when email entered). Togglable in profile settings. Admin panel tab showing all newsletter subscribers with name, email, and join date.
 
 ### Key Endpoints (continued)
 - `GET /api/participants/:id/flavor-profile` — Aggregated flavor profile with radar data, breakdowns, and whisky lists

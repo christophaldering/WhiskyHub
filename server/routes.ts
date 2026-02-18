@@ -1118,6 +1118,7 @@ export async function registerRoutes(
       const updates: any = {};
       if (req.body.name) updates.name = req.body.name;
       if (req.body.email !== undefined) updates.email = req.body.email;
+      if (req.body.newsletterOptIn !== undefined) updates.newsletterOptIn = !!req.body.newsletterOptIn;
 
       if (req.body.pin !== undefined) {
         if (!req.body.pin || req.body.pin.length < 4) {
@@ -2525,6 +2526,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             hostedTastings,
             isHost: hostIds.has(p.id),
             canAccessWhiskyDb: p.canAccessWhiskyDb || false,
+            newsletterOptIn: p.newsletterOptIn || false,
           };
         })
       );

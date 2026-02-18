@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { useTranslation } from "react-i18next";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
 
 interface LoginDialogProps {
@@ -22,6 +23,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isReturning, setIsReturning] = useState(false);
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
 
   const [verifyMode, setVerifyMode] = useState(false);
   const [pendingParticipant, setPendingParticipant] = useState<{ id: string; name: string; role?: string; email?: string } | null>(null);
@@ -72,7 +74,8 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
       const participant = await participantApi.loginOrCreate(
         name.trim(),
         pin,
-        isReturning ? undefined : email.trim()
+        isReturning ? undefined : email.trim(),
+        isReturning ? undefined : newsletterOptIn
       );
 
       if (!participant.emailVerified) {
@@ -418,6 +421,28 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                 className="bg-secondary/20"
                 data-testid="input-email"
               />
+            </div>
+          )}
+
+          {!isReturning && email.trim() && (
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="newsletter"
+                checked={newsletterOptIn}
+                onCheckedChange={(checked) => setNewsletterOptIn(checked === true)}
+                data-testid="checkbox-newsletter"
+              />
+              <div className="grid gap-0.5 leading-none">
+                <label
+                  htmlFor="newsletter"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  {t('login.newsletterOptIn')}
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  {t('login.newsletterHint')}
+                </p>
+              </div>
             </div>
           )}
 

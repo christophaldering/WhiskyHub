@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { adminApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database } from "lucide-react";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ interface AdminParticipant {
   hostedTastings: number;
   isHost: boolean;
   canAccessWhiskyDb: boolean;
+  newsletterOptIn: boolean;
 }
 
 interface AdminTasting {
@@ -365,6 +366,9 @@ export default function AdminPanel() {
           </TabsTrigger>
           <TabsTrigger value="analytics" data-testid="tab-analytics" className="flex-1 min-w-0">
             <BarChart3 className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">Analytics</span>
+          </TabsTrigger>
+          <TabsTrigger value="newsletter" data-testid="tab-newsletter" className="flex-1 min-w-0">
+            <Mail className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">{t("admin.newsletterSubscribers")}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1078,6 +1082,37 @@ export default function AdminPanel() {
           ) : (
             <p className="text-center text-muted-foreground py-8">No analytics data available</p>
           )}
+        </TabsContent>
+
+        <TabsContent value="newsletter">
+          {(() => {
+            const subscribers = data?.participants?.filter((p: AdminParticipant) => p.newsletterOptIn && p.email) || [];
+            return subscribers.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground mb-4">
+                  {subscribers.length} {t("admin.newsletterSubscribers").toLowerCase()}
+                </p>
+                {subscribers.map((p: AdminParticipant) => (
+                  <Card key={p.id} data-testid={`card-subscriber-${p.id}`}>
+                    <CardContent className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-3">
+                        <Mail className="w-4 h-4 text-primary" />
+                        <div>
+                          <p className="font-medium text-sm">{p.name}</p>
+                          <p className="text-xs text-muted-foreground">{p.email}</p>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ""}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">{t("admin.noSubscribers")}</p>
+            );
+          })()}
         </TabsContent>
       </Tabs>
     </motion.div>

@@ -31,7 +31,7 @@ export interface IStorage {
   getParticipantByName(name: string): Promise<Participant | undefined>;
   getParticipantByEmail(email: string): Promise<Participant | undefined>;
   createParticipant(data: InsertParticipant): Promise<Participant>;
-  updateParticipant(id: string, data: Partial<{name: string; email: string; pin: string}>): Promise<Participant | undefined>;
+  updateParticipant(id: string, data: Partial<{name: string; email: string; pin: string; newsletterOptIn: boolean}>): Promise<Participant | undefined>;
   updateParticipantLanguage(id: string, language: string): Promise<Participant | undefined>;
   updateParticipantPin(id: string, pin: string): Promise<Participant | undefined>;
   setVerificationCode(id: string, code: string, expiry: Date): Promise<Participant | undefined>;
@@ -183,7 +183,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async updateParticipant(id: string, data: Partial<{name: string; email: string; pin: string}>): Promise<Participant | undefined> {
+  async updateParticipant(id: string, data: Partial<{name: string; email: string; pin: string; newsletterOptIn: boolean}>): Promise<Participant | undefined> {
     const [result] = await db.update(participants).set(data).where(eq(participants.id, id)).returning();
     return result;
   }
