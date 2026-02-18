@@ -43,3 +43,13 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **qrcode**: For generating QR code invitations.
 -   **Replit Object Storage**: For persistent storage of uploaded bottle images.
 -   **GPT-4o**: For AI-powered bottle identification.
+-   **Capacitor**: For wrapping the PWA as native iOS/Android apps for App Store/Play Store distribution.
+
+## Mobile App (Capacitor)
+
+The project is configured for native mobile app builds via Capacitor:
+-   **Config**: `capacitor.config.ts` (App ID: `com.casksense.app`)
+-   **Icons**: Generated in `client/public/icons/` (all required sizes from 20x20 to 1024x1024)
+-   **Build Guide**: See `MOBILE_APP_GUIDE.md` for step-by-step instructions
+-   **Build Command**: `npm run build && npx cap sync` to prepare, then `npx cap open ios/android`
+-   **Plugins**: SplashScreen, StatusBar configured with dark theme
