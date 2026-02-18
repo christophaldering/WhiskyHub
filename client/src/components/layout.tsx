@@ -34,6 +34,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     enabled: !!currentParticipant,
   });
 
+  const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      if (mainRef.current) {
+        mainRef.current.scrollLeft = 0;
+        mainRef.current.scrollTop = 0;
+      }
+      window.scrollTo(0, 0);
+      document.documentElement.scrollLeft = 0;
+      document.body.scrollLeft = 0;
+    });
+  }, [location]);
+
   const isHost = currentParticipant && allTastings.some((t: any) => t.hostId === currentParticipant.id);
   const isAdmin = currentParticipant?.role === "admin";
 
@@ -266,7 +280,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden font-sans">
       <div className="fixed inset-0 z-0 bg-background" />
 
       <WelcomeOverlay />
@@ -292,11 +306,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <div className="flex relative z-10 h-screen overflow-hidden">
+      <div className="flex relative z-10 overflow-hidden" style={{ height: '100dvh' }}>
         <aside className="hidden md:block w-72 h-full">
           <NavContent navInnerRef={desktopNavRef} />
         </aside>
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
+        <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-background" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
           <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-12 py-6 md:py-12 pb-24 md:pb-12 animate-in fade-in duration-700 min-w-0">
             {children}
           </div>

@@ -125,6 +125,15 @@
   -webkit-transform: translate3d(0, 0, 0);
 }
 
+html, body {
+  overflow-x: hidden;
+  overflow-x: clip;
+  max-width: 100vw;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-x: none;
+}
+
+
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
