@@ -107,6 +107,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: t('navGroup.main'),
       items: [
         { href: "/", icon: Home, label: t('nav.lobby') },
+        { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
         { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         ...(currentParticipant ? [
           { href: "/sessions", icon: Wine, label: t('nav.sessions') },
@@ -165,7 +166,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
         { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
         { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
-        { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
         { href: "/donate", icon: Heart, label: t('nav.donate') },
         { href: "/intro", icon: Info, label: t('nav.about') },
       ],
