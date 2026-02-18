@@ -289,3 +289,40 @@ export const newsletterRecipients = pgTable("newsletter_recipients", {
   email: text("email").notNull(),
   sentAt: timestamp("sent_at").defaultNow(),
 });
+
+// --- Whiskybase Collection (imported personal whisky collection from whiskybase.com) ---
+export const whiskybaseCollection = pgTable("whiskybase_collection", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  whiskybaseId: text("whiskybase_id").notNull(),
+  collectionId: text("collection_id"),
+  brand: text("brand"),
+  name: text("name").notNull(),
+  bottlingSeries: text("bottling_series"),
+  status: text("status"), // open, closed, empty
+  statedAge: text("stated_age"),
+  size: text("size"),
+  abv: text("abv"),
+  unit: text("unit"),
+  caskType: text("cask_type"),
+  communityRating: real("community_rating"),
+  personalRating: real("personal_rating"),
+  pricePaid: real("price_paid"),
+  currency: text("currency"),
+  avgPrice: real("avg_price"),
+  avgPriceCurrency: text("avg_price_currency"),
+  distillery: text("distillery"),
+  vintage: text("vintage"),
+  addedAt: text("added_at"),
+  imageUrl: text("image_url"),
+  auctionPrice: real("auction_price"),
+  auctionCurrency: text("auction_currency"),
+  notes: text("notes"),
+  purchaseLocation: text("purchase_location"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertWhiskybaseCollectionSchema = createInsertSchema(whiskybaseCollection).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertWhiskybaseCollection = z.infer<typeof insertWhiskybaseCollectionSchema>;
+export type WhiskybaseCollectionItem = typeof whiskybaseCollection.$inferSelect;

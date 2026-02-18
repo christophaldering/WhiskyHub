@@ -3,7 +3,7 @@ import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, journalEntries, benchmarkEntries, wishlistEntries,
-  newsletters, newsletterRecipients,
+  newsletters, newsletterRecipients, whiskybaseCollection,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -18,6 +18,7 @@ import {
   type InsertBenchmarkEntry, type BenchmarkEntry,
   type InsertWishlistEntry, type WishlistEntry,
   type InsertNewsletter, type Newsletter,
+  type InsertWhiskybaseCollection, type WhiskybaseCollectionItem,
 } from "@shared/schema";
 
 export interface WhiskyOfTheDay {
@@ -168,6 +169,12 @@ export interface IStorage {
   createNewsletter(data: InsertNewsletter): Promise<Newsletter>;
   addNewsletterRecipients(newsletterId: string, recipients: { participantId: string; email: string }[]): Promise<void>;
   getNewsletterRecipients(newsletterId: string): Promise<{ participantId: string; email: string; sentAt: Date | null }[]>;
+
+  // Whiskybase Collection
+  getWhiskybaseCollection(participantId: string): Promise<WhiskybaseCollectionItem[]>;
+  upsertWhiskybaseCollectionItem(data: InsertWhiskybaseCollection): Promise<WhiskybaseCollectionItem>;
+  deleteWhiskybaseCollectionItem(id: string, participantId: string): Promise<void>;
+  deleteWhiskybaseCollection(participantId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -832,6 +839,40 @@ export class DatabaseStorage implements IStorage {
       email: newsletterRecipients.email,
       sentAt: newsletterRecipients.sentAt,
     }).from(newsletterRecipients).where(eq(newsletterRecipients.newsletterId, newsletterId));
+  }
+  // --- Whiskybase Collection ---
+  async getWhiskybaseCollection(participantId: string): Promise<WhiskybaseCollectionItem[]> {
+    return await db.select().from(whiskybaseCollection).where(eq(whiskybaseCollection.participantId, participantId)).orderBy(whiskybaseCollection.brand, whiskybaseCollection.name);
+  }
+
+  async upsertWhiskybaseCollectionItem(data: InsertWhiskybaseCollection): Promise<WhiskybaseCollectionItem> {
+    const [existing] = await db.select().from(whiskybaseCollection)
+      .where(and(
+        eq(whiskybaseCollection.participantId, data.participantId),
+        eq(whiskybaseCollection.whiskybaseId, data.whiskybaseId)
+      ));
+    
+    if (existing) {
+      const [updated] = await db.update(whiskybaseCollection)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(whiskybaseCollection.id, existing.id))
+        .returning();
+      return updated;
+    }
+    
+    const [created] = await db.insert(whiskybaseCollection).values(data).returning();
+    return created;
+  }
+
+  async deleteWhiskybaseCollectionItem(id: string, participantId: string): Promise<void> {
+    await db.delete(whiskybaseCollection).where(and(
+      eq(whiskybaseCollection.id, id),
+      eq(whiskybaseCollection.participantId, participantId)
+    ));
+  }
+
+  async deleteWhiskybaseCollection(participantId: string): Promise<void> {
+    await db.delete(whiskybaseCollection).where(eq(whiskybaseCollection.participantId, participantId));
   }
 }
 

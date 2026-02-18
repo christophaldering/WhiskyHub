@@ -1552,6 +1552,200 @@ export async function registerRoutes(
     }
   });
 
+  // --- Whiskybase Collection ---
+  
+  app.get("/api/collection/:participantId", async (req: Request, res: Response) => {
+    try {
+      const items = await storage.getWhiskybaseCollection(req.params.participantId as string);
+      res.json(items);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/collection/:participantId/import", docUpload.single("file"), async (req: Request, res: Response) => {
+    try {
+      const file = req.file;
+      if (!file) return res.status(400).json({ error: "No file provided" });
+      
+      const participantId = req.params.participantId as string;
+      let rows: any[] = [];
+      
+      const fileName = file.originalname.toLowerCase();
+      if (fileName.endsWith(".csv")) {
+        const text = file.buffer.toString("utf-8");
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length < 2) return res.status(400).json({ error: "File is empty or has no data rows" });
+        
+        const headerLine = lines[0];
+        const delimiter = headerLine.includes("\t") ? "\t" : headerLine.includes(";") ? ";" : ",";
+        
+        const parseCSVLine = (line: string, delim: string): string[] => {
+          const result: string[] = [];
+          let current = "";
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+                current += '"';
+                i++;
+              } else {
+                inQuotes = !inQuotes;
+              }
+            } else if (char === delim && !inQuotes) {
+              result.push(current.trim());
+              current = "";
+            } else {
+              current += char;
+            }
+          }
+          result.push(current.trim());
+          return result;
+        };
+        
+        const headers = parseCSVLine(headerLine, delimiter);
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          const values = parseCSVLine(lines[i], delimiter);
+          const row: any = {};
+          headers.forEach((h, idx) => { row[h] = values[idx] || ""; });
+          rows.push(row);
+        }
+      } else {
+        const workbook = XLSX.read(file.buffer, { type: "buffer" });
+        const sheetName = workbook.SheetNames[0];
+        rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: "" });
+      }
+      
+      const colMap = (row: any, ...keys: string[]): string => {
+        for (const key of keys) {
+          if (row[key] !== undefined && row[key] !== "") return String(row[key]).trim();
+        }
+        return "";
+      };
+      
+      const parseFloat2 = (val: string): number | null => {
+        if (!val) return null;
+        const cleaned = val.replace(",", ".");
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? null : num;
+      };
+      
+      let imported = 0;
+      let updated = 0;
+      let skipped = 0;
+      
+      const existingItems = await storage.getWhiskybaseCollection(participantId as string);
+      const existingMap = new Map(existingItems.map(item => [item.whiskybaseId, true]));
+      
+      for (const row of rows) {
+        const whiskybaseId = colMap(row, "ID", "id");
+        if (!whiskybaseId) { skipped++; continue; }
+        
+        const name = colMap(row, "Name", "name");
+        if (!name) { skipped++; continue; }
+        
+        const isUpdate = existingMap.has(whiskybaseId);
+        
+        await storage.upsertWhiskybaseCollectionItem({
+          participantId: participantId as string,
+          whiskybaseId,
+          collectionId: colMap(row, "Sammlungs-ID", "Collection ID", "Collection-ID") || null,
+          brand: colMap(row, "Marke", "Brand") || null,
+          name,
+          bottlingSeries: colMap(row, "Abfüllserie", "Bottling serie", "Bottling series") || null,
+          status: colMap(row, "Status", "status") || null,
+          statedAge: colMap(row, "Deklariertes Alter", "Stated Age") || null,
+          size: colMap(row, "Größe", "Size") || null,
+          abv: colMap(row, "Stärke", "Strength") || null,
+          unit: colMap(row, "Einheit", "Unit") || null,
+          caskType: colMap(row, "Fasstyp", "Cask type") || null,
+          communityRating: parseFloat2(colMap(row, "Bewertung", "Rating")),
+          personalRating: parseFloat2(colMap(row, "Meine Bewertung", "My rating")),
+          pricePaid: parseFloat2(colMap(row, "Bezahlter Preis", "Price paid")),
+          currency: colMap(row, "Währung", "Currency") || null,
+          avgPrice: parseFloat2(colMap(row, "Mittlerer preis", "Mittlerer Preis", "Average price")),
+          avgPriceCurrency: (() => {
+            const keys = Object.keys(row);
+            const currencyKeys = keys.filter(k => k.toLowerCase().includes("währung") || k.toLowerCase().includes("currency"));
+            return currencyKeys.length > 1 ? String(row[currencyKeys[1]] || "").trim() : colMap(row, "Währung Whisky", "Currency Whisky") || null;
+          })(),
+          distillery: colMap(row, "Destillerien", "Distilleries") || null,
+          vintage: colMap(row, "Jahrgang", "Vintage") || null,
+          addedAt: colMap(row, "Hinzugefügt am", "Added on") || null,
+          imageUrl: colMap(row, "Bild", "Image") || null,
+          auctionPrice: parseFloat2(colMap(row, "Auktionspreis:", "Auction price:", "Auktionspreis", "Auction price")),
+          auctionCurrency: (() => {
+            const keys = Object.keys(row);
+            const currencyKeys = keys.filter(k => k.toLowerCase().includes("währung") || k.toLowerCase().includes("currency"));
+            return currencyKeys.length > 2 ? String(row[currencyKeys[2]] || "").trim() : null;
+          })(),
+          notes: colMap(row, "Notizen", "Notes") || null,
+          purchaseLocation: colMap(row, "Kaufort", "Purchase location") || null,
+        });
+        
+        if (isUpdate) updated++;
+        else imported++;
+      }
+      
+      res.json({ imported, updated, skipped, total: rows.length });
+    } catch (error: any) {
+      console.error("Collection import error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/collection/:participantId/:id", async (req: Request, res: Response) => {
+    try {
+      await storage.deleteWhiskybaseCollectionItem(req.params.id as string, req.params.participantId as string);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/collection/:participantId/:id/to-journal", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.params.participantId as string;
+      const id = req.params.id as string;
+      const items = await storage.getWhiskybaseCollection(participantId);
+      const item = items.find(i => i.id === id);
+      if (!item) return res.status(404).json({ error: "Item not found" });
+      
+      const journalEntry = await storage.createJournalEntry({
+        participantId: participantId as string,
+        title: [item.brand, item.name].filter(Boolean).join(" - "),
+        whiskyName: item.name,
+        distillery: item.distillery || item.brand,
+        region: null,
+        age: item.statedAge,
+        abv: item.abv,
+        caskType: item.caskType,
+        noseNotes: null,
+        tasteNotes: null,
+        finishNotes: null,
+        personalScore: item.personalRating,
+        whiskybaseId: item.whiskybaseId,
+        wbScore: item.communityRating,
+        mood: null,
+        occasion: null,
+        imageUrl: null,
+        body: [
+          item.bottlingSeries ? `Series: ${item.bottlingSeries}` : null,
+          item.vintage ? `Vintage: ${item.vintage}` : null,
+          item.status ? `Status: ${item.status}` : null,
+          item.pricePaid ? `Price: ${item.pricePaid} ${item.currency || ""}` : null,
+          item.notes || null,
+        ].filter(Boolean).join("\n"),
+      });
+      
+      res.json(journalEntry);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ===== Journal Bottle Identification (must be before parameterized /api/journal/:participantId routes) =====
   app.post("/api/journal/identify-bottle", docUpload.single("photo"), async (req: Request, res: Response) => {
     try {

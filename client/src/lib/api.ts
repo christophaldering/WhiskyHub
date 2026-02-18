@@ -381,6 +381,25 @@ export const textExtractApi = {
     fetchJSON("/extract-whisky-text", { method: "POST", body: JSON.stringify({ text, participantId }) }),
 };
 
+// ===== Whiskybase Collection =====
+export const collectionApi = {
+  getAll: (participantId: string) => fetchJSON(`/collection/${participantId}`),
+  importFile: async (participantId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`/api/collection/${participantId}/import`, { method: "POST", body: formData });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: "Import failed" }));
+      throw new Error(error.error || "Import failed");
+    }
+    return res.json();
+  },
+  delete: (participantId: string, id: string) =>
+    fetchJSON(`/collection/${participantId}/${id}`, { method: "DELETE" }),
+  toJournal: (participantId: string, id: string) =>
+    fetchJSON(`/collection/${participantId}/${id}/to-journal`, { method: "POST" }),
+};
+
 // ===== Admin =====
 export const adminApi = {
   getOverview: (participantId: string) => fetchJSON(`/admin/overview?participantId=${participantId}`),
