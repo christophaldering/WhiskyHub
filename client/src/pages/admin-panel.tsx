@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { adminApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail } from "lucide-react";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -157,6 +157,352 @@ const statusBadge = (status: string) => {
     </span>
   );
 };
+
+interface NewsletterArchiveItem {
+  id: string;
+  subject: string;
+  contentHtml: string;
+  recipientCount: number | null;
+  sentAt: string | null;
+  createdAt: string | null;
+}
+
+function NewsletterManagement({ participants, currentParticipantId, t }: {
+  participants: AdminParticipant[];
+  currentParticipantId: string;
+  t: (key: string, opts?: any) => string;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const subscribers = participants.filter(p => p.newsletterOptIn && p.email);
+  const allWithEmail = participants.filter(p => p.email);
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [subject, setSubject] = useState("");
+  const [contentHtml, setContentHtml] = useState("");
+  const [customNotes, setCustomNotes] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [resendSelectedIds, setResendSelectedIds] = useState<Set<string>>(new Set());
+  const [showResendDialog, setShowResendDialog] = useState<string | null>(null);
+
+  const { data: newsletters = [] } = useQuery<NewsletterArchiveItem[]>({
+    queryKey: ["/admin/newsletters", currentParticipantId],
+    queryFn: () => adminApi.getNewsletters(currentParticipantId),
+    enabled: !!currentParticipantId,
+  });
+
+  const toggleRecipient = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllSubscribers = () => {
+    setSelectedIds(new Set(subscribers.map(s => s.id)));
+  };
+
+  const deselectAll = () => setSelectedIds(new Set());
+
+  const handleGenerate = async (type: "welcome" | "update") => {
+    setGenerating(true);
+    try {
+      const result = await adminApi.generateNewsletter(currentParticipantId, type, customNotes || undefined);
+      setSubject(result.subject || "");
+      setContentHtml(result.body || "");
+      toast({ title: "Newsletter generated", description: "You can edit the content before sending." });
+    } catch (e: any) {
+      toast({ title: t("admin.error"), description: e.message, variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleSend = async () => {
+    if (!subject.trim() || !contentHtml.trim() || selectedIds.size === 0) return;
+    setSending(true);
+    try {
+      const result = await adminApi.sendNewsletter(currentParticipantId, subject, contentHtml, Array.from(selectedIds));
+      toast({ title: t("admin.newsletterSent", { count: result.sent }) });
+      setSubject("");
+      setContentHtml("");
+      setSelectedIds(new Set());
+      setCustomNotes("");
+      queryClient.invalidateQueries({ queryKey: ["/admin/newsletters"] });
+    } catch (e: any) {
+      toast({ title: t("admin.error"), description: e.message, variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleResend = async (newsletterId: string) => {
+    if (resendSelectedIds.size === 0) return;
+    setResendingId(newsletterId);
+    try {
+      const result = await adminApi.resendNewsletter(currentParticipantId, newsletterId, Array.from(resendSelectedIds));
+      toast({ title: t("admin.newsletterResent", { count: result.sent }) });
+      setShowResendDialog(null);
+      setResendSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ["/admin/newsletters"] });
+    } catch (e: any) {
+      toast({ title: t("admin.error"), description: e.message, variant: "destructive" });
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="space-y-4">
+        <h3 className="font-serif text-lg text-primary flex items-center gap-2">
+          <Send className="w-4 h-4" /> {t("admin.newsletterCompose")}
+        </h3>
+
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleGenerate("welcome")}
+              disabled={generating}
+              data-testid="button-generate-welcome"
+            >
+              {generating ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />}
+              {t("admin.newsletterGenerateWelcome")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleGenerate("update")}
+              disabled={generating}
+              data-testid="button-generate-update"
+            >
+              {generating ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />}
+              {t("admin.newsletterGenerateUpdate")}
+            </Button>
+          </div>
+
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground font-medium">{t("admin.newsletterCustomNotes")}</label>
+            <textarea
+              className="w-full mt-1 p-2 text-sm bg-secondary/20 border border-border/50 rounded-md resize-y min-h-[60px] focus:outline-none focus:ring-1 focus:ring-primary/50"
+              value={customNotes}
+              onChange={(e) => setCustomNotes(e.target.value)}
+              rows={2}
+              placeholder="e.g. Focus on the new journal feature..."
+              data-testid="input-newsletter-notes"
+            />
+          </div>
+
+          {generating && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-3">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {t("admin.newsletterGenerating")}
+            </div>
+          )}
+
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground font-medium">{t("admin.newsletterSubject")}</label>
+            <Input
+              className="mt-1 bg-secondary/20"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="Newsletter subject..."
+              data-testid="input-newsletter-subject"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="text-xs uppercase tracking-widest text-muted-foreground font-medium">{t("admin.newsletterContent")}</label>
+              {contentHtml && (
+                <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)} data-testid="button-preview-newsletter">
+                  <Eye className="w-3.5 h-3.5 mr-1" /> {t("admin.newsletterPreview")}
+                </Button>
+              )}
+            </div>
+            {showPreview && contentHtml ? (
+              <div
+                className="mt-1 p-4 bg-white text-gray-800 border border-border/50 rounded-md max-h-[400px] overflow-y-auto prose prose-sm"
+                dangerouslySetInnerHTML={{ __html: contentHtml }}
+                data-testid="div-newsletter-preview"
+              />
+            ) : (
+              <textarea
+                className="w-full mt-1 p-2 text-sm bg-secondary/20 border border-border/50 rounded-md resize-y min-h-[200px] font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary/50"
+                value={contentHtml}
+                onChange={(e) => setContentHtml(e.target.value)}
+                placeholder="<h2>Hello!</h2><p>Newsletter content...</p>"
+                data-testid="input-newsletter-content"
+              />
+            )}
+          </div>
+
+          <div className="border border-border/50 rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs uppercase tracking-widest text-muted-foreground font-medium">
+                {t("admin.newsletterRecipients")} — {t("admin.newsletterSelected", { count: selectedIds.size })}
+              </label>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={selectAllSubscribers} data-testid="button-select-all">
+                  <CheckSquare className="w-3.5 h-3.5 mr-1" /> {t("admin.newsletterSelectAll")}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={deselectAll} data-testid="button-deselect-all">
+                  {t("admin.newsletterDeselectAll")}
+                </Button>
+              </div>
+            </div>
+            <div className="max-h-[200px] overflow-y-auto space-y-1">
+              {allWithEmail.length > 0 ? allWithEmail.map(p => (
+                <div
+                  key={p.id}
+                  className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${
+                    selectedIds.has(p.id) ? "bg-primary/10" : "hover:bg-secondary/30"
+                  }`}
+                  onClick={() => toggleRecipient(p.id)}
+                  data-testid={`recipient-${p.id}`}
+                >
+                  {selectedIds.has(p.id) ? (
+                    <CheckSquare className="w-4 h-4 text-primary flex-shrink-0" />
+                  ) : (
+                    <Square className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium">{p.name}</span>
+                    <span className="text-xs text-muted-foreground ml-2">{p.email}</span>
+                  </div>
+                  {p.newsletterOptIn && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-600 font-medium flex-shrink-0">Opt-in</span>
+                  )}
+                </div>
+              )) : (
+                <p className="text-sm text-muted-foreground text-center py-4">{t("admin.noSubscribers")}</p>
+              )}
+            </div>
+          </div>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                className="w-full"
+                disabled={!subject.trim() || !contentHtml.trim() || selectedIds.size === 0 || sending}
+                data-testid="button-send-newsletter"
+              >
+                {sending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                {sending ? t("admin.newsletterSending") : t("admin.newsletterSend")}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t("admin.newsletterConfirmSend")}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t("admin.newsletterConfirmSendDesc", { count: selectedIds.size })}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t("admin.cancel")}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleSend} data-testid="button-confirm-send">
+                  {t("admin.newsletterSend")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+
+      <div className="border-t border-border/30 pt-6 space-y-4">
+        <h3 className="font-serif text-lg text-primary flex items-center gap-2">
+          <Archive className="w-4 h-4" /> {t("admin.newsletterArchive")}
+        </h3>
+
+        {newsletters.length > 0 ? (
+          <div className="space-y-3">
+            {newsletters.map((nl: NewsletterArchiveItem) => (
+              <Card key={nl.id} data-testid={`card-newsletter-${nl.id}`}>
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{nl.subject}</p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-xs text-muted-foreground">
+                          {t("admin.newsletterSentDate")}: {nl.sentAt ? new Date(nl.sentAt).toLocaleDateString() : "-"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {t("admin.newsletterRecipientsCount", { count: nl.recipientCount || 0 })}
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowResendDialog(showResendDialog === nl.id ? null : nl.id);
+                        setResendSelectedIds(new Set());
+                      }}
+                      data-testid={`button-resend-${nl.id}`}
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 mr-1" /> {t("admin.newsletterResend")}
+                    </Button>
+                  </div>
+
+                  {showResendDialog === nl.id && (
+                    <div className="mt-3 border-t border-border/30 pt-3 space-y-3">
+                      <p className="text-xs text-muted-foreground">{t("admin.newsletterRecipients")}</p>
+                      <div className="max-h-[150px] overflow-y-auto space-y-1">
+                        {allWithEmail.map(p => (
+                          <div
+                            key={p.id}
+                            className={`flex items-center gap-2 p-1.5 rounded cursor-pointer text-sm ${
+                              resendSelectedIds.has(p.id) ? "bg-primary/10" : "hover:bg-secondary/20"
+                            }`}
+                            onClick={() => {
+                              setResendSelectedIds(prev => {
+                                const next = new Set(prev);
+                                if (next.has(p.id)) next.delete(p.id); else next.add(p.id);
+                                return next;
+                              });
+                            }}
+                          >
+                            {resendSelectedIds.has(p.id) ? (
+                              <CheckSquare className="w-3.5 h-3.5 text-primary" />
+                            ) : (
+                              <Square className="w-3.5 h-3.5 text-muted-foreground" />
+                            )}
+                            <span>{p.name}</span>
+                            <span className="text-xs text-muted-foreground">{p.email}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        size="sm"
+                        disabled={resendSelectedIds.size === 0 || resendingId === nl.id}
+                        onClick={() => handleResend(nl.id)}
+                        data-testid={`button-confirm-resend-${nl.id}`}
+                      >
+                        {resendingId === nl.id ? (
+                          <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> {t("admin.newsletterResending")}</>
+                        ) : (
+                          <><Send className="w-3.5 h-3.5 mr-1" /> {t("admin.newsletterResend")} ({resendSelectedIds.size})</>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-muted-foreground py-6">{t("admin.newsletterNoArchive")}</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPanel() {
   const { t } = useTranslation();
@@ -369,7 +715,7 @@ export default function AdminPanel() {
             <BarChart3 className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">Analytics</span>
           </TabsTrigger>
           <TabsTrigger value="newsletter" data-testid="tab-newsletter" className="flex-1 min-w-0">
-            <Mail className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">{t("admin.newsletterSubscribers")}</span>
+            <Mail className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">{t("admin.newsletterManagement")}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1094,34 +1440,11 @@ export default function AdminPanel() {
         </TabsContent>
 
         <TabsContent value="newsletter">
-          {(() => {
-            const subscribers = data?.participants?.filter((p: AdminParticipant) => p.newsletterOptIn && p.email) || [];
-            return subscribers.length > 0 ? (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground mb-4">
-                  {subscribers.length} {t("admin.newsletterSubscribers").toLowerCase()}
-                </p>
-                {subscribers.map((p: AdminParticipant) => (
-                  <Card key={p.id} data-testid={`card-subscriber-${p.id}`}>
-                    <CardContent className="flex items-center justify-between p-4">
-                      <div className="flex items-center gap-3">
-                        <Mail className="w-4 h-4 text-primary" />
-                        <div>
-                          <p className="font-medium text-sm">{p.name}</p>
-                          <p className="text-xs text-muted-foreground">{p.email}</p>
-                        </div>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ""}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">{t("admin.noSubscribers")}</p>
-            );
-          })()}
+          <NewsletterManagement
+            participants={data?.participants || []}
+            currentParticipantId={currentParticipant?.id || ""}
+            t={t}
+          />
         </TabsContent>
       </Tabs>
     </motion.div>

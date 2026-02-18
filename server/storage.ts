@@ -3,6 +3,7 @@ import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, journalEntries, benchmarkEntries, wishlistEntries,
+  newsletters, newsletterRecipients,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -16,6 +17,7 @@ import {
   type InsertJournalEntry, type JournalEntry,
   type InsertBenchmarkEntry, type BenchmarkEntry,
   type InsertWishlistEntry, type WishlistEntry,
+  type InsertNewsletter, type Newsletter,
 } from "@shared/schema";
 
 export interface WhiskyOfTheDay {
@@ -159,6 +161,13 @@ export interface IStorage {
   createWishlistEntry(data: InsertWishlistEntry): Promise<WishlistEntry>;
   updateWishlistEntry(id: string, participantId: string, data: Partial<InsertWishlistEntry>): Promise<WishlistEntry | undefined>;
   deleteWishlistEntry(id: string, participantId: string): Promise<void>;
+
+  // Newsletters
+  getNewsletters(): Promise<Newsletter[]>;
+  getNewsletter(id: string): Promise<Newsletter | undefined>;
+  createNewsletter(data: InsertNewsletter): Promise<Newsletter>;
+  addNewsletterRecipients(newsletterId: string, recipients: { participantId: string; email: string }[]): Promise<void>;
+  getNewsletterRecipients(newsletterId: string): Promise<{ participantId: string; email: string; sentAt: Date | null }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -793,6 +802,36 @@ export class DatabaseStorage implements IStorage {
   async deleteWishlistEntry(id: string, participantId: string): Promise<void> {
     await db.delete(wishlistEntries)
       .where(and(eq(wishlistEntries.id, id), eq(wishlistEntries.participantId, participantId)));
+  }
+
+  // --- Newsletters ---
+  async getNewsletters(): Promise<Newsletter[]> {
+    return db.select().from(newsletters).orderBy(desc(newsletters.createdAt));
+  }
+
+  async getNewsletter(id: string): Promise<Newsletter | undefined> {
+    const [result] = await db.select().from(newsletters).where(eq(newsletters.id, id));
+    return result;
+  }
+
+  async createNewsletter(data: InsertNewsletter): Promise<Newsletter> {
+    const [result] = await db.insert(newsletters).values(data).returning();
+    return result;
+  }
+
+  async addNewsletterRecipients(newsletterId: string, recipients: { participantId: string; email: string }[]): Promise<void> {
+    if (recipients.length === 0) return;
+    await db.insert(newsletterRecipients).values(
+      recipients.map(r => ({ newsletterId, participantId: r.participantId, email: r.email }))
+    );
+  }
+
+  async getNewsletterRecipients(newsletterId: string): Promise<{ participantId: string; email: string; sentAt: Date | null }[]> {
+    return db.select({
+      participantId: newsletterRecipients.participantId,
+      email: newsletterRecipients.email,
+      sentAt: newsletterRecipients.sentAt,
+    }).from(newsletterRecipients).where(eq(newsletterRecipients.newsletterId, newsletterId));
   }
 }
 

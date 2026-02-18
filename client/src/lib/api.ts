@@ -398,4 +398,12 @@ export const adminApi = {
     fetchJSON(`/admin/analytics?requesterId=${requesterId}`),
   updateWhiskyDbAccess: (participantId: string, canAccess: boolean, requesterId: string) =>
     fetchJSON(`/admin/participants/${participantId}/whisky-db-access`, { method: "PATCH", body: JSON.stringify({ canAccess, requesterId }) }),
+  getNewsletters: (requesterId: string) =>
+    fetchJSON(`/admin/newsletters?requesterId=${requesterId}`),
+  generateNewsletter: (requesterId: string, type: string, customNotes?: string) =>
+    fetchJSON("/admin/newsletters/generate", { method: "POST", body: JSON.stringify({ requesterId, type, customNotes }) }),
+  sendNewsletter: (requesterId: string, subject: string, contentHtml: string, recipientIds: string[]) =>
+    fetchJSON("/admin/newsletters/send", { method: "POST", body: JSON.stringify({ requesterId, subject, contentHtml, recipientIds }) }),
+  resendNewsletter: (requesterId: string, newsletterId: string, recipientIds: string[]) =>
+    fetchJSON(`/admin/newsletters/${newsletterId}/resend`, { method: "POST", body: JSON.stringify({ requesterId, recipientIds }) }),
 };

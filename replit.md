@@ -108,6 +108,11 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 - `DELETE /api/wishlist/:participantId/:id` — Delete a wishlist entry
 - `POST /api/participants/forgot-pin` — Request PIN reset via email verification code
 - `POST /api/participants/reset-pin` — Reset PIN with verification code and new PIN
+- `GET /api/admin/newsletters` — List all sent newsletters (archive)
+- `GET /api/admin/newsletters/:id/recipients` — Recipients of a specific newsletter
+- `POST /api/admin/newsletters/generate` — AI-powered newsletter content generation (welcome/update types)
+- `POST /api/admin/newsletters/send` — Send newsletter to selected recipients via Gmail
+- `POST /api/admin/newsletters/:id/resend` — Resend archived newsletter to new recipients
 
 ## External Dependencies
 

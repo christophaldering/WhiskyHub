@@ -265,3 +265,27 @@ export const wishlistEntries = pgTable("wishlist_entries", {
 export const insertWishlistEntrySchema = createInsertSchema(wishlistEntries).omit({ id: true, createdAt: true });
 export type InsertWishlistEntry = z.infer<typeof insertWishlistEntrySchema>;
 export type WishlistEntry = typeof wishlistEntries.$inferSelect;
+
+// --- Newsletters (admin newsletter management + archive) ---
+export const newsletters = pgTable("newsletters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  subject: text("subject").notNull(),
+  contentHtml: text("content_html").notNull(),
+  contentText: text("content_text"),
+  recipientCount: integer("recipient_count").default(0),
+  sentAt: timestamp("sent_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertNewsletterSchema = createInsertSchema(newsletters).omit({ id: true, createdAt: true });
+export type InsertNewsletter = z.infer<typeof insertNewsletterSchema>;
+export type Newsletter = typeof newsletters.$inferSelect;
+
+// --- Newsletter Recipients (tracks who received which newsletter) ---
+export const newsletterRecipients = pgTable("newsletter_recipients", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  newsletterId: varchar("newsletter_id").notNull(),
+  participantId: varchar("participant_id").notNull(),
+  email: text("email").notNull(),
+  sentAt: timestamp("sent_at").defaultNow(),
+});

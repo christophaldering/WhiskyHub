@@ -3107,6 +3107,243 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
   });
 
   // ============================================================
+  // NEWSLETTER MANAGEMENT (admin-only)
+  // ============================================================
+
+  app.get("/api/admin/newsletters", async (req, res) => {
+    try {
+      const requesterId = req.query.requesterId as string;
+      const requester = requesterId ? await storage.getParticipant(requesterId) : null;
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin only" });
+      const all = await storage.getNewsletters();
+      res.json(all);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.get("/api/admin/newsletters/:id/recipients", async (req, res) => {
+    try {
+      const requesterId = req.query.requesterId as string;
+      const requester = requesterId ? await storage.getParticipant(requesterId) : null;
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin only" });
+      const recipients = await storage.getNewsletterRecipients(req.params.id);
+      res.json(recipients);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/admin/newsletters/generate", async (req, res) => {
+    try {
+      const requesterId = req.body.requesterId as string;
+      const requester = requesterId ? await storage.getParticipant(requesterId) : null;
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin only" });
+
+      const { type, customNotes } = req.body; // type: "welcome" | "update"
+      const existingNewsletters = await storage.getNewsletters();
+      const isFirstNewsletter = existingNewsletters.length === 0;
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const featureList = `
+Key CaskSense Features:
+- Collaborative whisky tasting sessions with structured evaluation (nose, taste, finish, balance)
+- Blind tasting mode with progressive reveal (name → metadata → image)
+- Personal whisky journal with AI-powered bottle scanner (photo → auto-fill details)
+- Achievement badges (37 milestones from beginner to expert)
+- Personal flavor profile with radar charts and global comparison
+- Whisky recommendations based on taste preferences
+- Side-by-side whisky comparison with overlaid charts
+- Tasting note generator with predefined flavor categories
+- Interactive flavor wheel visualization
+- Shared tasting calendar with upcoming events
+- Friend activity feed and participant leaderboard
+- Distillery encyclopedia with 100+ entries and interactive map
+- Independent bottlers encyclopedia (20+ entries)
+- Whisky lexicon with 53 bilingual entries
+- Smart whisky pairing suggestions
+- Tasting curation wizard for planning flights
+- QR code invitations for sessions
+- PDF export of tasting menus and personal notes
+- Progressive Web App (installable on mobile)
+- Ambient soundscapes (fireplace, rain, night)
+- Dark/light theme support
+- Whisky wishlist with AI scanning
+- Host dashboard with analytics
+- Benchmark analyzer for document analysis
+- Newsletter system for community updates
+- Multi-language support (English & German)
+`;
+
+      const systemPrompt = isFirstNewsletter || type === "welcome"
+        ? `You are a copywriter for CaskSense, a sophisticated whisky tasting web application. Write a warm, engaging FIRST newsletter that introduces the platform to subscribers. The tone should be: friendly, passionate about whisky, slightly sophisticated but approachable — like a knowledgeable friend inviting you to discover something special. Keep it concise (300-400 words max). Use short paragraphs. Include a brief "What CaskSense offers" section highlighting 5-6 standout features. End with an inviting call to action. Write in a way that makes people excited to explore the platform. The subject line should be catchy and welcoming. Output as JSON with keys: "subject" (string) and "body" (string, HTML formatted with inline styles for email compatibility, using the CaskSense brand colors: dark slate #4a5568 for headings, warm amber accents).`
+        : `You are a copywriter for CaskSense, a whisky tasting web application. Write a concise, engaging UPDATE newsletter informing subscribers about new features and improvements. The tone should be: enthusiastic but measured, informative, making each update feel valuable. Keep it under 300 words. Use bullet points or short sections for each feature. Include a brief intro, the updates, and a short closing. The subject line should hint at what's new. Output as JSON with keys: "subject" (string) and "body" (string, HTML formatted with inline styles for email compatibility, using brand colors: dark slate #4a5568 for headings, warm amber accents).`;
+
+      const userMessage = customNotes
+        ? `Here are the platform features:\n${featureList}\n\nAdditional notes from admin:\n${customNotes}`
+        : `Here are the platform features:\n${featureList}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessage },
+        ],
+        temperature: 0.8,
+      });
+
+      const result = JSON.parse(response.choices[0]?.message?.content || "{}");
+      res.json({ subject: result.subject || "CaskSense Newsletter", body: result.body || "" });
+    } catch (e: any) {
+      console.error("Newsletter AI generation error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/admin/newsletters/send", async (req, res) => {
+    try {
+      const requesterId = req.body.requesterId as string;
+      const requester = requesterId ? await storage.getParticipant(requesterId) : null;
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin only" });
+
+      const { subject, contentHtml, recipientIds } = req.body;
+      if (!subject || !contentHtml || !recipientIds?.length) {
+        return res.status(400).json({ message: "Subject, content, and recipients required" });
+      }
+
+      const allParticipants = await storage.getAllParticipants();
+      const recipients = allParticipants.filter(p => recipientIds.includes(p.id) && p.email);
+
+      if (recipients.length === 0) {
+        return res.status(400).json({ message: "No valid email recipients found" });
+      }
+
+      const emailWrapper = (body: string) => `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:'Georgia',serif;background:#f9f9f7;color:#333;">
+  <div style="max-width:600px;margin:40px auto;background:#fff;border:1px solid #e5e5e0;border-radius:4px;overflow:hidden;">
+    <div style="padding:32px 32px 16px;border-bottom:1px solid #e5e5e0;">
+      <h1 style="margin:0;font-size:24px;color:#4a5568;font-weight:700;letter-spacing:-0.5px;">CaskSense</h1>
+      <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a0aec0;">Newsletter</p>
+    </div>
+    <div style="padding:32px;">
+      ${body}
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid #e5e5e0;background:#fafaf8;">
+      <p style="margin:0;font-size:11px;color:#a0aec0;text-align:center;">CaskSense — Where Tasting Becomes Reflection</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+      const newsletter = await storage.createNewsletter({
+        subject,
+        contentHtml,
+        contentText: null,
+        recipientCount: recipients.length,
+        sentAt: new Date(),
+      });
+
+      let sentCount = 0;
+      const errors: string[] = [];
+
+      for (const recipient of recipients) {
+        try {
+          const success = await sendEmail({
+            to: recipient.email!,
+            subject,
+            html: emailWrapper(contentHtml),
+          });
+          if (success) sentCount++;
+          else errors.push(`Failed: ${recipient.email}`);
+        } catch (err: any) {
+          errors.push(`Error for ${recipient.email}: ${err.message}`);
+        }
+      }
+
+      await storage.addNewsletterRecipients(
+        newsletter.id,
+        recipients.map(r => ({ participantId: r.id, email: r.email! }))
+      );
+
+      res.json({
+        newsletterId: newsletter.id,
+        totalRecipients: recipients.length,
+        sent: sentCount,
+        errors,
+      });
+    } catch (e: any) {
+      console.error("Newsletter send error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/admin/newsletters/:id/resend", async (req, res) => {
+    try {
+      const requesterId = req.body.requesterId as string;
+      const requester = requesterId ? await storage.getParticipant(requesterId) : null;
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin only" });
+
+      const newsletter = await storage.getNewsletter(req.params.id);
+      if (!newsletter) return res.status(404).json({ message: "Newsletter not found" });
+
+      const { recipientIds } = req.body;
+      if (!recipientIds?.length) return res.status(400).json({ message: "Recipients required" });
+
+      const allParticipants = await storage.getAllParticipants();
+      const recipients = allParticipants.filter(p => recipientIds.includes(p.id) && p.email);
+
+      if (recipients.length === 0) {
+        return res.status(400).json({ message: "No valid email recipients found" });
+      }
+
+      const emailWrapper = (body: string) => `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:'Georgia',serif;background:#f9f9f7;color:#333;">
+  <div style="max-width:600px;margin:40px auto;background:#fff;border:1px solid #e5e5e0;border-radius:4px;overflow:hidden;">
+    <div style="padding:32px 32px 16px;border-bottom:1px solid #e5e5e0;">
+      <h1 style="margin:0;font-size:24px;color:#4a5568;font-weight:700;letter-spacing:-0.5px;">CaskSense</h1>
+      <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a0aec0;">Newsletter</p>
+    </div>
+    <div style="padding:32px;">
+      ${body}
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid #e5e5e0;background:#fafaf8;">
+      <p style="margin:0;font-size:11px;color:#a0aec0;text-align:center;">CaskSense — Where Tasting Becomes Reflection</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+      let sentCount = 0;
+      for (const recipient of recipients) {
+        try {
+          const success = await sendEmail({
+            to: recipient.email!,
+            subject: newsletter.subject,
+            html: emailWrapper(newsletter.contentHtml),
+          });
+          if (success) sentCount++;
+        } catch {}
+      }
+
+      await storage.addNewsletterRecipients(
+        newsletter.id,
+        recipients.map(r => ({ participantId: r.id, email: r.email! }))
+      );
+
+      res.json({ sent: sentCount, totalRecipients: recipients.length });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ============================================================
   // BENCHMARK ANALYZER - Document upload + AI extraction
   // ============================================================
 
