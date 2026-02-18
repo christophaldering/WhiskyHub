@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useLocation, Link } from "wouter";
-import { UserPlus, Plus, ArrowRight, Star, Wine, Glasses, BookOpen, Camera, User, ChevronDown, Eye, Sparkles, BarChart3, Users, MapPin, NotebookPen, ScanLine, Heart, Zap, Globe, Trophy } from "lucide-react";
+import { UserPlus, Plus, ArrowRight, Star, Wine, Glasses, BookOpen, Camera, User, ChevronDown, Eye, Sparkles, BarChart3, Users, MapPin, NotebookPen, ScanLine, Heart, Zap, Globe, Trophy, LogIn } from "lucide-react";
 import heroImage from "@/assets/images/hero-whisky.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -585,17 +585,28 @@ export default function Home() {
                 </p>
               </CardContent>
             </Card>
-            <div className="text-center mt-3 space-y-2">
-              <p className="text-xs text-muted-foreground">{t("home.noCodeNeeded")}</p>
-              <button
-                type="button"
-                onClick={() => setShowLogin(true)}
-                className="text-sm font-medium text-primary/80 hover:text-primary underline transition-colors"
-                data-testid="button-login"
-              >
-                {t("home.haveAccount")}
-              </button>
-            </div>
+            <p className="text-xs text-muted-foreground text-center mt-2">{t("home.noCodeNeeded")}</p>
+
+            <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 shadow-md mt-4">
+              <CardHeader className="text-center pb-2">
+                <CardTitle className="flex items-center justify-center gap-3 font-serif text-2xl text-primary">
+                  <LogIn className="w-6 h-6 text-accent" />
+                  {t("home.loginTitle")}
+                </CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">
+                  {t("home.loginSubtitle")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="max-w-md mx-auto">
+                <Button
+                  onClick={() => setShowLogin(true)}
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-serif tracking-wide h-11 text-base"
+                  data-testid="button-login"
+                >
+                  {t("home.loginButton")} <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
           </motion.div>
 
           <motion.div
