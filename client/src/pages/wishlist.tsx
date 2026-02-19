@@ -445,28 +445,39 @@ function WishlistForm({
               setScanError("");
               setScanResult(null);
               try {
-                const result = await wishlistScanApi.identify(file, participantId);
-                setScanResult(result);
-                if (result.whiskyName && result.whiskyName !== "Unknown Whisky") {
-                  setWhiskyName(result.whiskyName);
-                  if (result.distillery) setDistillery(result.distillery);
-                  if (result.region) setRegion(result.region);
-                  if (result.age) setAge(result.age);
-                  if (result.abv) setAbv(result.abv);
-                  if (result.caskType) setCaskType(result.caskType);
-                  if (result.notes && !notes) setNotes(result.notes);
-                  if (result.source && !source) setSource(result.source);
-                  generateSummary({
-                    whiskyName: result.whiskyName,
-                    distillery: result.distillery,
-                    region: result.region,
-                    age: result.age,
-                    abv: result.abv,
-                    caskType: result.caskType,
-                    notes: result.notes,
-                  });
-                } else {
+                const response = await wishlistScanApi.identify(file, participantId);
+                const whiskies = response.whiskies || (response.whiskyName ? [response] : []);
+                const applyWhisky = (w: any) => {
+                  setScanResult(w);
+                  if (w.whiskyName && w.whiskyName !== "Unknown Whisky") {
+                    setWhiskyName(w.whiskyName);
+                    if (w.distillery) setDistillery(w.distillery);
+                    if (w.region) setRegion(w.region);
+                    if (w.age) setAge(w.age);
+                    if (w.abv) setAbv(w.abv);
+                    if (w.caskType) setCaskType(w.caskType);
+                    if (w.notes && !notes) setNotes(w.notes);
+                    if (w.source && !source) setSource(w.source);
+                    generateSummary({
+                      whiskyName: w.whiskyName,
+                      distillery: w.distillery,
+                      region: w.region,
+                      age: w.age,
+                      abv: w.abv,
+                      caskType: w.caskType,
+                      notes: w.notes,
+                    });
+                  }
+                };
+                if (whiskies.length === 0) {
                   setScanError(t("wishlist.scanFailed"));
+                } else if (whiskies.length === 1) {
+                  applyWhisky(whiskies[0]);
+                  if (!whiskies[0].whiskyName || whiskies[0].whiskyName === "Unknown Whisky") {
+                    setScanError(t("wishlist.scanFailed"));
+                  }
+                } else {
+                  setScanResult({ multipleWhiskies: whiskies, _applyWhisky: applyWhisky });
                 }
               } catch (err: any) {
                 setScanError(err.message || t("wishlist.scanFailed"));
@@ -481,7 +492,7 @@ function WishlistForm({
             {scanError}
           </div>
         )}
-        {scanResult && scanResult.whiskyName && scanResult.whiskyName !== "Unknown Whisky" && (
+        {scanResult && !scanResult.multipleWhiskies && scanResult.whiskyName && scanResult.whiskyName !== "Unknown Whisky" && (
           <motion.div
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
@@ -515,6 +526,52 @@ function WishlistForm({
                 {t("wishlist.searchWhiskybase")} <ExternalLink className="w-3 h-3" />
               </a>
             ) : null}
+          </motion.div>
+        )}
+        {scanResult?.multipleWhiskies && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-lg p-3"
+          >
+            <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-1.5">
+              <ScanLine className="w-3.5 h-3.5" />
+              {t("wishlist.multipleFound", { count: scanResult.multipleWhiskies.length })}
+            </p>
+            <div className="space-y-1.5">
+              {scanResult.multipleWhiskies.map((w: any, idx: number) => (
+                <button
+                  key={idx}
+                  type="button"
+                  data-testid={`button-select-wishlist-scan-${idx}`}
+                  onClick={() => {
+                    const applyFn = scanResult._applyWhisky;
+                    if (applyFn) applyFn(w);
+                    else {
+                      setScanResult(w);
+                      if (w.whiskyName && w.whiskyName !== "Unknown Whisky") {
+                        setWhiskyName(w.whiskyName);
+                        if (w.distillery) setDistillery(w.distillery);
+                        if (w.region) setRegion(w.region);
+                        if (w.age) setAge(w.age);
+                        if (w.abv) setAbv(w.abv);
+                        if (w.caskType) setCaskType(w.caskType);
+                        if (w.notes && !notes) setNotes(w.notes);
+                        if (w.source && !source) setSource(w.source);
+                      }
+                    }
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-md bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-800/50 hover:border-blue-400 dark:hover:border-blue-600 transition-colors text-xs"
+                >
+                  <span className="font-medium text-foreground">{w.whiskyName || "Unknown Whisky"}</span>
+                  {(w.distillery || w.age || w.region) && (
+                    <span className="text-muted-foreground ml-1.5">
+                      {[w.distillery, w.age ? `${w.age}y` : null, w.region].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
           </motion.div>
         )}
       </div>

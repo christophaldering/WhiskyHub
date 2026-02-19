@@ -313,6 +313,7 @@ const zh = {
       textPlaceholder: "在此粘贴威士忌描述、评论或名称...",
       extractButton: "提取详情",
       scanFailed: "无法识别威士忌。请重试或手动填写。",
+      multipleFound: "发现 {{count}} 款威士忌 — 点击选择：",
     },
     wishlist: {
       title: "威士忌心愿单",
@@ -353,6 +354,7 @@ const zh = {
       scanHint: "拍摄酒瓶、报纸文章、杂志评论或任何提及威士忌的内容",
       scanSuccess: "已识别：{{name}}",
       scanFailed: "无法识别威士忌。请重试或手动填写。",
+      multipleFound: "发现 {{count}} 款威士忌 — 点击选择：",
       searchWhiskybase: "搜索 Whiskybase",
       foundInDb: "数据库中已有",
       extractText: "粘贴文本",

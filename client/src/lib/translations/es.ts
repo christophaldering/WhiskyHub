@@ -313,6 +313,7 @@ const es = {
       textPlaceholder: "Pega aquí una descripción, reseña o nombre de whisky...",
       extractButton: "Extraer Detalles",
       scanFailed: "No se pudo identificar el whisky. Por favor, inténtalo de nuevo o complétalo manualmente.",
+      multipleFound: "{{count}} whiskies encontrados — toca para seleccionar:",
     },
     wishlist: {
       title: "Lista de Deseos de Whisky",
@@ -353,6 +354,7 @@ const es = {
       scanHint: "Toma una foto de una botella, artículo de periódico, reseña de revista o cualquier mención de whisky",
       scanSuccess: "Identificado: {{name}}",
       scanFailed: "No se pudo identificar el whisky. Por favor, inténtalo de nuevo o complétalo manualmente.",
+      multipleFound: "{{count}} whiskies encontrados — toca para seleccionar:",
       searchWhiskybase: "Buscar en Whiskybase",
       foundInDb: "En la Base de Datos",
       extractText: "Pegar Texto",

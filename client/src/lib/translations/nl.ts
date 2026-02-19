@@ -313,6 +313,7 @@ const nl = {
       textPlaceholder: "Plak hier een whiskybeschrijving, review of naam...",
       extractButton: "Details Extraheren",
       scanFailed: "Kon de whisky niet herkennen. Probeer het opnieuw of vul handmatig in.",
+      multipleFound: "{{count}} whisky's gevonden — tik om te selecteren:",
     },
     wishlist: {
       title: "Whisky Verlanglijst",
@@ -353,6 +354,7 @@ const nl = {
       scanHint: "Maak een foto van een fles, krantenartikel, tijdschriftreview of een andere whiskyvermelding",
       scanSuccess: "Herkend: {{name}}",
       scanFailed: "Kon de whisky niet herkennen. Probeer het opnieuw of vul handmatig in.",
+      multipleFound: "{{count}} whisky's gevonden — tik om te selecteren:",
       searchWhiskybase: "Zoeken op Whiskybase",
       foundInDb: "In Database",
       extractText: "Tekst Plakken",

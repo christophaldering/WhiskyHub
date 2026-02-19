@@ -322,6 +322,7 @@ const resources = {
         textPlaceholder: "Paste whisky description, review, or name here...",
         extractButton: "Extract Details",
         scanFailed: "Could not identify the whisky. Please try again or fill in manually.",
+        multipleFound: "{{count}} whiskies found — tap to select:",
       },
       wishlist: {
         title: "Whisky Wishlist",
@@ -362,6 +363,7 @@ const resources = {
         scanHint: "Take a photo of a bottle, newspaper article, magazine review, or any whisky mention",
         scanSuccess: "Identified: {{name}}",
         scanFailed: "Could not identify the whisky. Please try again or fill in manually.",
+        multipleFound: "{{count}} whiskies found — tap to select:",
         searchWhiskybase: "Search Whiskybase",
         foundInDb: "In Database",
         extractText: "Paste Text",
@@ -1810,6 +1812,7 @@ const resources = {
         textPlaceholder: "Whisky-Beschreibung, Rezension oder Name hier einfügen...",
         extractButton: "Details extrahieren",
         scanFailed: "Konnte den Whisky nicht identifizieren. Bitte versuche es erneut oder fülle die Felder manuell aus.",
+        multipleFound: "{{count}} Whiskys gefunden — zum Auswählen tippen:",
       },
       wishlist: {
         title: "Whisky-Wunschliste",
@@ -1850,6 +1853,7 @@ const resources = {
         scanHint: "Fotografiere eine Flasche, einen Zeitungsartikel, eine Magazin-Rezension oder jede Whisky-Erwähnung",
         scanSuccess: "Erkannt: {{name}}",
         scanFailed: "Konnte den Whisky nicht identifizieren. Bitte versuche es erneut oder fülle die Felder manuell aus.",
+        multipleFound: "{{count}} Whiskys gefunden — zum Auswählen tippen:",
         searchWhiskybase: "Auf Whiskybase suchen",
         foundInDb: "In Datenbank",
         extractText: "Text einfügen",

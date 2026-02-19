@@ -612,17 +612,25 @@ function EntryForm({
                   setScanResult(null);
                   try {
                     const result = await journalBottleApi.identify(file, participantId);
-                    setScanResult(result);
-                    setForm(prev => ({
-                      ...prev,
-                      whiskyName: result.whiskyName || prev.whiskyName,
-                      distillery: result.distillery || prev.distillery,
-                      region: result.region || prev.region,
-                      age: result.age || prev.age,
-                      abv: result.abv || prev.abv,
-                      caskType: result.caskType || prev.caskType,
-                      title: prev.title || result.whiskyName || prev.title,
-                    }));
+                    const whiskies = result.whiskies || (result.whiskyName ? [result] : []);
+                    if (whiskies.length === 0) {
+                      setScanError(t("journal.scanFailed"));
+                    } else if (whiskies.length === 1) {
+                      const w = whiskies[0];
+                      setScanResult(w);
+                      setForm(prev => ({
+                        ...prev,
+                        whiskyName: w.whiskyName || prev.whiskyName,
+                        distillery: w.distillery || prev.distillery,
+                        region: w.region || prev.region,
+                        age: w.age || prev.age,
+                        abv: w.abv || prev.abv,
+                        caskType: w.caskType || prev.caskType,
+                        title: prev.title || w.whiskyName || prev.title,
+                      }));
+                    } else {
+                      setScanResult({ multipleWhiskies: whiskies });
+                    }
                     onImageChange(file);
                   } catch (err: any) {
                     setScanError(err.message || "Scan failed");
@@ -640,7 +648,7 @@ function EntryForm({
             </div>
           )}
 
-          {scanResult && (
+          {scanResult && !scanResult.multipleWhiskies && (
             <motion.div
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
@@ -669,6 +677,49 @@ function EntryForm({
                   {t("journal.searchWhiskybase")} <ExternalLink className="w-3 h-3" />
                 </a>
               ) : null}
+            </motion.div>
+          )}
+
+          {scanResult?.multipleWhiskies && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-lg p-3"
+            >
+              <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-1.5">
+                <ScanLine className="w-3.5 h-3.5" />
+                {t("journal.multipleFound", { count: scanResult.multipleWhiskies.length })}
+              </p>
+              <div className="space-y-1.5">
+                {scanResult.multipleWhiskies.map((w: any, idx: number) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    data-testid={`button-select-scan-whisky-${idx}`}
+                    onClick={() => {
+                      setScanResult(w);
+                      setForm(prev => ({
+                        ...prev,
+                        whiskyName: w.whiskyName || prev.whiskyName,
+                        distillery: w.distillery || prev.distillery,
+                        region: w.region || prev.region,
+                        age: w.age || prev.age,
+                        abv: w.abv || prev.abv,
+                        caskType: w.caskType || prev.caskType,
+                        title: prev.title || w.whiskyName || prev.title,
+                      }));
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-md bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-800/50 hover:border-blue-400 dark:hover:border-blue-600 transition-colors text-xs"
+                  >
+                    <span className="font-medium text-foreground">{w.whiskyName || "Unknown Whisky"}</span>
+                    {(w.distillery || w.age || w.region) && (
+                      <span className="text-muted-foreground ml-1.5">
+                        {[w.distillery, w.age ? `${w.age}y` : null, w.region].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </motion.div>
           )}
 
@@ -829,17 +880,25 @@ function EntryForm({
                     setScanResult(null);
                     try {
                       const result = await journalBottleApi.identify(file, participantId);
-                      setScanResult(result);
-                      setForm(prev => ({
-                        ...prev,
-                        whiskyName: result.whiskyName || prev.whiskyName,
-                        distillery: result.distillery || prev.distillery,
-                        region: result.region || prev.region,
-                        age: result.age || prev.age,
-                        abv: result.abv || prev.abv,
-                        caskType: result.caskType || prev.caskType,
-                        title: prev.title || result.whiskyName || prev.title,
-                      }));
+                      const whiskies = result.whiskies || (result.whiskyName ? [result] : []);
+                      if (whiskies.length === 0) {
+                        setScanError(t("journal.scanFailed"));
+                      } else if (whiskies.length === 1) {
+                        const w = whiskies[0];
+                        setScanResult(w);
+                        setForm(prev => ({
+                          ...prev,
+                          whiskyName: w.whiskyName || prev.whiskyName,
+                          distillery: w.distillery || prev.distillery,
+                          region: w.region || prev.region,
+                          age: w.age || prev.age,
+                          abv: w.abv || prev.abv,
+                          caskType: w.caskType || prev.caskType,
+                          title: prev.title || w.whiskyName || prev.title,
+                        }));
+                      } else {
+                        setScanResult({ multipleWhiskies: whiskies });
+                      }
                     } catch (err: any) {
                       setScanError(err.message || t("journal.scanFailed"));
                     } finally {
