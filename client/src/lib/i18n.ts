@@ -970,7 +970,11 @@ const resources = {
         stepImage: "Image revealed",
         allRevealed: "All expressions revealed",
         revealProgress: "Revealing Expression {{current}} of {{total}}",
-        resetReveal: "Reset Reveal"
+        resetReveal: "Reset Reveal",
+        revealPhoto: "Reveal Photo",
+        hidePhoto: "Hide Photo",
+        revealAllPhotos: "Reveal All Photos",
+        hideAllPhotos: "Hide All Photos"
       },
       discussion: {
         title: "Discussion",
@@ -2460,7 +2464,11 @@ const resources = {
         stepImage: "Bild enthüllt",
         allRevealed: "Alle Expressions enthüllt",
         revealProgress: "Expression {{current}} von {{total}} wird enthüllt",
-        resetReveal: "Enthüllung zurücksetzen"
+        resetReveal: "Enthüllung zurücksetzen",
+        revealPhoto: "Foto aufdecken",
+        hidePhoto: "Foto verbergen",
+        revealAllPhotos: "Alle Fotos aufdecken",
+        hideAllPhotos: "Alle Fotos verbergen"
       },
       discussion: {
         title: "Diskussion",

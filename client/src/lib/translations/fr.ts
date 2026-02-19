@@ -961,7 +961,11 @@ const fr = {
       stepImage: "Image révélée",
       allRevealed: "Toutes les expressions révélées",
       revealProgress: "Révélation de l'Expression {{current}} sur {{total}}",
-      resetReveal: "Réinitialiser la Révélation"
+      resetReveal: "Réinitialiser la Révélation",
+      revealPhoto: "Révéler la Photo",
+      hidePhoto: "Masquer la Photo",
+      revealAllPhotos: "Révéler Toutes les Photos",
+      hideAllPhotos: "Masquer Toutes les Photos"
     },
     discussion: {
       title: "Discussion",

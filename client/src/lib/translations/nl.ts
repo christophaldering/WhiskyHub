@@ -961,7 +961,11 @@ const nl = {
       stepImage: "Afbeelding onthuld",
       allRevealed: "Alle expressies onthuld",
       revealProgress: "Expressie {{current}} van {{total}} onthullen",
-      resetReveal: "Onthulling Resetten"
+      resetReveal: "Onthulling Resetten",
+      revealPhoto: "Foto Onthullen",
+      hidePhoto: "Foto Verbergen",
+      revealAllPhotos: "Alle Foto's Onthullen",
+      hideAllPhotos: "Alle Foto's Verbergen"
     },
     discussion: {
       title: "Discussie",

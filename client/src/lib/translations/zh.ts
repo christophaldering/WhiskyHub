@@ -961,7 +961,11 @@ const zh = {
       stepImage: "图片已揭晓",
       allRevealed: "所有酒款已揭晓",
       revealProgress: "正在揭晓第 {{current}} 款，共 {{total}} 款",
-      resetReveal: "重置揭晓"
+      resetReveal: "重置揭晓",
+      revealPhoto: "揭晓照片",
+      hidePhoto: "隐藏照片",
+      revealAllPhotos: "揭晓所有照片",
+      hideAllPhotos: "隐藏所有照片"
     },
     discussion: {
       title: "讨论",

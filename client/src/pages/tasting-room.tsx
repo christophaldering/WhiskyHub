@@ -15,7 +15,7 @@ import DiscussionPanel from "@/components/discussion-panel";
 import ReflectionPanel from "@/components/reflection-panel";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -789,6 +789,20 @@ export default function TastingRoom() {
     },
   });
 
+  const revealPhotoMutation = useMutation({
+    mutationFn: ({ whiskyId, revealed }: { whiskyId: string; revealed: boolean }) => whiskyApi.revealPhoto(whiskyId, revealed, currentParticipant.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", id] });
+    },
+  });
+
+  const revealAllPhotosMutation = useMutation({
+    mutationFn: (revealed: boolean) => tastingApi.revealAllPhotos(id!, revealed, currentParticipant.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", id] });
+    },
+  });
+
   const handleMoveWhisky = (whiskyId: string, direction: "up" | "down") => {
     const idx = whiskyList.findIndex((w: Whisky) => w.id === whiskyId);
     if (idx < 0) return;
@@ -845,15 +859,17 @@ export default function TastingRoom() {
   const revealIndex = tasting.revealIndex ?? 0;
   const revealStep = tasting.revealStep ?? 0;
 
-  const getBlindState = (whiskyIdx: number) => {
+  const getBlindState = (whiskyIdx: number, whisky?: Whisky) => {
     if (!isBlind) return { showName: true, showMeta: true, showImage: true };
+    if (isHost) return { showName: true, showMeta: true, showImage: true };
     if (whiskyIdx < revealIndex) return { showName: true, showMeta: true, showImage: true };
+    const photoRevealed = whisky?.photoRevealed ?? false;
     if (whiskyIdx === revealIndex) return {
       showName: revealStep >= 1,
       showMeta: revealStep >= 2,
-      showImage: revealStep >= 3,
+      showImage: revealStep >= 3 || photoRevealed,
     };
-    return { showName: false, showMeta: false, showImage: false };
+    return { showName: false, showMeta: false, showImage: photoRevealed };
   };
 
   return (
@@ -917,7 +933,7 @@ export default function TastingRoom() {
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex overflow-x-auto gap-3 flex-1 no-scrollbar items-center">
             {whiskyList.map((w: Whisky, idx: number) => {
-              const blind = getBlindState(idx);
+              const blind = getBlindState(idx, w);
               return (
                 <button
                   key={w.id}
@@ -1018,7 +1034,7 @@ export default function TastingRoom() {
           <div className="lg:col-span-8">
             {(() => {
               const activeIdx = whiskyList.findIndex((w: Whisky) => w.id === activeWhisky.id);
-              const blind = getBlindState(activeIdx);
+              const blind = getBlindState(activeIdx, activeWhisky);
               return (
                 <div className="flex items-center gap-4 mb-6 p-4 bg-card border border-border/50 rounded-lg lg:hidden" data-testid="inline-whisky-header">
                   <div className="flex-shrink-0">
@@ -1072,7 +1088,7 @@ export default function TastingRoom() {
             <div className="sticky top-8 space-y-8">
               {(() => {
                 const activeIdx = whiskyList.findIndex((w: Whisky) => w.id === activeWhisky.id);
-                const blind = getBlindState(activeIdx);
+                const blind = getBlindState(activeIdx, activeWhisky);
                 return (
                   <div className="bg-card border border-border/50 shadow-sm p-8 text-center relative overflow-hidden group">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50"></div>
@@ -1133,6 +1149,32 @@ export default function TastingRoom() {
                             </a>
                           </div>
                         )}
+                      </div>
+                    )}
+                    {isHost && isBlind && activeWhisky.imageUrl && (
+                      <div className="mt-6 pt-4 border-t border-border/30 space-y-2">
+                        <Button
+                          variant={activeWhisky.photoRevealed ? "secondary" : "outline"}
+                          size="sm"
+                          className="w-full font-serif"
+                          onClick={() => revealPhotoMutation.mutate({ whiskyId: activeWhisky.id, revealed: !activeWhisky.photoRevealed })}
+                          disabled={revealPhotoMutation.isPending}
+                          data-testid="button-reveal-photo"
+                        >
+                          {activeWhisky.photoRevealed ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                          {activeWhisky.photoRevealed ? t("blind.hidePhoto") : t("blind.revealPhoto")}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full font-serif text-xs text-muted-foreground"
+                          onClick={() => revealAllPhotosMutation.mutate(!whiskyList.every((w: Whisky) => w.photoRevealed))}
+                          disabled={revealAllPhotosMutation.isPending}
+                          data-testid="button-reveal-all-photos"
+                        >
+                          <ImageIcon className="w-3.5 h-3.5 mr-1.5" />
+                          {whiskyList.every((w: Whisky) => w.photoRevealed) ? t("blind.hideAllPhotos") : t("blind.revealAllPhotos")}
+                        </Button>
                       </div>
                     )}
                   </div>

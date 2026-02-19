@@ -50,6 +50,7 @@ export const tastingApi = {
   join: (id: string, participantId: string, code?: string) =>
     fetchJSON(`/tastings/${id}/join`, { method: "POST", body: JSON.stringify({ participantId, code }) }),
   getAnalytics: (id: string) => fetchJSON(`/tastings/${id}/analytics`),
+  revealAllPhotos: (id: string, revealed: boolean, hostId: string) => fetchJSON(`/tastings/${id}/reveal-all-photos`, { method: "POST", body: JSON.stringify({ revealed, hostId }) }),
 };
 
 // ===== Whiskies =====
@@ -71,6 +72,7 @@ export const whiskyApi = {
     return res.json();
   },
   deleteImage: (id: string) => fetchJSON(`/whiskies/${id}/image`, { method: "DELETE" }),
+  revealPhoto: (id: string, revealed: boolean, hostId: string) => fetchJSON(`/whiskies/${id}/reveal-photo`, { method: "PATCH", body: JSON.stringify({ revealed, hostId }) }),
 };
 
 // ===== Flight Import =====

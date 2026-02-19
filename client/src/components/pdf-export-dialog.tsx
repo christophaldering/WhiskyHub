@@ -396,7 +396,9 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
 
       const colW = (contentW - 10) / 2;
       const startY = lineupY;
-      const itemH = includePhotos ? 20 : 16;
+      const hasAnyImages = whiskies.some(w => w.imageUrl);
+      const effectiveIncludePhotos = includePhotos && hasAnyImages;
+      const itemH = effectiveIncludePhotos ? 20 : 16;
       const maxItems = Math.floor((pageH - startY - 15) / itemH);
       const itemsPerCol = Math.ceil(whiskies.length / 2);
       const effectivePerCol = Math.min(itemsPerCol, maxItems);
@@ -415,19 +417,14 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
         let y = startY;
         items.forEach((w, i) => {
           const idx = startIdx + i;
-          const thumbSize = includePhotos ? 10 : 0;
-          const textX = offsetX + (includePhotos ? thumbSize + 4 : 0);
+          const thumbSize = effectiveIncludePhotos ? 10 : 0;
+          const textX = offsetX + (effectiveIncludePhotos ? thumbSize + 4 : 0);
 
-          if (includePhotos && w.imageUrl && imageCache[w.imageUrl]) {
+          if (effectiveIncludePhotos && w.imageUrl && imageCache[w.imageUrl]) {
             try {
               doc.addImage(imageCache[w.imageUrl]!, "JPEG", offsetX, y - 3, thumbSize, thumbSize, undefined, "FAST");
             } catch {
-              doc.setFillColor(230, 230, 230);
-              doc.roundedRect(offsetX, y - 3, thumbSize, thumbSize, 2, 2, "F");
             }
-          } else if (includePhotos) {
-            doc.setFillColor(230, 230, 230);
-            doc.roundedRect(offsetX, y - 3, thumbSize, thumbSize, 2, 2, "F");
           }
 
           doc.setFont("helvetica", "bold");
@@ -439,7 +436,7 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
           doc.setFont("helvetica", "bold");
           doc.setFontSize(9);
           doc.setTextColor(...DARK_COLOR);
-          const nameMaxW = colW - (includePhotos ? thumbSize + 4 : 0) - numW - 2;
+          const nameMaxW = colW - (effectiveIncludePhotos ? thumbSize + 4 : 0) - numW - 2;
           const dispName = w.name.length > 30 ? w.name.slice(0, 28) + "\u2026" : w.name;
           doc.text(dispName, textX + numW, y + 1);
 

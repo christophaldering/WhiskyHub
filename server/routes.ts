@@ -1503,6 +1503,49 @@ export async function registerRoutes(
     }
   });
 
+  // ===== PHOTO REVEAL (per-whisky and bulk) =====
+
+  app.patch("/api/whiskies/:id/reveal-photo", async (req, res) => {
+    try {
+      const { hostId, revealed } = req.body;
+      if (!hostId) return res.status(401).json({ message: "Not authenticated" });
+
+      const whisky = await storage.getWhisky(req.params.id);
+      if (!whisky) return res.status(404).json({ message: "Whisky not found" });
+
+      const tasting = await storage.getTasting(whisky.tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.hostId !== hostId) return res.status(403).json({ message: "Only the host can reveal photos" });
+      if (!tasting.blindMode) return res.status(400).json({ message: "Tasting is not in blind mode" });
+
+      const updated = await storage.updateWhisky(req.params.id, { photoRevealed: revealed !== false });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/reveal-all-photos", async (req, res) => {
+    try {
+      const { hostId, revealed } = req.body;
+      if (!hostId) return res.status(401).json({ message: "Not authenticated" });
+
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.hostId !== hostId) return res.status(403).json({ message: "Only the host can reveal photos" });
+      if (!tasting.blindMode) return res.status(400).json({ message: "Tasting is not in blind mode" });
+
+      const tastingWhiskies = await storage.getWhiskiesForTasting(req.params.id);
+      const revealValue = revealed !== false;
+      const updated = await Promise.all(
+        tastingWhiskies.map(w => storage.updateWhisky(w.id, { photoRevealed: revealValue }))
+      );
+      res.json({ count: updated.length, revealed: revealValue });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== DISCUSSION ENTRIES =====
 
   app.get("/api/tastings/:id/discussions", async (req, res) => {

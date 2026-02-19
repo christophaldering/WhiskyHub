@@ -961,7 +961,11 @@ const es = {
       stepImage: "Imagen revelada",
       allRevealed: "Todas las expresiones reveladas",
       revealProgress: "Revelando Expresión {{current}} de {{total}}",
-      resetReveal: "Restablecer Revelación"
+      resetReveal: "Restablecer Revelación",
+      revealPhoto: "Revelar Foto",
+      hidePhoto: "Ocultar Foto",
+      revealAllPhotos: "Revelar Todas las Fotos",
+      hideAllPhotos: "Ocultar Todas las Fotos"
     },
     discussion: {
       title: "Discusión",
