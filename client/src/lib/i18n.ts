@@ -1,5 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
 import nl from './translations/nl';
 import fr from './translations/fr';
 import es from './translations/es';
@@ -3225,11 +3226,17 @@ const resources = {
 };
 
 i18n
+  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
-    lng: "en",
     fallbackLng: "en",
+    supportedLngs: ["en", "de", "nl", "fr", "es", "it", "zh"],
+    detection: {
+      order: ["localStorage", "navigator"],
+      caches: ["localStorage"],
+      lookupLocalStorage: "casksense-language",
+    },
     interpolation: {
       escapeValue: false
     }
