@@ -83,6 +83,7 @@ export const whiskies = pgTable("whiskies", {
   whiskybaseId: text("whiskybase_id"), // Whiskybase catalog number
   wbScore: real("wb_score"), // Whiskybase community score (0-100)
   imageUrl: text("image_url"),
+  photoRevealed: boolean("photo_revealed").default(false),
 });
 
 export const insertWhiskySchema = createInsertSchema(whiskies).omit({ id: true });
