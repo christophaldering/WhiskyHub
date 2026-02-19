@@ -629,12 +629,18 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: "", date: "", location: "" });
   const [coverUploading, setCoverUploading] = useState(false);
+  const [saved, setSaved] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (open && tasting) {
       setForm({ title: tasting.title, date: tasting.date, location: tasting.location });
+      setSaved(false);
     }
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
   }, [open, tasting]);
 
   const updateMutation = useMutation({
@@ -642,9 +648,36 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasting", tasting.id] });
       queryClient.invalidateQueries({ queryKey: ["tastings"] });
-      setOpen(false);
+      setSaved(true);
     },
   });
+
+  const triggerAutoSave = (newForm: typeof form) => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    setSaved(false);
+    saveTimeoutRef.current = setTimeout(() => {
+      if (newForm.title.trim() && currentParticipant) {
+        updateMutation.mutate(newForm);
+      }
+    }, 1500);
+  };
+
+  const handleFormChange = (field: string, value: string) => {
+    const newForm = { ...form, [field]: value };
+    setForm(newForm);
+    triggerAutoSave(newForm);
+  };
+
+  const handleDialogClose = (isOpen: boolean) => {
+    if (!isOpen && form.title.trim() && currentParticipant) {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      const hasChanges = form.title !== tasting.title || form.date !== tasting.date || form.location !== tasting.location;
+      if (hasChanges && !saved) {
+        updateMutation.mutate(form);
+      }
+    }
+    setOpen(isOpen);
+  };
 
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -675,7 +708,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="border-primary/30 text-primary font-serif" data-testid="button-edit-tasting">
           <Settings className="w-4 h-4 mr-1" /> {t("session.actions.editDetails")}
@@ -684,19 +717,28 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl text-primary">{t("session.actions.editDetailsTitle")}</DialogTitle>
+          <DialogDescription className="flex items-center gap-1 text-xs">
+            {updateMutation.isPending ? (
+              <span className="text-muted-foreground">{t("session.actions.autoSaving")}</span>
+            ) : saved ? (
+              <span className="text-green-600">{t("session.actions.autoSaved")}</span>
+            ) : (
+              <span className="text-muted-foreground">{t("session.actions.autoSaveHint")}</span>
+            )}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 mt-4">
           <div>
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.actions.editTitle")}</Label>
-            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="bg-secondary/20" data-testid="input-edit-title" />
+            <Input value={form.title} onChange={(e) => handleFormChange("title", e.target.value)} className="bg-secondary/20" data-testid="input-edit-title" />
           </div>
           <div>
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.actions.editDate")}</Label>
-            <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="bg-secondary/20" data-testid="input-edit-date" />
+            <Input type="date" value={form.date} onChange={(e) => handleFormChange("date", e.target.value)} className="bg-secondary/20" data-testid="input-edit-date" />
           </div>
           <div>
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.actions.editLocation")}</Label>
-            <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className="bg-secondary/20" data-testid="input-edit-location" />
+            <Input value={form.location} onChange={(e) => handleFormChange("location", e.target.value)} className="bg-secondary/20" data-testid="input-edit-location" />
           </div>
           <div>
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.coverImage.label")}</Label>
@@ -753,12 +795,17 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
             )}
           </div>
           <Button
-            onClick={() => updateMutation.mutate(form)}
-            disabled={updateMutation.isPending || !form.title.trim()}
+            onClick={() => {
+              if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+              if (form.title.trim() && currentParticipant) {
+                updateMutation.mutate(form);
+              }
+              handleDialogClose(false);
+            }}
             className="w-full bg-primary text-primary-foreground font-serif"
             data-testid="button-save-tasting-details"
           >
-            {updateMutation.isPending ? "..." : t("session.actions.editSave")}
+            {updateMutation.isPending ? "..." : t("session.actions.editDone")}
           </Button>
         </div>
       </DialogContent>

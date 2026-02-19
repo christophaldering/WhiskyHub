@@ -6,7 +6,7 @@ import { tastingApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
-import { ArrowRight, Trash2, KeyRound, Loader2 } from "lucide-react";
+import { ArrowRight, Trash2, KeyRound, Loader2, Crown, Users } from "lucide-react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ export default function Sessions() {
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [joinCode, setJoinCode] = useState("");
   const [joinLoading, setJoinLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<"host" | "participant">("host");
 
   const { data: tastings = [], isLoading } = useQuery({
     queryKey: ["tastings", currentParticipant?.id],
@@ -59,18 +60,30 @@ export default function Sessions() {
     }
   };
 
-  const active = tastings.filter((s: any) => s.status === "open" || s.status === "closed" || s.status === "reveal");
-  const drafts = tastings.filter((s: any) => s.status === "draft");
-  const archived = tastings.filter((s: any) => s.status === "archived");
+  const isHostOf = (tasting: any) => currentParticipant && tasting.hostId === currentParticipant.id;
+
+  const hostedTastings = tastings.filter((s: any) => isHostOf(s));
+  const participatedTastings = tastings.filter((s: any) => !isHostOf(s));
+
+  const splitByStatus = (list: any[]) => ({
+    active: list.filter((s: any) => s.status === "open" || s.status === "closed" || s.status === "reveal"),
+    drafts: list.filter((s: any) => s.status === "draft"),
+    archived: list.filter((s: any) => s.status === "archived"),
+  });
 
   const sortByDate = (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime();
 
-  active.sort(sortByDate);
-  drafts.sort(sortByDate);
-  archived.sort(sortByDate);
+  const hosted = splitByStatus(hostedTastings);
+  const participated = splitByStatus(participatedTastings);
 
-  const isHostOf = (tasting: any) => currentParticipant && tasting.hostId === currentParticipant.id;
-  const canDelete = (tasting: any) => tasting.status !== "open" && isHostOf(tasting);
+  Object.values(hosted).forEach(arr => arr.sort(sortByDate));
+  Object.values(participated).forEach(arr => arr.sort(sortByDate));
+
+  const currentList = viewMode === "host" ? hosted : participated;
+  const hasHosted = hostedTastings.length > 0;
+  const hasParticipated = participatedTastings.length > 0;
+
+  const canDelete = (tasting: any) => isHostOf(tasting);
 
   const SessionCard = ({ tasting }: { tasting: any }) => (
     <div
@@ -177,6 +190,29 @@ export default function Sessions() {
         </div>
       </motion.div>
 
+      {tastings.length > 0 && (
+        <div className="flex rounded-lg bg-secondary/30 p-1" data-testid="session-role-tabs">
+          <button
+            type="button"
+            onClick={() => setViewMode("host")}
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-serif font-medium transition-all flex items-center justify-center gap-2 ${viewMode === "host" ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            data-testid="tab-hosted"
+          >
+            <Crown className="w-4 h-4" />
+            {t("nav.sessionsHosted")} ({hostedTastings.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("participant")}
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-serif font-medium transition-all flex items-center justify-center gap-2 ${viewMode === "participant" ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            data-testid="tab-participated"
+          >
+            <Users className="w-4 h-4" />
+            {t("nav.sessionsParticipated")} ({participatedTastings.length})
+          </button>
+        </div>
+      )}
+
       {tastings.length === 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
@@ -190,9 +226,19 @@ export default function Sessions() {
         </motion.div>
       ) : (
         <div className="space-y-10">
-          <SessionGroup title={t("nav.sessionsActive")} sessions={active} delay={0.1} />
-          <SessionGroup title={t("nav.sessionsDraft")} sessions={drafts} delay={0.2} />
-          <SessionGroup title={t("nav.sessionsArchived")} sessions={archived} delay={0.3} />
+          {viewMode === "host" && !hasHosted && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-8">
+              <p className="text-muted-foreground font-serif italic" data-testid="text-no-hosted">{t("nav.noHostedSessions")}</p>
+            </motion.div>
+          )}
+          {viewMode === "participant" && !hasParticipated && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-8">
+              <p className="text-muted-foreground font-serif italic" data-testid="text-no-participated">{t("nav.noParticipatedSessions")}</p>
+            </motion.div>
+          )}
+          <SessionGroup title={t("nav.sessionsActive")} sessions={currentList.active} delay={0.1} />
+          <SessionGroup title={t("nav.sessionsDraft")} sessions={currentList.drafts} delay={0.2} />
+          <SessionGroup title={t("nav.sessionsArchived")} sessions={currentList.archived} delay={0.3} />
         </div>
       )}
 
