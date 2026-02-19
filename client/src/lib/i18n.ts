@@ -702,6 +702,24 @@ const resources = {
         ],
         backToApp: "Return to CaskSense"
       },
+      about: {
+        title: "About Me",
+        backToApp: "Back to App",
+        blocks: [
+          { lines: ["I'm a psychologist, diagnostician, entrepreneur.", "But what truly blew me away recently was something entirely different."] },
+          { heading: "Something big is happening.", accent: true, lines: [] },
+          { lines: ["What I've experienced in the field of AI-assisted development over the past months doesn't feel like a trend – it feels like a quiet but fundamental revolution. Tools like OpenClaw show how radically programming is changing right now. And honestly: I don't yet have a clear picture of what massive changes the coming weeks and months will bring.", "That they will be massive – I have little doubt about that."] },
+          { lines: ["My personal realization was surprisingly simple – and electrifying at the same time:", "AI-assisted programming isn't just accessible to developers. It has become remarkably easy. Ideas can be translated into working structures in no time. Concepts become prototypes, prototypes become products."] },
+          { lines: ["CaskSense was born out of this fascination."], italic: true },
+          { lines: ["Not as a strategic project.", "Not as a business model.", "But as an experiment."] },
+          { lines: ["I asked myself: What could I just try out?", "What would emerge if you combined curiosity, structure, and AI?"] },
+          { lines: ["The basic framework of the site was built surprisingly fast.", "And then something happened that I know well from other contexts: with every further engagement, one feature after another was added. Play turned into seriousness. The idea became a system."] },
+          { lines: ["That a platform for the conscious perception of whisky emerged from all this may actually fit me better than it seems at first. I enjoy drinking whisky – but above all, I enjoy the exchange about it. The structure. The reflection. The dialogue."] },
+          { lines: ["CaskSense is therefore more than a tasting tool for me.", "It's a small laboratory for something bigger:", "for the question of how AI doesn't replace thinking, but extends it.", "How it accelerates creation.", "And how it empowers people to build things they recently thought were beyond their reach."] },
+          { lines: ["I have no idea where all this is heading.", "But I can feel that we're standing at the beginning of something."] },
+          { lines: ["And while I figure that out, I sit in the evenings with a dram in hand – and my Golden Retriever Sammy beside me.", "He stays calm, by the way.", "He doesn't judge. He just observes."], italic: true }
+        ]
+      },
       whisky: {
         bottlePhoto: "Bottle Photo",
         uploadPhoto: "Upload Photo",
@@ -2171,6 +2189,24 @@ const resources = {
           "Der wertvollste Whisky ist nicht der am höchsten bewertete. Sondern der, der die Wahrnehmung erweitert."
         ],
         backToApp: "Zurück zu CaskSense"
+      },
+      about: {
+        title: "Über mich",
+        backToApp: "Zurück zur App",
+        blocks: [
+          { lines: ["Ich bin Psychologe, Diagnostiker, Unternehmer.", "Aber was mich zuletzt wirklich \u201Evon den Socken gehauen\u201C hat, war etwas ganz anderes."] },
+          { heading: "Something big is happening.", accent: true, lines: [] },
+          { lines: ["Was ich in den letzten Monaten im Bereich KI-gestützter Entwicklung erlebt habe, fühlt sich nicht wie ein Trend an – sondern wie eine stille, aber fundamentale Revolution. Tools wie OpenClaw zeigen, wie radikal sich Programmierung gerade verändert. Und ehrlicherweise: Ich habe noch keine klare Vorstellung davon, welche massiven Veränderungen das in den kommenden Wochen und Monaten mit sich bringen wird.", "Dass sie massiv sein werden, daran habe ich wenig Zweifel."] },
+          { lines: ["Meine persönliche Erkenntnis war überraschend simpel – und gleichzeitig elektrisierend:", "KI-gestützte Programmierung ist nicht nur für Entwickler zugänglich. Sie ist denkbar einfach geworden. Ideen lassen sich in kürzester Zeit in funktionierende Strukturen übersetzen. Konzepte werden zu Prototypen, Prototypen zu Produkten."] },
+          { lines: ["Aus dieser Faszination heraus entstand CaskSense."], italic: true },
+          { lines: ["Nicht als strategisches Projekt.", "Nicht als Geschäftsmodell.", "Sondern als Experiment."] },
+          { lines: ["Ich habe mich gefragt: Was könnte man einfach mal ausprobieren?", "Was würde entstehen, wenn man Neugier, Struktur und KI zusammenbringt?"] },
+          { lines: ["Das Grobgerüst der Seite war überraschend schnell gebaut.", "Und dann passierte etwas, das ich aus anderen Kontexten gut kenne: Mit jeder weiteren Beschäftigung kam ein Feature nach dem anderen hinzu. Aus dem Spiel wurde Ernsthaftigkeit. Aus der Idee wurde ein System."] },
+          { lines: ["Dass ausgerechnet eine Plattform zur bewussten Wahrnehmung von Whisky daraus entstand, passt vielleicht besser zu mir, als es zunächst scheint. Ich trinke gerne Whisky – aber vor allem genieße ich den Austausch darüber. Die Struktur. Die Reflexion. Den Dialog."] },
+          { lines: ["CaskSense ist für mich deshalb mehr als ein Tasting-Tool.", "Es ist ein kleines Labor für etwas Größeres:", "für die Frage, wie KI Denken nicht ersetzt, sondern erweitert.", "Wie sie Gestaltung beschleunigt.", "Und wie sie Menschen befähigt, Dinge zu bauen, die sie vor kurzem noch für außerhalb ihrer Reichweite hielten."] },
+          { lines: ["Ich habe keine Ahnung, wohin das alles führt.", "Aber ich spüre, dass wir gerade am Anfang von etwas stehen."] },
+          { lines: ["Und während ich das herausfinde, sitze ich abends mit einem Dram in der Hand – und meinem Golden Retriever Sammy neben mir.", "Er bleibt übrigens gelassen.", "Er bewertet nicht. Er beobachtet nur."], italic: true }
+        ]
       },
       whisky: {
         bottlePhoto: "Flaschenfoto",

@@ -693,6 +693,24 @@ const es = {
       ],
       backToApp: "Volver a CaskSense"
     },
+    about: {
+      title: "Sobre Mí",
+      backToApp: "Volver a la App",
+      blocks: [
+        { lines: ["Soy psicólogo, diagnosticador, emprendedor.", "Pero lo que realmente me dejó sin palabras recientemente fue algo completamente diferente."] },
+        { heading: "Something big is happening.", accent: true, lines: [] },
+        { lines: ["Lo que he experimentado en el campo del desarrollo asistido por IA durante los últimos meses no se siente como una tendencia – se siente como una revolución silenciosa pero fundamental. Herramientas como OpenClaw muestran lo radicalmente que está cambiando la programación ahora mismo. Y honestamente: aún no tengo una imagen clara de los cambios masivos que traerán las próximas semanas y meses.", "Que serán masivos – de eso tengo pocas dudas."] },
+        { lines: ["Mi revelación personal fue sorprendentemente simple – y electrizante al mismo tiempo:", "La programación asistida por IA no es solo accesible para los desarrolladores. Se ha vuelto notablemente fácil. Las ideas pueden traducirse en estructuras funcionales en muy poco tiempo. Los conceptos se convierten en prototipos, los prototipos se convierten en productos."] },
+        { lines: ["CaskSense nació de esta fascinación."], italic: true },
+        { lines: ["No como un proyecto estratégico.", "No como un modelo de negocio.", "Sino como un experimento."] },
+        { lines: ["Me pregunté: ¿qué podría simplemente probar?", "¿Qué surgiría si combinaras curiosidad, estructura e IA?"] },
+        { lines: ["El marco básico del sitio se construyó sorprendentemente rápido.", "Y entonces sucedió algo que conozco bien de otros contextos: con cada nueva involucración, se añadía una funcionalidad tras otra. El juego se convirtió en seriedad. La idea se convirtió en un sistema."] },
+        { lines: ["Que una plataforma para la percepción consciente del whisky surgiera de todo esto quizás me encaja mejor de lo que parece a primera vista. Disfruto bebiendo whisky – pero sobre todo, disfruto el intercambio al respecto. La estructura. La reflexión. El diálogo."] },
+        { lines: ["CaskSense es por tanto para mí más que una herramienta de cata.", "Es un pequeño laboratorio para algo más grande:", "para la pregunta de cómo la IA no reemplaza el pensamiento, sino que lo extiende.", "Cómo acelera la creación.", "Y cómo empodera a las personas para construir cosas que recientemente pensaban que estaban fuera de su alcance."] },
+        { lines: ["No tengo ni idea de hacia dónde va todo esto.", "Pero puedo sentir que estamos al comienzo de algo."] },
+        { lines: ["Y mientras lo descubro, me siento por las noches con un dram en la mano – y mi Golden Retriever Sammy a mi lado.", "Él se mantiene tranquilo, por cierto.", "No juzga. Solo observa."], italic: true }
+      ]
+    },
     whisky: {
       bottlePhoto: "Foto de la Botella",
       uploadPhoto: "Subir Foto",

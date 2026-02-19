@@ -693,6 +693,24 @@ const nl = {
       ],
       backToApp: "Terug naar CaskSense"
     },
+    about: {
+      title: "Over Mij",
+      backToApp: "Terug naar App",
+      blocks: [
+        { lines: ["Ik ben psycholoog, diagnosticus, ondernemer.", "Maar wat mij onlangs echt omver heeft geblazen, was iets heel anders."] },
+        { heading: "Something big is happening.", accent: true, lines: [] },
+        { lines: ["Wat ik de afgelopen maanden heb meegemaakt op het gebied van AI-ondersteunde ontwikkeling voelt niet als een trend – het voelt als een stille maar fundamentele revolutie. Tools zoals OpenClaw laten zien hoe radicaal programmeren op dit moment verandert. En eerlijk gezegd: ik heb nog geen duidelijk beeld van welke ingrijpende veranderingen de komende weken en maanden zullen brengen.", "Dat ze ingrijpend zullen zijn – daar twijfel ik weinig aan."] },
+        { lines: ["Mijn persoonlijke inzicht was verrassend eenvoudig – en tegelijkertijd elektriserend:", "AI-ondersteund programmeren is niet alleen toegankelijk voor ontwikkelaars. Het is opmerkelijk eenvoudig geworden. Ideeën kunnen in een mum van tijd worden vertaald naar werkende structuren. Concepten worden prototypes, prototypes worden producten."] },
+        { lines: ["CaskSense is uit deze fascinatie geboren."], italic: true },
+        { lines: ["Niet als strategisch project.", "Niet als bedrijfsmodel.", "Maar als experiment."] },
+        { lines: ["Ik vroeg mezelf af: wat zou ik gewoon eens kunnen proberen?", "Wat zou er ontstaan als je nieuwsgierigheid, structuur en AI combineert?"] },
+        { lines: ["Het basisraamwerk van de site was verrassend snel gebouwd.", "En toen gebeurde er iets dat ik goed ken uit andere contexten: met elke verdere betrokkenheid kwam er het ene feature na het andere bij. Spel werd ernst. Het idee werd een systeem."] },
+        { lines: ["Dat uitgerekend een platform voor de bewuste waarneming van whisky hieruit is ontstaan, past misschien beter bij mij dan het op het eerste gezicht lijkt. Ik drink graag whisky – maar bovenal geniet ik van de uitwisseling erover. De structuur. De reflectie. De dialoog."] },
+        { lines: ["CaskSense is daarom voor mij meer dan een proeftool.", "Het is een klein laboratorium voor iets groters:", "voor de vraag hoe AI het denken niet vervangt, maar uitbreidt.", "Hoe het creatie versnelt.", "En hoe het mensen in staat stelt dingen te bouwen waarvan ze onlangs nog dachten dat ze buiten hun bereik lagen."] },
+        { lines: ["Ik heb geen idee waar dit allemaal naartoe gaat.", "Maar ik voel dat we aan het begin van iets staan."] },
+        { lines: ["En terwijl ik dat uitzoek, zit ik 's avonds met een dram in de hand – en mijn Golden Retriever Sammy naast me.", "Hij blijft trouwens kalm.", "Hij oordeelt niet. Hij observeert alleen."], italic: true }
+      ]
+    },
     whisky: {
       bottlePhoto: "Flesfoto",
       uploadPhoto: "Foto Uploaden",
