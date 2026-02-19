@@ -1598,6 +1598,153 @@ export async function registerRoutes(
     }
   });
 
+  // ===== DRAM TIMER =====
+
+  app.post("/api/tastings/:id/dram-timer", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId } = req.body;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can control the timer" });
+      const updated = await storage.updateTasting(req.params.id, { dramStartedAt: new Date() });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== AI WHISKY INSIGHTS =====
+
+  app.post("/api/whiskies/ai-insights", async (req, res) => {
+    try {
+      const { participantId, whiskyName, distillery, region, age, abv, caskInfluence, category, peatLevel } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const details = [
+        whiskyName,
+        distillery && `Distillery: ${distillery}`,
+        region && `Region: ${region}`,
+        age && `Age: ${age}`,
+        abv && `ABV: ${abv}%`,
+        caskInfluence && `Cask: ${caskInfluence}`,
+        category && `Category: ${category}`,
+        peatLevel && `Peat: ${peatLevel}`,
+      ].filter(Boolean).join(", ");
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a knowledgeable whisky expert providing fascinating background information about whiskies during a tasting session. Keep responses concise (3-5 short paragraphs), engaging, and surprising. Include:
+- Brief history or interesting facts about the distillery
+- What makes this particular expression special or noteworthy
+- Tasting context: what to look for, food pairings, or serving suggestions
+- Any awards, notable reviews, or interesting production details
+- A fun or surprising fact that even experienced whisky enthusiasts might not know
+
+Write in a warm, conversational tone. Use the language that matches the whisky details provided. Do NOT use markdown headers or bullet points - write flowing prose paragraphs. Keep it informative but not overwhelming.`
+          },
+          {
+            role: "user",
+            content: `Tell me fascinating background information about this whisky: ${details}`
+          }
+        ],
+        max_tokens: 800,
+        temperature: 0.8,
+      });
+
+      const insights = response.choices[0]?.message?.content || "No insights available.";
+      res.json({ insights });
+    } catch (e: any) {
+      console.error("AI insights error:", e.message);
+      res.status(500).json({ message: "Could not generate insights" });
+    }
+  });
+
+  // ===== AI SESSION HIGHLIGHTS =====
+
+  app.post("/api/tastings/:id/ai-highlights", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+      const whiskies = await storage.getWhiskiesForTasting(req.params.id);
+      const allRatings = await storage.getRatingsForTasting(req.params.id);
+      const participants = await storage.getTastingParticipants(req.params.id);
+      const participantMap = new Map<string, string>();
+      for (const tp of participants) {
+        const p = await storage.getParticipant(tp.participantId);
+        if (p) participantMap.set(tp.participantId, p.name);
+      }
+
+      const whiskyData = whiskies.map(w => {
+        const wRatings = allRatings.filter(r => r.whiskyId === w.id);
+        const avgOverall = wRatings.length > 0 ? wRatings.reduce((s, r) => s + r.overall, 0) / wRatings.length : 0;
+        return {
+          name: w.name,
+          distillery: w.distillery,
+          age: w.age,
+          abv: w.abv,
+          avgScore: avgOverall.toFixed(1),
+          ratingCount: wRatings.length,
+          ratings: wRatings.map(r => ({
+            participant: participantMap.get(r.participantId) || "Unknown",
+            overall: r.overall,
+            nose: r.nose,
+            taste: r.taste,
+            finish: r.finish,
+            notes: r.notes,
+          })),
+        };
+      });
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `You are analyzing a whisky tasting session to create engaging highlights and insights. Return a JSON object with these fields:
+- "summary": A 2-3 sentence entertaining summary of the evening (string)
+- "topWhisky": The highest-rated whisky name and why it stood out (string)
+- "surpriseWinner": If any lower-expected whisky scored well, mention it (string or null)
+- "tasteTwins": Pairs of participants who had the most similar ratings patterns, with their names (string or null)
+- "mostDivisive": The whisky with the biggest rating spread, and who loved/disliked it (string or null)
+- "funFacts": An array of 2-3 short fun observations about the tasting data (string[])
+
+Be specific with names and numbers. Make it entertaining and create "aha" moments. Write in a warm, engaging style.`
+          },
+          {
+            role: "user",
+            content: `Tasting: "${tasting.title}" on ${tasting.date} at ${tasting.location}\n\nWhisky data:\n${JSON.stringify(whiskyData, null, 2)}`
+          }
+        ],
+        max_tokens: 1200,
+        temperature: 0.7,
+      });
+
+      const content = response.choices[0]?.message?.content || "{}";
+      let highlights;
+      try { highlights = JSON.parse(content); } catch { highlights = { summary: content }; }
+      res.json(highlights);
+    } catch (e: any) {
+      console.error("AI highlights error:", e.message);
+      res.status(500).json({ message: "Could not generate highlights" });
+    }
+  });
+
   // ===== PHOTO REVEAL (per-whisky and bulk) =====
 
   app.patch("/api/whiskies/:id/reveal-photo", async (req, res) => {

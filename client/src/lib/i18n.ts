@@ -276,7 +276,8 @@ const resources = {
         guessAbv: "Guess ABV (%)",
         guessAge: "Guess Age",
         blindResults: "Your Blind Guess Results",
-        guessVsActual: "{{guess}} → actual: {{actual}}"
+        guessVsActual: "{{guess}} → actual: {{actual}}",
+        notesPlaceholder: "Aromas, palate, finish..."
       },
       taxonomy: {
         category: "Category",
@@ -900,6 +901,21 @@ const resources = {
         detailBottler: "Bottler",
         detailVintage: "Vintage",
         detailNotes: "Notes",
+      },
+      focus: {
+        enterFocus: "Focus Mode",
+        backToRoom: "Back to Room",
+        timeElapsed: "elapsed",
+        ratingsProgress: "{{count}}/{{total}} rated",
+        dramLabel: "Dram {{current}} of {{total}}",
+        hostNotes: "Host Notes",
+        hostNotesPlaceholder: "Private notes for the host about this dram (e.g. tasting order hints, talking points, price)...",
+        hostNotesHint: "Only visible to the host during the session",
+        learnMore: "Learn More",
+        insightsError: "Could not load insights. Please try again.",
+        prev: "Previous",
+        next: "Next",
+        revealNext: "Reveal",
       },
       profile: {
         title: "My Profile",
@@ -1810,7 +1826,8 @@ const resources = {
         guessAbv: "ABV schätzen (%)",
         guessAge: "Alter schätzen",
         blindResults: "Deine Blindverkostungs-Ergebnisse",
-        guessVsActual: "{{guess}} → tatsächlich: {{actual}}"
+        guessVsActual: "{{guess}} → tatsächlich: {{actual}}",
+        notesPlaceholder: "Aromen, Gaumen, Abgang..."
       },
       taxonomy: {
         category: "Kategorie",
@@ -2434,6 +2451,21 @@ const resources = {
         detailBottler: "Abfüller",
         detailVintage: "Jahrgang",
         detailNotes: "Notizen",
+      },
+      focus: {
+        enterFocus: "Fokus-Modus",
+        backToRoom: "Zurück zum Raum",
+        timeElapsed: "vergangen",
+        ratingsProgress: "{{count}}/{{total}} bewertet",
+        dramLabel: "Dram {{current}} von {{total}}",
+        hostNotes: "Gastgeber-Notizen",
+        hostNotesPlaceholder: "Private Notizen für den Gastgeber zu diesem Dram (z.B. Reihenfolge, Gesprächspunkte, Preis)...",
+        hostNotesHint: "Nur für den Gastgeber während der Sitzung sichtbar",
+        learnMore: "Mehr erfahren",
+        insightsError: "Informationen konnten nicht geladen werden. Bitte versuchen Sie es erneut.",
+        prev: "Zurück",
+        next: "Weiter",
+        revealNext: "Aufdecken",
       },
       profile: {
         title: "Mein Profil",

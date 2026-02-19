@@ -2,6 +2,7 @@ import { useParams, useLocation } from "wouter";
 import { useState, useRef, useEffect } from "react";
 import { EvaluationForm } from "@/components/evaluation-form";
 import { RevealView } from "@/components/reveal-view";
+import { FocusedTasting } from "@/components/focused-tasting";
 import { SessionControl } from "@/components/session-control";
 import { LoginDialog } from "@/components/login-dialog";
 import { ImportFlightDialog } from "@/components/import-flight-dialog";
@@ -337,6 +338,7 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
     name: "", distillery: "", age: "", abv: "", country: "",
     notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "",
     caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "", wbScore: "",
+    hostNotes: "",
   });
 
   const canEdit = isHost && (tastingStatus === "draft" || tastingStatus === "open");
@@ -358,6 +360,7 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
       ppm: whisky.ppm != null ? String(whisky.ppm) : "",
       whiskybaseId: whisky.whiskybaseId || "",
       wbScore: whisky.wbScore != null ? String(whisky.wbScore) : "",
+      hostNotes: (whisky as any).hostNotes || "",
     });
     setImageFile(null);
     setImagePreview(null);
@@ -421,6 +424,7 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
       ppm: form.ppm ? parseFloat(form.ppm) : null,
       whiskybaseId: form.whiskybaseId.trim() || null,
       wbScore: form.wbScore ? parseFloat(form.wbScore) : null,
+      hostNotes: form.hostNotes.trim() || null,
     });
   };
 
@@ -612,6 +616,19 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
                 <Label className="text-xs text-muted-foreground">{t("whisky.wbScore")}</Label>
                 <Input type="number" min={0} max={100} step={0.1} value={form.wbScore} onChange={(e) => setForm(p => ({ ...p, wbScore: e.target.value }))} placeholder="87.5" className="w-full" data-testid="input-edit-whisky-wbscore" />
               </div>
+            </div>
+          </div>
+          <div className="border-t border-border/30 pt-4">
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("focus.hostNotes")}</Label>
+              <textarea
+                value={form.hostNotes}
+                onChange={(e) => setForm(p => ({ ...p, hostNotes: e.target.value }))}
+                placeholder={t("focus.hostNotesPlaceholder")}
+                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                data-testid="input-edit-whisky-host-notes"
+              />
+              <p className="text-xs text-muted-foreground">{t("focus.hostNotesHint")}</p>
             </div>
           </div>
           <Button onClick={handleSubmit} disabled={updateWhisky.isPending || !form.name.trim()} className="w-full bg-primary text-primary-foreground font-serif" data-testid="button-save-whisky">
@@ -1035,6 +1052,7 @@ export default function TastingRoom() {
 
   const [activeWhiskyId, setActiveWhiskyId] = useState<string | null>(null);
   const [viewTab, setViewTab] = useState<"tasting" | "board">("tasting");
+  const [focusMode, setFocusMode] = useState(false);
 
   const reorderMutation = useMutation({
     mutationFn: (order: { id: string; sortOrder: number }[]) => whiskyApi.reorder(id!, order),
@@ -1183,6 +1201,16 @@ export default function TastingRoom() {
     return { showName: false, showMeta: false, showImage: photoRevealed };
   };
 
+  if (focusMode && tasting && whiskyList.length > 0) {
+    return (
+      <FocusedTasting
+        tasting={tasting}
+        whiskies={whiskyList}
+        onExit={() => setFocusMode(false)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto overflow-x-hidden">
       <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
@@ -1322,6 +1350,18 @@ export default function TastingRoom() {
               </div>
             </div>
             <div className="flex items-center gap-1 mt-1">
+              {tasting.status === "open" && whiskyList.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFocusMode(true)}
+                  className="font-serif text-xs border-primary/30 text-primary mr-2"
+                  data-testid="button-focus-mode"
+                >
+                  <Eye className="w-3.5 h-3.5 mr-1" />
+                  {t("focus.enterFocus")}
+                </Button>
+              )}
               <Button
                 variant={viewTab === "tasting" ? "default" : "ghost"}
                 size="sm"

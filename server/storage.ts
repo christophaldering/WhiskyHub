@@ -52,6 +52,7 @@ export interface IStorage {
   updateTastingStatus(id: string, status: string, currentAct?: string): Promise<Tasting | undefined>;
   updateTastingReflection(id: string, reflection: string): Promise<Tasting | undefined>;
   updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean }>): Promise<Tasting | undefined>;
+  updateTasting(id: string, data: Partial<Record<string, any>>): Promise<Tasting | undefined>;
   transferTastingHost(id: string, newHostId: string): Promise<Tasting | undefined>;
   duplicateTasting(id: string, hostId: string): Promise<Tasting>;
 
@@ -305,6 +306,12 @@ export class DatabaseStorage implements IStorage {
     if (data.coverImageRevealed !== undefined) updateData.coverImageRevealed = data.coverImageRevealed;
     if (Object.keys(updateData).length === 0) return this.getTasting(id);
     const [result] = await db.update(tastings).set(updateData).where(eq(tastings.id, id)).returning();
+    return result;
+  }
+
+  async updateTasting(id: string, data: Partial<Record<string, any>>): Promise<Tasting | undefined> {
+    if (Object.keys(data).length === 0) return this.getTasting(id);
+    const [result] = await db.update(tastings).set(data).where(eq(tastings.id, id)).returning();
     return result;
   }
 

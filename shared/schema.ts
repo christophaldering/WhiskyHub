@@ -43,6 +43,7 @@ export const tastings = pgTable("tastings", {
   customPrompts: text("custom_prompts"), // JSON array of custom prompt strings
   coverImageUrl: text("cover_image_url"),
   coverImageRevealed: boolean("cover_image_revealed").default(false),
+  dramStartedAt: timestamp("dram_started_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -86,6 +87,7 @@ export const whiskies = pgTable("whiskies", {
   wbScore: real("wb_score"), // Whiskybase community score (0-100)
   imageUrl: text("image_url"),
   photoRevealed: boolean("photo_revealed").default(false),
+  hostNotes: text("host_notes"),
 });
 
 export const insertWhiskySchema = createInsertSchema(whiskies).omit({ id: true });
