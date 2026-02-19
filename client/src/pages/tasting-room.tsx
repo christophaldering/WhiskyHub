@@ -627,6 +627,8 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   const { currentParticipant } = useAppStore();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: "", date: "", location: "" });
+  const [coverUploading, setCoverUploading] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open && tasting) {
@@ -642,6 +644,34 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
       setOpen(false);
     },
   });
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentParticipant) return;
+    setCoverUploading(true);
+    try {
+      await tastingApi.uploadCoverImage(tasting.id, file, currentParticipant.id);
+      queryClient.invalidateQueries({ queryKey: ["tasting", tasting.id] });
+    } catch (err) {
+      console.error("Cover upload failed:", err);
+    } finally {
+      setCoverUploading(false);
+      if (coverInputRef.current) coverInputRef.current.value = "";
+    }
+  };
+
+  const handleCoverRemove = async () => {
+    if (!currentParticipant) return;
+    setCoverUploading(true);
+    try {
+      await tastingApi.deleteCoverImage(tasting.id, currentParticipant.id);
+      queryClient.invalidateQueries({ queryKey: ["tasting", tasting.id] });
+    } catch (err) {
+      console.error("Cover remove failed:", err);
+    } finally {
+      setCoverUploading(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -666,6 +696,60 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
           <div>
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.actions.editLocation")}</Label>
             <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className="bg-secondary/20" data-testid="input-edit-location" />
+          </div>
+          <div>
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.coverImage.label")}</Label>
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleCoverUpload}
+              data-testid="input-cover-image"
+            />
+            {tasting.coverImageUrl ? (
+              <div className="relative mt-2 rounded-lg overflow-hidden">
+                <img src={tasting.coverImageUrl} alt="Cover" className="w-full h-32 object-cover rounded-lg" />
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => coverInputRef.current?.click()}
+                    disabled={coverUploading}
+                    data-testid="button-change-cover"
+                  >
+                    <Camera className="w-3 h-3 mr-1" />
+                    {t("session.coverImage.change")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="h-7 px-2 text-xs"
+                    onClick={handleCoverRemove}
+                    disabled={coverUploading}
+                    data-testid="button-remove-cover"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                className="w-full mt-2 border-dashed border-2 h-20"
+                onClick={() => coverInputRef.current?.click()}
+                disabled={coverUploading}
+                data-testid="button-upload-cover"
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    {coverUploading ? "..." : t("session.coverImage.upload")}
+                  </span>
+                </div>
+              </Button>
+            )}
           </div>
           <Button
             onClick={() => updateMutation.mutate(form)}
@@ -877,6 +961,17 @@ export default function TastingRoom() {
       <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
 
       <header className="mb-8 border-b border-border/50 pb-6">
+        {tasting.coverImageUrl && (
+          <div className="relative w-full h-40 sm:h-56 rounded-xl overflow-hidden mb-4">
+            <img
+              src={tasting.coverImageUrl}
+              alt={tasting.title}
+              className="w-full h-full object-cover"
+              data-testid="img-tasting-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
+          </div>
+        )}
         <div className="flex flex-col gap-4">
           <div className="min-w-0 w-full">
             <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{tasting.title}</h1>

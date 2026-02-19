@@ -51,6 +51,19 @@ export const tastingApi = {
     fetchJSON(`/tastings/${id}/join`, { method: "POST", body: JSON.stringify({ participantId, code }) }),
   getAnalytics: (id: string) => fetchJSON(`/tastings/${id}/analytics`),
   revealAllPhotos: (id: string, revealed: boolean, hostId: string) => fetchJSON(`/tastings/${id}/reveal-all-photos`, { method: "POST", body: JSON.stringify({ revealed, hostId }) }),
+  uploadCoverImage: async (id: string, file: File, hostId: string) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("hostId", hostId);
+    const res = await fetch(`${API_BASE}/tastings/${id}/cover-image`, { method: "POST", body: formData });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Upload failed");
+    }
+    return res.json();
+  },
+  deleteCoverImage: (id: string, hostId: string) =>
+    fetchJSON(`/tastings/${id}/cover-image`, { method: "DELETE", body: JSON.stringify({ hostId }) }),
 };
 
 // ===== Whiskies =====
@@ -342,8 +355,26 @@ export const photoTastingApi = {
     }
     return res.json();
   },
-  createTasting: (data: { participantId: string; title: string; date: string; location: string; whiskies: any[] }) =>
-    fetchJSON("/photo-tasting/create", { method: "POST", body: JSON.stringify(data) }),
+  createTasting: async (data: { participantId: string; title: string; date: string; location: string; whiskies: any[]; coverPhoto?: File }) => {
+    const formData = new FormData();
+    formData.append("participantId", data.participantId);
+    formData.append("title", data.title);
+    formData.append("date", data.date);
+    formData.append("location", data.location);
+    formData.append("whiskies", JSON.stringify(data.whiskies));
+    if (data.coverPhoto) {
+      formData.append("coverPhoto", data.coverPhoto);
+    }
+    const res = await fetch(`${API_BASE}/photo-tasting/create`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Create failed");
+    }
+    return res.json();
+  },
 };
 
 // ===== Wishlist =====

@@ -193,6 +193,12 @@ const es = {
         editDate: "Fecha",
         editLocation: "Ubicación"
       },
+      coverImage: {
+        label: "Imagen de portada",
+        upload: "Subir imagen de portada",
+        change: "Cambiar",
+        remove: "Eliminar",
+      },
       joinSessionTitle: "Unirse a una Sesión de Cata",
       joinSessionSubtitle: "¿Tienes un código de acceso? Introdúcelo a continuación para unirte al instante.",
       joinButton: "Unirse",

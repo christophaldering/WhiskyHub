@@ -26,8 +26,10 @@ type IdentifiedWhisky = {
   confidence?: string;
   dbMatch?: boolean;
   benchmarkMatch?: boolean;
+  collectionMatch?: boolean;
   whiskybaseSearch?: string | null;
   whiskybaseUrl?: string | null;
+  imageUrl?: string | null;
   fileName?: string;
   selected: boolean;
   editing: boolean;
@@ -137,6 +139,7 @@ export default function PhotoTasting() {
         title: tastingTitle,
         date: tastingDate,
         location: tastingLocation,
+        coverPhoto: photos.length > 0 ? photos[0] : undefined,
         whiskies: selected.map(w => ({
           name: w.name,
           distillery: w.distillery,
@@ -149,6 +152,7 @@ export default function PhotoTasting() {
           caskInfluence: w.caskInfluence,
           peatLevel: w.peatLevel,
           notes: w.notes,
+          imageUrl: w.imageUrl,
         })),
       });
       toast({

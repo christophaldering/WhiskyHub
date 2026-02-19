@@ -193,6 +193,12 @@ const zh = {
         editDate: "日期",
         editLocation: "地点"
       },
+      coverImage: {
+        label: "封面图片",
+        upload: "上传封面图片",
+        change: "更换",
+        remove: "删除",
+      },
       joinSessionTitle: "加入品鉴会",
       joinSessionSubtitle: "有访问码？在下方输入即可立即加入。",
       joinButton: "加入",

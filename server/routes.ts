@@ -541,6 +541,44 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/tastings/:id/cover-image", (req: any, res: any, next: any) => {
+    memUpload.single("image")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ message: "Image must be under 2 MB" });
+        }
+        return res.status(400).json({ message: err.message || "Upload failed" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const hostId = req.body.hostId;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can update the cover image" });
+      if (!req.file) return res.status(400).json({ message: "No image file provided" });
+      const coverImageUrl = await uploadBufferToObjectStorage(objectStorage, req.file.buffer, req.file.mimetype);
+      const updated = await storage.updateTastingDetails(req.params.id, { coverImageUrl });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/tastings/:id/cover-image", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId } = req.body;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can remove the cover image" });
+      const updated = await storage.updateTastingDetails(req.params.id, { coverImageUrl: null });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.post("/api/tastings/:id/duplicate", async (req, res) => {
     try {
       const { hostId } = req.body;
@@ -4046,6 +4084,7 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
 
       const allWhiskies = await storage.getAllWhiskies();
       const benchmarks = await storage.getBenchmarkEntries();
+      const collectionItems = await storage.getWhiskybaseCollection(participantId);
 
       const dbWhiskyNames = [...new Set(allWhiskies.map(w => w.name))].slice(0, 200);
       const benchmarkNames = [...new Set(benchmarks.map(b => b.whiskyName))].slice(0, 200);
@@ -4148,6 +4187,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
               peatLevel: identified.peatLevel || matchedWhisky.peatLevel,
               dbMatch: true,
               dbWhiskyId: matchedWhisky.id,
+              imageUrl: matchedWhisky.imageUrl || identified.imageUrl,
             };
           } else if (matchedBenchmark) {
             identified = {
@@ -4161,6 +4201,37 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
               category: identified.category || matchedBenchmark.category,
               benchmarkMatch: true,
             };
+          }
+
+          if (!identified.imageUrl && collectionItems.length > 0) {
+            const searchName = (identified.matchedExisting || identified.name || "").toLowerCase();
+            const collectionMatch = collectionItems.find(c => {
+              const fullName = [c.brand, c.name].filter(Boolean).join(" ").toLowerCase();
+              return fullName === searchName || c.name.toLowerCase() === searchName ||
+                fullName.includes(searchName) || searchName.includes(c.name.toLowerCase());
+            });
+            if (collectionMatch?.imageUrl) {
+              identified.imageUrl = collectionMatch.imageUrl;
+              identified.collectionMatch = true;
+            }
+          }
+
+          if (!identified.imageUrl && identified.whiskybaseUrl) {
+            try {
+              const wbId = identified.whiskybaseUrl.match(/\/whisky\/(\d+)/)?.[1];
+              if (wbId) {
+                const imgUrl = `https://static.whiskybase.com/storage/whiskies/${wbId}/${wbId}-big.jpg`;
+                const testResp = await fetch(imgUrl, { method: "HEAD" });
+                if (testResp.ok) {
+                  const downloaded = await downloadImageFromUrl(imgUrl, objectStorage);
+                  if (downloaded) {
+                    identified.imageUrl = downloaded;
+                  }
+                }
+              }
+            } catch (e) {
+              console.log("Whiskybase image fetch failed for", identified.name);
+            }
           }
 
           if (!identified.whiskybaseSearch) {
@@ -4181,14 +4252,25 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     }
   });
 
-  app.post("/api/photo-tasting/create", async (req: Request, res: Response) => {
+  app.post("/api/photo-tasting/create", docUpload.single("coverPhoto"), async (req: Request, res: Response) => {
     try {
-      const { participantId, title, date, location, whiskies: whiskiesList } = req.body;
+      const { participantId, title, date, location } = req.body;
+      let whiskiesList: any[];
+      try {
+        whiskiesList = JSON.parse(req.body.whiskies || "[]");
+      } catch {
+        return res.status(400).json({ message: "Invalid whiskies data" });
+      }
       if (!participantId || !title || !whiskiesList || !Array.isArray(whiskiesList)) {
         return res.status(400).json({ message: "participantId, title, and whiskies array required" });
       }
       const auth = await verifyHostOrAdmin(participantId);
       if (!auth) return res.status(403).json({ message: "Only hosts and admins can create tastings" });
+
+      let coverImageUrl: string | undefined;
+      if (req.file) {
+        coverImageUrl = await uploadBufferToObjectStorage(objectStorage, req.file.buffer, req.file.mimetype);
+      }
 
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const tasting = await storage.createTasting({
@@ -4198,6 +4280,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
         hostId: participantId,
         code,
         status: "draft",
+        coverImageUrl: coverImageUrl || null,
       });
 
       const createdWhiskies = [];
@@ -4216,6 +4299,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
           caskInfluence: w.caskInfluence || null,
           peatLevel: w.peatLevel || null,
           notes: w.notes || null,
+          imageUrl: w.imageUrl || null,
           sortOrder: i,
         });
         createdWhiskies.push(whisky);

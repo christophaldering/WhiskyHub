@@ -202,6 +202,12 @@ const resources = {
           editDate: "Date",
           editLocation: "Location"
         },
+        coverImage: {
+          label: "Cover Image",
+          upload: "Upload cover image",
+          change: "Change",
+          remove: "Remove",
+        },
         joinSessionTitle: "Join a Tasting Session",
         joinSessionSubtitle: "Got an access code? Enter it below to join instantly.",
         joinButton: "Join",
@@ -1695,6 +1701,12 @@ const resources = {
           editTitle: "Titel",
           editDate: "Datum",
           editLocation: "Ort"
+        },
+        coverImage: {
+          label: "Titelbild",
+          upload: "Titelbild hochladen",
+          change: "Ändern",
+          remove: "Entfernen",
         },
         joinSessionTitle: "Einer Session beitreten",
         joinSessionSubtitle: "Du hast einen Zugangscode? Gib ihn unten ein, um sofort beizutreten.",

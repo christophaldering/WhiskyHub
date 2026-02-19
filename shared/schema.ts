@@ -41,6 +41,7 @@ export const tastings = pgTable("tastings", {
   reflectionMode: text("reflection_mode").default("standard"), // standard | custom
   reflectionVisibility: text("reflection_visibility").default("named"), // named | anonymous | optional
   customPrompts: text("custom_prompts"), // JSON array of custom prompt strings
+  coverImageUrl: text("cover_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

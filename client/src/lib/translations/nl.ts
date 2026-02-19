@@ -193,6 +193,12 @@ const nl = {
         editDate: "Datum",
         editLocation: "Locatie"
       },
+      coverImage: {
+        label: "Omslagfoto",
+        upload: "Omslagfoto uploaden",
+        change: "Wijzigen",
+        remove: "Verwijderen",
+      },
       joinSessionTitle: "Deelnemen aan een Proeverij",
       joinSessionSubtitle: "Heb je een toegangscode? Voer deze hieronder in om direct deel te nemen.",
       joinButton: "Deelnemen",

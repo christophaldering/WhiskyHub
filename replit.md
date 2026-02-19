@@ -27,7 +27,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Asynchronous Updates**: React Query polling is used for near real-time updates.
 -   **Bulk Import & Photo Uploads**: Hosts can import whisky data from spreadsheets and upload bottle photos, stored in Replit Object Storage.
 -   **Whiskybase Integration**: External links to Whiskybase for research and collection import.
--   **Tasting Features**: Includes whisky management, flight board view, PDF export of tasting menus, blind mode, discussion panel, and a tasting note generator.
+-   **Tasting Features**: Includes whisky management, flight board view, PDF export of tasting menus, blind mode, discussion panel, tasting note generator, and cover image banner for sessions (uploadable by host for any tasting type, auto-set from group photo in photo-tastings).
 -   **Personalization & Analytics**: Participant profiles, whisky journal, achievement badges, personal flavor profiles (radar charts), whisky recommendations, side-by-side comparisons, and flavor wheel visualization.
 -   **Host Tools**: Host briefing notes, tasting curation wizard, calendar view, and dashboard summary.
 -   **Communication**: Session invitations via email (Nodemailer) or QR codes, and a friend activity feed. Tasting Reminders via email with configurable timing offsets.

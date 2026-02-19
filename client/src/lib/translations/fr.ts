@@ -193,6 +193,12 @@ const fr = {
         editDate: "Date",
         editLocation: "Lieu"
       },
+      coverImage: {
+        label: "Image de couverture",
+        upload: "Télécharger une image de couverture",
+        change: "Modifier",
+        remove: "Supprimer",
+      },
       joinSessionTitle: "Rejoindre une Session de Dégustation",
       joinSessionSubtitle: "Vous avez un code d'accès ? Entrez-le ci-dessous pour rejoindre instantanément.",
       joinButton: "Rejoindre",
