@@ -1,87 +1,13 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
-import L from "leaflet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, MapPin, Calendar, Star, ExternalLink, ChevronDown, ChevronUp, Map } from "lucide-react";
 import { distilleries, type Distillery } from "@/data/distilleries";
 import { SuggestEntryDialog } from "@/components/suggest-entry-dialog";
-import "leaflet/dist/leaflet.css";
-
-const miniMapIcon = L.divIcon({
-  className: "",
-  html: `<div style="width:22px;height:22px;border-radius:50%;background:hsl(25,70%,45%);border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;">
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-  </div>`,
-  iconSize: [22, 22],
-  iconAnchor: [11, 22],
-});
-
-function InvalidateSizeOnMount() {
-  const map = useMap();
-  useEffect(() => {
-    const timers = [
-      setTimeout(() => map.invalidateSize(), 50),
-      setTimeout(() => map.invalidateSize(), 150),
-      setTimeout(() => map.invalidateSize(), 300),
-      setTimeout(() => map.invalidateSize(), 500),
-      setTimeout(() => map.invalidateSize(), 800),
-      setTimeout(() => map.invalidateSize(), 1200),
-    ];
-    const container = map.getContainer();
-    const parentEl = container.closest("[data-minimap-wrapper]") || container.parentElement;
-    const observer = new ResizeObserver(() => {
-      map.invalidateSize();
-    });
-    observer.observe(container);
-    if (parentEl && parentEl !== container) {
-      observer.observe(parentEl);
-    }
-    return () => {
-      timers.forEach(clearTimeout);
-      observer.disconnect();
-    };
-  }, [map]);
-  return null;
-}
-
-function MiniMap({ lat, lng, name }: { lat: number; lng: number; name: string }) {
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setReady(true), 350);
-    return () => clearTimeout(timer);
-  }, []);
-  return (
-    <div data-minimap-wrapper className="rounded-md overflow-hidden border border-border/30" style={{ height: 180, width: "100%" }} onClick={(e) => e.stopPropagation()}>
-      {ready ? (
-        <MapContainer
-          center={[lat, lng]}
-          zoom={10}
-          style={{ height: "100%", width: "100%" }}
-          scrollWheelZoom={false}
-          dragging={false}
-          zoomControl={false}
-          attributionControl={false}
-          doubleClickZoom={false}
-          touchZoom={false}
-          key={name}
-        >
-          <InvalidateSizeOnMount />
-          <TileLayer url="https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png" />
-          <Marker position={[lat, lng]} icon={miniMapIcon} />
-        </MapContainer>
-      ) : (
-        <div className="h-full w-full flex items-center justify-center bg-muted/30">
-          <MapPin className="h-5 w-5 text-muted-foreground animate-pulse" />
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function DistilleryEncyclopedia() {
   const { t } = useTranslation();
@@ -290,12 +216,22 @@ export default function DistilleryEncyclopedia() {
                               <Star className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                               <p className="text-sm text-primary/90 italic">{d.feature}</p>
                             </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
-                                <MapPin className="w-3 h-3" /> {t("distillery.location")}
-                              </p>
-                              <MiniMap lat={d.lat} lng={d.lng} name={d.name} />
-                            </div>
+                            <Link
+                              href={`/distillery-map?highlight=${encodeURIComponent(d.name)}`}
+                              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                              data-testid={`link-map-${d.name.toLowerCase().replace(/\s+/g, "-")}`}
+                            >
+                              <div className="flex items-center gap-3 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg p-3 transition-colors cursor-pointer">
+                                <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/20">
+                                  <Map className="w-5 h-5 text-primary" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-primary">{t("distillery.viewOnMap")}</p>
+                                  <p className="text-xs text-muted-foreground">{d.region}, {d.country}</p>
+                                </div>
+                                <MapPin className="w-4 h-4 text-primary/60" />
+                              </div>
+                            </Link>
                           </div>
                         </motion.div>
                       )}

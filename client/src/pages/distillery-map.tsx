@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { Input } from "@/components/ui/input";
@@ -113,10 +113,13 @@ function FitBounds({ markers, fitKey }: { markers: Distillery[]; fitKey: number 
 
 export default function DistilleryMap() {
   const { t } = useTranslation();
+  const searchParams = useSearch();
+  const highlightParam = new URLSearchParams(searchParams).get("highlight");
   const [search, setSearch] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [hoveredName, setHoveredName] = useState<string | null>(null);
+  const [highlightedName, setHighlightedName] = useState<string | null>(highlightParam);
   const [showFilters, setShowFilters] = useState(false);
   const [fitKey, setFitKey] = useState(0);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>(() => {
@@ -125,6 +128,23 @@ export default function DistilleryMap() {
   });
   const [showTilePicker, setShowTilePicker] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
+
+  useEffect(() => {
+    if (highlightParam) {
+      const d = distilleries.find(d => d.name === highlightParam);
+      if (d) {
+        setHighlightedName(d.name);
+        const tryZoom = () => {
+          if (mapRef.current) {
+            mapRef.current.setView([d.lat, d.lng], 12, { animate: true });
+          }
+        };
+        tryZoom();
+        setTimeout(tryZoom, 500);
+        setTimeout(tryZoom, 1000);
+      }
+    }
+  }, [highlightParam]);
 
   const countries = useMemo(() => Array.from(new Set(distilleries.map(d => d.country))).sort(), []);
   const regions = useMemo(() => {
@@ -301,9 +321,9 @@ export default function DistilleryMap() {
               <Marker
                 key={d.name}
                 position={[d.lat, d.lng]}
-                icon={hoveredName === d.name ? selectedIcon : defaultIcon}
+                icon={(hoveredName === d.name || highlightedName === d.name) ? selectedIcon : defaultIcon}
                 eventHandlers={{
-                  click: () => setHoveredName(d.name),
+                  click: () => { setHoveredName(d.name); setHighlightedName(null); },
                 }}
               >
                 <Popup>
@@ -334,7 +354,7 @@ export default function DistilleryMap() {
             {filtered.map(d => (
               <div
                 key={d.name}
-                className={`px-3 py-2.5 border-b border-border/20 cursor-pointer transition-colors hover:bg-primary/5 ${hoveredName === d.name ? "bg-primary/10" : ""}`}
+                className={`px-3 py-2.5 border-b border-border/20 cursor-pointer transition-colors hover:bg-primary/5 ${(hoveredName === d.name || highlightedName === d.name) ? "bg-primary/10" : ""}`}
                 onClick={() => flyTo(d)}
                 onMouseEnter={() => setHoveredName(d.name)}
                 onMouseLeave={() => hoveredName === d.name && setHoveredName(null)}
