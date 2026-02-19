@@ -262,6 +262,10 @@ export const statsApi = {
   get: (participantId: string) => fetchJSON(`/participants/${participantId}/stats`),
 };
 
+export const platformStatsApi = {
+  get: () => fetchJSON(`/platform-stats`),
+};
+
 // ===== Flavor Profile =====
 export const flavorProfileApi = {
   get: (participantId: string) => fetchJSON(`/participants/${participantId}/flavor-profile`),

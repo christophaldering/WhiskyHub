@@ -395,6 +395,15 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/platform-stats", async (_req, res) => {
+    try {
+      const stats = await storage.getPlatformStats();
+      res.json(stats);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.get("/api/participants/:id", async (req, res) => {
     const participant = await storage.getParticipant(req.params.id);
     if (!participant) return res.status(404).json({ message: "Not found" });

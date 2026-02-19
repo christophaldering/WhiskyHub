@@ -26,7 +26,7 @@ export function GuestPreview({ children, featureTitle, featureDescription }: Gue
           <h3 className="font-serif text-lg font-semibold text-foreground">{featureTitle}</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">{featureDescription}</p>
           <Button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/app")}
             className="gap-2"
             data-testid="button-guest-signin"
           >

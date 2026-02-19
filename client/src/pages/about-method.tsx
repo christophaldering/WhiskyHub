@@ -135,7 +135,7 @@ export default function AboutMethod() {
           className="py-20 md:py-28 text-center border-t border-border/30"
         >
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/app")}
             className="inline-flex items-center gap-2 px-8 py-3 border border-primary/40 text-primary rounded-sm font-serif text-sm tracking-wide hover:bg-primary/5 transition-colors"
             data-testid="button-about-back"
           >

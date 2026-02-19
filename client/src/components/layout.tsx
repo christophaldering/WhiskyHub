@@ -106,7 +106,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     {
       label: t('navGroup.main'),
       items: [
-        { href: "/", icon: Home, label: t('nav.lobby') },
+        { href: "/app", icon: Home, label: t('nav.lobby') },
         { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
         { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         { href: "/sessions", icon: Wine, label: t('nav.sessions') },
@@ -319,7 +319,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/40 safe-area-bottom" style={{ paddingLeft: 'env(safe-area-inset-left, 0)', paddingRight: 'env(safe-area-inset-right, 0)' }}>
         <div className="flex items-center justify-around px-1 py-1.5">
           {[
-            { href: "/", icon: Home, label: t('nav.lobby') },
+            { href: "/app", icon: Home, label: t('nav.lobby') },
             { href: "/sessions", icon: Wine, label: t('nav.sessions') },
             { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
             { href: "/calendar", icon: Calendar, label: t('nav.calendar') },

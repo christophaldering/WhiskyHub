@@ -194,6 +194,16 @@ export interface IStorage {
   getEncyclopediaSuggestions(status?: string): Promise<EncyclopediaSuggestion[]>;
   createEncyclopediaSuggestion(data: InsertEncyclopediaSuggestion): Promise<EncyclopediaSuggestion>;
   updateSuggestionStatus(id: string, status: string, adminNote?: string): Promise<EncyclopediaSuggestion>;
+
+  // Platform Stats
+  getPlatformStats(): Promise<{
+    totalTastings: number;
+    totalParticipants: number;
+    totalWhiskies: number;
+    totalRatings: number;
+    totalJournalEntries: number;
+    countriesRepresented: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1050,6 +1060,23 @@ export class DatabaseStorage implements IStorage {
     if (adminNote !== undefined) updateData.adminNote = adminNote;
     const [result] = await db.update(encyclopediaSuggestions).set(updateData).where(eq(encyclopediaSuggestions.id, id)).returning();
     return result;
+  }
+
+  async getPlatformStats() {
+    const [tastingCount] = await db.select({ count: sql<number>`count(*)::int` }).from(tastings).where(ne(tastings.status, "deleted"));
+    const [participantCount] = await db.select({ count: sql<number>`count(*)::int` }).from(participants);
+    const [whiskyCount] = await db.select({ count: sql<number>`count(*)::int` }).from(whiskies);
+    const [ratingCount] = await db.select({ count: sql<number>`count(*)::int` }).from(ratings);
+    const [journalCount] = await db.select({ count: sql<number>`count(*)::int` }).from(journalEntries);
+    const countryResult = await db.select({ country: whiskies.country }).from(whiskies).where(sql`${whiskies.country} IS NOT NULL AND ${whiskies.country} != ''`).groupBy(whiskies.country);
+    return {
+      totalTastings: tastingCount?.count ?? 0,
+      totalParticipants: participantCount?.count ?? 0,
+      totalWhiskies: whiskyCount?.count ?? 0,
+      totalRatings: ratingCount?.count ?? 0,
+      totalJournalEntries: journalCount?.count ?? 0,
+      countriesRepresented: countryResult.length,
+    };
   }
 }
 

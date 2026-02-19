@@ -227,7 +227,7 @@ export default function Intro() {
 
   const handleSkip = () => {
     markIntroSeen();
-    navigate("/");
+    navigate("/app");
   };
 
   return (

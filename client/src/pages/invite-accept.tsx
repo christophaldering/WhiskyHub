@@ -53,7 +53,7 @@ export default function InviteAccept() {
             <p className="text-sm text-muted-foreground mb-4">
               This invitation link may have expired or already been used.
             </p>
-            <Button onClick={() => navigate("/")} data-testid="button-go-home">
+            <Button onClick={() => navigate("/app")} data-testid="button-go-home">
               Go to Lobby
             </Button>
           </CardContent>
@@ -77,7 +77,7 @@ export default function InviteAccept() {
             <p className="text-sm text-muted-foreground">
               Please log in from the lobby first, then return to this link.
             </p>
-            <Button onClick={() => navigate("/")} data-testid="button-go-lobby">
+            <Button onClick={() => navigate("/app")} data-testid="button-go-lobby">
               Go to Lobby
             </Button>
           </CardContent>

@@ -42,6 +42,7 @@ import Reminders from "@/pages/reminders";
 import TastingHistory from "@/pages/tasting-history";
 import About from "@/pages/about";
 import Intro from "@/pages/intro";
+import Landing from "@/pages/landing";
 import { BuildFooter } from "@/components/build-footer";
 import "@/lib/i18n";
 
@@ -49,11 +50,12 @@ function Router() {
   return (
     <>
       <Switch>
+        <Route path="/" component={Landing} />
         <Route path="/intro" component={Intro} />
         <Route>
           <Layout>
             <Switch>
-              <Route path="/" component={Home} />
+              <Route path="/app" component={Home} />
               <Route path="/sessions" component={Sessions} />
               <Route path="/tasting/:id" component={TastingRoom} />
               <Route path="/profile" component={Profile} />
