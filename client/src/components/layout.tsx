@@ -109,46 +109,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/", icon: Home, label: t('nav.lobby') },
         { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
         { href: "/features", icon: LayoutGrid, label: t('nav.features') },
-        ...(currentParticipant ? [
-          { href: "/sessions", icon: Wine, label: t('nav.sessions') },
-          { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
-        ] : []),
+        { href: "/sessions", icon: Wine, label: t('nav.sessions') },
+        { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
       ],
     },
-    ...(currentParticipant ? [
-      {
-        label: t('navGroup.myWhisky'),
-        items: [
-          { href: "/profile", icon: User, label: t('profile.title') },
-          { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
-          { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
-          { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
-          { href: "/flavor-wheel", icon: CircleDot, label: t('nav.flavorWheel') },
-          { href: "/badges", icon: Trophy, label: t('nav.badges') },
-          { href: "/wishlist", icon: Star, label: t('nav.wishlist') },
-          { href: "/collection", icon: Archive, label: t('nav.collection') },
-          { href: "/reminders", icon: Bell, label: t('nav.reminders') },
-        ],
-      },
-      {
-        label: t('navGroup.tools'),
-        items: [
-          { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
-          { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
-          { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
-          { href: "/export-notes", icon: Download, label: t('nav.exportNotes') },
-          { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
-        ],
-      },
-      {
-        label: t('navGroup.community'),
-        items: [
-          { href: "/friends", icon: Users, label: t('nav.friends') },
-          { href: "/activity", icon: Rss, label: t('nav.activity') },
-          { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
-        ],
-      },
-    ] : []),
+    {
+      label: t('navGroup.myWhisky'),
+      items: [
+        { href: "/profile", icon: User, label: t('profile.title') },
+        { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
+        { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
+        { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
+        { href: "/flavor-wheel", icon: CircleDot, label: t('nav.flavorWheel') },
+        { href: "/badges", icon: Trophy, label: t('nav.badges') },
+        { href: "/wishlist", icon: Star, label: t('nav.wishlist') },
+        { href: "/collection", icon: Archive, label: t('nav.collection') },
+        { href: "/reminders", icon: Bell, label: t('nav.reminders') },
+      ],
+    },
+    {
+      label: t('navGroup.tools'),
+      items: [
+        { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
+        { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
+        { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
+        { href: "/export-notes", icon: Download, label: t('nav.exportNotes') },
+        { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
+      ],
+    },
+    {
+      label: t('navGroup.community'),
+      items: [
+        { href: "/friends", icon: Users, label: t('nav.friends') },
+        { href: "/activity", icon: Rss, label: t('nav.activity') },
+        { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
+      ],
+    },
     ...((isHost || isAdmin) ? [
       {
         label: t('navGroup.host'),
@@ -324,14 +320,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center justify-around px-1 py-1.5">
           {[
             { href: "/", icon: Home, label: t('nav.lobby') },
-            ...(currentParticipant ? [
-              { href: "/sessions", icon: Wine, label: t('nav.sessions') },
-              { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
-              { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
-            ] : [
-              { href: "/features", icon: LayoutGrid, label: t('nav.features') },
-              { href: "/lexicon", icon: Library, label: t('nav.lexicon') },
-            ]),
+            { href: "/sessions", icon: Wine, label: t('nav.sessions') },
+            { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
+            { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
             { href: "/more", icon: Menu, label: t('nav.more'), isMore: true },
           ].map((item) => {
             const isActive = location === item.href;
