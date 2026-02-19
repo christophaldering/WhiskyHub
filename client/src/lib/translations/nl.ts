@@ -119,6 +119,7 @@ const nl = {
       bottlers: "Bottelaars",
       collection: "Mijn Collectie",
       reminders: "Herinneringen",
+      myTastings: "Mijn Tastings",
     },
     navGroup: {
       main: "Hoofdmenu",
@@ -1522,6 +1523,25 @@ const nl = {
       topRated: "Best beoordeeld",
       addToTasting: "Toevoegen aan Proeverij",
       added: "Toegevoegd"
+    },
+    tastingHistory: {
+      title: "Mijn Tastings",
+      subtitle: "Je persoonlijke tasting-kroniek.",
+      loginRequired: "Log in om je tasting-geschiedenis te bekijken.",
+      empty: "Nog geen tastings",
+      emptyHint: "Neem deel aan een tasting om je geschiedenis op te bouwen.",
+      statTastings: "Tastings",
+      statWhiskies: "Whisky's",
+      statDistilleries: "Distilleerderijen",
+      statAvgRating: "Gem. Score",
+      countries: "Landen",
+      regions: "Regio's",
+      hosted: "Gehost",
+      rated: "Beoordeeld",
+      whiskiesShort: "Whisky's",
+      hostedBy: "Gehost door",
+      openSession: "Sessie openen",
+      notRated: "Niet beoordeeld",
     }
   }
 };

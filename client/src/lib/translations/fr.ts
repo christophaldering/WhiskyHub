@@ -119,6 +119,7 @@ const fr = {
       bottlers: "Embouteilleurs",
       collection: "Ma Collection",
       reminders: "Rappels",
+      myTastings: "Mes Dégustations",
     },
     navGroup: {
       main: "Principal",
@@ -1522,6 +1523,25 @@ const fr = {
       topRated: "Les mieux notés",
       addToTasting: "Ajouter à la Dégustation",
       added: "Ajouté"
+    },
+    tastingHistory: {
+      title: "Mes Dégustations",
+      subtitle: "Votre chronique personnelle de dégustation.",
+      loginRequired: "Connectez-vous pour voir votre historique.",
+      empty: "Pas encore de dégustations",
+      emptyHint: "Participez à une dégustation pour commencer.",
+      statTastings: "Dégustations",
+      statWhiskies: "Whiskies",
+      statDistilleries: "Distilleries",
+      statAvgRating: "Note moy.",
+      countries: "Pays",
+      regions: "Régions",
+      hosted: "Organisées",
+      rated: "Notés",
+      whiskiesShort: "Whiskies",
+      hostedBy: "Organisé par",
+      openSession: "Ouvrir session",
+      notRated: "Non noté",
     }
   }
 };

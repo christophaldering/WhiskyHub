@@ -39,6 +39,7 @@ import BenchmarkAnalyzer from "@/pages/benchmark-analyzer";
 import Features from "@/pages/features";
 import PhotoTasting from "@/pages/photo-tasting";
 import Reminders from "@/pages/reminders";
+import TastingHistory from "@/pages/tasting-history";
 import About from "@/pages/about";
 import Intro from "@/pages/intro";
 import { BuildFooter } from "@/components/build-footer";
@@ -85,6 +86,7 @@ function Router() {
               <Route path="/features" component={Features} />
               <Route path="/photo-tasting" component={PhotoTasting} />
               <Route path="/reminders" component={Reminders} />
+              <Route path="/my-tastings" component={TastingHistory} />
               <Route path="/about-method" component={AboutMethod} />
               <Route path="/about" component={About} />
               <Route path="/invite/:token" component={InviteAccept} />

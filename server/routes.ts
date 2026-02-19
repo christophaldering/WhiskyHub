@@ -3084,6 +3084,111 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  // ===== MY TASTING HISTORY =====
+
+  app.get("/api/participants/:id/tasting-history", async (req, res) => {
+    try {
+      const participantId = req.params.id;
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(404).json({ message: "Participant not found" });
+
+      const tastings = await storage.getTastingsForParticipant(participantId);
+      const nonDeletedTastings = tastings.filter((t: any) => t.status !== "deleted");
+
+      const history = await Promise.all(
+        nonDeletedTastings.map(async (tasting: any) => {
+          const [whiskies, allRatings, participants] = await Promise.all([
+            storage.getWhiskiesForTasting(tasting.id),
+            storage.getRatingsForTasting(tasting.id),
+            storage.getTastingParticipants(tasting.id),
+          ]);
+
+          const myRatings = allRatings.filter((r: any) => r.participantId === participantId);
+          const host = await storage.getParticipant(tasting.hostId);
+
+          const whiskyDetails = whiskies.map((w: any) => {
+            const myRating = myRatings.find((r: any) => r.whiskyId === w.id);
+            const allWhiskyRatings = allRatings.filter((r: any) => r.whiskyId === w.id);
+            const avgOverall = allWhiskyRatings.length > 0
+              ? Math.round((allWhiskyRatings.reduce((sum: number, r: any) => sum + (r.overall || 0), 0) / allWhiskyRatings.length) * 10) / 10
+              : null;
+            return {
+              id: w.id,
+              name: w.name,
+              distillery: w.distillery,
+              age: w.age,
+              abv: w.abv,
+              country: w.country,
+              region: w.region,
+              category: w.category,
+              caskInfluence: w.caskInfluence,
+              peatLevel: w.peatLevel,
+              imageUrl: w.imageUrl,
+              myRating: myRating ? {
+                nose: myRating.nose,
+                taste: myRating.taste,
+                finish: myRating.finish,
+                balance: myRating.balance,
+                overall: myRating.overall,
+                notes: myRating.notes,
+              } : null,
+              avgOverall,
+            };
+          });
+
+          const myAvgOverall = myRatings.length > 0
+            ? Math.round((myRatings.reduce((sum: number, r: any) => sum + (r.overall || 0), 0) / myRatings.length) * 10) / 10
+            : null;
+
+          return {
+            id: tasting.id,
+            title: tasting.title,
+            date: tasting.date,
+            location: tasting.location,
+            status: tasting.status,
+            hostName: host?.name || "Unknown",
+            isHost: tasting.hostId === participantId,
+            participantCount: participants.length,
+            whiskyCount: whiskies.length,
+            ratedCount: myRatings.length,
+            myAvgOverall,
+            coverImageUrl: tasting.coverImageUrl,
+            whiskies: whiskyDetails,
+          };
+        })
+      );
+
+      history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      const totalWhiskies = history.reduce((s, h) => s + h.whiskyCount, 0);
+      const totalRated = history.reduce((s, h) => s + h.ratedCount, 0);
+      const allMyRatings = history.flatMap(h => h.whiskies.filter(w => w.myRating).map(w => w.myRating!.overall));
+      const overallAvg = allMyRatings.length > 0
+        ? Math.round((allMyRatings.reduce((a, b) => a + b, 0) / allMyRatings.length) * 10) / 10
+        : null;
+
+      const distilleries = new Set(history.flatMap(h => h.whiskies.map(w => w.distillery).filter(Boolean)));
+      const countries = new Set(history.flatMap(h => h.whiskies.map(w => w.country).filter(Boolean)));
+      const regions = new Set(history.flatMap(h => h.whiskies.map(w => w.region).filter(Boolean)));
+
+      res.json({
+        tastings: history,
+        stats: {
+          totalTastings: history.length,
+          totalWhiskies,
+          totalRated,
+          overallAvg,
+          uniqueDistilleries: distilleries.size,
+          uniqueCountries: countries.size,
+          uniqueRegions: regions.size,
+          hostedCount: history.filter(h => h.isHost).length,
+        },
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== SMART PAIRING SUGGESTIONS =====
 
   app.get("/api/tastings/:id/pairings", async (req, res) => {

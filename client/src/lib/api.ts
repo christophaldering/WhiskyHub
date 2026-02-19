@@ -298,6 +298,11 @@ export const exportApi = {
     fetchJSON(`/tastings/${tastingId}/participant-notes?participantId=${participantId}`),
 };
 
+// ===== Tasting History =====
+export const tastingHistoryApi = {
+  get: (participantId: string) => fetchJSON(`/participants/${participantId}/tasting-history`),
+};
+
 // ===== Host Dashboard =====
 export const hostDashboardApi = {
   getSummary: (hostId: string) => fetchJSON(`/hosts/${hostId}/summary`),

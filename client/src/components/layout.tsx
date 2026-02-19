@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -120,6 +120,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         label: t('navGroup.myWhisky'),
         items: [
           { href: "/profile", icon: User, label: t('profile.title') },
+          { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
           { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
           { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
           { href: "/flavor-wheel", icon: CircleDot, label: t('nav.flavorWheel') },

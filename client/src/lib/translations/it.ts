@@ -119,6 +119,7 @@ const it = {
       bottlers: "Imbottigliatori",
       collection: "La Mia Collezione",
       reminders: "Promemoria",
+      myTastings: "Le Mie Degustazioni",
     },
     navGroup: {
       main: "Principale",
@@ -1522,6 +1523,25 @@ const it = {
       topRated: "Meglio valutati",
       addToTasting: "Aggiungi alla Degustazione",
       added: "Aggiunto"
+    },
+    tastingHistory: {
+      title: "Le Mie Degustazioni",
+      subtitle: "La tua cronaca personale di degustazione.",
+      loginRequired: "Accedi per vedere la tua cronologia.",
+      empty: "Nessuna degustazione",
+      emptyHint: "Partecipa a una degustazione per iniziare.",
+      statTastings: "Degustazioni",
+      statWhiskies: "Whisky",
+      statDistilleries: "Distillerie",
+      statAvgRating: "Media voti",
+      countries: "Paesi",
+      regions: "Regioni",
+      hosted: "Organizzate",
+      rated: "Valutati",
+      whiskiesShort: "Whisky",
+      hostedBy: "Organizzato da",
+      openSession: "Apri sessione",
+      notRated: "Non valutato",
     }
   }
 };

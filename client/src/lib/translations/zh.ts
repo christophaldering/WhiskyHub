@@ -119,6 +119,7 @@ const zh = {
       bottlers: "独立装瓶商",
       collection: "我的收藏",
       reminders: "提醒",
+      myTastings: "我的品鉴",
     },
     navGroup: {
       main: "主要",
@@ -1522,6 +1523,25 @@ const zh = {
       topRated: "最高评分",
       addToTasting: "添加到品鉴",
       added: "已添加"
+    },
+    tastingHistory: {
+      title: "我的品鉴",
+      subtitle: "你的个人品鉴编年史。",
+      loginRequired: "登录以查看你的品鉴历史。",
+      empty: "还没有品鉴",
+      emptyHint: "参加品鉴活动来建立你的历史。",
+      statTastings: "品鉴",
+      statWhiskies: "威士忌",
+      statDistilleries: "酒厂",
+      statAvgRating: "平均评分",
+      countries: "国家",
+      regions: "产区",
+      hosted: "主持",
+      rated: "已评分",
+      whiskiesShort: "威士忌",
+      hostedBy: "主持人",
+      openSession: "打开会话",
+      notRated: "未评分",
     }
   }
 };
