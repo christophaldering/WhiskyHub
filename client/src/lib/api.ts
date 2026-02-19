@@ -64,6 +64,10 @@ export const tastingApi = {
   },
   deleteCoverImage: (id: string, hostId: string) =>
     fetchJSON(`/tastings/${id}/cover-image`, { method: "DELETE", body: JSON.stringify({ hostId }) }),
+  transferHost: (id: string, hostId: string, newHostId: string) =>
+    fetchJSON(`/tastings/${id}/transfer-host`, { method: "POST", body: JSON.stringify({ hostId, newHostId }) }),
+  toggleCoverImageReveal: (id: string, hostId: string, revealed: boolean) =>
+    fetchJSON(`/tastings/${id}/cover-image-reveal`, { method: "PATCH", body: JSON.stringify({ hostId, revealed }) }),
 };
 
 // ===== Whiskies =====

@@ -393,11 +393,31 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="font-serif text-2xl text-primary">{isReturning ? t('login.titleReturning') : t('login.title')}</DialogTitle>
-          <DialogDescription>
-            {isReturning ? t('login.returningSubtitle') : t('login.subtitle')}
+          <DialogTitle className="font-serif text-2xl text-primary text-center">{t('login.welcome')}</DialogTitle>
+          <DialogDescription className="text-center">
+            {t('login.welcomeSubtitle')}
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex rounded-lg bg-secondary/30 p-1 mt-2" data-testid="auth-tab-switcher">
+          <button
+            type="button"
+            onClick={() => { setIsReturning(false); setError(""); }}
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-serif font-medium transition-all ${!isReturning ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            data-testid="tab-register"
+          >
+            {t('login.tabRegister')}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setIsReturning(true); setError(""); }}
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-serif font-medium transition-all ${isReturning ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            data-testid="tab-login"
+          >
+            {t('login.tabLogin')}
+          </button>
+        </div>
+
         <div className="space-y-4 mt-4">
           <div className="space-y-2">
             <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.name')}</Label>
@@ -460,14 +480,16 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
             {!isReturning && (
               <p className="text-xs text-muted-foreground">{t('login.pinHint')}</p>
             )}
-            <button
-              type="button"
-              onClick={() => setForgotPinMode(true)}
-              className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
-              data-testid="button-forgot-pin"
-            >
-              {t('forgotPin.link')}
-            </button>
+            {isReturning && (
+              <button
+                type="button"
+                onClick={() => setForgotPinMode(true)}
+                className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
+                data-testid="button-forgot-pin"
+              >
+                {t('forgotPin.link')}
+              </button>
+            )}
           </div>
 
           {error && <p className="text-sm text-destructive" data-testid="text-login-error">{error}</p>}
@@ -480,17 +502,6 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           >
             {loading ? t('login.joining') : (isReturning ? t('login.enterReturning') : t('login.enter'))}
           </Button>
-
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => { setIsReturning(!isReturning); setError(""); }}
-              className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
-              data-testid="button-toggle-returning"
-            >
-              {isReturning ? t('login.toggleToNew') : t('login.toggleToReturning')}
-            </button>
-          </div>
         </div>
       </DialogContent>
     </Dialog>

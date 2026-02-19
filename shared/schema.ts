@@ -42,6 +42,7 @@ export const tastings = pgTable("tastings", {
   reflectionVisibility: text("reflection_visibility").default("named"), // named | anonymous | optional
   customPrompts: text("custom_prompts"), // JSON array of custom prompt strings
   coverImageUrl: text("cover_image_url"),
+  coverImageRevealed: boolean("cover_image_revealed").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

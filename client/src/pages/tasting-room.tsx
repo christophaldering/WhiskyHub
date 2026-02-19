@@ -15,7 +15,7 @@ import DiscussionPanel from "@/components/discussion-panel";
 import ReflectionPanel from "@/components/reflection-panel";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -837,6 +837,75 @@ function DuplicateTastingButton({ tasting }: { tasting: Tasting }) {
   );
 }
 
+function TransferHostDialog({ tasting }: { tasting: Tasting }) {
+  const { t } = useTranslation();
+  const { currentParticipant } = useAppStore();
+  const [open, setOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string>("");
+
+  const { data: participants = [] } = useQuery({
+    queryKey: ["tasting-participants", tasting.id],
+    queryFn: () => tastingApi.getParticipants(tasting.id),
+    enabled: open,
+  });
+
+  const transferMutation = useMutation({
+    mutationFn: () => tastingApi.transferHost(tasting.id, currentParticipant!.id, selectedId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", tasting.id] });
+      setOpen(false);
+      setSelectedId("");
+    },
+  });
+
+  const otherParticipants = participants.filter((p: any) => p.participantId !== currentParticipant?.id);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="border-primary/30 text-primary font-serif" data-testid="button-transfer-host">
+          <UserCog className="w-4 h-4 mr-1" /> {t("session.transferHost.button")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md bg-card border-border">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-xl text-primary">{t("session.transferHost.title")}</DialogTitle>
+          <DialogDescription>{t("session.transferHost.description")}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 mt-4">
+          {otherParticipants.length === 0 ? (
+            <p className="text-sm text-muted-foreground" data-testid="text-no-participants">{t("session.transferHost.noParticipants")}</p>
+          ) : (
+            <div className="space-y-2">
+              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t("session.transferHost.selectLabel")}</Label>
+              <Select value={selectedId} onValueChange={setSelectedId}>
+                <SelectTrigger data-testid="select-new-host">
+                  <SelectValue placeholder={t("session.transferHost.selectPlaceholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {otherParticipants.map((p: any) => (
+                    <SelectItem key={p.participantId} value={p.participantId} data-testid={`option-host-${p.participantId}`}>
+                      {p.participant?.name || p.participantId}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <Button
+            onClick={() => transferMutation.mutate()}
+            disabled={!selectedId || transferMutation.isPending}
+            className="w-full bg-primary text-primary-foreground font-serif"
+            data-testid="button-confirm-transfer"
+          >
+            {transferMutation.isPending ? "..." : t("session.transferHost.confirm")}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function TastingRoom() {
   const { id } = useParams();
   const { t } = useTranslation();
@@ -884,6 +953,13 @@ export default function TastingRoom() {
     mutationFn: (revealed: boolean) => tastingApi.revealAllPhotos(id!, revealed, currentParticipant.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["whiskies", id] });
+    },
+  });
+
+  const toggleCoverRevealMutation = useMutation({
+    mutationFn: (revealed: boolean) => tastingApi.toggleCoverImageReveal(id!, currentParticipant.id, revealed),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", id] });
     },
   });
 
@@ -961,17 +1037,55 @@ export default function TastingRoom() {
       <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
 
       <header className="mb-8 border-b border-border/50 pb-6">
-        {tasting.coverImageUrl && (
-          <div className="relative w-full h-40 sm:h-56 rounded-xl overflow-hidden mb-4">
-            <img
-              src={tasting.coverImageUrl}
-              alt={tasting.title}
-              className="w-full h-full object-cover"
-              data-testid="img-tasting-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
-          </div>
-        )}
+        {tasting.coverImageUrl && (() => {
+          const coverHidden = isBlind && !tasting.coverImageRevealed;
+          if (coverHidden) {
+            return (
+              <div className="relative w-full h-40 sm:h-56 rounded-xl overflow-hidden mb-4">
+                <div className="w-full h-full bg-secondary/50 flex flex-col items-center justify-center gap-2" data-testid="cover-hidden-placeholder">
+                  <EyeOff className="w-8 h-8 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground font-serif">{t("session.coverImage.hiddenBlind")}</p>
+                  {isHost && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => toggleCoverRevealMutation.mutate(true)}
+                      disabled={toggleCoverRevealMutation.isPending}
+                      data-testid="button-reveal-cover"
+                    >
+                      <Eye className="w-4 h-4 mr-1" /> {t("session.coverImage.reveal")}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div className="relative w-full h-40 sm:h-56 rounded-xl overflow-hidden mb-4">
+              <img
+                src={tasting.coverImageUrl}
+                alt={tasting.title}
+                className="w-full h-full object-cover"
+                data-testid="img-tasting-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
+              {isHost && isBlind && tasting.coverImageRevealed && (
+                <div className="absolute top-2 right-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => toggleCoverRevealMutation.mutate(false)}
+                    disabled={toggleCoverRevealMutation.isPending}
+                    data-testid="button-hide-cover"
+                  >
+                    <EyeOff className="w-3 h-3 mr-1" /> {t("session.coverImage.hide")}
+                  </Button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
         <div className="flex flex-col gap-4">
           <div className="min-w-0 w-full">
             <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{tasting.title}</h1>
@@ -988,6 +1102,7 @@ export default function TastingRoom() {
               {isHost && tasting.status !== "deleted" && <DeleteTastingButton tasting={tasting} />}
               <PdfExportDialog tasting={tasting} whiskies={whiskyList} />
               {isHost && <BriefingNotes whiskies={whiskyList} tastingTitle={tasting.title} />}
+              {isHost && <TransferHostDialog tasting={tasting} />}
               <span className="text-xs font-mono bg-secondary px-2 py-1 rounded text-muted-foreground">Code: {tasting.code}</span>
               <div className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm font-medium border border-border/50">
                 {t(`session.status.${tasting.status}`)}

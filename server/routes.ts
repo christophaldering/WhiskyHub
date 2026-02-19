@@ -579,6 +579,19 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/tastings/:id/cover-image-reveal", async (req: Request, res: Response) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId, revealed } = req.body;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can toggle cover image visibility" });
+      const updated = await storage.updateTastingDetails(req.params.id, { coverImageRevealed: !!revealed });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.post("/api/tastings/:id/duplicate", async (req, res) => {
     try {
       const { hostId } = req.body;
@@ -609,6 +622,22 @@ export async function registerRoutes(
       }
       await storage.hardDeleteTasting(req.params.id);
       res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/transfer-host", async (req: Request, res: Response) => {
+    try {
+      const { hostId, newHostId } = req.body;
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.hostId !== hostId) return res.status(403).json({ message: "Only the current host can transfer host role" });
+      if (!newHostId) return res.status(400).json({ message: "newHostId is required" });
+      const newHost = await storage.getParticipant(newHostId);
+      if (!newHost) return res.status(404).json({ message: "New host participant not found" });
+      const updated = await storage.transferTastingHost(req.params.id, newHostId);
+      res.json(updated);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
