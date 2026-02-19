@@ -5,6 +5,7 @@ import { useAppStore } from "@/lib/store";
 import { journalApi, ratingNotesApi } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { CircleDot, X } from "lucide-react";
+import { GuestPreview } from "@/components/guest-preview";
 import { useState, useMemo } from "react";
 
 interface FlavorCategory {
@@ -240,11 +241,21 @@ export default function FlavorWheel() {
 
   if (!currentParticipant) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted-foreground font-serif" data-testid="text-flavor-wheel-login-required">
-          {t("flavorWheel.loginRequired")}
-        </p>
-      </div>
+      <GuestPreview featureTitle={t("flavorWheel.title")} featureDescription={t("guestPreview.flavorWheel")}>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-serif font-bold">{t("flavorWheel.title")}</h1>
+          <div className="bg-card rounded-xl border p-6 flex items-center justify-center" style={{height: 350}}>
+            <div className="w-64 h-64 rounded-full border-4 border-primary/20 flex items-center justify-center relative">
+              <div className="w-44 h-44 rounded-full border-2 border-primary/30 flex items-center justify-center">
+                <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center font-serif text-primary font-semibold">Aroma</div>
+              </div>
+              {["Fruity","Floral","Peaty","Spicy","Sweet","Woody"].map((label, i) => (
+                <span key={label} className="absolute text-xs text-muted-foreground font-medium" style={{top: `${50 - 45 * Math.cos(i * Math.PI / 3)}%`, left: `${50 + 45 * Math.sin(i * Math.PI / 3)}%`, transform: "translate(-50%, -50%)"}}>{label}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </GuestPreview>
     );
   }
 

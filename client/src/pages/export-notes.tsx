@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Printer, Copy, FileText, Wine } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { GuestPreview } from "@/components/guest-preview";
 
 interface WhiskyNote {
   whisky: {
@@ -88,11 +89,15 @@ export default function ExportNotes() {
 
   if (!currentParticipant) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted-foreground font-serif" data-testid="text-export-login-required">
-          {t("exportNotes.loginRequired")}
-        </p>
-      </div>
+      <GuestPreview featureTitle={t("exportNotes.title")} featureDescription={t("guestPreview.exportNotes")}>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-serif font-bold">{t("exportNotes.title")}</h1>
+          <div className="bg-card rounded-xl border p-6 space-y-4">
+            <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">📄</div><div><div className="font-serif font-semibold">Highland Evening Notes</div><div className="text-sm text-muted-foreground">6 whiskies · Jan 15, 2026</div></div></div>
+            <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">📄</div><div><div className="font-serif font-semibold">Islay Exploration Notes</div><div className="text-sm text-muted-foreground">5 whiskies · Dec 8, 2025</div></div></div>
+          </div>
+        </div>
+      </GuestPreview>
     );
   }
 

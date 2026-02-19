@@ -4,6 +4,7 @@ import { statsApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
 import { Trophy, Lock } from "lucide-react";
+import { GuestPreview } from "@/components/guest-preview";
 
 interface ParticipantStats {
   totalRatings: number;
@@ -434,11 +435,20 @@ export default function Badges() {
 
   if (!currentParticipant) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted-foreground font-serif" data-testid="text-badges-login-required">
-          {t("badges.loginRequired")}
-        </p>
-      </div>
+      <GuestPreview featureTitle={t("badges.title")} featureDescription={t("guestPreview.badges")}>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-serif font-bold">{t("badges.title")}</h1>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {[{emoji: "🥃", name: "First Dram", desc: "Rate your first whisky"}, {emoji: "🏆", name: "Connoisseur", desc: "Rate 50 whiskies"}, {emoji: "🌍", name: "Globe Trotter", desc: "Taste whiskies from 10 countries"}, {emoji: "🔥", name: "Peat Lover", desc: "Rate 10 peated whiskies"}, {emoji: "📝", name: "Wordsmith", desc: "Write 25 tasting notes"}, {emoji: "🎯", name: "Sharp Palate", desc: "Match the group average within 0.5"}].map(b => (
+              <div key={b.name} className="bg-card rounded-xl border p-4 text-center space-y-2">
+                <div className="text-3xl">{b.emoji}</div>
+                <div className="font-serif font-semibold text-sm">{b.name}</div>
+                <div className="text-xs text-muted-foreground">{b.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </GuestPreview>
     );
   }
 

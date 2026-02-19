@@ -41,6 +41,7 @@ import {
   Star,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { GuestPreview } from "@/components/guest-preview";
 import type { WhiskybaseCollectionItem } from "@shared/schema";
 
 type SortKey = "name" | "rating" | "price" | "added";
@@ -170,10 +171,19 @@ export default function WhiskybaseCollection() {
 
   if (!currentParticipant) {
     return (
-      <div className="p-6 text-center">
-        <Archive className="w-12 h-12 mx-auto mb-4 opacity-40" />
-        <p className="text-muted-foreground">{t("collection.loginRequired")}</p>
-      </div>
+      <GuestPreview featureTitle={t("wishlist.title")} featureDescription={t("guestPreview.wishlist")}>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-serif font-bold">{t("wishlist.title")}</h1>
+          <div className="grid gap-3">
+            {[{name: "Lagavulin 16", distillery: "Lagavulin", region: "Islay"}, {name: "Glenfarclas 25", distillery: "Glenfarclas", region: "Speyside"}, {name: "Springbank 15", distillery: "Springbank", region: "Campbeltown"}].map(w => (
+              <div key={w.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
+                <div><div className="font-serif font-semibold">{w.name}</div><div className="text-sm text-muted-foreground">{w.distillery} · {w.region}</div></div>
+                <div className="text-yellow-500">★</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </GuestPreview>
     );
   }
 

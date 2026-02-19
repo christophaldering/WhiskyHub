@@ -5,6 +5,26 @@ const es = {
       tagline: "Donde la Cata se Convierte en Reflexión",
       copyright: "© 2026 CaskSense. Todos los derechos reservados."
     },
+    common: {
+      signInToAccess: "Iniciar sesión para comenzar",
+    },
+    guestPreview: {
+      profile: "Construye tu identidad de cata con un perfil personal, preferencias de sabor y estadísticas.",
+      wishlist: "Lleva un registro de los whiskies que quieres probar — añade botellas y no olvides ninguna recomendación.",
+      journal: "Documenta cada whisky con notas detalladas, fotos y valoraciones personales en tu diario privado.",
+      badges: "Gana insignias de logros a medida que exploras más whiskies y participas en catas.",
+      flavorProfile: "Descubre tus preferencias de sabor con gráficos radar basados en tu historial de catas.",
+      flavorWheel: "Visualiza patrones de sabor en todas tus catas con una rueda de aromas interactiva.",
+      recommendations: "Recibe recomendaciones personalizadas basadas en tu perfil gustativo y valoraciones.",
+      comparison: "Compara whiskies lado a lado — encuentra similitudes y diferencias en sabor y carácter.",
+      friends: "Conecta con entusiastas del whisky, comparte catas y descubre qué beben tus amigos.",
+      activity: "Mantente al día con las últimas catas y descubrimientos de tus amigos.",
+      reminders: "Configura recordatorios para no perderte ninguna sesión de cata.",
+      pairings: "Descubre sugerencias de maridaje de comida y whisky basadas en perfiles de sabor.",
+      exportNotes: "Exporta tus notas de cata como documentos bellamente formateados para compartir o guardar.",
+      tastingHistory: "Revisa todas tus catas pasadas con estadísticas, valoraciones y detalles detallados.",
+      collection: "Gestiona tu colección personal de whiskies — controla las botellas que posees y tu inventario.",
+    },
     login: {
       title: "Crear Cuenta",
       titleReturning: "Iniciar Sesión",

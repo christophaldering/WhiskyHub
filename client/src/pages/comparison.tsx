@@ -8,6 +8,7 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 import { GitCompareArrows, Plus, X, Wine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { GuestPreview } from "@/components/guest-preview";
 
 const CHART_COLORS = ["#c8a864", "#6b9bd2", "#d97c5a"];
 
@@ -63,11 +64,30 @@ export default function Comparison() {
 
   if (!currentParticipant) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted-foreground font-serif" data-testid="text-compare-login-required">
-          {t("comparison.loginRequired")}
-        </p>
-      </div>
+      <GuestPreview featureTitle={t("comparison.title")} featureDescription={t("guestPreview.comparison")}>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-serif font-bold">{t("comparison.title")}</h1>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-card rounded-xl border p-4 text-center space-y-3">
+              <div className="font-serif font-semibold">Lagavulin 16</div>
+              <div className="text-sm text-muted-foreground">Islay · 43%</div>
+              <div className="text-2xl font-serif font-bold text-primary">8.7</div>
+            </div>
+            <div className="bg-card rounded-xl border p-4 text-center space-y-3">
+              <div className="font-serif font-semibold">Laphroaig 10</div>
+              <div className="text-sm text-muted-foreground">Islay · 40%</div>
+              <div className="text-2xl font-serif font-bold text-primary">8.2</div>
+            </div>
+          </div>
+          <div className="bg-card rounded-xl border p-4">
+            <div className="grid grid-cols-3 gap-2 text-sm">
+              {[{cat: "Nose", a: "8.5", b: "8.0"}, {cat: "Taste", a: "9.0", b: "8.5"}, {cat: "Finish", a: "8.8", b: "7.8"}].map(c => (
+                <div key={c.cat} className="text-center"><div className="text-muted-foreground text-xs mb-1">{c.cat}</div><div className="font-serif">{c.a} vs {c.b}</div></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </GuestPreview>
     );
   }
 

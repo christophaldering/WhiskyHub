@@ -5,6 +5,26 @@ const it = {
       tagline: "Dove la Degustazione Diventa Riflessione",
       copyright: "© 2026 CaskSense. Tutti i diritti riservati."
     },
+    common: {
+      signInToAccess: "Accedi per iniziare",
+    },
+    guestPreview: {
+      profile: "Costruisci la tua identità di degustazione con un profilo personale, preferenze e statistiche.",
+      wishlist: "Tieni traccia dei whisky che vuoi assaggiare — aggiungi bottiglie e non dimenticare nessuna raccomandazione.",
+      journal: "Documenta ogni whisky con note dettagliate, foto e valutazioni personali nel tuo diario privato.",
+      badges: "Guadagna badge di achievement esplorando più whisky e partecipando a degustazioni.",
+      flavorProfile: "Scopri le tue preferenze gustative con grafici radar basati sulla tua storia di degustazione.",
+      flavorWheel: "Visualizza i pattern aromatici di tutte le tue degustazioni con una ruota interattiva.",
+      recommendations: "Ricevi raccomandazioni personalizzate basate sul tuo profilo gustativo e le tue valutazioni.",
+      comparison: "Confronta whisky fianco a fianco — trova somiglianze e differenze nel gusto e nel carattere.",
+      friends: "Connettiti con appassionati di whisky, condividi degustazioni e scopri cosa bevono i tuoi amici.",
+      activity: "Resta aggiornato sulle ultime degustazioni e scoperte dei tuoi amici.",
+      reminders: "Imposta promemoria per le prossime degustazioni per non perdere nessuna sessione.",
+      pairings: "Scopri suggerimenti di abbinamento cibo-whisky basati sui profili aromatici.",
+      exportNotes: "Esporta le tue note di degustazione come documenti formattati da condividere o conservare.",
+      tastingHistory: "Rivedi tutte le tue degustazioni passate con statistiche e valutazioni dettagliate.",
+      collection: "Gestisci la tua collezione personale di whisky — tieni traccia delle bottiglie che possiedi.",
+    },
     login: {
       title: "Crea Account",
       titleReturning: "Accedi",

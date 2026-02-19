@@ -15,6 +15,26 @@ const resources = {
         tagline: "Where Tasting Becomes Reflection",
         copyright: "\u00a9 2026 CaskSense. All rights reserved."
       },
+      common: {
+        signInToAccess: "Sign in to get started",
+      },
+      guestPreview: {
+        profile: "Build your tasting identity with a personal profile, flavor preferences, and tasting statistics.",
+        wishlist: "Keep track of whiskies you want to try — add bottles, take notes, and never forget a recommendation.",
+        journal: "Document every whisky you taste with detailed notes, photos, and personal ratings in your private journal.",
+        badges: "Earn achievement badges as you explore more whiskies, attend tastings, and develop your palate.",
+        flavorProfile: "Discover your personal flavor preferences with radar charts based on your tasting history.",
+        flavorWheel: "Visualize flavor patterns across all your tastings with an interactive aroma wheel.",
+        recommendations: "Get personalized whisky recommendations based on your taste profile and rating history.",
+        comparison: "Compare whiskies side-by-side to find similarities and differences in flavor, rating, and character.",
+        friends: "Connect with fellow whisky enthusiasts, share tastings, and discover what your friends are drinking.",
+        activity: "Stay up to date with your friends' latest tastings, ratings, and whisky discoveries.",
+        reminders: "Set reminders for upcoming tastings so you never miss a session.",
+        pairings: "Discover food and whisky pairing suggestions based on flavor profiles and expert recommendations.",
+        exportNotes: "Export your tasting notes as beautifully formatted documents to share or keep.",
+        tastingHistory: "Review all your past tastings with detailed statistics, ratings, and whisky breakdowns.",
+        collection: "Manage your personal whisky collection — track bottles you own, what you've opened, and your cellar inventory.",
+      },
       login: {
         title: "Create Account",
         titleReturning: "Sign In",
@@ -1619,6 +1639,26 @@ const resources = {
         name: "CaskSense",
         tagline: "Where Tasting Becomes Reflection",
         copyright: "\u00a9 2026 CaskSense. Alle Rechte vorbehalten."
+      },
+      common: {
+        signInToAccess: "Anmelden und loslegen",
+      },
+      guestPreview: {
+        profile: "Erstelle dein Tasting-Profil mit persönlichen Vorlieben, Geschmackspräferenzen und Statistiken.",
+        wishlist: "Merke dir Whiskys, die du probieren möchtest — füge Flaschen hinzu und vergiss keine Empfehlung.",
+        journal: "Dokumentiere jeden Whisky mit detaillierten Notizen, Fotos und persönlichen Bewertungen in deinem privaten Tagebuch.",
+        badges: "Verdiene Auszeichnungen, wenn du mehr Whiskys entdeckst, an Tastings teilnimmst und deinen Gaumen entwickelst.",
+        flavorProfile: "Entdecke deine persönlichen Geschmacksvorlieben mit Radar-Diagrammen basierend auf deiner Tasting-Geschichte.",
+        flavorWheel: "Visualisiere Geschmacksmuster über alle Tastings hinweg mit einem interaktiven Aromarad.",
+        recommendations: "Erhalte personalisierte Whisky-Empfehlungen basierend auf deinem Geschmacksprofil und deinen Bewertungen.",
+        comparison: "Vergleiche Whiskys nebeneinander — finde Gemeinsamkeiten und Unterschiede in Geschmack, Bewertung und Charakter.",
+        friends: "Verbinde dich mit Whisky-Enthusiasten, teile Tastings und entdecke, was deine Freunde trinken.",
+        activity: "Bleibe auf dem Laufenden über die neuesten Tastings, Bewertungen und Whisky-Entdeckungen deiner Freunde.",
+        reminders: "Setze Erinnerungen für bevorstehende Tastings, damit du keine Session verpasst.",
+        pairings: "Entdecke Speise- und Whisky-Empfehlungen basierend auf Geschmacksprofilen und Expertentipps.",
+        exportNotes: "Exportiere deine Tasting-Notizen als schön formatierte Dokumente zum Teilen oder Aufbewahren.",
+        tastingHistory: "Überblicke alle vergangenen Tastings mit detaillierten Statistiken, Bewertungen und Whisky-Aufschlüsselungen.",
+        collection: "Verwalte deine persönliche Whisky-Sammlung — behalte den Überblick über deine Flaschen und deinen Bestand.",
       },
       login: {
         title: "Konto erstellen",

@@ -5,6 +5,26 @@ const nl = {
       tagline: "Waar Proeven Reflectie Wordt",
       copyright: "\u00a9 2026 CaskSense. Alle rechten voorbehouden."
     },
+    common: {
+      signInToAccess: "Aanmelden om te beginnen",
+    },
+    guestPreview: {
+      profile: "Bouw je tasting-identiteit met een persoonlijk profiel, smaakvoorkeuren en statistieken.",
+      wishlist: "Houd bij welke whisky's je wilt proberen — voeg flessen toe en vergeet geen aanbeveling.",
+      journal: "Documenteer elke whisky met gedetailleerde notities, foto's en persoonlijke beoordelingen.",
+      badges: "Verdien prestatiebadges naarmate je meer whisky's ontdekt en aan tastings deelneemt.",
+      flavorProfile: "Ontdek je persoonlijke smaakvoorkeuren met radargrafieken op basis van je tasting-geschiedenis.",
+      flavorWheel: "Visualiseer smaakpatronen over al je tastings met een interactief aromarad.",
+      recommendations: "Krijg persoonlijke whisky-aanbevelingen op basis van je smaakprofiel en beoordelingen.",
+      comparison: "Vergelijk whisky's naast elkaar — vind overeenkomsten en verschillen in smaak en karakter.",
+      friends: "Verbind met whisky-liefhebbers, deel tastings en ontdek wat je vrienden drinken.",
+      activity: "Blijf op de hoogte van de laatste tastings en whisky-ontdekkingen van je vrienden.",
+      reminders: "Stel herinneringen in voor aankomende tastings zodat je geen sessie mist.",
+      pairings: "Ontdek eten-en-whisky-suggesties op basis van smaakprofielen en experttips.",
+      exportNotes: "Exporteer je tasting-notities als mooi opgemaakte documenten om te delen of bewaren.",
+      tastingHistory: "Bekijk al je eerdere tastings met gedetailleerde statistieken en beoordelingen.",
+      collection: "Beheer je persoonlijke whisky-collectie — houd bij welke flessen je bezit.",
+    },
     login: {
       title: "Account Aanmaken",
       titleReturning: "Inloggen",

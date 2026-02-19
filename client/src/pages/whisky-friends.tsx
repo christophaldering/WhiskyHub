@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Users, Plus, Pencil, Trash2, Check, User, UserPlus, X } from "lucide-react";
+import { GuestPreview } from "@/components/guest-preview";
 
 export default function WhiskyFriends() {
   const { t } = useTranslation();
@@ -115,16 +116,19 @@ export default function WhiskyFriends() {
 
   if (!currentParticipant) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Card className="max-w-md w-full border-border/50">
-          <CardContent className="p-8 text-center">
-            <User className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
-            <p className="text-muted-foreground font-serif" data-testid="text-login-required">
-              Please sign in to manage your whisky friends.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <GuestPreview featureTitle={t("friends.title")} featureDescription={t("guestPreview.friends")}>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-serif font-bold">{t("friends.title")}</h1>
+          <div className="grid gap-3">
+            {[{name: "Alex M.", tastings: 18, lastActive: "2 days ago"}, {name: "Sarah K.", tastings: 12, lastActive: "1 week ago"}, {name: "Tom B.", tastings: 24, lastActive: "yesterday"}].map(f => (
+              <div key={f.name} className="bg-card rounded-xl border p-4 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-serif text-primary font-semibold">{f.name[0]}</div>
+                <div className="flex-1"><div className="font-serif font-semibold">{f.name}</div><div className="text-sm text-muted-foreground">{f.tastings} tastings · {f.lastActive}</div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </GuestPreview>
     );
   }
 

@@ -5,6 +5,7 @@ import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
 import { Rss, NotebookPen, Wine, Star } from "lucide-react";
 import { Link } from "wouter";
+import { GuestPreview } from "@/components/guest-preview";
 
 interface ActivityItem {
   type: "journal" | "tasting";
@@ -43,11 +44,19 @@ export default function ActivityFeed() {
 
   if (!currentParticipant) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted-foreground font-serif" data-testid="text-feed-login-required">
-          {t("activityFeed.loginRequired")}
-        </p>
-      </div>
+      <GuestPreview featureTitle={t("activityFeed.title")} featureDescription={t("guestPreview.activity")}>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-serif font-bold">{t("activityFeed.title")}</h1>
+          <div className="space-y-3">
+            {[{user: "Alex M.", action: "rated Ardbeg Uigeadail", score: "9.2", time: "2h ago"}, {user: "Sarah K.", action: "joined Highland Evening tasting", score: "", time: "5h ago"}, {user: "Tom B.", action: "added Lagavulin 16 to wishlist", score: "", time: "1d ago"}].map((a, i) => (
+              <div key={i} className="bg-card rounded-xl border p-4 flex items-center gap-4">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-serif text-primary text-sm font-semibold">{a.user[0]}</div>
+                <div className="flex-1"><div className="text-sm"><span className="font-semibold">{a.user}</span> {a.action} {a.score && <span className="text-primary font-serif font-bold ml-1">{a.score}</span>}</div><div className="text-xs text-muted-foreground">{a.time}</div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </GuestPreview>
     );
   }
 

@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Camera, X, User, KeyRound, Mail } from "lucide-react";
+import { GuestPreview } from "@/components/guest-preview";
 
 const REGIONS = [
   "Speyside", "Highlands", "Islay", "Lowlands", "Campbeltown",
@@ -176,16 +177,20 @@ export default function Profile() {
 
   if (!currentParticipant) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Card className="max-w-md w-full border-border/50">
-          <CardContent className="p-8 text-center">
-            <User className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
-            <p className="text-muted-foreground font-serif" data-testid="text-login-required">
-              Please sign in to view your profile.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <GuestPreview featureTitle={t("profile.title")} featureDescription={t("guestPreview.profile")}>
+        <div className="space-y-6">
+          <div className="flex items-center gap-6">
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-serif text-primary">JD</div>
+            <div><h2 className="text-xl font-serif font-semibold">Jane Doe</h2><p className="text-sm text-muted-foreground">Whisky Explorer · Member since 2024</p></div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[{label: "Tastings", value: "24"}, {label: "Whiskies", value: "87"}, {label: "Avg Rating", value: "8.2"}, {label: "Badges", value: "12"}].map(s => (
+              <div key={s.label} className="bg-card rounded-xl border p-4 text-center"><div className="text-2xl font-serif font-bold text-primary">{s.value}</div><div className="text-xs text-muted-foreground mt-1">{s.label}</div></div>
+            ))}
+          </div>
+          <div className="bg-card rounded-xl border p-6"><h3 className="font-serif font-semibold mb-2">Favorite Regions</h3><div className="flex gap-2 flex-wrap">{["Islay","Speyside","Highland","Campbeltown"].map(r => <span key={r} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">{r}</span>)}</div></div>
+        </div>
+      </GuestPreview>
     );
   }
 

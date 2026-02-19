@@ -4,6 +4,7 @@ import { flavorProfileApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
 import { Sparkles, ExternalLink } from "lucide-react";
+import { GuestPreview } from "@/components/guest-preview";
 
 interface Whisky {
   id: string;
@@ -80,11 +81,19 @@ export default function Recommendations() {
 
   if (!currentParticipant) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted-foreground font-serif" data-testid="text-rec-login-required">
-          {t("recommendations.loginRequired")}
-        </p>
-      </div>
+      <GuestPreview featureTitle={t("recommendations.title")} featureDescription={t("guestPreview.recommendations")}>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-serif font-bold">{t("recommendations.title")}</h1>
+          <div className="grid gap-3">
+            {[{name: "Ardbeg Corryvreckan", reason: "Based on your love for peated whiskies", score: "94%"}, {name: "Clynelish 14", reason: "Similar to your top-rated Highland malts", score: "89%"}, {name: "Bunnahabhain 18", reason: "Matches your preference for maritime notes", score: "87%"}].map(r => (
+              <div key={r.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
+                <div><div className="font-serif font-semibold">{r.name}</div><div className="text-sm text-muted-foreground">{r.reason}</div></div>
+                <div className="text-primary font-serif font-bold">{r.score}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </GuestPreview>
     );
   }
 

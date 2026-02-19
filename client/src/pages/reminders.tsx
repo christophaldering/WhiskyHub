@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAppStore } from "@/lib/store";
 import { apiRequest } from "@/lib/queryClient";
+import { GuestPreview } from "@/components/guest-preview";
 
 const OFFSET_OPTIONS = [
   { value: 1440, key: "offset1440" },
@@ -78,12 +79,19 @@ export default function Reminders() {
 
   if (!currentParticipant) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6 min-w-0">
-        <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight" data-testid="text-reminders-title">
-          {t("reminders.title")}
-        </h1>
-        <p className="text-muted-foreground">{t("reminders.noEmail")}</p>
-      </div>
+      <GuestPreview featureTitle={t("reminders.title")} featureDescription={t("guestPreview.reminders")}>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-serif font-bold">{t("reminders.title")}</h1>
+          <div className="space-y-3">
+            {[{name: "Highland Evening Tasting", date: "Feb 28, 2026", time: "7:00 PM"}, {name: "Islay Exploration", date: "Mar 15, 2026", time: "6:30 PM"}].map(r => (
+              <div key={r.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
+                <div><div className="font-serif font-semibold">{r.name}</div><div className="text-sm text-muted-foreground">{r.date} · {r.time}</div></div>
+                <div className="text-primary">🔔</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </GuestPreview>
     );
   }
 

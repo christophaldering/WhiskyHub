@@ -22,6 +22,7 @@ import {
 import { Plus, ArrowLeft, Pencil, Trash2, BookOpen, Wine, Calendar, Camera, X, Loader2, ScanLine, ExternalLink, Type, Send } from "lucide-react";
 import { TastingNoteGenerator } from "@/components/tasting-note-generator";
 import type { JournalEntry } from "@shared/schema";
+import { GuestPreview } from "@/components/guest-preview";
 
 type View = "list" | "form" | "detail";
 
@@ -120,11 +121,19 @@ export default function Journal() {
 
   if (!currentParticipant) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted-foreground font-serif" data-testid="text-journal-login-required">
-          {t("journal.loginRequired")}
-        </p>
-      </div>
+      <GuestPreview featureTitle={t("journal.title")} featureDescription={t("guestPreview.journal")}>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-serif font-bold">{t("journal.title")}</h1>
+          <div className="space-y-3">
+            {[{name: "Ardbeg Uigeadail", date: "Feb 10, 2026", score: "91"}, {name: "Talisker 18", date: "Jan 28, 2026", score: "88"}, {name: "Glendronach 21", date: "Jan 12, 2026", score: "90"}].map(e => (
+              <div key={e.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
+                <div><div className="font-serif font-semibold">{e.name}</div><div className="text-sm text-muted-foreground">{e.date}</div></div>
+                <div className="text-lg font-serif font-bold text-primary">{e.score}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </GuestPreview>
     );
   }
 

@@ -10,6 +10,7 @@ import {
   Star, BarChart3, Loader2, Globe, Landmark, ArrowRight
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GuestPreview } from "@/components/guest-preview";
 
 export default function TastingHistory() {
   const { t } = useTranslation();
@@ -25,12 +26,21 @@ export default function TastingHistory() {
 
   if (!currentParticipant) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Wine className="w-12 h-12 text-muted-foreground/40" />
-        <p className="text-muted-foreground font-serif italic text-center" data-testid="text-login-required">
-          {t("tastingHistory.loginRequired")}
-        </p>
-      </div>
+      <GuestPreview featureTitle={t("tastingHistory.title")} featureDescription={t("guestPreview.tastingHistory")}>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-serif font-bold">{t("tastingHistory.title")}</h1>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[{label: "Tastings", value: "12"}, {label: "Whiskies", value: "48"}, {label: "Distilleries", value: "31"}, {label: "Avg Rating", value: "7.8"}].map(s => (
+              <div key={s.label} className="bg-card rounded-xl border p-4 text-center"><div className="text-2xl font-serif font-bold text-primary">{s.value}</div><div className="text-xs text-muted-foreground mt-1">{s.label}</div></div>
+            ))}
+          </div>
+          <div className="space-y-3">
+            {[{name: "Highland Evening", date: "Jan 15, 2026", whiskies: 6}, {name: "Islay Exploration", date: "Dec 8, 2025", whiskies: 5}, {name: "Speyside Classics", date: "Nov 20, 2025", whiskies: 4}].map(item => (
+              <div key={item.name} className="bg-card rounded-xl border p-4"><div className="font-serif font-semibold">{item.name}</div><div className="text-sm text-muted-foreground">{item.date} · {item.whiskies} whiskies</div></div>
+            ))}
+          </div>
+        </div>
+      </GuestPreview>
     );
   }
 

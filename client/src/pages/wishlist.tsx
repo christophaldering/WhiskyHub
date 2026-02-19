@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { wishlistApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
+import { GuestPreview } from "@/components/guest-preview";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,11 +84,19 @@ export default function Wishlist() {
 
   if (!currentParticipant) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted-foreground font-serif" data-testid="text-wishlist-login-required">
-          {t("wishlist.loginRequired")}
-        </p>
-      </div>
+      <GuestPreview featureTitle={t("wishlist.title")} featureDescription={t("guestPreview.wishlist")}>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-serif font-bold">{t("wishlist.title")}</h1>
+          <div className="grid gap-3">
+            {[{name: "Lagavulin 16", distillery: "Lagavulin", region: "Islay"}, {name: "Glenfarclas 25", distillery: "Glenfarclas", region: "Speyside"}, {name: "Springbank 15", distillery: "Springbank", region: "Campbeltown"}, {name: "Macallan 18 Sherry Oak", distillery: "Macallan", region: "Speyside"}].map(w => (
+              <div key={w.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
+                <div><div className="font-serif font-semibold">{w.name}</div><div className="text-sm text-muted-foreground">{w.distillery} · {w.region}</div></div>
+                <div className="text-yellow-500">★</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </GuestPreview>
     );
   }
 

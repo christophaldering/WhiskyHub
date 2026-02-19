@@ -5,6 +5,26 @@ const fr = {
       tagline: "Quand la Dégustation Devient Réflexion",
       copyright: "© 2026 CaskSense. Tous droits réservés."
     },
+    common: {
+      signInToAccess: "Se connecter pour commencer",
+    },
+    guestPreview: {
+      profile: "Créez votre identité de dégustation avec un profil personnel, des préférences et des statistiques.",
+      wishlist: "Gardez une trace des whiskies que vous voulez goûter — ajoutez des bouteilles et ne manquez aucune recommandation.",
+      journal: "Documentez chaque whisky avec des notes détaillées, des photos et des évaluations personnelles.",
+      badges: "Gagnez des badges en explorant plus de whiskies et en participant à des dégustations.",
+      flavorProfile: "Découvrez vos préférences gustatives avec des graphiques radar basés sur votre historique.",
+      flavorWheel: "Visualisez les patterns aromatiques de toutes vos dégustations avec une roue interactive.",
+      recommendations: "Recevez des recommandations personnalisées basées sur votre profil gustatif.",
+      comparison: "Comparez des whiskies côte à côte — trouvez les similitudes et différences.",
+      friends: "Connectez-vous avec des amateurs de whisky, partagez des dégustations et découvrez ce que vos amis boivent.",
+      activity: "Restez informé des dernières dégustations et découvertes de vos amis.",
+      reminders: "Définissez des rappels pour ne manquer aucune session de dégustation.",
+      pairings: "Découvrez des suggestions d'accords mets-whisky basées sur les profils aromatiques.",
+      exportNotes: "Exportez vos notes de dégustation sous forme de documents joliment formatés.",
+      tastingHistory: "Revoyez toutes vos dégustations passées avec statistiques et évaluations détaillées.",
+      collection: "Gérez votre collection personnelle de whiskies — suivez vos bouteilles et votre cave.",
+    },
     login: {
       title: "Créer un Compte",
       titleReturning: "Se Connecter",

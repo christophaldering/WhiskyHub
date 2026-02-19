@@ -5,6 +5,26 @@ const zh = {
       tagline: "品鉴即是反思",
       copyright: "© 2026 CaskSense. 保留所有权利。"
     },
+    common: {
+      signInToAccess: "登录开始使用",
+    },
+    guestPreview: {
+      profile: "建立你的品鉴身份——个人资料、风味偏好和品鉴统计。",
+      wishlist: "记录你想品尝的威士忌——添加酒瓶，不错过任何推荐。",
+      journal: "用详细笔记、照片和个人评分记录每一款威士忌。",
+      badges: "随着探索更多威士忌和参加品鉴会，赢得成就徽章。",
+      flavorProfile: "通过基于品鉴历史的雷达图发现你的个人风味偏好。",
+      flavorWheel: "用交互式风味轮可视化所有品鉴的风味模式。",
+      recommendations: "根据你的口味档案和评分历史获得个性化威士忌推荐。",
+      comparison: "并排比较威士忌——发现风味、评分和特征的异同。",
+      friends: "与威士忌爱好者交流，分享品鉴，发现朋友们在喝什么。",
+      activity: "了解朋友们最新的品鉴、评分和威士忌发现。",
+      reminders: "设置提醒，不错过任何品鉴会。",
+      pairings: "发现基于风味档案的食物与威士忌搭配建议。",
+      exportNotes: "将品鉴笔记导出为精美排版的文档，方便分享或保存。",
+      tastingHistory: "查看所有过去的品鉴，包括详细统计和评分。",
+      collection: "管理你的个人威士忌收藏——追踪你拥有的酒瓶和库存。",
+    },
     login: {
       title: "创建账户",
       titleReturning: "登录",

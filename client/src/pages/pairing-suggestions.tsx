@@ -6,6 +6,7 @@ import { useAppStore } from "@/lib/store";
 import { pairingsApi, tastingApi } from "@/lib/api";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Wine, Sparkles, MapPin, Flame, Package } from "lucide-react";
+import { GuestPreview } from "@/components/guest-preview";
 
 interface Suggestion {
   name: string;
@@ -69,9 +70,19 @@ export default function PairingSuggestions() {
 
   if (!currentParticipant) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]" data-testid="pairings-login-required">
-        <p className="text-muted-foreground font-serif">{t("pairings.loginRequired")}</p>
-      </div>
+      <GuestPreview featureTitle={t("pairings.title")} featureDescription={t("guestPreview.pairings")}>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-serif font-bold">{t("pairings.title")}</h1>
+          <div className="grid gap-3">
+            {[{whisky: "Lagavulin 16", food: "Dark Chocolate", note: "Rich smoke meets bitter cocoa"}, {whisky: "Glenfiddich 15", food: "Blue Cheese", note: "Sweet sherry notes complement creamy tang"}, {whisky: "Talisker 10", food: "Smoked Salmon", note: "Maritime character with ocean-fresh fish"}].map(p => (
+              <div key={p.whisky} className="bg-card rounded-xl border p-4">
+                <div className="flex items-center justify-between mb-1"><span className="font-serif font-semibold">{p.whisky}</span><span className="text-sm">+ {p.food}</span></div>
+                <div className="text-sm text-muted-foreground italic">{p.note}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </GuestPreview>
     );
   }
 

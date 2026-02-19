@@ -5,6 +5,7 @@ import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { Activity } from "lucide-react";
+import { GuestPreview } from "@/components/guest-preview";
 
 const COLORS = ["#c8a864", "#a8845c", "#8b6f47", "#d4a853", "#b8934a", "#9e7d3f", "#c4956c", "#d9b87c"];
 
@@ -46,11 +47,20 @@ export default function FlavorProfile() {
 
   if (!currentParticipant) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted-foreground font-serif" data-testid="text-flavor-login-required">
-          {t("flavorProfile.loginRequired")}
-        </p>
-      </div>
+      <GuestPreview featureTitle={t("flavorProfile.title")} featureDescription={t("guestPreview.flavorProfile")}>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-serif font-bold">{t("flavorProfile.title")}</h1>
+          <div className="bg-card rounded-xl border p-6 flex items-center justify-center" style={{height: 300}}>
+            <div className="text-center space-y-3">
+              <div className="grid grid-cols-3 gap-6 text-sm">
+                {[{label: "Fruity", val: "8.4"}, {label: "Smoky", val: "6.2"}, {label: "Sweet", val: "7.8"}, {label: "Spicy", val: "5.5"}, {label: "Floral", val: "4.1"}, {label: "Maritime", val: "7.0"}].map(f => (
+                  <div key={f.label} className="text-center"><div className="text-lg font-serif font-bold text-primary">{f.val}</div><div className="text-muted-foreground text-xs">{f.label}</div></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </GuestPreview>
     );
   }
 
