@@ -848,13 +848,7 @@ export default function Home() {
                     </Button>
                     <Button
                       variant="ghost"
-                      onClick={() => {
-                        if (!currentParticipant) {
-                          setShowLogin(true);
-                          return;
-                        }
-                        setShowImportDialog(true);
-                      }}
+                      onClick={() => setShowImportDialog(true)}
                       className="w-full text-xs gap-2 text-muted-foreground hover:text-primary"
                       data-testid="button-create-from-file"
                     >

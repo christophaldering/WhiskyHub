@@ -1094,6 +1094,11 @@ const resources = {
         createTasting: "Create Tasting",
         creating: "Creating...",
         createFromFile: "Or import from file / photo",
+        guestIdentify: "Enter your name to create the tasting",
+        guestName: "Your Name",
+        guestNamePlaceholder: "e.g. Alex",
+        guestPin: "PIN (optional)",
+        guestPinPlaceholder: "For later access",
       },
       home: {
         createFromPhotos: "Or create from bottle photos",
@@ -2674,6 +2679,11 @@ const resources = {
         createTasting: "Tasting erstellen",
         creating: "Wird erstellt...",
         createFromFile: "Oder aus Datei / Foto importieren",
+        guestIdentify: "Gib deinen Namen ein, um die Verkostung zu erstellen",
+        guestName: "Dein Name",
+        guestNamePlaceholder: "z.B. Alex",
+        guestPin: "PIN (optional)",
+        guestPinPlaceholder: "Für späteren Zugriff",
       },
       home: {
         createFromPhotos: "Oder aus Flaschenfotos erstellen",

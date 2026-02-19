@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAppStore } from "@/lib/store";
-import { tastingApi } from "@/lib/api";
+import { tastingApi, participantApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,7 @@ interface ImportResult {
 export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
-  const { currentParticipant } = useAppStore();
+  const { currentParticipant, setParticipant } = useAppStore();
 
   const [step, setStep] = useState<"upload" | "preview" | "creating">("upload");
   const [files, setFiles] = useState<File[]>([]);
@@ -67,12 +67,14 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
   const [blindMode, setBlindMode] = useState(true);
   const [expandedWhisky, setExpandedWhisky] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [guestName, setGuestName] = useState("");
+  const [guestPin, setGuestPin] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const analyzeMutation = useMutation({
     mutationFn: async () => {
-      if (!currentParticipant) throw new Error("Not logged in");
-      return tastingApi.aiImport(files, pastedText, currentParticipant.id);
+      const hostId = currentParticipant?.id || "guest-analyze";
+      return tastingApi.aiImport(files, pastedText, hostId);
     },
     onSuccess: (data: ImportResult) => {
       setResult(data);
@@ -90,9 +92,15 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (!currentParticipant) throw new Error("Not logged in");
+      let hostId = currentParticipant?.id;
+      if (!hostId) {
+        if (!guestName.trim()) throw new Error("Please enter your name");
+        const participant = await participantApi.loginOrCreate(guestName.trim(), guestPin || undefined);
+        setParticipant(participant);
+        hostId = participant.id;
+      }
       return tastingApi.createFromImport({
-        hostId: currentParticipant.id,
+        hostId,
         title: tastingTitle.trim() || "Imported Tasting",
         date: tastingDate || new Date().toISOString().split("T")[0],
         location: tastingLocation.trim() || "Online",
@@ -123,6 +131,8 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
     setBlindMode(true);
     setExpandedWhisky(null);
     setError(null);
+    setGuestName("");
+    setGuestPin("");
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -421,6 +431,35 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
                 </div>
               </div>
 
+              {!currentParticipant && (
+                <div className="p-4 bg-secondary/50 border border-border/50 rounded-lg space-y-3">
+                  <p className="text-sm font-semibold text-foreground">{t("aiImport.guestIdentify")}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">{t("aiImport.guestName")}</Label>
+                      <Input
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        placeholder={t("aiImport.guestNamePlaceholder")}
+                        className="mt-1"
+                        data-testid="input-guest-name"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">{t("aiImport.guestPin")}</Label>
+                      <Input
+                        value={guestPin}
+                        onChange={(e) => setGuestPin(e.target.value)}
+                        placeholder={t("aiImport.guestPinPlaceholder")}
+                        type="password"
+                        className="mt-1"
+                        data-testid="input-guest-pin"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {error && (
                 <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md text-sm text-destructive">
                   {error}
@@ -433,7 +472,7 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
                 </Button>
                 <Button
                   onClick={() => createMutation.mutate()}
-                  disabled={createMutation.isPending || editingWhiskies.length === 0}
+                  disabled={createMutation.isPending || editingWhiskies.length === 0 || (!currentParticipant && !guestName.trim())}
                   className="flex-1 font-serif"
                   data-testid="button-import-create"
                 >
