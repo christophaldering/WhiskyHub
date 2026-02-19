@@ -178,6 +178,15 @@ iframe {
   min-width: 0;
 }
 
+.mobile-bottom-spacing {
+  padding-bottom: calc(9rem + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 768px) {
+  .mobile-bottom-spacing {
+    padding-bottom: 3rem;
+  }
+}
+
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;

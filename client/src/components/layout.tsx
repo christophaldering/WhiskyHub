@@ -313,7 +313,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <NavContent navInnerRef={desktopNavRef} />
         </aside>
         <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-background" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
-          <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-12 py-6 md:py-12 pb-24 md:pb-12 animate-in fade-in duration-700 min-w-0">
+          <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-12 py-6 md:py-12 animate-in fade-in duration-700 min-w-0 mobile-bottom-spacing">
             {children}
           </div>
         </main>

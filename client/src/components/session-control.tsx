@@ -218,7 +218,7 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
   if (tasting.status === "deleted") {
     if (!isAdmin) return null;
     return (
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-20 md:bottom-6 right-6 z-50">
         <div className="bg-card border border-border/50 shadow-2xl p-4 rounded-lg flex flex-col gap-2 min-w-[200px]">
           <div className="text-xs uppercase tracking-widest text-muted-foreground font-mono mb-1">
             Host Control
@@ -242,7 +242,7 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
 
   if (tasting.status === "archived") {
     return (
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-20 md:bottom-6 right-6 z-50">
         <div className="bg-card border border-border/50 shadow-2xl p-4 rounded-lg flex flex-col gap-2 min-w-[200px]">
           <div className="text-xs uppercase tracking-widest text-muted-foreground font-mono mb-1">
             Host Control
@@ -265,7 +265,7 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-20 md:bottom-6 right-6 z-50">
       <div className="bg-card border border-border/50 shadow-2xl p-4 rounded-lg flex flex-col gap-2 min-w-[200px]">
         <div className="text-xs uppercase tracking-widest text-muted-foreground font-mono mb-1">
           Host Control
