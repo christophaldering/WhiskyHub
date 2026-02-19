@@ -1,5 +1,10 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import nl from './translations/nl';
+import fr from './translations/fr';
+import es from './translations/es';
+import it from './translations/it';
+import zh from './translations/zh';
 
 const resources = {
   en: {
@@ -2941,7 +2946,12 @@ const resources = {
         added: "Hinzugefügt"
       }
     }
-  }
+  },
+  nl,
+  fr,
+  es,
+  it,
+  zh,
 };
 
 i18n
