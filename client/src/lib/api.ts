@@ -68,6 +68,22 @@ export const tastingApi = {
     fetchJSON(`/tastings/${id}/transfer-host`, { method: "POST", body: JSON.stringify({ hostId, newHostId }) }),
   toggleCoverImageReveal: (id: string, hostId: string, revealed: boolean) =>
     fetchJSON(`/tastings/${id}/cover-image-reveal`, { method: "PATCH", body: JSON.stringify({ hostId, revealed }) }),
+  aiImport: async (files: File[], text: string, hostId: string) => {
+    const formData = new FormData();
+    formData.append("hostId", hostId);
+    formData.append("text", text);
+    for (const file of files) {
+      formData.append("files", file);
+    }
+    const res = await fetch(`${API_BASE}/tastings/ai-import`, { method: "POST", body: formData });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Import failed");
+    }
+    return res.json();
+  },
+  createFromImport: (data: any) =>
+    fetchJSON("/tastings/create-from-import", { method: "POST", body: JSON.stringify(data) }),
 };
 
 // ===== Whiskies =====

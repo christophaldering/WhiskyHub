@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useLocation, Link } from "wouter";
-import { UserPlus, Plus, ArrowRight, Star, Wine, Glasses, BookOpen, Camera, User, ChevronDown, Eye, Sparkles, BarChart3, Users, MapPin, NotebookPen, ScanLine, Heart, Zap, Globe, Trophy, LogIn } from "lucide-react";
+import { UserPlus, Plus, ArrowRight, Star, Wine, Glasses, BookOpen, Camera, User, ChevronDown, Eye, Sparkles, BarChart3, Users, MapPin, NotebookPen, ScanLine, Heart, Zap, Globe, Trophy, LogIn, FileUp } from "lucide-react";
 import heroImage from "@/assets/images/hero-whisky.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,7 @@ import { useAppStore } from "@/lib/store";
 import { tastingApi, participantApi, wotdApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { LoginDialog } from "@/components/login-dialog";
+import { AiTastingImportDialog } from "@/components/ai-tasting-import";
 import { queryClient } from "@/lib/queryClient";
 
 function JourneyFlowGraphic({ steps }: { steps: string[] }) {
@@ -213,6 +214,7 @@ export default function Home() {
 
   const [joinCode, setJoinCode] = useState("");
   const [showLogin, setShowLogin] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [joinError, setJoinError] = useState("");
 
   const [showQuickJoin, setShowQuickJoin] = useState(false);
@@ -321,6 +323,7 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] w-full max-w-3xl mx-auto space-y-10 py-10">
       <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
+      <AiTastingImportDialog open={showImportDialog} onOpenChange={setShowImportDialog} />
 
       <Dialog open={showQuickJoin} onOpenChange={(v) => { if (!v) { setShowQuickJoin(false); setQuickJoinError(""); } }}>
         <DialogContent className="sm:max-w-sm bg-card border-border">
@@ -541,6 +544,15 @@ export default function Home() {
                       >
                         <Camera className="w-3.5 h-3.5" />
                         {t("home.createFromPhotos")}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => setShowImportDialog(true)}
+                        className="w-full text-xs gap-2 text-muted-foreground hover:text-primary"
+                        data-testid="button-create-from-file"
+                      >
+                        <FileUp className="w-3.5 h-3.5" />
+                        {t("aiImport.createFromFile")}
                       </Button>
                     </CardFooter>
                   </>
@@ -833,6 +845,21 @@ export default function Home() {
                     >
                       <Camera className="w-3.5 h-3.5" />
                       {t("home.createFromPhotos")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        if (!currentParticipant) {
+                          setShowLogin(true);
+                          return;
+                        }
+                        setShowImportDialog(true);
+                      }}
+                      className="w-full text-xs gap-2 text-muted-foreground hover:text-primary"
+                      data-testid="button-create-from-file"
+                    >
+                      <FileUp className="w-3.5 h-3.5" />
+                      {t("aiImport.createFromFile")}
                     </Button>
                   </CardFooter>
                 </>

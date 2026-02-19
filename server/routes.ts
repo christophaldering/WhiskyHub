@@ -4583,5 +4583,441 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     }
   });
 
+  // ===== AI TASTING IMPORT =====
+
+  const tastingImportUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 20 * 1024 * 1024 },
+    fileFilter: (_req: any, file: any, cb: any) => {
+      const allowedMimes = [
+        "application/pdf",
+        "text/plain", "text/csv",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+        "image/jpeg", "image/png", "image/webp", "image/gif",
+        "application/octet-stream",
+      ];
+      const allowedExts = [".xlsx", ".xls", ".csv", ".pdf", ".txt", ".jpg", ".jpeg", ".png", ".webp", ".gif"];
+      const ext = path.extname(file.originalname).toLowerCase();
+      if (allowedMimes.includes(file.mimetype) || allowedExts.includes(ext)) cb(null, true);
+      else cb(new Error("Unsupported file type. Allowed: Excel, CSV, PDF, TXT, JPG, PNG, WebP, GIF"));
+    },
+  });
+
+  function parseTransposedExcel(buffer: Buffer): { whiskies: any[]; tastingMeta: any; hostNotes: Record<number, string> } {
+    const wb = XLSX.read(buffer, { type: "buffer" });
+    const whiskies: any[] = [];
+    const tastingMeta: any = {};
+    const hostNotes: Record<number, string> = {};
+
+    const lineUpSheet = wb.SheetNames.find(n => n.toLowerCase().includes("line up") || n.toLowerCase().includes("lineup"));
+    if (lineUpSheet) {
+      const sheet = wb.Sheets[lineUpSheet];
+      const raw: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+      const rowMap: Record<string, any[]> = {};
+      let whiskyCount = 0;
+
+      for (const row of raw) {
+        if (!row || !row[0]) continue;
+        const label = String(row[0]).trim().toLowerCase();
+        const values: any[] = [];
+        for (let i = 1; i < row.length; i++) {
+          if (row[i] != null && row[i] !== "") values.push(row[i]);
+        }
+        if (values.length > whiskyCount) whiskyCount = values.length;
+
+        if (label.startsWith("nr")) {
+          rowMap["nr"] = values;
+        } else if (label.includes("name") || label.includes("protagonist")) {
+          rowMap["name"] = values;
+        } else if (label.includes("typ") || label.includes("kat") || label.includes("category") || label.includes("type")) {
+          rowMap["cask"] = values;
+        } else if (label.includes("land") || label.includes("reg") || label.includes("country") || label.includes("region")) {
+          rowMap["region"] = values;
+        } else if (label.includes("distill") || label.includes("ib") || label.includes("bottler") || label.includes("abfüller")) {
+          rowMap["distillery_ib"] = values;
+        } else if (label.includes("cask") || label.includes("fass")) {
+          rowMap["cask"] = values;
+        } else if (label.includes("alter") || label === "age") {
+          rowMap["age"] = values;
+        } else if (label.includes("vintage") || label.includes("jahrgang")) {
+          rowMap["vintage"] = values;
+        } else if (label === "abv" || label.includes("abv") || label.includes("alkohol")) {
+          rowMap["abv"] = values;
+        } else if (label.includes("wid") || label.includes("whiskybase") || label === "wb") {
+          rowMap["wid"] = values;
+        } else if (label.includes("punkt") || label.includes("score") || label.includes("rating")) {
+          rowMap["score"] = values;
+        } else if (label.includes("preis") || label.includes("price")) {
+          rowMap["price"] = values;
+        } else if (label.includes("ppm") || label.includes("phenol")) {
+          rowMap["ppm"] = values;
+        } else if (label.includes("peat") || label.includes("torf")) {
+          rowMap["peat"] = values;
+        }
+      }
+
+      for (let i = 0; i < whiskyCount; i++) {
+        const getName = (arr: any[] | undefined) => arr && arr[i] != null ? String(arr[i]).replace(/\r?\n/g, " ").trim() : null;
+        const name = getName(rowMap["name"]);
+        if (!name) continue;
+
+        let distillery: string | null = null;
+        let bottler: string | null = null;
+        const distIb = getName(rowMap["distillery_ib"]);
+        if (distIb) {
+          const oaMatch = distIb.match(/^(.+?)\s+OA$/i);
+          if (oaMatch) {
+            distillery = oaMatch[1].trim();
+            bottler = "Official Bottling";
+          } else {
+            const parts = distIb.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+            if (parts.length >= 2) {
+              distillery = parts[0];
+              bottler = parts[1] === "OA" ? "Official Bottling" : parts[1];
+            } else if (parts.length === 1) {
+              const spaceOa = parts[0].match(/^(.+?)\s+OA$/i);
+              if (spaceOa) {
+                distillery = spaceOa[1].trim();
+                bottler = "Official Bottling";
+              } else {
+                distillery = parts[0];
+              }
+            }
+          }
+        }
+
+        let country: string | null = null;
+        let region: string | null = null;
+        const regionRaw = getName(rowMap["region"]);
+        if (regionRaw) {
+          const rParts = regionRaw.split("/").map(s => s.trim());
+          if (rParts.length >= 2) {
+            const countryCode = rParts[0].toUpperCase();
+            const countryMap: Record<string, string> = { SC: "Scotland", USA: "USA", US: "USA", JP: "Japan", IR: "Ireland", TW: "Taiwan", IN: "India", DE: "Germany", FR: "France", AU: "Australia", CA: "Canada", NZ: "New Zealand", SE: "Sweden", NL: "Netherlands", FI: "Finland", CH: "Switzerland", AT: "Austria", BE: "Belgium", DK: "Denmark", NO: "Norway", IL: "Israel", ES: "Spain", IT: "Italy", WA: "Wales", EN: "England" };
+            country = countryMap[countryCode] || countryCode;
+            region = rParts.slice(1).join(" / ").trim();
+          } else {
+            const upper = regionRaw.toUpperCase();
+            const knownCountries = ["USA", "SCOTLAND", "JAPAN", "IRELAND", "TAIWAN", "INDIA", "GERMANY", "FRANCE", "AUSTRALIA", "CANADA"];
+            const knownRegions: Record<string, string> = { SPEYSIDE: "Scotland", HIGHLANDS: "Scotland", HIGHLAND: "Scotland", ISLAY: "Scotland", ISLANDS: "Scotland", LOWLANDS: "Scotland", LOWLAND: "Scotland", CAMPBELTOWN: "Scotland", KENTUCKY: "USA", TENNESSEE: "USA", BOURBON: "USA" };
+            if (knownCountries.includes(upper)) {
+              country = regionRaw;
+            } else if (knownRegions[upper]) {
+              country = knownRegions[upper];
+              region = regionRaw;
+            } else {
+              region = regionRaw;
+            }
+          }
+        }
+
+        let abv: number | null = null;
+        const abvRaw = rowMap["abv"]?.[i];
+        if (abvRaw != null) {
+          const abvStr = String(abvRaw).replace(/%/g, "").trim();
+          const abvNum = parseFloat(abvStr);
+          if (!isNaN(abvNum)) abv = abvNum <= 1 ? abvNum * 100 : abvNum;
+        }
+
+        let age: string | null = null;
+        const ageRaw = getName(rowMap["age"]);
+        if (ageRaw) age = ageRaw.replace(/\s*y(ears?)?$/i, "").trim();
+
+        let wbScore: number | null = null;
+        const scoreRaw = rowMap["score"]?.[i];
+        if (scoreRaw != null) { const n = parseFloat(String(scoreRaw)); if (!isNaN(n)) wbScore = n; }
+
+        let price: number | null = null;
+        const priceRaw = rowMap["price"]?.[i];
+        if (priceRaw != null) { const n = parseFloat(String(priceRaw)); if (!isNaN(n)) price = n; }
+
+        let whiskybaseId: string | null = null;
+        const widRaw = rowMap["wid"]?.[i];
+        if (widRaw != null) whiskybaseId = String(widRaw).trim();
+
+        whiskies.push({
+          name,
+          distillery,
+          bottler,
+          age,
+          abv: abv != null ? Math.round(abv * 10) / 10 : null,
+          category: null,
+          country,
+          region,
+          caskInfluence: getName(rowMap["cask"]),
+          vintage: getName(rowMap["vintage"]),
+          whiskybaseId,
+          wbScore,
+          price,
+          ppm: rowMap["ppm"]?.[i] != null ? parseFloat(String(rowMap["ppm"][i])) || null : null,
+          peatLevel: getName(rowMap["peat"]),
+          sortOrder: i,
+          hostNotes: null,
+          hostSummary: null,
+        });
+      }
+    }
+
+    const metaSheet = wb.SheetNames.find(n => n.toLowerCase().includes("tln") || n.toLowerCase().includes("logistik") || n.toLowerCase().includes("teilnehmer"));
+    if (metaSheet) {
+      const sheet = wb.Sheets[metaSheet];
+      const raw: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      if (raw[0]?.[0]) tastingMeta.title = String(raw[0][0]).trim();
+      if (raw[1]?.[0]) {
+        const dateStr = String(raw[1][0]).trim();
+        tastingMeta.date = dateStr;
+        const match = dateStr.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+        if (match) tastingMeta.dateISO = `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
+      }
+
+      tastingMeta.participants = [];
+      for (let r = 3; r < raw.length; r++) {
+        const name = raw[r]?.[0];
+        if (name && typeof name === "string" && name.trim() && !name.toLowerCase().includes("summe") && !name.toLowerCase().includes("total") && !name.toLowerCase().includes("gesamt")) {
+          tastingMeta.participants.push(name.trim());
+        }
+      }
+    }
+
+    for (const sheetName of wb.SheetNames) {
+      const num = parseInt(sheetName.trim());
+      if (!isNaN(num) && num >= 1 && num <= 100) {
+        const sheet = wb.Sheets[sheetName];
+        const raw: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        const texts: string[] = [];
+        for (const row of raw) {
+          if (!row) continue;
+          for (const cell of row) {
+            if (cell != null && String(cell).trim()) texts.push(String(cell).trim());
+          }
+        }
+        if (texts.length > 0) {
+          hostNotes[num - 1] = texts.join("\n\n");
+        }
+      }
+    }
+
+    for (let i = 0; i < whiskies.length; i++) {
+      if (hostNotes[i]) {
+        whiskies[i].hostSummary = hostNotes[i];
+      }
+    }
+
+    return { whiskies, tastingMeta, hostNotes };
+  }
+
+  app.post("/api/tastings/ai-import", (req: any, res: any, next: any) => {
+    tastingImportUpload.array("files", 10)(req, res, (err: any) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ message: "File too large (max 20 MB)" });
+        return res.status(400).json({ message: err.message || "Upload failed" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const files: Express.Multer.File[] = req.files || [];
+      const pastedText: string = req.body.text || "";
+      const hostId: string = req.body.hostId;
+
+      if (!hostId) return res.status(400).json({ message: "hostId required" });
+      if (files.length === 0 && !pastedText.trim()) {
+        return res.status(400).json({ message: "Please provide at least one file or paste text" });
+      }
+
+      let excelResult: { whiskies: any[]; tastingMeta: any; hostNotes: Record<number, string> } | null = null;
+      const imageContents: { type: "image_url"; image_url: { url: string } }[] = [];
+      let textContent = pastedText.trim();
+
+      for (const file of files) {
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (ext === ".xlsx" || ext === ".xls" || ext === ".csv") {
+          excelResult = parseTransposedExcel(file.buffer);
+          if (excelResult.whiskies.length === 0) {
+            const rows = parseSpreadsheetRows(file.buffer, file.originalname);
+            if (rows.rows.length > 0) {
+              excelResult.whiskies = rows.rows;
+            }
+          }
+        } else if (file.mimetype.startsWith("image/")) {
+          const base64 = file.buffer.toString("base64");
+          imageContents.push({
+            type: "image_url",
+            image_url: { url: `data:${file.mimetype};base64,${base64}` },
+          });
+        } else if (ext === ".pdf" || file.mimetype === "text/plain") {
+          textContent += "\n\n" + file.buffer.toString("utf-8");
+        }
+      }
+
+      if (excelResult && excelResult.whiskies.length > 0) {
+        return res.json({
+          whiskies: excelResult.whiskies,
+          tastingMeta: excelResult.tastingMeta || {},
+          source: "excel",
+        });
+      }
+
+      if (!textContent && imageContents.length === 0) {
+        return res.status(400).json({ message: "Could not extract any content from the uploaded files" });
+      }
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const systemPrompt = `You are an expert whisky tasting data extractor. You analyze images, screenshots, text messages, and documents to extract structured tasting session information.
+
+Extract ALL whisky information you can find. Return a JSON object with this structure:
+{
+  "tastingMeta": {
+    "title": "Tasting title if found",
+    "date": "ISO date YYYY-MM-DD if found",
+    "dateDisplay": "Original date string as shown",
+    "location": "Location if mentioned",
+    "participants": ["Name1", "Name2"]
+  },
+  "whiskies": [
+    {
+      "name": "Whisky name (full expression name)",
+      "distillery": "Distillery name",
+      "bottler": "Independent bottler or 'OA' for official, null if unknown",
+      "age": "Age statement as string (e.g. '17' or 'NAS')",
+      "abv": 46.0,
+      "category": "Single Malt / Blended Malt / Bourbon / Rye / Grain / Blended / Other",
+      "country": "Scotland / Ireland / Japan / USA / Canada / India / Taiwan / Other",
+      "region": "Speyside / Islay / Highland / etc.",
+      "caskInfluence": "Cask type(s)",
+      "vintage": "Vintage year(s) e.g. '2010 - 2025'",
+      "whiskybaseId": "Whiskybase ID number if visible",
+      "wbScore": 87.5,
+      "price": 80.00,
+      "peatLevel": "None / Light / Medium / Heavy",
+      "ppm": null,
+      "hostNotes": "Any tasting notes or descriptions found for this whisky",
+      "hostSummary": "Detailed host assessment/review if present",
+      "sortOrder": 0
+    }
+  ]
+}
+
+Important rules:
+- Extract EVERY whisky you can identify, preserving the order
+- ABV should be a decimal number (e.g. 46.0 not "46%")
+- For country codes: SC/SCO = Scotland, IR/IRL = Ireland, JP/JPN = Japan
+- If "OA" or "Originalabfüllung" is mentioned as bottler, set bottler to "OA (Original Abfüllung)"
+- Prices should be numbers without currency symbols
+- Parse whiskybase IDs as strings
+- wbScore should be a number 0-100
+- If you find tasting notes (nose/palate/finish descriptions), combine them into hostSummary
+- Set null for any field you cannot determine
+- The output must be valid JSON only, no markdown or explanation`;
+
+      const userContent: any[] = [];
+
+      if (textContent) {
+        userContent.push({
+          type: "text",
+          text: `Extract all whisky tasting information from this content:\n\n${textContent}`,
+        });
+      }
+
+      if (imageContents.length > 0) {
+        userContent.push({
+          type: "text",
+          text: textContent
+            ? "Also analyze these images for additional tasting information:"
+            : "Extract all whisky tasting information from these images:",
+        });
+        userContent.push(...imageContents);
+      }
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userContent },
+        ],
+        max_tokens: 4000,
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        return res.status(500).json({ message: "AI could not extract data from the provided content" });
+      }
+
+      const parsed = JSON.parse(content);
+      return res.json({
+        whiskies: parsed.whiskies || [],
+        tastingMeta: parsed.tastingMeta || {},
+        source: "ai",
+      });
+    } catch (e: any) {
+      console.error("AI import error:", e);
+      res.status(500).json({ message: e.message || "Import analysis failed" });
+    }
+  });
+
+  app.post("/api/tastings/create-from-import", async (req: any, res: any) => {
+    try {
+      const { hostId, title, date, location, blindMode, whiskies: whiskyData } = req.body;
+      if (!hostId) return res.status(400).json({ message: "hostId required" });
+      if (!title) return res.status(400).json({ message: "title required" });
+      if (!whiskyData || !Array.isArray(whiskyData) || whiskyData.length === 0) {
+        return res.status(400).json({ message: "At least one whisky required" });
+      }
+
+      const code = Math.random().toString(36).slice(2, 8).toUpperCase();
+      const tasting = await storage.createTasting({
+        title: title.trim(),
+        date: date || new Date().toISOString().split("T")[0],
+        location: location || "Online",
+        hostId,
+        code,
+        status: "draft",
+        blindMode: blindMode ?? false,
+      });
+
+      const createdWhiskies = [];
+      for (let i = 0; i < whiskyData.length; i++) {
+        const w = whiskyData[i];
+        const whisky = await storage.createWhisky({
+          tastingId: tasting.id,
+          name: (w.name || `Whisky ${i + 1}`).trim(),
+          distillery: w.distillery?.trim() || null,
+          age: w.age?.toString()?.trim() || null,
+          abv: w.abv != null ? parseFloat(String(w.abv)) || null : null,
+          type: w.category || w.type || null,
+          country: w.country || null,
+          notes: w.notes || null,
+          sortOrder: w.sortOrder ?? i,
+          category: w.category || w.type || null,
+          region: w.region?.trim() || null,
+          caskInfluence: w.caskInfluence?.trim() || null,
+          peatLevel: w.peatLevel || null,
+          ppm: w.ppm != null ? parseFloat(String(w.ppm)) || null : null,
+          whiskybaseId: w.whiskybaseId?.toString()?.trim() || null,
+          wbScore: w.wbScore != null ? parseFloat(String(w.wbScore)) || null : null,
+          bottler: w.bottler?.trim() || null,
+          vintage: w.vintage?.toString()?.trim() || null,
+          price: w.price != null ? parseFloat(String(w.price)) || null : null,
+          hostNotes: w.hostNotes?.trim() || null,
+          hostSummary: w.hostSummary?.trim() || null,
+        });
+        createdWhiskies.push(whisky);
+      }
+
+      res.status(201).json({ tasting, whiskies: createdWhiskies });
+    } catch (e: any) {
+      console.error("Create from import error:", e);
+      res.status(500).json({ message: e.message || "Failed to create tasting" });
+    }
+  });
+
   return httpServer;
 }
