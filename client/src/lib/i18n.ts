@@ -61,6 +61,16 @@ const resources = {
         backToLogin: "Back to Login",
         noAccount: "No account found with that name and email"
       },
+      guestSecure: {
+        title: "Secure Your Access",
+        description: "Set a PIN so you can log back in later. Add your email too if you'd like to recover your PIN or receive invitations.",
+        pinHint: "At least 4 characters. You'll use this to log back in.",
+        optional: "optional",
+        emailHint: "For PIN recovery and session invitations.",
+        confirm: "Secure My Account",
+        skip: "Skip for now",
+        pinTooShort: "PIN must be at least 4 characters",
+      },
       verify: {
         title: "Verify Your Email",
         subtitle: "We sent a 6-digit code to {{email}}. Please enter it below.",
@@ -1576,6 +1586,16 @@ const resources = {
         success: "PIN erfolgreich zurückgesetzt! Sie können sich jetzt mit Ihrer neuen PIN anmelden.",
         backToLogin: "Zurück zum Login",
         noAccount: "Kein Konto mit diesem Namen und dieser E-Mail gefunden"
+      },
+      guestSecure: {
+        title: "Zugang sichern",
+        description: "Lege eine PIN fest, damit du dich später wieder anmelden kannst. Füge optional eine E-Mail hinzu, um deine PIN wiederherzustellen oder Einladungen zu erhalten.",
+        pinHint: "Mindestens 4 Zeichen. Damit meldest du dich wieder an.",
+        optional: "optional",
+        emailHint: "Für PIN-Wiederherstellung und Session-Einladungen.",
+        confirm: "Zugang sichern",
+        skip: "Jetzt überspringen",
+        pinTooShort: "PIN muss mindestens 4 Zeichen lang sein",
       },
       verify: {
         title: "E-Mail bestätigen",

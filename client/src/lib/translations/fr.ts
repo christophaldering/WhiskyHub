@@ -52,6 +52,16 @@ const fr = {
       backToLogin: "Retour à la Connexion",
       noAccount: "Aucun compte trouvé avec ce nom et cet e-mail"
     },
+    guestSecure: {
+      title: "Sécurisez votre Accès",
+      description: "Définissez un PIN pour vous reconnecter plus tard. Ajoutez un e-mail pour récupérer votre PIN ou recevoir des invitations.",
+      pinHint: "Au moins 4 caractères. Vous l'utiliserez pour vous reconnecter.",
+      optional: "optionnel",
+      emailHint: "Pour la récupération du PIN et les invitations.",
+      confirm: "Sécuriser mon Compte",
+      skip: "Passer pour l'instant",
+      pinTooShort: "Le PIN doit comporter au moins 4 caractères",
+    },
     verify: {
       title: "Vérifiez Votre E-mail",
       subtitle: "Nous avons envoyé un code à 6 chiffres à {{email}}. Veuillez le saisir ci-dessous.",

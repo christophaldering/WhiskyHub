@@ -363,6 +363,34 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/participants/:id/secure", async (req, res) => {
+    try {
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      if (participant.pin) return res.status(400).json({ message: "Account already secured" });
+      if (participant.emailVerified) return res.status(400).json({ message: "Account already has verified email" });
+      const createdAt = participant.createdAt ? new Date(participant.createdAt).getTime() : 0;
+      const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+      if (createdAt < tenMinutesAgo) {
+        return res.status(403).json({ message: "Secure window has expired. Please sign in normally." });
+      }
+      const { pin, email } = req.body;
+      if (!pin || typeof pin !== "string" || pin.length < 4) {
+        return res.status(400).json({ message: "PIN must be at least 4 characters" });
+      }
+      const bcrypt = await import("bcrypt");
+      const hashedPin = await bcrypt.hash(pin, 10);
+      const updates: any = { pin: hashedPin };
+      if (email && typeof email === "string") {
+        updates.email = email.trim().toLowerCase();
+      }
+      const updated = await storage.updateParticipant(participant.id, updates);
+      res.json({ success: true, id: updated!.id, name: updated!.name });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.get("/api/participants/:id", async (req, res) => {
     const participant = await storage.getParticipant(req.params.id);
     if (!participant) return res.status(404).json({ message: "Not found" });

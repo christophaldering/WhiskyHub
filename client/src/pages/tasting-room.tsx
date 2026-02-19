@@ -15,16 +15,17 @@ import DiscussionPanel from "@/components/discussion-panel";
 import ReflectionPanel from "@/components/reflection-panel";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, whiskyApi } from "@/lib/api";
+import { tastingApi, whiskyApi, participantApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import type { Whisky, Tasting } from "@shared/schema";
@@ -909,8 +910,68 @@ function TransferHostDialog({ tasting }: { tasting: Tasting }) {
 export default function TastingRoom() {
   const { id } = useParams();
   const { t } = useTranslation();
-  const { currentParticipant } = useAppStore();
+  const { currentParticipant, setParticipant } = useAppStore();
   const [showLogin, setShowLogin] = useState(false);
+  const [guestName, setGuestName] = useState("");
+  const [guestLoading, setGuestLoading] = useState(false);
+  const [guestError, setGuestError] = useState("");
+  const [showSecureAccount, setShowSecureAccount] = useState(false);
+  const [secureEmail, setSecureEmail] = useState("");
+  const [securePin, setSecurePin] = useState("");
+  const [secureLoading, setSecureLoading] = useState(false);
+  const [secureError, setSecureError] = useState("");
+  const [secureDismissed, setSecureDismissed] = useState(false);
+
+  const handleGuestJoin = async () => {
+    if (!guestName.trim()) return;
+    setGuestLoading(true);
+    setGuestError("");
+    try {
+      const guest = await participantApi.guestJoin(guestName.trim());
+      setParticipant({ id: guest.id, name: guest.name, role: guest.role, canAccessWhiskyDb: guest.canAccessWhiskyDb });
+      if (guest.guest && !guest.pin) {
+        setShowSecureAccount(true);
+      }
+    } catch (e: any) {
+      if (e.message?.includes("already taken")) {
+        setGuestError(t("home.nameTaken"));
+      } else {
+        setGuestError(e.message || t("home.joinFailed"));
+      }
+    } finally {
+      setGuestLoading(false);
+    }
+  };
+
+  const handleSecureAccount = async () => {
+    if (!securePin.trim() || securePin.length < 4) {
+      setSecureError(t("guestSecure.pinTooShort"));
+      return;
+    }
+    if (secureEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(secureEmail.trim())) {
+      setSecureError(t("login.invalidEmail"));
+      return;
+    }
+    setSecureLoading(true);
+    setSecureError("");
+    try {
+      const res = await fetch(`/api/participants/${currentParticipant!.id}/secure`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: securePin, email: secureEmail.trim() || undefined }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ message: "Failed" }));
+        throw new Error(data.message);
+      }
+      setShowSecureAccount(false);
+      setSecureDismissed(true);
+    } catch (e: any) {
+      setSecureError(e.message || "Failed");
+    } finally {
+      setSecureLoading(false);
+    }
+  };
 
   const { data: tasting, isLoading: tastingLoading } = useQuery({
     queryKey: ["tasting", id],
@@ -988,9 +1049,52 @@ export default function TastingRoom() {
 
   if (!currentParticipant) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
-        <LoginDialog open={showLogin || true} onClose={() => setShowLogin(false)} />
-        <p className="text-muted-foreground font-serif">Please sign in to join this tasting session.</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 px-4">
+        <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
+        <Card className="max-w-sm w-full border-border/50 shadow-lg">
+          <CardHeader className="text-center pb-2">
+            <CardTitle className="font-serif text-2xl text-primary flex items-center justify-center gap-2">
+              <User className="w-6 h-6" />
+              {t("home.quickJoinTitle")}
+            </CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              {t("home.quickJoinDesc")}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t("login.name")}</Label>
+              <Input
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder={t("home.namePlaceholder")}
+                className="bg-secondary/20"
+                autoFocus
+                data-testid="input-guest-name"
+                onKeyDown={(e) => e.key === "Enter" && handleGuestJoin()}
+              />
+            </div>
+            {guestError && <p className="text-sm text-destructive" data-testid="text-guest-error">{guestError}</p>}
+            <Button
+              onClick={handleGuestJoin}
+              disabled={guestLoading || !guestName.trim()}
+              className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
+              data-testid="button-guest-join"
+            >
+              {guestLoading ? t("home.joining") : t("home.joinNow")}
+            </Button>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowLogin(true)}
+                className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
+                data-testid="button-switch-to-signin"
+              >
+                {t("home.haveAccount")}
+              </button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -1035,6 +1139,68 @@ export default function TastingRoom() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto overflow-x-hidden">
       <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
+
+      <Dialog open={showSecureAccount} onOpenChange={(v) => { if (!v) { setShowSecureAccount(false); setSecureDismissed(true); } }}>
+        <DialogContent className="sm:max-w-sm bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl text-primary flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              {t("guestSecure.title")}
+            </DialogTitle>
+            <DialogDescription>
+              {t("guestSecure.description")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t("login.pin")}</Label>
+              <Input
+                type="password"
+                value={securePin}
+                onChange={(e) => setSecurePin(e.target.value)}
+                placeholder={t("login.pinPlaceholder")}
+                maxLength={6}
+                className="bg-secondary/20"
+                data-testid="input-secure-pin"
+              />
+              <p className="text-xs text-muted-foreground">{t("guestSecure.pinHint")}</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">
+                {t("login.email")} <span className="normal-case tracking-normal text-muted-foreground/60">({t("guestSecure.optional")})</span>
+              </Label>
+              <Input
+                type="email"
+                value={secureEmail}
+                onChange={(e) => setSecureEmail(e.target.value)}
+                placeholder={t("login.emailPlaceholder")}
+                className="bg-secondary/20"
+                data-testid="input-secure-email"
+              />
+              <p className="text-xs text-muted-foreground">{t("guestSecure.emailHint")}</p>
+            </div>
+            {secureError && <p className="text-sm text-destructive" data-testid="text-secure-error">{secureError}</p>}
+            <Button
+              onClick={handleSecureAccount}
+              disabled={secureLoading || !securePin.trim()}
+              className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
+              data-testid="button-secure-account"
+            >
+              {secureLoading ? "..." : t("guestSecure.confirm")}
+            </Button>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => { setShowSecureAccount(false); setSecureDismissed(true); }}
+                className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
+                data-testid="button-skip-secure"
+              >
+                {t("guestSecure.skip")}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <header className="mb-8 border-b border-border/50 pb-6">
         {tasting.coverImageUrl && (() => {

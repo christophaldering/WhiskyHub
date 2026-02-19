@@ -52,6 +52,16 @@ const nl = {
       backToLogin: "Terug naar Inloggen",
       noAccount: "Geen account gevonden met die naam en dat e-mailadres"
     },
+    guestSecure: {
+      title: "Beveilig je Toegang",
+      description: "Stel een PIN in zodat je later weer kunt inloggen. Voeg optioneel een e-mail toe om je PIN te herstellen of uitnodigingen te ontvangen.",
+      pinHint: "Minimaal 4 tekens. Hiermee log je opnieuw in.",
+      optional: "optioneel",
+      emailHint: "Voor PIN-herstel en sessie-uitnodigingen.",
+      confirm: "Toegang Beveiligen",
+      skip: "Nu overslaan",
+      pinTooShort: "PIN moet minstens 4 tekens lang zijn",
+    },
     verify: {
       title: "Verifieer Je E-mail",
       subtitle: "We hebben een 6-cijferige code naar {{email}} gestuurd. Voer deze hieronder in.",

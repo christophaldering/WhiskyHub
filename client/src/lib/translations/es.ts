@@ -52,6 +52,16 @@ const es = {
       backToLogin: "Volver al Inicio de Sesión",
       noAccount: "No se encontró ninguna cuenta con ese nombre y correo electrónico"
     },
+    guestSecure: {
+      title: "Asegura tu Acceso",
+      description: "Establece un PIN para poder volver a iniciar sesión. Añade un correo para recuperar tu PIN o recibir invitaciones.",
+      pinHint: "Al menos 4 caracteres. Lo usarás para volver a iniciar sesión.",
+      optional: "opcional",
+      emailHint: "Para recuperación del PIN e invitaciones.",
+      confirm: "Asegurar mi Cuenta",
+      skip: "Omitir por ahora",
+      pinTooShort: "El PIN debe tener al menos 4 caracteres",
+    },
     verify: {
       title: "Verifica tu Correo Electrónico",
       subtitle: "Hemos enviado un código de 6 dígitos a {{email}}. Por favor, introdúcelo a continuación.",

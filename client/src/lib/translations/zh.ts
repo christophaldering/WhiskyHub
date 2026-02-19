@@ -52,6 +52,16 @@ const zh = {
       backToLogin: "返回登录",
       noAccount: "未找到使用该姓名和电子邮件的账户"
     },
+    guestSecure: {
+      title: "保护您的访问权限",
+      description: "设置 PIN 以便日后重新登录。可选添加电子邮件以恢复 PIN 或接收邀请。",
+      pinHint: "至少4个字符。用于重新登录。",
+      optional: "可选",
+      emailHint: "用于 PIN 恢复和品鉴会邀请。",
+      confirm: "保护我的账户",
+      skip: "暂时跳过",
+      pinTooShort: "PIN 至少需要4个字符",
+    },
     verify: {
       title: "验证您的电子邮件",
       subtitle: "我们已向 {{email}} 发送了一个 6 位验证码，请在下方输入。",
