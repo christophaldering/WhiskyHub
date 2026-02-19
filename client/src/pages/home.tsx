@@ -229,6 +229,12 @@ export default function Home() {
   const [blindMode, setBlindMode] = useState(false);
   const [reflectionEnabled, setReflectionEnabled] = useState(false);
   const [showFeatures, setShowFeatures] = useState(!currentParticipant);
+  const [showGuestCreate, setShowGuestCreate] = useState(false);
+  const [guestCreateName, setGuestCreateName] = useState("");
+  const [guestCreatePin, setGuestCreatePin] = useState("");
+  const [guestCreateLoading, setGuestCreateLoading] = useState(false);
+  const [guestCreateError, setGuestCreateError] = useState("");
+  const [pendingAction, setPendingAction] = useState<"create" | "photo" | null>(null);
 
   const { data: tastings } = useQuery({
     queryKey: ["tastings", currentParticipant?.id],
@@ -295,24 +301,62 @@ export default function Home() {
     }
   };
 
-  const handleCreate = () => {
-    if (!currentParticipant) {
-      setShowLogin(true);
-      return;
-    }
+  const doCreateTasting = (hostId: string) => {
     if (!newTitle.trim()) return;
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     createTasting.mutate({
       title: newTitle.trim(),
       date: newDate,
       location: newLocation.trim() || "—",
-      hostId: currentParticipant.id,
+      hostId,
       code,
       status: "draft",
       currentAct: "act1",
       blindMode,
       reflectionEnabled,
     });
+  };
+
+  const handleCreate = () => {
+    if (!newTitle.trim()) return;
+    if (!currentParticipant) {
+      setPendingAction("create");
+      setShowGuestCreate(true);
+      return;
+    }
+    doCreateTasting(currentParticipant.id);
+  };
+
+  const handlePhotoTasting = () => {
+    if (!currentParticipant) {
+      setPendingAction("photo");
+      setShowGuestCreate(true);
+      return;
+    }
+    navigate("/photo-tasting");
+  };
+
+  const handleGuestCreateSubmit = async () => {
+    if (!guestCreateName.trim()) return;
+    setGuestCreateLoading(true);
+    setGuestCreateError("");
+    try {
+      const participant = await participantApi.loginOrCreate(guestCreateName.trim(), guestCreatePin || undefined);
+      setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
+      setShowGuestCreate(false);
+      setGuestCreateName("");
+      setGuestCreatePin("");
+      if (pendingAction === "create") {
+        doCreateTasting(participant.id);
+      } else if (pendingAction === "photo") {
+        navigate("/photo-tasting");
+      }
+      setPendingAction(null);
+    } catch (e: any) {
+      setGuestCreateError(e.message || "Failed");
+    } finally {
+      setGuestCreateLoading(false);
+    }
   };
 
   const journeySteps = t("features.journeySteps", { returnObjects: true }) as string[];
@@ -372,6 +416,63 @@ export default function Home() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showGuestCreate} onOpenChange={(v) => { if (!v) { setShowGuestCreate(false); setGuestCreateError(""); setPendingAction(null); } }}>
+        <DialogContent className="sm:max-w-sm bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl text-primary flex items-center gap-2">
+              <User className="w-5 h-5" />
+              {t("home.quickJoinTitle")}
+            </DialogTitle>
+            <DialogDescription>
+              {t("home.quickJoinDesc")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t("home.yourName")}</Label>
+              <Input
+                value={guestCreateName}
+                onChange={(e) => setGuestCreateName(e.target.value)}
+                placeholder={t("home.namePlaceholder")}
+                className="bg-secondary/20"
+                autoFocus
+                data-testid="input-guest-create-name"
+                onKeyDown={(e) => e.key === "Enter" && handleGuestCreateSubmit()}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t("aiImport.guestPin")}</Label>
+              <Input
+                value={guestCreatePin}
+                onChange={(e) => setGuestCreatePin(e.target.value)}
+                placeholder={t("aiImport.guestPinPlaceholder")}
+                type="password"
+                className="bg-secondary/20"
+                data-testid="input-guest-create-pin"
+              />
+            </div>
+            {guestCreateError && <p className="text-sm text-destructive" data-testid="text-guest-create-error">{guestCreateError}</p>}
+            <Button
+              onClick={handleGuestCreateSubmit}
+              disabled={guestCreateLoading || !guestCreateName.trim()}
+              className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
+              data-testid="button-guest-create-submit"
+            >
+              {guestCreateLoading ? t("home.joining") : t("home.joinNow")}
+            </Button>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => { setShowGuestCreate(false); setShowLogin(true); }}
+                className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
+              >
+                {t("home.haveAccount")}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -382,7 +483,7 @@ export default function Home() {
           <img
             src={heroImage}
             alt="Whisky tasting atmosphere"
-            className={`w-full object-cover ${currentParticipant ? "h-36 md:h-48" : "h-48 md:h-72"}`}
+            className="w-full object-cover h-36 md:h-48"
             data-testid="img-hero"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
@@ -404,464 +505,321 @@ export default function Home() {
         )}
       </motion.div>
 
-      {currentParticipant ? (
-        <>
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.8 }}
-            className="w-full space-y-4"
-          >
-            <h2 className="font-serif text-2xl text-primary" data-testid="text-welcome-back">
-              {t("home.welcomeBack", { name: currentParticipant.name })}
-            </h2>
-            <div className="grid grid-cols-3 gap-4">
-              <Link href="/sessions">
-                <div className="bg-card border border-border/50 rounded-xl p-4 text-center hover:shadow-md transition-all duration-300 cursor-pointer" data-testid="card-stat-sessions">
-                  <Wine className="w-6 h-6 text-primary mx-auto mb-2" />
-                  <p className="text-2xl font-mono font-bold text-primary">{activeSessions.length}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{t("home.activeSessions")}</p>
-                </div>
-              </Link>
-              <Link href="/journal">
-                <div className="bg-card border border-border/50 rounded-xl p-4 text-center hover:shadow-md transition-all duration-300 cursor-pointer" data-testid="card-stat-journal">
-                  <NotebookPen className="w-6 h-6 text-primary mx-auto mb-2" />
-                  <ArrowRight className="w-4 h-4 text-muted-foreground mx-auto" />
-                  <p className="text-xs text-muted-foreground mt-1">{t("home.myJournal")}</p>
-                </div>
-              </Link>
-              <Link href="/badges">
-                <div className="bg-card border border-border/50 rounded-xl p-4 text-center hover:shadow-md transition-all duration-300 cursor-pointer" data-testid="card-stat-badges">
-                  <Trophy className="w-6 h-6 text-primary mx-auto mb-2" />
-                  <ArrowRight className="w-4 h-4 text-muted-foreground mx-auto" />
-                  <p className="text-xs text-muted-foreground mt-1">{t("home.myBadges")}</p>
-                </div>
-              </Link>
+      {/* Quick Links - always visible */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.8 }}
+        className="w-full space-y-4"
+      >
+        {currentParticipant && (
+          <h2 className="font-serif text-2xl text-primary" data-testid="text-welcome-back">
+            {t("home.welcomeBack", { name: currentParticipant.name })}
+          </h2>
+        )}
+        <div className="grid grid-cols-3 gap-4">
+          <Link href="/sessions">
+            <div className="bg-card border border-border/50 rounded-xl p-4 text-center hover:shadow-md transition-all duration-300 cursor-pointer" data-testid="card-stat-sessions">
+              <Wine className="w-6 h-6 text-primary mx-auto mb-2" />
+              {currentParticipant ? (
+                <p className="text-2xl font-mono font-bold text-primary">{activeSessions.length}</p>
+              ) : (
+                <ArrowRight className="w-4 h-4 text-muted-foreground mx-auto" />
+              )}
+              <p className="text-xs text-muted-foreground mt-1">{t("home.activeSessions")}</p>
             </div>
-          </motion.div>
+          </Link>
+          <Link href="/journal">
+            <div className="bg-card border border-border/50 rounded-xl p-4 text-center hover:shadow-md transition-all duration-300 cursor-pointer" data-testid="card-stat-journal">
+              <NotebookPen className="w-6 h-6 text-primary mx-auto mb-2" />
+              <ArrowRight className="w-4 h-4 text-muted-foreground mx-auto" />
+              <p className="text-xs text-muted-foreground mt-1">{t("home.myJournal")}</p>
+            </div>
+          </Link>
+          <Link href="/badges">
+            <div className="bg-card border border-border/50 rounded-xl p-4 text-center hover:shadow-md transition-all duration-300 cursor-pointer" data-testid="card-stat-badges">
+              <Trophy className="w-6 h-6 text-primary mx-auto mb-2" />
+              <ArrowRight className="w-4 h-4 text-muted-foreground mx-auto" />
+              <p className="text-xs text-muted-foreground mt-1">{t("home.myBadges")}</p>
+            </div>
+          </Link>
+        </div>
+      </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-8 w-full">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.8 }}>
-              <Card className="h-full border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-500">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3 font-serif text-2xl text-primary">
-                    <UserPlus className="w-5 h-5 text-accent" /> Join Session
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Input
-                    placeholder="Access Code"
-                    className="font-mono uppercase tracking-widest bg-secondary/30 border-border/50"
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-                    data-testid="input-join-code"
-                  />
-                  {joinError && <p className="text-xs text-destructive">{joinError}</p>}
-                </CardContent>
-                <CardFooter>
-                  <Button onClick={handleJoin} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-serif tracking-wide" data-testid="button-join-session">
-                    Enter Tasting Room <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.8 }}>
-              <Card className="h-full border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-500">
-                <CardHeader
-                  className="cursor-pointer select-none"
-                  onClick={() => setShowHostForm(!showHostForm)}
-                  data-testid="button-toggle-host-form"
-                >
-                  <CardTitle className="flex items-center gap-3 font-serif text-2xl text-primary">
-                    <Plus className="w-5 h-5 text-accent" /> Host Session
-                    <ChevronDown className={`w-4 h-4 ml-auto text-muted-foreground transition-transform duration-300 ${showHostForm ? "rotate-180" : ""}`} />
-                  </CardTitle>
-                  {!showHostForm && (
-                    <CardDescription className="text-xs text-muted-foreground/80">
-                      {t("home.hostDesc")}
-                    </CardDescription>
-                  )}
-                </CardHeader>
-                {showHostForm && (
-                  <>
-                    <CardContent className="space-y-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs uppercase tracking-widest text-muted-foreground">Title</Label>
-                        <Input placeholder="Friday Night Drams" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-title" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs uppercase tracking-widest text-muted-foreground">Date</Label>
-                          <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-date" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs uppercase tracking-widest text-muted-foreground">Location</Label>
-                          <Input placeholder="The Library" value={newLocation} onChange={(e) => setNewLocation(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-location" />
-                        </div>
-                      </div>
-                      <div className="border-t border-border/30 pt-3 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Glasses className="w-4 h-4 text-muted-foreground" />
-                            <div>
-                              <Label className="text-xs font-medium">{t("sessionSettings.blindMode")}</Label>
-                              <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.blindModeDesc")}</p>
-                            </div>
-                          </div>
-                          <Switch checked={blindMode} onCheckedChange={setBlindMode} data-testid="switch-blind-mode" />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <BookOpen className="w-4 h-4 text-muted-foreground" />
-                            <div>
-                              <Label className="text-xs font-medium">{t("sessionSettings.reflectionPhase")}</Label>
-                              <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.reflectionDesc")}</p>
-                            </div>
-                          </div>
-                          <Switch checked={reflectionEnabled} onCheckedChange={setReflectionEnabled} data-testid="switch-reflection" />
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="mt-auto flex-col gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={handleCreate}
-                        disabled={createTasting.isPending || !newTitle.trim()}
-                        className="w-full border-primary/20 hover:border-primary text-primary hover:bg-secondary font-serif tracking-wide"
-                        data-testid="button-create-tasting"
-                      >
-                        {createTasting.isPending ? "Creating..." : "Create New Event"}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          navigate("/photo-tasting");
-                        }}
-                        className="w-full text-xs gap-2 text-muted-foreground hover:text-primary"
-                        data-testid="button-create-from-photos"
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                        {t("home.createFromPhotos")}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => setShowImportDialog(true)}
-                        className="w-full text-xs gap-2 text-muted-foreground hover:text-primary"
-                        data-testid="button-create-from-file"
-                      >
-                        <FileUp className="w-3.5 h-3.5" />
-                        {t("aiImport.createFromFile")}
-                      </Button>
-                    </CardFooter>
-                  </>
-                )}
-              </Card>
-            </motion.div>
-          </div>
-        </>
-      ) : (
-        <>
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.8 }}
-            className="w-full"
-          >
-            <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 shadow-md">
-              <CardHeader className="text-center pb-2">
-                <CardTitle className="flex items-center justify-center gap-3 font-serif text-2xl text-primary">
-                  <UserPlus className="w-6 h-6 text-accent" />
-                  {t("home.joinSessionTitle")}
-                </CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">
-                  {t("home.joinSessionSubtitle")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 max-w-md mx-auto">
-                <Input
-                  placeholder="Access Code"
-                  className="font-mono uppercase tracking-widest bg-secondary/30 border-border/50 text-center text-lg h-12"
-                  value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-                  data-testid="input-join-code"
-                />
-                {joinError && <p className="text-xs text-destructive text-center">{joinError}</p>}
-                <Button onClick={handleJoin} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-serif tracking-wide h-11 text-base" data-testid="button-join-session">
-                  Enter Tasting Room <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-                <p className="text-xs text-muted-foreground/70 text-center italic">
-                  {t("home.privacyNote")}
-                </p>
-              </CardContent>
-            </Card>
-            <p className="text-xs text-muted-foreground text-center mt-2">{t("home.noCodeNeeded")}</p>
-
-            <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 shadow-md mt-4">
-              <CardHeader className="text-center pb-2">
-                <CardTitle className="flex items-center justify-center gap-3 font-serif text-2xl text-primary">
-                  <LogIn className="w-6 h-6 text-accent" />
-                  {t("home.loginTitle")}
-                </CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">
-                  {t("home.loginSubtitle")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="max-w-md mx-auto">
+      {/* Join + Host cards - always visible side by side */}
+      <div className="grid md:grid-cols-2 gap-8 w-full">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.8 }}>
+          <Card className="h-full border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 font-serif text-2xl text-primary">
+                <UserPlus className="w-5 h-5 text-accent" /> Join Session
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Input
+                placeholder="Access Code"
+                className="font-mono uppercase tracking-widest bg-secondary/30 border-border/50"
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+                data-testid="input-join-code"
+              />
+              {joinError && <p className="text-xs text-destructive">{joinError}</p>}
+            </CardContent>
+            <CardFooter className="flex-col gap-2">
+              <Button onClick={handleJoin} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-serif tracking-wide" data-testid="button-join-session">
+                Enter Tasting Room <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              {!currentParticipant && (
                 <Button
+                  variant="ghost"
                   onClick={() => setShowLogin(true)}
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-serif tracking-wide h-11 text-base"
+                  className="w-full text-xs gap-2 text-muted-foreground hover:text-primary"
                   data-testid="button-login"
                 >
-                  {t("home.loginButton")} <ArrowRight className="w-4 h-4 ml-2" />
+                  <LogIn className="w-3.5 h-3.5" />
+                  {t("home.loginButton")}
                 </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
-            className="w-full"
-          >
-            <Card className="border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-500">
-              <CardHeader
-                className="cursor-pointer select-none"
-                onClick={() => setShowFeatures(!showFeatures)}
-                data-testid="button-toggle-features"
-              >
-                <CardTitle className="flex items-center gap-3 font-serif text-2xl text-primary">
-                  <Eye className="w-5 h-5 text-accent" />
-                  {showFeatures ? t("home.hideFeatures") : t("home.showFeatures")}
-                  <ChevronDown className={`w-4 h-4 ml-auto text-muted-foreground transition-transform duration-300 ${showFeatures ? "rotate-180" : ""}`} />
-                </CardTitle>
-                {!showFeatures && (
-                  <CardDescription className="text-xs text-muted-foreground/80">
-                    {t("home.showFeaturesHint")}
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <AnimatePresence>
-                {showFeatures && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.4, ease: "easeInOut" }}
-                    className="overflow-hidden"
-                  >
-                    <CardContent className="space-y-4">
-                      <p className="text-center text-sm text-foreground/90 font-serif italic px-4">
-                        {t("home.introHeadline")}
-                      </p>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <motion.div
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.1 }}
-                          className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
-                          data-testid="card-feature-journey"
-                        >
-                          <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
-                            <ArrowRight className="w-4 h-4" />
-                            {t("features.journey")}
-                          </h3>
-                          <JourneyFlowGraphic steps={journeySteps} />
-                          <p className="text-xs text-muted-foreground leading-relaxed pt-3">{t("features.journeyDesc")}</p>
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.15 }}
-                          className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
-                          data-testid="card-feature-ai"
-                        >
-                          <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
-                            <Sparkles className="w-4 h-4" />
-                            {t("features.ai")}
-                          </h3>
-                          <AiPipelineGraphic labels={[t("features.aiScan"), t("features.aiMatch"), t("features.aiRec")]} />
-                          <p className="text-xs text-muted-foreground leading-relaxed">{t("features.aiDesc")}</p>
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.2 }}
-                          className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
-                          data-testid="card-feature-tasting"
-                        >
-                          <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
-                            <Glasses className="w-4 h-4" />
-                            {t("features.tasting")}
-                          </h3>
-                          <MiniBarChart categories={tastingCategories} />
-                          <p className="text-xs text-muted-foreground leading-relaxed">{t("features.tastingDesc")}</p>
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.25 }}
-                          className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
-                          data-testid="card-feature-stats"
-                        >
-                          <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
-                            <BarChart3 className="w-4 h-4" />
-                            {t("features.stats")}
-                          </h3>
-                          <div className="w-24 h-24 mx-auto">
-                            <MiniRadarChart />
-                          </div>
-                          <p className="text-xs text-muted-foreground leading-relaxed">{t("features.statsDesc")}</p>
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.3 }}
-                          className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
-                          data-testid="card-feature-community"
-                        >
-                          <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
-                            <Users className="w-4 h-4" />
-                            {t("features.community")}
-                          </h3>
-                          <CommunityGraphic metrics={communityMetrics} />
-                          <p className="text-xs text-muted-foreground leading-relaxed">{t("features.communityDesc")}</p>
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.35 }}
-                          className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
-                          data-testid="card-feature-encyclopedia"
-                        >
-                          <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
-                            <Globe className="w-4 h-4" />
-                            {t("features.encyclopedia")}
-                          </h3>
-                          <div className="h-20">
-                            <WorldMapDots regions={encyclopediaRegions} />
-                          </div>
-                          <p className="text-xs text-muted-foreground leading-relaxed">{t("features.encyclopediaDesc")}</p>
-                        </motion.div>
-                      </div>
-
-                      <p className="text-center text-xs text-muted-foreground italic pt-1">
-                        {t("home.introFooter")}
-                      </p>
-                    </CardContent>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </Card>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.8 }} className="w-full">
-            <Card className="border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-500">
-              <CardHeader
-                className="cursor-pointer select-none"
-                onClick={() => setShowHostForm(!showHostForm)}
-                data-testid="button-toggle-host-form"
-              >
-                <CardTitle className="flex items-center gap-3 font-serif text-2xl text-primary">
-                  <Plus className="w-5 h-5 text-accent" /> Host Session
-                  <ChevronDown className={`w-4 h-4 ml-auto text-muted-foreground transition-transform duration-300 ${showHostForm ? "rotate-180" : ""}`} />
-                </CardTitle>
-                {!showHostForm && (
-                  <CardDescription className="text-xs text-muted-foreground/80">
-                    {t("home.hostDesc")}
-                  </CardDescription>
-                )}
-              </CardHeader>
-              {showHostForm && (
-                <>
-                  <CardContent className="space-y-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">Title</Label>
-                      <Input placeholder="Friday Night Drams" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-title" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs uppercase tracking-widest text-muted-foreground">Date</Label>
-                        <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-date" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs uppercase tracking-widest text-muted-foreground">Location</Label>
-                        <Input placeholder="The Library" value={newLocation} onChange={(e) => setNewLocation(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-location" />
-                      </div>
-                    </div>
-                    <div className="border-t border-border/30 pt-3 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Glasses className="w-4 h-4 text-muted-foreground" />
-                          <div>
-                            <Label className="text-xs font-medium">{t("sessionSettings.blindMode")}</Label>
-                            <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.blindModeDesc")}</p>
-                          </div>
-                        </div>
-                        <Switch checked={blindMode} onCheckedChange={setBlindMode} data-testid="switch-blind-mode" />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <BookOpen className="w-4 h-4 text-muted-foreground" />
-                          <div>
-                            <Label className="text-xs font-medium">{t("sessionSettings.reflectionPhase")}</Label>
-                            <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.reflectionDesc")}</p>
-                          </div>
-                        </div>
-                        <Switch checked={reflectionEnabled} onCheckedChange={setReflectionEnabled} data-testid="switch-reflection" />
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="mt-auto flex-col gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={handleCreate}
-                      disabled={createTasting.isPending || !newTitle.trim()}
-                      className="w-full border-primary/20 hover:border-primary text-primary hover:bg-secondary font-serif tracking-wide"
-                      data-testid="button-create-tasting"
-                    >
-                      {createTasting.isPending ? "Creating..." : "Create New Event"}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        if (!currentParticipant) {
-                          setShowLogin(true);
-                          return;
-                        }
-                        navigate("/photo-tasting");
-                      }}
-                      className="w-full text-xs gap-2 text-muted-foreground hover:text-primary"
-                      data-testid="button-create-from-photos"
-                    >
-                      <Camera className="w-3.5 h-3.5" />
-                      {t("home.createFromPhotos")}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => setShowImportDialog(true)}
-                      className="w-full text-xs gap-2 text-muted-foreground hover:text-primary"
-                      data-testid="button-create-from-file"
-                    >
-                      <FileUp className="w-3.5 h-3.5" />
-                      {t("aiImport.createFromFile")}
-                    </Button>
-                  </CardFooter>
-                </>
               )}
-            </Card>
-          </motion.div>
-        </>
-      )}
+            </CardFooter>
+          </Card>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.8 }}>
+          <Card className="h-full border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-500">
+            <CardHeader
+              className="cursor-pointer select-none"
+              onClick={() => setShowHostForm(!showHostForm)}
+              data-testid="button-toggle-host-form"
+            >
+              <CardTitle className="flex items-center gap-3 font-serif text-2xl text-primary">
+                <Plus className="w-5 h-5 text-accent" /> Host Session
+                <ChevronDown className={`w-4 h-4 ml-auto text-muted-foreground transition-transform duration-300 ${showHostForm ? "rotate-180" : ""}`} />
+              </CardTitle>
+              {!showHostForm && (
+                <CardDescription className="text-xs text-muted-foreground/80">
+                  {t("home.hostDesc")}
+                </CardDescription>
+              )}
+            </CardHeader>
+            {showHostForm && (
+              <>
+                <CardContent className="space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs uppercase tracking-widest text-muted-foreground">Title</Label>
+                    <Input placeholder="Friday Night Drams" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-title" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">Date</Label>
+                      <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-date" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">Location</Label>
+                      <Input placeholder="The Library" value={newLocation} onChange={(e) => setNewLocation(e.target.value)} className="bg-secondary/20" data-testid="input-tasting-location" />
+                    </div>
+                  </div>
+                  <div className="border-t border-border/30 pt-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Glasses className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <Label className="text-xs font-medium">{t("sessionSettings.blindMode")}</Label>
+                          <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.blindModeDesc")}</p>
+                        </div>
+                      </div>
+                      <Switch checked={blindMode} onCheckedChange={setBlindMode} data-testid="switch-blind-mode" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <Label className="text-xs font-medium">{t("sessionSettings.reflectionPhase")}</Label>
+                          <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.reflectionDesc")}</p>
+                        </div>
+                      </div>
+                      <Switch checked={reflectionEnabled} onCheckedChange={setReflectionEnabled} data-testid="switch-reflection" />
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="mt-auto flex-col gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleCreate}
+                    disabled={createTasting.isPending || !newTitle.trim()}
+                    className="w-full border-primary/20 hover:border-primary text-primary hover:bg-secondary font-serif tracking-wide"
+                    data-testid="button-create-tasting"
+                  >
+                    {createTasting.isPending ? "Creating..." : "Create New Event"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={handlePhotoTasting}
+                    className="w-full text-xs gap-2 text-muted-foreground hover:text-primary"
+                    data-testid="button-create-from-photos"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    {t("home.createFromPhotos")}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowImportDialog(true)}
+                    className="w-full text-xs gap-2 text-muted-foreground hover:text-primary"
+                    data-testid="button-create-from-file"
+                  >
+                    <FileUp className="w-3.5 h-3.5" />
+                    {t("aiImport.createFromFile")}
+                  </Button>
+                </CardFooter>
+              </>
+            )}
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* Features showcase - always visible */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.8 }}
+        className="w-full"
+      >
+        <Card className="border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-500">
+          <CardHeader
+            className="cursor-pointer select-none"
+            onClick={() => setShowFeatures(!showFeatures)}
+            data-testid="button-toggle-features"
+          >
+            <CardTitle className="flex items-center gap-3 font-serif text-2xl text-primary">
+              <Eye className="w-5 h-5 text-accent" />
+              {showFeatures ? t("home.hideFeatures") : t("home.showFeatures")}
+              <ChevronDown className={`w-4 h-4 ml-auto text-muted-foreground transition-transform duration-300 ${showFeatures ? "rotate-180" : ""}`} />
+            </CardTitle>
+            {!showFeatures && (
+              <CardDescription className="text-xs text-muted-foreground/80">
+                {t("home.showFeaturesHint")}
+              </CardDescription>
+            )}
+          </CardHeader>
+          <AnimatePresence>
+            {showFeatures && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <CardContent className="space-y-4">
+                  <p className="text-center text-sm text-foreground/90 font-serif italic px-4">
+                    {t("home.introHeadline")}
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                      data-testid="card-feature-journey"
+                    >
+                      <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                        <ArrowRight className="w-4 h-4" />
+                        {t("features.journey")}
+                      </h3>
+                      <JourneyFlowGraphic steps={journeySteps} />
+                      <p className="text-xs text-muted-foreground leading-relaxed pt-3">{t("features.journeyDesc")}</p>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 }}
+                      className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                      data-testid="card-feature-ai"
+                    >
+                      <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                        <Sparkles className="w-4 h-4" />
+                        {t("features.ai")}
+                      </h3>
+                      <AiPipelineGraphic labels={[t("features.aiScan"), t("features.aiMatch"), t("features.aiRec")]} />
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t("features.aiDesc")}</p>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                      data-testid="card-feature-tasting"
+                    >
+                      <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                        <Glasses className="w-4 h-4" />
+                        {t("features.tasting")}
+                      </h3>
+                      <MiniBarChart categories={tastingCategories} />
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t("features.tastingDesc")}</p>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25 }}
+                      className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                      data-testid="card-feature-stats"
+                    >
+                      <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4" />
+                        {t("features.stats")}
+                      </h3>
+                      <div className="w-24 h-24 mx-auto">
+                        <MiniRadarChart />
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t("features.statsDesc")}</p>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                      data-testid="card-feature-community"
+                    >
+                      <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        {t("features.community")}
+                      </h3>
+                      <CommunityGraphic metrics={communityMetrics} />
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t("features.communityDesc")}</p>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.35 }}
+                      className="border border-border/40 bg-card rounded-xl p-4 space-y-2"
+                      data-testid="card-feature-encyclopedia"
+                    >
+                      <h3 className="font-serif font-bold text-primary text-sm flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        {t("features.encyclopedia")}
+                      </h3>
+                      <div className="h-20">
+                        <WorldMapDots regions={encyclopediaRegions} />
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t("features.encyclopediaDesc")}</p>
+                    </motion.div>
+                  </div>
+
+                  <p className="text-center text-xs text-muted-foreground italic pt-1">
+                    {t("home.introFooter")}
+                  </p>
+                </CardContent>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Card>
+      </motion.div>
 
       {/* Whisky of the Day */}
       {wotd && wotd.whisky && (
