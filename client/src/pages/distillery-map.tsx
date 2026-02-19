@@ -78,17 +78,35 @@ const countryColors: Record<string, string> = {
 function FitBounds({ markers, fitKey }: { markers: Distillery[]; fitKey: number }) {
   const map = useMap();
   useEffect(() => {
-    setTimeout(() => map.invalidateSize(), 100);
-    setTimeout(() => map.invalidateSize(), 500);
+    const timers = [
+      setTimeout(() => map.invalidateSize(), 50),
+      setTimeout(() => map.invalidateSize(), 200),
+      setTimeout(() => map.invalidateSize(), 500),
+      setTimeout(() => map.invalidateSize(), 1000),
+    ];
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    observer.observe(container);
+    return () => {
+      timers.forEach(clearTimeout);
+      observer.disconnect();
+    };
   }, [map]);
   useEffect(() => {
     if (markers.length === 0) return;
-    if (markers.length === 1) {
-      map.setView([markers[0].lat, markers[0].lng], 10);
-      return;
-    }
-    const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng]));
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
+    const doFit = () => {
+      map.invalidateSize();
+      if (markers.length === 1) {
+        map.setView([markers[0].lat, markers[0].lng], 10);
+        return;
+      }
+      const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng]));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
+    };
+    doFit();
+    setTimeout(doFit, 300);
   }, [fitKey]);
   return null;
 }

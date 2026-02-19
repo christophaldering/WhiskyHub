@@ -25,15 +25,22 @@ function InvalidateSizeOnMount() {
   const map = useMap();
   useEffect(() => {
     const timers = [
-      setTimeout(() => map.invalidateSize(), 200),
+      setTimeout(() => map.invalidateSize(), 50),
+      setTimeout(() => map.invalidateSize(), 150),
+      setTimeout(() => map.invalidateSize(), 300),
       setTimeout(() => map.invalidateSize(), 500),
-      setTimeout(() => map.invalidateSize(), 1000),
+      setTimeout(() => map.invalidateSize(), 800),
+      setTimeout(() => map.invalidateSize(), 1200),
     ];
     const container = map.getContainer();
+    const parentEl = container.closest("[data-minimap-wrapper]") || container.parentElement;
     const observer = new ResizeObserver(() => {
       map.invalidateSize();
     });
     observer.observe(container);
+    if (parentEl && parentEl !== container) {
+      observer.observe(parentEl);
+    }
     return () => {
       timers.forEach(clearTimeout);
       observer.disconnect();
@@ -43,24 +50,35 @@ function InvalidateSizeOnMount() {
 }
 
 function MiniMap({ lat, lng, name }: { lat: number; lng: number; name: string }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setReady(true), 350);
+    return () => clearTimeout(timer);
+  }, []);
   return (
-    <div className="rounded-md overflow-hidden border border-border/30" style={{ height: 180, width: "100%" }} onClick={(e) => e.stopPropagation()}>
-      <MapContainer
-        center={[lat, lng]}
-        zoom={10}
-        style={{ height: "100%", width: "100%" }}
-        scrollWheelZoom={false}
-        dragging={false}
-        zoomControl={false}
-        attributionControl={false}
-        doubleClickZoom={false}
-        touchZoom={false}
-        key={name}
-      >
-        <InvalidateSizeOnMount />
-        <TileLayer url="https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png" />
-        <Marker position={[lat, lng]} icon={miniMapIcon} />
-      </MapContainer>
+    <div data-minimap-wrapper className="rounded-md overflow-hidden border border-border/30" style={{ height: 180, width: "100%" }} onClick={(e) => e.stopPropagation()}>
+      {ready ? (
+        <MapContainer
+          center={[lat, lng]}
+          zoom={10}
+          style={{ height: "100%", width: "100%" }}
+          scrollWheelZoom={false}
+          dragging={false}
+          zoomControl={false}
+          attributionControl={false}
+          doubleClickZoom={false}
+          touchZoom={false}
+          key={name}
+        >
+          <InvalidateSizeOnMount />
+          <TileLayer url="https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png" />
+          <Marker position={[lat, lng]} icon={miniMapIcon} />
+        </MapContainer>
+      ) : (
+        <div className="h-full w-full flex items-center justify-center bg-muted/30">
+          <MapPin className="h-5 w-5 text-muted-foreground animate-pulse" />
+        </div>
+      )}
     </div>
   );
 }
