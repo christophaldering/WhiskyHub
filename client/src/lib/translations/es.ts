@@ -510,6 +510,7 @@ const es = {
         activityFeed: "Feed de Actividad",
         leaderboard: "Clasificación",
         calendar: "Calendario de Catas",
+        remindersFeature: "Recordatorios de Cata",
         hostDashboard: "Panel del Anfitrión",
         photoTasting: "Cata Fotográfica",
         recap: "Resumen de Cata",

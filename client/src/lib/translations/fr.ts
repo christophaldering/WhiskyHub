@@ -510,6 +510,7 @@ const fr = {
         activityFeed: "Fil d'Activité",
         leaderboard: "Classement",
         calendar: "Calendrier de Dégustation",
+        remindersFeature: "Rappels de Dégustation",
         hostDashboard: "Tableau de Bord Hôte",
         photoTasting: "Dégustation Photo",
         recap: "Récapitulatif de Dégustation",

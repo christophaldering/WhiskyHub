@@ -510,6 +510,7 @@ const nl = {
         activityFeed: "Activiteitsfeed",
         leaderboard: "Ranglijst",
         calendar: "Proefkalender",
+        remindersFeature: "Proeverij Herinneringen",
         hostDashboard: "Host Dashboard",
         photoTasting: "Fotoproeverij",
         recap: "Proeverij Samenvatting",

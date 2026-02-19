@@ -510,6 +510,7 @@ const it = {
         activityFeed: "Feed Attività",
         leaderboard: "Classifica",
         calendar: "Calendario Degustazioni",
+        remindersFeature: "Promemoria Degustazioni",
         hostDashboard: "Dashboard Host",
         photoTasting: "Degustazione Fotografica",
         recap: "Riepilogo Degustazione",

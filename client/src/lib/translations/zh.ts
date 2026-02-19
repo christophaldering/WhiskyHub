@@ -510,6 +510,7 @@ const zh = {
         activityFeed: "动态",
         leaderboard: "排行榜",
         calendar: "品鉴日历",
+        remindersFeature: "品鉴提醒",
         hostDashboard: "主持人面板",
         photoTasting: "拍照品鉴",
         recap: "品鉴回顾",
