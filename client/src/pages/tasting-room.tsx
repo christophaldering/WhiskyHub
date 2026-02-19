@@ -66,6 +66,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
     name: "", distillery: "", age: "", abv: "", country: "",
     notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "",
     caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "", wbScore: "",
+    bottler: "", vintage: "", price: "", hostSummary: "",
   });
 
   const createWhisky = useMutation({
@@ -84,7 +85,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
   });
 
   const resetForm = () => {
-    setForm({ name: "", distillery: "", age: "", abv: "", country: "", notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "", caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "", wbScore: "" });
+    setForm({ name: "", distillery: "", age: "", abv: "", country: "", notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "", caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "", wbScore: "", bottler: "", vintage: "", price: "", hostSummary: "" });
     setImageFile(null);
     setImagePreview(null);
     setImageError("");
@@ -132,6 +133,10 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
       ppm: form.ppm ? parseFloat(form.ppm) : null,
       whiskybaseId: form.whiskybaseId.trim() || null,
       wbScore: form.wbScore ? parseFloat(form.wbScore) : null,
+      bottler: form.bottler.trim() || null,
+      vintage: form.vintage.trim() || null,
+      price: form.price ? parseFloat(form.price) : null,
+      hostSummary: form.hostSummary.trim() || null,
     });
   };
 
@@ -230,6 +235,16 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("whisky.bottler")}</Label>
+              <Input value={form.bottler} onChange={(e) => setForm(p => ({ ...p, bottler: e.target.value }))} placeholder="OA / Signatory / G&M..." data-testid="input-whisky-bottler" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("whisky.vintage")}</Label>
+              <Input value={form.vintage} onChange={(e) => setForm(p => ({ ...p, vintage: e.target.value }))} placeholder="2010 - 2025" data-testid="input-whisky-vintage" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
               <Label className="text-xs uppercase tracking-widest text-muted-foreground">Age</Label>
               <Input value={form.age} onChange={(e) => setForm(p => ({ ...p, age: e.target.value }))} placeholder="NAS or 18" />
             </div>
@@ -238,7 +253,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
               <Input type="number" value={form.abv} onChange={(e) => setForm(p => ({ ...p, abv: e.target.value }))} placeholder="46.0" step="0.1" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1">
               <Label className="text-xs uppercase tracking-widest text-muted-foreground">Country</Label>
               <Select value={form.country} onValueChange={(v) => setForm(p => ({ ...p, country: v }))}>
@@ -269,6 +284,10 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("whisky.price")}</Label>
+              <Input type="number" value={form.price} onChange={(e) => setForm(p => ({ ...p, price: e.target.value }))} placeholder="80.00" step="0.01" data-testid="input-whisky-price" />
             </div>
           </div>
           <div className="border-t border-border/30 pt-4">
@@ -317,6 +336,19 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
               </div>
             </div>
           </div>
+          <div className="border-t border-border/30 pt-4">
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("whisky.hostSummary")}</Label>
+              <textarea
+                value={form.hostSummary}
+                onChange={(e) => setForm(p => ({ ...p, hostSummary: e.target.value }))}
+                placeholder={t("whisky.hostSummaryPlaceholder")}
+                className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                data-testid="input-whisky-host-summary"
+              />
+              <p className="text-xs text-muted-foreground">{t("whisky.hostSummaryHint")}</p>
+            </div>
+          </div>
           <Button onClick={handleSubmit} disabled={createWhisky.isPending || !form.name.trim()} className="w-full bg-primary text-primary-foreground font-serif" data-testid="button-submit-whisky">
             {createWhisky.isPending ? "Adding..." : t("whisky.addToFlight")}
           </Button>
@@ -338,7 +370,7 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
     name: "", distillery: "", age: "", abv: "", country: "",
     notes: "", category: "Single Malt", region: "", abvBand: "", ageBand: "",
     caskInfluence: "", peatLevel: "None", ppm: "", whiskybaseId: "", wbScore: "",
-    hostNotes: "",
+    hostNotes: "", bottler: "", vintage: "", price: "", hostSummary: "",
   });
 
   const canEdit = isHost && (tastingStatus === "draft" || tastingStatus === "open");
@@ -360,7 +392,11 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
       ppm: whisky.ppm != null ? String(whisky.ppm) : "",
       whiskybaseId: whisky.whiskybaseId || "",
       wbScore: whisky.wbScore != null ? String(whisky.wbScore) : "",
-      hostNotes: (whisky as any).hostNotes || "",
+      hostNotes: whisky.hostNotes || "",
+      bottler: whisky.bottler || "",
+      vintage: whisky.vintage || "",
+      price: whisky.price != null ? String(whisky.price) : "",
+      hostSummary: whisky.hostSummary || "",
     });
     setImageFile(null);
     setImagePreview(null);
@@ -425,6 +461,10 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
       whiskybaseId: form.whiskybaseId.trim() || null,
       wbScore: form.wbScore ? parseFloat(form.wbScore) : null,
       hostNotes: form.hostNotes.trim() || null,
+      bottler: form.bottler.trim() || null,
+      vintage: form.vintage.trim() || null,
+      price: form.price ? parseFloat(form.price) : null,
+      hostSummary: form.hostSummary.trim() || null,
     });
   };
 
@@ -531,6 +571,16 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("whisky.bottler")}</Label>
+              <Input value={form.bottler} onChange={(e) => setForm(p => ({ ...p, bottler: e.target.value }))} placeholder="OA / Signatory / G&M..." data-testid="input-edit-whisky-bottler" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("whisky.vintage")}</Label>
+              <Input value={form.vintage} onChange={(e) => setForm(p => ({ ...p, vintage: e.target.value }))} placeholder="2010 - 2025" data-testid="input-edit-whisky-vintage" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
               <Label className="text-xs uppercase tracking-widest text-muted-foreground">Age</Label>
               <Input value={form.age} onChange={(e) => setForm(p => ({ ...p, age: e.target.value }))} />
             </div>
@@ -539,7 +589,7 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
               <Input type="number" value={form.abv} onChange={(e) => setForm(p => ({ ...p, abv: e.target.value }))} step="0.1" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1">
               <Label className="text-xs uppercase tracking-widest text-muted-foreground">Country</Label>
               <Select value={form.country} onValueChange={(v) => setForm(p => ({ ...p, country: v }))}>
@@ -570,6 +620,10 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("whisky.price")}</Label>
+              <Input type="number" value={form.price} onChange={(e) => setForm(p => ({ ...p, price: e.target.value }))} placeholder="80.00" step="0.01" data-testid="input-edit-whisky-price" />
             </div>
           </div>
           <div className="border-t border-border/30 pt-4">
@@ -629,6 +683,19 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
                 data-testid="input-edit-whisky-host-notes"
               />
               <p className="text-xs text-muted-foreground">{t("focus.hostNotesHint")}</p>
+            </div>
+          </div>
+          <div className="border-t border-border/30 pt-4">
+            <div className="space-y-1">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("whisky.hostSummary")}</Label>
+              <textarea
+                value={form.hostSummary}
+                onChange={(e) => setForm(p => ({ ...p, hostSummary: e.target.value }))}
+                placeholder={t("whisky.hostSummaryPlaceholder")}
+                className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                data-testid="input-edit-whisky-host-summary"
+              />
+              <p className="text-xs text-muted-foreground">{t("whisky.hostSummaryHint")}</p>
             </div>
           </div>
           <Button onClick={handleSubmit} disabled={updateWhisky.isPending || !form.name.trim()} className="w-full bg-primary text-primary-foreground font-serif" data-testid="button-save-whisky">
@@ -1592,6 +1659,24 @@ export default function TastingRoom() {
                             <span className="font-mono text-lg font-medium">{activeWhisky.ppm}</span>
                           </div>
                         )}
+                        {activeWhisky.bottler && (
+                          <div>
+                            <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">{t("whisky.bottler")}</span>
+                            <span className="font-mono text-lg font-medium">{activeWhisky.bottler}</span>
+                          </div>
+                        )}
+                        {activeWhisky.vintage && (
+                          <div>
+                            <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">{t("whisky.vintage")}</span>
+                            <span className="font-mono text-lg font-medium">{activeWhisky.vintage}</span>
+                          </div>
+                        )}
+                        {activeWhisky.price != null && (
+                          <div>
+                            <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">{t("whisky.price")}</span>
+                            <span className="font-mono text-lg font-medium">{activeWhisky.price.toFixed(2)}</span>
+                          </div>
+                        )}
                         {activeWhisky.wbScore != null && (
                           <div>
                             <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">WB Score</span>
@@ -1612,6 +1697,12 @@ export default function TastingRoom() {
                             </a>
                           </div>
                         )}
+                      </div>
+                    )}
+                    {blind.showMeta && activeWhisky.hostSummary && (
+                      <div className="mt-6 pt-4 border-t border-border/30">
+                        <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-2">{t("whisky.hostSummary")}</span>
+                        <p className="text-sm font-serif italic text-foreground/80 whitespace-pre-wrap" data-testid="text-host-summary">{activeWhisky.hostSummary}</p>
                       </div>
                     )}
                     {isHost && isBlind && activeWhisky.imageUrl && (

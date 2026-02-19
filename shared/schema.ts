@@ -88,6 +88,10 @@ export const whiskies = pgTable("whiskies", {
   imageUrl: text("image_url"),
   photoRevealed: boolean("photo_revealed").default(false),
   hostNotes: text("host_notes"),
+  bottler: text("bottler"), // Independent Bottler or "OA" for official
+  vintage: text("vintage"), // Distillation/bottling vintage year(s)
+  price: real("price"), // Bottle price (0.7l)
+  hostSummary: text("host_summary"), // Host's detailed tasting assessment/review
 });
 
 export const insertWhiskySchema = createInsertSchema(whiskies).omit({ id: true });

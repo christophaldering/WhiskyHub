@@ -358,11 +358,15 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
                 <p className="text-muted-foreground font-serif italic mt-1">{activeWhisky.distillery}</p>
               )}
               {blind.showMeta && (
-                <div className="flex items-center justify-center gap-3 mt-2 text-sm font-mono text-muted-foreground">
+                <div className="flex flex-wrap items-center justify-center gap-3 mt-2 text-sm font-mono text-muted-foreground">
                   {activeWhisky.age && <span>{activeWhisky.age === "NAS" ? "NAS" : `${activeWhisky.age}y`}</span>}
                   {activeWhisky.abv != null && <span>{activeWhisky.abv}%</span>}
+                  {activeWhisky.bottler && <span className="text-primary/80">{activeWhisky.bottler}</span>}
+                  {activeWhisky.vintage && <span>{activeWhisky.vintage}</span>}
                   {activeWhisky.region && <span>{activeWhisky.region}</span>}
                   {activeWhisky.category && <span>{activeWhisky.category}</span>}
+                  {activeWhisky.price != null && <span>€{activeWhisky.price.toFixed(0)}</span>}
+                  {activeWhisky.wbScore != null && <span className="text-primary font-bold">WB {activeWhisky.wbScore.toFixed(1)}</span>}
                 </div>
               )}
               {!blind.showName && isBlind && (
@@ -382,6 +386,21 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
                   <span className="text-xs font-serif font-bold uppercase tracking-widest">{t("focus.hostNotes")}</span>
                 </div>
                 <p className="text-sm font-serif leading-relaxed text-foreground/80 whitespace-pre-line">{activeWhisky.hostNotes}</p>
+              </motion.div>
+            )}
+
+            {activeWhisky.hostSummary && blind.showMeta && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg"
+                data-testid="host-summary-display"
+              >
+                <div className="flex items-center gap-2 mb-2 text-primary">
+                  <BookOpen className="w-4 h-4" />
+                  <span className="text-xs font-serif font-bold uppercase tracking-widest">{t("whisky.hostSummary")}</span>
+                </div>
+                <p className="text-sm font-serif leading-relaxed text-foreground/80 whitespace-pre-line">{activeWhisky.hostSummary}</p>
               </motion.div>
             )}
 

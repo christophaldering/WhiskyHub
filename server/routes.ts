@@ -110,6 +110,10 @@ const COLUMN_MAP: Record<string, string> = {
   image: "imageRef", image_url: "imageRef", image_filename: "imageRef", bild: "imageRef", foto: "imageRef",
   abv_band: "abvBand", abvband: "abvBand",
   age_band: "ageBand", ageband: "ageBand", altersband: "ageBand",
+  bottler: "bottler", "independent bottler": "bottler", ib: "bottler", abfüller: "bottler",
+  vintage: "vintage", jahrgang: "vintage",
+  price: "price", preis: "price", "retail price": "price",
+  host_summary: "hostSummary", hostsummary: "hostSummary", "host summary": "hostSummary",
 };
 
 function normalizeColumnName(raw: string): string | null {
