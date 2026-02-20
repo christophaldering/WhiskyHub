@@ -155,7 +155,7 @@ function WhiskyRow({
   return (
     <div
       className={cn(
-        "rounded-lg border bg-card p-2.5 sm:p-3 space-y-1.5 sm:space-y-2",
+        "rounded-lg border bg-card p-3 sm:p-4 space-y-2 sm:space-y-3",
         hasRating ? "border-green-500/30 bg-green-500/5" : "border-border/40"
       )}
       data-testid={`overview-row-${whisky.id}`}
@@ -209,16 +209,16 @@ function WhiskyRow({
 
       <div className="hidden md:block">
         {!isLocked ? (
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-5 gap-5">
             {categories.map((cat) => (
-              <div key={cat.id} className="space-y-1">
+              <div key={cat.id} className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-serif font-bold text-muted-foreground uppercase tracking-wider">{cat.short}</span>
+                  <span className="text-[10px] font-serif font-bold text-muted-foreground uppercase tracking-wider">{cat.short}</span>
                   <Input
                     type="number"
                     value={scores[cat.id]}
                     onChange={(e) => handleScoreChange(cat.id, parseFloat(e.target.value) || 0)}
-                    className="w-11 text-right font-mono text-[11px] font-bold border-none bg-transparent h-5 p-0 focus:ring-0"
+                    className="w-12 text-right font-mono text-xs font-bold border-none bg-transparent h-5 p-0 focus:ring-0"
                     step={0.1} min={0} max={100}
                     disabled={isLocked}
                     data-testid={`overview-input-${cat.id}-${whisky.id}`}
@@ -236,10 +236,10 @@ function WhiskyRow({
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-5 gap-5">
             {categories.map((cat) => (
               <div key={cat.id} className="text-center">
-                <span className="text-[9px] font-serif text-muted-foreground uppercase block">{cat.short}</span>
+                <span className="text-[10px] font-serif text-muted-foreground uppercase block">{cat.short}</span>
                 <span className="text-sm font-mono font-bold">{scores[cat.id]}</span>
               </div>
             ))}
@@ -280,7 +280,7 @@ function WhiskyRow({
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-5 gap-2 pt-1">
+            <div className="grid grid-cols-5 gap-4 pt-1">
               {categories.map((cat) => (
                 <div key={cat.id} className="text-center">
                   <span className="text-[9px] font-serif text-muted-foreground uppercase block">{cat.short}</span>
@@ -350,7 +350,7 @@ export function OverviewRating({ tasting, whiskies, onExit, getBlindState }: Ove
       </header>
 
       <div className="w-full px-3 sm:px-4 py-3 sm:py-4 pb-24">
-        <div className="flex flex-col gap-2 sm:gap-3 w-full">
+        <div className="flex flex-col gap-3 sm:gap-4 w-full">
           {whiskies.map((whisky, idx) => {
             const blind = getBlindState(idx, whisky);
             return (
