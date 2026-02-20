@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
-import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
@@ -16,6 +16,18 @@ import { profileApi, tastingApi, notificationApi } from "@/lib/api";
 
 type NavItem = { href: string; icon: any; label: string; match?: (loc: string) => boolean };
 type NavGroup = { label: string; items: NavItem[]; defaultOpen?: boolean };
+
+const FullBleedContext = createContext<{ setFullBleed: (v: boolean) => void }>({ setFullBleed: () => {} });
+
+export function useLayoutFullBleed(active: boolean) {
+  const { setFullBleed } = useContext(FullBleedContext);
+  useEffect(() => {
+    if (active) {
+      setFullBleed(true);
+      return () => setFullBleed(false);
+    }
+  }, [active, setFullBleed]);
+}
 
 function NotifBadge() {
   const { currentParticipant } = useAppStore();
@@ -253,6 +265,7 @@ const MemoizedChildren = memo(function MemoizedChildren({ children }: { children
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
+  const [fullBleed, setFullBleed] = useState(false);
   const { t } = useTranslation();
   const { currentParticipant, setParticipant } = useAppStore();
 
@@ -389,6 +402,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const handleNavigate = useCallback(() => setOpen(false), []);
 
   return (
+    <FullBleedContext.Provider value={{ setFullBleed }}>
     <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden font-sans">
       <div className="fixed inset-0 z-0 bg-background" />
 
@@ -420,7 +434,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <NavContent navInnerRef={desktopNavRef} location={location} navGroups={navGroups} onNavigate={handleNavigate} />
         </aside>
         <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-background" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
-          <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-12 py-6 md:py-12 animate-in fade-in duration-700 min-w-0 mobile-bottom-spacing">
+          <div className={cn(
+            "animate-in fade-in duration-700 min-w-0",
+            fullBleed
+              ? "w-full px-0 py-0"
+              : "w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-12 py-6 md:py-12 mobile-bottom-spacing"
+          )}>
             <MemoizedChildren>{children}</MemoizedChildren>
           </div>
         </main>
@@ -489,5 +508,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
     </div>
+    </FullBleedContext.Provider>
   );
 }

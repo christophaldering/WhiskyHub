@@ -10,6 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { X, Lock, ImageIcon, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { useInputFocused } from "@/hooks/use-input-focused";
+import { useLayoutFullBleed } from "@/components/layout";
 import type { Whisky, Tasting } from "@shared/schema";
 
 type BlindState = { showName: boolean; showMeta: boolean; showImage: boolean };
@@ -300,6 +301,8 @@ export function OverviewRating({ tasting, whiskies, onExit, getBlindState }: Ove
   const participantId = currentParticipant?.id || "";
   const isLocked = tasting.status !== "open" && tasting.status !== "draft";
 
+  useLayoutFullBleed(true);
+
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const allExpanded = expandedIds.size === whiskies.length;
 
@@ -321,9 +324,9 @@ export function OverviewRating({ tasting, whiskies, onExit, getBlindState }: Ove
   }, [allExpanded, whiskies]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border/30 px-3 sm:px-6 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <div className="bg-background min-h-[calc(100dvh-4rem)]">
+      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border/30 px-3 sm:px-4 py-3">
+        <div className="w-full flex items-center justify-between">
           <div>
             <h1 className="font-serif font-bold text-lg">{t("overview.title", "Alle bewerten")}</h1>
             <p className="text-xs text-muted-foreground font-serif">{tasting.title} · {whiskies.length} {t("overview.whiskies", "Whiskys")}</p>
@@ -346,7 +349,7 @@ export function OverviewRating({ tasting, whiskies, onExit, getBlindState }: Ove
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4 pb-24">
+      <div className="w-full px-3 sm:px-4 py-3 sm:py-4 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
           {whiskies.map((whisky, idx) => {
             const blind = getBlindState(idx, whisky);
