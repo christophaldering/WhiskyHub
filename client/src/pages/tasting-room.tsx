@@ -20,7 +20,7 @@ import ReflectionPanel from "@/components/reflection-panel";
 import TastingPhotos from "@/components/tasting-photos";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, participantApi } from "@/lib/api";
@@ -800,7 +801,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", date: "", location: "", videoLink: "" });
+  const [form, setForm] = useState({ title: "", date: "", location: "", videoLink: "", blindMode: false });
   const [coverUploading, setCoverUploading] = useState(false);
   const [saved, setSaved] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -808,7 +809,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
 
   useEffect(() => {
     if (open && tasting) {
-      setForm({ title: tasting.title, date: tasting.date, location: tasting.location, videoLink: tasting.videoLink || "" });
+      setForm({ title: tasting.title, date: tasting.date, location: tasting.location, videoLink: tasting.videoLink || "", blindMode: tasting.blindMode ?? false });
       setSaved(false);
     }
     return () => {
@@ -844,7 +845,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   const handleDialogClose = (isOpen: boolean) => {
     if (!isOpen && form.title.trim() && currentParticipant) {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      const hasChanges = form.title !== tasting.title || form.date !== tasting.date || form.location !== tasting.location || form.videoLink !== (tasting.videoLink || "");
+      const hasChanges = form.title !== tasting.title || form.date !== tasting.date || form.location !== tasting.location || form.videoLink !== (tasting.videoLink || "") || form.blindMode !== (tasting.blindMode ?? false);
       if (hasChanges && !saved) {
         updateMutation.mutate(form);
       }
@@ -918,6 +919,26 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
             <Input value={form.videoLink} onChange={(e) => handleFormChange("videoLink", e.target.value)} placeholder="https://zoom.us/j/..." className="bg-secondary/20" data-testid="input-edit-video-link" />
             <p className="text-xs text-muted-foreground mt-1">{t("session.videoLinkHint", "Zoom, Teams, Google Meet etc.")}</p>
           </div>
+          {(tasting.status === "draft" || tasting.status === "open") && (
+            <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/20 border border-border/30">
+              <div className="flex items-center gap-2">
+                <Glasses className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <Label className="text-xs font-medium">{t("sessionSettings.blindMode")}</Label>
+                  <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.blindModeDesc")}</p>
+                </div>
+              </div>
+              <Switch
+                checked={form.blindMode}
+                onCheckedChange={(v) => {
+                  const newForm = { ...form, blindMode: v };
+                  setForm(newForm);
+                  triggerAutoSave(newForm);
+                }}
+                data-testid="switch-edit-blind-mode"
+              />
+            </div>
+          )}
           <div>
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.coverImage.label")}</Label>
             <input
