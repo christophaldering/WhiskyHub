@@ -1145,6 +1145,11 @@ const resources = {
         mappingPreview: "Image Mapping",
         mappingHint: "Review which image will be attached to each expression. You can change the selection manually."
       },
+      overview: {
+        title: "Rate All",
+        enterOverview: "Rate All",
+        whiskies: "Whiskys",
+      },
       flightBoard: {
         title: "Flight Board",
         empty: "No expressions in this flight yet.",
@@ -3054,6 +3059,11 @@ const resources = {
         close: "Schließen",
         mappingPreview: "Bildzuordnung",
         mappingHint: "\u00dcberpr\u00fcfen Sie, welches Bild jeder Expression zugeordnet wird. Sie k\u00f6nnen die Zuordnung manuell \u00e4ndern."
+      },
+      overview: {
+        title: "Alle bewerten",
+        enterOverview: "Alle bewerten",
+        whiskies: "Whiskys",
       },
       flightBoard: {
         title: "Flight-Board",

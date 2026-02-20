@@ -1,6 +1,7 @@
 import { useParams, useLocation } from "wouter";
 import { useState, useRef, useEffect } from "react";
 import { FocusedTasting } from "@/components/focused-tasting";
+import { OverviewRating } from "@/components/overview-rating";
 import { GuidedTasting } from "@/components/guided-tasting";
 import { RevealPresenter } from "@/components/reveal-presenter";
 import { SessionControl } from "@/components/session-control";
@@ -18,7 +19,7 @@ import ReflectionPanel from "@/components/reflection-panel";
 import TastingPhotos from "@/components/tasting-photos";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1234,6 +1235,7 @@ export default function TastingRoom() {
   });
 
   const [focusMode, setFocusMode] = useState(false);
+  const [overviewMode, setOverviewMode] = useState(false);
   const [guidedActive, setGuidedActive] = useState(false);
   const [guidedExited, setGuidedExited] = useState(false);
   const [presenterActive, setPresenterActive] = useState(false);
@@ -1242,6 +1244,7 @@ export default function TastingRoom() {
   useEffect(() => {
     const handler = () => {
       setFocusMode(false);
+      setOverviewMode(false);
       setGuidedActive(false);
       setPresenterActive(false);
     };
@@ -1352,6 +1355,17 @@ export default function TastingRoom() {
         tasting={tasting}
         whiskies={whiskyList}
         onExit={() => { setGuidedActive(false); setGuidedExited(true); }}
+      />
+    );
+  }
+
+  if (overviewMode && tasting && whiskyList.length > 0) {
+    return (
+      <OverviewRating
+        tasting={tasting}
+        whiskies={whiskyList}
+        onExit={() => setOverviewMode(false)}
+        getBlindState={getBlindState}
       />
     );
   }
@@ -1583,16 +1597,28 @@ export default function TastingRoom() {
                   {t("flightBoard.title")}
                 </div>
                 {tasting.status === "open" && whiskyList.length > 0 && !tasting.guidedMode && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setFocusMode(true)}
-                    className="font-serif text-xs rounded-md h-7 text-primary font-semibold hover:bg-primary/10"
-                    data-testid="button-focus-mode"
-                  >
-                    <Eye className="w-3.5 h-3.5 mr-1" />
-                    {t("focus.enterFocus")}
-                  </Button>
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setOverviewMode(true)}
+                      className="font-serif text-xs rounded-md h-7 text-primary font-semibold hover:bg-primary/10"
+                      data-testid="button-overview-mode"
+                    >
+                      <Rows3 className="w-3.5 h-3.5 mr-1" />
+                      {t("overview.enterOverview", "Alle bewerten")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setFocusMode(true)}
+                      className="font-serif text-xs rounded-md h-7 text-primary font-semibold hover:bg-primary/10"
+                      data-testid="button-focus-mode"
+                    >
+                      <Eye className="w-3.5 h-3.5 mr-1" />
+                      {t("focus.enterFocus")}
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
