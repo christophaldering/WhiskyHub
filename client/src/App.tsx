@@ -47,6 +47,7 @@ import DataExport from "@/pages/data-export";
 import Intro from "@/pages/intro";
 import Landing from "@/pages/landing";
 import FeatureTour from "@/pages/feature-tour";
+import Tour from "@/pages/tour";
 import { BuildFooter } from "@/components/build-footer";
 import "@/lib/i18n";
 
@@ -56,6 +57,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/feature-tour" component={FeatureTour} />
+        <Route path="/tour" component={Tour} />
         <Route path="/intro" component={Intro} />
         <Route>
           <Layout>

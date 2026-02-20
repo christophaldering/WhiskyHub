@@ -4,6 +4,7 @@
 CaskSense is a web application designed for hosting and participating in collaborative whisky tasting sessions. It enables a host to create tasting events, invite participants, and guide them through a structured whisky evaluation process. Participants rate whiskies across various dimensions, and the host manages the session's progression through distinct stages, including a multi-act reveal phase for presenting results with analytics and charts. The project aims to provide a sophisticated and engaging platform for whisky enthusiasts to share and compare their tasting experiences, offering features from session management to personalized analytics and a comprehensive whisky journal.
 
 ## Recent Changes
+- **Product Tour (Feb 2026)**: New visual product tour at `/tour` with 12 illustrated slides, split-screen layouts, TOC sidebar, keyboard/autoplay navigation, and Framer Motion animations. German-only content. PPTX export via `/api/tour-pptx` using pptxgenjs with embedded illustrations. Old `/feature-tour` still available.
 - **Landing Page (Feb 2026)**: Added a public-facing landing page at `/` with Hero, Features, How It Works, Origin Story, Live Stats, AI Highlight, and CTA sections. The app dashboard moved from `/` to `/app`. All internal navigation updated accordingly. Full EN/DE translations. New `/api/platform-stats` endpoint serves live database counts.
 
 ## User Preferences

@@ -108,7 +108,7 @@ export default function Landing() {
             <span className="font-serif font-black text-xl text-primary tracking-tight">CaskSense</span>
           </button>
           <div className="flex items-center gap-2 sm:gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/feature-tour")} className="font-serif text-xs sm:text-sm" data-testid="landing-nav-tour">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/tour")} className="font-serif text-xs sm:text-sm" data-testid="landing-nav-tour">
               {t("landing.nav.featureTour")}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => document.getElementById("import-showcase")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-sm hidden sm:inline-flex" data-testid="landing-nav-explore">
@@ -490,7 +490,7 @@ export default function Landing() {
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <button onClick={() => navigate("/about")} className="hover:text-primary transition-colors">{t("landing.footer.about")}</button>
-              <button onClick={() => navigate("/feature-tour")} className="hover:text-primary transition-colors">{t("landing.footer.featureTour")}</button>
+              <button onClick={() => navigate("/tour")} className="hover:text-primary transition-colors">{t("landing.footer.featureTour")}</button>
               <button onClick={() => navigate("/features")} className="hover:text-primary transition-colors">{t("landing.footer.features")}</button>
               <button onClick={() => navigate("/app")} className="hover:text-primary transition-colors">{t("landing.footer.app")}</button>
             </div>

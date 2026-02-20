@@ -5641,5 +5641,334 @@ Important rules:
     }
   });
 
+  // --- Tour PPTX export ---
+  app.get("/api/tour-pptx", async (_req: Request, res: Response) => {
+    try {
+      // @ts-ignore
+      const pptxgen = await import("pptxgenjs");
+      const PptxGenJS = pptxgen.default || pptxgen;
+      const pres = new PptxGenJS();
+
+      pres.layout = "LAYOUT_WIDE";
+      pres.author = "CaskSense";
+      pres.company = "CaskSense";
+      pres.subject = "CaskSense Produkt-Tour";
+      pres.title = "CaskSense — Produkt-Tour";
+
+      const NAVY = "0f172a";
+      const AMBER = "c8943e";
+      const CREAM = "f5f0e8";
+      const MUTED = "8b8578";
+
+      const tourImagesDir = path.join(process.cwd(), "client", "src", "assets", "tour");
+      function loadImage(name: string): string | null {
+        try {
+          const imgPath = path.join(tourImagesDir, name);
+          if (fs.existsSync(imgPath)) {
+            return "data:image/png;base64," + fs.readFileSync(imgPath).toString("base64");
+          }
+        } catch {}
+        return null;
+      }
+
+      const slideData = [
+        {
+          title: "CaskSense",
+          subtitle: "Whisky gemeinsam erleben — strukturiert, persönlich, ohne Vorwissen.",
+          badge: "Produkt-Tour",
+          features: [] as string[],
+          image: "slide-cover.png",
+        },
+        {
+          title: "Tasting-Sessions",
+          subtitle: "Erstelle strukturierte Tastings, lade Gäste per QR-Code ein und bewerte gemeinsam.",
+          badge: "Kernfunktion",
+          image: "slide-tasting.png",
+          features: [
+            "Sessions erstellen — Name, Datum, Line-up — in Sekunden startklar",
+            "QR-Code Einladungen — Scannen und sofort dabei",
+            "Strukturierte Bewertung — Nase, Geschmack, Abgang, Balance",
+            "Live-Diskussion — Chat in Echtzeit während des Tastings",
+          ],
+        },
+        {
+          title: "Blind Tasting & Enthüllung",
+          subtitle: "Whiskys ohne Vorurteile verkosten. Der Gastgeber steuert die Enthüllung.",
+          badge: "Highlight",
+          image: "slide-blind.png",
+          features: [
+            "Blind-Modus — Etiketten ausblenden, fair bewerten",
+            "Schrittweise Enthüllung — Gastgeber enthüllt nach und nach mit Diagrammen",
+            "ABV & Alter raten — Zusätzliche Herausforderung für erfahrene Gaumen",
+            "Cover-Bild Enthüllung — Überraschungsmoment mit Session-Foto",
+          ],
+        },
+        {
+          title: "KI-Import & Whisky-Verwaltung",
+          subtitle: "Flaschenfoto, Excel oder Text — die KI erkennt Whiskys und übernimmt die Dateneingabe.",
+          badge: "KI-gestützt",
+          image: "slide-ai.png",
+          features: [
+            "Foto-Erkennung — GPT-4o liest Etiketten und identifiziert Flaschen",
+            "Excel/CSV Import — Spalten werden automatisch zugeordnet",
+            "Benchmark-Analyse — Bewertungen hochladen, KI extrahiert Daten",
+            "Whiskybase-Import — Sammlung per CSV importieren",
+          ],
+        },
+        {
+          title: "Verkostungsbrett & Präsentation",
+          subtitle: "Das visuelle Herzstück: alle Whiskys im Überblick, mit Fotos und Nummern.",
+          badge: "Visuell",
+          image: "slide-flightboard.png",
+          features: [
+            "Verkostungsbrett — Alle Whiskys auf einen Blick, nummeriert und sortiert",
+            "Flaschenfotos — Bilder hochladen und verwalten",
+            "PDF Tasting-Menü — Professionelles Menü als PDF exportieren",
+            "Tasting-Notiz Generator — Interaktives Tool mit vordefinierten Aromen",
+          ],
+        },
+        {
+          title: "Persönliche Analysen",
+          subtitle: "Radar-Charts, Flavor Wheels und Geschmacksentwicklung — Muster im eigenen Gaumen entdecken.",
+          badge: "Deine Daten",
+          image: "slide-analytics.png",
+          features: [
+            "Geschmacksprofil — Radar-Diagramm: Region, Fass, Torfgehalt",
+            "Aromenrad — Sunburst-Diagramm mit 8 Aromen-Kategorien",
+            "Whisky-Tagebuch — Notizen, Fotos, Stimmung — persönliche Bibliothek",
+            "37 Abzeichen — Von der ersten Bewertung bis zum 1.000sten Tasting",
+            "Direktvergleich — 2–3 Whiskys nebeneinander vergleichen",
+            "Empfehlungen — Personalisierte Vorschläge nach Profil",
+          ],
+        },
+        {
+          title: "Gemeinschaft & Austausch",
+          subtitle: "Freunde finden, Aktivitäten verfolgen, Rankings vergleichen.",
+          badge: "Gemeinsam",
+          image: "slide-community.png",
+          features: [
+            "Freunde — Whisky-Freunde hinzufügen und deren Einträge sehen",
+            "Aktivitäts-Feed — Timeline der Journal-Einträge deiner Freunde",
+            "Rangliste — Wertungen: aktivster Bewerter, detaillierteste Notizen",
+            "Tasting-Kalender — Monatsansicht aller Sessions",
+            "Erinnerungen — E-Mail-Reminder vor dem Tasting",
+          ],
+        },
+        {
+          title: "Wissensdatenbank",
+          subtitle: "Lexikon, Destillerien-Enzyklopädie und interaktive Weltkarte.",
+          badge: "Referenz",
+          image: "slide-knowledge.png",
+          features: [
+            "Whisky-Lexikon — 53 Einträge in 5 Kategorien, zweisprachig",
+            "Destillerien — ~100 Destillerien weltweit mit Geschichte",
+            "Interaktive Karte — Weltkarte mit Destillerie-Pins",
+            "Abfüller-Lexikon — Unabhängige Abfüller mit Details",
+          ],
+        },
+        {
+          title: "Gastgeber-Werkzeuge & Übersicht",
+          subtitle: "Überblick für Gastgeber: Statistiken, Top-Whiskys, Briefing-Notizen.",
+          badge: "Für Gastgeber",
+          image: "slide-host.png",
+          features: [
+            "Gastgeber-Übersicht — Tastings, Teilnehmer, Bewertungen im Blick",
+            "Tasting-Zusammenfassung — Rückblick: Top-Whisky, Kontroversen",
+            "Gastgeber-Delegation — Rolle an anderen Teilnehmer übertragen",
+            "Ambiente — Kaminfeuer, Regen, Nacht — dezente Klänge",
+          ],
+        },
+        {
+          title: "Geführtes Tasting & Präsentationsmodus",
+          subtitle: "Live-Moderation: geteilter Bildschirm für den Gastgeber, Vollbild für Teilnehmer.",
+          badge: "Präsentation",
+          image: "slide-guided.png",
+          features: [
+            "Geteilter Bildschirm — Steuerung und Präsentation",
+            "Vollbild Teilnehmer — Große, klare Darstellung",
+            "Schrittweise Enthüllung — Nach und nach enthüllen mit Animationen",
+            "Automatische Aktivierung — Startet mit der Enthüllungsphase",
+          ],
+        },
+        {
+          title: "Mobile & Mehrsprachig",
+          subtitle: "Installierbar, offline nutzbar, komplett zweisprachig.",
+          badge: "Überall",
+          image: "slide-mobile.png",
+          features: [
+            "Progressive Web App — Auf dem Home-Screen installieren",
+            "Offline-Modus — Network-First Caching",
+            "Deutsch & Englisch — Vollständig zweisprachig, jederzeit umschaltbar",
+            "Dark & Light — Warmes Whisky-Dunkel oder helles Creme-Amber",
+          ],
+        },
+        {
+          title: "Bereit für das nächste Tasting?",
+          subtitle: "Starte eine Session, lade Freunde ein und entdecke, was dein Gaumen wirklich wahrnimmt.\n\nKostenlos — ohne Konto.\ncasksense.replit.app",
+          badge: "",
+          image: "slide-cta.png",
+          features: [] as string[],
+        },
+      ];
+
+      for (let i = 0; i < slideData.length; i++) {
+        const d = slideData[i];
+        const slide = pres.addSlide();
+        const isCover = i === 0;
+        const isCta = i === slideData.length - 1;
+
+        const imgData = d.image ? loadImage(d.image) : null;
+
+        slide.background = { color: NAVY };
+
+        if (imgData && (isCover || isCta)) {
+          slide.addImage({
+            data: imgData,
+            x: 0, y: 0, w: "100%", h: "100%",
+            sizing: { type: "cover", w: 13.33, h: 7.5 },
+          });
+          slide.addShape(pres.ShapeType ? pres.ShapeType.rect : "rect", {
+            x: 0, y: 0, w: "100%", h: "100%",
+            fill: { color: NAVY, transparency: 35 },
+          });
+        } else if (imgData && !isCover && !isCta) {
+          slide.addImage({
+            data: imgData,
+            x: 7.2, y: 0.5, w: 5.8, h: 3.25,
+            sizing: { type: "cover", w: 5.8, h: 3.25 },
+            rounding: true,
+          });
+          slide.addShape(pres.ShapeType ? pres.ShapeType.rect : "rect", {
+            x: 7.2, y: 0.5, w: 5.8, h: 3.25,
+            fill: { color: NAVY, transparency: 60 },
+            rectRadius: 0.15,
+          });
+        }
+
+        slide.addShape(pres.ShapeType ? pres.ShapeType.rect : "rect", {
+          x: 0, y: 0, w: "100%", h: 0.06,
+          fill: { color: AMBER },
+        });
+
+        if (d.badge) {
+          slide.addText(d.badge.toUpperCase(), {
+            x: isCover || isCta ? 3.5 : 0.7,
+            y: isCover ? 1.8 : 0.5,
+            w: isCover || isCta ? 6 : 4,
+            h: 0.35,
+            fontSize: 9,
+            fontFace: "Arial",
+            color: AMBER,
+            bold: true,
+            letterSpacing: 3,
+            align: isCover || isCta ? "center" : "left",
+          });
+        }
+
+        slide.addText(d.title, {
+          x: isCover || isCta ? 1 : 0.7,
+          y: isCover ? 2.3 : 0.85,
+          w: isCover || isCta ? 11 : 6,
+          h: isCover ? 1.2 : 0.8,
+          fontSize: isCover ? 48 : 32,
+          fontFace: "Georgia",
+          color: CREAM,
+          bold: true,
+          align: isCover || isCta ? "center" : "left",
+        });
+
+        if (d.subtitle) {
+          slide.addText(d.subtitle, {
+            x: isCover || isCta ? 2 : 0.7,
+            y: isCover ? 3.6 : 1.7,
+            w: isCover || isCta ? 9 : 6,
+            h: isCover || isCta ? 1.2 : 0.7,
+            fontSize: isCover ? 16 : 13,
+            fontFace: "Arial",
+            color: MUTED,
+            align: isCover || isCta ? "center" : "left",
+            lineSpacingMultiple: 1.4,
+          });
+        }
+
+        if (d.features.length > 0) {
+          const cols = d.features.length > 4 ? 2 : 1;
+          const perCol = Math.ceil(d.features.length / cols);
+
+          for (let c = 0; c < cols; c++) {
+            const colFeatures = d.features.slice(c * perCol, (c + 1) * perCol);
+            const startX = 0.7 + c * 6.15;
+            const startY = 2.6;
+
+            for (let fi = 0; fi < colFeatures.length; fi++) {
+              const parts = colFeatures[fi].split(" — ");
+              const featureTitle = parts[0];
+              const featureDesc = parts.length > 1 ? parts[1] : "";
+
+              // feature dot
+              slide.addShape(pres.ShapeType ? pres.ShapeType.rect : "rect", {
+                x: startX, y: startY + fi * 0.72 + 0.08,
+                w: 0.12, h: 0.12,
+                fill: { color: AMBER },
+                rectRadius: 0.02,
+              });
+
+              // feature title
+              slide.addText(featureTitle, {
+                x: startX + 0.25, y: startY + fi * 0.72,
+                w: 5.5, h: 0.3,
+                fontSize: 12,
+                fontFace: "Arial",
+                color: CREAM,
+                bold: true,
+              });
+
+              // feature description
+              if (featureDesc) {
+                slide.addText(featureDesc, {
+                  x: startX + 0.25, y: startY + fi * 0.72 + 0.28,
+                  w: 5.5, h: 0.3,
+                  fontSize: 10,
+                  fontFace: "Arial",
+                  color: MUTED,
+                });
+              }
+            }
+          }
+        }
+
+        // slide number
+        if (!isCover) {
+          slide.addText(`${i} / ${slideData.length - 1}`, {
+            x: 11.3, y: 7.0, w: 1.5, h: 0.3,
+            fontSize: 8, fontFace: "Arial", color: MUTED,
+            align: "right",
+          });
+        }
+
+        // decorative bottom line
+        slide.addShape(pres.ShapeType ? pres.ShapeType.rect : "rect", {
+          x: 0, y: 7.44, w: "100%", h: 0.06,
+          fill: { color: AMBER },
+        });
+
+        // footer branding
+        slide.addText("CaskSense", {
+          x: 0.5, y: 7.05, w: 3, h: 0.3,
+          fontSize: 8, fontFace: "Georgia", color: MUTED,
+          italic: true,
+        });
+      }
+
+      const pptxBuffer = await pres.write({ outputType: "nodebuffer" });
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
+      res.setHeader("Content-Disposition", `attachment; filename="CaskSense-Produkt-Tour.pptx"`);
+      res.send(Buffer.from(pptxBuffer));
+    } catch (e: any) {
+      console.error("PPTX generation error:", e);
+      res.status(500).json({ message: e.message || "PPTX generation failed" });
+    }
+  });
+
   return httpServer;
 }
