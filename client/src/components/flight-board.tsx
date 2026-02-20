@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronUp, ChevronDown, Trash2, ChevronLeft, ChevronRight, ImageIcon } from "lucide-react";
+import { ChevronUp, ChevronDown, Trash2, ChevronLeft, ChevronRight, ImageIcon, Camera, X, Loader2 } from "lucide-react";
 import type { Whisky, Tasting } from "@shared/schema";
 
 const ITEMS_PER_PAGE = 12;
@@ -238,59 +238,139 @@ export function FlightBoard({ tasting, whiskies, isHost }: FlightBoardProps) {
             <DialogTitle className="font-serif text-xl text-primary">{detailWhisky?.name}</DialogTitle>
           </DialogHeader>
           {detailWhisky && (
-            <div className="space-y-4">
-              {detailWhisky.imageUrl && (
-                <div className="flex justify-center">
-                  <img src={detailWhisky.imageUrl} alt={detailWhisky.name} className="max-h-64 rounded-lg border border-border/50 object-contain" data-testid="img-detail-whisky" />
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                {detailWhisky.distillery && (
-                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailDistillery")}</span><p className="font-serif">{detailWhisky.distillery}</p></div>
-                )}
-                {detailWhisky.age && (
-                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailAge")}</span><p className="font-serif">{detailWhisky.age === "NAS" || detailWhisky.age === "n.a.s." ? "NAS" : `${detailWhisky.age} years`}</p></div>
-                )}
-                {detailWhisky.abv != null && (
-                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailAbv")}</span><p className="font-serif">{detailWhisky.abv}%</p></div>
-                )}
-                {detailWhisky.country && (
-                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCountry")}</span><p className="font-serif">{detailWhisky.country}</p></div>
-                )}
-                {(detailWhisky.category || detailWhisky.type) && (
-                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCategory")}</span><p className="font-serif">{detailWhisky.category || detailWhisky.type}</p></div>
-                )}
-                {detailWhisky.region && (
-                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailRegion")}</span><p className="font-serif">{detailWhisky.region}</p></div>
-                )}
-                {detailWhisky.caskInfluence && (
-                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCask")}</span><p className="font-serif">{detailWhisky.caskInfluence}</p></div>
-                )}
-                {detailWhisky.peatLevel && detailWhisky.peatLevel !== "None" && (
-                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailPeat")}</span><p className="font-serif">{detailWhisky.peatLevel}{detailWhisky.ppm != null ? ` (${detailWhisky.ppm} ppm)` : ""}</p></div>
-                )}
-                {(detailWhisky as any).bottler && (
-                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailBottler")}</span><p className="font-serif">{(detailWhisky as any).bottler}</p></div>
-                )}
-                {(detailWhisky as any).vintage && (
-                  <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailVintage")}</span><p className="font-serif">{(detailWhisky as any).vintage}</p></div>
-                )}
-              </div>
-              {detailWhisky.notes && (
-                <div>
-                  <span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailNotes")}</span>
-                  <p className="font-serif text-sm mt-1 leading-relaxed">{detailWhisky.notes}</p>
-                </div>
-              )}
-              {detailWhisky.whiskybaseId && (
-                <a href={`https://www.whiskybase.com/whiskies/whisky/${detailWhisky.whiskybaseId}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary font-mono" data-testid="link-detail-whiskybase">
-                  Whiskybase #{detailWhisky.whiskybaseId}
-                </a>
-              )}
-            </div>
+            <DetailDialogContent whisky={detailWhisky} canEdit={canEdit} tastingId={tasting.id} />
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function DetailDialogContent({ whisky, canEdit, tastingId }: { whisky: Whisky; canEdit: boolean; tastingId: string }) {
+  const { t } = useTranslation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadImageMutation = useMutation({
+    mutationFn: (file: File) => whiskyApi.uploadImage(whisky.id, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+    },
+  });
+
+  const deleteImageMutation = useMutation({
+    mutationFn: () => whiskyApi.deleteImage(whisky.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+    },
+  });
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type)) return;
+    if (file.size > 2 * 1024 * 1024) return;
+    uploadImageMutation.mutate(file);
+  };
+
+  const isUploading = uploadImageMutation.isPending;
+  const isDeleting = deleteImageMutation.isPending;
+
+  return (
+    <div className="space-y-4">
+      {whisky.imageUrl ? (
+        <div className="flex justify-center">
+          <div className="relative">
+            <img src={whisky.imageUrl} alt={whisky.name} className="max-h-64 rounded-lg border border-border/50 object-contain" data-testid="img-detail-whisky" />
+            {canEdit && (
+              <button
+                onClick={() => deleteImageMutation.mutate()}
+                disabled={isDeleting}
+                className="absolute top-2 right-2 w-7 h-7 bg-destructive/90 text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive transition-colors shadow-md"
+                data-testid="button-detail-delete-image"
+              >
+                {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
+        </div>
+      ) : canEdit ? (
+        <div className="flex justify-center">
+          <div className="w-32 h-32 rounded-lg bg-secondary/20 border border-dashed border-border flex items-center justify-center">
+            <Camera className="w-8 h-8 text-muted-foreground/40" />
+          </div>
+        </div>
+      ) : null}
+      {canEdit && (
+        <div className="flex justify-center">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageSelect}
+            className="hidden"
+            data-testid="input-detail-image"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="text-xs font-serif"
+            data-testid="button-detail-upload-image"
+          >
+            {isUploading ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+            ) : (
+              <Camera className="w-3.5 h-3.5 mr-1" />
+            )}
+            {whisky.imageUrl ? t("whisky.replacePhoto") : t("whisky.uploadPhoto")}
+          </Button>
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        {whisky.distillery && (
+          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailDistillery")}</span><p className="font-serif">{whisky.distillery}</p></div>
+        )}
+        {whisky.age && (
+          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailAge")}</span><p className="font-serif">{whisky.age === "NAS" || whisky.age === "n.a.s." ? "NAS" : `${whisky.age} years`}</p></div>
+        )}
+        {whisky.abv != null && (
+          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailAbv")}</span><p className="font-serif">{whisky.abv}%</p></div>
+        )}
+        {whisky.country && (
+          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCountry")}</span><p className="font-serif">{whisky.country}</p></div>
+        )}
+        {(whisky.category || whisky.type) && (
+          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCategory")}</span><p className="font-serif">{whisky.category || whisky.type}</p></div>
+        )}
+        {whisky.region && (
+          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailRegion")}</span><p className="font-serif">{whisky.region}</p></div>
+        )}
+        {whisky.caskInfluence && (
+          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCask")}</span><p className="font-serif">{whisky.caskInfluence}</p></div>
+        )}
+        {whisky.peatLevel && whisky.peatLevel !== "None" && (
+          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailPeat")}</span><p className="font-serif">{whisky.peatLevel}{whisky.ppm != null ? ` (${whisky.ppm} ppm)` : ""}</p></div>
+        )}
+        {(whisky as any).bottler && (
+          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailBottler")}</span><p className="font-serif">{(whisky as any).bottler}</p></div>
+        )}
+        {(whisky as any).vintage && (
+          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailVintage")}</span><p className="font-serif">{(whisky as any).vintage}</p></div>
+        )}
+      </div>
+      {whisky.notes && (
+        <div>
+          <span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailNotes")}</span>
+          <p className="font-serif text-sm mt-1 leading-relaxed">{whisky.notes}</p>
+        </div>
+      )}
+      {whisky.whiskybaseId && (
+        <a href={`https://www.whiskybase.com/whiskies/whisky/${whisky.whiskybaseId}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary font-mono" data-testid="link-detail-whiskybase">
+          Whiskybase #{whisky.whiskybaseId}
+        </a>
+      )}
     </div>
   );
 }
