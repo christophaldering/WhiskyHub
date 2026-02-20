@@ -1149,6 +1149,8 @@ const resources = {
         title: "Rate All",
         enterOverview: "Rate All",
         whiskies: "Whiskys",
+        expandAll: "Expand all",
+        collapseAll: "Collapse all",
       },
       flightBoard: {
         title: "Flight Board",
@@ -3064,6 +3066,8 @@ const resources = {
         title: "Alle bewerten",
         enterOverview: "Alle bewerten",
         whiskies: "Whiskys",
+        expandAll: "Aufklappen",
+        collapseAll: "Zuklappen",
       },
       flightBoard: {
         title: "Flight-Board",

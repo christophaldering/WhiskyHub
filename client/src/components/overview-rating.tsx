@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { X, Lock, ImageIcon } from "lucide-react";
+import { X, Lock, ImageIcon, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Whisky, Tasting } from "@shared/schema";
 
@@ -34,6 +34,8 @@ function WhiskyRow({
   participantId,
   blind,
   isLocked,
+  expanded,
+  onToggle,
 }: {
   whisky: Whisky;
   index: number;
@@ -41,6 +43,8 @@ function WhiskyRow({
   participantId: string;
   blind: BlindState;
   isLocked: boolean;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
   const { t } = useTranslation();
   const [imgErr, setImgErr] = useState(false);
@@ -144,6 +148,9 @@ function WhiskyRow({
     { id: "overall", short: t("evaluation.overall") },
   ];
 
+  const overallCategory = categories.find(c => c.id === "overall")!;
+  const detailCategories = categories.filter(c => c.id !== "overall");
+
   return (
     <div
       className={cn(
@@ -152,7 +159,11 @@ function WhiskyRow({
       )}
       data-testid={`overview-row-${whisky.id}`}
     >
-      <div className="flex items-center gap-3">
+      <div
+        className="flex items-center gap-3 cursor-pointer md:cursor-default"
+        onClick={onToggle}
+        data-testid={`overview-toggle-${whisky.id}`}
+      >
         {blind.showImage && whisky.imageUrl && !imgErr ? (
           <img
             src={whisky.imageUrl}
@@ -176,46 +187,107 @@ function WhiskyRow({
             </p>
           )}
         </div>
+
+        {!expanded && !isLocked && (
+          <div className="flex items-center gap-1.5 md:hidden flex-shrink-0">
+            <span className="text-[9px] font-serif font-bold text-muted-foreground uppercase">{overallCategory.short}</span>
+            <span className="text-sm font-mono font-bold w-8 text-right">{scores.overall}</span>
+          </div>
+        )}
+
         {isLocked && (
           <Lock className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
         )}
+        <ChevronDown
+          className={cn(
+            "w-4 h-4 text-muted-foreground/50 flex-shrink-0 transition-transform md:hidden",
+            expanded && "rotate-180"
+          )}
+        />
       </div>
 
-      {!isLocked ? (
-        <div className="grid grid-cols-5 gap-2">
-          {categories.map((cat) => (
-            <div key={cat.id} className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[9px] font-serif font-bold text-muted-foreground uppercase tracking-wider">{cat.short}</span>
-                <Input
-                  type="number"
-                  value={scores[cat.id]}
-                  onChange={(e) => handleScoreChange(cat.id, parseFloat(e.target.value) || 0)}
-                  className="w-11 text-right font-mono text-[11px] font-bold border-none bg-transparent h-5 p-0 focus:ring-0"
-                  step={0.1} min={0} max={100}
+      <div className="hidden md:block">
+        {!isLocked ? (
+          <div className="grid grid-cols-5 gap-2">
+            {categories.map((cat) => (
+              <div key={cat.id} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-serif font-bold text-muted-foreground uppercase tracking-wider">{cat.short}</span>
+                  <Input
+                    type="number"
+                    value={scores[cat.id]}
+                    onChange={(e) => handleScoreChange(cat.id, parseFloat(e.target.value) || 0)}
+                    className="w-11 text-right font-mono text-[11px] font-bold border-none bg-transparent h-5 p-0 focus:ring-0"
+                    step={0.1} min={0} max={100}
+                    disabled={isLocked}
+                    data-testid={`overview-input-${cat.id}-${whisky.id}`}
+                  />
+                </div>
+                <Slider
+                  value={[scores[cat.id]]}
+                  max={100} step={0.1} min={0}
+                  onValueChange={(val) => handleScoreChange(cat.id, val[0])}
+                  className={cn("cursor-pointer", cat.id === "overall" ? "[&_[role=slider]]:bg-primary [&_[data-orientation=horizontal]>span:first-child>span]:bg-primary/30" : "")}
                   disabled={isLocked}
-                  data-testid={`overview-input-${cat.id}-${whisky.id}`}
+                  data-testid={`overview-slider-${cat.id}-${whisky.id}`}
                 />
               </div>
-              <Slider
-                value={[scores[cat.id]]}
-                max={100} step={0.1} min={0}
-                onValueChange={(val) => handleScoreChange(cat.id, val[0])}
-                className={cn("cursor-pointer", cat.id === "overall" ? "[&_[role=slider]]:bg-primary [&_[data-orientation=horizontal]>span:first-child>span]:bg-primary/30" : "")}
-                disabled={isLocked}
-                data-testid={`overview-slider-${cat.id}-${whisky.id}`}
-              />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-5 gap-2">
+            {categories.map((cat) => (
+              <div key={cat.id} className="text-center">
+                <span className="text-[9px] font-serif text-muted-foreground uppercase block">{cat.short}</span>
+                <span className="text-sm font-mono font-bold">{scores[cat.id]}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {expanded && (
+        <div className="md:hidden">
+          {!isLocked ? (
+            <div className="space-y-2.5 pt-1">
+              {categories.map((cat) => (
+                <div key={cat.id} className="space-y-0.5">
+                  <div className="flex items-center justify-between">
+                    <span className={cn(
+                      "text-[10px] font-serif font-bold uppercase tracking-wider",
+                      cat.id === "overall" ? "text-primary" : "text-muted-foreground"
+                    )}>{cat.short}</span>
+                    <Input
+                      type="number"
+                      value={scores[cat.id]}
+                      onChange={(e) => handleScoreChange(cat.id, parseFloat(e.target.value) || 0)}
+                      className="w-12 text-right font-mono text-xs font-bold border-none bg-transparent h-5 p-0 focus:ring-0"
+                      step={0.1} min={0} max={100}
+                      disabled={isLocked}
+                      data-testid={`overview-input-mobile-${cat.id}-${whisky.id}`}
+                    />
+                  </div>
+                  <Slider
+                    value={[scores[cat.id]]}
+                    max={100} step={0.1} min={0}
+                    onValueChange={(val) => handleScoreChange(cat.id, val[0])}
+                    className={cn("cursor-pointer", cat.id === "overall" ? "[&_[role=slider]]:bg-primary [&_[data-orientation=horizontal]>span:first-child>span]:bg-primary/30" : "")}
+                    disabled={isLocked}
+                    data-testid={`overview-slider-mobile-${cat.id}-${whisky.id}`}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-5 gap-2">
-          {categories.map((cat) => (
-            <div key={cat.id} className="text-center">
-              <span className="text-[9px] font-serif text-muted-foreground uppercase block">{cat.short}</span>
-              <span className="text-sm font-mono font-bold">{scores[cat.id]}</span>
+          ) : (
+            <div className="grid grid-cols-5 gap-2 pt-1">
+              {categories.map((cat) => (
+                <div key={cat.id} className="text-center">
+                  <span className="text-[9px] font-serif text-muted-foreground uppercase block">{cat.short}</span>
+                  <span className="text-sm font-mono font-bold">{scores[cat.id]}</span>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
@@ -228,6 +300,26 @@ export function OverviewRating({ tasting, whiskies, onExit, getBlindState }: Ove
   const participantId = currentParticipant?.id || "";
   const isLocked = tasting.status !== "open" && tasting.status !== "draft";
 
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const allExpanded = expandedIds.size === whiskies.length;
+
+  const toggleOne = useCallback((id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleAll = useCallback(() => {
+    if (allExpanded) {
+      setExpandedIds(new Set());
+    } else {
+      setExpandedIds(new Set(whiskies.map(w => w.id)));
+    }
+  }, [allExpanded, whiskies]);
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border/30 px-4 py-3">
@@ -236,9 +328,21 @@ export function OverviewRating({ tasting, whiskies, onExit, getBlindState }: Ove
             <h1 className="font-serif font-bold text-lg">{t("overview.title", "Alle bewerten")}</h1>
             <p className="text-xs text-muted-foreground font-serif">{tasting.title} · {whiskies.length} {t("overview.whiskies", "Whiskys")}</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={onExit} data-testid="button-exit-overview">
-            <X className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleAll}
+              className="md:hidden text-xs text-muted-foreground gap-1 h-8"
+              data-testid="button-toggle-all-overview"
+            >
+              <ChevronsUpDown className="w-4 h-4" />
+              {allExpanded ? t("overview.collapseAll", "Zuklappen") : t("overview.expandAll", "Aufklappen")}
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onExit} data-testid="button-exit-overview">
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -254,6 +358,8 @@ export function OverviewRating({ tasting, whiskies, onExit, getBlindState }: Ove
               participantId={participantId}
               blind={blind}
               isLocked={isLocked}
+              expanded={expandedIds.has(whisky.id)}
+              onToggle={() => toggleOne(whisky.id)}
             />
           );
         })}
