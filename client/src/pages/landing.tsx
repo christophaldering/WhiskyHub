@@ -9,12 +9,17 @@ import { LoginDialog } from "@/components/login-dialog";
 import { useAppStore } from "@/lib/store";
 import heroImage from "@/assets/images/hero-whisky.png";
 import christophImage from "@assets/22A3ABF8-0085-4C82-97DF-EAA0ACD46B4E_1771546683886.jpeg";
+import slideBlind from "@/assets/tour/slide-blind.png";
+import slideAnalytics from "@/assets/tour/slide-analytics.png";
+import slideFlightboard from "@/assets/tour/slide-flightboard.png";
 import {
   Glasses, BookOpen, Users, BarChart3, Brain, Camera,
   FileUp, Globe, ArrowRight, Wine, LogIn,
   ChevronDown, Heart, FileSpreadsheet, ClipboardPaste,
   Sparkles, Presentation, Play
 } from "lucide-react";
+
+const tourPreviewSlides = [slideBlind, slideFlightboard, slideAnalytics];
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -168,11 +173,15 @@ export default function Landing() {
                   {t("landing.hero.cta")}
                   <ArrowRight className="w-4 h-4" />
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-base gap-2" data-testid="landing-hero-learn">
-                  {t("landing.hero.learnMore")}
-                  <ChevronDown className="w-4 h-4" />
+                <Button size="lg" variant="outline" onClick={() => navigate("/tour")} className="font-serif text-base gap-2 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 hover:border-amber-500/60" data-testid="landing-hero-tour">
+                  <Play className="w-4 h-4" />
+                  {t("landing.hero.tourCta")}
                 </Button>
               </div>
+              <p className="text-sm text-muted-foreground/50 flex items-center gap-1.5">
+                <ChevronDown className="w-3.5 h-3.5 animate-bounce" />
+                {t("landing.hero.scrollHint")}
+              </p>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, x: 40 }}
@@ -258,20 +267,21 @@ export default function Landing() {
       </section>
 
       {/* Feature Tour Banner */}
-      <section className="py-16 sm:py-20 bg-gradient-to-r from-amber-900/10 via-amber-800/5 to-orange-900/10 border-y border-amber-700/20 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-amber-500/20 blur-3xl" />
+      <section className="py-16 sm:py-24 bg-gradient-to-br from-amber-900/15 via-amber-800/8 to-orange-900/12 border-y border-amber-700/25 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-amber-500/10 blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-orange-500/8 blur-3xl" />
         </div>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             custom={0}
             variants={fadeUp}
-            className="text-center space-y-6"
+            className="text-center space-y-6 mb-10"
           >
-            <div className="inline-flex items-center gap-2 bg-amber-500/15 text-amber-500 rounded-full px-4 py-1.5 text-sm font-medium">
+            <div className="inline-flex items-center gap-2 bg-amber-500/20 text-amber-500 rounded-full px-5 py-2 text-sm font-bold uppercase tracking-widest animate-pulse">
               <Presentation className="w-4 h-4" />
               {t("landing.tourBanner.badge")}
             </div>
@@ -281,18 +291,56 @@ export default function Landing() {
             <p className="text-muted-foreground text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
               {t("landing.tourBanner.desc")}
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Button
-                size="lg"
+          </motion.div>
+
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={1}
+            variants={fadeUp}
+            className="flex justify-center gap-3 sm:gap-4 mb-10 overflow-hidden"
+          >
+            {tourPreviewSlides.map((src, i) => (
+              <motion.button
+                key={i}
                 onClick={() => navigate("/tour")}
-                className="font-serif text-base gap-2.5 px-8 py-6 bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-900/20"
-                data-testid="landing-tour-cta"
+                className="relative rounded-xl overflow-hidden border-2 border-amber-500/20 hover:border-amber-500/60 shadow-lg hover:shadow-xl hover:shadow-amber-900/20 transition-all duration-300 group cursor-pointer flex-shrink-0"
+                style={{ width: i === 1 ? "220px" : "160px", height: i === 1 ? "140px" : "100px" }}
+                whileHover={{ scale: 1.05, y: -4 }}
+                data-testid={`tour-preview-${i}`}
               >
-                <Play className="w-5 h-5" />
-                {t("landing.tourBanner.cta")}
-              </Button>
-              <p className="text-sm text-muted-foreground/60">{t("landing.tourBanner.hint")}</p>
-            </div>
+                <img src={src} alt="" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent group-hover:from-background/30 transition-all" />
+                {i === 1 && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-amber-600/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                      <Play className="w-5 h-5 text-white ml-0.5" />
+                    </div>
+                  </div>
+                )}
+              </motion.button>
+            ))}
+          </motion.div>
+
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={2}
+            variants={fadeUp}
+            className="flex flex-col items-center gap-4"
+          >
+            <Button
+              size="lg"
+              onClick={() => navigate("/tour")}
+              className="font-serif text-lg gap-3 px-10 py-7 bg-amber-600 hover:bg-amber-700 text-white shadow-xl shadow-amber-900/25 hover:shadow-2xl hover:shadow-amber-900/30 transition-all"
+              data-testid="landing-tour-cta"
+            >
+              <Play className="w-5 h-5" />
+              {t("landing.tourBanner.cta")}
+            </Button>
+            <p className="text-sm text-muted-foreground/60">{t("landing.tourBanner.hint")}</p>
           </motion.div>
         </div>
       </section>
