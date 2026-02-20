@@ -23,6 +23,8 @@ import {
   type InsertEncyclopediaSuggestion, type EncyclopediaSuggestion,
   type InsertTastingPhoto, type TastingPhoto,
   type InsertUserFeedback, type UserFeedback,
+  notifications,
+  type InsertNotification, type Notification,
 } from "@shared/schema";
 
 export interface WhiskyOfTheDay {
@@ -239,6 +241,13 @@ export interface IStorage {
   // User Feedback
   createUserFeedback(data: InsertUserFeedback): Promise<UserFeedback>;
   getUserFeedback(): Promise<UserFeedback[]>;
+
+  // Notifications
+  getNotificationsForParticipant(participantId: string): Promise<Notification[]>;
+  createNotification(data: InsertNotification): Promise<Notification>;
+  markNotificationRead(notificationId: string, participantId: string): Promise<void>;
+  markAllNotificationsRead(participantId: string): Promise<void>;
+  getUnreadNotificationCount(participantId: string): Promise<number>;
 
   // Platform Stats
   getPlatformStats(): Promise<{
@@ -1324,6 +1333,55 @@ export class DatabaseStorage implements IStorage {
 
   async getUserFeedback(): Promise<UserFeedback[]> {
     return db.select().from(userFeedback).orderBy(desc(userFeedback.createdAt));
+  }
+
+  // --- Notifications ---
+  async getNotificationsForParticipant(participantId: string): Promise<Notification[]> {
+    const personal = await db.select().from(notifications)
+      .where(eq(notifications.recipientId, participantId))
+      .orderBy(desc(notifications.createdAt));
+    const global = await db.select().from(notifications)
+      .where(eq(notifications.isGlobal, true))
+      .orderBy(desc(notifications.createdAt));
+    const merged = [...personal, ...global];
+    const seen = new Set<string>();
+    const unique = merged.filter(n => { if (seen.has(n.id)) return false; seen.add(n.id); return true; });
+    unique.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+    return unique;
+  }
+
+  async createNotification(data: InsertNotification): Promise<Notification> {
+    const [result] = await db.insert(notifications).values(data).returning();
+    return result;
+  }
+
+  async markNotificationRead(notificationId: string, participantId: string): Promise<void> {
+    const [notif] = await db.select().from(notifications).where(eq(notifications.id, notificationId)).limit(1);
+    if (!notif) return;
+    const readByList: string[] = JSON.parse(notif.readBy || "[]");
+    if (!readByList.includes(participantId)) {
+      readByList.push(participantId);
+      await db.update(notifications).set({ readBy: JSON.stringify(readByList) }).where(eq(notifications.id, notificationId));
+    }
+  }
+
+  async markAllNotificationsRead(participantId: string): Promise<void> {
+    const all = await this.getNotificationsForParticipant(participantId);
+    for (const notif of all) {
+      const readByList: string[] = JSON.parse(notif.readBy || "[]");
+      if (!readByList.includes(participantId)) {
+        readByList.push(participantId);
+        await db.update(notifications).set({ readBy: JSON.stringify(readByList) }).where(eq(notifications.id, notif.id));
+      }
+    }
+  }
+
+  async getUnreadNotificationCount(participantId: string): Promise<number> {
+    const all = await this.getNotificationsForParticipant(participantId);
+    return all.filter(n => {
+      const readByList: string[] = JSON.parse(n.readBy || "[]");
+      return !readByList.includes(participantId);
+    }).length;
   }
 }
 

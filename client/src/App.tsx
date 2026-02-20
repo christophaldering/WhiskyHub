@@ -48,6 +48,7 @@ import Intro from "@/pages/intro";
 import Landing from "@/pages/landing";
 import FeatureTour from "@/pages/feature-tour";
 import Tour from "@/pages/tour";
+import News from "@/pages/news";
 import { BuildFooter } from "@/components/build-footer";
 import "@/lib/i18n";
 
@@ -63,6 +64,7 @@ function Router() {
           <Layout>
             <Switch>
               <Route path="/app" component={Home} />
+              <Route path="/news" component={News} />
               <Route path="/sessions" component={Sessions} />
               <Route path="/tasting/:id" component={TastingRoom} />
               <Route path="/profile" component={Profile} />

@@ -552,3 +552,16 @@ export const feedbackApi = {
   getAll: (participantId: string) =>
     fetchJSON(`/feedback?participantId=${participantId}`),
 };
+
+export const notificationApi = {
+  getAll: (participantId: string) =>
+    fetchJSON(`/notifications?participantId=${participantId}`),
+  getUnreadCount: (participantId: string) =>
+    fetchJSON(`/notifications/unread-count?participantId=${participantId}`),
+  markRead: (notificationId: string, participantId: string) =>
+    fetchJSON(`/notifications/${notificationId}/read`, { method: "PATCH", body: JSON.stringify({ participantId }) }),
+  markAllRead: (participantId: string) =>
+    fetchJSON(`/notifications/read-all`, { method: "PATCH", body: JSON.stringify({ participantId }) }),
+  createGlobal: (data: { participantId: string; title: string; message: string; type?: string; linkUrl?: string }) =>
+    fetchJSON("/notifications", { method: "POST", body: JSON.stringify(data) }),
+};

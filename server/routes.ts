@@ -626,6 +626,26 @@ export async function registerRoutes(
     }
     const updated = await storage.updateTastingStatus(req.params.id, status, currentAct);
     if (!updated) return res.status(404).json({ message: "Not found" });
+
+    if (status === "reveal") {
+      try {
+        const tps = await storage.getTastingParticipants(req.params.id);
+        for (const tp of tps) {
+          if (tp.participantId !== updated.hostId) {
+            await storage.createNotification({
+              recipientId: tp.participantId,
+              type: "reveal",
+              title: `Results ready: "${updated.title}"`,
+              message: `The tasting "${updated.title}" has entered the reveal phase. Check out the results!`,
+              linkUrl: `/tasting/${updated.id}`,
+              tastingId: updated.id,
+              isGlobal: false,
+            });
+          }
+        }
+      } catch {}
+    }
+
     res.json(updated);
   });
 
@@ -790,6 +810,22 @@ export async function registerRoutes(
       }
 
       const tp = await storage.addParticipantToTasting({ tastingId, participantId });
+
+      try {
+        const joiner = await storage.getParticipant(participantId);
+        if (tasting.hostId !== participantId) {
+          await storage.createNotification({
+            recipientId: tasting.hostId,
+            type: "join",
+            title: `${joiner?.name || "Someone"} joined "${tasting.title}"`,
+            message: `${joiner?.name || "A participant"} has joined your tasting session "${tasting.title}".`,
+            linkUrl: `/tasting/${tasting.id}`,
+            tastingId: tasting.id,
+            isGlobal: false,
+          });
+        }
+      } catch {}
+
       res.status(201).json(tp);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -1563,6 +1599,21 @@ export async function registerRoutes(
         }
 
         results.push({ email: trimmed, token, link, emailSent });
+
+        try {
+          const existingUser = await storage.getParticipantByEmail(trimmed);
+          if (existingUser) {
+            await storage.createNotification({
+              recipientId: existingUser.id,
+              type: "invitation",
+              title: `You're invited to "${tasting.title}"`,
+              message: `${hostName} has invited you to the tasting "${tasting.title}" on ${tasting.date} at ${tasting.location}.`,
+              linkUrl: `/invite/${token}`,
+              tastingId: tasting.id,
+              isGlobal: false,
+            });
+          }
+        } catch {}
       }
 
       res.json({ invites: results, smtpConfigured: smtpReady });
@@ -1605,6 +1656,22 @@ export async function registerRoutes(
       if (participant && !participant.email) {
         await storage.updateParticipant(participantId, { email: invite.email });
       }
+
+      try {
+        const tasting = await storage.getTasting(invite.tastingId);
+        const joiner = await storage.getParticipant(participantId);
+        if (tasting && joiner && tasting.hostId !== participantId) {
+          await storage.createNotification({
+            recipientId: tasting.hostId,
+            type: "join",
+            title: `${joiner.name} accepted your invitation`,
+            message: `${joiner.name} has accepted the invitation and joined "${tasting.title}".`,
+            linkUrl: `/tasting/${tasting.id}`,
+            tastingId: tasting.id,
+            isGlobal: false,
+          });
+        }
+      } catch {}
 
       res.json({ success: true, tastingId: invite.tastingId });
     } catch (e: any) {
@@ -6138,6 +6205,79 @@ Important rules:
     } catch (e: any) {
       console.error("PPTX generation error:", e);
       res.status(500).json({ message: e.message || "PPTX generation failed" });
+    }
+  });
+
+  // ===== NOTIFICATIONS / NEWS FEED =====
+
+  app.get("/api/notifications", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const all = await storage.getNotificationsForParticipant(participantId);
+      const withReadStatus = all.map(n => {
+        const readByList: string[] = JSON.parse(n.readBy || "[]");
+        return { ...n, isRead: readByList.includes(participantId) };
+      });
+      res.json(withReadStatus);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/notifications/unread-count", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const count = await storage.getUnreadNotificationCount(participantId);
+      res.json({ count });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/notifications/:id/read", async (req: Request, res: Response) => {
+    try {
+      const { participantId } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      await storage.markNotificationRead(req.params.id, participantId);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/notifications/read-all", async (req: Request, res: Response) => {
+    try {
+      const { participantId } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      await storage.markAllNotificationsRead(participantId);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/notifications", async (req: Request, res: Response) => {
+    try {
+      const { participantId } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const notif = await storage.createNotification({
+        recipientId: null,
+        type: req.body.type || "platform_update",
+        title: req.body.title,
+        message: req.body.message,
+        linkUrl: req.body.linkUrl || null,
+        tastingId: null,
+        isGlobal: true,
+      });
+      res.status(201).json(notif);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
     }
   });
 

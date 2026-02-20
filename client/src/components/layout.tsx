@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3 } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
@@ -12,7 +12,7 @@ import { FeedbackButton } from "@/components/feedback-button";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
-import { profileApi, tastingApi } from "@/lib/api";
+import { profileApi, tastingApi, notificationApi } from "@/lib/api";
 
 type NavItem = { href: string; icon: any; label: string; match?: (loc: string) => boolean };
 type NavGroup = { label: string; items: NavItem[]; defaultOpen?: boolean };
@@ -33,6 +33,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     queryKey: ["tastings", currentParticipant?.id],
     queryFn: () => tastingApi.getAll(currentParticipant?.id),
     enabled: !!currentParticipant,
+  });
+
+  const { data: notifCount } = useQuery({
+    queryKey: ["notification-count", currentParticipant?.id],
+    queryFn: () => notificationApi.getUnreadCount(currentParticipant!.id),
+    enabled: !!currentParticipant,
+    refetchInterval: 30000,
   });
 
   const mainRef = useRef<HTMLElement>(null);
@@ -109,6 +116,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       defaultOpen: true,
       items: [
         { href: "/app", icon: Home, label: t('nav.lobby') },
+        { href: "/news", icon: Newspaper, label: t('nav.news') },
         { href: "/sessions", icon: Wine, label: t('nav.sessions') },
         { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
       ],
@@ -158,6 +166,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
         { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         { href: "/about", icon: Info, label: t('nav.about') },
+        { href: "/", icon: Globe, label: t('nav.landingPage') },
         { href: "/donate", icon: Heart, label: t('nav.donate') },
       ],
     },
@@ -311,6 +320,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       >
                         <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-primary")} />
                         <span className={cn("text-sm font-medium truncate", isActive && "font-semibold")}>{item.label}</span>
+                        {item.href === "/news" && (notifCount?.count ?? 0) > 0 && (
+                          <span className="ml-auto bg-primary text-primary-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1" data-testid="badge-news-count">
+                            {notifCount.count > 99 ? "99+" : notifCount.count}
+                          </span>
+                        )}
                       </div>
                     </Link>
                   );
