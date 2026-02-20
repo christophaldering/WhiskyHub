@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
@@ -271,14 +271,50 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
 
   const [promptDismissed, setPromptDismissed] = useState(false);
 
+  const isLocked = tasting.status !== "open" && tasting.status !== "draft";
+
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestScoresRef = useRef(scores);
+  const latestNotesRef = useRef(notes);
+  const latestGuessAbvRef = useRef(guessAbv);
+  const latestGuessAgeRef = useRef(guessAge);
+  latestScoresRef.current = scores;
+  latestNotesRef.current = notes;
+  latestGuessAbvRef.current = guessAbv;
+  latestGuessAgeRef.current = guessAge;
+
+  const triggerAutoSave = useCallback(() => {
+    if (!participantId || !activeWhisky?.id || isLocked) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      saveMutation.mutate({
+        tastingId: tasting.id,
+        whiskyId: activeWhisky.id,
+        participantId,
+        ...latestScoresRef.current,
+        notes: latestNotesRef.current,
+        guessAbv: latestGuessAbvRef.current ?? undefined,
+        guessAge: latestGuessAgeRef.current || undefined,
+      });
+    }, 800);
+  }, [participantId, activeWhisky?.id, tasting.id, isLocked]);
+
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, []);
+
   const handleScoreChange = useCallback((key: string, value: number) => {
     const clamped = Math.max(0, Math.min(100, Math.round(value * 10) / 10));
     setScores(prev => ({ ...prev, [key]: clamped }));
     setIsDirty(true);
-  }, []);
+    triggerAutoSave();
+  }, [triggerAutoSave]);
 
   const handleSave = () => {
     if (!participantId || !activeWhisky) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     saveMutation.mutate({
       tastingId: tasting.id,
       whiskyId: activeWhisky.id,
@@ -289,8 +325,6 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
       guessAge: guessAge || undefined,
     });
   };
-
-  const isLocked = tasting.status !== "open" && tasting.status !== "draft";
 
   const getGuidedBlindState = (forEval = false) => {
     if (isHost && !forEval) return { showName: true, showMeta: true, showImage: true, showLinks: guidedStep >= 3 };
@@ -754,13 +788,13 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                           placeholder={t("evaluation.notesPlaceholder") || "Aromas, palate, finish..."}
                           className="bg-secondary/10 min-h-[80px] border-border/50 focus:border-primary/50 resize-none font-serif leading-relaxed text-sm"
                           value={notes}
-                          onChange={(e) => { setNotes(e.target.value); setIsDirty(true); }}
+                          onChange={(e) => { setNotes(e.target.value); setIsDirty(true); triggerAutoSave(); }}
                           disabled={isLocked}
                           data-testid="guided-textarea-notes"
                         />
                         <TastingNoteGenerator
                           currentNotes={notes}
-                          onInsertNote={(note) => { setNotes(note); setIsDirty(true); }}
+                          onInsertNote={(note) => { setNotes(note); setIsDirty(true); triggerAutoSave(); }}
                           disabled={isLocked}
                         />
                       </motion.div>
@@ -776,7 +810,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                         type="number"
                         placeholder="e.g. 46.0"
                         value={guessAbv ?? ""}
-                        onChange={(e) => { setGuessAbv(e.target.value ? parseFloat(e.target.value) : null); setIsDirty(true); }}
+                        onChange={(e) => { setGuessAbv(e.target.value ? parseFloat(e.target.value) : null); setIsDirty(true); triggerAutoSave(); }}
                         step={0.1} min={20} max={70}
                         disabled={isLocked}
                         className="font-mono h-8 text-sm"
@@ -788,7 +822,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                       <Input
                         placeholder="e.g. 12, NAS"
                         value={guessAge}
-                        onChange={(e) => { setGuessAge(e.target.value); setIsDirty(true); }}
+                        onChange={(e) => { setGuessAge(e.target.value); setIsDirty(true); triggerAutoSave(); }}
                         disabled={isLocked}
                         className="font-mono h-8 text-sm"
                         data-testid="guided-guess-age"
