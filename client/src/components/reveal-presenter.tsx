@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  EyeOff,
   Monitor,
   Smartphone,
   Users,
@@ -96,6 +97,18 @@ export function RevealPresenter({ tasting, whiskies, onExit }: RevealPresenterPr
     if (revealStep === 2) return t("blind.stepMeta");
     if (revealStep === 3) return t("blind.stepImage");
     return t("presenter.allHidden");
+  };
+
+  const getBlindStateForWhisky = (idx: number, w?: Whisky) => {
+    if (!tasting.blindMode) return { showName: true, showMeta: true, showImage: true };
+    if (idx < revealIndex) return { showName: true, showMeta: true, showImage: true };
+    const photoRevealed = w?.photoRevealed ?? false;
+    if (idx === revealIndex) return {
+      showName: revealStep >= 1,
+      showMeta: revealStep >= 2,
+      showImage: revealStep >= 3 || photoRevealed,
+    };
+    return { showName: false, showMeta: false, showImage: photoRevealed };
   };
 
   if (!isHost) {
@@ -322,6 +335,73 @@ export function RevealPresenter({ tasting, whiskies, onExit }: RevealPresenterPr
                         <Glasses className="w-4 h-4" /> {t("blind.revealNext")}
                       </Button>
                     </div>
+                  </div>
+                )}
+
+                {showBlindControls && activeWhisky && (
+                  <div className="border-t border-border/20 pt-4" data-testid="presenter-host-preview">
+                    <span className="text-[10px] font-serif font-bold text-amber-600 uppercase tracking-widest block mb-2">
+                      {t("presenter.hostPreview")}
+                    </span>
+                    {(() => {
+                      const blind = getBlindStateForWhisky(selectedWhiskyIdx, activeWhisky);
+                      const nextStep = !blind.showName ? t("blind.stepName") : !blind.showMeta ? t("blind.stepMeta") : !blind.showImage ? t("blind.stepImage") : null;
+                      return (
+                        <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 space-y-2">
+                          {activeWhisky.imageUrl && (
+                            <div className="flex justify-center">
+                              <img
+                                src={activeWhisky.imageUrl}
+                                alt={activeWhisky.name}
+                                className={cn("w-16 h-16 rounded-lg object-cover border", blind.showImage ? "border-green-500/40 opacity-100" : "border-amber-500/40 opacity-70")}
+                                data-testid="presenter-preview-image"
+                              />
+                            </div>
+                          )}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              {blind.showName ? <Eye className="w-3 h-3 text-green-600 flex-shrink-0" /> : <EyeOff className="w-3 h-3 text-amber-600 flex-shrink-0" />}
+                              <span className={cn("text-xs font-serif font-bold", blind.showName ? "text-foreground" : "text-amber-700")}>{activeWhisky.name}</span>
+                            </div>
+                            {activeWhisky.distillery && (
+                              <div className="flex items-center gap-1.5">
+                                {blind.showName ? <Eye className="w-3 h-3 text-green-600 flex-shrink-0" /> : <EyeOff className="w-3 h-3 text-amber-600 flex-shrink-0" />}
+                                <span className={cn("text-[11px] font-serif italic", blind.showName ? "text-muted-foreground" : "text-amber-700/70")}>{activeWhisky.distillery}</span>
+                              </div>
+                            )}
+                            {(activeWhisky.age || activeWhisky.abv != null || activeWhisky.caskInfluence) && (
+                              <div className="flex items-center gap-1.5">
+                                {blind.showMeta ? <Eye className="w-3 h-3 text-green-600 flex-shrink-0" /> : <EyeOff className="w-3 h-3 text-amber-600 flex-shrink-0" />}
+                                <span className={cn("text-[11px] font-mono", blind.showMeta ? "text-muted-foreground" : "text-amber-700/70")}>
+                                  {[
+                                    activeWhisky.age && (activeWhisky.age === "NAS" ? "NAS" : `${activeWhisky.age}y`),
+                                    activeWhisky.abv != null && `${activeWhisky.abv}%`,
+                                    activeWhisky.caskInfluence,
+                                    activeWhisky.region,
+                                  ].filter(Boolean).join(" · ")}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          {nextStep && (
+                            <div className="flex items-center gap-1.5 pt-1 border-t border-amber-500/10">
+                              <ChevronRight className="w-3 h-3 text-amber-600" />
+                              <span className="text-[10px] font-serif text-amber-600">
+                                {t("presenter.nextRevealStep")}: {nextStep}
+                              </span>
+                            </div>
+                          )}
+                          {!nextStep && selectedWhiskyIdx < whiskies.length - 1 && !allRevealed && (
+                            <div className="flex items-center gap-1.5 pt-1 border-t border-amber-500/10">
+                              <ChevronRight className="w-3 h-3 text-amber-600" />
+                              <span className="text-[10px] font-serif text-amber-600">
+                                {t("presenter.nextWhiskyHint", { name: whiskies[revealIndex < whiskies.length ? revealIndex : selectedWhiskyIdx]?.name || "" })}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 

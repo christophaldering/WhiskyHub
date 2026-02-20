@@ -82,7 +82,7 @@ function RatingProgress({ tastingId, whiskyId, isHost, participantCount }: { tas
   const total = participantCount;
   const allRated = ratedCount >= total && total > 0;
 
-  if (!isHost && ratedCount === 0) return null;
+  if (!isHost) return null;
 
   return (
     <div className={cn(
@@ -92,6 +92,32 @@ function RatingProgress({ tastingId, whiskyId, isHost, participantCount }: { tas
       <Users className="w-3.5 h-3.5" />
       <span>{t("focus.ratingsProgress", { count: ratedCount, total })}</span>
       {allRated && <Check className="w-3.5 h-3.5" />}
+    </div>
+  );
+}
+
+function PersonalProgress({ tastingId, participantId, totalWhiskies }: { tastingId: string; participantId: string; totalWhiskies: number }) {
+  const { t } = useTranslation();
+
+  const inputFocused = useInputFocused();
+  const { data: allRatings = [] } = useQuery({
+    queryKey: ["ratings", tastingId],
+    queryFn: () => ratingApi.getForTasting(tastingId),
+    refetchInterval: inputFocused ? false : 10000,
+  });
+
+  const myRatedCount = allRatings.filter((r: any) => r.participantId === participantId).length;
+  const allDone = myRatedCount >= totalWhiskies && totalWhiskies > 0;
+
+  if (totalWhiskies === 0) return null;
+
+  return (
+    <div className={cn(
+      "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-serif",
+      allDone ? "bg-green-500/10 text-green-700" : "bg-secondary/50 text-muted-foreground"
+    )} data-testid="personal-rating-progress">
+      <Check className="w-3.5 h-3.5" />
+      <span>{t("focus.personalProgress", { count: myRatedCount, total: totalWhiskies })}</span>
     </div>
   );
 }
@@ -344,14 +370,21 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
               <span className="text-[10px] font-serif font-semibold text-amber-700 uppercase tracking-widest">{t("focus.enterFocus")}</span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <DramTimer startedAt={isCurrentlyTimed ? tasting.dramStartedAt : null} accumulated={currentAccumulated} />
-            <RatingProgress
+            <PersonalProgress
               tastingId={tasting.id}
-              whiskyId={activeWhisky.id}
-              isHost={isHost}
-              participantCount={participants.length}
+              participantId={participantId}
+              totalWhiskies={whiskies.length}
             />
+            {isHost && (
+              <RatingProgress
+                tastingId={tasting.id}
+                whiskyId={activeWhisky.id}
+                isHost={isHost}
+                participantCount={participants.length}
+              />
+            )}
           </div>
         </header>
 
@@ -418,6 +451,47 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
                 {tasting.ratingPrompt === "final" ? t("focus.hostPromptClear") : t("focus.hostPromptFinal")}
               </Button>
             </div>
+            {isBlind && (() => {
+              const participantBlind = getBlindState(activeIndex, activeWhisky, true);
+              const nextStep = !participantBlind.showName ? t("blind.stepName") : !participantBlind.showMeta ? t("blind.stepMeta") : !participantBlind.showImage ? t("blind.stepImage") : null;
+              if (!nextStep && participantBlind.showName && participantBlind.showMeta && participantBlind.showImage) return null;
+              return (
+                <div className="mt-3 bg-amber-500/5 border border-amber-500/20 rounded-lg p-2.5 space-y-1.5" data-testid="focus-host-preview">
+                  <span className="text-[10px] font-serif font-bold text-amber-600 uppercase tracking-widest">{t("presenter.hostPreview")}</span>
+                  <div className="flex items-start gap-2">
+                    {activeWhisky.imageUrl && (
+                      <img src={activeWhisky.imageUrl} alt={activeWhisky.name} className="w-10 h-10 rounded object-cover border border-amber-500/30 opacity-80 flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0 space-y-0.5">
+                      <div className="flex items-center gap-1">
+                        {participantBlind.showName ? <Eye className="w-2.5 h-2.5 text-green-600 flex-shrink-0" /> : <EyeOff className="w-2.5 h-2.5 text-amber-600 flex-shrink-0" />}
+                        <span className="text-xs font-serif font-bold text-amber-700 truncate">{activeWhisky.name}</span>
+                      </div>
+                      {activeWhisky.distillery && (
+                        <div className="flex items-center gap-1">
+                          {participantBlind.showName ? <Eye className="w-2.5 h-2.5 text-green-600 flex-shrink-0" /> : <EyeOff className="w-2.5 h-2.5 text-amber-600 flex-shrink-0" />}
+                          <span className="text-[11px] font-serif italic text-amber-700/70 truncate">{activeWhisky.distillery}</span>
+                        </div>
+                      )}
+                      {(activeWhisky.age || activeWhisky.abv != null) && (
+                        <div className="flex items-center gap-1">
+                          {participantBlind.showMeta ? <Eye className="w-2.5 h-2.5 text-green-600 flex-shrink-0" /> : <EyeOff className="w-2.5 h-2.5 text-amber-600 flex-shrink-0" />}
+                          <span className="text-[11px] font-mono text-amber-700/70">
+                            {[activeWhisky.age && (activeWhisky.age === "NAS" ? "NAS" : `${activeWhisky.age}y`), activeWhisky.abv != null && `${activeWhisky.abv}%`, activeWhisky.caskInfluence].filter(Boolean).join(" · ")}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {nextStep && (
+                    <div className="flex items-center gap-1 text-[10px] font-serif text-amber-600 pt-0.5 border-t border-amber-500/10">
+                      <ChevronRight className="w-2.5 h-2.5" />
+                      <span>{t("presenter.nextRevealStep")}: {nextStep}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 
