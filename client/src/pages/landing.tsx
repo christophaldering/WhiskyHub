@@ -8,7 +8,7 @@ import heroImage from "@/assets/images/hero-whisky.png";
 import christophImage from "@assets/22A3ABF8-0085-4C82-97DF-EAA0ACD46B4E_1771546683886.jpeg";
 import {
   Glasses, BookOpen, Users, BarChart3, Brain, Camera,
-  FileUp, Globe, ArrowRight, Wine, Star, Sparkles,
+  FileUp, Globe, ArrowRight, Wine,
   ChevronDown, Heart
 } from "lucide-react";
 
@@ -45,12 +45,12 @@ export default function Landing() {
   });
 
   const features = [
-    { icon: Glasses, titleKey: "landing.features.blindTasting", descKey: "landing.features.blindTastingDesc", color: "text-amber-500 bg-amber-500/10" },
-    { icon: Brain, titleKey: "landing.features.aiImport", descKey: "landing.features.aiImportDesc", color: "text-violet-500 bg-violet-500/10" },
-    { icon: BookOpen, titleKey: "landing.features.journal", descKey: "landing.features.journalDesc", color: "text-emerald-500 bg-emerald-500/10" },
-    { icon: BarChart3, titleKey: "landing.features.analytics", descKey: "landing.features.analyticsDesc", color: "text-blue-500 bg-blue-500/10" },
-    { icon: Users, titleKey: "landing.features.community", descKey: "landing.features.communityDesc", color: "text-rose-500 bg-rose-500/10" },
-    { icon: Globe, titleKey: "landing.features.encyclopedia", descKey: "landing.features.encyclopediaDesc", color: "text-teal-500 bg-teal-500/10" },
+    { icon: Glasses, titleKey: "landing.features.blindTasting", descKey: "landing.features.blindTastingDesc", color: "text-amber-600 bg-amber-600/10" },
+    { icon: Brain, titleKey: "landing.features.aiImport", descKey: "landing.features.aiImportDesc", color: "text-orange-500 bg-orange-500/10" },
+    { icon: BookOpen, titleKey: "landing.features.journal", descKey: "landing.features.journalDesc", color: "text-amber-700 bg-amber-700/10" },
+    { icon: BarChart3, titleKey: "landing.features.analytics", descKey: "landing.features.analyticsDesc", color: "text-yellow-600 bg-yellow-600/10" },
+    { icon: Users, titleKey: "landing.features.community", descKey: "landing.features.communityDesc", color: "text-orange-600 bg-orange-600/10" },
+    { icon: Globe, titleKey: "landing.features.encyclopedia", descKey: "landing.features.encyclopediaDesc", color: "text-amber-500 bg-amber-500/10" },
   ];
 
   const steps = [
@@ -61,7 +61,6 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
-      {/* Sticky Nav Bar */}
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <button onClick={() => navigate("/")} className="flex items-center gap-2.5" data-testid="landing-logo">
@@ -81,7 +80,7 @@ export default function Landing() {
 
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-amber-500/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-900/10 via-transparent to-orange-900/5" />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 lg:py-32 relative">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <motion.div
@@ -90,8 +89,8 @@ export default function Landing() {
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="space-y-6"
             >
-              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium">
-                <Sparkles className="w-4 h-4" />
+              <div className="inline-flex items-center gap-2 bg-amber-500/15 text-amber-400 rounded-full px-4 py-1.5 text-sm font-medium">
+                <Wine className="w-4 h-4" />
                 {t("landing.hero.badge")}
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-black text-primary leading-tight tracking-tight">
@@ -117,20 +116,9 @@ export default function Landing() {
               transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
               className="relative hidden lg:block"
             >
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-primary/10 border border-border/30">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-amber-900/20 border border-amber-800/20">
                 <img src={heroImage} alt="CaskSense" className="w-full h-auto object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
-              </div>
-              <div className="absolute -bottom-4 -left-4 bg-card border border-border/50 rounded-xl p-4 shadow-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-                    <Star className="w-5 h-5 text-amber-500" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-primary">4.8 / 5</div>
-                    <div className="text-xs text-muted-foreground">{t("landing.hero.avgRating")}</div>
-                  </div>
-                </div>
               </div>
             </motion.div>
           </div>
@@ -139,7 +127,7 @@ export default function Landing() {
 
       {/* Live Stats */}
       {stats && (stats.totalTastings > 0 || stats.totalParticipants > 0) && (
-        <section className="border-y border-border/40 bg-secondary/20">
+        <section className="border-y border-amber-800/20 bg-amber-900/5">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               {[
@@ -191,7 +179,7 @@ export default function Landing() {
                 viewport={{ once: true }}
                 custom={i}
                 variants={fadeUp}
-                className="bg-card border border-border/50 rounded-xl p-6 hover:shadow-md hover:border-primary/20 transition-all group"
+                className="bg-card border border-border/50 rounded-xl p-6 hover:shadow-md hover:border-amber-700/30 transition-all group"
                 data-testid={`landing-feature-${i}`}
               >
                 <div className={`w-12 h-12 rounded-lg ${f.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
@@ -206,7 +194,7 @@ export default function Landing() {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 sm:py-28 bg-secondary/10 border-y border-border/30">
+      <section className="py-20 sm:py-28 bg-amber-900/5 border-y border-amber-800/15">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <motion.div
             initial="hidden"
@@ -220,7 +208,7 @@ export default function Landing() {
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("landing.howItWorks.subtitle")}</p>
           </motion.div>
           <div className="grid md:grid-cols-3 gap-8 relative">
-            <div className="hidden md:block absolute top-16 left-[20%] right-[20%] h-0.5 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
+            <div className="hidden md:block absolute top-16 left-[20%] right-[20%] h-0.5 bg-gradient-to-r from-amber-700/20 via-amber-600/40 to-amber-700/20" />
             {steps.map((s, i) => (
               <motion.div
                 key={s.num}
@@ -232,7 +220,7 @@ export default function Landing() {
                 className="relative text-center"
                 data-testid={`landing-step-${i}`}
               >
-                <div className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center mx-auto mb-5 relative z-10 bg-background">
+                <div className="w-16 h-16 rounded-full bg-amber-800/10 border-2 border-amber-700/30 flex items-center justify-center mx-auto mb-5 relative z-10 bg-background">
                   <span className="text-2xl font-serif font-black text-primary">{s.num}</span>
                 </div>
                 <h3 className="font-serif font-bold text-primary text-lg mb-2">{t(s.titleKey)}</h3>
@@ -263,11 +251,12 @@ export default function Landing() {
               viewport={{ once: true }}
               custom={0}
               variants={fadeUp}
-              className="lg:col-span-2"
+              className="lg:col-span-2 space-y-3"
             >
-              <div className="rounded-2xl overflow-hidden shadow-xl shadow-primary/10 border border-border/30">
-                <img src={christophImage} alt="Christoph" className="w-full h-auto object-cover" />
+              <div className="rounded-2xl overflow-hidden shadow-xl shadow-amber-900/15 border border-amber-800/20">
+                <img src={christophImage} alt="Christoph & Sammy" className="w-full h-auto object-cover" />
               </div>
+              <p className="text-sm text-muted-foreground/60 italic text-center">{t("landing.story.photoCaption")}</p>
             </motion.div>
             <motion.div
               initial="hidden"
@@ -278,8 +267,8 @@ export default function Landing() {
               className="lg:col-span-3 space-y-5"
             >
               <div className="flex items-center gap-3 mb-2">
-                <Heart className="w-5 h-5 text-primary" />
-                <span className="text-sm font-medium text-primary uppercase tracking-widest">{t("landing.story.label")}</span>
+                <Heart className="w-5 h-5 text-amber-500" />
+                <span className="text-sm font-medium text-amber-500 uppercase tracking-widest">{t("landing.story.label")}</span>
               </div>
               <p className="text-muted-foreground leading-relaxed text-base">
                 {t("landing.story.p1")}
@@ -293,17 +282,20 @@ export default function Landing() {
               <p className="text-muted-foreground leading-relaxed text-base">
                 {t("landing.story.p4")}
               </p>
+              <p className="text-muted-foreground leading-relaxed text-base">
+                {t("landing.story.p5")}
+              </p>
               <ul className="space-y-2 pl-1">
                 <li className="flex items-start gap-3 text-muted-foreground text-base">
-                  <span className="text-primary mt-0.5">•</span>
+                  <span className="text-amber-500 mt-0.5">•</span>
                   <span>{t("landing.story.bullet1")}</span>
                 </li>
                 <li className="flex items-start gap-3 text-muted-foreground text-base">
-                  <span className="text-primary mt-0.5">•</span>
+                  <span className="text-amber-500 mt-0.5">•</span>
                   <span>{t("landing.story.bullet2")}</span>
                 </li>
               </ul>
-              <p className="text-muted-foreground/70 leading-relaxed text-sm italic pt-2">
+              <p className="text-muted-foreground/60 leading-relaxed text-sm italic pt-2 border-t border-amber-800/10 mt-4">
                 {t("landing.story.tagline")}
               </p>
             </motion.div>
@@ -312,7 +304,7 @@ export default function Landing() {
       </section>
 
       {/* AI Highlight */}
-      <section className="py-20 sm:py-28 bg-gradient-to-br from-violet-500/5 via-transparent to-primary/5 border-y border-border/30">
+      <section className="py-20 sm:py-28 bg-gradient-to-br from-amber-900/8 via-transparent to-orange-900/5 border-y border-amber-800/15">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
@@ -323,7 +315,7 @@ export default function Landing() {
               variants={fadeUp}
               className="space-y-6"
             >
-              <div className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-600 rounded-full px-4 py-1.5 text-sm font-medium">
+              <div className="inline-flex items-center gap-2 bg-orange-500/10 text-orange-400 rounded-full px-4 py-1.5 text-sm font-medium">
                 <Brain className="w-4 h-4" />
                 {t("landing.ai.badge")}
               </div>
@@ -336,7 +328,7 @@ export default function Landing() {
               <ul className="space-y-3">
                 {["landing.ai.bullet1", "landing.ai.bullet2", "landing.ai.bullet3"].map((k) => (
                   <li key={k} className="flex items-start gap-3 text-muted-foreground">
-                    <Sparkles className="w-4 h-4 text-violet-500 mt-1 shrink-0" />
+                    <ArrowRight className="w-3 h-3 text-amber-500 mt-1.5 shrink-0" />
                     <span className="text-sm">{t(k)}</span>
                   </li>
                 ))}
@@ -352,9 +344,9 @@ export default function Landing() {
             >
               {[
                 { icon: Camera, label: t("landing.ai.photo"), color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-                { icon: FileUp, label: t("landing.ai.file"), color: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
-                { icon: Globe, label: t("landing.ai.web"), color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" },
-                { icon: Wine, label: t("landing.ai.text"), color: "bg-rose-500/10 text-rose-500 border-rose-500/20" },
+                { icon: FileUp, label: t("landing.ai.file"), color: "bg-orange-500/10 text-orange-500 border-orange-500/20" },
+                { icon: Globe, label: t("landing.ai.web"), color: "bg-yellow-600/10 text-yellow-600 border-yellow-600/20" },
+                { icon: Wine, label: t("landing.ai.text"), color: "bg-amber-600/10 text-amber-600 border-amber-600/20" },
               ].map((item, i) => (
                 <div key={i} className={`${item.color} border rounded-xl p-6 flex flex-col items-center gap-3 text-center`}>
                   <item.icon className="w-8 h-8" />
@@ -392,7 +384,7 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/40 bg-secondary/10 py-10">
+      <footer className="border-t border-amber-800/15 bg-amber-900/5 py-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
