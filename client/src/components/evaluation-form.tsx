@@ -47,14 +47,37 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
   const [isDirty, setIsDirty] = useState(false);
 
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isDirtyRef = useRef(false);
   const latestScoresRef = useRef(scores);
   const latestNotesRef = useRef(notes);
   const latestGuessAbvRef = useRef(guessAbv);
   const latestGuessAgeRef = useRef(guessAge);
+  const latestWhiskyIdRef = useRef(whisky.id);
   latestScoresRef.current = scores;
   latestNotesRef.current = notes;
   latestGuessAbvRef.current = guessAbv;
   latestGuessAgeRef.current = guessAge;
+  isDirtyRef.current = isDirty;
+
+  const flushSave = useCallback((forWhiskyId: string) => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    if (!participantId || !isDirtyRef.current) return;
+    ratingApi.upsert({
+      tastingId: tasting.id,
+      whiskyId: forWhiskyId,
+      participantId,
+      ...latestScoresRef.current,
+      notes: latestNotesRef.current,
+      guessAbv: latestGuessAbvRef.current ?? undefined,
+      guessAge: latestGuessAgeRef.current || undefined,
+    }).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["rating", participantId, forWhiskyId] });
+      queryClient.invalidateQueries({ queryKey: ["ratings", tasting.id] });
+    });
+  }, [participantId, tasting.id]);
 
   useEffect(() => {
     return () => {
@@ -63,7 +86,14 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
   }, []);
 
   useEffect(() => {
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    const prevWhiskyId = latestWhiskyIdRef.current;
+    if (prevWhiskyId !== whisky.id) {
+      flushSave(prevWhiskyId);
+      latestWhiskyIdRef.current = whisky.id;
+    } else if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
     if (existingRating) {
       setScores({
         nose: existingRating.nose,
@@ -76,14 +106,14 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
       setGuessAbv(existingRating.guessAbv ?? null);
       setGuessAge(existingRating.guessAge || "");
       setIsDirty(false);
-    } else {
+    } else if (prevWhiskyId !== whisky.id) {
       setScores({ nose: 50.0, taste: 50.0, finish: 50.0, balance: 50.0, overall: 50.0 });
       setNotes("");
       setGuessAbv(null);
       setGuessAge("");
       setIsDirty(false);
     }
-  }, [existingRating, whisky.id]);
+  }, [existingRating, whisky.id, flushSave]);
 
   const saveMutation = useMutation({
     mutationFn: (data: any) => ratingApi.upsert(data),

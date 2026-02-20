@@ -263,14 +263,17 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
   const [isDirty, setIsDirty] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
 
+  const prevWhiskyIdForResetRef = useRef(activeWhisky.id);
   useEffect(() => {
+    const whiskyChanged = prevWhiskyIdForResetRef.current !== activeWhisky.id;
+    if (whiskyChanged) prevWhiskyIdForResetRef.current = activeWhisky.id;
     if (existingRating) {
       setScores({ nose: existingRating.nose, taste: existingRating.taste, finish: existingRating.finish, balance: existingRating.balance, overall: existingRating.overall });
       setNotes(existingRating.notes || "");
       setGuessAbv(existingRating.guessAbv ?? null);
       setGuessAge(existingRating.guessAge || "");
       setIsDirty(false);
-    } else {
+    } else if (whiskyChanged) {
       setScores({ nose: 50.0, taste: 50.0, finish: 50.0, balance: 50.0, overall: 50.0 });
       setNotes("");
       setGuessAbv(null);
@@ -323,14 +326,45 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
   const isLocked = tasting.status !== "open" && tasting.status !== "draft";
 
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isDirtyRef = useRef(false);
   const latestScoresRef = useRef(scores);
   const latestNotesRef = useRef(notes);
   const latestGuessAbvRef = useRef(guessAbv);
   const latestGuessAgeRef = useRef(guessAge);
+  const latestWhiskyIdRef = useRef(activeWhisky.id);
   latestScoresRef.current = scores;
   latestNotesRef.current = notes;
   latestGuessAbvRef.current = guessAbv;
   latestGuessAgeRef.current = guessAge;
+  isDirtyRef.current = isDirty;
+
+  const flushSave = useCallback((forWhiskyId: string) => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    if (!participantId || !isDirtyRef.current) return;
+    ratingApi.upsert({
+      tastingId: tasting.id,
+      whiskyId: forWhiskyId,
+      participantId,
+      ...latestScoresRef.current,
+      notes: latestNotesRef.current,
+      guessAbv: latestGuessAbvRef.current ?? undefined,
+      guessAge: latestGuessAgeRef.current || undefined,
+    }).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["rating", participantId, forWhiskyId] });
+      queryClient.invalidateQueries({ queryKey: ["ratings", tasting.id] });
+    });
+  }, [participantId, tasting.id]);
+
+  useEffect(() => {
+    const prevWhiskyId = latestWhiskyIdRef.current;
+    if (prevWhiskyId !== activeWhisky.id) {
+      flushSave(prevWhiskyId);
+      latestWhiskyIdRef.current = activeWhisky.id;
+    }
+  }, [activeWhisky.id, flushSave]);
 
   const triggerAutoSave = useCallback(() => {
     if (!participantId || !activeWhisky?.id || isLocked) return;
