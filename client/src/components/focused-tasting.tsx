@@ -332,11 +332,18 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
 
   return (
     <div className="fixed inset-0 bg-background z-50 overflow-y-auto" data-testid="focused-tasting-screen">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500/60 via-primary/40 to-amber-500/60" />
       <div className="min-h-screen flex flex-col max-w-2xl mx-auto px-4 py-4">
         <header className="flex items-center justify-between mb-4">
-          <Button variant="ghost" size="sm" onClick={onExit} className="font-serif text-xs" data-testid="button-exit-focus">
-            <ChevronLeft className="w-4 h-4 mr-1" /> {t("focus.backToRoom")}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={onExit} className="font-serif text-xs gap-1" data-testid="button-exit-focus">
+              <ChevronLeft className="w-4 h-4" /> {t("focus.backToRoom")}
+            </Button>
+            <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 rounded-full border border-amber-500/20">
+              <Eye className="w-3 h-3 text-amber-600" />
+              <span className="text-[10px] font-serif font-semibold text-amber-700 uppercase tracking-widest">{t("focus.enterFocus")}</span>
+            </div>
+          </div>
           <div className="flex items-center gap-3">
             <DramTimer startedAt={isCurrentlyTimed ? tasting.dramStartedAt : null} accumulated={currentAccumulated} />
             <RatingProgress

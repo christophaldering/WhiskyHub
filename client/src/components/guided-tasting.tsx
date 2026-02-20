@@ -33,6 +33,7 @@ import {
   Globe,
   Info,
   Bell,
+  Navigation,
 } from "lucide-react";
 import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Whisky, Tasting } from "@shared/schema";
@@ -385,11 +386,18 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
 
   return (
     <div className="fixed inset-0 bg-background z-50 overflow-y-auto" data-testid="guided-tasting-screen">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500/60 via-primary/40 to-emerald-500/60" />
       <div className="min-h-screen flex flex-col max-w-2xl mx-auto px-4 py-4">
         <header className="flex items-center justify-between mb-3">
-          <Button variant="ghost" size="sm" onClick={onExit} className="font-serif text-xs" data-testid="button-exit-guided">
-            <ChevronLeft className="w-4 h-4 mr-1" /> {t("guided.backToRoom")}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={onExit} className="font-serif text-xs gap-1" data-testid="button-exit-guided">
+              <ChevronLeft className="w-4 h-4" /> {t("guided.backToRoom")}
+            </Button>
+            <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+              <Navigation className="w-3 h-3 text-emerald-600" />
+              <span className="text-[10px] font-serif font-semibold text-emerald-700 uppercase tracking-widest">{t("guided.enterGuided")}</span>
+            </div>
+          </div>
           <div className="flex items-center gap-3">
             {isHost && (
               <GuidedRatingProgress

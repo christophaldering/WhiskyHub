@@ -1581,13 +1581,13 @@ export default function TastingRoom() {
                 {t(`session.status.${tasting.status}`)}
               </div>
             </div>
-            <div className="flex items-center gap-1 mt-1">
+            <div className="flex items-center gap-1 mt-1 flex-wrap">
               {isRevealPhase && (isHost ? presenterExited : true) && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => { setPresenterActive(true); setPresenterExited(false); }}
-                  className="font-serif text-xs border-primary/30 text-primary mr-2"
+                  className="font-serif text-xs border-primary/30 text-primary mr-1"
                   data-testid="button-presenter-mode"
                 >
                   <Monitor className="w-3.5 h-3.5 mr-1" />
@@ -1599,44 +1599,46 @@ export default function TastingRoom() {
                   variant="outline"
                   size="sm"
                   onClick={() => { setGuidedActive(true); setGuidedExited(false); }}
-                  className="font-serif text-xs border-primary/30 text-primary mr-2"
+                  className="font-serif text-xs border-primary/30 text-primary mr-1"
                   data-testid="button-guided-mode"
                 >
                   <Navigation className="w-3.5 h-3.5 mr-1" />
                   {t("guided.enterGuided")}
                 </Button>
               )}
-              {tasting.status === "open" && whiskyList.length > 0 && !tasting.guidedMode && (
+              <div className="flex items-center bg-secondary/50 rounded-lg p-0.5 border border-border/30">
                 <Button
-                  variant="outline"
+                  variant={viewTab === "tasting" ? "default" : "ghost"}
                   size="sm"
-                  onClick={() => setFocusMode(true)}
-                  className="font-serif text-xs border-primary/30 text-primary mr-2"
-                  data-testid="button-focus-mode"
+                  onClick={() => setViewTab("tasting")}
+                  className={cn("font-serif text-xs rounded-md h-7", viewTab === "tasting" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+                  data-testid="tab-tasting"
                 >
-                  <Eye className="w-3.5 h-3.5 mr-1" />
-                  {t("focus.enterFocus")}
+                  {t("nav.tastingRoom")}
                 </Button>
-              )}
-              <Button
-                variant={viewTab === "tasting" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewTab("tasting")}
-                className={cn("font-serif text-xs", viewTab === "tasting" ? "bg-primary text-primary-foreground" : "")}
-                data-testid="tab-tasting"
-              >
-                {t("nav.tastingRoom")}
-              </Button>
-              <Button
-                variant={viewTab === "board" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewTab("board")}
-                className={cn("font-serif text-xs", viewTab === "board" ? "bg-primary text-primary-foreground" : "")}
-                data-testid="tab-flight-board"
-              >
-                <LayoutList className="w-3.5 h-3.5 mr-1" />
-                {t("flightBoard.title")}
-              </Button>
+                <Button
+                  variant={viewTab === "board" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewTab("board")}
+                  className={cn("font-serif text-xs rounded-md h-7", viewTab === "board" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+                  data-testid="tab-flight-board"
+                >
+                  <LayoutList className="w-3.5 h-3.5 mr-1" />
+                  {t("flightBoard.title")}
+                </Button>
+                {tasting.status === "open" && whiskyList.length > 0 && !tasting.guidedMode && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFocusMode(true)}
+                    className="font-serif text-xs rounded-md h-7 text-primary font-semibold hover:bg-primary/10"
+                    data-testid="button-focus-mode"
+                  >
+                    <Eye className="w-3.5 h-3.5 mr-1" />
+                    {t("focus.enterFocus")}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -2009,6 +2011,25 @@ export default function TastingRoom() {
       <AttendeeRoster tastingId={tasting.id} hostId={tasting.hostId} />
 
       {isHost && <SessionControl tasting={tasting} totalWhiskies={whiskyList.length} />}
+
+      {tasting.status === "open" && whiskyList.length > 0 && !tasting.guidedMode && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed bottom-6 right-6 z-40"
+          data-testid="floating-am-glas-cta"
+        >
+          <Button
+            size="lg"
+            onClick={() => setFocusMode(true)}
+            className="rounded-full shadow-lg font-serif text-sm gap-2 px-6 h-12 bg-primary hover:bg-primary/90"
+            data-testid="button-floating-am-glas"
+          >
+            <Eye className="w-4 h-4" />
+            {t("focus.enterFocus")}
+          </Button>
+        </motion.div>
+      )}
     </div>
   );
 }
