@@ -41,6 +41,7 @@ import PhotoTasting from "@/pages/photo-tasting";
 import Reminders from "@/pages/reminders";
 import TastingHistory from "@/pages/tasting-history";
 import About from "@/pages/about";
+import DataExport from "@/pages/data-export";
 import Intro from "@/pages/intro";
 import Landing from "@/pages/landing";
 import { BuildFooter } from "@/components/build-footer";
@@ -91,6 +92,7 @@ function Router() {
               <Route path="/my-tastings" component={TastingHistory} />
               <Route path="/about-method" component={AboutMethod} />
               <Route path="/about" component={About} />
+              <Route path="/data-export" component={DataExport} />
               <Route path="/invite/:token" component={InviteAccept} />
               <Route component={NotFound} />
             </Switch>

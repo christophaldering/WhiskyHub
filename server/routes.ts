@@ -5133,5 +5133,239 @@ Important rules:
     }
   });
 
+  // ===== DATA EXPORT =====
+
+  const buildWorkbook = (sheetName: string, data: any[]) => {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
+    return wb;
+  };
+
+  const sendExport = (res: Response, data: any[], filename: string, format: string, sheetName: string) => {
+    if (!data || data.length === 0) {
+      return res.status(404).json({ message: "No data available for export" });
+    }
+    if (format === "csv") {
+      const ws = XLSX.utils.json_to_sheet(data);
+      const csv = XLSX.utils.sheet_to_csv(ws);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}.csv"`);
+      return res.send("\uFEFF" + csv);
+    }
+    const wb = buildWorkbook(sheetName, data);
+    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}.xlsx"`);
+    return res.send(Buffer.from(buf));
+  };
+
+  app.get("/api/export/tastings", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      const format = (req.query.format as string) || "csv";
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const tastings = await storage.getTastingsForParticipant(participantId);
+      const rows: any[] = [];
+      for (const t of tastings) {
+        if (t.status === "deleted") continue;
+        const whiskies = await storage.getWhiskiesForTasting(t.id);
+        const ratings = await storage.getRatingsForTasting(t.id);
+        const myRatings = ratings.filter((r: any) => r.participantId === participantId);
+        if (myRatings.length === 0) {
+          rows.push({
+            Tasting: t.title, Date: t.date, Location: t.location, Status: t.status,
+            Whisky: "", Distillery: "", Age: "", ABV: "",
+            Nose: "", Taste: "", Finish: "", Balance: "", Overall: "", Notes: ""
+          });
+        }
+        for (const r of myRatings) {
+          const w = whiskies.find((w: any) => w.id === r.whiskyId);
+          rows.push({
+            Tasting: t.title, Date: t.date, Location: t.location, Status: t.status,
+            Whisky: w?.name || "", Distillery: w?.distillery || "", Age: w?.age || "", ABV: w?.abv || "",
+            Nose: r.nose, Taste: r.taste, Finish: r.finish, Balance: r.balance, Overall: r.overall,
+            Notes: r.notes || ""
+          });
+        }
+      }
+      sendExport(res, rows, `casksense_tastings_${new Date().toISOString().split("T")[0]}`, format, "Tastings");
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Export failed" });
+    }
+  });
+
+  app.get("/api/export/journal", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      const format = (req.query.format as string) || "csv";
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const entries = await storage.getJournalEntries(participantId);
+      const rows = entries.map((e: any) => ({
+        Date: e.createdAt, Name: e.name, Distillery: e.distillery || "",
+        Region: e.region || "", Age: e.age || "", ABV: e.abv || "",
+        Rating: e.rating || "", Nose: e.noseNotes || "", Taste: e.tasteNotes || "",
+        Finish: e.finishNotes || "", Notes: e.notes || "", Source: e.source || ""
+      }));
+      sendExport(res, rows, `casksense_journal_${new Date().toISOString().split("T")[0]}`, format, "Journal");
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Export failed" });
+    }
+  });
+
+  app.get("/api/export/profile", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      const format = (req.query.format as string) || "csv";
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const profile = await storage.getProfile(participantId);
+      const participant = await storage.getParticipant(participantId);
+      const rows = [{
+        Name: participant?.name || "", Email: participant?.email || "",
+        Bio: profile?.bio || "", Location: profile?.location || "",
+        FavoriteRegion: profile?.favoriteRegion || "", FavoriteDistillery: profile?.favoriteDistillery || "",
+        PreferredStyle: profile?.preferredStyle || "", ExperienceLevel: profile?.experienceLevel || "",
+        TopNoseNotes: profile?.topNoseNotes || "", TopTasteNotes: profile?.topTasteNotes || "",
+        TopFinishNotes: profile?.topFinishNotes || ""
+      }];
+      sendExport(res, rows, `casksense_profile_${new Date().toISOString().split("T")[0]}`, format, "Profile");
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Export failed" });
+    }
+  });
+
+  app.get("/api/export/friends", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      const format = (req.query.format as string) || "csv";
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const friends = await storage.getWhiskyFriends(participantId);
+      const rows = await Promise.all(friends.map(async (f: any) => {
+        const p = f.friendId ? await storage.getParticipant(f.friendId) : null;
+        return {
+          Name: `${f.firstName || ""} ${f.lastName || ""}`.trim(),
+          Email: f.email || "", Status: f.status || "",
+          LinkedProfile: p?.name || "", AddedAt: f.createdAt || ""
+        };
+      }));
+      sendExport(res, rows, `casksense_friends_${new Date().toISOString().split("T")[0]}`, format, "Friends");
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Export failed" });
+    }
+  });
+
+  app.get("/api/export/wishlist", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      const format = (req.query.format as string) || "csv";
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const entries = await storage.getWishlistEntries(participantId);
+      const rows = entries.map((e: any) => ({
+        Name: e.name || "", Distillery: e.distillery || "",
+        Age: e.age || "", ABV: e.abv || "", Region: e.region || "",
+        Notes: e.notes || "", Priority: e.priority || "", AddedAt: e.createdAt || ""
+      }));
+      sendExport(res, rows, `casksense_wishlist_${new Date().toISOString().split("T")[0]}`, format, "Wishlist");
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Export failed" });
+    }
+  });
+
+  app.get("/api/export/collection", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      const format = (req.query.format as string) || "csv";
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const entries = await storage.getWhiskybaseCollection(participantId);
+      const rows = entries.map((e: any) => ({
+        Brand: e.brand || "", Name: e.name || "", WhiskybaseId: e.whiskybaseId || "",
+        Category: e.category || "", Rating: e.rating || "",
+        Notes: e.notes || "", AddedAt: e.createdAt || ""
+      }));
+      sendExport(res, rows, `casksense_collection_${new Date().toISOString().split("T")[0]}`, format, "Collection");
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Export failed" });
+    }
+  });
+
+  app.get("/api/export/all", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      const format = (req.query.format as string) || "xlsx";
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+
+      const wb = XLSX.utils.book_new();
+
+      const tastings = await storage.getTastingsForParticipant(participantId);
+      const tastingRows: any[] = [];
+      for (const t of tastings) {
+        if (t.status === "deleted") continue;
+        const whiskies = await storage.getWhiskiesForTasting(t.id);
+        const ratings = await storage.getRatingsForTasting(t.id);
+        const myRatings = ratings.filter((r: any) => r.participantId === participantId);
+        for (const r of myRatings) {
+          const w = whiskies.find((w: any) => w.id === r.whiskyId);
+          tastingRows.push({
+            Tasting: t.title, Date: t.date, Whisky: w?.name || "", Distillery: w?.distillery || "",
+            ABV: w?.abv || "", Nose: r.nose, Taste: r.taste, Finish: r.finish, Balance: r.balance, Overall: r.overall, Notes: r.notes || ""
+          });
+        }
+      }
+      if (tastingRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tastingRows), "Tastings");
+
+      const journal = await storage.getJournalEntries(participantId);
+      if (journal.length) {
+        const jRows = journal.map((e: any) => ({
+          Date: e.createdAt, Name: e.name, Distillery: e.distillery || "", Rating: e.rating || "",
+          Nose: e.noseNotes || "", Taste: e.tasteNotes || "", Finish: e.finishNotes || "", Notes: e.notes || ""
+        }));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(jRows), "Journal");
+      }
+
+      const wishlist = await storage.getWishlistEntries(participantId);
+      if (wishlist.length) {
+        const wRows = wishlist.map((e: any) => ({
+          Name: e.name || "", Distillery: e.distillery || "", Notes: e.notes || "", Priority: e.priority || ""
+        }));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wRows), "Wishlist");
+      }
+
+      const collection = await storage.getWhiskybaseCollection(participantId);
+      if (collection.length) {
+        const cRows = collection.map((e: any) => ({
+          Brand: e.brand || "", Name: e.name || "", WhiskybaseId: e.whiskybaseId || "", Rating: e.rating || ""
+        }));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cRows), "Collection");
+      }
+
+      const friends = await storage.getWhiskyFriends(participantId);
+      if (friends.length) {
+        const fRows = friends.map((f: any) => ({
+          Name: `${f.firstName || ""} ${f.lastName || ""}`.trim(), Email: f.email || "", Status: f.status || ""
+        }));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fRows), "Friends");
+      }
+
+      if (wb.SheetNames.length === 0) {
+        return res.status(404).json({ message: "No data available for export" });
+      }
+
+      if (format === "csv") {
+        const firstSheet = wb.Sheets[wb.SheetNames[0]];
+        const csv = XLSX.utils.sheet_to_csv(firstSheet);
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader("Content-Disposition", `attachment; filename="casksense_all_${new Date().toISOString().split("T")[0]}.csv"`);
+        return res.send("\uFEFF" + csv);
+      }
+
+      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename="casksense_all_${new Date().toISOString().split("T")[0]}.xlsx"`);
+      res.send(Buffer.from(buf));
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Export failed" });
+    }
+  });
+
   return httpServer;
 }

@@ -57,12 +57,20 @@ export default function Sessions() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (tasting: any) =>
-      tastingApi.updateStatus(tasting.id, "deleted", undefined, currentParticipant!.id),
+    mutationFn: async (tasting: any) => {
+      if (tasting.status === "open" || tasting.status === "closed" || tasting.status === "reveal") {
+        await tastingApi.updateStatus(tasting.id, "archived", undefined, currentParticipant!.id);
+      }
+      return tastingApi.updateStatus(tasting.id, "deleted", undefined, currentParticipant!.id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tastings"] });
       setDeleteTarget(null);
       toast({ title: t("session.actions.deleted") });
+    },
+    onError: (error: any) => {
+      toast({ title: error.message || t("session.actions.deleteFailed"), variant: "destructive" });
+      setDeleteTarget(null);
     },
   });
 
