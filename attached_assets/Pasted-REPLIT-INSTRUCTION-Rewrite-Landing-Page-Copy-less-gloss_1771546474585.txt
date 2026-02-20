@@ -1,0 +1,172 @@
+REPLIT INSTRUCTION — Rewrite Landing Page Copy (less glossy, more “Christoph”)
+
+Goal
+Transform the current landing page text of https://whisky-rating-hub.replit.app from “nüchtern-glatt / startup-marketing” to a more personal, reflective, authentic tone that fits the creator (Christoph): psychologist + management diagnostician + entrepreneur + whisky enthusiast; curious about AI speed; fascinated but not naïvely optimistic; comfortable with ambiguity; structured thinking serving perception and enjoyment.
+
+Key principles (must follow)
+- Write primarily in German (you may keep a few English terms like “Dram” if they feel natural).
+- No hype, no startup clichés (“Level heben”, “Community”, “magisch”, “unvergesslich”, “Wir glauben…”, “aus Leidenschaft…”).
+- Prefer “Ich”-Form where it’s about the origin/story. Use “wir” only if it truly refers to users tasting together (friends at a table), not to the product team.
+- Keep it warm, human, self-confident but modest: no self-praise, no grand claims.
+- Explicitly include ambivalence: fascination + reflection; possibility + implications for screen-based jobs.
+- Whisky is not a product-rating contest: structure deepens perception; precision serves pleasure.
+- Preserve UX clarity: headings remain short; body copy concise; CTAs action-oriented.
+- Do not change layout/components—only text content (and microcopy) unless a tiny label change is required.
+
+Scope: pages/sections to edit (based on current PDF)
+1) Hero section (Page 1)
+Current:
+- “Smarte Whisky-Verkostungen”
+- “Whisky gemeinsam entdecken”
+- Body: “Veranstalte gemeinsame Blind-Tastings… keine Vorkenntnisse nötig.”
+- CTAs: “Erstes Tasting starten” / “Mehr erfahren”
+Requested rewrite:
+- Make headline less generic and more distinctive.
+- Add a subtle line that signals: whisky + perception + structure + AI as helper (not show-off).
+- Keep CTA labels short (can stay, or slightly refine).
+
+Suggested replacement copy (Hero)
+Eyebrow:
+“Whisky. Wahrnehmung. Ein bisschen Struktur.”
+Headline:
+“Whisky gemeinsam – bewusster.”
+Body:
+“Organisiere Blind-Tastings, halte Nuancen fest und lass dir Routinearbeit abnehmen – damit mehr Aufmerksamkeit beim Dram bleibt. Ohne Vorkenntnisse, ohne Gehabe.”
+Primary CTA:
+“Erstes Tasting starten”
+Secondary CTA:
+“Mehr erfahren”
+
+2) Metrics strip (Page 2)
+Current:
+“Tastings veranstaltet / Teilnehmer dabei / Whiskys bewertet / Bewertungen abgegeben”
+Requested rewrite:
+- Keep the numbers, but soften the framing: not performance/competition, more “Momente dokumentiert”.
+Suggested labels:
+“Tastings” / “Menschen am Tisch” / “Dram-Momente” / “Notizen & Bewertungen”
+
+3) Feature cards (Pages 2–3)
+Current features:
+- Blind Tastings (dramatic reveal, acts)
+- KI-Import (no manual entry)
+- Whisky-Tagebuch
+- Umfangreiche Analysen
+- Soziale Tastings
+- Wissensdatenbank
+Requested rewrite:
+- Reduce “dramatisch/magisch”-language.
+- Emphasize fairness, curiosity, discovery, and reflection.
+- Keep benefits clear.
+
+Suggested replacements (cards)
+Blind Tastings:
+Title: “Blind-Tastings”
+Text: “Etiketten ausblenden, Vorurteile rausnehmen, gemeinsam auflösen. Klar strukturiert – und trotzdem locker.”
+
+KI-Import:
+Title: “KI-Import”
+Text: “Foto, Tabelle oder Text: Details werden automatisch erkannt. Weniger Tipparbeit, mehr Zeit fürs Verkosten.”
+
+Whisky-Tagebuch:
+Title: “Whisky-Tagebuch”
+Text: “Notizen, Fotos, Eindrücke. Nicht nur Punkte – sondern Erinnerungen, die du später wiederfindest.”
+
+Umfangreiche Analysen:
+Title: “Auswertungen”
+Text: “Radar-Charts, Profile, Vergleiche. Nicht um zu gewinnen – sondern um Muster im eigenen Geschmack zu sehen.”
+
+Soziale Tastings:
+Title: “Gemeinsam verkosten”
+Text: “Freunde per Code oder QR-Link einladen, Eindrücke teilen, Unterschiede vergleichen. Whisky macht am Tisch mehr Sinn.”
+
+Wissensdatenbank:
+Title: “Wissensbereich”
+Text: “Destillerien, Regionen, Abfüller – als Hintergrund beim Verkosten. Kurz, praktisch, ohne Overload.”
+
+4) “Drei einfache Schritte” (Page 3)
+Current:
+“Tasting erstellen / Freunde einladen / Verkosten & Entdecken”
+Requested rewrite:
+- Keep structure; make copy more human and less salesy.
+
+Suggested copy
+Step 1:
+Title: “Tasting anlegen”
+Text: “Name vergeben, Line-up hinzufügen – manuell, per Tabelle oder per KI.”
+
+Step 2:
+Title: “Freunde dazuholen”
+Text: “Code oder QR-Link teilen. Einsteigen ohne Konto – sofort am Tisch.”
+
+Step 3:
+Title: “Verkosten & vergleichen”
+Text: “Eindrücke festhalten, gemeinsam auflösen, Unterschiede im Gaumen entdecken.”
+
+5) “Die Geschichte hinter CaskSense / UNSERE REISE” (Page 4) — REPLACE ENTIRELY
+Current is generic (“Servietten”, “wir glauben”, “magisch”, “für Whisky-Liebhaber”).
+Requested rewrite:
+- Switch to “Ich”-form, modestly confident.
+- Include: OpenClaw → Replit experiment → speechless speed → reflection on employability of screen work → whisky joy.
+- Keep it skimmable (2–3 short paragraphs + 2 short bullets max).
+- No melodrama; no fearmongering.
+
+Suggested replacement section (German)
+Headline:
+“Warum es CaskSense gibt”
+Body:
+“Ich bin kein Software-Entwickler. Ich komme aus Psychologie, Diagnostik und Beratung – und ich liebe Whisky: wegen der Nuancen, der Gespräche, der Erinnerung an einen guten Dram.
+
+CaskSense ist aus Neugier entstanden. Nach einer kurzen Auseinandersetzung mit OpenClaw bin ich bei Replit gelandet und wollte einfach ausprobieren, was heute möglich ist. Die Geschwindigkeit, mit der daraus funktionierende Software wurde, hat mich fasziniert – und nachdenklich gemacht.
+
+Denn das ist die zweite Ebene: Wenn Software so schnell entsteht, verändert das die Arbeit vieler Menschen, die vor Bildschirmen arbeiten. Ich bin kein Technik-Optimist aus Prinzip, aber auch kein Pessimist. Ich probiere aus, beobachte – und denke danach weiter.
+
+CaskSense ist mein Versuch, beides zu verbinden:
+• Struktur, die Wahrnehmung vertieft (nicht Genuss ersetzt)
+• Technik, die Routine abnimmt (nicht Eindruck vorgibt)”
+
+Optional micro-line below:
+“Wenn du willst, ist es einfach ein Tasting-Tool. Wenn du genauer hinschaust, ist es auch ein Experiment.”
+
+6) KI-Import section (Page 5)
+Current: “Kein lästiges Abtippen mehr… KI extrahiert… in Sekunden”
+Requested rewrite:
+- Keep the promise, but make it less “salesy” and add your philosophy line.
+
+Suggested replacement
+Headline:
+“Import, ohne Tipparbeit”
+Body:
+“Flaschenfoto, Tabelle, Text oder URL: Details werden automatisch übernommen. Die Idee ist simpel: weniger Bildschirmarbeit – mehr Aufmerksamkeit beim Dram.”
+Bullets:
+- “Foto: Line-up fotografieren”
+- “Excel/CSV: Spalten automatisch zuordnen”
+- “Text/URL: einfügen, übernehmen, fertig”
+
+7) Final CTA (Page 6)
+Current: “Level zu heben? Werde Teil der Community…”
+Requested rewrite:
+- Remove “Level/Community” tone.
+- Invite warmly and simply.
+
+Suggested replacement
+Headline:
+“Bereit für das nächste Tasting?”
+Body:
+“Starte eine Session, lade Freunde ein und halte fest, was du wirklich wahrnimmst. Kostenlos nutzbar – ohne Konto zum Start.”
+CTA:
+“CaskSense öffnen” (or “App öffnen”)
+
+Footer links
+If you have “Über uns” link, ensure it points to the rewritten story section title “Warum es CaskSense gibt” or “Warum es CaskSense gibt / Über CaskSense”.
+
+Implementation notes
+- Apply copy changes in all language files / i18n keys for German. If English exists, provide a toned-down English equivalent later; for now prioritize DE.
+- Ensure line breaks fit mobile; prefer sentences <= 18 words where possible.
+- Keep button labels short; avoid long CTA text.
+- After updating, quickly re-check for “glatt” words: Community, magisch, unvergesslich, Level, Leidenschaft, revolutionär, perfekt, etc. Replace with simpler words.
+
+Acceptance criteria
+- Landing page feels personal and distinctive within 10 seconds of reading.
+- “Why” section sounds like a real person, not a brand.
+- Whisky is framed as perception + memory + conversation, not points.
+- AI is framed as helper + reflection point (employability angle), without alarmism.
