@@ -5168,6 +5168,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       });
       res.json(photo);
     } catch (e: any) {
+      console.error("Photo upload error:", e.message);
       res.status(500).json({ message: e.message });
     }
   });

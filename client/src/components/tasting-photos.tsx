@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Camera, Upload, Trash2, X, Printer, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { useInputFocused } from "@/hooks/use-input-focused";
+import { useToast } from "@/hooks/use-toast";
 import type { TastingPhoto, Whisky } from "@shared/schema";
 
 interface TastingPhotosProps {
@@ -22,6 +23,7 @@ interface TastingPhotosProps {
 export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: TastingPhotosProps) {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
+  const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
   const [lightboxPhoto, setLightboxPhoto] = useState<TastingPhoto | null>(null);
@@ -74,9 +76,16 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: t("session.photos.tooLarge", "Image must be under 2 MB"), variant: "destructive" });
+      return;
+    }
     setUploading(true);
     try {
       await uploadMutation.mutateAsync(file);
+      toast({ title: t("session.photos.uploadSuccess", "Photo uploaded") });
+    } catch (err: any) {
+      toast({ title: t("session.photos.uploadError", "Upload failed"), description: err?.message || "Unknown error", variant: "destructive" });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -108,7 +117,6 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             className="hidden"
             onChange={handleFileSelect}
             data-testid="input-photo-upload"
