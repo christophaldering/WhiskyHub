@@ -1961,7 +1961,7 @@ Respond ONLY with valid JSON, no markdown.`;
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
       const lang = language === "de" ? "German" : "English";
-      const cacheKey = `${lang}`;
+      const cacheKey = language === "de" ? "de" : "en";
 
       if (whiskyId) {
         const whisky = await storage.getWhisky(whiskyId);
