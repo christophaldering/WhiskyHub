@@ -4,6 +4,7 @@ import { EvaluationForm } from "@/components/evaluation-form";
 import { RevealView } from "@/components/reveal-view";
 import { FocusedTasting } from "@/components/focused-tasting";
 import { GuidedTasting } from "@/components/guided-tasting";
+import { RevealPresenter } from "@/components/reveal-presenter";
 import { SessionControl } from "@/components/session-control";
 import { LoginDialog } from "@/components/login-dialog";
 import { ImportFlightDialog } from "@/components/import-flight-dialog";
@@ -17,7 +18,7 @@ import DiscussionPanel from "@/components/discussion-panel";
 import ReflectionPanel from "@/components/reflection-panel";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1188,6 +1189,8 @@ export default function TastingRoom() {
   const [focusMode, setFocusMode] = useState(false);
   const [guidedActive, setGuidedActive] = useState(false);
   const [guidedExited, setGuidedExited] = useState(false);
+  const [presenterActive, setPresenterActive] = useState(false);
+  const [presenterExited, setPresenterExited] = useState(false);
 
   const reorderMutation = useMutation({
     mutationFn: (order: { id: string; sortOrder: number }[]) => whiskyApi.reorder(id!, order),
@@ -1358,6 +1361,19 @@ export default function TastingRoom() {
     );
   }
 
+  const isRevealPhase = tasting.status === "reveal";
+  const shouldAutoPresenter = isRevealPhase && isHost && !presenterExited;
+
+  if ((presenterActive || shouldAutoPresenter) && tasting && whiskyList.length > 0 && isRevealPhase) {
+    return (
+      <RevealPresenter
+        tasting={tasting}
+        whiskies={whiskyList}
+        onExit={() => { setPresenterActive(false); setPresenterExited(true); }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto overflow-x-hidden">
       <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
@@ -1521,6 +1537,18 @@ export default function TastingRoom() {
               </div>
             </div>
             <div className="flex items-center gap-1 mt-1">
+              {isRevealPhase && (isHost ? presenterExited : true) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setPresenterActive(true); setPresenterExited(false); }}
+                  className="font-serif text-xs border-primary/30 text-primary mr-2"
+                  data-testid="button-presenter-mode"
+                >
+                  <Monitor className="w-3.5 h-3.5 mr-1" />
+                  {t("presenter.enterPresenter")}
+                </Button>
+              )}
               {tasting.status === "open" && whiskyList.length > 0 && tasting.guidedMode && (
                 <Button
                   variant="outline"
