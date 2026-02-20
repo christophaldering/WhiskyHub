@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { EvaluationForm } from "@/components/evaluation-form";
 import { RevealView } from "@/components/reveal-view";
 import { FocusedTasting } from "@/components/focused-tasting";
+import { GuidedTasting } from "@/components/guided-tasting";
 import { SessionControl } from "@/components/session-control";
 import { LoginDialog } from "@/components/login-dialog";
 import { ImportFlightDialog } from "@/components/import-flight-dialog";
@@ -16,7 +17,7 @@ import DiscussionPanel from "@/components/discussion-panel";
 import ReflectionPanel from "@/components/reflection-panel";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1120,6 +1121,8 @@ export default function TastingRoom() {
   const [activeWhiskyId, setActiveWhiskyId] = useState<string | null>(null);
   const [viewTab, setViewTab] = useState<"tasting" | "board">("tasting");
   const [focusMode, setFocusMode] = useState(false);
+  const [guidedActive, setGuidedActive] = useState(false);
+  const [guidedExited, setGuidedExited] = useState(false);
 
   const reorderMutation = useMutation({
     mutationFn: (order: { id: string; sortOrder: number }[]) => whiskyApi.reorder(id!, order),
@@ -1267,6 +1270,18 @@ export default function TastingRoom() {
     };
     return { showName: false, showMeta: false, showImage: photoRevealed };
   };
+
+  const isGuidedMode = tasting?.guidedMode && (tasting.status === "open" || tasting.status === "draft");
+
+  if ((guidedActive || (isGuidedMode && !guidedExited)) && tasting && whiskyList.length > 0 && tasting.status === "open") {
+    return (
+      <GuidedTasting
+        tasting={tasting}
+        whiskies={whiskyList}
+        onExit={() => { setGuidedActive(false); setGuidedExited(true); }}
+      />
+    );
+  }
 
   if (focusMode && tasting && whiskyList.length > 0) {
     return (
@@ -1441,7 +1456,19 @@ export default function TastingRoom() {
               </div>
             </div>
             <div className="flex items-center gap-1 mt-1">
-              {tasting.status === "open" && whiskyList.length > 0 && (
+              {tasting.status === "open" && whiskyList.length > 0 && tasting.guidedMode && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setGuidedActive(true); setGuidedExited(false); }}
+                  className="font-serif text-xs border-primary/30 text-primary mr-2"
+                  data-testid="button-guided-mode"
+                >
+                  <Navigation className="w-3.5 h-3.5 mr-1" />
+                  {t("guided.enterGuided")}
+                </Button>
+              )}
+              {tasting.status === "open" && whiskyList.length > 0 && !tasting.guidedMode && (
                 <Button
                   variant="outline"
                   size="sm"

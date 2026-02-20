@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useLocation, Link } from "wouter";
-import { UserPlus, Plus, ArrowRight, Star, Wine, Glasses, BookOpen, Camera, User, ChevronDown, Eye, Sparkles, BarChart3, Users, MapPin, NotebookPen, ScanLine, Heart, Zap, Globe, Trophy, LogIn, FileUp } from "lucide-react";
+import { UserPlus, Plus, ArrowRight, Star, Wine, Glasses, BookOpen, Camera, User, ChevronDown, Eye, Sparkles, BarChart3, Users, MapPin, NotebookPen, ScanLine, Heart, Zap, Globe, Trophy, LogIn, FileUp, Navigation } from "lucide-react";
 import heroImage from "@/assets/images/hero-whisky.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -227,6 +227,7 @@ export default function Home() {
   const [newLocation, setNewLocation] = useState("");
   const [newDate, setNewDate] = useState(new Date().toISOString().split("T")[0]);
   const [blindMode, setBlindMode] = useState(false);
+  const [guidedMode, setGuidedMode] = useState(false);
   const [reflectionEnabled, setReflectionEnabled] = useState(false);
   const [showFeatures, setShowFeatures] = useState(!currentParticipant);
   const [showGuestCreate, setShowGuestCreate] = useState(false);
@@ -313,6 +314,7 @@ export default function Home() {
       status: "draft",
       currentAct: "act1",
       blindMode,
+      guidedMode,
       reflectionEnabled,
     });
   };
@@ -630,7 +632,17 @@ export default function Home() {
                           <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.blindModeDesc")}</p>
                         </div>
                       </div>
-                      <Switch checked={blindMode} onCheckedChange={setBlindMode} data-testid="switch-blind-mode" />
+                      <Switch checked={blindMode} onCheckedChange={(v) => { setBlindMode(v); if (v) setGuidedMode(true); }} data-testid="switch-blind-mode" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Navigation className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <Label className="text-xs font-medium">{t("sessionSettings.guidedMode")}</Label>
+                          <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.guidedModeDesc")}</p>
+                        </div>
+                      </div>
+                      <Switch checked={guidedMode} onCheckedChange={setGuidedMode} data-testid="switch-guided-mode" />
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">

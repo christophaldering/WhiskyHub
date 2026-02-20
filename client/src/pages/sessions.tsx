@@ -6,7 +6,7 @@ import { tastingApi, participantApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
-import { ArrowRight, Trash2, KeyRound, Loader2, Crown, Users, Plus, Camera, FileUp, Glasses, BookOpen, ChevronDown } from "lucide-react";
+import { ArrowRight, Trash2, KeyRound, Loader2, Crown, Users, Plus, Camera, FileUp, Glasses, BookOpen, ChevronDown, Navigation } from "lucide-react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,7 @@ export default function Sessions() {
   const [newDate, setNewDate] = useState(new Date().toISOString().slice(0, 10));
   const [newLocation, setNewLocation] = useState("");
   const [blindMode, setBlindMode] = useState(false);
+  const [guidedMode, setGuidedMode] = useState(false);
   const [reflectionEnabled, setReflectionEnabled] = useState(true);
   const [showImportDialog, setShowImportDialog] = useState(false);
 
@@ -86,6 +87,7 @@ export default function Sessions() {
       status: "draft",
       currentAct: "act1",
       blindMode,
+      guidedMode,
       reflectionEnabled,
     });
   };
@@ -286,7 +288,17 @@ export default function Sessions() {
                   <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.blindModeDesc")}</p>
                 </div>
               </div>
-              <Switch checked={blindMode} onCheckedChange={setBlindMode} data-testid="switch-session-blind" />
+              <Switch checked={blindMode} onCheckedChange={(v) => { setBlindMode(v); if (v) setGuidedMode(true); }} data-testid="switch-session-blind" />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Navigation className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <Label className="text-xs font-medium">{t("sessionSettings.guidedMode")}</Label>
+                  <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.guidedModeDesc")}</p>
+                </div>
+              </div>
+              <Switch checked={guidedMode} onCheckedChange={setGuidedMode} data-testid="switch-session-guided" />
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

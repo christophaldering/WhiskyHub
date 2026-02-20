@@ -209,6 +209,30 @@ export const blindModeApi = {
     }),
 };
 
+// ===== Guided Tasting =====
+export const guidedApi = {
+  updateMode: (tastingId: string, hostId: string, data: any) =>
+    fetchJSON(`/tastings/${tastingId}/guided-mode`, {
+      method: "PATCH",
+      body: JSON.stringify({ hostId, ...data }),
+    }),
+  advance: (tastingId: string, hostId: string) =>
+    fetchJSON(`/tastings/${tastingId}/guided-advance`, {
+      method: "POST",
+      body: JSON.stringify({ hostId }),
+    }),
+  goTo: (tastingId: string, hostId: string, whiskyIndex: number, revealStep?: number) =>
+    fetchJSON(`/tastings/${tastingId}/guided-goto`, {
+      method: "POST",
+      body: JSON.stringify({ hostId, whiskyIndex, revealStep }),
+    }),
+  enrichWhisky: (whiskyId: string, participantId: string) =>
+    fetchJSON(`/whiskies/${whiskyId}/ai-enrich`, {
+      method: "POST",
+      body: JSON.stringify({ participantId }),
+    }),
+};
+
 // ===== Discussions =====
 export const discussionApi = {
   get: (tastingId: string) => fetchJSON(`/tastings/${tastingId}/discussions`),
