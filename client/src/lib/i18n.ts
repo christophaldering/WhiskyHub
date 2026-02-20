@@ -271,6 +271,7 @@ const resources = {
       },
       nav: {
         lobby: "Home",
+        backToTasting: "Cockpit",
         sessions: "Sessions",
         sessionsActive: "Active Sessions",
         sessionsDraft: "Draft Sessions",
@@ -2176,6 +2177,7 @@ const resources = {
       },
       nav: {
         lobby: "Home",
+        backToTasting: "Cockpit",
         sessions: "Tastings",
         sessionsActive: "Aktive Tastings",
         sessionsDraft: "Entwürfe",

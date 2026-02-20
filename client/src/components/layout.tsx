@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
@@ -429,14 +429,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/40 safe-area-bottom" style={{ paddingLeft: 'env(safe-area-inset-left, 0)', paddingRight: 'env(safe-area-inset-right, 0)' }}>
         <div className="flex items-center justify-around px-1 py-1.5">
-          {[
-            { href: "/app", icon: Home, label: t('nav.lobby') },
-            { href: "/sessions", icon: Wine, label: t('nav.sessions') },
-            { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
-            { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
-            { href: "/more", icon: Menu, label: t('nav.more'), isMore: true },
-          ].map((item) => {
+          {(() => {
+            const tastingMatch = location.match(/^\/tasting\/([^/]+)/);
+            const inTasting = !!tastingMatch;
+            return [
+              inTasting
+                ? { href: `/tasting/${tastingMatch![1]}`, icon: ArrowLeft, label: t('nav.backToTasting'), isCockpit: true }
+                : { href: "/app", icon: Home, label: t('nav.lobby') },
+              { href: "/sessions", icon: Wine, label: t('nav.sessions') },
+              { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
+              { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
+              { href: "/more", icon: Menu, label: t('nav.more'), isMore: true },
+            ];
+          })().map((item) => {
             const isActive = location === item.href;
+            if ((item as any).isCockpit) {
+              return (
+                <button
+                  key="cockpit"
+                  onClick={() => window.dispatchEvent(new CustomEvent("casksense:exitFocusMode"))}
+                  className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px] text-primary transition-colors"
+                  data-testid="bottom-nav-cockpit"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  <span className="text-[10px] leading-tight font-semibold">{item.label}</span>
+                </button>
+              );
+            }
             if ((item as any).isMore) {
               return (
                 <button

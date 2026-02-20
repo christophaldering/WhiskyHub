@@ -1222,6 +1222,16 @@ export default function TastingRoom() {
   const [presenterExited, setPresenterExited] = useState(false);
   const [promptDismissed, setPromptDismissed] = useState(false);
 
+  useEffect(() => {
+    const handler = () => {
+      setFocusMode(false);
+      setGuidedActive(false);
+      setPresenterActive(false);
+    };
+    window.addEventListener("casksense:exitFocusMode", handler);
+    return () => window.removeEventListener("casksense:exitFocusMode", handler);
+  }, []);
+
   const ratingPromptMutation = useMutation({
     mutationFn: (prompt: string | null) => fetch(`/api/tastings/${id}/rating-prompt`, {
       method: "POST",
@@ -1664,7 +1674,7 @@ export default function TastingRoom() {
       </header>
 
       {viewTab === "board" && (
-        <FlightBoard tasting={tasting} whiskies={whiskyList} isHost={isHost} />
+        <FlightBoard tasting={tasting} whiskies={whiskyList} isHost={isHost} getBlindState={getBlindState} />
       )}
 
       {!isHost && tasting.ratingPrompt && !promptDismissed && (

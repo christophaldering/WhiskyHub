@@ -23,19 +23,19 @@ function buildMetaLine(w: Whisky): string {
   return parts.join(" \u2022 ");
 }
 
-function WhiskyThumbnailSmall({ whisky }: { whisky: Whisky }) {
+function WhiskyThumbnailSmall({ whisky, label, showImage }: { whisky: Whisky; label: string; showImage: boolean }) {
   const [err, setErr] = useState(false);
-  if (whisky.imageUrl && !err) {
+  if (showImage && whisky.imageUrl && !err) {
     return (
       <div className="flex-shrink-0 flex flex-col items-center gap-1 w-[60px]">
         <img
           src={whisky.imageUrl}
-          alt={whisky.name}
+          alt={label}
           className="w-[60px] h-[60px] object-cover rounded-lg border border-border/50"
           onError={() => setErr(true)}
           data-testid={`img-board-${whisky.id}`}
         />
-        <span className="text-[9px] text-muted-foreground text-center leading-tight line-clamp-2 w-full font-serif">{whisky.name}</span>
+        <span className="text-[9px] text-muted-foreground text-center leading-tight line-clamp-2 w-full font-serif">{label}</span>
       </div>
     );
   }
@@ -44,21 +44,25 @@ function WhiskyThumbnailSmall({ whisky }: { whisky: Whisky }) {
       <div className="w-[60px] h-[60px] rounded-lg bg-secondary/30 border border-secondary flex items-center justify-center">
         <ImageIcon className="w-5 h-5 text-muted-foreground/40" />
       </div>
-      <span className="text-[9px] text-muted-foreground text-center leading-tight line-clamp-2 w-full font-serif">{whisky.name}</span>
+      <span className="text-[9px] text-muted-foreground text-center leading-tight line-clamp-2 w-full font-serif">{label}</span>
     </div>
   );
 }
+
+type BlindState = { showName: boolean; showMeta: boolean; showImage: boolean };
 
 interface FlightBoardProps {
   tasting: Tasting;
   whiskies: Whisky[];
   isHost: boolean;
+  getBlindState: (whiskyIdx: number, whisky?: Whisky) => BlindState;
 }
 
-export function FlightBoard({ tasting, whiskies, isHost }: FlightBoardProps) {
+export function FlightBoard({ tasting, whiskies, isHost, getBlindState }: FlightBoardProps) {
   const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(0);
   const [detailWhisky, setDetailWhisky] = useState<Whisky | null>(null);
+  const [detailWhiskyIdx, setDetailWhiskyIdx] = useState(0);
   const canEdit = isHost && (tasting.status === "draft" || tasting.status === "open");
 
   const totalPages = Math.max(1, Math.ceil(whiskies.length / ITEMS_PER_PAGE));
@@ -106,6 +110,8 @@ export function FlightBoard({ tasting, whiskies, isHost }: FlightBoardProps) {
     const meta = buildMetaLine(w);
     const isFirst = globalIdx === 0;
     const isLast = globalIdx === whiskies.length - 1;
+    const blind = getBlindState(globalIdx, w);
+    const displayName = blind.showName ? w.name : `${t("blind.expressionLabel")} ${globalIdx + 1}`;
 
     return (
       <div
@@ -117,24 +123,29 @@ export function FlightBoard({ tasting, whiskies, isHost }: FlightBoardProps) {
           <span className="font-serif text-lg font-bold text-primary/60">{globalIdx + 1}</span>
         </div>
 
-        <button onClick={() => setDetailWhisky(w)} className="cursor-pointer" data-testid={`button-detail-${w.id}`}>
-          <WhiskyThumbnailSmall whisky={w} />
+        <button onClick={() => { setDetailWhisky(w); setDetailWhiskyIdx(globalIdx); }} className="cursor-pointer" data-testid={`button-detail-${w.id}`}>
+          <WhiskyThumbnailSmall whisky={w} label={displayName} showImage={blind.showImage} />
         </button>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2">
-            <h4 className="font-serif font-bold text-base text-foreground truncate cursor-pointer hover:text-primary transition-colors" onClick={() => setDetailWhisky(w)}>{w.name}</h4>
+            <h4 className="font-serif font-bold text-base text-foreground truncate cursor-pointer hover:text-primary transition-colors" onClick={() => { setDetailWhisky(w); setDetailWhiskyIdx(globalIdx); }}>{displayName}</h4>
           </div>
-          {w.distillery && (
+          {blind.showName && w.distillery && (
             <p className="text-sm text-muted-foreground font-serif italic truncate">{w.distillery}</p>
           )}
-          <div className="flex items-center gap-2 mt-0.5">
-            {w.age && <span className="text-xs font-mono text-muted-foreground">{w.age === "NAS" || w.age === "n.a.s." ? "NAS" : `${w.age}y`}</span>}
-            {w.abv != null && <span className="text-xs font-mono text-muted-foreground">{w.abv}%</span>}
-            {w.type && <span className="text-xs text-muted-foreground/70">{w.type}</span>}
-          </div>
-          {meta && (
+          {blind.showMeta && (
+            <div className="flex items-center gap-2 mt-0.5">
+              {w.age && <span className="text-xs font-mono text-muted-foreground">{w.age === "NAS" || w.age === "n.a.s." ? "NAS" : `${w.age}y`}</span>}
+              {w.abv != null && <span className="text-xs font-mono text-muted-foreground">{w.abv}%</span>}
+              {w.type && <span className="text-xs text-muted-foreground/70">{w.type}</span>}
+            </div>
+          )}
+          {blind.showMeta && meta && (
             <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{meta}</p>
+          )}
+          {!blind.showName && (
+            <p className="text-xs text-muted-foreground/50 font-serif italic">{t("blind.hidden")}</p>
           )}
         </div>
 
@@ -235,10 +246,12 @@ export function FlightBoard({ tasting, whiskies, isHost }: FlightBoardProps) {
       <Dialog open={!!detailWhisky} onOpenChange={(open) => !open && setDetailWhisky(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-serif text-xl text-primary">{detailWhisky?.name}</DialogTitle>
+            <DialogTitle className="font-serif text-xl text-primary">
+              {detailWhisky ? (getBlindState(detailWhiskyIdx, detailWhisky).showName ? detailWhisky.name : `${t("blind.expressionLabel")} ${detailWhiskyIdx + 1}`) : ""}
+            </DialogTitle>
           </DialogHeader>
           {detailWhisky && (
-            <DetailDialogContent whisky={detailWhisky} canEdit={canEdit} tastingId={tasting.id} />
+            <DetailDialogContent whisky={detailWhisky} canEdit={canEdit} tastingId={tasting.id} blindState={getBlindState(detailWhiskyIdx, detailWhisky)} />
           )}
         </DialogContent>
       </Dialog>
@@ -246,7 +259,7 @@ export function FlightBoard({ tasting, whiskies, isHost }: FlightBoardProps) {
   );
 }
 
-function DetailDialogContent({ whisky, canEdit, tastingId }: { whisky: Whisky; canEdit: boolean; tastingId: string }) {
+function DetailDialogContent({ whisky, canEdit, tastingId, blindState }: { whisky: Whisky; canEdit: boolean; tastingId: string; blindState: BlindState }) {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -278,7 +291,7 @@ function DetailDialogContent({ whisky, canEdit, tastingId }: { whisky: Whisky; c
 
   return (
     <div className="space-y-4">
-      {whisky.imageUrl ? (
+      {blindState.showImage && whisky.imageUrl ? (
         <div className="flex justify-center">
           <div className="relative">
             <img src={whisky.imageUrl} alt={whisky.name} className="max-h-64 rounded-lg border border-border/50 object-contain" data-testid="img-detail-whisky" />
@@ -328,45 +341,49 @@ function DetailDialogContent({ whisky, canEdit, tastingId }: { whisky: Whisky; c
           </Button>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        {whisky.distillery && (
-          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailDistillery")}</span><p className="font-serif">{whisky.distillery}</p></div>
-        )}
-        {whisky.age && (
-          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailAge")}</span><p className="font-serif">{whisky.age === "NAS" || whisky.age === "n.a.s." ? "NAS" : `${whisky.age} years`}</p></div>
-        )}
-        {whisky.abv != null && (
-          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailAbv")}</span><p className="font-serif">{whisky.abv}%</p></div>
-        )}
-        {whisky.country && (
-          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCountry")}</span><p className="font-serif">{whisky.country}</p></div>
-        )}
-        {(whisky.category || whisky.type) && (
-          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCategory")}</span><p className="font-serif">{whisky.category || whisky.type}</p></div>
-        )}
-        {whisky.region && (
-          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailRegion")}</span><p className="font-serif">{whisky.region}</p></div>
-        )}
-        {whisky.caskInfluence && (
-          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCask")}</span><p className="font-serif">{whisky.caskInfluence}</p></div>
-        )}
-        {whisky.peatLevel && whisky.peatLevel !== "None" && (
-          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailPeat")}</span><p className="font-serif">{whisky.peatLevel}{whisky.ppm != null ? ` (${whisky.ppm} ppm)` : ""}</p></div>
-        )}
-        {(whisky as any).bottler && (
-          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailBottler")}</span><p className="font-serif">{(whisky as any).bottler}</p></div>
-        )}
-        {(whisky as any).vintage && (
-          <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailVintage")}</span><p className="font-serif">{(whisky as any).vintage}</p></div>
-        )}
-      </div>
-      {whisky.notes && (
+      {blindState.showMeta ? (
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          {blindState.showName && whisky.distillery && (
+            <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailDistillery")}</span><p className="font-serif">{whisky.distillery}</p></div>
+          )}
+          {whisky.age && (
+            <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailAge")}</span><p className="font-serif">{whisky.age === "NAS" || whisky.age === "n.a.s." ? "NAS" : `${whisky.age} years`}</p></div>
+          )}
+          {whisky.abv != null && (
+            <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailAbv")}</span><p className="font-serif">{whisky.abv}%</p></div>
+          )}
+          {whisky.country && (
+            <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCountry")}</span><p className="font-serif">{whisky.country}</p></div>
+          )}
+          {(whisky.category || whisky.type) && (
+            <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCategory")}</span><p className="font-serif">{whisky.category || whisky.type}</p></div>
+          )}
+          {whisky.region && (
+            <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailRegion")}</span><p className="font-serif">{whisky.region}</p></div>
+          )}
+          {whisky.caskInfluence && (
+            <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailCask")}</span><p className="font-serif">{whisky.caskInfluence}</p></div>
+          )}
+          {whisky.peatLevel && whisky.peatLevel !== "None" && (
+            <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailPeat")}</span><p className="font-serif">{whisky.peatLevel}{whisky.ppm != null ? ` (${whisky.ppm} ppm)` : ""}</p></div>
+          )}
+          {(whisky as any).bottler && (
+            <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailBottler")}</span><p className="font-serif">{(whisky as any).bottler}</p></div>
+          )}
+          {(whisky as any).vintage && (
+            <div><span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailVintage")}</span><p className="font-serif">{(whisky as any).vintage}</p></div>
+          )}
+        </div>
+      ) : (
+        <p className="text-center text-sm text-muted-foreground/60 font-serif italic py-4">{t("blind.hidden")}</p>
+      )}
+      {blindState.showMeta && whisky.notes && (
         <div>
           <span className="text-muted-foreground font-mono text-xs uppercase">{t("flightBoard.detailNotes")}</span>
           <p className="font-serif text-sm mt-1 leading-relaxed">{whisky.notes}</p>
         </div>
       )}
-      {whisky.whiskybaseId && (
+      {blindState.showName && whisky.whiskybaseId && (
         <a href={`https://www.whiskybase.com/whiskies/whisky/${whisky.whiskybaseId}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary font-mono" data-testid="link-detail-whiskybase">
           Whiskybase #{whisky.whiskybaseId}
         </a>
