@@ -24,7 +24,6 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
   const { currentParticipant } = useAppStore();
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
-  const [selectedWhiskyId, setSelectedWhiskyId] = useState<string | null>(null);
   const [lightboxPhoto, setLightboxPhoto] = useState<TastingPhoto | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -43,14 +42,13 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
         file,
         currentParticipant.id,
         currentParticipant.name,
-        selectedWhiskyId || undefined,
+        undefined,
         caption || undefined
       );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasting-photos", tastingId] });
       setCaption("");
-      setSelectedWhiskyId(null);
     },
   });
 
@@ -122,19 +120,6 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
             className="max-w-xs bg-secondary/20 text-sm"
             data-testid="input-photo-caption"
           />
-          {whiskies.length > 0 && (
-            <select
-              value={selectedWhiskyId || ""}
-              onChange={(e) => setSelectedWhiskyId(e.target.value || null)}
-              className="text-sm border rounded-md px-2 py-1.5 bg-secondary/20 text-foreground"
-              data-testid="select-photo-whisky"
-            >
-              <option value="">{t("session.photos.generalPhoto", "General photo")}</option>
-              {whiskies.map((w) => (
-                <option key={w.id} value={w.id}>{w.name}</option>
-              ))}
-            </select>
-          )}
           <Button
             size="sm"
             onClick={() => fileInputRef.current?.click()}
@@ -174,7 +159,7 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
                   )}
                   <span>{photo.printable ? t("session.photos.printable", "Printable") : t("session.photos.screenOnly", "Screen only")}</span>
                 </div>
-                {isOwner(photo) && (
+                {(isOwner(photo) || isHost) && (
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => togglePrintableMutation.mutate({ photoId: photo.id, printable: !photo.printable })}
@@ -184,14 +169,16 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
                     >
                       {photo.printable ? <Eye className="w-3.5 h-3.5" /> : <Printer className="w-3.5 h-3.5" />}
                     </button>
-                    <button
-                      onClick={() => deleteMutation.mutate(photo.id)}
-                      className="text-xs text-destructive/60 hover:text-destructive p-1"
-                      title={t("session.photos.delete", "Delete")}
-                      data-testid={`button-delete-photo-${photo.id}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {isOwner(photo) && (
+                      <button
+                        onClick={() => deleteMutation.mutate(photo.id)}
+                        className="text-xs text-destructive/60 hover:text-destructive p-1"
+                        title={t("session.photos.delete", "Delete")}
+                        data-testid={`button-delete-photo-${photo.id}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

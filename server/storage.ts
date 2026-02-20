@@ -231,6 +231,7 @@ export interface IStorage {
   getTastingPhotos(tastingId: string): Promise<TastingPhoto[]>;
   createTastingPhoto(data: InsertTastingPhoto): Promise<TastingPhoto>;
   updateTastingPhoto(id: string, participantId: string, data: Partial<{ caption: string; printable: boolean }>): Promise<TastingPhoto | undefined>;
+  updateTastingPhotoAsHost(id: string, hostParticipantId: string, data: Partial<{ caption: string; printable: boolean }>): Promise<TastingPhoto | undefined>;
   deleteTastingPhoto(id: string, participantId: string): Promise<void>;
 
   // User Feedback
@@ -1288,6 +1289,15 @@ export class DatabaseStorage implements IStorage {
 
   async updateTastingPhoto(id: string, participantId: string, data: Partial<{ caption: string; printable: boolean }>): Promise<TastingPhoto | undefined> {
     const [result] = await db.update(tastingPhotos).set(data).where(and(eq(tastingPhotos.id, id), eq(tastingPhotos.participantId, participantId))).returning();
+    return result;
+  }
+
+  async updateTastingPhotoAsHost(id: string, hostParticipantId: string, data: Partial<{ caption: string; printable: boolean }>): Promise<TastingPhoto | undefined> {
+    const photos = await db.select().from(tastingPhotos).where(eq(tastingPhotos.id, id)).limit(1);
+    if (photos.length === 0 || !photos[0].tastingId) return undefined;
+    const tasting = await this.getTasting(photos[0].tastingId);
+    if (!tasting || tasting.hostId !== hostParticipantId) return undefined;
+    const [result] = await db.update(tastingPhotos).set(data).where(eq(tastingPhotos.id, id)).returning();
     return result;
   }
 

@@ -5074,8 +5074,12 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       const updateData: any = {};
       if (printable !== undefined) updateData.printable = printable;
       if (caption !== undefined) updateData.caption = caption;
-      const photo = await storage.updateTastingPhoto(req.params.id as string, participantId, updateData);
-      if (!photo) return res.status(404).json({ message: "Photo not found or not yours" });
+
+      let photo = await storage.updateTastingPhoto(req.params.id as string, participantId, updateData);
+      if (!photo) {
+        photo = await storage.updateTastingPhotoAsHost(req.params.id as string, participantId, updateData);
+      }
+      if (!photo) return res.status(404).json({ message: "Photo not found or not authorized" });
       res.json(photo);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
