@@ -77,7 +77,7 @@ function RatingProgress({ tastingId, whiskyId, isHost, participantCount }: { tas
     refetchInterval: inputFocused ? false : (isHost ? 5000 : 15000),
   });
 
-  const ratedCount = ratings.length;
+  const ratedCount = new Set(ratings.map((r: any) => r.participantId)).size;
   const total = participantCount;
   const allRated = ratedCount >= total && total > 0;
 
@@ -105,7 +105,7 @@ function PersonalProgress({ tastingId, participantId, totalWhiskies }: { tasting
     refetchInterval: inputFocused ? false : 10000,
   });
 
-  const myRatedCount = allRatings.filter((r: any) => r.participantId === participantId).length;
+  const myRatedCount = new Set(allRatings.filter((r: any) => r.participantId === participantId).map((r: any) => r.whiskyId)).size;
   const allDone = myRatedCount >= totalWhiskies && totalWhiskies > 0;
 
   if (totalWhiskies === 0) return null;
