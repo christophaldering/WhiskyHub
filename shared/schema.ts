@@ -46,6 +46,7 @@ export const tastings = pgTable("tastings", {
   customPrompts: text("custom_prompts"), // JSON array of custom prompt strings
   coverImageUrl: text("cover_image_url"),
   coverImageRevealed: boolean("cover_image_revealed").default(false),
+  videoLink: text("video_link"),
   dramStartedAt: timestamp("dram_started_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -386,6 +387,23 @@ export const encyclopediaSuggestions = pgTable("encyclopedia_suggestions", {
 export const insertEncyclopediaSuggestionSchema = createInsertSchema(encyclopediaSuggestions).omit({ id: true, createdAt: true, status: true, adminNote: true });
 export type InsertEncyclopediaSuggestion = z.infer<typeof insertEncyclopediaSuggestionSchema>;
 export type EncyclopediaSuggestion = typeof encyclopediaSuggestions.$inferSelect;
+
+// --- Tasting Photos ---
+export const tastingPhotos = pgTable("tasting_photos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tastingId: varchar("tasting_id").notNull(),
+  participantId: varchar("participant_id").notNull(),
+  participantName: text("participant_name"),
+  whiskyId: varchar("whisky_id"),
+  photoUrl: text("photo_url").notNull(),
+  caption: text("caption"),
+  printable: boolean("printable").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTastingPhotoSchema = createInsertSchema(tastingPhotos).omit({ id: true, createdAt: true });
+export type InsertTastingPhoto = z.infer<typeof insertTastingPhotoSchema>;
+export type TastingPhoto = typeof tastingPhotos.$inferSelect;
 
 // --- User Feedback ---
 export const userFeedback = pgTable("user_feedback", {

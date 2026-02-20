@@ -521,6 +521,28 @@ export const adminApi = {
     fetchJSON(`/admin/newsletters/${newsletterId}/resend`, { method: "POST", body: JSON.stringify({ requesterId, recipientIds }) }),
 };
 
+export const tastingPhotoApi = {
+  getAll: (tastingId: string) => fetchJSON(`/tastings/${tastingId}/photos`),
+  upload: async (tastingId: string, file: File, participantId: string, participantName: string, whiskyId?: string, caption?: string) => {
+    const formData = new FormData();
+    formData.append("photo", file);
+    formData.append("participantId", participantId);
+    formData.append("participantName", participantName);
+    if (whiskyId) formData.append("whiskyId", whiskyId);
+    if (caption) formData.append("caption", caption);
+    const res = await fetch(`${API_BASE}/tastings/${tastingId}/photos`, { method: "POST", body: formData });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Upload failed");
+    }
+    return res.json();
+  },
+  update: (photoId: string, participantId: string, data: { printable?: boolean; caption?: string }) =>
+    fetchJSON(`/tasting-photos/${photoId}`, { method: "PATCH", body: JSON.stringify({ participantId, ...data }) }),
+  delete: (photoId: string, participantId: string) =>
+    fetchJSON(`/tasting-photos/${photoId}`, { method: "DELETE", body: JSON.stringify({ participantId }) }),
+};
+
 export const feedbackApi = {
   submit: (data: { participantId?: string; participantName?: string; category: string; message: string }) =>
     fetchJSON("/feedback", { method: "POST", body: JSON.stringify(data) }),

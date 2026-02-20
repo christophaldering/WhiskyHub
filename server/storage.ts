@@ -3,7 +3,7 @@ import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, journalEntries, benchmarkEntries, wishlistEntries,
-  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, userFeedback,
+  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, tastingPhotos, userFeedback,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -21,6 +21,7 @@ import {
   type InsertWhiskybaseCollection, type WhiskybaseCollectionItem,
   type InsertTastingReminder, type TastingReminder,
   type InsertEncyclopediaSuggestion, type EncyclopediaSuggestion,
+  type InsertTastingPhoto, type TastingPhoto,
   type InsertUserFeedback, type UserFeedback,
 } from "@shared/schema";
 
@@ -52,7 +53,7 @@ export interface IStorage {
   createTasting(data: InsertTasting): Promise<Tasting>;
   updateTastingStatus(id: string, status: string, currentAct?: string): Promise<Tasting | undefined>;
   updateTastingReflection(id: string, reflection: string): Promise<Tasting | undefined>;
-  updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean }>): Promise<Tasting | undefined>;
+  updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; videoLink: string | null }>): Promise<Tasting | undefined>;
   updateTasting(id: string, data: Partial<Record<string, any>>): Promise<Tasting | undefined>;
   transferTastingHost(id: string, newHostId: string): Promise<Tasting | undefined>;
   duplicateTasting(id: string, hostId: string): Promise<Tasting>;
@@ -226,6 +227,12 @@ export interface IStorage {
   createEncyclopediaSuggestion(data: InsertEncyclopediaSuggestion): Promise<EncyclopediaSuggestion>;
   updateSuggestionStatus(id: string, status: string, adminNote?: string): Promise<EncyclopediaSuggestion>;
 
+  // Tasting Photos
+  getTastingPhotos(tastingId: string): Promise<TastingPhoto[]>;
+  createTastingPhoto(data: InsertTastingPhoto): Promise<TastingPhoto>;
+  updateTastingPhoto(id: string, participantId: string, data: Partial<{ caption: string; printable: boolean }>): Promise<TastingPhoto | undefined>;
+  deleteTastingPhoto(id: string, participantId: string): Promise<void>;
+
   // User Feedback
   createUserFeedback(data: InsertUserFeedback): Promise<UserFeedback>;
   getUserFeedback(): Promise<UserFeedback[]>;
@@ -338,7 +345,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean }>): Promise<Tasting | undefined> {
+  async updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; videoLink: string | null }>): Promise<Tasting | undefined> {
     const updateData: any = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.date !== undefined) updateData.date = data.date;
@@ -349,6 +356,7 @@ export class DatabaseStorage implements IStorage {
     if (data.reflectionVisibility !== undefined) updateData.reflectionVisibility = data.reflectionVisibility;
     if (data.coverImageUrl !== undefined) updateData.coverImageUrl = data.coverImageUrl;
     if (data.coverImageRevealed !== undefined) updateData.coverImageRevealed = data.coverImageRevealed;
+    if (data.videoLink !== undefined) updateData.videoLink = data.videoLink;
     if (Object.keys(updateData).length === 0) return this.getTasting(id);
     const [result] = await db.update(tastings).set(updateData).where(eq(tastings.id, id)).returning();
     return result;
@@ -1266,6 +1274,25 @@ export class DatabaseStorage implements IStorage {
     }
 
     return twins.sort((a, b) => b.correlation - a.correlation).slice(0, 10);
+  }
+
+  // --- Tasting Photos ---
+  async getTastingPhotos(tastingId: string): Promise<TastingPhoto[]> {
+    return db.select().from(tastingPhotos).where(eq(tastingPhotos.tastingId, tastingId)).orderBy(desc(tastingPhotos.createdAt));
+  }
+
+  async createTastingPhoto(data: InsertTastingPhoto): Promise<TastingPhoto> {
+    const [result] = await db.insert(tastingPhotos).values(data).returning();
+    return result;
+  }
+
+  async updateTastingPhoto(id: string, participantId: string, data: Partial<{ caption: string; printable: boolean }>): Promise<TastingPhoto | undefined> {
+    const [result] = await db.update(tastingPhotos).set(data).where(and(eq(tastingPhotos.id, id), eq(tastingPhotos.participantId, participantId))).returning();
+    return result;
+  }
+
+  async deleteTastingPhoto(id: string, participantId: string): Promise<void> {
+    await db.delete(tastingPhotos).where(and(eq(tastingPhotos.id, id), eq(tastingPhotos.participantId, participantId)));
   }
 
   // --- User Feedback ---

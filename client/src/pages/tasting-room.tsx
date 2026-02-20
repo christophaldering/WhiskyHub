@@ -17,9 +17,10 @@ import { AttendeeRoster } from "@/components/attendee-roster";
 import { InvitePanel } from "@/components/invite-panel";
 import DiscussionPanel from "@/components/discussion-panel";
 import ReflectionPanel from "@/components/reflection-panel";
+import TastingPhotos from "@/components/tasting-photos";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -779,7 +780,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", date: "", location: "" });
+  const [form, setForm] = useState({ title: "", date: "", location: "", videoLink: "" });
   const [coverUploading, setCoverUploading] = useState(false);
   const [saved, setSaved] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -787,7 +788,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
 
   useEffect(() => {
     if (open && tasting) {
-      setForm({ title: tasting.title, date: tasting.date, location: tasting.location });
+      setForm({ title: tasting.title, date: tasting.date, location: tasting.location, videoLink: tasting.videoLink || "" });
       setSaved(false);
     }
     return () => {
@@ -823,7 +824,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   const handleDialogClose = (isOpen: boolean) => {
     if (!isOpen && form.title.trim() && currentParticipant) {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      const hasChanges = form.title !== tasting.title || form.date !== tasting.date || form.location !== tasting.location;
+      const hasChanges = form.title !== tasting.title || form.date !== tasting.date || form.location !== tasting.location || form.videoLink !== (tasting.videoLink || "");
       if (hasChanges && !saved) {
         updateMutation.mutate(form);
       }
@@ -891,6 +892,11 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
           <div>
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.actions.editLocation")}</Label>
             <Input value={form.location} onChange={(e) => handleFormChange("location", e.target.value)} className="bg-secondary/20" data-testid="input-edit-location" />
+          </div>
+          <div>
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.videoLink", "Video Link")}</Label>
+            <Input value={form.videoLink} onChange={(e) => handleFormChange("videoLink", e.target.value)} placeholder="https://zoom.us/j/..." className="bg-secondary/20" data-testid="input-edit-video-link" />
+            <p className="text-xs text-muted-foreground mt-1">{t("session.videoLinkHint", "Zoom, Teams, Google Meet etc.")}</p>
           </div>
           <div>
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.coverImage.label")}</Label>
@@ -1498,6 +1504,15 @@ export default function TastingRoom() {
               <span>{tasting.location}</span>
               <span>•</span>
               <span>{new Date(tasting.date).toLocaleDateString()}</span>
+              {tasting.videoLink && (
+                <>
+                  <span>•</span>
+                  <a href={tasting.videoLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline not-italic text-sm" data-testid="link-video-call">
+                    <Video className="w-4 h-4" />
+                    {t("session.joinVideoCall", "Join Video Call")}
+                  </a>
+                </>
+              )}
             </div>
           </div>
           <div className="flex flex-col items-start sm:items-end gap-2 min-w-0 w-full md:w-auto">
@@ -1914,6 +1929,10 @@ export default function TastingRoom() {
           <DiscussionPanel tasting={tasting} />
           <ReflectionPanel tasting={tasting} />
         </div>
+      )}
+
+      {(tasting.status === "open" || tasting.status === "reveal" || tasting.status === "closed") && (
+        <TastingPhotos tastingId={tasting.id} isHost={isHost} whiskies={whiskyList} />
       )}
 
       <AttendeeRoster tastingId={tasting.id} hostId={tasting.hostId} />

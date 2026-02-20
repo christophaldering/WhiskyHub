@@ -4999,6 +4999,73 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     }
   });
 
+  // ===== TASTING PHOTOS =====
+  app.get("/api/tastings/:id/photos", async (req: Request, res: Response) => {
+    try {
+      const photos = await storage.getTastingPhotos(req.params.id as string);
+      res.json(photos);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/photos", (req: any, res: any, next: any) => {
+    memUpload.single("photo")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ message: "Image must be under 2 MB" });
+        return res.status(400).json({ message: err.message || "Upload failed" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const tastingId = req.params.id;
+      const { participantId, participantName, whiskyId, caption } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      if (!req.file) return res.status(400).json({ message: "No photo provided" });
+
+      const photoUrl = await uploadBufferToObjectStorage(objectStorage, req.file.buffer, req.file.mimetype);
+      const photo = await storage.createTastingPhoto({
+        tastingId,
+        participantId,
+        participantName: participantName || null,
+        whiskyId: whiskyId || null,
+        photoUrl,
+        caption: caption || null,
+        printable: true,
+      });
+      res.json(photo);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/tasting-photos/:id", async (req: Request, res: Response) => {
+    try {
+      const { participantId, printable, caption } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const updateData: any = {};
+      if (printable !== undefined) updateData.printable = printable;
+      if (caption !== undefined) updateData.caption = caption;
+      const photo = await storage.updateTastingPhoto(req.params.id as string, participantId, updateData);
+      if (!photo) return res.status(404).json({ message: "Photo not found or not yours" });
+      res.json(photo);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/tasting-photos/:id", async (req: Request, res: Response) => {
+    try {
+      const { participantId } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      await storage.deleteTastingPhoto(req.params.id as string, participantId);
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== AI TASTING IMPORT =====
 
   const tastingImportUpload = multer({
