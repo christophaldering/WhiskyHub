@@ -68,11 +68,12 @@ export default function Landing() {
             <span className="font-serif font-black text-xl text-primary tracking-tight">CaskSense</span>
           </button>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/app")} className="font-serif text-sm" data-testid="landing-nav-explore">
+            <Button variant="ghost" size="sm" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-sm" data-testid="landing-nav-explore">
               {t("landing.nav.explore")}
             </Button>
-            <Button size="sm" onClick={() => navigate("/app")} className="font-serif text-sm" data-testid="landing-nav-start">
+            <Button size="sm" onClick={() => navigate("/app")} className="font-serif text-sm gap-1.5" data-testid="landing-nav-start">
               {t("landing.nav.getStarted")}
+              <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
