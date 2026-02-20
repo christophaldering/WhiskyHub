@@ -199,8 +199,9 @@ export default function Sessions() {
 
   const canDelete = (tasting: any) => isHostOf(tasting) && tasting.status !== "open";
 
-  const SessionCard = ({ tasting }: { tasting: any }) => (
+  const renderSessionCard = (tasting: any) => (
     <div
+      key={tasting.id}
       className="w-full text-left p-4 bg-card border border-border/50 rounded-lg hover:shadow-sm transition-all flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 group"
       data-testid={`card-tasting-${tasting.id}`}
     >
@@ -234,10 +235,11 @@ export default function Sessions() {
     </div>
   );
 
-  const SessionGroup = ({ title, sessions, delay }: { title: string; sessions: any[]; delay: number }) => {
+  const renderSessionGroup = (title: string, sessions: any[], delay: number) => {
     if (sessions.length === 0) return null;
     return (
       <motion.div
+        key={title}
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay, duration: 0.6 }}
@@ -245,15 +247,13 @@ export default function Sessions() {
       >
         <h2 className="text-lg font-serif font-bold text-primary tracking-tight">{title}</h2>
         <div className="space-y-2">
-          {sessions.map((tasting: any) => (
-            <SessionCard key={tasting.id} tasting={tasting} />
-          ))}
+          {sessions.map((tasting: any) => renderSessionCard(tasting))}
         </div>
       </motion.div>
     );
   };
 
-  const CreateSection = () => (
+  const createSectionJsx = (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
@@ -352,7 +352,7 @@ export default function Sessions() {
     </motion.div>
   );
 
-  const JoinSection = () => (
+  const joinSectionJsx = (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
@@ -402,8 +402,8 @@ export default function Sessions() {
           <div className="w-12 h-1 bg-primary/50 mt-3" />
         </motion.div>
 
-        <JoinSection />
-        <CreateSection />
+        {joinSectionJsx}
+        {createSectionJsx}
 
         <GuestPreview featureTitle={t("sessions.yourSessionsTitle")} featureDescription={t("guestPreview.sessions")}>
           <div className="space-y-4">
@@ -481,8 +481,8 @@ export default function Sessions() {
         <div className="w-12 h-1 bg-primary/50 mt-3" />
       </motion.div>
 
-      <JoinSection />
-      <CreateSection />
+      {joinSectionJsx}
+      {createSectionJsx}
 
       {tastings.length > 0 && (
         <div className="flex rounded-lg bg-secondary/30 p-1" data-testid="session-role-tabs">
@@ -530,9 +530,9 @@ export default function Sessions() {
               <p className="text-muted-foreground font-serif italic" data-testid="text-no-participated">{t("nav.noParticipatedSessions")}</p>
             </motion.div>
           )}
-          <SessionGroup title={t("nav.sessionsDraft")} sessions={currentList.drafts} delay={0.1} />
-          <SessionGroup title={t("nav.sessionsActive")} sessions={currentList.active} delay={0.2} />
-          <SessionGroup title={t("nav.sessionsArchived")} sessions={currentList.archived} delay={0.3} />
+          {renderSessionGroup(t("nav.sessionsDraft"), currentList.drafts, 0.1)}
+          {renderSessionGroup(t("nav.sessionsActive"), currentList.active, 0.2)}
+          {renderSessionGroup(t("nav.sessionsArchived"), currentList.archived, 0.3)}
         </div>
       )}
 

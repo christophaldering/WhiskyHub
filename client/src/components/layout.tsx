@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
@@ -17,29 +17,249 @@ import { profileApi, tastingApi, notificationApi } from "@/lib/api";
 type NavItem = { href: string; icon: any; label: string; match?: (loc: string) => boolean };
 type NavGroup = { label: string; items: NavItem[]; defaultOpen?: boolean };
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
-  const [open, setOpen] = useState(false);
-  const { t } = useTranslation();
-  const { currentParticipant, setParticipant } = useAppStore();
+function NotifBadge() {
+  const { currentParticipant } = useAppStore();
+  const { data: notifCount } = useQuery({
+    queryKey: ["notification-count", currentParticipant?.id],
+    queryFn: () => notificationApi.getUnreadCount(currentParticipant!.id),
+    enabled: !!currentParticipant,
+    refetchInterval: 30000,
+  });
+  const count = notifCount?.count ?? 0;
+  if (count <= 0) return null;
+  return (
+    <span className="ml-auto bg-primary text-primary-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1" data-testid="badge-news-count">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
 
+function ProfileAvatar({ size = 36, showName = false, showSignOut = false }: { size?: number; showName?: boolean; showSignOut?: boolean }) {
+  const { currentParticipant, setParticipant } = useAppStore();
+  const { t } = useTranslation();
   const { data: profile } = useQuery({
     queryKey: ["profile", currentParticipant?.id],
     queryFn: () => profileApi.get(currentParticipant!.id),
     enabled: !!currentParticipant,
   });
 
+  if (!currentParticipant) return null;
+  const photoUrl = profile?.photoUrl;
+  const initials = currentParticipant.name
+    ? currentParticipant.name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
+    : "";
+  return (
+    <div className="flex items-center gap-2">
+      <Link href="/profile">
+        <div
+          title={t("profile.title")}
+          className="cursor-pointer flex flex-col items-center gap-1"
+          data-testid="avatar-profile"
+        >
+          {photoUrl ? (
+            <img
+              src={photoUrl}
+              alt={currentParticipant.name}
+              className="rounded-full object-cover border-2 border-border/60"
+              style={{ width: size, height: size }}
+            />
+          ) : (
+            <div
+              className="rounded-full bg-secondary border-2 border-border/60 flex items-center justify-center text-primary font-serif font-bold"
+              style={{ width: size, height: size, fontSize: size * 0.38 }}
+            >
+              {initials || <User className="w-4 h-4 text-muted-foreground" />}
+            </div>
+          )}
+          {showName && (
+            <span className="text-xs text-muted-foreground font-serif truncate max-w-[80px] text-center leading-tight">{currentParticipant.name}</span>
+          )}
+        </div>
+      </Link>
+      {showSignOut && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setParticipant(null)}
+          title={t('nav.leave')}
+          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          data-testid="button-signout-mobile"
+        >
+          <LogOut className="w-4 h-4" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function NavItemRow({ item, location, onNavigate }: { item: NavItem; location: string; onNavigate: () => void }) {
+  const isActive = item.match ? item.match(location) : location === item.href;
+  return (
+    <Link key={item.href} href={item.href}>
+      <div
+        data-nav-active={isActive ? "true" : undefined}
+        className={cn(
+          "flex items-center gap-3 px-3 py-1.5 rounded-sm transition-all duration-300 cursor-pointer group",
+          isActive
+            ? "bg-secondary text-primary border-l-2 border-primary"
+            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+        )}
+        onClick={onNavigate}
+      >
+        <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-primary")} />
+        <span className={cn("text-sm font-medium truncate", isActive && "font-semibold")}>{item.label}</span>
+        {item.href === "/news" && <NotifBadge />}
+      </div>
+    </Link>
+  );
+}
+
+function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
+  navInnerRef?: React.RefObject<HTMLElement | null>;
+  location: string;
+  navGroups: NavGroup[];
+  onNavigate: () => void;
+}) {
+  const { t } = useTranslation();
+  const { currentParticipant, setParticipant } = useAppStore();
+
+  const activeGroupIndex = useMemo(() => {
+    for (let gi = 0; gi < navGroups.length; gi++) {
+      for (const item of navGroups[gi].items) {
+        const isActive = item.match ? item.match(location) : location === item.href;
+        if (isActive) return gi;
+      }
+    }
+    return 0;
+  }, [location, navGroups]);
+
+  const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    setExpandedGroups(prev => {
+      const next = { ...prev };
+      if (next[activeGroupIndex] === undefined) {
+        next[activeGroupIndex] = true;
+      }
+      return next;
+    });
+  }, [activeGroupIndex]);
+
+  const toggleGroup = (gi: number) => {
+    setExpandedGroups(prev => ({ ...prev, [gi]: !prev[gi] }));
+  };
+
+  const isGroupExpanded = (gi: number) => {
+    if (expandedGroups[gi] !== undefined) return expandedGroups[gi];
+    if (gi === activeGroupIndex) return true;
+    if (navGroups[gi].defaultOpen) return true;
+    return false;
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-card border-r border-border/40">
+      <div className="p-5 border-b border-border/40">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-serif font-black tracking-tight text-primary">
+              {t('app.name')}
+            </h1>
+            <ProfileAvatar size={54} />
+          </div>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-sans">
+            {t('app.tagline')}
+          </p>
+        </div>
+      </div>
+      
+      <nav ref={navInnerRef} className="flex-1 overflow-y-auto p-3 space-y-0.5">
+        {navGroups.map((group, gi) => {
+          const expanded = isGroupExpanded(gi);
+          const groupHasActive = group.items.some(item =>
+            item.match ? item.match(location) : location === item.href
+          );
+          return (
+            <div key={gi}>
+              {gi > 0 && <div className="border-t border-border/20 my-1.5" />}
+              <button
+                onClick={() => toggleGroup(gi)}
+                className={cn(
+                  "w-full flex items-center justify-between px-3 py-1.5 rounded-sm transition-all duration-200 cursor-pointer group/header",
+                  groupHasActive
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                data-testid={`nav-group-toggle-${gi}`}
+              >
+                <span className={cn(
+                  "text-[10px] font-semibold uppercase tracking-wider",
+                  groupHasActive ? "text-primary/80" : "text-muted-foreground/70"
+                )}>
+                  {group.label}
+                  <span className="ml-1.5 text-[9px] font-normal normal-case tracking-normal opacity-60">
+                    ({group.items.length})
+                  </span>
+                </span>
+                <ChevronDown className={cn(
+                  "w-3 h-3 transition-transform duration-200",
+                  expanded ? "rotate-0" : "-rotate-90",
+                  groupHasActive ? "text-primary/60" : "text-muted-foreground/50"
+                )} />
+              </button>
+              <div className={cn(
+                "overflow-hidden transition-all duration-200",
+                expanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+              )}>
+                {group.items.map((item) => (
+                  <NavItemRow key={item.href} item={item} location={location} onNavigate={onNavigate} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </nav>
+
+      <div className="p-4 border-t border-border/40 space-y-3">
+        {currentParticipant && (
+          <div className="text-xs text-muted-foreground px-3 mb-1">
+            Signed in as <span className="font-semibold text-foreground">{currentParticipant.name}</span>
+          </div>
+        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          <LanguageToggle />
+          <ThemeToggle />
+          <AmbientToggle />
+        </div>
+        {currentParticipant && (
+          <Button
+            variant="outline"
+            onClick={() => { setParticipant(null); onNavigate(); }}
+            className="w-full flex items-center gap-2 text-muted-foreground hover:text-destructive hover:border-destructive/40 hover:bg-destructive/5 transition-colors"
+            data-testid="button-signout-sidebar"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>{t('nav.leave')}</span>
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const MemoizedChildren = memo(function MemoizedChildren({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+});
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  const [location] = useLocation();
+  const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
+  const { currentParticipant, setParticipant } = useAppStore();
+
   const { data: allTastings = [] } = useQuery({
     queryKey: ["tastings", currentParticipant?.id],
     queryFn: () => tastingApi.getAll(currentParticipant?.id),
     enabled: !!currentParticipant,
-  });
-
-  const { data: notifCount } = useQuery({
-    queryKey: ["notification-count", currentParticipant?.id],
-    queryFn: () => notificationApi.getUnreadCount(currentParticipant!.id),
-    enabled: !!currentParticipant,
-    refetchInterval: 30000,
   });
 
   const mainRef = useRef<HTMLElement>(null);
@@ -59,58 +279,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isHost = currentParticipant && allTastings.some((t: any) => t.hostId === currentParticipant.id);
   const isAdmin = currentParticipant?.role === "admin";
 
-  const initials = currentParticipant?.name
-    ? currentParticipant.name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
-    : "";
-
-  const ProfileAvatar = ({ size = 36, showName = false, showSignOut = false }: { size?: number; showName?: boolean; showSignOut?: boolean }) => {
-    if (!currentParticipant) return null;
-    const photoUrl = profile?.photoUrl;
-    return (
-      <div className="flex items-center gap-2">
-        <Link href="/profile">
-          <div
-            title={t("profile.title")}
-            className="cursor-pointer flex flex-col items-center gap-1"
-            data-testid="avatar-profile"
-          >
-            {photoUrl ? (
-              <img
-                src={photoUrl}
-                alt={currentParticipant.name}
-                className="rounded-full object-cover border-2 border-border/60"
-                style={{ width: size, height: size }}
-              />
-            ) : (
-              <div
-                className="rounded-full bg-secondary border-2 border-border/60 flex items-center justify-center text-primary font-serif font-bold"
-                style={{ width: size, height: size, fontSize: size * 0.38 }}
-              >
-                {initials || <User className="w-4 h-4 text-muted-foreground" />}
-              </div>
-            )}
-            {showName && (
-              <span className="text-xs text-muted-foreground font-serif truncate max-w-[80px] text-center leading-tight">{currentParticipant.name}</span>
-            )}
-          </div>
-        </Link>
-        {showSignOut && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setParticipant(null)}
-            title={t('nav.leave')}
-            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-            data-testid="button-signout-mobile"
-          >
-            <LogOut className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
-    );
-  };
-
-  const navGroups: NavGroup[] = [
+  const navGroups: NavGroup[] = useMemo(() => [
     {
       label: t('navGroup.main'),
       defaultOpen: true,
@@ -191,40 +360,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ],
       },
     ] : []),
-  ];
-
-  const activeGroupIndex = useMemo(() => {
-    for (let gi = 0; gi < navGroups.length; gi++) {
-      for (const item of navGroups[gi].items) {
-        const isActive = item.match ? item.match(location) : location === item.href;
-        if (isActive) return gi;
-      }
-    }
-    return 0;
-  }, [location, navGroups]);
-
-  const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
-
-  useEffect(() => {
-    setExpandedGroups(prev => {
-      const next = { ...prev };
-      if (next[activeGroupIndex] === undefined) {
-        next[activeGroupIndex] = true;
-      }
-      return next;
-    });
-  }, [activeGroupIndex]);
-
-  const toggleGroup = (gi: number) => {
-    setExpandedGroups(prev => ({ ...prev, [gi]: !prev[gi] }));
-  };
-
-  const isGroupExpanded = (gi: number) => {
-    if (expandedGroups[gi] !== undefined) return expandedGroups[gi];
-    if (gi === activeGroupIndex) return true;
-    if (navGroups[gi].defaultOpen) return true;
-    return false;
-  };
+  ], [t, isHost, isAdmin, currentParticipant?.canAccessWhiskyDb, currentParticipant?.role]);
 
   const desktopNavRef = useRef<HTMLElement>(null);
   const mobileNavRef = useRef<HTMLElement>(null);
@@ -250,116 +386,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, [location, scrollNavToActive]);
 
-  const NavContent = ({ navInnerRef }: { navInnerRef?: React.RefObject<HTMLElement | null> }) => (
-    <div className="flex flex-col h-full bg-card border-r border-border/40">
-      <div className="p-5 border-b border-border/40">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-serif font-black tracking-tight text-primary">
-              {t('app.name')}
-            </h1>
-            <ProfileAvatar size={54} />
-          </div>
-          <p className="text-xs text-muted-foreground uppercase tracking-widest font-sans">
-            {t('app.tagline')}
-          </p>
-        </div>
-      </div>
-      
-      <nav ref={navInnerRef} className="flex-1 overflow-y-auto p-3 space-y-0.5">
-        {navGroups.map((group, gi) => {
-          const expanded = isGroupExpanded(gi);
-          const groupHasActive = group.items.some(item =>
-            item.match ? item.match(location) : location === item.href
-          );
-          return (
-            <div key={gi}>
-              {gi > 0 && <div className="border-t border-border/20 my-1.5" />}
-              <button
-                onClick={() => toggleGroup(gi)}
-                className={cn(
-                  "w-full flex items-center justify-between px-3 py-1.5 rounded-sm transition-all duration-200 cursor-pointer group/header",
-                  groupHasActive
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                data-testid={`nav-group-toggle-${gi}`}
-              >
-                <span className={cn(
-                  "text-[10px] font-semibold uppercase tracking-wider",
-                  groupHasActive ? "text-primary/80" : "text-muted-foreground/70"
-                )}>
-                  {group.label}
-                  <span className="ml-1.5 text-[9px] font-normal normal-case tracking-normal opacity-60">
-                    ({group.items.length})
-                  </span>
-                </span>
-                <ChevronDown className={cn(
-                  "w-3 h-3 transition-transform duration-200",
-                  expanded ? "rotate-0" : "-rotate-90",
-                  groupHasActive ? "text-primary/60" : "text-muted-foreground/50"
-                )} />
-              </button>
-              <div className={cn(
-                "overflow-hidden transition-all duration-200",
-                expanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-              )}>
-                {group.items.map((item) => {
-                  const isActive = item.match ? item.match(location) : location === item.href;
-                  return (
-                    <Link key={item.href} href={item.href}>
-                      <div
-                        data-nav-active={isActive ? "true" : undefined}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-1.5 rounded-sm transition-all duration-300 cursor-pointer group",
-                          isActive
-                            ? "bg-secondary text-primary border-l-2 border-primary"
-                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                        )}
-                        onClick={() => setOpen(false)}
-                      >
-                        <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-primary")} />
-                        <span className={cn("text-sm font-medium truncate", isActive && "font-semibold")}>{item.label}</span>
-                        {item.href === "/news" && (notifCount?.count ?? 0) > 0 && (
-                          <span className="ml-auto bg-primary text-primary-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1" data-testid="badge-news-count">
-                            {notifCount.count > 99 ? "99+" : notifCount.count}
-                          </span>
-                        )}
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </nav>
-
-      <div className="p-4 border-t border-border/40 space-y-3">
-        {currentParticipant && (
-          <div className="text-xs text-muted-foreground px-3 mb-1">
-            Signed in as <span className="font-semibold text-foreground">{currentParticipant.name}</span>
-          </div>
-        )}
-        <div className="flex items-center gap-2 flex-wrap">
-          <LanguageToggle />
-          <ThemeToggle />
-          <AmbientToggle />
-        </div>
-        {currentParticipant && (
-          <Button
-            variant="outline"
-            onClick={() => { setParticipant(null); setOpen(false); }}
-            className="w-full flex items-center gap-2 text-muted-foreground hover:text-destructive hover:border-destructive/40 hover:bg-destructive/5 transition-colors"
-            data-testid="button-signout-sidebar"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>{t('nav.leave')}</span>
-          </Button>
-        )}
-      </div>
-    </div>
-  );
+  const handleNavigate = useCallback(() => setOpen(false), []);
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden font-sans">
@@ -382,7 +409,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 border-r-border/40 w-72 bg-card">
-              <NavContent navInnerRef={mobileNavRef} />
+              <NavContent navInnerRef={mobileNavRef} location={location} navGroups={navGroups} onNavigate={handleNavigate} />
             </SheetContent>
           </Sheet>
         </div>
@@ -390,11 +417,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <div className="flex relative z-10 overflow-hidden" style={{ height: '100dvh' }}>
         <aside className="hidden md:block w-72 h-full">
-          <NavContent navInnerRef={desktopNavRef} />
+          <NavContent navInnerRef={desktopNavRef} location={location} navGroups={navGroups} onNavigate={handleNavigate} />
         </aside>
         <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-background" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
           <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-12 py-6 md:py-12 animate-in fade-in duration-700 min-w-0 mobile-bottom-spacing">
-            {children}
+            <MemoizedChildren>{children}</MemoizedChildren>
           </div>
         </main>
         <FeedbackButton />
