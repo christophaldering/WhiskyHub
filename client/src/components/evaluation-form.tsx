@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,7 +46,24 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
   const [guessAge, setGuessAge] = useState("");
   const [isDirty, setIsDirty] = useState(false);
 
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestScoresRef = useRef(scores);
+  const latestNotesRef = useRef(notes);
+  const latestGuessAbvRef = useRef(guessAbv);
+  const latestGuessAgeRef = useRef(guessAge);
+  latestScoresRef.current = scores;
+  latestNotesRef.current = notes;
+  latestGuessAbvRef.current = guessAbv;
+  latestGuessAgeRef.current = guessAge;
+
   useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     if (existingRating) {
       setScores({
         nose: existingRating.nose,
@@ -77,13 +94,31 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
     },
   });
 
+  const triggerAutoSave = useCallback(() => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      if (!participantId) return;
+      saveMutation.mutate({
+        tastingId: tasting.id,
+        whiskyId: whisky.id,
+        participantId,
+        ...latestScoresRef.current,
+        notes: latestNotesRef.current,
+        guessAbv: latestGuessAbvRef.current ?? undefined,
+        guessAge: latestGuessAgeRef.current || undefined,
+      });
+    }, 800);
+  }, [participantId, tasting.id, whisky.id, saveMutation]);
+
   const handleScoreChange = useCallback((key: string, value: number) => {
     const clamped = Math.max(0, Math.min(100, Math.round(value * 10) / 10));
     setScores(prev => ({ ...prev, [key]: clamped }));
     setIsDirty(true);
-  }, []);
+    triggerAutoSave();
+  }, [triggerAutoSave]);
 
   const handleSave = () => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     if (!participantId) return;
     saveMutation.mutate({
       tastingId: tasting.id,
@@ -197,13 +232,13 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
             placeholder="Aromas, palate, finish..."
             className="bg-secondary/10 min-h-[120px] border-border/50 focus:border-primary/50 resize-none font-serif leading-relaxed"
             value={notes}
-            onChange={(e) => { setNotes(e.target.value); setIsDirty(true); }}
+            onChange={(e) => { setNotes(e.target.value); setIsDirty(true); triggerAutoSave(); }}
             disabled={isLocked}
             data-testid="textarea-notes"
           />
           <TastingNoteGenerator
             currentNotes={notes}
-            onInsertNote={(note) => { setNotes(note); setIsDirty(true); }}
+            onInsertNote={(note) => { setNotes(note); setIsDirty(true); triggerAutoSave(); }}
             disabled={isLocked}
           />
           {tasting.blindMode && (tasting.status === "open" || tasting.status === "draft") && (
@@ -216,7 +251,7 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
                     type="number"
                     placeholder="e.g. 46.0"
                     value={guessAbv ?? ""}
-                    onChange={(e) => { setGuessAbv(e.target.value ? parseFloat(e.target.value) : null); setIsDirty(true); }}
+                    onChange={(e) => { setGuessAbv(e.target.value ? parseFloat(e.target.value) : null); setIsDirty(true); triggerAutoSave(); }}
                     step={0.1} min={20} max={70}
                     disabled={isLocked}
                     className="font-mono h-8"
@@ -228,7 +263,7 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
                   <Input
                     placeholder="e.g. 12, NAS"
                     value={guessAge}
-                    onChange={(e) => { setGuessAge(e.target.value); setIsDirty(true); }}
+                    onChange={(e) => { setGuessAge(e.target.value); setIsDirty(true); triggerAutoSave(); }}
                     disabled={isLocked}
                     className="font-mono h-8"
                     data-testid="input-guess-age"
