@@ -274,6 +274,12 @@ export const flavorProfileApi = {
   getGlobal: () => fetchJSON(`/flavor-profile/global`),
 };
 
+// ===== Community Scores =====
+export const communityApi = {
+  getScores: () => fetchJSON(`/community-scores`),
+  getTasteTwins: (participantId: string) => fetchJSON(`/participants/${participantId}/taste-twins`),
+};
+
 // ===== Rating Notes =====
 export const ratingNotesApi = {
   get: (participantId: string) => fetchJSON(`/participants/${participantId}/rating-notes`),

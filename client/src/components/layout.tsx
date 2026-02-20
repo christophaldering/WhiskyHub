@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
@@ -140,6 +140,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     {
       label: t('navGroup.community'),
       items: [
+        { href: "/community-rankings", icon: BarChart3, label: t('nav.communityRankings') },
+        { href: "/taste-twins", icon: HeartHandshake, label: t('nav.tasteTwins') },
         { href: "/friends", icon: Users, label: t('nav.friends') },
         { href: "/activity", icon: Rss, label: t('nav.activity') },
         { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },

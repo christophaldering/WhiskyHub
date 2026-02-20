@@ -39,6 +39,8 @@ import BenchmarkAnalyzer from "@/pages/benchmark-analyzer";
 import Features from "@/pages/features";
 import PhotoTasting from "@/pages/photo-tasting";
 import Reminders from "@/pages/reminders";
+import CommunityRankings from "@/pages/community-rankings";
+import TasteTwins from "@/pages/taste-twins";
 import TastingHistory from "@/pages/tasting-history";
 import About from "@/pages/about";
 import DataExport from "@/pages/data-export";
@@ -78,6 +80,8 @@ function Router() {
               <Route path="/recap/:id" component={TastingRecap} />
               <Route path="/recap" component={TastingRecap} />
               <Route path="/pairings" component={PairingSuggestions} />
+              <Route path="/community-rankings" component={CommunityRankings} />
+              <Route path="/taste-twins" component={TasteTwins} />
               <Route path="/leaderboard" component={Leaderboard} />
               <Route path="/admin" component={AdminPanel} />
               <Route path="/distilleries" component={DistilleryEncyclopedia} />

@@ -189,7 +189,7 @@ export default function Sessions() {
   const hasHosted = hostedTastings.length > 0;
   const hasParticipated = participatedTastings.length > 0;
 
-  const canDelete = (tasting: any) => isHostOf(tasting);
+  const canDelete = (tasting: any) => isHostOf(tasting) && tasting.status !== "open";
 
   const SessionCard = ({ tasting }: { tasting: any }) => (
     <div

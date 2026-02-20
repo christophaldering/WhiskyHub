@@ -1,9 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { flavorProfileApi } from "@/lib/api";
+import { flavorProfileApi, communityApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
-import { Sparkles, ExternalLink } from "lucide-react";
+import { Sparkles, ExternalLink, Users } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
 
 interface Whisky {
@@ -20,16 +20,30 @@ interface Whisky {
   whiskybaseId: string | null;
 }
 
+interface CommunityScore {
+  whiskyKey: string;
+  avgOverall: number;
+  totalRaters: number;
+}
+
 function computeRecommendations(
   ratedWhiskies: Array<{ whisky: Whisky; rating: { overall: number } }>,
   allWhiskies: Whisky[],
   regionBreakdown: Record<string, { count: number; avgScore: number }>,
   caskBreakdown: Record<string, { count: number; avgScore: number }>,
-  peatBreakdown: Record<string, { count: number; avgScore: number }>
+  peatBreakdown: Record<string, { count: number; avgScore: number }>,
+  communityScores?: CommunityScore[]
 ) {
   const ratedIds = new Set(ratedWhiskies.map(r => r.whisky.id));
   const unrated = allWhiskies.filter(w => !ratedIds.has(w.id));
   if (unrated.length === 0) return [];
+
+  const communityMap = new Map<string, CommunityScore>();
+  if (communityScores) {
+    for (const cs of communityScores) {
+      communityMap.set(cs.whiskyKey, cs);
+    }
+  }
 
   const topRegions = Object.entries(regionBreakdown)
     .sort((a, b) => b[1].avgScore - a[1].avgScore)
@@ -49,20 +63,30 @@ function computeRecommendations(
     let reasons: string[] = [];
     if (w.region && topRegions.includes(w.region)) {
       const regionScore = regionBreakdown[w.region]?.avgScore || 0;
-      score += regionScore * 0.4;
+      score += regionScore * 0.35;
       reasons.push(w.region);
     }
     if (w.caskInfluence && topCasks.includes(w.caskInfluence)) {
       const caskScore = caskBreakdown[w.caskInfluence]?.avgScore || 0;
-      score += caskScore * 0.3;
+      score += caskScore * 0.25;
       reasons.push(w.caskInfluence);
     }
     if (w.peatLevel && topPeat.includes(w.peatLevel)) {
       const peatScore = peatBreakdown[w.peatLevel]?.avgScore || 0;
-      score += peatScore * 0.3;
+      score += peatScore * 0.25;
       reasons.push(w.peatLevel);
     }
-    return { whisky: w, score, reasons };
+
+    const key = w.whiskybaseId
+      ? `wb:${w.whiskybaseId}`
+      : `name:${(w.name || "").toLowerCase().trim()}|${(w.distillery || "").toLowerCase().trim()}`;
+    const cs = communityMap.get(key);
+    if (cs && cs.totalRaters >= 2) {
+      score += cs.avgOverall * 0.15;
+      reasons.push(`★ ${cs.avgOverall}`);
+    }
+
+    return { whisky: w, score, reasons, communityScore: cs?.avgOverall, communityRaters: cs?.totalRaters };
   });
 
   return scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score).slice(0, 10);
@@ -76,6 +100,12 @@ export default function Recommendations() {
   const { data: profile, isLoading } = useQuery({
     queryKey: ["flavor-profile", currentParticipant?.id],
     queryFn: () => flavorProfileApi.get(currentParticipant!.id),
+    enabled: !!currentParticipant,
+  });
+
+  const { data: communityScores } = useQuery<CommunityScore[]>({
+    queryKey: ["community-scores"],
+    queryFn: () => communityApi.getScores(),
     enabled: !!currentParticipant,
   });
 
@@ -103,7 +133,8 @@ export default function Recommendations() {
         profile.allWhiskies || [],
         profile.regionBreakdown || {},
         profile.caskBreakdown || {},
-        profile.peatBreakdown || {}
+        profile.peatBreakdown || {},
+        communityScores
       )
     : [];
 
@@ -180,6 +211,12 @@ export default function Recommendations() {
                 <div className="text-right shrink-0">
                   <div className="text-xs text-muted-foreground">{isDE ? "Match" : "Match"}</div>
                   <div className="text-lg font-serif font-bold text-primary">{Math.round(rec.score)}</div>
+                  {rec.communityScore && rec.communityRaters && rec.communityRaters >= 2 && (
+                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5 justify-end">
+                      <Users className="w-3 h-3" />
+                      {rec.communityScore}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ))}

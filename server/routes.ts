@@ -2828,6 +2828,30 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  // ===== COMMUNITY SCORES =====
+
+  app.get("/api/community-scores", async (_req, res) => {
+    try {
+      const scores = await storage.getCommunityScores();
+      res.json(scores);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== TASTE TWINS =====
+
+  app.get("/api/participants/:id/taste-twins", async (req, res) => {
+    try {
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      const twins = await storage.getTasteTwins(req.params.id);
+      res.json(twins);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== GLOBAL AVERAGES =====
 
   app.get("/api/flavor-profile/global", async (_req, res) => {

@@ -266,6 +266,8 @@ const resources = {
         reminders: "Reminders",
         myTastings: "My Tastings",
         dataExport: "Data Export",
+        communityRankings: "Community Rankings",
+        tasteTwins: "Taste Twins",
       },
       navGroup: {
         main: "Main",
@@ -629,7 +631,7 @@ const resources = {
       },
       reminders: {
         title: "Tasting Reminders",
-        subtitle: "Get notified before upcoming tasting sessions",
+        subtitle: "Receive email reminders before upcoming tasting sessions",
         enabled: "Reminders enabled",
         disabled: "Reminders disabled",
         globalReminder: "Default reminder for all tastings",
@@ -2028,6 +2030,8 @@ const resources = {
         reminders: "Erinnerungen",
         myTastings: "Meine Tastings",
         dataExport: "Daten-Export",
+        communityRankings: "Community Rankings",
+        tasteTwins: "Geschmackszwillinge",
       },
       navGroup: {
         main: "Übersicht",
@@ -2391,7 +2395,7 @@ const resources = {
       },
       reminders: {
         title: "Verkostungserinnerungen",
-        subtitle: "Lass dich vor bevorstehenden Verkostungen benachrichtigen",
+        subtitle: "Erhalte E-Mail-Erinnerungen vor bevorstehenden Verkostungen",
         enabled: "Erinnerungen aktiviert",
         disabled: "Erinnerungen deaktiviert",
         globalReminder: "Standard-Erinnerung für alle Verkostungen",

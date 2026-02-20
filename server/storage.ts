@@ -145,6 +145,35 @@ export interface IStorage {
     sources: { tastingRatings: number; journalEntries: number };
   }>;
 
+  // Community Scores
+  getCommunityScores(): Promise<Array<{
+    whiskyKey: string;
+    name: string;
+    distillery: string | null;
+    whiskybaseId: string | null;
+    avgOverall: number;
+    avgNose: number;
+    avgTaste: number;
+    avgFinish: number;
+    avgBalance: number;
+    totalRatings: number;
+    totalRaters: number;
+    region: string | null;
+    category: string | null;
+    caskInfluence: string | null;
+    peatLevel: string | null;
+    age: string | null;
+    abv: number | null;
+    imageUrl: string | null;
+  }>>;
+
+  getTasteTwins(participantId: string): Promise<Array<{
+    participantId: string;
+    participantName: string;
+    correlation: number;
+    sharedWhiskies: number;
+  }>>;
+
   // Hard Delete (admin only)
   hardDeleteTasting(id: string): Promise<void>;
 
@@ -1077,6 +1106,150 @@ export class DatabaseStorage implements IStorage {
       totalJournalEntries: journalCount?.count ?? 0,
       countriesRepresented: countryResult.length,
     };
+  }
+  async getCommunityScores(): Promise<Array<{
+    whiskyKey: string;
+    name: string;
+    distillery: string | null;
+    whiskybaseId: string | null;
+    avgOverall: number;
+    avgNose: number;
+    avgTaste: number;
+    avgFinish: number;
+    avgBalance: number;
+    totalRatings: number;
+    totalRaters: number;
+    region: string | null;
+    category: string | null;
+    caskInfluence: string | null;
+    peatLevel: string | null;
+    age: string | null;
+    abv: number | null;
+    imageUrl: string | null;
+  }>> {
+    const allWhiskyRows = await db.select().from(whiskies);
+    const allRatings = await db.select().from(ratings);
+
+    const whiskyMap = new Map(allWhiskyRows.map(w => [w.id, w]));
+
+    const grouped: Record<string, {
+      ratings: Array<{ nose: number; taste: number; finish: number; balance: number; overall: number; participantId: string }>;
+      whisky: typeof whiskies.$inferSelect;
+    }> = {};
+
+    for (const r of allRatings) {
+      const w = whiskyMap.get(r.whiskyId);
+      if (!w) continue;
+
+      const key = w.whiskybaseId
+        ? `wb:${w.whiskybaseId}`
+        : `name:${(w.name || "").toLowerCase().trim()}|${(w.distillery || "").toLowerCase().trim()}`;
+
+      if (!grouped[key]) {
+        grouped[key] = { ratings: [], whisky: w };
+      }
+      if (!grouped[key].whisky.imageUrl && w.imageUrl) {
+        grouped[key].whisky = w;
+      }
+      grouped[key].ratings.push({
+        nose: r.nose, taste: r.taste, finish: r.finish,
+        balance: r.balance, overall: r.overall, participantId: r.participantId,
+      });
+    }
+
+    const results = [];
+    for (const [key, data] of Object.entries(grouped)) {
+      const { ratings: rList, whisky: w } = data;
+      if (rList.length < 2) continue;
+
+      const raters = new Set(rList.map(r => r.participantId));
+      const avg = (arr: number[]) => Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10;
+
+      results.push({
+        whiskyKey: key,
+        name: w.name,
+        distillery: w.distillery,
+        whiskybaseId: w.whiskybaseId,
+        avgOverall: avg(rList.map(r => r.overall)),
+        avgNose: avg(rList.map(r => r.nose)),
+        avgTaste: avg(rList.map(r => r.taste)),
+        avgFinish: avg(rList.map(r => r.finish)),
+        avgBalance: avg(rList.map(r => r.balance)),
+        totalRatings: rList.length,
+        totalRaters: raters.size,
+        region: w.region,
+        category: w.category,
+        caskInfluence: w.caskInfluence,
+        peatLevel: w.peatLevel,
+        age: w.age,
+        abv: w.abv,
+        imageUrl: w.imageUrl,
+      });
+    }
+
+    return results.sort((a, b) => b.avgOverall - a.avgOverall);
+  }
+
+  async getTasteTwins(participantId: string): Promise<Array<{
+    participantId: string;
+    participantName: string;
+    correlation: number;
+    sharedWhiskies: number;
+  }>> {
+    const myRatings = await db.select().from(ratings).where(eq(ratings.participantId, participantId));
+    if (myRatings.length === 0) return [];
+
+    const myWhiskyIds = myRatings.map(r => r.whiskyId);
+    const otherRatings = await db.select().from(ratings)
+      .where(and(
+        ne(ratings.participantId, participantId),
+        inArray(ratings.whiskyId, myWhiskyIds)
+      ));
+
+    const myScores = new Map(myRatings.map(r => [r.whiskyId, r.overall]));
+
+    const byParticipant: Record<string, Array<{ whiskyId: string; overall: number }>> = {};
+    for (const r of otherRatings) {
+      if (!byParticipant[r.participantId]) byParticipant[r.participantId] = [];
+      byParticipant[r.participantId].push({ whiskyId: r.whiskyId, overall: r.overall });
+    }
+
+    const allParticipants = await db.select().from(participants);
+    const nameMap = new Map(allParticipants.map(p => [p.id, p.name]));
+
+    const twins = [];
+    for (const [pid, pRatings] of Object.entries(byParticipant)) {
+      if (pRatings.length < 3) continue;
+
+      const pairs = pRatings
+        .filter(r => myScores.has(r.whiskyId))
+        .map(r => ({ mine: myScores.get(r.whiskyId)!, theirs: r.overall }));
+
+      if (pairs.length < 3) continue;
+
+      const meanMine = pairs.reduce((s, p) => s + p.mine, 0) / pairs.length;
+      const meanTheirs = pairs.reduce((s, p) => s + p.theirs, 0) / pairs.length;
+
+      let num = 0, denA = 0, denB = 0;
+      for (const p of pairs) {
+        const dA = p.mine - meanMine;
+        const dB = p.theirs - meanTheirs;
+        num += dA * dB;
+        denA += dA * dA;
+        denB += dB * dB;
+      }
+
+      const correlation = denA > 0 && denB > 0 ? num / Math.sqrt(denA * denB) : 0;
+
+      twins.push({
+        participantId: pid,
+        participantName: nameMap.get(pid) || "Unknown",
+        correlation: Math.round(correlation * 100) / 100,
+        sharedWhiskies: pairs.length,
+      });
+    }
+
+    return twins.sort((a, b) => b.correlation - a.correlation).slice(0, 10);
   }
 }
 

@@ -16,7 +16,7 @@ import DiscussionPanel from "@/components/discussion-panel";
 import ReflectionPanel from "@/components/reflection-panel";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1406,11 +1406,35 @@ export default function TastingRoom() {
           <div className="flex flex-col items-start sm:items-end gap-2 min-w-0 w-full md:w-auto">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {isHost && (tasting.status === "draft" || tasting.status === "open") && <EditTastingDialog tasting={tasting} />}
-              <DuplicateTastingButton tasting={tasting} />
-              {isHost && tasting.status !== "deleted" && <DeleteTastingButton tasting={tasting} />}
               <PdfExportDialog tasting={tasting} whiskies={whiskyList} />
-              {isHost && <BriefingNotes whiskies={whiskyList} tastingTitle={tasting.title} />}
-              {isHost && <TransferHostDialog tasting={tasting} />}
+              {(() => {
+                const hasSecondary = isHost || true;
+                if (!hasSecondary) return null;
+                return (
+                  <div className="relative group">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-primary/30 text-primary font-serif"
+                      onClick={(e) => {
+                        const el = e.currentTarget.nextElementSibling as HTMLElement;
+                        if (el) el.classList.toggle("hidden");
+                      }}
+                      data-testid="button-more-actions"
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                    <div className="hidden absolute right-0 top-full mt-1 z-50 bg-card border rounded-lg shadow-lg p-2 min-w-[200px] space-y-1">
+                      <div className="flex flex-col gap-1">
+                        <DuplicateTastingButton tasting={tasting} />
+                        {isHost && <BriefingNotes whiskies={whiskyList} tastingTitle={tasting.title} />}
+                        {isHost && <TransferHostDialog tasting={tasting} />}
+                        {isHost && tasting.status !== "deleted" && <DeleteTastingButton tasting={tasting} />}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
               <span className="text-xs font-mono bg-secondary px-2 py-1 rounded text-muted-foreground">Code: {tasting.code}</span>
               <div className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm font-medium border border-border/50">
                 {t(`session.status.${tasting.status}`)}
