@@ -986,7 +986,7 @@ export async function registerRoutes(
       if (!spreadsheetFile) return res.status(400).json({ message: "No spreadsheet file provided" });
 
       const buffer = fs.readFileSync(spreadsheetFile.path);
-      const { rows, errors } = parseSpreadsheetRows(buffer, spreadsheetFile.originalname);
+      const { rows, errors } = await parseSpreadsheetRows(buffer, spreadsheetFile.originalname);
 
       const imageFiles: string[] = [];
       if (files?.images) {
@@ -1048,7 +1048,7 @@ export async function registerRoutes(
       if (!spreadsheetFile) return res.status(400).json({ message: "No spreadsheet file provided" });
 
       const buffer = fs.readFileSync(spreadsheetFile.path);
-      const { rows, errors: parseErrors } = parseSpreadsheetRows(buffer, spreadsheetFile.originalname);
+      const { rows, errors: parseErrors } = await parseSpreadsheetRows(buffer, spreadsheetFile.originalname);
 
       let imageMappingRaw: Record<string, string> = {};
       try {
@@ -2379,9 +2379,9 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
           rows.push(row);
         }
       } else {
-        const workbook = XLSX.read(file.buffer, { type: "buffer" });
+        const workbook = await readExcelBuffer(file.buffer);
         const sheetName = workbook.SheetNames[0];
-        rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: "" });
+        rows = sheetToJson(workbook.Sheets[sheetName], { defval: "" });
       }
       
       const colMap = (row: any, ...keys: string[]): string => {
@@ -4761,11 +4761,11 @@ Return ONLY valid JSON array. If no whisky data found, return [].`,
           return res.json({ entries: enrichEntries(entries), fileName: file.originalname });
         }
       } else if (file.mimetype.includes("spreadsheet") || file.mimetype.includes("excel")) {
-        const workbook = XLSX.read(file.buffer, { type: "buffer" });
+        const workbook = await readExcelBuffer(file.buffer);
         const allText: string[] = [];
         for (const sheetName of workbook.SheetNames) {
           const sheet = workbook.Sheets[sheetName];
-          const csv = XLSX.utils.sheet_to_csv(sheet);
+          const csv = sheetToCsv(sheet);
           allText.push(`Sheet: ${sheetName}\n${csv}`);
         }
         textContent = allText.join("\n\n");
@@ -5276,8 +5276,8 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     },
   });
 
-  function parseTransposedExcel(buffer: Buffer): { whiskies: any[]; tastingMeta: any; hostNotes: Record<number, string> } {
-    const wb = XLSX.read(buffer, { type: "buffer" });
+  async function parseTransposedExcel(buffer: Buffer): Promise<{ whiskies: any[]; tastingMeta: any; hostNotes: Record<number, string> }> {
+    const wb = await readExcelBuffer(buffer);
     const whiskies: any[] = [];
     const tastingMeta: any = {};
     const hostNotes: Record<number, string> = {};
@@ -5285,7 +5285,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     const lineUpSheet = wb.SheetNames.find(n => n.toLowerCase().includes("line up") || n.toLowerCase().includes("lineup"));
     if (lineUpSheet) {
       const sheet = wb.Sheets[lineUpSheet];
-      const raw: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      const raw: any[][] = sheetToArrayOfArrays(sheet);
 
       const rowMap: Record<string, any[]> = {};
       let whiskyCount = 0;
@@ -5435,7 +5435,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     const metaSheet = wb.SheetNames.find(n => n.toLowerCase().includes("tln") || n.toLowerCase().includes("logistik") || n.toLowerCase().includes("teilnehmer"));
     if (metaSheet) {
       const sheet = wb.Sheets[metaSheet];
-      const raw: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      const raw: any[][] = sheetToArrayOfArrays(sheet);
       if (raw[0]?.[0]) tastingMeta.title = String(raw[0][0]).trim();
       if (raw[1]?.[0]) {
         const dateStr = String(raw[1][0]).trim();
@@ -5457,7 +5457,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       const num = parseInt(sheetName.trim());
       if (!isNaN(num) && num >= 1 && num <= 100) {
         const sheet = wb.Sheets[sheetName];
-        const raw: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        const raw: any[][] = sheetToArrayOfArrays(sheet);
         const texts: string[] = [];
         for (const row of raw) {
           if (!row) continue;
@@ -5506,9 +5506,9 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       for (const file of files) {
         const ext = path.extname(file.originalname).toLowerCase();
         if (ext === ".xlsx" || ext === ".xls" || ext === ".csv") {
-          excelResult = parseTransposedExcel(file.buffer);
+          excelResult = await parseTransposedExcel(file.buffer);
           if (excelResult.whiskies.length === 0) {
-            const rows = parseSpreadsheetRows(file.buffer, file.originalname);
+            const rows = await parseSpreadsheetRows(file.buffer, file.originalname);
             if (rows.rows.length > 0) {
               excelResult.whiskies = rows.rows;
             }
@@ -5700,29 +5700,20 @@ Important rules:
 
   // ===== DATA EXPORT =====
 
-  const buildWorkbook = (sheetName: string, data: any[]) => {
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
-    return wb;
-  };
-
-  const sendExport = (res: Response, data: any[], filename: string, format: string, sheetName: string) => {
+  const sendExport = async (res: Response, data: any[], filename: string, format: string, sheetName: string) => {
     if (!data || data.length === 0) {
       return res.status(404).json({ message: "No data available for export" });
     }
     if (format === "csv") {
-      const ws = XLSX.utils.json_to_sheet(data);
-      const csv = XLSX.utils.sheet_to_csv(ws);
+      const csv = jsonToCsv(data);
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
       res.setHeader("Content-Disposition", `attachment; filename="${filename}.csv"`);
       return res.send("\uFEFF" + csv);
     }
-    const wb = buildWorkbook(sheetName, data);
-    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    const buf = await buildExcelBuffer([{ name: sheetName.slice(0, 31), data }]);
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}.xlsx"`);
-    return res.send(Buffer.from(buf));
+    return res.send(buf);
   };
 
   app.get("/api/export/tastings", async (req, res) => {
@@ -5754,7 +5745,7 @@ Important rules:
           });
         }
       }
-      sendExport(res, rows, `casksense_tastings_${new Date().toISOString().split("T")[0]}`, format, "Tastings");
+      await sendExport(res, rows, `casksense_tastings_${new Date().toISOString().split("T")[0]}`, format, "Tastings");
     } catch (e: any) {
       res.status(500).json({ message: e.message || "Export failed" });
     }
@@ -5772,7 +5763,7 @@ Important rules:
         Rating: e.rating || "", Nose: e.noseNotes || "", Taste: e.tasteNotes || "",
         Finish: e.finishNotes || "", Notes: e.notes || "", Source: e.source || ""
       }));
-      sendExport(res, rows, `casksense_journal_${new Date().toISOString().split("T")[0]}`, format, "Journal");
+      await sendExport(res, rows, `casksense_journal_${new Date().toISOString().split("T")[0]}`, format, "Journal");
     } catch (e: any) {
       res.status(500).json({ message: e.message || "Export failed" });
     }
@@ -5793,7 +5784,7 @@ Important rules:
         TopNoseNotes: profile?.topNoseNotes || "", TopTasteNotes: profile?.topTasteNotes || "",
         TopFinishNotes: profile?.topFinishNotes || ""
       }];
-      sendExport(res, rows, `casksense_profile_${new Date().toISOString().split("T")[0]}`, format, "Profile");
+      await sendExport(res, rows, `casksense_profile_${new Date().toISOString().split("T")[0]}`, format, "Profile");
     } catch (e: any) {
       res.status(500).json({ message: e.message || "Export failed" });
     }
@@ -5813,7 +5804,7 @@ Important rules:
           LinkedProfile: p?.name || "", AddedAt: f.createdAt || ""
         };
       }));
-      sendExport(res, rows, `casksense_friends_${new Date().toISOString().split("T")[0]}`, format, "Friends");
+      await sendExport(res, rows, `casksense_friends_${new Date().toISOString().split("T")[0]}`, format, "Friends");
     } catch (e: any) {
       res.status(500).json({ message: e.message || "Export failed" });
     }
@@ -5830,7 +5821,7 @@ Important rules:
         Age: e.age || "", ABV: e.abv || "", Region: e.region || "",
         Notes: e.notes || "", Priority: e.priority || "", AddedAt: e.createdAt || ""
       }));
-      sendExport(res, rows, `casksense_wishlist_${new Date().toISOString().split("T")[0]}`, format, "Wishlist");
+      await sendExport(res, rows, `casksense_wishlist_${new Date().toISOString().split("T")[0]}`, format, "Wishlist");
     } catch (e: any) {
       res.status(500).json({ message: e.message || "Export failed" });
     }
@@ -5847,7 +5838,7 @@ Important rules:
         Category: e.category || "", Rating: e.rating || "",
         Notes: e.notes || "", AddedAt: e.createdAt || ""
       }));
-      sendExport(res, rows, `casksense_collection_${new Date().toISOString().split("T")[0]}`, format, "Collection");
+      await sendExport(res, rows, `casksense_collection_${new Date().toISOString().split("T")[0]}`, format, "Collection");
     } catch (e: any) {
       res.status(500).json({ message: e.message || "Export failed" });
     }
@@ -5859,7 +5850,7 @@ Important rules:
       const format = (req.query.format as string) || "xlsx";
       if (!participantId) return res.status(400).json({ message: "participantId required" });
 
-      const wb = XLSX.utils.book_new();
+      const sheets: { name: string; data: any[] }[] = [];
 
       const tastings = await storage.getTastingsForParticipant(participantId);
       const tastingRows: any[] = [];
@@ -5876,7 +5867,7 @@ Important rules:
           });
         }
       }
-      if (tastingRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tastingRows), "Tastings");
+      if (tastingRows.length) sheets.push({ name: "Tastings", data: tastingRows });
 
       const journal = await storage.getJournalEntries(participantId);
       if (journal.length) {
@@ -5884,7 +5875,7 @@ Important rules:
           Date: e.createdAt, Name: e.name, Distillery: e.distillery || "", Rating: e.rating || "",
           Nose: e.noseNotes || "", Taste: e.tasteNotes || "", Finish: e.finishNotes || "", Notes: e.notes || ""
         }));
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(jRows), "Journal");
+        sheets.push({ name: "Journal", data: jRows });
       }
 
       const wishlist = await storage.getWishlistEntries(participantId);
@@ -5892,7 +5883,7 @@ Important rules:
         const wRows = wishlist.map((e: any) => ({
           Name: e.name || "", Distillery: e.distillery || "", Notes: e.notes || "", Priority: e.priority || ""
         }));
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wRows), "Wishlist");
+        sheets.push({ name: "Wishlist", data: wRows });
       }
 
       const collection = await storage.getWhiskybaseCollection(participantId);
@@ -5900,7 +5891,7 @@ Important rules:
         const cRows = collection.map((e: any) => ({
           Brand: e.brand || "", Name: e.name || "", WhiskybaseId: e.whiskybaseId || "", Rating: e.rating || ""
         }));
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cRows), "Collection");
+        sheets.push({ name: "Collection", data: cRows });
       }
 
       const friends = await storage.getWhiskyFriends(participantId);
@@ -5908,25 +5899,24 @@ Important rules:
         const fRows = friends.map((f: any) => ({
           Name: `${f.firstName || ""} ${f.lastName || ""}`.trim(), Email: f.email || "", Status: f.status || ""
         }));
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fRows), "Friends");
+        sheets.push({ name: "Friends", data: fRows });
       }
 
-      if (wb.SheetNames.length === 0) {
+      if (sheets.length === 0) {
         return res.status(404).json({ message: "No data available for export" });
       }
 
       if (format === "csv") {
-        const firstSheet = wb.Sheets[wb.SheetNames[0]];
-        const csv = XLSX.utils.sheet_to_csv(firstSheet);
+        const csv = jsonToCsv(sheets[0].data);
         res.setHeader("Content-Type", "text/csv; charset=utf-8");
         res.setHeader("Content-Disposition", `attachment; filename="casksense_all_${new Date().toISOString().split("T")[0]}.csv"`);
         return res.send("\uFEFF" + csv);
       }
 
-      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      const buf = await buildExcelBuffer(sheets);
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       res.setHeader("Content-Disposition", `attachment; filename="casksense_all_${new Date().toISOString().split("T")[0]}.xlsx"`);
-      res.send(Buffer.from(buf));
+      res.send(buf);
     } catch (e: any) {
       res.status(500).json({ message: e.message || "Export failed" });
     }
