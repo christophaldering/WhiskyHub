@@ -50,6 +50,7 @@ const resources = {
       landing: {
         nav: {
           explore: "Explore",
+          featureTour: "Feature Tour",
           getStarted: "Get Started",
           login: "Sign In",
         },
@@ -143,9 +144,24 @@ const resources = {
         },
         footer: {
           about: "About CaskSense",
+          featureTour: "Feature Tour",
           features: "Features",
           app: "Open App",
         },
+      },
+      featureTour: {
+        backToHome: "Back",
+        coverSubtitle: "A guided tour through everything CaskSense has to offer — from blind tastings and AI import to personal analytics and community features.",
+        featuresCount: "Features",
+        categoriesCount: "Categories",
+        navHint: "Use arrow keys or click to navigate · Press Space to advance",
+        category: "Category",
+        autoPlay: "Auto",
+        pause: "Pause",
+        downloadPdf: "Download as PDF",
+        endTitle: "Ready to taste?",
+        endSubtitle: "Start your first tasting, invite friends, and discover what your palate really tells you. Free to use — no account needed.",
+        startNow: "Get Started",
       },
       login: {
         title: "Create Account",
@@ -1862,6 +1878,7 @@ const resources = {
       landing: {
         nav: {
           explore: "Entdecken",
+          featureTour: "Feature-Tour",
           getStarted: "Loslegen",
           login: "Anmelden",
         },
@@ -1955,9 +1972,24 @@ const resources = {
         },
         footer: {
           about: "Über CaskSense",
+          featureTour: "Feature-Tour",
           features: "Funktionen",
           app: "App öffnen",
         },
+      },
+      featureTour: {
+        backToHome: "Zurück",
+        coverSubtitle: "Eine geführte Präsentation durch alles, was CaskSense zu bieten hat — von Blind-Tastings und KI-Import bis zu persönlichen Analysen und Community-Funktionen.",
+        featuresCount: "Funktionen",
+        categoriesCount: "Kategorien",
+        navHint: "Pfeiltasten oder Klick zum Navigieren · Leertaste zum Weiterblättern",
+        category: "Kategorie",
+        autoPlay: "Auto",
+        pause: "Pause",
+        downloadPdf: "Als PDF herunterladen",
+        endTitle: "Bereit zum Verkosten?",
+        endSubtitle: "Starte dein erstes Tasting, lade Freunde ein und entdecke, was dein Gaumen wirklich wahrnimmt. Kostenlos — ohne Konto.",
+        startNow: "Jetzt starten",
       },
       login: {
         title: "Konto erstellen",
