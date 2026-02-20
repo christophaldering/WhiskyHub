@@ -1518,6 +1518,7 @@ export default function TastingRoom() {
           <div className="flex flex-col items-start sm:items-end gap-2 min-w-0 w-full md:w-auto">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {isHost && (tasting.status === "draft" || tasting.status === "open") && <EditTastingDialog tasting={tasting} />}
+              {isHost && (tasting.status === "draft" || tasting.status === "open") && <InvitePanel tastingId={tasting.id} />}
               <PdfExportDialog tasting={tasting} whiskies={whiskyList} />
               {(() => {
                 const hasSecondary = isHost || true;
@@ -1938,9 +1939,6 @@ export default function TastingRoom() {
       <AttendeeRoster tastingId={tasting.id} hostId={tasting.hostId} />
 
       {isHost && <SessionControl tasting={tasting} totalWhiskies={whiskyList.length} />}
-      {isHost && (tasting.status === "draft" || tasting.status === "open") && (
-        <InvitePanel tastingId={tasting.id} />
-      )}
     </div>
   );
 }

@@ -51,12 +51,14 @@ export default function Sessions() {
     queryKey: ["tastings", currentParticipant?.id],
     queryFn: () => tastingApi.getAll(currentParticipant?.id),
     enabled: !!currentParticipant,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const createTasting = useMutation({
     mutationFn: (data: any) => tastingApi.create(data),
-    onSuccess: (tasting) => {
-      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+    onSuccess: async (tasting) => {
+      await queryClient.invalidateQueries({ queryKey: ["tastings"] });
       navigate(`/tasting/${tasting.id}`);
     },
   });
@@ -528,8 +530,8 @@ export default function Sessions() {
               <p className="text-muted-foreground font-serif italic" data-testid="text-no-participated">{t("nav.noParticipatedSessions")}</p>
             </motion.div>
           )}
-          <SessionGroup title={t("nav.sessionsActive")} sessions={currentList.active} delay={0.1} />
-          <SessionGroup title={t("nav.sessionsDraft")} sessions={currentList.drafts} delay={0.2} />
+          <SessionGroup title={t("nav.sessionsDraft")} sessions={currentList.drafts} delay={0.1} />
+          <SessionGroup title={t("nav.sessionsActive")} sessions={currentList.active} delay={0.2} />
           <SessionGroup title={t("nav.sessionsArchived")} sessions={currentList.archived} delay={0.3} />
         </div>
       )}
