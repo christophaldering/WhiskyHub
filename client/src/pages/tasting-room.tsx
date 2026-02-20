@@ -1394,7 +1394,7 @@ export default function TastingRoom() {
   const isHost = tasting.hostId === currentParticipant.id;
   const showAnalytics = tasting.status === "reveal" || tasting.status === "archived";
 
-  const isBlind = tasting.blindMode && (tasting.status === "open" || tasting.status === "closed");
+  const isBlind = tasting.blindMode && (tasting.status === "draft" || tasting.status === "open" || tasting.status === "closed");
   const revealIndex = tasting.revealIndex ?? 0;
   const revealStep = tasting.revealStep ?? 0;
 

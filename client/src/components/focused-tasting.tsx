@@ -217,7 +217,7 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
   const activeWhisky = whiskies[activeIndex] || whiskies[0];
   if (!activeWhisky) return null;
 
-  const isBlind = tasting.blindMode && (tasting.status === "open" || tasting.status === "closed");
+  const isBlind = tasting.blindMode && (tasting.status === "draft" || tasting.status === "open" || tasting.status === "closed");
   const revealIndex = tasting.revealIndex ?? 0;
   const revealStep = tasting.revealStep ?? 0;
 

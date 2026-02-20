@@ -112,7 +112,7 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
 
   const { label, icon: Icon } = getButtonConfig();
 
-  const showBlindControls = tasting.blindMode && (tasting.status === "open" || tasting.status === "closed");
+  const showBlindControls = tasting.blindMode && (tasting.status === "draft" || tasting.status === "open" || tasting.status === "closed");
   const revealIndex = tasting.revealIndex ?? 0;
   const revealStep = tasting.revealStep ?? 0;
   const allRevealed = revealIndex >= totalWhiskies;
