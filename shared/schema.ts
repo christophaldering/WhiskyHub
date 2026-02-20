@@ -48,6 +48,9 @@ export const tastings = pgTable("tastings", {
   coverImageRevealed: boolean("cover_image_revealed").default(false),
   videoLink: text("video_link"),
   dramStartedAt: timestamp("dram_started_at"),
+  dramTimers: text("dram_timers"), // JSON: { [whiskyId]: accumulatedSeconds }
+  ratingPrompt: text("rating_prompt"), // null | "rate" | "final" — host prompt to submit ratings
+  activeWhiskyId: varchar("active_whisky_id"), // tracks which whisky is currently being discussed
   createdAt: timestamp("created_at").defaultNow(),
 });
 

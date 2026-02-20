@@ -1201,6 +1201,18 @@ export default function TastingRoom() {
   const [guidedExited, setGuidedExited] = useState(false);
   const [presenterActive, setPresenterActive] = useState(false);
   const [presenterExited, setPresenterExited] = useState(false);
+  const [promptDismissed, setPromptDismissed] = useState(false);
+
+  const ratingPromptMutation = useMutation({
+    mutationFn: (prompt: string | null) => fetch(`/api/tastings/${id}/rating-prompt`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hostId: currentParticipant?.id, prompt }),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", id] });
+    },
+  });
 
   const reorderMutation = useMutation({
     mutationFn: (order: { id: string; sortOrder: number }[]) => whiskyApi.reorder(id!, order),
@@ -1632,6 +1644,49 @@ export default function TastingRoom() {
 
       {viewTab === "board" && (
         <FlightBoard tasting={tasting} whiskies={whiskyList} isHost={isHost} />
+      )}
+
+      {!isHost && tasting.ratingPrompt && !promptDismissed && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between"
+          data-testid="cockpit-rating-prompt-banner"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-serif text-amber-800">
+              {tasting.ratingPrompt === "final" ? t("focus.promptFinalMessage") : t("focus.promptRateMessage")}
+            </span>
+          </div>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setPromptDismissed(true)} data-testid="cockpit-button-dismiss-prompt">
+            {t("focus.promptDismiss")}
+          </Button>
+        </motion.div>
+      )}
+
+      {isHost && tasting.status === "open" && (
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <Button
+            variant={tasting.ratingPrompt === "rate" ? "default" : "outline"}
+            size="sm"
+            className="font-serif text-xs gap-1"
+            onClick={() => ratingPromptMutation.mutate(tasting.ratingPrompt === "rate" ? null : "rate")}
+            disabled={ratingPromptMutation.isPending}
+            data-testid="cockpit-host-prompt-rate"
+          >
+            {tasting.ratingPrompt === "rate" ? t("focus.hostPromptClear") : t("focus.hostPromptRate")}
+          </Button>
+          <Button
+            variant={tasting.ratingPrompt === "final" ? "default" : "outline"}
+            size="sm"
+            className="font-serif text-xs gap-1"
+            onClick={() => ratingPromptMutation.mutate(tasting.ratingPrompt === "final" ? null : "final")}
+            disabled={ratingPromptMutation.isPending}
+            data-testid="cockpit-host-prompt-final"
+          >
+            {tasting.ratingPrompt === "final" ? t("focus.hostPromptClear") : t("focus.hostPromptFinal")}
+          </Button>
+        </div>
       )}
 
       {viewTab === "tasting" && <>

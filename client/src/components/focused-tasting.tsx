@@ -26,6 +26,7 @@ import {
   Lock,
   ChevronDown,
   ChevronUp,
+  Bell,
 } from "lucide-react";
 import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Whisky, Tasting } from "@shared/schema";
@@ -36,12 +37,15 @@ interface FocusedTastingProps {
   onExit: () => void;
 }
 
-function DramTimer({ startedAt }: { startedAt: Date | string | null }) {
+function DramTimer({ startedAt, accumulated = 0 }: { startedAt: Date | string | null; accumulated?: number }) {
   const { t } = useTranslation();
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    if (!startedAt) return;
+    if (!startedAt) {
+      setElapsed(0);
+      return;
+    }
     const start = new Date(startedAt).getTime();
     const update = () => setElapsed(Math.floor((Date.now() - start) / 1000));
     update();
@@ -49,10 +53,11 @@ function DramTimer({ startedAt }: { startedAt: Date | string | null }) {
     return () => clearInterval(interval);
   }, [startedAt]);
 
-  if (!startedAt) return null;
+  const total = accumulated + elapsed;
+  if (!startedAt && accumulated === 0) return null;
 
-  const mins = Math.floor(elapsed / 60);
-  const secs = elapsed % 60;
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
 
   return (
     <div className="flex items-center gap-1.5 text-muted-foreground/60 text-xs font-mono" data-testid="dram-timer">
@@ -92,7 +97,7 @@ function RatingProgress({ tastingId, whiskyId, isHost, participantCount }: { tas
 }
 
 function AiInsightsPanel({ whisky, tasting }: { whisky: Whisky; tasting: Tasting }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
   const [insights, setInsights] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -119,6 +124,7 @@ function AiInsightsPanel({ whisky, tasting }: { whisky: Whisky; tasting: Tasting
           caskInfluence: whisky.caskInfluence,
           category: whisky.category,
           peatLevel: whisky.peatLevel,
+          language: i18n.language,
         }),
       });
       if (!res.ok) throw new Error("Failed");
@@ -252,10 +258,10 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
   });
 
   const dramTimerMutation = useMutation({
-    mutationFn: () => fetch(`/api/tastings/${tasting.id}/dram-timer`, {
+    mutationFn: (whiskyId?: string) => fetch(`/api/tastings/${tasting.id}/dram-timer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ hostId: participantId }),
+      body: JSON.stringify({ hostId: participantId, whiskyId: whiskyId || activeWhisky?.id }),
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasting", tasting.id] });
@@ -268,6 +274,19 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
       queryClient.invalidateQueries({ queryKey: ["tasting", tasting.id] });
     },
   });
+
+  const ratingPromptMutation = useMutation({
+    mutationFn: (prompt: string | null) => fetch(`/api/tastings/${tasting.id}/rating-prompt`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hostId: participantId, prompt }),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", tasting.id] });
+    },
+  });
+
+  const [promptDismissed, setPromptDismissed] = useState(false);
 
   const handleScoreChange = useCallback((key: string, value: number) => {
     const clamped = Math.max(0, Math.min(100, Math.round(value * 10) / 10));
@@ -290,12 +309,17 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
 
   const goToDram = (idx: number) => {
     if (idx >= 0 && idx < whiskies.length) {
+      const targetWhisky = whiskies[idx];
       setActiveIndex(idx);
-      if (isHost) {
-        dramTimerMutation.mutate();
+      if (isHost && targetWhisky) {
+        dramTimerMutation.mutate(targetWhisky.id);
       }
     }
   };
+
+  const dramTimers: Record<string, number> = tasting.dramTimers ? JSON.parse(tasting.dramTimers) : {};
+  const currentAccumulated = dramTimers[activeWhisky.id] || 0;
+  const isCurrentlyTimed = tasting.activeWhiskyId === activeWhisky.id;
 
   const isLocked = tasting.status !== "open" && tasting.status !== "draft";
 
@@ -314,7 +338,7 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
             <ChevronLeft className="w-4 h-4 mr-1" /> {t("focus.backToRoom")}
           </Button>
           <div className="flex items-center gap-3">
-            <DramTimer startedAt={tasting.dramStartedAt} />
+            <DramTimer startedAt={isCurrentlyTimed ? tasting.dramStartedAt : null} accumulated={currentAccumulated} />
             <RatingProgress
               tastingId={tasting.id}
               whiskyId={activeWhisky.id}
@@ -323,6 +347,72 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
             />
           </div>
         </header>
+
+        {!isHost && tasting.ratingPrompt && !promptDismissed && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between"
+            data-testid="rating-prompt-banner"
+          >
+            <div className="flex items-center gap-2">
+              <Bell className="w-4 h-4 text-amber-600" />
+              <span className="text-sm font-serif text-amber-800">
+                {tasting.ratingPrompt === "final" ? t("focus.promptFinalMessage") : t("focus.promptRateMessage")}
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" className="text-xs" onClick={() => setPromptDismissed(true)} data-testid="button-dismiss-prompt">
+              {t("focus.promptDismiss")}
+            </Button>
+          </motion.div>
+        )}
+
+        {isHost && (
+          <div className="mb-4 p-3 rounded-xl bg-primary/5 border border-primary/20" data-testid="focus-host-controls">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-serif font-bold text-primary uppercase tracking-widest">{t("guided.hostControl")}</span>
+              <span className="text-xs font-mono text-muted-foreground">
+                {t("focus.dramLabel", { current: activeIndex + 1, total: whiskies.length })}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {isBlind && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="font-serif text-xs border-primary/30 text-primary gap-1"
+                  onClick={() => revealNextMutation.mutate()}
+                  disabled={revealNextMutation.isPending}
+                  data-testid="focus-host-reveal"
+                >
+                  <Eye className="w-3.5 h-3.5" /> {t("focus.revealNext")}
+                </Button>
+              )}
+              <Button
+                variant={tasting.ratingPrompt === "rate" ? "default" : "outline"}
+                size="sm"
+                className="font-serif text-xs gap-1"
+                onClick={() => ratingPromptMutation.mutate(tasting.ratingPrompt === "rate" ? null : "rate")}
+                disabled={ratingPromptMutation.isPending}
+                data-testid="focus-host-prompt-rate"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                {tasting.ratingPrompt === "rate" ? t("focus.hostPromptClear") : t("focus.hostPromptRate")}
+              </Button>
+              <Button
+                variant={tasting.ratingPrompt === "final" ? "default" : "outline"}
+                size="sm"
+                className="font-serif text-xs gap-1"
+                onClick={() => ratingPromptMutation.mutate(tasting.ratingPrompt === "final" ? null : "final")}
+                disabled={ratingPromptMutation.isPending}
+                data-testid="focus-host-prompt-final"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                {tasting.ratingPrompt === "final" ? t("focus.hostPromptClear") : t("focus.hostPromptFinal")}
+              </Button>
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center justify-center gap-2 mb-4">
           {whiskies.map((_, idx) => (
@@ -555,18 +645,6 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
           >
             <ChevronLeft className="w-4 h-4 mr-1" /> {t("focus.prev")}
           </Button>
-
-          {isHost && isBlind && (
-            <Button
-              variant="outline"
-              className="font-serif text-xs border-primary/30 text-primary"
-              onClick={() => revealNextMutation.mutate()}
-              disabled={revealNextMutation.isPending}
-              data-testid="focus-reveal-next"
-            >
-              <Eye className="w-3.5 h-3.5 mr-1" /> {t("focus.revealNext")}
-            </Button>
-          )}
 
           <Button
             variant="ghost"

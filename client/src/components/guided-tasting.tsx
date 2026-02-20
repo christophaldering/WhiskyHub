@@ -32,6 +32,7 @@ import {
   ChevronUp,
   Globe,
   Info,
+  Bell,
 } from "lucide-react";
 import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Whisky, Tasting } from "@shared/schema";
@@ -256,6 +257,19 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
     },
   });
 
+  const ratingPromptMutation = useMutation({
+    mutationFn: (prompt: string | null) => fetch(`/api/tastings/${tasting.id}/rating-prompt`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hostId: participantId, prompt }),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", tasting.id] });
+    },
+  });
+
+  const [promptDismissed, setPromptDismissed] = useState(false);
+
   const handleScoreChange = useCallback((key: string, value: number) => {
     const clamped = Math.max(0, Math.min(100, Math.round(value * 10) / 10));
     setScores(prev => ({ ...prev, [key]: clamped }));
@@ -466,11 +480,54 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
               </Button>
             </div>
 
-            <div className="mt-2 text-[10px] font-serif text-muted-foreground/60 flex items-center gap-1">
-              <Eye className="w-3 h-3" />
-              {t("guided.participantsSee")}: {guidedStep === 0 ? t("guided.blindOnly") : guidedStep === 1 ? t("guided.nameVisible") : guidedStep === 2 ? t("guided.detailsVisible") : t("guided.everythingVisible")}
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <div className="text-[10px] font-serif text-muted-foreground/60 flex items-center gap-1 flex-1">
+                <Eye className="w-3 h-3" />
+                {t("guided.participantsSee")}: {guidedStep === 0 ? t("guided.blindOnly") : guidedStep === 1 ? t("guided.nameVisible") : guidedStep === 2 ? t("guided.detailsVisible") : t("guided.everythingVisible")}
+              </div>
+              <Button
+                variant={tasting.ratingPrompt === "rate" ? "default" : "outline"}
+                size="sm"
+                className="font-serif text-[10px] h-6 gap-1"
+                onClick={() => ratingPromptMutation.mutate(tasting.ratingPrompt === "rate" ? null : "rate")}
+                disabled={ratingPromptMutation.isPending}
+                data-testid="guided-host-prompt-rate"
+              >
+                <Bell className="w-3 h-3" />
+                {tasting.ratingPrompt === "rate" ? t("focus.hostPromptClear") : t("focus.hostPromptRate")}
+              </Button>
+              <Button
+                variant={tasting.ratingPrompt === "final" ? "default" : "outline"}
+                size="sm"
+                className="font-serif text-[10px] h-6 gap-1"
+                onClick={() => ratingPromptMutation.mutate(tasting.ratingPrompt === "final" ? null : "final")}
+                disabled={ratingPromptMutation.isPending}
+                data-testid="guided-host-prompt-final"
+              >
+                <Bell className="w-3 h-3" />
+                {tasting.ratingPrompt === "final" ? t("focus.hostPromptClear") : t("focus.hostPromptFinal")}
+              </Button>
             </div>
           </div>
+        )}
+
+        {!isHost && tasting.ratingPrompt && !promptDismissed && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between"
+            data-testid="guided-rating-prompt-banner"
+          >
+            <div className="flex items-center gap-2">
+              <Bell className="w-4 h-4 text-amber-600" />
+              <span className="text-sm font-serif text-amber-800">
+                {tasting.ratingPrompt === "final" ? t("focus.promptFinalMessage") : t("focus.promptRateMessage")}
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" className="text-xs" onClick={() => setPromptDismissed(true)} data-testid="guided-button-dismiss-prompt">
+              {t("focus.promptDismiss")}
+            </Button>
+          </motion.div>
         )}
 
         {!isHost && (

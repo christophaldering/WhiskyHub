@@ -1851,9 +1851,35 @@ Respond ONLY with valid JSON, no markdown.`;
     try {
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
-      const { hostId } = req.body;
+      const { hostId, whiskyId } = req.body;
       if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can control the timer" });
-      const updated = await storage.updateTasting(req.params.id, { dramStartedAt: new Date() });
+
+      const timers: Record<string, number> = tasting.dramTimers ? JSON.parse(tasting.dramTimers) : {};
+      if (tasting.dramStartedAt && tasting.activeWhiskyId) {
+        const elapsed = Math.floor((Date.now() - new Date(tasting.dramStartedAt).getTime()) / 1000);
+        timers[tasting.activeWhiskyId] = (timers[tasting.activeWhiskyId] || 0) + elapsed;
+      }
+
+      const updated = await storage.updateTasting(req.params.id, {
+        dramStartedAt: new Date(),
+        dramTimers: JSON.stringify(timers),
+        activeWhiskyId: whiskyId || tasting.activeWhiskyId,
+      });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/rating-prompt", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId, prompt } = req.body;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can send prompts" });
+      const updated = await storage.updateTasting(req.params.id, {
+        ratingPrompt: prompt || null,
+      });
       res.json(updated);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -1864,9 +1890,10 @@ Respond ONLY with valid JSON, no markdown.`;
 
   app.post("/api/whiskies/ai-insights", async (req, res) => {
     try {
-      const { participantId, whiskyName, distillery, region, age, abv, caskInfluence, category, peatLevel } = req.body;
+      const { participantId, whiskyName, distillery, region, age, abv, caskInfluence, category, peatLevel, language } = req.body;
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
+      const lang = language === "de" ? "German" : "English";
 
       const openai = new OpenAI({
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -1896,7 +1923,7 @@ Respond ONLY with valid JSON, no markdown.`;
 - Any awards, notable reviews, or interesting production details
 - A fun or surprising fact that even experienced whisky enthusiasts might not know
 
-Write in a warm, conversational tone. Use the language that matches the whisky details provided. Do NOT use markdown headers or bullet points - write flowing prose paragraphs. Keep it informative but not overwhelming.`
+Write in a warm, conversational tone. ALWAYS respond in ${lang}. Do NOT use markdown headers or bullet points - write flowing prose paragraphs. Keep it informative but not overwhelming.`
           },
           {
             role: "user",
