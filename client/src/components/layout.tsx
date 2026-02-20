@@ -1,9 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
@@ -14,7 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { profileApi, tastingApi } from "@/lib/api";
 
 type NavItem = { href: string; icon: any; label: string; match?: (loc: string) => boolean };
-type NavGroup = { label: string; items: NavItem[] };
+type NavGroup = { label: string; items: NavItem[]; defaultOpen?: boolean };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -105,10 +105,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navGroups: NavGroup[] = [
     {
       label: t('navGroup.main'),
+      defaultOpen: true,
       items: [
         { href: "/app", icon: Home, label: t('nav.lobby') },
-        { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
-        { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         { href: "/sessions", icon: Wine, label: t('nav.sessions') },
         { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
       ],
@@ -134,6 +133,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
         { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
         { href: "/export-notes", icon: Download, label: t('nav.exportNotes') },
+        { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
         { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
       ],
     },
@@ -143,6 +143,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/friends", icon: Users, label: t('nav.friends') },
         { href: "/activity", icon: Rss, label: t('nav.activity') },
         { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
+      ],
+    },
+    {
+      label: t('navGroup.reference'),
+      items: [
+        { href: "/lexicon", icon: Library, label: t('nav.lexicon') },
+        { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
+        { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
+        { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
+        { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
+        { href: "/features", icon: LayoutGrid, label: t('nav.features') },
+        { href: "/about", icon: Info, label: t('nav.about') },
+        { href: "/donate", icon: Heart, label: t('nav.donate') },
       ],
     },
     ...((isHost || isAdmin) ? [
@@ -158,17 +171,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ],
       },
     ] : []),
-    {
-      label: t('navGroup.reference'),
-      items: [
-        { href: "/lexicon", icon: Library, label: t('nav.lexicon') },
-        { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
-        { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
-        { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
-        { href: "/donate", icon: Heart, label: t('nav.donate') },
-        { href: "/about", icon: Info, label: t('nav.about') },
-      ],
-    },
     ...(currentParticipant?.role === "admin" ? [
       {
         label: t('navGroup.admin'),
@@ -178,6 +180,39 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       },
     ] : []),
   ];
+
+  const activeGroupIndex = useMemo(() => {
+    for (let gi = 0; gi < navGroups.length; gi++) {
+      for (const item of navGroups[gi].items) {
+        const isActive = item.match ? item.match(location) : location === item.href;
+        if (isActive) return gi;
+      }
+    }
+    return 0;
+  }, [location, navGroups]);
+
+  const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    setExpandedGroups(prev => {
+      const next = { ...prev };
+      if (next[activeGroupIndex] === undefined) {
+        next[activeGroupIndex] = true;
+      }
+      return next;
+    });
+  }, [activeGroupIndex]);
+
+  const toggleGroup = (gi: number) => {
+    setExpandedGroups(prev => ({ ...prev, [gi]: !prev[gi] }));
+  };
+
+  const isGroupExpanded = (gi: number) => {
+    if (expandedGroups[gi] !== undefined) return expandedGroups[gi];
+    if (gi === activeGroupIndex) return true;
+    if (navGroups[gi].defaultOpen) return true;
+    return false;
+  };
 
   const desktopNavRef = useRef<HTMLElement>(null);
   const mobileNavRef = useRef<HTMLElement>(null);
@@ -219,37 +254,68 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       
-      <nav ref={navInnerRef} className="flex-1 overflow-y-auto p-3 space-y-1">
-        {navGroups.map((group, gi) => (
-          <div key={gi}>
-            {gi > 0 && <div className="border-t border-border/30 my-2" />}
-            <div className="px-3 pt-1 pb-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                {group.label}
-              </span>
+      <nav ref={navInnerRef} className="flex-1 overflow-y-auto p-3 space-y-0.5">
+        {navGroups.map((group, gi) => {
+          const expanded = isGroupExpanded(gi);
+          const groupHasActive = group.items.some(item =>
+            item.match ? item.match(location) : location === item.href
+          );
+          return (
+            <div key={gi}>
+              {gi > 0 && <div className="border-t border-border/20 my-1.5" />}
+              <button
+                onClick={() => toggleGroup(gi)}
+                className={cn(
+                  "w-full flex items-center justify-between px-3 py-1.5 rounded-sm transition-all duration-200 cursor-pointer group/header",
+                  groupHasActive
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                data-testid={`nav-group-toggle-${gi}`}
+              >
+                <span className={cn(
+                  "text-[10px] font-semibold uppercase tracking-wider",
+                  groupHasActive ? "text-primary/80" : "text-muted-foreground/70"
+                )}>
+                  {group.label}
+                  <span className="ml-1.5 text-[9px] font-normal normal-case tracking-normal opacity-60">
+                    ({group.items.length})
+                  </span>
+                </span>
+                <ChevronDown className={cn(
+                  "w-3 h-3 transition-transform duration-200",
+                  expanded ? "rotate-0" : "-rotate-90",
+                  groupHasActive ? "text-primary/60" : "text-muted-foreground/50"
+                )} />
+              </button>
+              <div className={cn(
+                "overflow-hidden transition-all duration-200",
+                expanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+              )}>
+                {group.items.map((item) => {
+                  const isActive = item.match ? item.match(location) : location === item.href;
+                  return (
+                    <Link key={item.href} href={item.href}>
+                      <div
+                        data-nav-active={isActive ? "true" : undefined}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-1.5 rounded-sm transition-all duration-300 cursor-pointer group",
+                          isActive
+                            ? "bg-secondary text-primary border-l-2 border-primary"
+                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                        )}
+                        onClick={() => setOpen(false)}
+                      >
+                        <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-primary")} />
+                        <span className={cn("text-sm font-medium truncate", isActive && "font-semibold")}>{item.label}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
-            {group.items.map((item) => {
-              const isActive = item.match ? item.match(location) : location === item.href;
-              return (
-                <Link key={item.href} href={item.href}>
-                  <div
-                    data-nav-active={isActive ? "true" : undefined}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-1.5 rounded-sm transition-all duration-300 cursor-pointer group",
-                      isActive
-                        ? "bg-secondary text-primary border-l-2 border-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                    )}
-                    onClick={() => setOpen(false)}
-                  >
-                    <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-primary")} />
-                    <span className={cn("text-sm font-medium truncate", isActive && "font-semibold")}>{item.label}</span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+          );
+        })}
       </nav>
 
       <div className="p-4 border-t border-border/40 space-y-3">
