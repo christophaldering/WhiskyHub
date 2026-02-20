@@ -613,10 +613,12 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Invalid status" });
     }
     if (status === "deleted" || status === "archived") {
+      if (!hostId) return res.status(400).json({ message: "hostId required for this action" });
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Not found" });
-      if (hostId && tasting.hostId !== hostId) {
-        return res.status(403).json({ message: "Only the host can perform this action" });
+      const requester = await storage.getParticipant(hostId);
+      if (tasting.hostId !== hostId && (!requester || requester.role !== "admin")) {
+        return res.status(403).json({ message: "Only the host or an admin can perform this action" });
       }
       if (status === "deleted" && tasting.status === "open") {
         return res.status(400).json({ message: "Cannot delete an active session. Close it first." });
@@ -1127,7 +1129,7 @@ export async function registerRoutes(
 
   app.get("/api/whisky-of-the-day", async (_req, res) => {
     try {
-      const allWhiskies = await storage.getAllWhiskies();
+      const allWhiskies = await storage.getActiveWhiskies();
       if (allWhiskies.length === 0) return res.json(null);
 
       const today = new Date().toISOString().split("T")[0];
@@ -2375,7 +2377,7 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
       const file = (req as any).file as Express.Multer.File;
       if (!file) return res.status(400).json({ message: "No photo uploaded" });
 
-      const allWhiskies = await storage.getAllWhiskies();
+      const allWhiskies = await storage.getActiveWhiskies();
       const benchmarks = await storage.getBenchmarkEntries();
       const dbWhiskyNames = Array.from(new Set(allWhiskies.map(w => w.name))).slice(0, 200);
       const benchmarkNames = Array.from(new Set(benchmarks.map(b => b.whiskyName))).slice(0, 200);
@@ -2644,7 +2646,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
       const file = (req as any).file as Express.Multer.File;
       if (!file) return res.status(400).json({ message: "No photo uploaded" });
 
-      const allWhiskies = await storage.getAllWhiskies();
+      const allWhiskies = await storage.getActiveWhiskies();
       const benchmarks = await storage.getBenchmarkEntries();
       const dbWhiskyNames = Array.from(new Set(allWhiskies.map(w => w.name))).slice(0, 200);
       const benchmarkNames = Array.from(new Set(benchmarks.map(b => b.whiskyName))).slice(0, 200);
@@ -2852,7 +2854,7 @@ ${flavorProfile.topWhiskies?.length ? `Top-rated whiskies: ${flavorProfile.topWh
       const participant = await storage.getParticipant(participantId);
       if (!participant) return res.status(404).json({ message: "Participant not found" });
 
-      const allWhiskies = await storage.getAllWhiskies();
+      const allWhiskies = await storage.getActiveWhiskies();
       const benchmarks = await storage.getBenchmarkEntries();
       const dbWhiskyNames = Array.from(new Set(allWhiskies.map(w => w.name))).slice(0, 200);
       const benchmarkNames = Array.from(new Set(benchmarks.map(b => b.whiskyName))).slice(0, 200);
@@ -3466,7 +3468,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const lineupPeats = new Set(lineupWhiskies.map(w => w.peatLevel).filter(Boolean));
       const lineupIds = new Set(lineupWhiskies.map(w => w.id));
 
-      const allWhiskies = await storage.getAllWhiskies();
+      const allWhiskies = await storage.getActiveWhiskies();
       const candidates = allWhiskies.filter(w => !lineupIds.has(w.id));
 
       const scored = candidates.map(w => {
@@ -4427,7 +4429,7 @@ Key CaskSense Features:
       const file = (req as any).file;
       if (!file) return res.status(400).json({ message: "No file uploaded" });
 
-      const allWhiskies = await storage.getAllWhiskies();
+      const allWhiskies = await storage.getActiveWhiskies();
       const benchmarks = await storage.getBenchmarkEntries();
 
       const enrichEntries = (entries: any[]) => {
@@ -4660,7 +4662,7 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       });
 
-      const allWhiskies = await storage.getAllWhiskies();
+      const allWhiskies = await storage.getActiveWhiskies();
       const benchmarks = await storage.getBenchmarkEntries();
       const collectionItems = await storage.getWhiskybaseCollection(participantId);
 
@@ -4672,6 +4674,14 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
       for (const file of files) {
         const base64 = file.buffer.toString("base64");
         console.log(`Photo tasting scan: file=${file.originalname}, size=${(file.size / 1024).toFixed(0)}KB`);
+
+        let photoStoredUrl: string | null = null;
+        try {
+          photoStoredUrl = await uploadBufferToObjectStorage(objectStorage, file.buffer, file.mimetype);
+          console.log(`Photo stored in Object Storage: ${photoStoredUrl}`);
+        } catch (uploadErr: any) {
+          console.error(`Failed to store photo in Object Storage: ${uploadErr.message}`);
+        }
 
         const response = await openai.chat.completions.create({
           model: "gpt-4o",
@@ -4803,6 +4813,10 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
 
           if (!identified.whiskybaseSearch) {
             identified.whiskybaseSearch = [identified.name, identified.distillery].filter(Boolean).join(" ");
+          }
+
+          if (!identified.imageUrl && photoStoredUrl) {
+            identified.imageUrl = photoStoredUrl;
           }
 
           results.push({

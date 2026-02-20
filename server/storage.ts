@@ -64,6 +64,7 @@ export interface IStorage {
   // Whiskies
   getWhiskiesForTasting(tastingId: string): Promise<Whisky[]>;
   getAllWhiskies(): Promise<Whisky[]>;
+  getActiveWhiskies(): Promise<Whisky[]>;
   getWhisky(id: string): Promise<Whisky | undefined>;
   createWhisky(data: InsertWhisky): Promise<Whisky>;
   updateWhisky(id: string, data: Partial<InsertWhisky>): Promise<Whisky | undefined>;
@@ -435,6 +436,13 @@ export class DatabaseStorage implements IStorage {
 
   async getAllWhiskies(): Promise<Whisky[]> {
     return db.select().from(whiskies);
+  }
+
+  async getActiveWhiskies(): Promise<Whisky[]> {
+    const deletedTastingIds = await db.select({ id: tastings.id }).from(tastings).where(eq(tastings.status, "deleted"));
+    const deletedIds = deletedTastingIds.map(t => t.id);
+    if (deletedIds.length === 0) return db.select().from(whiskies);
+    return db.select().from(whiskies).where(sql`${whiskies.tastingId} NOT IN (${sql.join(deletedIds.map(id => sql`${id}`), sql`, `)})`);
   }
 
   async getWhisky(id: string): Promise<Whisky | undefined> {

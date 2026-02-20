@@ -5,6 +5,7 @@ import { useLocation } from "wouter";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, participantApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +71,9 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
   const [guestName, setGuestName] = useState("");
   const [guestPin, setGuestPin] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const hasUnsavedData = files.length > 0 || pastedText.trim().length > 0 || editingWhiskies.length > 0 || tastingTitle.trim().length > 0;
+  useUnsavedChanges(hasUnsavedData && step !== "creating");
 
   const analyzeMutation = useMutation({
     mutationFn: async () => {

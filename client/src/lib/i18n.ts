@@ -17,6 +17,7 @@ const resources = {
       },
       common: {
         signInToAccess: "Sign in to get started",
+        unsavedChangesWarning: "You have unsaved changes. Are you sure you want to leave this page?",
       },
       guestPreview: {
         profile: "Build your tasting identity with a personal profile, flavor preferences, and tasting statistics.",
@@ -934,6 +935,8 @@ const resources = {
         photoHint: "JPG, PNG, WebP or GIF, max 2 MB",
         photoTooLarge: "Image must be under 2 MB",
         photoInvalidType: "Only JPG, PNG, WebP, and GIF images are allowed",
+        photoUploaded: "Photo uploaded successfully",
+        photoUploadError: "Photo upload failed. Please try again.",
         photoFormats: "JPG, PNG, WebP or GIF, max 2 MB",
         uploadError: "Upload failed. Please try again.",
         deletePhotoConfirm: "Remove this photo?",
@@ -1810,6 +1813,7 @@ const resources = {
       },
       common: {
         signInToAccess: "Anmelden und loslegen",
+        unsavedChangesWarning: "Du hast ungespeicherte Änderungen. Möchtest du die Seite wirklich verlassen?",
       },
       guestPreview: {
         profile: "Erstelle dein Tasting-Profil mit persönlichen Vorlieben, Geschmackspräferenzen und Statistiken.",
@@ -2727,6 +2731,8 @@ const resources = {
         photoHint: "JPG, PNG, WebP oder GIF, max 2 MB",
         photoTooLarge: "Bild muss kleiner als 2 MB sein",
         photoInvalidType: "Nur JPG, PNG, WebP und GIF Bilder erlaubt",
+        photoUploaded: "Foto erfolgreich hochgeladen",
+        photoUploadError: "Foto-Upload fehlgeschlagen. Bitte erneut versuchen.",
         photoFormats: "JPG, PNG, WebP oder GIF, max 2 MB",
         uploadError: "Upload fehlgeschlagen. Bitte erneut versuchen.",
         deletePhotoConfirm: "Dieses Foto entfernen?",

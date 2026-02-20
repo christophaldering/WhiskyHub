@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { GuestPreview } from "@/components/guest-preview";
 import { AiTastingImportDialog } from "@/components/ai-tasting-import";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 
 export default function Sessions() {
   const { t } = useTranslation();
@@ -42,6 +43,9 @@ export default function Sessions() {
   const [guestLoading, setGuestLoading] = useState(false);
   const [guestError, setGuestError] = useState("");
   const [pendingAction, setPendingAction] = useState<"create" | "photo" | "join" | null>(null);
+
+  const hasUnsavedCreate = showCreateForm && newTitle.trim().length > 0;
+  useUnsavedChanges(hasUnsavedCreate);
 
   const { data: tastings = [], isLoading } = useQuery({
     queryKey: ["tastings", currentParticipant?.id],

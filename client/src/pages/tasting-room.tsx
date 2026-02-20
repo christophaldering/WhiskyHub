@@ -17,7 +17,7 @@ import DiscussionPanel from "@/components/discussion-panel";
 import ReflectionPanel from "@/components/reflection-panel";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,7 +30,72 @@ import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, participantApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Whisky, Tasting } from "@shared/schema";
+
+function QuickImageUpload({ whisky, tastingId, size = "lg" }: { whisky: Whisky; tastingId: string; size?: "md" | "lg" }) {
+  const { t } = useTranslation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
+
+  const dim = size === "lg" ? "w-40 h-40" : "w-20 h-20";
+  const iconSize = size === "lg" ? "w-8 h-8" : "w-5 h-5";
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type)) {
+      toast({ title: t("whisky.photoInvalidType"), variant: "destructive" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: t("whisky.photoTooLarge"), variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    try {
+      await whiskyApi.uploadImage(whisky.id, file);
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+      toast({ title: t("whisky.photoUploaded") });
+    } catch {
+      toast({ title: t("whisky.photoUploadError"), variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="relative group/img mx-auto">
+      <WhiskyThumbnail whisky={whisky} size={size} />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleUpload}
+        className="hidden"
+        data-testid={`input-quick-upload-${whisky.id}`}
+      />
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading}
+        className={cn(
+          dim,
+          "absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer"
+        )}
+        data-testid={`button-quick-upload-${whisky.id}`}
+      >
+        {uploading ? (
+          <Loader2 className={cn(iconSize, "text-white animate-spin")} />
+        ) : (
+          <Camera className={cn(iconSize, "text-white")} />
+        )}
+      </button>
+    </div>
+  );
+}
 
 function WhiskyThumbnail({ whisky, size = "sm" }: { whisky: Whisky; size?: "sm" | "md" | "lg" }) {
   const [imgError, setImgError] = useState(false);
@@ -1619,7 +1684,9 @@ export default function TastingRoom() {
               return (
                 <div className="flex items-center gap-4 mb-6 p-4 bg-card border border-border/50 rounded-lg lg:hidden" data-testid="inline-whisky-header">
                   <div className="flex-shrink-0">
-                    {blind.showImage ? (
+                    {isHost && (tasting.status === "draft" || tasting.status === "open") ? (
+                      <QuickImageUpload whisky={activeWhisky} tastingId={tasting.id} size="md" />
+                    ) : blind.showImage ? (
                       <WhiskyThumbnail whisky={activeWhisky} size="md" />
                     ) : (
                       <div className="w-20 h-20 rounded-full bg-secondary/30 border border-secondary flex items-center justify-center">
@@ -1674,7 +1741,9 @@ export default function TastingRoom() {
                   <div className="bg-card border border-border/50 shadow-sm p-8 text-center relative overflow-hidden group">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50"></div>
                     <div className="mx-auto mb-6">
-                      {blind.showImage ? (
+                      {isHost && (tasting.status === "draft" || tasting.status === "open") ? (
+                        <QuickImageUpload whisky={activeWhisky} tastingId={tasting.id} size="lg" />
+                      ) : blind.showImage ? (
                         <WhiskyThumbnail whisky={activeWhisky} size="lg" />
                       ) : (
                         <div className="w-40 h-40 rounded-full bg-secondary/30 border border-secondary flex items-center justify-center mx-auto">

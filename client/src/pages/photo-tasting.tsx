@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { tastingApi, photoTastingApi } from "@/lib/api";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 
 type IdentifiedWhisky = {
   name: string;
@@ -62,6 +63,9 @@ export default function PhotoTasting() {
   const [tastingTitle, setTastingTitle] = useState("");
   const [tastingDate, setTastingDate] = useState(new Date().toISOString().split("T")[0]);
   const [tastingLocation, setTastingLocation] = useState("");
+
+  const hasUnsavedData = photos.length > 0 || whiskies.length > 0 || tastingTitle.trim().length > 0;
+  useUnsavedChanges(hasUnsavedData && step !== "done");
 
   const handlePhotosSelected = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
