@@ -388,6 +388,12 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
     };
   }, []);
 
+  useEffect(() => {
+    if (isLocked && isDirtyRef.current && activeWhisky?.id) {
+      flushSave(activeWhisky.id);
+    }
+  }, [isLocked, activeWhisky?.id, flushSave]);
+
   const handleScoreChange = useCallback((key: string, value: number) => {
     const clamped = Math.max(0, Math.min(100, Math.round(value * 10) / 10));
     setScores(prev => ({ ...prev, [key]: clamped }));
@@ -395,19 +401,6 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
     triggerAutoSave();
   }, [triggerAutoSave]);
 
-  const handleSave = () => {
-    if (!participantId) return;
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    saveMutation.mutate({
-      tastingId: tasting.id,
-      whiskyId: activeWhisky.id,
-      participantId,
-      ...scores,
-      notes,
-      guessAbv: guessAbv ?? undefined,
-      guessAge: guessAge || undefined,
-    });
-  };
 
   const goToDram = (idx: number) => {
     if (idx >= 0 && idx < whiskies.length) {
@@ -766,21 +759,6 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
                   </div>
                 )}
 
-                <Button
-                  className={cn(
-                    "w-full h-11 font-serif tracking-wide transition-all",
-                    !isDirty && existingRating ? "bg-secondary text-primary hover:bg-secondary" : "bg-primary text-primary-foreground hover:bg-primary/90"
-                  )}
-                  onClick={handleSave}
-                  disabled={isLocked || (!isDirty && !!existingRating) || saveMutation.isPending}
-                  data-testid="focus-button-save"
-                >
-                  {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : isDirty || !existingRating ? (
-                    <span className="flex items-center gap-2">{t("evaluation.save")} <ChevronRight className="w-4 h-4" /></span>
-                  ) : (
-                    <span className="flex items-center gap-2"><Check className="w-4 h-4" /> {t("evaluation.saved")}</span>
-                  )}
-                </Button>
               </div>
             )}
 

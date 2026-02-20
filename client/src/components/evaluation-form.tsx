@@ -2,10 +2,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Check, Lock, ChevronRight, ExternalLink } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Lock, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
@@ -147,21 +146,14 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
     triggerAutoSave();
   }, [triggerAutoSave]);
 
-  const handleSave = () => {
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    if (!participantId) return;
-    saveMutation.mutate({
-      tastingId: tasting.id,
-      whiskyId: whisky.id,
-      participantId,
-      ...scores,
-      notes,
-      guessAbv: guessAbv ?? undefined,
-      guessAge: guessAge || undefined,
-    });
-  };
 
   const isLocked = tasting.status !== "open" && tasting.status !== "draft";
+
+  useEffect(() => {
+    if (isLocked && isDirtyRef.current) {
+      flushSave(whisky.id);
+    }
+  }, [isLocked, whisky.id, flushSave]);
 
   const categories = [
     { id: "nose", label: t('evaluation.nose') },
@@ -328,23 +320,6 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
         </div>
       </CardContent>
 
-      <CardFooter className="pb-8">
-        <Button
-          className={cn(
-            "w-full h-12 text-lg font-serif transition-all duration-300 tracking-wide",
-            !isDirty && existingRating ? "bg-secondary text-primary hover:bg-secondary" : "bg-primary text-primary-foreground hover:bg-primary/90"
-          )}
-          onClick={handleSave}
-          disabled={isLocked || (!isDirty && !!existingRating) || saveMutation.isPending}
-          data-testid="button-save-rating"
-        >
-          {saveMutation.isPending ? "Saving..." : isDirty || !existingRating ? (
-            <span className="flex items-center gap-2">{t('evaluation.save')} <ChevronRight className="w-4 h-4" /></span>
-          ) : (
-            <span className="flex items-center gap-2"><Check className="w-4 h-4" /> {t('evaluation.saved')}</span>
-          )}
-        </Button>
-      </CardFooter>
     </Card>
   );
 }
