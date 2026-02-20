@@ -321,8 +321,8 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
 
   if (isWaiting) {
     return (
-      <div className="fixed inset-0 bg-background z-50 overflow-y-auto" data-testid="guided-tasting-screen">
-        <div className="min-h-screen flex flex-col items-center justify-center max-w-lg mx-auto px-6 text-center">
+      <div className="fixed inset-0 bg-background z-50 overflow-y-auto" style={{ height: '100dvh' }} data-testid="guided-tasting-screen">
+        <div className="flex flex-col items-center justify-center max-w-lg mx-auto px-6 text-center" style={{ minHeight: '100dvh' }}>
           <Button variant="ghost" size="sm" onClick={onExit} className="absolute top-4 left-4 font-serif text-xs" data-testid="button-exit-guided">
             <ChevronLeft className="w-4 h-4 mr-1" /> {t("guided.backToRoom")}
           </Button>
@@ -385,9 +385,9 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
   if (!activeWhisky) return null;
 
   return (
-    <div className="fixed inset-0 bg-background z-50 overflow-y-auto" data-testid="guided-tasting-screen">
+    <div className="fixed inset-0 bg-background z-50 overflow-y-auto" style={{ height: '100dvh' }} data-testid="guided-tasting-screen">
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500/60 via-primary/40 to-emerald-500/60" />
-      <div className="min-h-screen flex flex-col max-w-2xl mx-auto px-4 py-4">
+      <div className="flex flex-col max-w-2xl mx-auto px-4 pt-4 pb-[env(safe-area-inset-bottom,16px)]" style={{ minHeight: '100dvh' }}>
         <header className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={onExit} className="font-serif text-xs gap-1" data-testid="button-exit-guided">

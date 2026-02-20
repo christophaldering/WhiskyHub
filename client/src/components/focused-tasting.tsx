@@ -331,9 +331,9 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
   ];
 
   return (
-    <div className="fixed inset-0 bg-background z-50 overflow-y-auto" data-testid="focused-tasting-screen">
+    <div className="fixed inset-0 bg-background z-50 overflow-y-auto" style={{ height: '100dvh' }} data-testid="focused-tasting-screen">
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500/60 via-primary/40 to-amber-500/60" />
-      <div className="min-h-screen flex flex-col max-w-2xl mx-auto px-4 py-4">
+      <div className="flex flex-col max-w-2xl mx-auto px-4 pt-4 pb-[env(safe-area-inset-bottom,16px)]" style={{ minHeight: '100dvh' }}>
         <header className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={onExit} className="font-serif text-xs gap-1" data-testid="button-exit-focus">
@@ -642,7 +642,7 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
           </motion.div>
         </AnimatePresence>
 
-        <footer className="flex items-center gap-3 pt-4 pb-6 border-t border-border/30 mt-auto">
+        <footer className="flex items-center gap-3 pt-4 pb-4 border-t border-border/30 mt-auto">
           <Button
             variant="ghost"
             className="flex-1 border border-border/50 font-serif"
