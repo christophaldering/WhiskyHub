@@ -56,8 +56,8 @@ const resources = {
         },
         hero: {
           badge: "Whisky. Perception. A bit of structure.",
-          title: "Whisky together — more mindfully.",
-          subtitle: "Organise blind tastings, capture nuances, and let the tool handle the busywork — so more attention stays with the dram. No expertise needed, no pretence.",
+          title: "Between structure, wonder and palate.",
+          subtitle: "A small experiment in perception, enjoyment and AI.",
           cta: "Start Your First Tasting",
           learnMore: "Learn More",
           avgRating: "Average Score",
@@ -1901,8 +1901,8 @@ const resources = {
         },
         hero: {
           badge: "Whisky. Wahrnehmung. Ein bisschen Struktur.",
-          title: "Whisky gemeinsam – bewusster.",
-          subtitle: "Organisiere Blind-Tastings, halte Nuancen fest und lass dir Routinearbeit abnehmen – damit mehr Aufmerksamkeit beim Dram bleibt. Ohne Vorkenntnisse, ohne Gehabe.",
+          title: "Zwischen Struktur, Staunen und Gaumen.",
+          subtitle: "Ein kleines Experiment in Wahrnehmung, Genuss und KI.",
           cta: "Erstes Tasting starten",
           learnMore: "Mehr erfahren",
           avgRating: "Durchschnittsnote",

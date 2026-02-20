@@ -111,7 +111,7 @@ export default function Landing() {
             <Button variant="ghost" size="sm" onClick={() => navigate("/tour")} className="font-serif text-xs sm:text-sm" data-testid="landing-nav-tour">
               {t("landing.nav.featureTour")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => document.getElementById("import-showcase")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-sm hidden sm:inline-flex" data-testid="landing-nav-explore">
+            <Button variant="ghost" size="sm" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-sm hidden sm:inline-flex" data-testid="landing-nav-explore">
               {t("landing.nav.explore")}
             </Button>
             {currentParticipant ? (
@@ -161,7 +161,7 @@ export default function Landing() {
                   {t("landing.hero.cta")}
                   <ArrowRight className="w-4 h-4" />
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => document.getElementById("import-showcase")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-base gap-2" data-testid="landing-hero-learn">
+                <Button size="lg" variant="outline" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-base gap-2" data-testid="landing-hero-learn">
                   {t("landing.hero.learnMore")}
                   <ChevronDown className="w-4 h-4" />
                 </Button>
@@ -179,78 +179,6 @@ export default function Landing() {
               </div>
             </motion.div>
           </div>
-        </div>
-      </section>
-
-      {/* ========== IMPORT SHOWCASE — THE BIG ONE ========== */}
-      <section id="import-showcase" className="py-20 sm:py-28 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-amber-900/8 via-orange-900/5 to-background" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={0}
-            variants={fadeUp}
-            className="text-center mb-6"
-          >
-            <div className="inline-flex items-center gap-2 bg-orange-500/10 text-orange-400 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
-              <Sparkles className="w-4 h-4" />
-              {t("landing.ai.badge")}
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-black text-primary mb-4 leading-tight">
-              {t("landing.ai.showcaseTitle")}
-            </h2>
-            <p className="text-muted-foreground text-lg sm:text-xl max-w-2xl mx-auto">
-              {t("landing.ai.showcaseSubtitle")}
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 mt-12">
-            {importCards.map((card, i) => (
-              <motion.div
-                key={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={i}
-                variants={fadeUp}
-                className={`relative rounded-2xl border ${card.borderColor} bg-card overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-amber-900/10 group`}
-                data-testid={`landing-import-card-${i}`}
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-50 group-hover:opacity-80 transition-opacity`} />
-                <div className="relative p-6 sm:p-8 flex flex-col h-full">
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className={`w-14 h-14 rounded-xl ${card.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                      <card.icon className="w-7 h-7" />
-                    </div>
-                    <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${card.tagBg}`}>
-                      {card.tag}
-                    </span>
-                  </div>
-                  <h3 className="font-serif font-black text-primary text-xl sm:text-2xl mb-3 leading-snug">
-                    {card.title}
-                  </h3>
-                  <p className="text-muted-foreground text-sm sm:text-base leading-relaxed flex-1">
-                    {card.desc}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={3}
-            variants={fadeUp}
-            className="text-center mt-10"
-          >
-            <p className="text-muted-foreground/80 text-sm italic max-w-xl mx-auto">
-              {t("landing.ai.desc")}
-            </p>
-          </motion.div>
         </div>
       </section>
 
@@ -284,6 +212,43 @@ export default function Landing() {
           </div>
         </section>
       )}
+
+      {/* Features */}
+      <section id="features" className="py-20 sm:py-28">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={0}
+            variants={fadeUp}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.features.title")}</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("landing.features.subtitle")}</p>
+          </motion.div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((f, i) => (
+              <motion.div
+                key={f.titleKey}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                custom={i}
+                variants={fadeUp}
+                className="bg-card border border-border/50 rounded-xl p-6 hover:shadow-md hover:border-amber-700/30 transition-all group"
+                data-testid={`landing-feature-${i}`}
+              >
+                <div className={`w-12 h-12 rounded-lg ${f.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <f.icon className="w-6 h-6" />
+                </div>
+                <h3 className="font-serif font-bold text-primary text-lg mb-2">{t(f.titleKey)}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{t(f.descKey)}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Origin Story */}
       <section className="py-20 sm:py-28" id="story">
@@ -380,40 +345,75 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="py-20 sm:py-28">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      {/* ========== IMPORT SHOWCASE ========== */}
+      <section id="import-showcase" className="py-20 sm:py-28 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-amber-900/8 via-orange-900/5 to-background" />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             custom={0}
             variants={fadeUp}
-            className="text-center mb-16"
+            className="text-center mb-6"
           >
-            <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.features.title")}</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("landing.features.subtitle")}</p>
+            <div className="inline-flex items-center gap-2 bg-orange-500/10 text-orange-400 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
+              <Sparkles className="w-4 h-4" />
+              {t("landing.ai.badge")}
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-black text-primary mb-4 leading-tight">
+              {t("landing.ai.showcaseTitle")}
+            </h2>
+            <p className="text-muted-foreground text-lg sm:text-xl max-w-2xl mx-auto">
+              {t("landing.ai.showcaseSubtitle")}
+            </p>
           </motion.div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((f, i) => (
+
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 mt-12">
+            {importCards.map((card, i) => (
               <motion.div
-                key={f.titleKey}
+                key={i}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
                 custom={i}
                 variants={fadeUp}
-                className="bg-card border border-border/50 rounded-xl p-6 hover:shadow-md hover:border-amber-700/30 transition-all group"
-                data-testid={`landing-feature-${i}`}
+                className={`relative rounded-2xl border ${card.borderColor} bg-card overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-amber-900/10 group`}
+                data-testid={`landing-import-card-${i}`}
               >
-                <div className={`w-12 h-12 rounded-lg ${f.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <f.icon className="w-6 h-6" />
+                <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-50 group-hover:opacity-80 transition-opacity`} />
+                <div className="relative p-6 sm:p-8 flex flex-col h-full">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className={`w-14 h-14 rounded-xl ${card.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                      <card.icon className="w-7 h-7" />
+                    </div>
+                    <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${card.tagBg}`}>
+                      {card.tag}
+                    </span>
+                  </div>
+                  <h3 className="font-serif font-black text-primary text-xl sm:text-2xl mb-3 leading-snug">
+                    {card.title}
+                  </h3>
+                  <p className="text-muted-foreground text-sm sm:text-base leading-relaxed flex-1">
+                    {card.desc}
+                  </p>
                 </div>
-                <h3 className="font-serif font-bold text-primary text-lg mb-2">{t(f.titleKey)}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{t(f.descKey)}</p>
               </motion.div>
             ))}
           </div>
+
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={3}
+            variants={fadeUp}
+            className="text-center mt-10"
+          >
+            <p className="text-muted-foreground/80 text-sm italic max-w-xl mx-auto">
+              {t("landing.ai.desc")}
+            </p>
+          </motion.div>
         </div>
       </section>
 
