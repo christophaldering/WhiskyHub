@@ -227,6 +227,27 @@ function parseArrayRows(raw: any[][], errors: string[]): { rows: Record<string, 
   return { rows, errors };
 }
 
+async function tryFetchWhiskybaseImage(whiskybaseUrlOrId: string | null | undefined, objectStorage: ObjectStorageService): Promise<string | null> {
+  if (!whiskybaseUrlOrId) return null;
+  try {
+    let wbId: string | null = null;
+    if (/^\d+$/.test(whiskybaseUrlOrId.trim())) {
+      wbId = whiskybaseUrlOrId.trim();
+    } else {
+      wbId = whiskybaseUrlOrId.match(/\/whisky\/(\d+)/)?.[1] || null;
+    }
+    if (!wbId) return null;
+    const imgUrl = `https://static.whiskybase.com/storage/whiskies/${wbId}/${wbId}-big.jpg`;
+    const testResp = await fetch(imgUrl, { method: "HEAD" });
+    if (testResp.ok) {
+      return await downloadImageFromUrl(imgUrl, objectStorage);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 async function downloadImageFromUrl(url: string, objectStorage: ObjectStorageService): Promise<string | null> {
   try {
     const response = await fetch(url);
@@ -347,6 +368,42 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/participants/login", async (req, res) => {
+    try {
+      const { email, pin } = req.body;
+      if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        return res.status(400).json({ message: "A valid email is required" });
+      }
+      if (!pin || typeof pin !== "string") {
+        return res.status(400).json({ message: "PIN is required" });
+      }
+      const ADMIN_EMAIL = "christoph.aldering@googlemail.com";
+      const existing = await storage.getParticipantByEmail(email.trim());
+      if (!existing) {
+        return res.status(404).json({ message: "No account found with this email. Please register first." });
+      }
+      if (!existing.pin) {
+        await storage.updateParticipantPin(existing.id, pin);
+        if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
+          await storage.updateParticipantRole(existing.id, "admin");
+        }
+        const updated = await storage.getParticipant(existing.id);
+        return res.json(updated);
+      }
+      if (pin !== existing.pin) {
+        return res.status(401).json({ message: "Invalid PIN" });
+      }
+      if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
+        await storage.updateParticipantRole(existing.id, "admin");
+        const updated = await storage.getParticipant(existing.id);
+        return res.json(updated);
+      }
+      return res.json(existing);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.post("/api/participants/guest", async (req, res) => {
     try {
       const { name } = req.body;
@@ -461,10 +518,18 @@ export async function registerRoutes(
   app.post("/api/participants/forgot-pin", async (req, res) => {
     try {
       const { name, email } = req.body;
-      if (!name || !email) return res.status(400).json({ message: "Name and email are required" });
-      const participant = await storage.getParticipantByName(name.trim());
-      if (!participant || !participant.email || participant.email.toLowerCase() !== email.trim().toLowerCase()) {
-        return res.status(404).json({ message: "No account found with that name and email" });
+      if (!email) return res.status(400).json({ message: "Email is required" });
+      let participant;
+      if (name) {
+        participant = await storage.getParticipantByName(name.trim());
+        if (!participant || !participant.email || participant.email.toLowerCase() !== email.trim().toLowerCase()) {
+          participant = await storage.getParticipantByEmail(email.trim());
+        }
+      } else {
+        participant = await storage.getParticipantByEmail(email.trim());
+      }
+      if (!participant) {
+        return res.status(404).json({ message: "No account found with that email" });
       }
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiry = new Date(Date.now() + 15 * 60 * 1000);
@@ -740,6 +805,13 @@ export async function registerRoutes(
     try {
       const data = insertWhiskySchema.parse(req.body);
       const whisky = await storage.createWhisky(data);
+      if (!whisky.imageUrl && whisky.whiskybaseId) {
+        const wbImage = await tryFetchWhiskybaseImage(whisky.whiskybaseId, objectStorage);
+        if (wbImage) {
+          const updated = await storage.updateWhisky(whisky.id, { imageUrl: wbImage });
+          return res.status(201).json(updated || whisky);
+        }
+      }
       res.status(201).json(whisky);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -749,6 +821,13 @@ export async function registerRoutes(
   app.patch("/api/whiskies/:id", async (req, res) => {
     const updated = await storage.updateWhisky(req.params.id, req.body);
     if (!updated) return res.status(404).json({ message: "Not found" });
+    if (!updated.imageUrl && updated.whiskybaseId) {
+      const wbImage = await tryFetchWhiskybaseImage(updated.whiskybaseId, objectStorage);
+      if (wbImage) {
+        const withImage = await storage.updateWhisky(updated.id, { imageUrl: wbImage });
+        return res.json(withImage || updated);
+      }
+    }
     res.json(updated);
   });
 
@@ -1010,6 +1089,14 @@ export async function registerRoutes(
             const imageUrl = await downloadImageFromUrl(imageRef, objectStorage);
             if (imageUrl) {
               await storage.updateWhisky(whisky.id, { imageUrl });
+              imageAttached = true;
+            }
+          }
+
+          if (!imageAttached && row.whiskybaseId) {
+            const wbImage = await tryFetchWhiskybaseImage(row.whiskybaseId, objectStorage);
+            if (wbImage) {
+              await storage.updateWhisky(whisky.id, { imageUrl: wbImage });
               imageAttached = true;
             }
           }
@@ -4539,20 +4626,9 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
           }
 
           if (!identified.imageUrl && identified.whiskybaseUrl) {
-            try {
-              const wbId = identified.whiskybaseUrl.match(/\/whisky\/(\d+)/)?.[1];
-              if (wbId) {
-                const imgUrl = `https://static.whiskybase.com/storage/whiskies/${wbId}/${wbId}-big.jpg`;
-                const testResp = await fetch(imgUrl, { method: "HEAD" });
-                if (testResp.ok) {
-                  const downloaded = await downloadImageFromUrl(imgUrl, objectStorage);
-                  if (downloaded) {
-                    identified.imageUrl = downloaded;
-                  }
-                }
-              }
-            } catch (e) {
-              console.log("Whiskybase image fetch failed for", identified.name);
+            const wbImage = await tryFetchWhiskybaseImage(identified.whiskybaseUrl, objectStorage);
+            if (wbImage) {
+              identified.imageUrl = wbImage;
             }
           }
 
@@ -4608,7 +4684,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       const createdWhiskies = [];
       for (let i = 0; i < whiskiesList.length; i++) {
         const w = whiskiesList[i];
-        const whisky = await storage.createWhisky({
+        let whisky = await storage.createWhisky({
           tastingId: tasting.id,
           name: w.name || "Unknown",
           distillery: w.distillery || null,
@@ -4622,8 +4698,16 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
           peatLevel: w.peatLevel || null,
           notes: w.notes || null,
           imageUrl: w.imageUrl || null,
+          whiskybaseId: w.whiskybaseId || null,
           sortOrder: i,
         });
+        if (!whisky.imageUrl && (w.whiskybaseUrl || w.whiskybaseId)) {
+          const wbImage = await tryFetchWhiskybaseImage(w.whiskybaseUrl || w.whiskybaseId, objectStorage);
+          if (wbImage) {
+            await storage.updateWhisky(whisky.id, { imageUrl: wbImage });
+            whisky = { ...whisky, imageUrl: wbImage } as typeof whisky;
+          }
+        }
         createdWhiskies.push(whisky);
       }
 
@@ -5100,7 +5184,7 @@ Important rules:
       const createdWhiskies = [];
       for (let i = 0; i < whiskyData.length; i++) {
         const w = whiskyData[i];
-        const whisky = await storage.createWhisky({
+        let whisky = await storage.createWhisky({
           tastingId: tasting.id,
           name: (w.name || `Whisky ${i + 1}`).trim(),
           distillery: w.distillery?.trim() || null,
@@ -5123,6 +5207,13 @@ Important rules:
           hostNotes: w.hostNotes?.trim() || null,
           hostSummary: w.hostSummary?.trim() || null,
         });
+        if (!whisky.imageUrl && (w.whiskybaseUrl || w.whiskybaseId)) {
+          const wbImage = await tryFetchWhiskybaseImage(w.whiskybaseUrl || w.whiskybaseId?.toString(), objectStorage);
+          if (wbImage) {
+            await storage.updateWhisky(whisky.id, { imageUrl: wbImage });
+            whisky = { ...whisky, imageUrl: wbImage } as typeof whisky;
+          }
+        }
         createdWhiskies.push(whisky);
       }
 

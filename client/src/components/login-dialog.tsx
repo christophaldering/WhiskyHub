@@ -34,7 +34,6 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const [resendSuccess, setResendSuccess] = useState(false);
 
   const [forgotPinMode, setForgotPinMode] = useState(false);
-  const [resetName, setResetName] = useState("");
   const [resetEmail, setResetEmail] = useState("");
   const [resetCode, setResetCode] = useState("");
   const [newPin, setNewPin] = useState("");
@@ -48,49 +47,59 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const handleSubmit = async () => {
     setError("");
 
-    if (!name.trim()) {
-      setError(t('login.nameRequired'));
+    if (!email.trim()) {
+      setError(t('login.emailRequired'));
       return;
     }
-
-    if (!isReturning) {
-      if (!email.trim()) {
-        setError(t('login.emailRequired'));
-        return;
-      }
-      if (!validateEmail(email.trim())) {
-        setError(t('login.invalidEmail'));
-        return;
-      }
+    if (!validateEmail(email.trim())) {
+      setError(t('login.invalidEmail'));
+      return;
     }
-
     if (!pin.trim()) {
       setError(t('login.pinRequired'));
       return;
     }
 
-    setLoading(true);
-    try {
-      const participant = await participantApi.loginOrCreate(
-        name.trim(),
-        pin,
-        isReturning ? undefined : email.trim(),
-        isReturning ? undefined : newsletterOptIn
-      );
-
-      if (!participant.emailVerified) {
-        setPendingParticipant({ id: participant.id, name: participant.name, role: participant.role, email: participant.email });
-        setVerifyMode(true);
-        setVerifyCode("");
-        setVerifyError("");
-      } else {
+    if (isReturning) {
+      setLoading(true);
+      try {
+        const participant = await participantApi.loginByEmail(email.trim(), pin);
         setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
         onClose();
+      } catch (e: any) {
+        setError(e.message || "Login failed");
+      } finally {
+        setLoading(false);
       }
-    } catch (e: any) {
-      setError(e.message || "Failed to join");
-    } finally {
-      setLoading(false);
+    } else {
+      if (!name.trim()) {
+        setError(t('login.nameRequired'));
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const participant = await participantApi.loginOrCreate(
+          name.trim(),
+          pin,
+          email.trim(),
+          newsletterOptIn
+        );
+
+        if (!participant.emailVerified) {
+          setPendingParticipant({ id: participant.id, name: participant.name, role: participant.role, email: participant.email });
+          setVerifyMode(true);
+          setVerifyCode("");
+          setVerifyError("");
+        } else {
+          setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
+          onClose();
+        }
+      } catch (e: any) {
+        setError(e.message || "Failed to join");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -138,8 +147,8 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   };
 
   const handleForgotPinRequest = async () => {
-    if (!resetName.trim() || !resetEmail.trim()) {
-      setResetError(t('forgotPin.nameEmailRequired'));
+    if (!resetEmail.trim()) {
+      setResetError(t('login.emailRequired'));
       return;
     }
     setResetLoading(true);
@@ -148,7 +157,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
       const res = await fetch("/api/participants/forgot-pin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: resetName.trim(), email: resetEmail.trim() }),
+        body: JSON.stringify({ email: resetEmail.trim() }),
       });
       const data = await res.json().catch(() => ({ message: "Request failed" }));
       if (!res.ok) {
@@ -195,7 +204,6 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const handleBackFromForgot = () => {
     setForgotPinMode(false);
     setResetStep("request");
-    setResetName("");
     setResetEmail("");
     setResetCode("");
     setNewPin("");
@@ -287,17 +295,6 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
             {resetStep === "request" && (
               <>
                 <div className="space-y-2">
-                  <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.name')}</Label>
-                  <Input
-                    value={resetName}
-                    onChange={(e) => setResetName(e.target.value)}
-                    placeholder={t('login.namePlaceholder')}
-                    className="bg-secondary/20"
-                    data-testid="input-reset-name"
-                    autoFocus
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.email')}</Label>
                   <Input
                     type="email"
@@ -306,6 +303,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                     placeholder={t('login.emailPlaceholder')}
                     className="bg-secondary/20"
                     data-testid="input-reset-email"
+                    autoFocus
                     onKeyDown={(e) => e.key === "Enter" && handleForgotPinRequest()}
                   />
                 </div>
@@ -419,30 +417,32 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
         </div>
 
         <div className="space-y-4 mt-4">
-          <div className="space-y-2">
-            <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.name')}</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('login.namePlaceholder')}
-              className="bg-secondary/20"
-              data-testid="input-name"
-            />
-          </div>
-
           {!isReturning && (
             <div className="space-y-2">
-              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.email')}</Label>
+              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.name')}</Label>
               <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('login.emailPlaceholder')}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t('login.namePlaceholder')}
                 className="bg-secondary/20"
-                data-testid="input-email"
+                data-testid="input-name"
+                autoFocus
               />
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.email')}</Label>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t('login.emailPlaceholder')}
+              className="bg-secondary/20"
+              data-testid="input-email"
+              autoFocus={isReturning}
+            />
+          </div>
 
           {!isReturning && email.trim() && (
             <div className="flex items-start space-x-2">
@@ -476,6 +476,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
               maxLength={6}
               className="bg-secondary/20"
               data-testid="input-pin"
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             />
             {!isReturning && (
               <p className="text-xs text-muted-foreground">{t('login.pinHint')}</p>

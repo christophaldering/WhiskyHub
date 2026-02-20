@@ -19,6 +19,8 @@ async function fetchJSON(url: string, options?: RequestInit) {
 export const participantApi = {
   loginOrCreate: (name: string, pin?: string, email?: string, newsletterOptIn?: boolean) =>
     fetchJSON("/participants", { method: "POST", body: JSON.stringify({ name, pin, email, newsletterOptIn }) }),
+  loginByEmail: (email: string, pin: string) =>
+    fetchJSON("/participants/login", { method: "POST", body: JSON.stringify({ email, pin }) }),
   guestJoin: (name: string) =>
     fetchJSON("/participants/guest", { method: "POST", body: JSON.stringify({ name }) }),
   get: (id: string) => fetchJSON(`/participants/${id}`),
