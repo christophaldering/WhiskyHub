@@ -23,6 +23,7 @@ import {
   Maximize2,
   Minimize2,
 } from "lucide-react";
+import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Whisky, Tasting } from "@shared/schema";
 
 interface RevealPresenterProps {
@@ -41,10 +42,11 @@ export function RevealPresenter({ tasting, whiskies, onExit }: RevealPresenterPr
   const currentAct = tasting.currentAct || "act1";
   const activeWhisky = whiskies[selectedWhiskyIdx] || whiskies[0];
 
+  const inputFocused = useInputFocused();
   const { data: participants = [] } = useQuery({
     queryKey: ["tasting-participants", tasting.id],
     queryFn: () => tastingApi.getParticipants(tasting.id),
-    refetchInterval: 10000,
+    refetchInterval: inputFocused ? false : 10000,
   });
 
   const updateStatus = useMutation({

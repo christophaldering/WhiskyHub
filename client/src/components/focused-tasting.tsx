@@ -27,6 +27,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Whisky, Tasting } from "@shared/schema";
 
 interface FocusedTastingProps {
@@ -65,10 +66,11 @@ function DramTimer({ startedAt }: { startedAt: Date | string | null }) {
 function RatingProgress({ tastingId, whiskyId, isHost, participantCount }: { tastingId: string; whiskyId: string; isHost: boolean; participantCount: number }) {
   const { t } = useTranslation();
 
+  const inputFocused = useInputFocused();
   const { data: ratings = [] } = useQuery({
     queryKey: ["ratings-whisky", whiskyId],
     queryFn: () => ratingApi.getForWhisky(whiskyId),
-    refetchInterval: isHost ? 5000 : 15000,
+    refetchInterval: inputFocused ? false : (isHost ? 5000 : 15000),
   });
 
   const ratedCount = ratings.length;
@@ -187,9 +189,9 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
   const revealIndex = tasting.revealIndex ?? 0;
   const revealStep = tasting.revealStep ?? 0;
 
-  const getBlindState = (idx: number, w?: Whisky) => {
+  const getBlindState = (idx: number, w?: Whisky, forEval = false) => {
     if (!isBlind) return { showName: true, showMeta: true, showImage: true };
-    if (isHost) return { showName: true, showMeta: true, showImage: true };
+    if (isHost && !forEval) return { showName: true, showMeta: true, showImage: true };
     if (idx < revealIndex) return { showName: true, showMeta: true, showImage: true };
     const photoRevealed = w?.photoRevealed ?? false;
     if (idx === revealIndex) return {
@@ -201,11 +203,13 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
   };
 
   const blind = getBlindState(activeIndex, activeWhisky);
+  const evalBlind = getBlindState(activeIndex, activeWhisky, true);
 
+  const inputFocused = useInputFocused();
   const { data: participants = [] } = useQuery({
     queryKey: ["tasting-participants", tasting.id],
     queryFn: () => tastingApi.getParticipants(tasting.id),
-    refetchInterval: 10000,
+    refetchInterval: inputFocused ? false : 10000,
   });
 
   const { data: existingRating } = useQuery({
@@ -352,12 +356,12 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
                 <span>{t("focus.dramLabel", { current: activeIndex + 1, total: whiskies.length })}</span>
               </div>
               <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary tracking-tight">
-                {blind.showName ? activeWhisky.name : `${t("blind.expressionLabel")} ${activeIndex + 1}`}
+                {evalBlind.showName ? activeWhisky.name : `${t("blind.expressionLabel")} ${activeIndex + 1}`}
               </h2>
-              {blind.showName && activeWhisky.distillery && (
+              {evalBlind.showName && activeWhisky.distillery && (
                 <p className="text-muted-foreground font-serif italic mt-1">{activeWhisky.distillery}</p>
               )}
-              {blind.showMeta && (
+              {evalBlind.showMeta && (
                 <div className="flex flex-wrap items-center justify-center gap-3 mt-2 text-sm font-mono text-muted-foreground">
                   {activeWhisky.age && <span>{activeWhisky.age === "NAS" ? "NAS" : `${activeWhisky.age}y`}</span>}
                   {activeWhisky.abv != null && <span>{activeWhisky.abv}%</span>}
@@ -369,7 +373,7 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
                   {activeWhisky.wbScore != null && <span className="text-primary font-bold">WB {activeWhisky.wbScore.toFixed(1)}</span>}
                 </div>
               )}
-              {!blind.showName && isBlind && (
+              {!evalBlind.showName && isBlind && (
                 <p className="text-xs text-muted-foreground font-serif italic mt-2">{t("blind.hidden")}</p>
               )}
             </div>
@@ -389,7 +393,7 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
               </motion.div>
             )}
 
-            {activeWhisky.hostSummary && blind.showMeta && (
+            {activeWhisky.hostSummary && evalBlind.showMeta && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -535,7 +539,7 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
               </div>
             )}
 
-            {(blind.showName || !isBlind) && (
+            {(evalBlind.showName || !isBlind) && (
               <AiInsightsPanel whisky={activeWhisky} tasting={tasting} />
             )}
           </motion.div>

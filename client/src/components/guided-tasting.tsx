@@ -33,6 +33,7 @@ import {
   Globe,
   Info,
 } from "lucide-react";
+import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Whisky, Tasting } from "@shared/schema";
 
 interface GuidedTastingProps {
@@ -43,10 +44,11 @@ interface GuidedTastingProps {
 
 function GuidedRatingProgress({ tastingId, whiskyId, participantCount }: { tastingId: string; whiskyId: string; participantCount: number }) {
   const { t } = useTranslation();
+  const inputFocused = useInputFocused();
   const { data: ratings = [] } = useQuery({
     queryKey: ["ratings-whisky", whiskyId],
     queryFn: () => ratingApi.getForWhisky(whiskyId),
-    refetchInterval: 5000,
+    refetchInterval: inputFocused ? false : 5000,
   });
 
   const ratedCount = ratings.length;
@@ -193,10 +195,11 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
   const isWaiting = guidedIdx === -1;
   const activeWhisky = !isWaiting ? whiskies[guidedIdx] : null;
 
+  const inputFocused = useInputFocused();
   const { data: participants = [] } = useQuery({
     queryKey: ["tasting-participants", tasting.id],
     queryFn: () => tastingApi.getParticipants(tasting.id),
-    refetchInterval: 10000,
+    refetchInterval: inputFocused ? false : 10000,
   });
 
   const { data: existingRating } = useQuery({
@@ -274,8 +277,8 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
 
   const isLocked = tasting.status !== "open" && tasting.status !== "draft";
 
-  const getGuidedBlindState = () => {
-    if (isHost) return { showName: true, showMeta: true, showImage: true, showLinks: guidedStep >= 3 };
+  const getGuidedBlindState = (forEval = false) => {
+    if (isHost && !forEval) return { showName: true, showMeta: true, showImage: true, showLinks: guidedStep >= 3 };
     return {
       showName: guidedStep >= 1,
       showMeta: guidedStep >= 2,
@@ -285,6 +288,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
   };
 
   const blind = getGuidedBlindState();
+  const evalBlind = getGuidedBlindState(true);
 
   const stepLabels = [
     t("guided.stepBlind"),
@@ -504,7 +508,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                 <span>{t("guided.dramLabel", { current: guidedIdx + 1, total: whiskies.length })}</span>
               </div>
 
-              {blind.showImage && activeWhisky.imageUrl && (
+              {evalBlind.showImage && activeWhisky.imageUrl && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -513,14 +517,14 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                 >
                   <img
                     src={activeWhisky.imageUrl}
-                    alt={blind.showName ? activeWhisky.name : ""}
+                    alt={evalBlind.showName ? activeWhisky.name : ""}
                     className="w-32 h-40 object-contain mx-auto rounded-lg shadow-md"
                     data-testid="guided-whisky-image"
                   />
                 </motion.div>
               )}
 
-              {!blind.showImage && !blind.showName && (
+              {!evalBlind.showImage && !evalBlind.showName && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -531,7 +535,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
               )}
 
               <AnimatePresence mode="wait">
-                {blind.showName ? (
+                {evalBlind.showName ? (
                   <motion.h2
                     key="name"
                     initial={{ opacity: 0, y: 10 }}
@@ -553,7 +557,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                 )}
               </AnimatePresence>
 
-              {blind.showName && activeWhisky.distillery && (
+              {evalBlind.showName && activeWhisky.distillery && (
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -564,7 +568,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                 </motion.p>
               )}
 
-              {blind.showMeta && (
+              {evalBlind.showMeta && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -582,12 +586,12 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                 </motion.div>
               )}
 
-              {!blind.showName && (
+              {!evalBlind.showName && (
                 <p className="text-xs text-muted-foreground/50 font-serif italic mt-2">{t("guided.blindTasting")}</p>
               )}
             </div>
 
-            {activeWhisky.hostNotes && (isHost || blind.showLinks) && (
+            {activeWhisky.hostNotes && (isHost || evalBlind.showLinks) && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -601,7 +605,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
               </motion.div>
             )}
 
-            {activeWhisky.hostSummary && blind.showMeta && (
+            {activeWhisky.hostSummary && evalBlind.showMeta && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -746,7 +750,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
               </div>
             )}
 
-            {blind.showLinks && (
+            {evalBlind.showLinks && (
               <WhiskyEnrichment whisky={activeWhisky} />
             )}
           </motion.div>

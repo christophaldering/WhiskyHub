@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, MessageCircle, Lock } from "lucide-react";
+import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Tasting } from "@shared/schema";
 
 interface DiscussionMessage {
@@ -39,11 +40,12 @@ export default function DiscussionPanel({ tasting }: { tasting: Tasting }) {
   const [text, setText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const isOpen = tasting.status === "open";
+  const inputFocused = useInputFocused();
 
   const { data: messages = [] } = useQuery<DiscussionMessage[]>({
     queryKey: ["discussions", tasting.id],
     queryFn: () => discussionApi.get(tasting.id),
-    refetchInterval: 3000,
+    refetchInterval: inputFocused ? false : 3000,
     enabled: isOpen,
   });
 

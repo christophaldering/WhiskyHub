@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { BookOpen, Send, Lock, Eye, EyeOff } from "lucide-react";
+import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Tasting } from "@shared/schema";
 
 interface Reflection {
@@ -46,10 +47,11 @@ export default function ReflectionPanel({ tasting }: { tasting: Tasting }) {
           t("reflection.prompt4"),
         ];
 
+  const inputFocused = useInputFocused();
   const { data: allReflections = [] } = useQuery<Reflection[]>({
     queryKey: ["reflections", tasting.id],
     queryFn: () => reflectionApi.getAll(tasting.id),
-    refetchInterval: 5000,
+    refetchInterval: inputFocused ? false : 5000,
     enabled: isOpen,
   });
 

@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Camera, Upload, Trash2, X, Printer, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { useInputFocused } from "@/hooks/use-input-focused";
 import type { TastingPhoto, Whisky } from "@shared/schema";
 
 interface TastingPhotosProps {
@@ -27,10 +28,11 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
   const [lightboxPhoto, setLightboxPhoto] = useState<TastingPhoto | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const inputFocused = useInputFocused();
   const { data: photos = [] } = useQuery<TastingPhoto[]>({
     queryKey: ["tasting-photos", tastingId],
     queryFn: () => tastingPhotoApi.getAll(tastingId),
-    refetchInterval: 15000,
+    refetchInterval: inputFocused ? false : 15000,
   });
 
   const uploadMutation = useMutation({

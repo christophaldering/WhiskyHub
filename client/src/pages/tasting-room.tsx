@@ -34,6 +34,7 @@ import { tastingApi, whiskyApi, participantApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Whisky, Tasting } from "@shared/schema";
 
 function QuickImageUpload({ whisky, tastingId, size = "lg" }: { whisky: Whisky; tastingId: string; size?: "md" | "lg" }) {
@@ -1178,25 +1179,7 @@ export default function TastingRoom() {
     }
   };
 
-  const [inputFocused, setInputFocused] = useState(false);
-
-  useEffect(() => {
-    const handleFocusIn = (e: FocusEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
-        setInputFocused(true);
-      }
-    };
-    const handleFocusOut = () => {
-      setInputFocused(false);
-    };
-    document.addEventListener("focusin", handleFocusIn);
-    document.addEventListener("focusout", handleFocusOut);
-    return () => {
-      document.removeEventListener("focusin", handleFocusIn);
-      document.removeEventListener("focusout", handleFocusOut);
-    };
-  }, []);
+  const inputFocused = useInputFocused();
 
   const { data: tasting, isLoading: tastingLoading } = useQuery({
     queryKey: ["tasting", id],
@@ -1356,6 +1339,18 @@ export default function TastingRoom() {
   const getBlindState = (whiskyIdx: number, whisky?: Whisky) => {
     if (!isBlind) return { showName: true, showMeta: true, showImage: true };
     if (isHost) return { showName: true, showMeta: true, showImage: true };
+    if (whiskyIdx < revealIndex) return { showName: true, showMeta: true, showImage: true };
+    const photoRevealed = whisky?.photoRevealed ?? false;
+    if (whiskyIdx === revealIndex) return {
+      showName: revealStep >= 1,
+      showMeta: revealStep >= 2,
+      showImage: revealStep >= 3 || photoRevealed,
+    };
+    return { showName: false, showMeta: false, showImage: photoRevealed };
+  };
+
+  const getEvalBlindState = (whiskyIdx: number, whisky?: Whisky) => {
+    if (!isBlind) return { showName: true, showMeta: true, showImage: true };
     if (whiskyIdx < revealIndex) return { showName: true, showMeta: true, showImage: true };
     const photoRevealed = whisky?.photoRevealed ?? false;
     if (whiskyIdx === revealIndex) return {
@@ -1746,11 +1741,11 @@ export default function TastingRoom() {
           <div className="lg:col-span-8">
             {(() => {
               const activeIdx = whiskyList.findIndex((w: Whisky) => w.id === activeWhisky.id);
-              const blind = getBlindState(activeIdx, activeWhisky);
+              const blind = getEvalBlindState(activeIdx, activeWhisky);
               return (
                 <div className="flex items-center gap-4 mb-6 p-4 bg-card border border-border/50 rounded-lg lg:hidden" data-testid="inline-whisky-header">
                   <div className="flex-shrink-0">
-                    {isHost && (tasting.status === "draft" || tasting.status === "open") ? (
+                    {isHost && !isBlind && (tasting.status === "draft" || tasting.status === "open") ? (
                       <QuickImageUpload whisky={activeWhisky} tastingId={tasting.id} size="md" />
                     ) : blind.showImage ? (
                       <WhiskyThumbnail whisky={activeWhisky} size="md" />
@@ -1792,7 +1787,7 @@ export default function TastingRoom() {
                 {showAnalytics ? (
                   <RevealView whisky={activeWhisky} tasting={tasting} />
                 ) : (
-                  <EvaluationForm whisky={activeWhisky} tasting={tasting} blindState={getBlindState(whiskyList.findIndex((w: Whisky) => w.id === activeWhisky.id), activeWhisky)} />
+                  <EvaluationForm whisky={activeWhisky} tasting={tasting} blindState={getEvalBlindState(whiskyList.findIndex((w: Whisky) => w.id === activeWhisky.id), activeWhisky)} />
                 )}
               </motion.div>
             </AnimatePresence>

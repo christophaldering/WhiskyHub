@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, 
 import { useQuery } from "@tanstack/react-query";
 import { tastingApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Tasting, Whisky } from "@shared/schema";
 
 interface RevealViewProps {
@@ -14,12 +15,13 @@ interface RevealViewProps {
 
 export function RevealView({ whisky, tasting }: RevealViewProps) {
   const { t } = useTranslation();
+  const inputFocused = useInputFocused();
 
   const { data: analytics, isLoading } = useQuery({
     queryKey: ["analytics", tasting.id],
     queryFn: () => tastingApi.getAnalytics(tasting.id),
     enabled: tasting.status === "reveal" || tasting.status === "archived",
-    refetchInterval: 5000,
+    refetchInterval: inputFocused ? false : 5000,
   });
 
   if (isLoading || !analytics) {
