@@ -341,7 +341,9 @@ export default function Home() {
     setGuestCreateLoading(true);
     setGuestCreateError("");
     try {
-      const participant = await participantApi.loginOrCreate(guestCreateName.trim(), guestCreatePin || undefined);
+      const participant = guestCreatePin
+        ? await participantApi.loginOrCreate(guestCreateName.trim(), guestCreatePin)
+        : await participantApi.guestJoin(guestCreateName.trim());
       setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
       setShowGuestCreate(false);
       setGuestCreateName("");

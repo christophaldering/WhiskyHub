@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useLocation } from "wouter";
+import { LoginDialog } from "@/components/login-dialog";
 
 interface GuestPreviewProps {
   children: React.ReactNode;
@@ -11,10 +12,11 @@ interface GuestPreviewProps {
 
 export function GuestPreview({ children, featureTitle, featureDescription }: GuestPreviewProps) {
   const { t } = useTranslation();
-  const [, navigate] = useLocation();
+  const [showLogin, setShowLogin] = useState(false);
 
   return (
     <div className="relative">
+      <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
       <div className="pointer-events-none select-none" aria-hidden="true">
         <div className="opacity-50 blur-[1px]">
           {children}
@@ -26,7 +28,7 @@ export function GuestPreview({ children, featureTitle, featureDescription }: Gue
           <h3 className="font-serif text-lg font-semibold text-foreground">{featureTitle}</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">{featureDescription}</p>
           <Button
-            onClick={() => navigate("/app")}
+            onClick={() => setShowLogin(true)}
             className="gap-2"
             data-testid="button-guest-signin"
           >
