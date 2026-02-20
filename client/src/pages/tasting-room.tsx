@@ -42,9 +42,17 @@ function QuickImageUpload({ whisky, tastingId, size = "lg" }: { whisky: Whisky; 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
 
   const dim = size === "lg" ? "w-40 h-40" : "w-20 h-20";
   const iconSize = size === "lg" ? "w-8 h-8" : "w-5 h-5";
+
+  useEffect(() => {
+    if (whisky.imageUrl && localPreview) {
+      URL.revokeObjectURL(localPreview);
+      setLocalPreview(null);
+    }
+  }, [whisky.imageUrl, localPreview]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,12 +66,21 @@ function QuickImageUpload({ whisky, tastingId, size = "lg" }: { whisky: Whisky; 
       toast({ title: t("whisky.photoTooLarge"), variant: "destructive" });
       return;
     }
+    if (localPreview) URL.revokeObjectURL(localPreview);
+    const previewUrl = URL.createObjectURL(file);
+    setLocalPreview(previewUrl);
     setUploading(true);
     try {
-      await whiskyApi.uploadImage(whisky.id, file);
+      const updated = await whiskyApi.uploadImage(whisky.id, file);
+      queryClient.setQueryData(["whiskies", tastingId], (old: Whisky[] | undefined) => {
+        if (!old) return old;
+        return old.map((w: Whisky) => w.id === whisky.id ? { ...w, imageUrl: updated.imageUrl } : w);
+      });
       queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
       toast({ title: t("whisky.photoUploaded") });
     } catch {
+      if (localPreview) URL.revokeObjectURL(localPreview);
+      setLocalPreview(null);
       toast({ title: t("whisky.photoUploadError"), variant: "destructive" });
     } finally {
       setUploading(false);
@@ -71,9 +88,11 @@ function QuickImageUpload({ whisky, tastingId, size = "lg" }: { whisky: Whisky; 
     }
   };
 
+  const displayWhisky = localPreview ? { ...whisky, imageUrl: localPreview } : whisky;
+
   return (
     <div className="relative group/img mx-auto">
-      <WhiskyThumbnail whisky={whisky} size={size} />
+      <WhiskyThumbnail whisky={displayWhisky} size={size} />
       <input
         ref={fileInputRef}
         type="file"
