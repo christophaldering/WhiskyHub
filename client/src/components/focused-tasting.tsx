@@ -26,7 +26,6 @@ import {
   Lock,
   ChevronDown,
   ChevronUp,
-  Bell,
 } from "lucide-react";
 import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Whisky, Tasting } from "@shared/schema";
@@ -310,19 +309,6 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
     },
   });
 
-  const ratingPromptMutation = useMutation({
-    mutationFn: (prompt: string | null) => fetch(`/api/tastings/${tasting.id}/rating-prompt`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ hostId: participantId, prompt }),
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasting", tasting.id] });
-    },
-  });
-
-  const [promptDismissed, setPromptDismissed] = useState(false);
-
   const isLocked = tasting.status !== "open" && tasting.status !== "draft";
 
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -455,24 +441,6 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
           </div>
         </header>
 
-        {!isHost && tasting.ratingPrompt && !promptDismissed && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between"
-            data-testid="rating-prompt-banner"
-          >
-            <div className="flex items-center gap-2">
-              <Bell className="w-4 h-4 text-amber-600" />
-              <span className="text-sm font-serif text-amber-800">
-                {tasting.ratingPrompt === "final" ? t("focus.promptFinalMessage") : t("focus.promptRateMessage")}
-              </span>
-            </div>
-            <Button variant="ghost" size="sm" className="text-xs" onClick={() => setPromptDismissed(true)} data-testid="button-dismiss-prompt">
-              {t("focus.promptDismiss")}
-            </Button>
-          </motion.div>
-        )}
 
         {isHost && (
           <div className="mb-4 p-3 rounded-xl bg-primary/5 border border-primary/20" data-testid="focus-host-controls">
@@ -495,28 +463,6 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
                   <Eye className="w-3.5 h-3.5" /> {t("focus.revealNext")}
                 </Button>
               )}
-              <Button
-                variant={tasting.ratingPrompt === "rate" ? "default" : "outline"}
-                size="sm"
-                className="font-serif text-xs gap-1"
-                onClick={() => ratingPromptMutation.mutate(tasting.ratingPrompt === "rate" ? null : "rate")}
-                disabled={ratingPromptMutation.isPending}
-                data-testid="focus-host-prompt-rate"
-              >
-                <Bell className="w-3.5 h-3.5" />
-                {tasting.ratingPrompt === "rate" ? t("focus.hostPromptClear") : t("focus.hostPromptRate")}
-              </Button>
-              <Button
-                variant={tasting.ratingPrompt === "final" ? "default" : "outline"}
-                size="sm"
-                className="font-serif text-xs gap-1"
-                onClick={() => ratingPromptMutation.mutate(tasting.ratingPrompt === "final" ? null : "final")}
-                disabled={ratingPromptMutation.isPending}
-                data-testid="focus-host-prompt-final"
-              >
-                <Bell className="w-3.5 h-3.5" />
-                {tasting.ratingPrompt === "final" ? t("focus.hostPromptClear") : t("focus.hostPromptFinal")}
-              </Button>
             </div>
             {isBlind && (() => {
               const participantBlind = getBlindState(activeIndex, activeWhisky, true);

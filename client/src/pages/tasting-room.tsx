@@ -1,7 +1,5 @@
 import { useParams, useLocation } from "wouter";
 import { useState, useRef, useEffect } from "react";
-import { EvaluationForm } from "@/components/evaluation-form";
-import { RevealView } from "@/components/reveal-view";
 import { FocusedTasting } from "@/components/focused-tasting";
 import { GuidedTasting } from "@/components/guided-tasting";
 import { RevealPresenter } from "@/components/reveal-presenter";
@@ -19,7 +17,7 @@ import DiscussionPanel from "@/components/discussion-panel";
 import ReflectionPanel from "@/components/reflection-panel";
 import TastingPhotos from "@/components/tasting-photos";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1235,14 +1233,11 @@ export default function TastingRoom() {
     refetchInterval: inputFocused ? false : 5000,
   });
 
-  const [activeWhiskyId, setActiveWhiskyId] = useState<string | null>(null);
-  const [viewTab, setViewTab] = useState<"tasting" | "board">("tasting");
   const [focusMode, setFocusMode] = useState(false);
   const [guidedActive, setGuidedActive] = useState(false);
   const [guidedExited, setGuidedExited] = useState(false);
   const [presenterActive, setPresenterActive] = useState(false);
   const [presenterExited, setPresenterExited] = useState(false);
-  const [promptDismissed, setPromptDismissed] = useState(false);
 
   useEffect(() => {
     const handler = () => {
@@ -1254,44 +1249,6 @@ export default function TastingRoom() {
     return () => window.removeEventListener("casksense:exitFocusMode", handler);
   }, []);
 
-  const ratingPromptMutation = useMutation({
-    mutationFn: (prompt: string | null) => fetch(`/api/tastings/${id}/rating-prompt`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ hostId: currentParticipant?.id, prompt }),
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasting", id] });
-    },
-  });
-
-  const reorderMutation = useMutation({
-    mutationFn: (order: { id: string; sortOrder: number }[]) => whiskyApi.reorder(id!, order),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["whiskies", id] });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (whiskyId: string) => whiskyApi.delete(whiskyId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["whiskies", id] });
-    },
-  });
-
-  const revealPhotoMutation = useMutation({
-    mutationFn: ({ whiskyId, revealed }: { whiskyId: string; revealed: boolean }) => whiskyApi.revealPhoto(whiskyId, revealed, currentParticipant.id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["whiskies", id] });
-    },
-  });
-
-  const revealAllPhotosMutation = useMutation({
-    mutationFn: (revealed: boolean) => tastingApi.revealAllPhotos(id!, revealed, currentParticipant.id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["whiskies", id] });
-    },
-  });
 
   const toggleCoverRevealMutation = useMutation({
     mutationFn: (revealed: boolean) => tastingApi.toggleCoverImageReveal(id!, currentParticipant.id, revealed),
@@ -1299,29 +1256,6 @@ export default function TastingRoom() {
       queryClient.invalidateQueries({ queryKey: ["tasting", id] });
     },
   });
-
-  const handleMoveWhisky = (whiskyId: string, direction: "up" | "down") => {
-    const idx = whiskyList.findIndex((w: Whisky) => w.id === whiskyId);
-    if (idx < 0) return;
-    const newIdx = direction === "up" ? idx - 1 : idx + 1;
-    if (newIdx < 0 || newIdx >= whiskyList.length) return;
-
-    const newOrder = whiskyList.map((w: Whisky, i: number) => {
-      if (i === idx) return { id: w.id, sortOrder: newIdx };
-      if (i === newIdx) return { id: w.id, sortOrder: idx };
-      return { id: w.id, sortOrder: i };
-    });
-    reorderMutation.mutate(newOrder);
-  };
-
-  const handleDeleteWhisky = (whiskyId: string) => {
-    if (activeWhiskyId === whiskyId) {
-      const idx = whiskyList.findIndex((w: Whisky) => w.id === whiskyId);
-      const next = whiskyList[idx + 1] || whiskyList[idx - 1];
-      setActiveWhiskyId(next?.id || null);
-    }
-    deleteMutation.mutate(whiskyId);
-  };
 
   if (!currentParticipant) {
     return (
@@ -1391,9 +1325,7 @@ export default function TastingRoom() {
     );
   }
 
-  const activeWhisky = whiskyList.find((w: Whisky) => w.id === activeWhiskyId) || whiskyList[0];
   const isHost = tasting.hostId === currentParticipant.id;
-  const showAnalytics = tasting.status === "reveal" || tasting.status === "archived";
 
   const isBlind = tasting.blindMode && (tasting.status === "draft" || tasting.status === "open" || tasting.status === "closed");
   const revealIndex = tasting.revealIndex ?? 0;
@@ -1402,18 +1334,6 @@ export default function TastingRoom() {
   const getBlindState = (whiskyIdx: number, whisky?: Whisky) => {
     if (!isBlind) return { showName: true, showMeta: true, showImage: true };
     if (isHost) return { showName: true, showMeta: true, showImage: true };
-    if (whiskyIdx < revealIndex) return { showName: true, showMeta: true, showImage: true };
-    const photoRevealed = whisky?.photoRevealed ?? false;
-    if (whiskyIdx === revealIndex) return {
-      showName: revealStep >= 1,
-      showMeta: revealStep >= 2,
-      showImage: revealStep >= 3 || photoRevealed,
-    };
-    return { showName: false, showMeta: false, showImage: photoRevealed };
-  };
-
-  const getEvalBlindState = (whiskyIdx: number, whisky?: Whisky) => {
-    if (!isBlind) return { showName: true, showMeta: true, showImage: true };
     if (whiskyIdx < revealIndex) return { showName: true, showMeta: true, showImage: true };
     const photoRevealed = whisky?.photoRevealed ?? false;
     if (whiskyIdx === revealIndex) return {
@@ -1658,25 +1578,10 @@ export default function TastingRoom() {
                 </Button>
               )}
               <div className="flex items-center bg-secondary/50 rounded-lg p-0.5 border border-border/30">
-                <Button
-                  variant={viewTab === "tasting" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewTab("tasting")}
-                  className={cn("font-serif text-xs rounded-md h-7", viewTab === "tasting" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
-                  data-testid="tab-tasting"
-                >
-                  {t("nav.tastingRoom")}
-                </Button>
-                <Button
-                  variant={viewTab === "board" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewTab("board")}
-                  className={cn("font-serif text-xs rounded-md h-7", viewTab === "board" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
-                  data-testid="tab-flight-board"
-                >
+                <div className="font-serif text-xs rounded-md h-7 px-3 flex items-center bg-primary text-primary-foreground shadow-sm">
                   <LayoutList className="w-3.5 h-3.5 mr-1" />
                   {t("flightBoard.title")}
-                </Button>
+                </div>
                 {tasting.status === "open" && whiskyList.length > 0 && !tasting.guidedMode && (
                   <Button
                     variant="ghost"
@@ -1695,358 +1600,8 @@ export default function TastingRoom() {
         </div>
       </header>
 
-      {viewTab === "board" && (
-        <FlightBoard tasting={tasting} whiskies={whiskyList} isHost={isHost} getBlindState={getBlindState} />
-      )}
+      <FlightBoard tasting={tasting} whiskies={whiskyList} isHost={isHost} getBlindState={getBlindState} />
 
-      {!isHost && tasting.ratingPrompt && !promptDismissed && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between"
-          data-testid="cockpit-rating-prompt-banner"
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-serif text-amber-800">
-              {tasting.ratingPrompt === "final" ? t("focus.promptFinalMessage") : t("focus.promptRateMessage")}
-            </span>
-          </div>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setPromptDismissed(true)} data-testid="cockpit-button-dismiss-prompt">
-            {t("focus.promptDismiss")}
-          </Button>
-        </motion.div>
-      )}
-
-      {isHost && tasting.status === "open" && (
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
-          <Button
-            variant={tasting.ratingPrompt === "rate" ? "default" : "outline"}
-            size="sm"
-            className="font-serif text-xs gap-1"
-            onClick={() => ratingPromptMutation.mutate(tasting.ratingPrompt === "rate" ? null : "rate")}
-            disabled={ratingPromptMutation.isPending}
-            data-testid="cockpit-host-prompt-rate"
-          >
-            {tasting.ratingPrompt === "rate" ? t("focus.hostPromptClear") : t("focus.hostPromptRate")}
-          </Button>
-          <Button
-            variant={tasting.ratingPrompt === "final" ? "default" : "outline"}
-            size="sm"
-            className="font-serif text-xs gap-1"
-            onClick={() => ratingPromptMutation.mutate(tasting.ratingPrompt === "final" ? null : "final")}
-            disabled={ratingPromptMutation.isPending}
-            data-testid="cockpit-host-prompt-final"
-          >
-            {tasting.ratingPrompt === "final" ? t("focus.hostPromptClear") : t("focus.hostPromptFinal")}
-          </Button>
-        </div>
-      )}
-
-      {viewTab === "tasting" && <>
-      {/* Flight Navigation */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex overflow-x-auto gap-3 flex-1 no-scrollbar items-center">
-            {whiskyList.map((w: Whisky, idx: number) => {
-              const blind = getBlindState(idx, w);
-              return (
-                <button
-                  key={w.id}
-                  onClick={() => setActiveWhiskyId(w.id)}
-                  className={cn(
-                    "flex flex-col items-center justify-center min-w-[60px] h-[60px] rounded-full border transition-all duration-500 relative overflow-hidden",
-                    (activeWhisky?.id === w.id)
-                      ? "border-primary scale-110 shadow-lg z-10 ring-2 ring-primary"
-                      : "bg-background border-border hover:border-primary/50 text-muted-foreground"
-                  )}
-                  data-testid={`button-whisky-${w.id}`}
-                >
-                  {blind.showImage && w.imageUrl ? (
-                    <img src={w.imageUrl} alt={blind.showName ? w.name : `#${idx + 1}`} className="w-full h-full object-cover rounded-full" />
-                  ) : (
-                    <span className="font-serif font-bold text-lg">{idx + 1}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          {isHost && (tasting.status === "draft" || tasting.status === "open") && (
-            <div className="flex gap-2">
-              <AddWhiskyDialog tastingId={tasting.id} />
-              <ImportFlightDialog tastingId={tasting.id} />
-              <CurationWizard tastingId={tasting.id} />
-            </div>
-          )}
-        </div>
-
-        {isHost && (tasting.status === "draft" || tasting.status === "open") && whiskyList.length > 0 && activeWhisky && (
-          <div className="flex items-center gap-2 px-1 flex-wrap">
-            <span className="text-xs text-muted-foreground font-serif mr-1 truncate max-w-[120px] sm:max-w-none">{activeWhisky.name}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 w-7 p-0"
-              disabled={whiskyList[0]?.id === activeWhisky.id || reorderMutation.isPending}
-              onClick={() => handleMoveWhisky(activeWhisky.id, "up")}
-              data-testid="button-move-up"
-            >
-              <ChevronUp className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 w-7 p-0"
-              disabled={whiskyList[whiskyList.length - 1]?.id === activeWhisky.id || reorderMutation.isPending}
-              onClick={() => handleMoveWhisky(activeWhisky.id, "down")}
-              data-testid="button-move-down"
-            >
-              <ChevronDown className="w-4 h-4" />
-            </Button>
-            <span className="text-[10px] text-muted-foreground/60 italic ml-1">{t("whisky.reorderHint")}</span>
-            <div className="flex-1" />
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                  data-testid="button-delete-whisky"
-                >
-                  <Trash2 className="w-3.5 h-3.5 mr-1" />
-                  <span className="text-xs">{t("whisky.deleteExpression")}</span>
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="font-serif text-primary">{t("whisky.deleteConfirmTitle")}</AlertDialogTitle>
-                  <AlertDialogDescription>{t("whisky.deleteConfirm")}</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="font-serif">{t("import.back")}</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => handleDeleteWhisky(activeWhisky.id)}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-serif"
-                    data-testid="button-confirm-delete"
-                  >
-                    {deleteMutation.isPending ? t("whisky.deleting") : t("whisky.deleteExpression")}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        )}
-      </div>
-
-      {whiskyList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-4">
-          <p className="text-2xl font-serif text-muted-foreground">{t("whisky.noExpressions")}</p>
-          {isHost && (
-            <p className="text-sm text-muted-foreground">Use "{t("whisky.addExpression")}" above to add whiskies to this flight.</p>
-          )}
-        </div>
-      ) : activeWhisky ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12">
-          <div className="lg:col-span-8">
-            {(() => {
-              const activeIdx = whiskyList.findIndex((w: Whisky) => w.id === activeWhisky.id);
-              const blind = getEvalBlindState(activeIdx, activeWhisky);
-              return (
-                <div className="flex items-center gap-4 mb-6 p-4 bg-card border border-border/50 rounded-lg lg:hidden" data-testid="inline-whisky-header">
-                  <div className="flex-shrink-0">
-                    {isHost && !isBlind && (tasting.status === "draft" || tasting.status === "open") ? (
-                      <QuickImageUpload whisky={activeWhisky} tastingId={tasting.id} size="md" />
-                    ) : blind.showImage ? (
-                      <WhiskyThumbnail whisky={activeWhisky} size="md" />
-                    ) : (
-                      <div className="w-20 h-20 rounded-full bg-secondary/30 border border-secondary flex items-center justify-center">
-                        <span className="font-serif font-bold text-2xl text-muted-foreground">{activeIdx + 1}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-serif text-xl font-bold text-primary truncate">
-                      {blind.showName ? activeWhisky.name : `${t("blind.expressionLabel")} ${activeIdx + 1}`}
-                    </h3>
-                    {blind.showName && activeWhisky.distillery && (
-                      <p className="text-sm text-muted-foreground font-serif italic truncate">{activeWhisky.distillery}</p>
-                    )}
-                    {blind.showMeta && (
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        {activeWhisky.age && <span className="text-xs font-mono text-muted-foreground">{activeWhisky.age === "NAS" || activeWhisky.age === "n.a.s." ? "NAS" : `${activeWhisky.age}y`}</span>}
-                        {activeWhisky.abv != null && <span className="text-xs font-mono text-muted-foreground">{activeWhisky.abv}%</span>}
-                        {activeWhisky.region && <span className="text-xs text-muted-foreground/70">{activeWhisky.region}</span>}
-                      </div>
-                    )}
-                    {!blind.showName && isBlind && (
-                      <p className="text-xs text-muted-foreground font-serif italic">{t("blind.hidden")}</p>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`${activeWhisky.id}-${tasting.status}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.4 }}
-              >
-                {showAnalytics ? (
-                  <RevealView whisky={activeWhisky} tasting={tasting} />
-                ) : (
-                  <EvaluationForm whisky={activeWhisky} tasting={tasting} blindState={getEvalBlindState(whiskyList.findIndex((w: Whisky) => w.id === activeWhisky.id), activeWhisky)} />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          <div className="hidden lg:block lg:col-span-4 space-y-8">
-            <div className="sticky top-8 space-y-8">
-              {(() => {
-                const activeIdx = whiskyList.findIndex((w: Whisky) => w.id === activeWhisky.id);
-                const blind = getBlindState(activeIdx, activeWhisky);
-                return (
-                  <div className="bg-card border border-border/50 shadow-sm p-8 text-center relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50"></div>
-                    <div className="mx-auto mb-6">
-                      {isHost && (tasting.status === "draft" || tasting.status === "open") ? (
-                        <QuickImageUpload whisky={activeWhisky} tastingId={tasting.id} size="lg" />
-                      ) : blind.showImage ? (
-                        <WhiskyThumbnail whisky={activeWhisky} size="lg" />
-                      ) : (
-                        <div className="w-40 h-40 rounded-full bg-secondary/30 border border-secondary flex items-center justify-center mx-auto">
-                          <span className="font-serif font-bold text-4xl text-muted-foreground">{activeIdx + 1}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <h3 className="font-serif text-3xl font-bold text-primary">
-                        {blind.showName ? activeWhisky.name : `${t("blind.expressionLabel")} ${activeIdx + 1}`}
-                      </h3>
-                      {!isBlind && <EditWhiskyDialog whisky={activeWhisky} tastingId={tasting.id} isHost={isHost} tastingStatus={tasting.status} />}
-                    </div>
-                    {blind.showName && (
-                      <p className="text-muted-foreground font-serif italic mb-6 text-lg">{activeWhisky.distillery || "Unknown"}</p>
-                    )}
-                    {!blind.showName && isBlind && (
-                      <p className="text-muted-foreground font-serif italic mb-6 text-sm">{t("blind.hidden")}</p>
-                    )}
-                    {blind.showMeta && (
-                      <div className="grid grid-cols-2 gap-4 text-left mt-8 pt-8 border-t border-border/30">
-                        <div>
-                          <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">ABV</span>
-                          <span className="font-mono text-lg font-medium">{activeWhisky.abv ? `${activeWhisky.abv}%` : "\u2014"}</span>
-                        </div>
-                        <div>
-                          <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">Age</span>
-                          <span className="font-mono text-lg font-medium">{activeWhisky.age || "NAS"}</span>
-                        </div>
-                        {activeWhisky.ppm != null && (
-                          <div>
-                            <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">PPM</span>
-                            <span className="font-mono text-lg font-medium">{activeWhisky.ppm}</span>
-                          </div>
-                        )}
-                        {activeWhisky.bottler && (
-                          <div>
-                            <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">{t("whisky.bottler")}</span>
-                            <span className="font-mono text-lg font-medium">{activeWhisky.bottler}</span>
-                          </div>
-                        )}
-                        {activeWhisky.vintage && (
-                          <div>
-                            <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">{t("whisky.vintage")}</span>
-                            <span className="font-mono text-lg font-medium">{activeWhisky.vintage}</span>
-                          </div>
-                        )}
-                        {activeWhisky.price != null && (
-                          <div>
-                            <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">{t("whisky.price")}</span>
-                            <span className="font-mono text-lg font-medium">{activeWhisky.price.toFixed(2)}</span>
-                          </div>
-                        )}
-                        {activeWhisky.wbScore != null && (
-                          <div>
-                            <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">WB Score</span>
-                            <span className="font-mono text-lg font-medium text-primary" data-testid="text-wb-score">{activeWhisky.wbScore.toFixed(1)}</span>
-                          </div>
-                        )}
-                        {activeWhisky.whiskybaseId && (
-                          <div>
-                            <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-1">Whiskybase</span>
-                            <a
-                              href={`https://www.whiskybase.com/whiskies/whisky/${activeWhisky.whiskybaseId}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-mono text-sm font-medium text-primary hover:underline inline-flex items-center gap-1"
-                              data-testid="link-whiskybase"
-                            >
-                              #{activeWhisky.whiskybaseId} <ExternalLink className="w-3 h-3" />
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {blind.showMeta && activeWhisky.hostSummary && (
-                      <div className="mt-6 pt-4 border-t border-border/30">
-                        <span className="text-xs uppercase tracking-widest text-muted-foreground block mb-2">{t("whisky.hostSummary")}</span>
-                        <p className="text-sm font-serif italic text-foreground/80 whitespace-pre-wrap" data-testid="text-host-summary">{activeWhisky.hostSummary}</p>
-                      </div>
-                    )}
-                    {isHost && isBlind && activeWhisky.imageUrl && (
-                      <div className="mt-6 pt-4 border-t border-border/30 space-y-2">
-                        <Button
-                          variant={activeWhisky.photoRevealed ? "secondary" : "outline"}
-                          size="sm"
-                          className="w-full font-serif"
-                          onClick={() => revealPhotoMutation.mutate({ whiskyId: activeWhisky.id, revealed: !activeWhisky.photoRevealed })}
-                          disabled={revealPhotoMutation.isPending}
-                          data-testid="button-reveal-photo"
-                        >
-                          {activeWhisky.photoRevealed ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                          {activeWhisky.photoRevealed ? t("blind.hidePhoto") : t("blind.revealPhoto")}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full font-serif text-xs text-muted-foreground"
-                          onClick={() => revealAllPhotosMutation.mutate(!whiskyList.every((w: Whisky) => w.photoRevealed))}
-                          disabled={revealAllPhotosMutation.isPending}
-                          data-testid="button-reveal-all-photos"
-                        >
-                          <ImageIcon className="w-3.5 h-3.5 mr-1.5" />
-                          {whiskyList.every((w: Whisky) => w.photoRevealed) ? t("blind.hideAllPhotos") : t("blind.revealAllPhotos")}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              <div className="flex justify-between gap-4">
-                <Button
-                  variant="ghost"
-                  onClick={() => { const idx = whiskyList.findIndex((w: Whisky) => w.id === activeWhisky.id); if (idx > 0) setActiveWhiskyId(whiskyList[idx-1].id); }}
-                  disabled={whiskyList[0]?.id === activeWhisky.id}
-                  className="flex-1 border border-border/50 hover:bg-secondary"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-2" /> Prev
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => { const idx = whiskyList.findIndex((w: Whisky) => w.id === activeWhisky.id); if (idx < whiskyList.length - 1) setActiveWhiskyId(whiskyList[idx+1].id); }}
-                  disabled={whiskyList[whiskyList.length-1]?.id === activeWhisky.id}
-                  className="flex-1 border border-border/50 hover:bg-secondary"
-                >
-                  Next <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-      </>}
 
       {tasting.status === "open" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
