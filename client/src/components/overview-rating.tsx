@@ -154,7 +154,7 @@ function WhiskyRow({
   return (
     <div
       className={cn(
-        "rounded-lg border bg-card p-3 space-y-2",
+        "rounded-lg border bg-card p-2.5 sm:p-3 space-y-1.5 sm:space-y-2",
         hasRating ? "border-green-500/30 bg-green-500/5" : "border-border/40"
       )}
       data-testid={`overview-row-${whisky.id}`}
@@ -322,8 +322,8 @@ export function OverviewRating({ tasting, whiskies, onExit, getBlindState }: Ove
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border/30 px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
+      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border/30 px-3 sm:px-6 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="font-serif font-bold text-lg">{t("overview.title", "Alle bewerten")}</h1>
             <p className="text-xs text-muted-foreground font-serif">{tasting.title} · {whiskies.length} {t("overview.whiskies", "Whiskys")}</p>
@@ -346,23 +346,25 @@ export function OverviewRating({ tasting, whiskies, onExit, getBlindState }: Ove
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto px-4 py-4 space-y-3 pb-24">
-        {whiskies.map((whisky, idx) => {
-          const blind = getBlindState(idx, whisky);
-          return (
-            <WhiskyRow
-              key={whisky.id}
-              whisky={whisky}
-              index={idx}
-              tasting={tasting}
-              participantId={participantId}
-              blind={blind}
-              isLocked={isLocked}
-              expanded={expandedIds.has(whisky.id)}
-              onToggle={() => toggleOne(whisky.id)}
-            />
-          );
-        })}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4 pb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
+          {whiskies.map((whisky, idx) => {
+            const blind = getBlindState(idx, whisky);
+            return (
+              <WhiskyRow
+                key={whisky.id}
+                whisky={whisky}
+                index={idx}
+                tasting={tasting}
+                participantId={participantId}
+                blind={blind}
+                isLocked={isLocked}
+                expanded={expandedIds.has(whisky.id)}
+                onToggle={() => toggleOne(whisky.id)}
+              />
+            );
+          })}
+        </div>
       </div>
     </div>
   );
