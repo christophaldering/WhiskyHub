@@ -1232,6 +1232,7 @@ export default function TastingRoom() {
     queryKey: ["whiskies", id],
     queryFn: () => whiskyApi.getForTasting(id!),
     enabled: !!id,
+    refetchInterval: inputFocused ? false : 5000,
   });
 
   const [activeWhiskyId, setActiveWhiskyId] = useState<string | null>(null);

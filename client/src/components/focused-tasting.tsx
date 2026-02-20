@@ -214,12 +214,18 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
     return 0;
   });
 
-  const activeWhisky = whiskies[activeIndex] || whiskies[0];
-  if (!activeWhisky) return null;
-
   const isBlind = tasting.blindMode && (tasting.status === "draft" || tasting.status === "open" || tasting.status === "closed");
   const revealIndex = tasting.revealIndex ?? 0;
   const revealStep = tasting.revealStep ?? 0;
+
+  useEffect(() => {
+    if (isBlind && !isHost) {
+      setActiveIndex(revealIndex);
+    }
+  }, [revealIndex, isBlind, isHost]);
+
+  const activeWhisky = whiskies[activeIndex] || whiskies[0];
+  if (!activeWhisky) return null;
 
   const getBlindState = (idx: number, w?: Whisky, forEval = false) => {
     if (!isBlind) return { showName: true, showMeta: true, showImage: true };
