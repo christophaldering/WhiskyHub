@@ -302,6 +302,7 @@ export const flavorProfileApi = {
 export const communityApi = {
   getScores: () => fetchJSON(`/community-scores`),
   getTasteTwins: (participantId: string) => fetchJSON(`/participants/${participantId}/taste-twins`),
+  getContributors: () => fetchJSON("/community-contributors"),
 };
 
 // ===== Rating Notes =====
@@ -519,6 +520,8 @@ export const adminApi = {
     fetchJSON("/admin/newsletters/send", { method: "POST", body: JSON.stringify({ requesterId, subject, contentHtml, recipientIds }) }),
   resendNewsletter: (requesterId: string, newsletterId: string, recipientIds: string[]) =>
     fetchJSON(`/admin/newsletters/${newsletterId}/resend`, { method: "POST", body: JSON.stringify({ requesterId, recipientIds }) }),
+  updateCommunityContributor: (participantId: string, status: boolean, requesterId: string) =>
+    fetchJSON(`/admin/participants/${participantId}/community-contributor`, { method: "PATCH", body: JSON.stringify({ status, requesterId }) }),
 };
 
 export const tastingPhotoApi = {

@@ -3658,6 +3658,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             isHost: hostIds.has(p.id),
             canAccessWhiskyDb: p.canAccessWhiskyDb || false,
             newsletterOptIn: p.newsletterOptIn || false,
+            communityContributor: p.communityContributor || false,
           };
         })
       );
@@ -3751,6 +3752,43 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const result = await storage.updateWhiskyDbAccess(req.params.id, canAccess);
       if (!result) return res.status(404).json({ message: "Participant not found" });
       res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/admin/participants/:id/community-contributor", async (req, res) => {
+    try {
+      const requesterId = req.body.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const { status } = req.body;
+      if (typeof status !== "boolean") {
+        return res.status(400).json({ message: "status must be boolean" });
+      }
+      const result = await storage.updateCommunityContributor(req.params.id, status);
+      if (!result) return res.status(404).json({ message: "Participant not found" });
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/community-contributors", async (_req, res) => {
+    try {
+      const contributors = await storage.getCommunityContributors();
+      const profilePromises = contributors.map(async (c) => {
+        const profile = await storage.getProfileByParticipantId(c.id);
+        return {
+          id: c.id,
+          name: c.name,
+          photoUrl: profile?.photoUrl || null,
+        };
+      });
+      res.json(await Promise.all(profilePromises));
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

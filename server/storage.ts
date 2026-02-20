@@ -186,6 +186,8 @@ export interface IStorage {
   // Admin
   getAllParticipants(): Promise<Participant[]>;
   updateParticipantRole(id: string, role: string): Promise<Participant | undefined>;
+  updateCommunityContributor(id: string, status: boolean): Promise<Participant | undefined>;
+  getCommunityContributors(): Promise<Participant[]>;
   deleteParticipant(id: string): Promise<void>;
 
   // Benchmark Entries
@@ -865,6 +867,15 @@ export class DatabaseStorage implements IStorage {
   async updateWhiskyDbAccess(id: string, canAccess: boolean): Promise<Participant | undefined> {
     const [result] = await db.update(participants).set({ canAccessWhiskyDb: canAccess }).where(eq(participants.id, id)).returning();
     return result;
+  }
+
+  async updateCommunityContributor(id: string, status: boolean): Promise<Participant | undefined> {
+    const [result] = await db.update(participants).set({ communityContributor: status }).where(eq(participants.id, id)).returning();
+    return result;
+  }
+
+  async getCommunityContributors(): Promise<Participant[]> {
+    return db.select().from(participants).where(eq(participants.communityContributor, true)).orderBy(participants.name);
   }
 
   async deleteParticipant(id: string): Promise<void> {

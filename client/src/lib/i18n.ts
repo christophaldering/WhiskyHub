@@ -137,6 +137,10 @@ const resources = {
           card3Desc: "Copy text from anywhere — a website, a message, a PDF. Paste it in, and the whiskies appear ready to taste.",
           card3Tag: "Text / URL",
         },
+        community: {
+          title: "Community Contributors",
+          desc: "These wonderful people help shape CaskSense with their ideas, feedback, and passion for whisky.",
+        },
         cta: {
           title: "Ready for the next tasting?",
           desc: "Start a session, invite friends, and capture what you really perceive. Free to use — no account needed to start.",
@@ -1689,6 +1693,12 @@ const resources = {
         newsletterNoArchive: "No newsletters sent yet.",
         newsletterConfirmSend: "Send Newsletter?",
         newsletterConfirmSendDesc: "This will send the newsletter to {{count}} selected recipients. Continue?",
+        tabCommunity: "Community",
+        communityTitle: "Community Contributors",
+        communityDescription: "Recognize members who help make CaskSense better – whether through feedback, ideas, or word of mouth.",
+        communityActive: "active",
+        communityBadge: "Contributor",
+        contributorUpdated: "Contributor status updated.",
       },
       distillery: {
         title: "Distillery Encyclopedia",
@@ -1999,6 +2009,10 @@ const resources = {
           card3Title: "Einfügen, übernehmen, fertig",
           card3Desc: "Kopiere Text von überall — Website, Nachricht, PDF. Einfügen, und die Whiskys stehen bereit zum Verkosten.",
           card3Tag: "Text / URL",
+        },
+        community: {
+          title: "Community Contributors",
+          desc: "Diese wunderbaren Menschen gestalten CaskSense mit ihren Ideen, ihrem Feedback und ihrer Leidenschaft für Whisky.",
         },
         cta: {
           title: "Bereit für das nächste Tasting?",
@@ -3552,6 +3566,12 @@ const resources = {
         newsletterNoArchive: "Noch keine Newsletter versendet.",
         newsletterConfirmSend: "Newsletter senden?",
         newsletterConfirmSendDesc: "Der Newsletter wird an {{count}} ausgewählte Empfänger gesendet. Fortfahren?",
+        tabCommunity: "Community",
+        communityTitle: "Community Contributors",
+        communityDescription: "Würdige Mitglieder, die CaskSense besser machen – ob durch Feedback, Ideen oder Weitersagen.",
+        communityActive: "aktiv",
+        communityBadge: "Contributor",
+        contributorUpdated: "Contributor-Status aktualisiert.",
       },
       distillery: {
         title: "Destillerie-Enzyklopädie",

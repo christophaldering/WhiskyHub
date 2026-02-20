@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { platformStatsApi } from "@/lib/api";
+import { platformStatsApi, communityApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { LoginDialog } from "@/components/login-dialog";
 import { useAppStore } from "@/lib/store";
@@ -47,6 +47,12 @@ export default function Landing() {
   const { data: stats } = useQuery({
     queryKey: ["platform-stats"],
     queryFn: platformStatsApi.get,
+    staleTime: 60_000,
+  });
+
+  const { data: contributors = [] } = useQuery({
+    queryKey: ["community-contributors"],
+    queryFn: communityApi.getContributors,
     staleTime: 60_000,
   });
 
@@ -454,6 +460,60 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* Community Contributors */}
+      {contributors.length > 0 && (
+        <section className="py-20 sm:py-28 bg-amber-900/5 border-y border-amber-800/10">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              custom={0}
+              variants={fadeUp}
+              className="mb-10"
+            >
+              <Heart className="w-8 h-8 text-amber-600 mx-auto mb-4" />
+              <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-3">
+                {t("landing.community.title")}
+              </h2>
+              <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+                {t("landing.community.desc")}
+              </p>
+            </motion.div>
+            <div className="flex flex-wrap justify-center gap-4">
+              {contributors.map((c: { id: string; name: string; photoUrl: string | null }, i: number) => (
+                <motion.div
+                  key={c.id}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  custom={i}
+                  variants={fadeUp}
+                  className="flex flex-col items-center gap-2"
+                  data-testid={`contributor-${c.id}`}
+                >
+                  {c.photoUrl ? (
+                    <img
+                      src={c.photoUrl}
+                      alt={c.name}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-amber-500/30 shadow-md"
+                      data-testid={`img-contributor-${c.id}`}
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-500/30 flex items-center justify-center shadow-md" data-testid={`img-contributor-${c.id}`}>
+                      <span className="text-xl font-serif font-bold text-amber-700">
+                        {c.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <span className="text-sm font-serif font-semibold text-primary" data-testid={`text-contributor-name-${c.id}`}>{c.name}</span>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Final CTA */}
       <section className="py-20 sm:py-28">

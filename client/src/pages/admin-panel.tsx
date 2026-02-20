@@ -7,7 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
 import type { EncyclopediaSuggestion } from "@shared/schema";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus } from "lucide-react";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ interface AdminParticipant {
   isHost: boolean;
   canAccessWhiskyDb: boolean;
   newsletterOptIn: boolean;
+  communityContributor: boolean;
 }
 
 interface AdminTasting {
@@ -604,6 +605,16 @@ export default function AdminPanel() {
     onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
   });
 
+  const contributorMutation = useMutation({
+    mutationFn: ({ participantId, status }: { participantId: string; status: boolean }) =>
+      adminApi.updateCommunityContributor(participantId, status, currentParticipant!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      toast({ title: t("admin.contributorUpdated") });
+    },
+    onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
+  });
+
   const deleteTastingMutation = useMutation({
     mutationFn: (tastingId: string) =>
       adminApi.deleteTasting(tastingId, currentParticipant!.id),
@@ -767,6 +778,10 @@ export default function AdminPanel() {
                 {feedbackData.length}
               </Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="community" data-testid="tab-community" className="flex-1 min-w-0">
+            <Heart className="w-4 h-4 mr-1 flex-shrink-0" />
+            <span className="truncate">{t("admin.tabCommunity")}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1620,6 +1635,63 @@ export default function AdminPanel() {
                 </motion.div>
               ))
             )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="community">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h3 className="text-lg font-serif font-bold text-primary">{t("admin.communityTitle")}</h3>
+                <p className="text-xs text-muted-foreground">{t("admin.communityDescription")}</p>
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                {data.participants.filter((p: AdminParticipant) => p.communityContributor).length} {t("admin.communityActive")}
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              {data.participants
+                .slice()
+                .sort((a: AdminParticipant, b: AdminParticipant) => {
+                  if (a.communityContributor && !b.communityContributor) return -1;
+                  if (!a.communityContributor && b.communityContributor) return 1;
+                  return a.name.localeCompare(b.name);
+                })
+                .map((p: AdminParticipant) => (
+                  <motion.div
+                    key={p.id}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <Card className={p.communityContributor ? "border-amber-500/30 bg-amber-500/5" : ""}>
+                      <CardContent className="p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-serif font-bold ${p.communityContributor ? "bg-amber-500/20 text-amber-700" : "bg-secondary text-muted-foreground"}`}>
+                            {p.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-serif font-semibold text-sm truncate" data-testid={`text-community-name-${p.id}`}>{p.name}</span>
+                              {p.communityContributor && (
+                                <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-700 bg-amber-500/10">
+                                  <Heart className="w-3 h-3 mr-0.5 fill-amber-500 text-amber-500" />
+                                  {t("admin.communityBadge")}
+                                </Badge>
+                              )}
+                            </div>
+                            {p.email && <span className="text-[10px] text-muted-foreground">{p.email}</span>}
+                          </div>
+                        </div>
+                        <Switch
+                          checked={p.communityContributor}
+                          onCheckedChange={(checked) => contributorMutation.mutate({ participantId: p.id, status: checked })}
+                          data-testid={`switch-contributor-${p.id}`}
+                        />
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+            </div>
           </div>
         </TabsContent>
       </Tabs>
