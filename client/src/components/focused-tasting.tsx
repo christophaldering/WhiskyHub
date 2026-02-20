@@ -593,6 +593,16 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
               <div className="inline-flex items-center gap-2 text-xs font-mono text-muted-foreground/50 mb-2">
                 <span>{t("focus.dramLabel", { current: activeIndex + 1, total: whiskies.length })}</span>
               </div>
+              {activeWhisky.imageUrl && (!isBlind || evalBlind.showImage) && (
+                <div className="flex justify-center mb-3">
+                  <img
+                    src={activeWhisky.imageUrl}
+                    alt={evalBlind.showName ? activeWhisky.name : `${t("blind.expressionLabel")} ${activeIndex + 1}`}
+                    className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl object-cover border-2 border-amber-500/20 shadow-md"
+                    data-testid="focus-whisky-image"
+                  />
+                </div>
+              )}
               <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary tracking-tight">
                 {evalBlind.showName ? activeWhisky.name : `${t("blind.expressionLabel")} ${activeIndex + 1}`}
               </h2>
