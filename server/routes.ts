@@ -1698,6 +1698,151 @@ export async function registerRoutes(
     }
   });
 
+  // ===== GUIDED TASTING =====
+
+  app.patch("/api/tastings/:id/guided-mode", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId } = req.body;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can change guided mode" });
+      const updates: any = {};
+      if (req.body.guidedMode !== undefined) updates.guidedMode = req.body.guidedMode;
+      if (req.body.guidedWhiskyIndex !== undefined) updates.guidedWhiskyIndex = req.body.guidedWhiskyIndex;
+      if (req.body.guidedRevealStep !== undefined) updates.guidedRevealStep = req.body.guidedRevealStep;
+      const updated = await storage.updateTastingBlindMode(req.params.id, updates);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/guided-advance", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId } = req.body;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can advance the guided tasting" });
+
+      const whiskyList = await storage.getWhiskiesForTasting(req.params.id);
+      const totalWhiskies = whiskyList.length;
+      if (totalWhiskies === 0) return res.status(400).json({ message: "No whiskies in tasting" });
+
+      let idx = tasting.guidedWhiskyIndex ?? -1;
+      let step = tasting.guidedRevealStep ?? 0;
+
+      if (idx === -1) {
+        idx = 0;
+        step = 0;
+      } else if (step < 3) {
+        step++;
+      } else {
+        if (idx < totalWhiskies - 1) {
+          idx++;
+          step = 0;
+        } else {
+          return res.json({ ...tasting, guidedWhiskyIndex: idx, guidedRevealStep: step, allComplete: true });
+        }
+      }
+
+      const updated = await storage.updateTastingBlindMode(req.params.id, { guidedWhiskyIndex: idx, guidedRevealStep: step });
+      const allComplete = idx >= totalWhiskies - 1 && step >= 3;
+      res.json({ ...updated, allComplete });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/guided-goto", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId, whiskyIndex, revealStep } = req.body;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can control guided tasting" });
+
+      const whiskyList = await storage.getWhiskiesForTasting(req.params.id);
+      if (whiskyIndex < 0 || whiskyIndex >= whiskyList.length) return res.status(400).json({ message: "Invalid whisky index" });
+
+      const updated = await storage.updateTastingBlindMode(req.params.id, {
+        guidedWhiskyIndex: whiskyIndex,
+        guidedRevealStep: revealStep ?? 0,
+      });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/whiskies/:id/ai-enrich", async (req, res) => {
+    try {
+      const { participantId } = req.body;
+      const whisky = await storage.getWhisky(req.params.id);
+      if (!whisky) return res.status(404).json({ message: "Whisky not found" });
+
+      if (whisky.aiFactsCache) {
+        try {
+          return res.json(JSON.parse(whisky.aiFactsCache));
+        } catch {}
+      }
+
+      const { OpenAI } = await import("openai");
+      const openai = new OpenAI();
+      const prompt = `You are a whisky expert. For the following whisky, provide:
+1. 3-4 interesting and potentially surprising facts (historical, production, or cultural)
+2. The distillery's official website URL (if known, otherwise null)
+3. A brief one-sentence "Did you know?" fact that would surprise even enthusiasts
+
+Whisky: ${whisky.name}
+${whisky.distillery ? `Distillery: ${whisky.distillery}` : ""}
+${whisky.region ? `Region: ${whisky.region}` : ""}
+${whisky.age ? `Age: ${whisky.age}` : ""}
+${whisky.category ? `Category: ${whisky.category}` : ""}
+${whisky.caskInfluence ? `Cask: ${whisky.caskInfluence}` : ""}
+${whisky.bottler ? `Bottler: ${whisky.bottler}` : ""}
+${whisky.vintage ? `Vintage: ${whisky.vintage}` : ""}
+
+Respond in JSON format:
+{
+  "facts": ["fact1", "fact2", "fact3"],
+  "distilleryUrl": "https://...",
+  "didYouKnow": "...",
+  "whiskybaseUrl": "https://www.whiskybase.com/whiskies/whisky/XXXXX"
+}
+
+For whiskybaseUrl: if the whiskybase ID is known, use it. Otherwise provide a search URL.
+If distillery URL is unknown, set to null.
+Respond ONLY with valid JSON, no markdown.`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 600,
+        temperature: 0.7,
+      });
+
+      let enrichment: any = { facts: [], distilleryUrl: null, didYouKnow: null, whiskybaseUrl: null };
+      try {
+        const raw = completion.choices[0]?.message?.content?.trim() || "{}";
+        const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+        enrichment = JSON.parse(cleaned);
+      } catch {}
+
+      if (whisky.whiskybaseId) {
+        enrichment.whiskybaseUrl = `https://www.whiskybase.com/whiskies/whisky/${whisky.whiskybaseId}`;
+      }
+      if (whisky.distilleryUrl) {
+        enrichment.distilleryUrl = whisky.distilleryUrl;
+      }
+
+      await storage.updateWhisky(req.params.id, { aiFactsCache: JSON.stringify(enrichment) } as any);
+
+      res.json(enrichment);
+    } catch (e: any) {
+      console.error("AI enrich error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== DRAM TIMER =====
 
   app.post("/api/tastings/:id/dram-timer", async (req, res) => {

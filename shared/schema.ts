@@ -35,6 +35,9 @@ export const tastings = pgTable("tastings", {
   currentAct: text("current_act").default("act1"), // act1 | act2 | act3 | act4
   hostReflection: text("host_reflection"),
   blindMode: boolean("blind_mode").default(false),
+  guidedMode: boolean("guided_mode").default(false),
+  guidedWhiskyIndex: integer("guided_whisky_index").default(-1), // -1=waiting, 0+=active whisky
+  guidedRevealStep: integer("guided_reveal_step").default(0), // 0=blind, 1=name, 2=meta, 3=image+links
   revealIndex: integer("reveal_index").default(0),
   revealStep: integer("reveal_step").default(0), // 0=blind, 1=name, 2=meta, 3=image
   reflectionEnabled: boolean("reflection_enabled").default(false),
@@ -92,6 +95,8 @@ export const whiskies = pgTable("whiskies", {
   vintage: text("vintage"), // Distillation/bottling vintage year(s)
   price: real("price"), // Bottle price (0.7l)
   hostSummary: text("host_summary"), // Host's detailed tasting assessment/review
+  distilleryUrl: text("distillery_url"), // Distillery homepage URL
+  aiFactsCache: text("ai_facts_cache"), // Cached AI-generated interesting facts (JSON)
 });
 
 export const insertWhiskySchema = createInsertSchema(whiskies).omit({ id: true });
