@@ -11,6 +11,7 @@ import { ImportFlightDialog } from "@/components/import-flight-dialog";
 import { CurationWizard } from "@/components/curation-wizard";
 import { FlightBoard } from "@/components/flight-board";
 import { PdfExportDialog } from "@/components/pdf-export-dialog";
+import { PrintableTastingSheets } from "@/components/printable-tasting-sheets";
 import { BriefingNotes } from "@/components/briefing-notes";
 import { AttendeeRoster } from "@/components/attendee-roster";
 import { InvitePanel } from "@/components/invite-panel";
@@ -1503,6 +1504,7 @@ export default function TastingRoom() {
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {isHost && (tasting.status === "draft" || tasting.status === "open") && <EditTastingDialog tasting={tasting} />}
               <PdfExportDialog tasting={tasting} whiskies={whiskyList} />
+              <PrintableTastingSheets tasting={tasting} whiskies={whiskyList} />
               {(() => {
                 const hasSecondary = isHost || true;
                 if (!hasSecondary) return null;
