@@ -157,6 +157,105 @@ export default function Landing() {
         </section>
       )}
 
+      {/* Origin Story — prominent personal section */}
+      <section className="py-20 sm:py-28" id="story">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={0}
+            variants={fadeUp}
+            className="text-center mb-14"
+          >
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <Heart className="w-5 h-5 text-amber-500" />
+              <span className="text-sm font-medium text-amber-500 uppercase tracking-widest">{t("landing.story.label")}</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-black text-primary">{t("landing.story.title")}</h2>
+          </motion.div>
+
+          <div className="grid lg:grid-cols-3 gap-10 lg:gap-12 items-start mb-14">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              custom={0}
+              variants={fadeUp}
+              className="lg:col-span-1 lg:sticky lg:top-24 space-y-3"
+            >
+              <div className="rounded-2xl overflow-hidden shadow-xl shadow-amber-900/15 border border-amber-800/20">
+                <img src={christophImage} alt="Christoph & Sammy" className="w-full h-auto object-cover" />
+              </div>
+              <p className="text-sm text-muted-foreground/60 italic text-center">{t("landing.story.photoCaption")}</p>
+            </motion.div>
+
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              custom={1}
+              variants={fadeUp}
+              className="lg:col-span-2 space-y-6"
+            >
+              <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
+                {t("landing.story.p1")}
+              </p>
+              <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
+                {t("landing.story.p2")}
+              </p>
+
+              <blockquote className="border-l-3 border-amber-500/60 pl-5 py-2 my-6">
+                <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
+                  {t("landing.story.quote1")}
+                </p>
+              </blockquote>
+
+              <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
+                {t("landing.story.p3")}
+              </p>
+              <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
+                {t("landing.story.p4")}
+              </p>
+
+              <blockquote className="border-l-3 border-amber-500/60 pl-5 py-2 my-6">
+                <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
+                  {t("landing.story.quote2")}
+                </p>
+              </blockquote>
+
+              <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
+                {t("landing.story.p5")}
+              </p>
+              <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
+                {t("landing.story.p6")}
+              </p>
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={2}
+            variants={fadeUp}
+            className="text-center space-y-8"
+          >
+            <p className="text-muted-foreground text-base lg:text-lg">
+              {t("landing.story.p7")}
+            </p>
+            <div className="flex flex-col items-center gap-3 py-6">
+              <span className="text-2xl sm:text-3xl font-serif font-black text-primary">{t("landing.story.joy1")}</span>
+              <span className="text-2xl sm:text-3xl font-serif font-black text-amber-500">{t("landing.story.joy2")}</span>
+              <span className="text-2xl sm:text-3xl font-serif font-black text-orange-500">{t("landing.story.joy3")}</span>
+            </div>
+            <p className="text-muted-foreground/70 text-sm sm:text-base italic max-w-lg mx-auto">
+              {t("landing.story.closing")}
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Features */}
       <section id="features" className="py-20 sm:py-28">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -228,78 +327,6 @@ export default function Landing() {
                 <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mx-auto">{t(s.descKey)}</p>
               </motion.div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Origin Story */}
-      <section className="py-20 sm:py-28">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={0}
-            variants={fadeUp}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.story.title")}</h2>
-          </motion.div>
-          <div className="grid lg:grid-cols-5 gap-10 lg:gap-12 items-start">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              custom={0}
-              variants={fadeUp}
-              className="lg:col-span-2 space-y-3"
-            >
-              <div className="rounded-2xl overflow-hidden shadow-xl shadow-amber-900/15 border border-amber-800/20">
-                <img src={christophImage} alt="Christoph & Sammy" className="w-full h-auto object-cover" />
-              </div>
-              <p className="text-sm text-muted-foreground/60 italic text-center">{t("landing.story.photoCaption")}</p>
-            </motion.div>
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              custom={1}
-              variants={fadeUp}
-              className="lg:col-span-3 space-y-5"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <Heart className="w-5 h-5 text-amber-500" />
-                <span className="text-sm font-medium text-amber-500 uppercase tracking-widest">{t("landing.story.label")}</span>
-              </div>
-              <p className="text-muted-foreground leading-relaxed text-base">
-                {t("landing.story.p1")}
-              </p>
-              <p className="text-muted-foreground leading-relaxed text-base">
-                {t("landing.story.p2")}
-              </p>
-              <p className="text-muted-foreground leading-relaxed text-base">
-                {t("landing.story.p3")}
-              </p>
-              <p className="text-muted-foreground leading-relaxed text-base">
-                {t("landing.story.p4")}
-              </p>
-              <p className="text-muted-foreground leading-relaxed text-base">
-                {t("landing.story.p5")}
-              </p>
-              <ul className="space-y-2 pl-1">
-                <li className="flex items-start gap-3 text-muted-foreground text-base">
-                  <span className="text-amber-500 mt-0.5">•</span>
-                  <span>{t("landing.story.bullet1")}</span>
-                </li>
-                <li className="flex items-start gap-3 text-muted-foreground text-base">
-                  <span className="text-amber-500 mt-0.5">•</span>
-                  <span>{t("landing.story.bullet2")}</span>
-                </li>
-              </ul>
-              <p className="text-muted-foreground/60 leading-relaxed text-sm italic pt-2 border-t border-amber-800/10 mt-4">
-                {t("landing.story.tagline")}
-              </p>
-            </motion.div>
           </div>
         </div>
       </section>
