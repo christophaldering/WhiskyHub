@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { TastingNoteGenerator } from "./tasting-note-generator";
 import {
   ChevronLeft,
@@ -210,6 +211,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
   const [guessAge, setGuessAge] = useState("");
   const [isDirty, setIsDirty] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
+  const [showNextConfirm, setShowNextConfirm] = useState(false);
 
   useEffect(() => {
     if (existingRating) {
@@ -429,7 +431,13 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                 size="sm"
                 variant="outline"
                 className="font-serif text-xs gap-1 border-primary/30 text-primary"
-                onClick={() => advanceMutation.mutate()}
+                onClick={() => {
+                  if (guidedStep >= 3 && guidedIdx < whiskies.length - 1) {
+                    setShowNextConfirm(true);
+                  } else {
+                    advanceMutation.mutate();
+                  }
+                }}
                 disabled={advanceMutation.isPending}
                 data-testid="button-guided-advance"
               >
@@ -743,6 +751,35 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
             )}
           </motion.div>
         </AnimatePresence>
+
+        <AlertDialog open={showNextConfirm} onOpenChange={setShowNextConfirm}>
+          <AlertDialogContent className="bg-card border-border">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="font-serif text-primary">
+                {t("guided.confirmNextTitle")}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {t("guided.confirmNextMessage", {
+                  current: activeWhisky?.name || `Dram ${guidedIdx + 1}`,
+                  next: whiskies[guidedIdx + 1]?.name || `Dram ${guidedIdx + 2}`,
+                })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="font-serif">{t("guided.stayHere")}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setShowNextConfirm(false);
+                  advanceMutation.mutate();
+                }}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-serif"
+                data-testid="button-confirm-next-dram"
+              >
+                {t("guided.confirmNext")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

@@ -1178,11 +1178,31 @@ export default function TastingRoom() {
     }
   };
 
+  const [inputFocused, setInputFocused] = useState(false);
+
+  useEffect(() => {
+    const handleFocusIn = (e: FocusEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
+        setInputFocused(true);
+      }
+    };
+    const handleFocusOut = () => {
+      setInputFocused(false);
+    };
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("focusout", handleFocusOut);
+    return () => {
+      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("focusout", handleFocusOut);
+    };
+  }, []);
+
   const { data: tasting, isLoading: tastingLoading } = useQuery({
     queryKey: ["tasting", id],
     queryFn: () => tastingApi.get(id!),
     enabled: !!id,
-    refetchInterval: 3000,
+    refetchInterval: inputFocused ? false : 3000,
   });
 
   const { data: whiskyList = [], isLoading: whiskiesLoading } = useQuery({
@@ -1772,7 +1792,7 @@ export default function TastingRoom() {
                 {showAnalytics ? (
                   <RevealView whisky={activeWhisky} tasting={tasting} />
                 ) : (
-                  <EvaluationForm whisky={activeWhisky} tasting={tasting} />
+                  <EvaluationForm whisky={activeWhisky} tasting={tasting} blindState={getBlindState(whiskyList.findIndex((w: Whisky) => w.id === activeWhisky.id), activeWhisky)} />
                 )}
               </motion.div>
             </AnimatePresence>

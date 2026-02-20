@@ -15,12 +15,19 @@ import { queryClient } from "@/lib/queryClient";
 import type { Whisky, Tasting } from "@shared/schema";
 import { TastingNoteGenerator } from "./tasting-note-generator";
 
+interface BlindState {
+  showName: boolean;
+  showMeta: boolean;
+  showImage: boolean;
+}
+
 interface EvaluationFormProps {
   whisky: Whisky;
   tasting: Tasting;
+  blindState?: BlindState;
 }
 
-export function EvaluationForm({ whisky, tasting }: EvaluationFormProps) {
+export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormProps) {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const participantId = currentParticipant?.id || "";
@@ -103,14 +110,18 @@ export function EvaluationForm({ whisky, tasting }: EvaluationFormProps) {
       <CardHeader className="pb-6 border-b border-border/10">
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-3xl font-serif font-bold text-primary mb-2">{whisky.name}</h2>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground font-mono uppercase tracking-wider">
-              {whisky.distillery && <span>{whisky.distillery}</span>}
-              {whisky.age && <span>• {whisky.age} YO</span>}
-              {whisky.abv && <span>• {whisky.abv}%</span>}
-              {whisky.category && <span>• {whisky.category}</span>}
-            </div>
-            {whisky.whiskybaseId && (
+            <h2 className="text-3xl font-serif font-bold text-primary mb-2">
+              {blindState && !blindState.showName ? `${t("blind.expressionLabel", "Expression")}` : whisky.name}
+            </h2>
+            {(!blindState || blindState.showMeta) && (
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground font-mono uppercase tracking-wider">
+                {whisky.distillery && <span>{whisky.distillery}</span>}
+                {whisky.age && <span>• {whisky.age} YO</span>}
+                {whisky.abv && <span>• {whisky.abv}%</span>}
+                {whisky.category && <span>• {whisky.category}</span>}
+              </div>
+            )}
+            {(!blindState || blindState.showMeta) && whisky.whiskybaseId && (
               <a
                 href={`https://www.whiskybase.com/whiskies/whisky/${whisky.whiskybaseId}`}
                 target="_blank"
