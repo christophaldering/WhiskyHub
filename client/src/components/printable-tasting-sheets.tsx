@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { profileApi } from "@/lib/api";
+import { useAppStore } from "@/lib/store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, FileDown, ClipboardList, EyeOff } from "lucide-react";
+import { Printer, FileDown, ClipboardList, EyeOff, Download } from "lucide-react";
 import type { Whisky, Tasting } from "@shared/schema";
 import jsPDF from "jspdf";
 
@@ -15,12 +18,31 @@ const LIGHT_BG: RGB = [248, 250, 252];
 const AMBER: RGB = [180, 130, 30];
 const LINE_GRAY: RGB = [200, 210, 220];
 
+interface ParticipantInfo {
+  name: string;
+  photoUrl?: string | null;
+}
+
 function formatDate(dateStr: string, lang: string): string {
   try {
     return new Date(dateStr).toLocaleDateString(lang === "de" ? "de-DE" : "en-GB", {
       day: "numeric", month: "long", year: "numeric"
     });
   } catch { return dateStr; }
+}
+
+async function loadImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch { return null; }
 }
 
 function drawHeader(doc: jsPDF, tasting: Tasting, lang: string, isBlind: boolean) {
@@ -33,8 +55,7 @@ function drawHeader(doc: jsPDF, tasting: Tasting, lang: string, isBlind: boolean
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.setTextColor(255, 255, 255);
-  const titleText = tasting.title;
-  const titleLines = doc.splitTextToSize(titleText, pageW - marginX * 2 - 60);
+  const titleLines = doc.splitTextToSize(tasting.title, pageW - marginX * 2 - 60);
   doc.text(titleLines, marginX, 14);
 
   doc.setFont("helvetica", "normal");
@@ -47,6 +68,9 @@ function drawHeader(doc: jsPDF, tasting: Tasting, lang: string, isBlind: boolean
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
   doc.setTextColor(180, 190, 200);
+  const codeLabel = lang === "de" ? "Code" : "Code";
+  doc.text(`${codeLabel}: ${tasting.code}`, marginX, 28);
+
   doc.text("CaskSense", pageW - marginX, 28, { align: "right" });
 
   if (isBlind) {
@@ -74,7 +98,38 @@ function drawFooter(doc: jsPDF, pageNum: number, totalPages: number) {
   doc.text(`${pageNum} / ${totalPages}`, pageW - 15, pageH - 7, { align: "right" });
 }
 
-function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], lang: string) {
+async function drawParticipantInfo(doc: jsPDF, participant: ParticipantInfo, y: number, marginX: number, pageW: number, lang: string): Promise<number> {
+  const isDE = lang === "de";
+  const nameLabel = isDE ? "Teilnehmer" : "Participant";
+
+  let photoDataUrl: string | null = null;
+  if (participant.photoUrl) {
+    photoDataUrl = await loadImageAsBase64(participant.photoUrl);
+  }
+
+  if (photoDataUrl) {
+    try {
+      doc.addImage(photoDataUrl, "JPEG", marginX, y - 5, 12, 12, undefined, "FAST");
+    } catch {}
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...SLATE);
+    doc.text(`${nameLabel}:`, marginX + 15, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(participant.name, marginX + 15 + doc.getTextWidth(`${nameLabel}: `), y);
+    return y + 10;
+  } else {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...SLATE);
+    doc.text(`${nameLabel}:`, marginX, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(participant.name, marginX + doc.getTextWidth(`${nameLabel}: `), y);
+    return y + 8;
+  }
+}
+
+async function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], lang: string, participant?: ParticipantInfo, mode: "download" | "print" = "download") {
   if (whiskies.length === 0) return;
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = 210;
@@ -90,7 +145,6 @@ function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], lang: s
     finish: isDE ? "Abgang" : "Finish",
     rating: isDE ? "Bewertung" : "Rating",
     notes: isDE ? "Notizen" : "Notes",
-    overall: isDE ? "Gesamt" : "Overall",
     name: isDE ? "Teilnehmer" : "Participant",
   };
 
@@ -123,15 +177,20 @@ function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], lang: s
   doc.line(marginX, y, pageW - marginX, y);
   y += 6;
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(...SLATE);
-  doc.text(`${labels.name}: `, marginX, y);
-  const nameFieldX = marginX + doc.getTextWidth(`${labels.name}: `);
-  doc.setDrawColor(...LINE_GRAY);
-  doc.setLineWidth(0.3);
-  doc.line(nameFieldX, y + 1, pageW - marginX, y + 1);
-  y += 10;
+  if (participant) {
+    y = await drawParticipantInfo(doc, participant, y, marginX, pageW, lang);
+    y += 2;
+  } else {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...SLATE);
+    doc.text(`${labels.name}: `, marginX, y);
+    const nameFieldX = marginX + doc.getTextWidth(`${labels.name}: `);
+    doc.setDrawColor(...LINE_GRAY);
+    doc.setLineWidth(0.3);
+    doc.line(nameFieldX, y + 1, pageW - marginX, y + 1);
+    y += 10;
+  }
 
   for (let wIdx = 0; wIdx < whiskies.length; wIdx++) {
     const w = whiskies[wIdx];
@@ -235,11 +294,16 @@ function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], lang: s
 
   drawFooter(doc, currentPage, totalPages);
 
-  const fileName = `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Notizblatt.pdf`;
-  doc.save(fileName);
+  if (mode === "print") {
+    doc.autoPrint();
+    window.open(doc.output("bloburl"), "_blank");
+  } else {
+    const fileName = `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Notizblatt.pdf`;
+    doc.save(fileName);
+  }
 }
 
-function generateBlindEvaluationSheet(tasting: Tasting, whiskies: Whisky[], lang: string) {
+async function generateBlindEvaluationSheet(tasting: Tasting, whiskies: Whisky[], lang: string, participant?: ParticipantInfo, mode: "download" | "print" = "download") {
   if (whiskies.length === 0) return;
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = 210;
@@ -295,15 +359,20 @@ function generateBlindEvaluationSheet(tasting: Tasting, whiskies: Whisky[], lang
   doc.line(marginX, y, pageW - marginX, y);
   y += 6;
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(...SLATE);
-  doc.text(`${labels.name}: `, marginX, y);
-  const nameFieldX2 = marginX + doc.getTextWidth(`${labels.name}: `);
-  doc.setDrawColor(...LINE_GRAY);
-  doc.setLineWidth(0.3);
-  doc.line(nameFieldX2, y + 1, pageW - marginX, y + 1);
-  y += 10;
+  if (participant) {
+    y = await drawParticipantInfo(doc, participant, y, marginX, pageW, lang);
+    y += 2;
+  } else {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...SLATE);
+    doc.text(`${labels.name}: `, marginX, y);
+    const nameFieldX2 = marginX + doc.getTextWidth(`${labels.name}: `);
+    doc.setDrawColor(...LINE_GRAY);
+    doc.setLineWidth(0.3);
+    doc.line(nameFieldX2, y + 1, pageW - marginX, y + 1);
+    y += 10;
+  }
 
   for (let wIdx = 0; wIdx < whiskies.length; wIdx++) {
     if (wIdx > 0 && wIdx % whiskiesPerPage === 0) {
@@ -414,8 +483,13 @@ function generateBlindEvaluationSheet(tasting: Tasting, whiskies: Whisky[], lang
 
   drawFooter(doc, currentPage, totalPages);
 
-  const fileName = `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Bewertungsbogen.pdf`;
-  doc.save(fileName);
+  if (mode === "print") {
+    doc.autoPrint();
+    window.open(doc.output("bloburl"), "_blank");
+  } else {
+    const fileName = `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Bewertungsbogen.pdf`;
+    doc.save(fileName);
+  }
 }
 
 interface PrintableTastingSheetsProps {
@@ -424,18 +498,29 @@ interface PrintableTastingSheetsProps {
 }
 
 export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSheetsProps) {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const lang = i18n.language;
   const isDE = lang === "de";
   const isBlind = tasting.blindMode;
+  const { currentParticipant } = useAppStore();
 
-  const handleMenuDownload = () => {
-    generateTastingNotesSheet(tasting, whiskies, lang);
-  };
+  const { data: profile } = useQuery({
+    queryKey: ["profile", currentParticipant?.id],
+    queryFn: () => profileApi.get(currentParticipant!.id),
+    enabled: !!currentParticipant && open,
+  });
 
-  const handleBlindDownload = () => {
-    generateBlindEvaluationSheet(tasting, whiskies, lang);
+  const participantInfo: ParticipantInfo | undefined = currentParticipant
+    ? { name: currentParticipant.name, photoUrl: profile?.photoUrl }
+    : undefined;
+
+  const handleAction = (type: "tasting" | "blind", mode: "download" | "print") => {
+    if (type === "tasting") {
+      generateTastingNotesSheet(tasting, whiskies, lang, participantInfo, mode);
+    } else {
+      generateBlindEvaluationSheet(tasting, whiskies, lang, participantInfo, mode);
+    }
   };
 
   return (
@@ -454,70 +539,104 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
             {isDE
-              ? "PDF-Vorlagen zum Ausdrucken — für handschriftliche Notizen und Bewertungen."
-              : "PDF templates for printing — for handwritten notes and ratings."}
+              ? "PDF-Vorlagen zum Ausdrucken oder Herunterladen — für handschriftliche Notizen und Bewertungen."
+              : "PDF templates for printing or downloading — for handwritten notes and ratings."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 mt-4">
-          <button
-            onClick={handleMenuDownload}
-            disabled={whiskies.length === 0}
-            className="w-full text-left p-4 rounded-lg border border-border hover:border-primary/30 hover:bg-primary/5 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
-            data-testid="button-download-tasting-notes"
-          >
+          <div className="p-4 rounded-lg border border-border space-y-3">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <ClipboardList className="w-5 h-5 text-primary" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <div className="font-serif font-semibold text-foreground">
                   {isDE ? "Verkostungsnotizen" : "Tasting Notes Sheet"}
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">
                   {isDE
-                    ? `${whiskies.length} Whiskys mit Namen, Details und Feldern für Nase, Geschmack, Abgang und Bewertung`
-                    : `${whiskies.length} whiskies with names, details, and fields for nose, palate, finish, and rating`}
+                    ? `${whiskies.length} Whiskys mit Namen, Details und Feldern für Nase, Geschmack, Abgang`
+                    : `${whiskies.length} whiskies with names, details, and fields for nose, palate, finish`}
                 </div>
               </div>
-              <FileDown className="w-4 h-4 text-muted-foreground ml-auto mt-1 group-hover:text-primary transition-colors" />
             </div>
-          </button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={whiskies.length === 0}
+                onClick={() => handleAction("tasting", "download")}
+                className="flex-1 text-xs"
+                data-testid="button-download-tasting-notes"
+              >
+                <Download className="w-3.5 h-3.5 mr-1" />
+                {isDE ? "Als PDF" : "Download PDF"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={whiskies.length === 0}
+                onClick={() => handleAction("tasting", "print")}
+                className="flex-1 text-xs"
+                data-testid="button-print-tasting-notes"
+              >
+                <Printer className="w-3.5 h-3.5 mr-1" />
+                {isDE ? "Drucken" : "Print"}
+              </Button>
+            </div>
+          </div>
 
-          <button
-            onClick={handleBlindDownload}
-            disabled={whiskies.length === 0}
-            className="w-full text-left p-4 rounded-lg border border-border hover:border-amber-500/30 hover:bg-amber-500/5 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
-            data-testid="button-download-blind-sheet"
-          >
+          <div className="p-4 rounded-lg border border-border space-y-3">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0 group-hover:bg-amber-500/20 transition-colors">
+              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
                 <EyeOff className="w-5 h-5 text-amber-600" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <div className="font-serif font-semibold text-foreground">
                   {isDE ? "Blind-Bewertungsbogen" : "Blind Evaluation Sheet"}
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">
                   {isDE
-                    ? `${whiskies.length} Proben ohne Namen — mit Farbe, Sensorik, Rate-Feldern und Bewertungsskala`
-                    : `${whiskies.length} samples without names — with colour, sensory fields, guessing fields, and rating scale`}
+                    ? `${whiskies.length} Proben ohne Namen — mit Farbe, Sensorik und Rate-Feldern`
+                    : `${whiskies.length} samples without names — with colour, sensory and guessing fields`}
                 </div>
                 {isBlind && (
-                  <div className="flex items-center gap-1 mt-1.5">
-                    <span className="text-[10px] bg-amber-500/10 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">
-                      {isDE ? "Empfohlen für dieses Tasting" : "Recommended for this tasting"}
-                    </span>
-                  </div>
+                  <span className="inline-block mt-1 text-[10px] bg-amber-500/10 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">
+                    {isDE ? "Empfohlen für dieses Tasting" : "Recommended for this tasting"}
+                  </span>
                 )}
               </div>
-              <FileDown className="w-4 h-4 text-muted-foreground ml-auto mt-1 group-hover:text-amber-600 transition-colors" />
             </div>
-          </button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={whiskies.length === 0}
+                onClick={() => handleAction("blind", "download")}
+                className="flex-1 text-xs"
+                data-testid="button-download-blind-sheet"
+              >
+                <Download className="w-3.5 h-3.5 mr-1" />
+                {isDE ? "Als PDF" : "Download PDF"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={whiskies.length === 0}
+                onClick={() => handleAction("blind", "print")}
+                className="flex-1 text-xs"
+                data-testid="button-print-blind-sheet"
+              >
+                <Printer className="w-3.5 h-3.5 mr-1" />
+                {isDE ? "Drucken" : "Print"}
+              </Button>
+            </div>
+          </div>
         </div>
 
         <div className="mt-3 text-[11px] text-muted-foreground text-center">
-          {isDE ? "A4-Format · Zum Ausdrucken optimiert" : "A4 format · Optimized for printing"}
+          {isDE ? "A4-Format · Dein Name und Profilbild werden automatisch eingefügt" : "A4 format · Your name and profile photo are automatically included"}
         </div>
       </DialogContent>
     </Dialog>

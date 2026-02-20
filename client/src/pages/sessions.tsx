@@ -6,7 +6,7 @@ import { tastingApi, participantApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
-import { ArrowRight, Trash2, KeyRound, Loader2, Crown, Users, Plus, Camera, FileUp, Glasses, BookOpen, ChevronDown, Navigation } from "lucide-react";
+import { ArrowRight, Trash2, KeyRound, Loader2, Crown, Users, Plus, Camera, FileUp, Glasses, BookOpen, ChevronDown, Navigation, PenLine } from "lucide-react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -19,7 +19,7 @@ import { AiTastingImportDialog } from "@/components/ai-tasting-import";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 
 export default function Sessions() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
   const { currentParticipant, setParticipant } = useAppStore();
   const { toast } = useToast();
@@ -380,6 +380,14 @@ export default function Sessions() {
         >
           {joinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("session.joinButton")}
         </Button>
+      </div>
+      <div className="flex items-center gap-1.5 pt-1">
+        <PenLine className="w-3 h-3 text-muted-foreground/60" />
+        <p className="text-[11px] text-muted-foreground/70">
+          {i18n.language === "de"
+            ? "Lieber analog? Im Tasting-Raum findest du druckbare Notizblätter unter dem ••• Menü."
+            : "Prefer pen & paper? Find printable note sheets in the tasting room's ••• menu."}
+        </p>
       </div>
     </motion.div>
   );

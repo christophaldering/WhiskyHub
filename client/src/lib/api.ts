@@ -520,3 +520,10 @@ export const adminApi = {
   resendNewsletter: (requesterId: string, newsletterId: string, recipientIds: string[]) =>
     fetchJSON(`/admin/newsletters/${newsletterId}/resend`, { method: "POST", body: JSON.stringify({ requesterId, recipientIds }) }),
 };
+
+export const feedbackApi = {
+  submit: (data: { participantId?: string; participantName?: string; category: string; message: string }) =>
+    fetchJSON("/feedback", { method: "POST", body: JSON.stringify(data) }),
+  getAll: (participantId: string) =>
+    fetchJSON(`/feedback?participantId=${participantId}`),
+};

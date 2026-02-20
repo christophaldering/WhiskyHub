@@ -1504,7 +1504,6 @@ export default function TastingRoom() {
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {isHost && (tasting.status === "draft" || tasting.status === "open") && <EditTastingDialog tasting={tasting} />}
               <PdfExportDialog tasting={tasting} whiskies={whiskyList} />
-              <PrintableTastingSheets tasting={tasting} whiskies={whiskyList} />
               {(() => {
                 const hasSecondary = isHost || true;
                 if (!hasSecondary) return null;
@@ -1524,6 +1523,7 @@ export default function TastingRoom() {
                     </Button>
                     <div className="hidden absolute right-0 top-full mt-1 z-50 bg-card border rounded-lg shadow-lg p-2 min-w-[200px] space-y-1">
                       <div className="flex flex-col gap-1">
+                        <PrintableTastingSheets tasting={tasting} whiskies={whiskyList} />
                         <DuplicateTastingButton tasting={tasting} />
                         {isHost && <BriefingNotes whiskies={whiskyList} tastingTitle={tasting.title} />}
                         {isHost && <TransferHostDialog tasting={tasting} />}

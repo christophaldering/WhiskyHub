@@ -2,12 +2,12 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { adminApi } from "@/lib/api";
+import { adminApi, feedbackApi } from "@/lib/api";
 import { apiRequest } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
 import type { EncyclopediaSuggestion } from "@shared/schema";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle } from "lucide-react";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -556,6 +556,12 @@ export default function AdminPanel() {
     enabled: !!currentParticipant,
   });
 
+  const { data: feedbackData } = useQuery<any[]>({
+    queryKey: ["user-feedback"],
+    queryFn: () => feedbackApi.getAll(currentParticipant!.id),
+    enabled: !!currentParticipant,
+  });
+
   const suggestionMutation = useMutation({
     mutationFn: async ({ id, status, adminNote }: { id: string; status: string; adminNote?: string }) => {
       const res = await apiRequest("PATCH", `/api/encyclopedia-suggestions/${id}`, { status, adminNote, participantId: currentParticipant!.id });
@@ -750,6 +756,15 @@ export default function AdminPanel() {
             {suggestionsData && suggestionsData.filter(s => s.status === "pending").length > 0 && (
               <Badge variant="destructive" className="ml-1 text-[10px] px-1.5 py-0 min-w-0" data-testid="badge-pending-suggestions">
                 {suggestionsData.filter(s => s.status === "pending").length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="feedback" data-testid="tab-feedback" className="flex-1 min-w-0">
+            <MessageSquarePlus className="w-4 h-4 mr-1 flex-shrink-0" />
+            <span className="truncate">Feedback</span>
+            {feedbackData && feedbackData.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0 min-w-0">
+                {feedbackData.length}
               </Badge>
             )}
           </TabsTrigger>
@@ -1560,6 +1575,51 @@ export default function AdminPanel() {
                 </motion.div>
               ));
             })()}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="feedback">
+          <div className="space-y-3">
+            {(!feedbackData || feedbackData.length === 0) ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <MessageSquarePlus className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Noch kein Feedback eingegangen</p>
+              </div>
+            ) : (
+              feedbackData.map((fb: any) => (
+                <motion.div
+                  key={fb.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="font-serif font-semibold text-sm text-foreground">
+                              {fb.participantName || "Anonym"}
+                            </span>
+                            <Badge variant="outline" className="text-[10px]">
+                              {{
+                                feature: "Neue Funktion",
+                                improvement: "Verbesserung",
+                                bug: "Problem",
+                                other: "Sonstiges",
+                              }[fb.category as string] || fb.category}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{fb.message}</p>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {fb.createdAt ? new Date(fb.createdAt).toLocaleDateString("de-DE", { day: "numeric", month: "short", year: "numeric" }) : ""}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))
+            )}
           </div>
         </TabsContent>
       </Tabs>

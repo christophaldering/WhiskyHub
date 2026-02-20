@@ -386,3 +386,17 @@ export const encyclopediaSuggestions = pgTable("encyclopedia_suggestions", {
 export const insertEncyclopediaSuggestionSchema = createInsertSchema(encyclopediaSuggestions).omit({ id: true, createdAt: true, status: true, adminNote: true });
 export type InsertEncyclopediaSuggestion = z.infer<typeof insertEncyclopediaSuggestionSchema>;
 export type EncyclopediaSuggestion = typeof encyclopediaSuggestions.$inferSelect;
+
+// --- User Feedback ---
+export const userFeedback = pgTable("user_feedback", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id"),
+  participantName: text("participant_name"),
+  category: text("category").notNull().default("feature"),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertUserFeedbackSchema = createInsertSchema(userFeedback).omit({ id: true, createdAt: true });
+export type InsertUserFeedback = z.infer<typeof insertUserFeedbackSchema>;
+export type UserFeedback = typeof userFeedback.$inferSelect;

@@ -4964,6 +4964,41 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     }
   });
 
+  // ===== USER FEEDBACK =====
+  app.post("/api/feedback", async (req: Request, res: Response) => {
+    try {
+      const { participantId, participantName, category, message } = req.body;
+      if (!message || !message.trim()) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+      const feedback = await storage.createUserFeedback({
+        participantId: participantId || null,
+        participantName: participantName || null,
+        category: category || "feature",
+        message: message.trim(),
+      });
+      res.json(feedback);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/feedback", async (req: Request, res: Response) => {
+    try {
+      const { participantId } = req.query;
+      if (participantId) {
+        const requester = await storage.getParticipant(participantId as string);
+        if (!requester || requester.role !== "admin") {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+      }
+      const feedback = await storage.getUserFeedback();
+      res.json(feedback);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== AI TASTING IMPORT =====
 
   const tastingImportUpload = multer({

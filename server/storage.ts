@@ -3,7 +3,7 @@ import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
   profiles, sessionInvites, discussionEntries, reflectionEntries, whiskyFriends, journalEntries, benchmarkEntries, wishlistEntries,
-  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions,
+  newsletters, newsletterRecipients, whiskybaseCollection, tastingReminders, reminderLog, encyclopediaSuggestions, userFeedback,
   type InsertParticipant, type Participant,
   type InsertTasting, type Tasting,
   type InsertTastingParticipant, type TastingParticipant,
@@ -21,6 +21,7 @@ import {
   type InsertWhiskybaseCollection, type WhiskybaseCollectionItem,
   type InsertTastingReminder, type TastingReminder,
   type InsertEncyclopediaSuggestion, type EncyclopediaSuggestion,
+  type InsertUserFeedback, type UserFeedback,
 } from "@shared/schema";
 
 export interface WhiskyOfTheDay {
@@ -224,6 +225,10 @@ export interface IStorage {
   getEncyclopediaSuggestions(status?: string): Promise<EncyclopediaSuggestion[]>;
   createEncyclopediaSuggestion(data: InsertEncyclopediaSuggestion): Promise<EncyclopediaSuggestion>;
   updateSuggestionStatus(id: string, status: string, adminNote?: string): Promise<EncyclopediaSuggestion>;
+
+  // User Feedback
+  createUserFeedback(data: InsertUserFeedback): Promise<UserFeedback>;
+  getUserFeedback(): Promise<UserFeedback[]>;
 
   // Platform Stats
   getPlatformStats(): Promise<{
@@ -1261,6 +1266,16 @@ export class DatabaseStorage implements IStorage {
     }
 
     return twins.sort((a, b) => b.correlation - a.correlation).slice(0, 10);
+  }
+
+  // --- User Feedback ---
+  async createUserFeedback(data: InsertUserFeedback): Promise<UserFeedback> {
+    const [result] = await db.insert(userFeedback).values(data).returning();
+    return result;
+  }
+
+  async getUserFeedback(): Promise<UserFeedback[]> {
+    return db.select().from(userFeedback).orderBy(desc(userFeedback.createdAt));
   }
 }
 

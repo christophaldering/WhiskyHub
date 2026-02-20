@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { WelcomeOverlay } from "@/components/welcome-overlay";
+import { FeedbackButton } from "@/components/feedback-button";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
@@ -382,6 +383,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {children}
           </div>
         </main>
+        <FeedbackButton />
       </div>
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/40 safe-area-bottom" style={{ paddingLeft: 'env(safe-area-inset-left, 0)', paddingRight: 'env(safe-area-inset-right, 0)' }}>
