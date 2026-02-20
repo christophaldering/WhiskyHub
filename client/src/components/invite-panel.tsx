@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, Copy, Check, AlertCircle, Users, UserPlus, QrCode, Download } from "lucide-react";
+import { Mail, Copy, Check, AlertCircle, Users, QrCode, Download } from "lucide-react";
 import QRCode from "qrcode";
 
 interface InvitePanelProps {
@@ -87,25 +87,25 @@ export function InvitePanel({ tastingId }: InvitePanelProps) {
   const alreadyInvitedEmails = new Set(existingInvites.map((inv) => inv.email.toLowerCase()));
 
   const toggleFriend = (friend: WhiskyFriend) => {
+    if (!friend.email) return;
     const next = new Set(selectedFriends);
-    if (next.has(friend.id)) {
-      next.delete(friend.id);
-    } else {
-      next.add(friend.id);
-    }
-    setSelectedFriends(next);
-  };
-
-  const addSelectedToEmails = () => {
-    const selected = friends.filter((f) => selectedFriends.has(f.id));
-    const newEmails = selected.map((f) => f.email).filter((e) => e);
     const currentEmails = emails
       .split("\n")
       .map((e) => e.trim())
       .filter((e) => e.length > 0);
-    const combined = Array.from(new Set([...currentEmails, ...newEmails]));
-    setEmails(combined.join("\n"));
-    setSelectedFriends(new Set());
+    if (next.has(friend.id)) {
+      next.delete(friend.id);
+      const filtered = currentEmails.filter(
+        (e) => e.toLowerCase() !== friend.email.toLowerCase()
+      );
+      setEmails(filtered.join("\n"));
+    } else {
+      next.add(friend.id);
+      if (!currentEmails.some((e) => e.toLowerCase() === friend.email.toLowerCase())) {
+        setEmails([...currentEmails, friend.email].join("\n"));
+      }
+    }
+    setSelectedFriends(next);
   };
 
   const handleSend = () => {
@@ -224,22 +224,11 @@ export function InvitePanel({ tastingId }: InvitePanelProps) {
                     <Users className="w-3.5 h-3.5" />
                     {t("invite.friendsList")}
                   </Label>
-                  {selectedFriends.size > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs text-primary font-serif px-2"
-                      onClick={addSelectedToEmails}
-                      data-testid="button-add-selected-friends"
-                    >
-                      <UserPlus className="w-3 h-3 mr-1" />
-                      {t("invite.addSelected", { count: selectedFriends.size })}
-                    </Button>
-                  )}
                 </div>
                 <div className="max-h-40 overflow-y-auto rounded-lg border border-border/40 divide-y divide-border/20">
                   {availableFriends.map((friend) => {
-                    const isSelected = selectedFriends.has(friend.id);
+                    const emailsLower = emails.split("\n").map((e) => e.trim().toLowerCase());
+                    const isSelected = selectedFriends.has(friend.id) || emailsLower.includes(friend.email.toLowerCase());
                     return (
                       <label
                         key={friend.id}
