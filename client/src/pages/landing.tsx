@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { platformStatsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/images/hero-whisky.png";
+import christophImage from "@assets/22A3ABF8-0085-4C82-97DF-EAA0ACD46B4E_1771546683886.jpeg";
 import {
   Glasses, BookOpen, Users, BarChart3, Brain, Camera,
   FileUp, Globe, ArrowRight, Wine, Star, Sparkles,
@@ -244,43 +245,69 @@ export default function Landing() {
 
       {/* Origin Story */}
       <section className="py-20 sm:py-28">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             custom={0}
             variants={fadeUp}
-            className="text-center mb-10"
+            className="text-center mb-12"
           >
             <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.story.title")}</h2>
           </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={1}
-            variants={fadeUp}
-            className="bg-card border border-border/50 rounded-2xl p-8 sm:p-12 relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-amber-500/5 rounded-full translate-y-1/2 -translate-x-1/2" />
-            <div className="relative space-y-5">
-              <div className="flex items-center gap-3 mb-6">
-                <Heart className="w-6 h-6 text-primary" />
+          <div className="grid lg:grid-cols-5 gap-10 lg:gap-12 items-start">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              custom={0}
+              variants={fadeUp}
+              className="lg:col-span-2"
+            >
+              <div className="rounded-2xl overflow-hidden shadow-xl shadow-primary/10 border border-border/30">
+                <img src={christophImage} alt="Christoph" className="w-full h-auto object-cover" />
+              </div>
+            </motion.div>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              custom={1}
+              variants={fadeUp}
+              className="lg:col-span-3 space-y-5"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <Heart className="w-5 h-5 text-primary" />
                 <span className="text-sm font-medium text-primary uppercase tracking-widest">{t("landing.story.label")}</span>
               </div>
-              <p className="text-muted-foreground leading-relaxed text-base sm:text-lg">
+              <p className="text-muted-foreground leading-relaxed text-base">
                 {t("landing.story.p1")}
               </p>
-              <p className="text-muted-foreground leading-relaxed text-base sm:text-lg">
+              <p className="text-muted-foreground leading-relaxed text-base">
                 {t("landing.story.p2")}
               </p>
-              <p className="text-muted-foreground leading-relaxed text-base sm:text-lg">
+              <p className="text-muted-foreground leading-relaxed text-base">
                 {t("landing.story.p3")}
               </p>
-            </div>
-          </motion.div>
+              <p className="text-muted-foreground leading-relaxed text-base">
+                {t("landing.story.p4")}
+              </p>
+              <ul className="space-y-2 pl-1">
+                <li className="flex items-start gap-3 text-muted-foreground text-base">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>{t("landing.story.bullet1")}</span>
+                </li>
+                <li className="flex items-start gap-3 text-muted-foreground text-base">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>{t("landing.story.bullet2")}</span>
+                </li>
+              </ul>
+              <p className="text-muted-foreground/70 leading-relaxed text-sm italic pt-2">
+                {t("landing.story.tagline")}
+              </p>
+            </motion.div>
+          </div>
         </div>
       </section>
 
