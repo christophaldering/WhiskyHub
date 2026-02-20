@@ -350,7 +350,7 @@ export function OverviewRating({ tasting, whiskies, onExit, getBlindState }: Ove
       </header>
 
       <div className="w-full px-3 sm:px-4 py-3 sm:py-4 pb-24">
-        <div className="flex flex-col gap-2 sm:gap-3 max-w-2xl mx-auto">
+        <div className="flex flex-col gap-2 sm:gap-3 w-full">
           {whiskies.map((whisky, idx) => {
             const blind = getBlindState(idx, whisky);
             return (
