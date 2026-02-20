@@ -1957,10 +1957,23 @@ Respond ONLY with valid JSON, no markdown.`;
 
   app.post("/api/whiskies/ai-insights", async (req, res) => {
     try {
-      const { participantId, whiskyName, distillery, region, age, abv, caskInfluence, category, peatLevel, language } = req.body;
+      const { participantId, whiskyId, whiskyName, distillery, region, age, abv, caskInfluence, category, peatLevel, language } = req.body;
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
       const lang = language === "de" ? "German" : "English";
+      const cacheKey = `${lang}`;
+
+      if (whiskyId) {
+        const whisky = await storage.getWhisky(whiskyId);
+        if (whisky?.aiInsightsCache) {
+          try {
+            const cached = JSON.parse(whisky.aiInsightsCache);
+            if (cached[cacheKey]) {
+              return res.json({ insights: cached[cacheKey], cached: true });
+            }
+          } catch {}
+        }
+      }
 
       const openai = new OpenAI({
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -2002,6 +2015,19 @@ Write in a warm, conversational tone. ALWAYS respond in ${lang}. Do NOT use mark
       });
 
       const insights = response.choices[0]?.message?.content || "No insights available.";
+
+      if (whiskyId) {
+        try {
+          const whisky = await storage.getWhisky(whiskyId);
+          let existing: Record<string, string> = {};
+          if (whisky?.aiInsightsCache) {
+            try { existing = JSON.parse(whisky.aiInsightsCache); } catch {}
+          }
+          existing[cacheKey] = insights;
+          await storage.updateWhisky(whiskyId, { aiInsightsCache: JSON.stringify(existing) } as any);
+        } catch {}
+      }
+
       res.json({ insights });
     } catch (e: any) {
       console.error("AI insights error:", e.message);
@@ -2013,11 +2039,25 @@ Write in a warm, conversational tone. ALWAYS respond in ${lang}. Do NOT use mark
 
   app.post("/api/tastings/:id/ai-highlights", async (req, res) => {
     try {
+      const { language } = req.body;
+      const lang = language === "de" ? "German" : "English";
+      const cacheKey = language === "de" ? "de" : "en";
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
 
-      const whiskies = await storage.getWhiskiesForTasting(req.params.id);
       const allRatings = await storage.getRatingsForTasting(req.params.id);
+      const currentRatingCount = allRatings.length;
+
+      if (tasting.aiHighlightsCache && tasting.aiHighlightsRatingCount === currentRatingCount) {
+        try {
+          const cached = JSON.parse(tasting.aiHighlightsCache);
+          if (cached[cacheKey]) {
+            return res.json({ ...cached[cacheKey], cached: true });
+          }
+        } catch {}
+      }
+
+      const whiskies = await storage.getWhiskiesForTasting(req.params.id);
       const participants = await storage.getTastingParticipants(req.params.id);
       const participantMap = new Map<string, string>();
       for (const tp of participants) {
@@ -2065,7 +2105,7 @@ Write in a warm, conversational tone. ALWAYS respond in ${lang}. Do NOT use mark
 - "mostDivisive": The whisky with the biggest rating spread, and who loved/disliked it (string or null)
 - "funFacts": An array of 2-3 short fun observations about the tasting data (string[])
 
-Be specific with names and numbers. Make it entertaining and create "aha" moments. Write in a warm, engaging style.`
+Be specific with names and numbers. Make it entertaining and create "aha" moments. Write in a warm, engaging style. ALWAYS respond in ${lang}.`
           },
           {
             role: "user",
@@ -2079,6 +2119,19 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
       const content = response.choices[0]?.message?.content || "{}";
       let highlights;
       try { highlights = JSON.parse(content); } catch { highlights = { summary: content }; }
+
+      try {
+        let existingCache: Record<string, any> = {};
+        if (tasting.aiHighlightsCache && tasting.aiHighlightsRatingCount === currentRatingCount) {
+          try { existingCache = JSON.parse(tasting.aiHighlightsCache); } catch {}
+        }
+        existingCache[cacheKey] = highlights;
+        await storage.updateTasting(req.params.id, {
+          aiHighlightsCache: JSON.stringify(existingCache),
+          aiHighlightsRatingCount: currentRatingCount,
+        } as any);
+      } catch {}
+
       res.json(highlights);
     } catch (e: any) {
       console.error("AI highlights error:", e.message);

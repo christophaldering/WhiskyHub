@@ -52,6 +52,8 @@ export const tastings = pgTable("tastings", {
   dramTimers: text("dram_timers"), // JSON: { [whiskyId]: accumulatedSeconds }
   ratingPrompt: text("rating_prompt"), // null | "rate" | "final" — host prompt to submit ratings
   activeWhiskyId: varchar("active_whisky_id"), // tracks which whisky is currently being discussed
+  aiHighlightsCache: text("ai_highlights_cache"), // Cached AI session highlights (JSON)
+  aiHighlightsRatingCount: integer("ai_highlights_rating_count"), // Rating count when highlights were cached
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -102,6 +104,7 @@ export const whiskies = pgTable("whiskies", {
   hostSummary: text("host_summary"), // Host's detailed tasting assessment/review
   distilleryUrl: text("distillery_url"), // Distillery homepage URL
   aiFactsCache: text("ai_facts_cache"), // Cached AI-generated interesting facts (JSON)
+  aiInsightsCache: text("ai_insights_cache"), // Cached AI-generated whisky insights (text)
 });
 
 export const insertWhiskySchema = createInsertSchema(whiskies).omit({ id: true });

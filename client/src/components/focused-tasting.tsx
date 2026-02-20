@@ -141,6 +141,7 @@ function AiInsightsPanel({ whisky, tasting }: { whisky: Whisky; tasting: Tasting
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           participantId: currentParticipant?.id,
+          whiskyId: whisky.id,
           whiskyName: whisky.name,
           distillery: whisky.distillery,
           region: whisky.region,
