@@ -5,8 +5,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
-// @ts-ignore
-import * as XLSX from "xlsx";
+import { readExcelBuffer, sheetToArrayOfArrays, sheetToJson, sheetToCsv, jsonToSheet, jsonToCsv, buildExcelBuffer, type SimpleWorkbook } from "./excel-utils";
 // @ts-ignore
 import AdmZip from "adm-zip";
 import { storage } from "./storage";
@@ -121,15 +120,15 @@ function normalizeColumnName(raw: string): string | null {
   return COLUMN_MAP[key] || COLUMN_MAP[key.replace(/ /g, "_")] || COLUMN_MAP[key.replace(/ /g, "")] || null;
 }
 
-function parseSpreadsheetRows(buffer: Buffer, filename: string): { rows: Record<string, any>[]; errors: string[] } {
+async function parseSpreadsheetRows(buffer: Buffer, filename: string): Promise<{ rows: Record<string, any>[]; errors: string[] }> {
   const ext = path.extname(filename).toLowerCase();
   const errors: string[] = [];
 
   if (ext === ".xlsx" || ext === ".xls") {
-    const wb = XLSX.read(buffer, { type: "buffer" });
+    const wb = await readExcelBuffer(buffer);
     const sheet = wb.Sheets[wb.SheetNames[0]];
     if (!sheet) { errors.push("No worksheet found in file"); return { rows: [], errors }; }
-    const raw: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    const raw: any[][] = sheetToArrayOfArrays(sheet);
     return parseArrayRows(raw, errors);
   }
 
