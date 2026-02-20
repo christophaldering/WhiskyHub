@@ -1,15 +1,19 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { platformStatsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { LoginDialog } from "@/components/login-dialog";
+import { useAppStore } from "@/lib/store";
 import heroImage from "@/assets/images/hero-whisky.png";
 import christophImage from "@assets/22A3ABF8-0085-4C82-97DF-EAA0ACD46B4E_1771546683886.jpeg";
 import {
   Glasses, BookOpen, Users, BarChart3, Brain, Camera,
-  FileUp, Globe, ArrowRight, Wine,
-  ChevronDown, Heart
+  FileUp, Globe, ArrowRight, Wine, LogIn,
+  ChevronDown, Heart, FileSpreadsheet, ClipboardPaste,
+  Sparkles
 } from "lucide-react";
 
 const fadeUp = {
@@ -37,6 +41,8 @@ function AnimatedCounter({ value, suffix = "" }: { value: number; suffix?: strin
 export default function Landing() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
+  const { currentParticipant } = useAppStore();
+  const [loginOpen, setLoginOpen] = useState(false);
 
   const { data: stats } = useQuery({
     queryKey: ["platform-stats"],
@@ -59,22 +65,69 @@ export default function Landing() {
     { icon: Wine, titleKey: "landing.steps.taste", descKey: "landing.steps.tasteDesc", num: "03" },
   ];
 
+  const importCards = [
+    {
+      icon: Camera,
+      tag: t("landing.ai.card1Tag"),
+      title: t("landing.ai.card1Title"),
+      desc: t("landing.ai.card1Desc"),
+      gradient: "from-amber-500/20 via-amber-600/10 to-transparent",
+      borderColor: "border-amber-500/30 hover:border-amber-500/60",
+      iconBg: "bg-amber-500/15 text-amber-500",
+      tagBg: "bg-amber-500/10 text-amber-600",
+    },
+    {
+      icon: FileSpreadsheet,
+      tag: t("landing.ai.card2Tag"),
+      title: t("landing.ai.card2Title"),
+      desc: t("landing.ai.card2Desc"),
+      gradient: "from-orange-500/20 via-orange-600/10 to-transparent",
+      borderColor: "border-orange-500/30 hover:border-orange-500/60",
+      iconBg: "bg-orange-500/15 text-orange-500",
+      tagBg: "bg-orange-500/10 text-orange-600",
+    },
+    {
+      icon: ClipboardPaste,
+      tag: t("landing.ai.card3Tag"),
+      title: t("landing.ai.card3Title"),
+      desc: t("landing.ai.card3Desc"),
+      gradient: "from-yellow-500/20 via-yellow-600/10 to-transparent",
+      borderColor: "border-yellow-500/30 hover:border-yellow-500/60",
+      iconBg: "bg-yellow-600/15 text-yellow-600",
+      tagBg: "bg-yellow-600/10 text-yellow-700",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+      {/* Sticky Nav with Login */}
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <button onClick={() => navigate("/")} className="flex items-center gap-2.5" data-testid="landing-logo">
             <Wine className="w-6 h-6 text-primary" />
             <span className="font-serif font-black text-xl text-primary tracking-tight">CaskSense</span>
           </button>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-sm" data-testid="landing-nav-explore">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button variant="ghost" size="sm" onClick={() => document.getElementById("import-showcase")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-sm hidden sm:inline-flex" data-testid="landing-nav-explore">
               {t("landing.nav.explore")}
             </Button>
-            <Button size="sm" onClick={() => navigate("/app")} className="font-serif text-sm gap-1.5" data-testid="landing-nav-start">
-              {t("landing.nav.getStarted")}
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Button>
+            {currentParticipant ? (
+              <Button size="sm" onClick={() => navigate("/app")} className="font-serif text-sm gap-1.5" data-testid="landing-nav-start">
+                {t("landing.nav.getStarted")}
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setLoginOpen(true)} className="font-serif text-sm gap-1.5" data-testid="landing-nav-login">
+                  <LogIn className="w-3.5 h-3.5" />
+                  {t("landing.nav.login")}
+                </Button>
+                <Button size="sm" onClick={() => navigate("/app")} className="font-serif text-sm gap-1.5" data-testid="landing-nav-start">
+                  {t("landing.nav.getStarted")}
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -105,7 +158,7 @@ export default function Landing() {
                   {t("landing.hero.cta")}
                   <ArrowRight className="w-4 h-4" />
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-base gap-2" data-testid="landing-hero-learn">
+                <Button size="lg" variant="outline" onClick={() => document.getElementById("import-showcase")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-base gap-2" data-testid="landing-hero-learn">
                   {t("landing.hero.learnMore")}
                   <ChevronDown className="w-4 h-4" />
                 </Button>
@@ -123,6 +176,78 @@ export default function Landing() {
               </div>
             </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* ========== IMPORT SHOWCASE — THE BIG ONE ========== */}
+      <section id="import-showcase" className="py-20 sm:py-28 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-amber-900/8 via-orange-900/5 to-background" />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={0}
+            variants={fadeUp}
+            className="text-center mb-6"
+          >
+            <div className="inline-flex items-center gap-2 bg-orange-500/10 text-orange-400 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
+              <Sparkles className="w-4 h-4" />
+              {t("landing.ai.badge")}
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-black text-primary mb-4 leading-tight">
+              {t("landing.ai.showcaseTitle")}
+            </h2>
+            <p className="text-muted-foreground text-lg sm:text-xl max-w-2xl mx-auto">
+              {t("landing.ai.showcaseSubtitle")}
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 mt-12">
+            {importCards.map((card, i) => (
+              <motion.div
+                key={i}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                custom={i}
+                variants={fadeUp}
+                className={`relative rounded-2xl border ${card.borderColor} bg-card overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-amber-900/10 group`}
+                data-testid={`landing-import-card-${i}`}
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-50 group-hover:opacity-80 transition-opacity`} />
+                <div className="relative p-6 sm:p-8 flex flex-col h-full">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className={`w-14 h-14 rounded-xl ${card.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                      <card.icon className="w-7 h-7" />
+                    </div>
+                    <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${card.tagBg}`}>
+                      {card.tag}
+                    </span>
+                  </div>
+                  <h3 className="font-serif font-black text-primary text-xl sm:text-2xl mb-3 leading-snug">
+                    {card.title}
+                  </h3>
+                  <p className="text-muted-foreground text-sm sm:text-base leading-relaxed flex-1">
+                    {card.desc}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={3}
+            variants={fadeUp}
+            className="text-center mt-10"
+          >
+            <p className="text-muted-foreground/80 text-sm italic max-w-xl mx-auto">
+              {t("landing.ai.desc")}
+            </p>
+          </motion.div>
         </div>
       </section>
 
@@ -157,7 +282,7 @@ export default function Landing() {
         </section>
       )}
 
-      {/* Origin Story — prominent personal section */}
+      {/* Origin Story */}
       <section className="py-20 sm:py-28" id="story">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <motion.div
@@ -204,26 +329,22 @@ export default function Landing() {
               <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
                 {t("landing.story.p2")}
               </p>
-
               <blockquote className="border-l-3 border-amber-500/60 pl-5 py-2 my-6">
                 <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
                   {t("landing.story.quote1")}
                 </p>
               </blockquote>
-
               <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
                 {t("landing.story.p3")}
               </p>
               <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
                 {t("landing.story.p4")}
               </p>
-
               <blockquote className="border-l-3 border-amber-500/60 pl-5 py-2 my-6">
                 <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
                   {t("landing.story.quote2")}
                 </p>
               </blockquote>
-
               <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
                 {t("landing.story.p5")}
               </p>
@@ -331,61 +452,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* AI Highlight */}
-      <section className="py-20 sm:py-28 bg-gradient-to-br from-amber-900/8 via-transparent to-orange-900/5 border-y border-amber-800/15">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              custom={0}
-              variants={fadeUp}
-              className="space-y-6"
-            >
-              <div className="inline-flex items-center gap-2 bg-orange-500/10 text-orange-400 rounded-full px-4 py-1.5 text-sm font-medium">
-                <Brain className="w-4 h-4" />
-                {t("landing.ai.badge")}
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary leading-tight">
-                {t("landing.ai.title")}
-              </h2>
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                {t("landing.ai.desc")}
-              </p>
-              <ul className="space-y-3">
-                {["landing.ai.bullet1", "landing.ai.bullet2", "landing.ai.bullet3"].map((k) => (
-                  <li key={k} className="flex items-start gap-3 text-muted-foreground">
-                    <ArrowRight className="w-3 h-3 text-amber-500 mt-1.5 shrink-0" />
-                    <span className="text-sm">{t(k)}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              custom={1}
-              variants={fadeUp}
-              className="grid grid-cols-2 gap-4"
-            >
-              {[
-                { icon: Camera, label: t("landing.ai.photo"), color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-                { icon: FileUp, label: t("landing.ai.file"), color: "bg-orange-500/10 text-orange-500 border-orange-500/20" },
-                { icon: Globe, label: t("landing.ai.web"), color: "bg-yellow-600/10 text-yellow-600 border-yellow-600/20" },
-                { icon: Wine, label: t("landing.ai.text"), color: "bg-amber-600/10 text-amber-600 border-amber-600/20" },
-              ].map((item, i) => (
-                <div key={i} className={`${item.color} border rounded-xl p-6 flex flex-col items-center gap-3 text-center`}>
-                  <item.icon className="w-8 h-8" />
-                  <span className="text-sm font-medium">{item.label}</span>
-                </div>
-              ))}
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
       {/* Final CTA */}
       <section className="py-20 sm:py-28">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
@@ -430,6 +496,8 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      <LoginDialog open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>
   );
 }

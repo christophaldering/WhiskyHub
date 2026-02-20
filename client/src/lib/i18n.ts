@@ -50,6 +50,7 @@ const resources = {
         nav: {
           explore: "Explore",
           getStarted: "Get Started",
+          login: "Sign In",
         },
         hero: {
           badge: "Whisky. Perception. A bit of structure.",
@@ -122,6 +123,17 @@ const resources = {
           file: "Spreadsheets",
           web: "URLs & Text",
           text: "Tasting Lists",
+          showcaseTitle: "Three ways. Zero typing.",
+          showcaseSubtitle: "However your whisky list arrives — CaskSense handles it.",
+          card1Title: "Photograph your lineup",
+          card1Desc: "Snap a photo of the bottles on the table. AI reads labels, distillery, age — your tasting sheet fills itself.",
+          card1Tag: "Photo",
+          card2Title: "Columns mapped automatically",
+          card2Desc: "Drag in your Excel or CSV. Columns are recognised and matched — no manual mapping, no cleanup.",
+          card2Tag: "Excel / CSV",
+          card3Title: "Paste, import, done",
+          card3Desc: "Copy text from anywhere — a website, a message, a PDF. Paste it in, and the whiskies appear ready to taste.",
+          card3Tag: "Text / URL",
         },
         cta: {
           title: "Ready for the next tasting?",
@@ -1800,6 +1812,7 @@ const resources = {
         nav: {
           explore: "Entdecken",
           getStarted: "Loslegen",
+          login: "Anmelden",
         },
         hero: {
           badge: "Whisky. Wahrnehmung. Ein bisschen Struktur.",
@@ -1872,6 +1885,17 @@ const resources = {
           file: "Tabellen",
           web: "URLs & Text",
           text: "Tasting-Listen",
+          showcaseTitle: "Drei Wege. Null Tipparbeit.",
+          showcaseSubtitle: "Egal wie deine Whisky-Liste ankommt — CaskSense kümmert sich.",
+          card1Title: "Line-up fotografieren",
+          card1Desc: "Mach ein Foto der Flaschen auf dem Tisch. KI liest Etiketten, Destillerie, Alter — dein Tasting-Sheet füllt sich von selbst.",
+          card1Tag: "Foto",
+          card2Title: "Spalten automatisch zuordnen",
+          card2Desc: "Zieh deine Excel- oder CSV-Datei rein. Spalten werden erkannt und zugeordnet — kein Mapping, kein Aufräumen.",
+          card2Tag: "Excel / CSV",
+          card3Title: "Einfügen, übernehmen, fertig",
+          card3Desc: "Kopiere Text von überall — Website, Nachricht, PDF. Einfügen, und die Whiskys stehen bereit zum Verkosten.",
+          card3Tag: "Text / URL",
         },
         cta: {
           title: "Bereit für das nächste Tasting?",
