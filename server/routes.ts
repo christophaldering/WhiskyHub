@@ -6208,6 +6208,278 @@ Important rules:
     }
   });
 
+  app.get("/api/tour-pdf", async (_req: Request, res: Response) => {
+    try {
+      const { jsPDF } = await import("jspdf");
+
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const W = 297;
+      const H = 210;
+
+      const NAVY = "#0f172a";
+      const AMBER = "#c8943e";
+      const CREAM = "#f5f0e8";
+      const MUTED = "#8b8578";
+
+      const tourImagesDir = path.join(process.cwd(), "client", "src", "assets", "tour");
+      function loadImage(name: string): string | null {
+        try {
+          const imgPath = path.join(tourImagesDir, name);
+          if (fs.existsSync(imgPath)) {
+            return "data:image/png;base64," + fs.readFileSync(imgPath).toString("base64");
+          }
+        } catch {}
+        return null;
+      }
+
+      const slideData = [
+        {
+          title: "CaskSense",
+          subtitle: "Whisky gemeinsam erleben — strukturiert, persönlich, ohne Vorwissen.",
+          badge: "Produkt-Tour",
+          features: [] as string[],
+          image: "slide-cover.png",
+        },
+        {
+          title: "Tasting-Sessions",
+          subtitle: "Erstelle strukturierte Tastings, lade Gäste per QR-Code ein und bewerte gemeinsam.",
+          badge: "Kernfunktion",
+          image: "slide-tasting.png",
+          features: [
+            "Sessions erstellen — Name, Datum, Line-up — in Sekunden startklar",
+            "QR-Code Einladungen — Scannen und sofort dabei",
+            "Strukturierte Bewertung — Nase, Geschmack, Abgang, Balance",
+            "Live-Diskussion — Chat in Echtzeit während des Tastings",
+          ],
+        },
+        {
+          title: "Blind Tasting & Enthüllung",
+          subtitle: "Whiskys ohne Vorurteile verkosten. Der Gastgeber steuert die Enthüllung.",
+          badge: "Highlight",
+          image: "slide-blind.png",
+          features: [
+            "Blind-Modus — Etiketten ausblenden, fair bewerten",
+            "Schrittweise Enthüllung — Gastgeber enthüllt nach und nach mit Diagrammen",
+            "ABV & Alter raten — Zusätzliche Herausforderung für erfahrene Gaumen",
+            "Cover-Bild Enthüllung — Überraschungsmoment mit Session-Foto",
+          ],
+        },
+        {
+          title: "KI-Import & Whisky-Verwaltung",
+          subtitle: "Flaschenfoto, Excel oder Text — die KI erkennt Whiskys und übernimmt die Dateneingabe.",
+          badge: "KI-gestützt",
+          image: "slide-ai.png",
+          features: [
+            "Foto-Erkennung — GPT-4o liest Etiketten und identifiziert Flaschen",
+            "Excel/CSV Import — Spalten werden automatisch zugeordnet",
+            "Benchmark-Analyse — Bewertungen hochladen, KI extrahiert Daten",
+            "Whiskybase-Import — Sammlung per CSV importieren",
+          ],
+        },
+        {
+          title: "Verkostungsbrett & Präsentation",
+          subtitle: "Das visuelle Herzstück: alle Whiskys im Überblick, mit Fotos und Nummern.",
+          badge: "Visuell",
+          image: "slide-flightboard.png",
+          features: [
+            "Verkostungsbrett — Alle Whiskys auf einen Blick, nummeriert und sortiert",
+            "Flaschenfotos — Bilder hochladen und verwalten",
+            "PDF Tasting-Menü — Professionelles Menü als PDF exportieren",
+            "Tasting-Notiz Generator — Interaktives Tool mit vordefinierten Aromen",
+          ],
+        },
+        {
+          title: "Persönliche Analysen",
+          subtitle: "Radar-Charts, Flavor Wheels und Geschmacksentwicklung — Muster im eigenen Gaumen entdecken.",
+          badge: "Deine Daten",
+          image: "slide-analytics.png",
+          features: [
+            "Geschmacksprofil — Radar-Diagramm: Region, Fass, Torfgehalt",
+            "Aromenrad — Sunburst-Diagramm mit 8 Aromen-Kategorien",
+            "Whisky-Tagebuch — Notizen, Fotos, Stimmung — persönliche Bibliothek",
+            "37 Abzeichen — Von der ersten Bewertung bis zum 1.000sten Tasting",
+            "Direktvergleich — 2–3 Whiskys nebeneinander vergleichen",
+            "Empfehlungen — Personalisierte Vorschläge nach Profil",
+          ],
+        },
+        {
+          title: "Gemeinschaft & Austausch",
+          subtitle: "Freunde finden, Aktivitäten verfolgen, Rankings vergleichen.",
+          badge: "Gemeinsam",
+          image: "slide-community.png",
+          features: [
+            "Freunde — Whisky-Freunde hinzufügen und deren Einträge sehen",
+            "Aktivitäts-Feed — Timeline der Journal-Einträge deiner Freunde",
+            "Rangliste — Wertungen: aktivster Bewerter, detaillierteste Notizen",
+            "Tasting-Kalender — Monatsansicht aller Sessions",
+            "Erinnerungen — E-Mail-Reminder vor dem Tasting",
+          ],
+        },
+        {
+          title: "Wissensdatenbank",
+          subtitle: "Lexikon, Destillerien-Enzyklopädie und interaktive Weltkarte.",
+          badge: "Referenz",
+          image: "slide-knowledge.png",
+          features: [
+            "Whisky-Lexikon — 53 Einträge in 5 Kategorien, zweisprachig",
+            "Destillerien — ~100 Destillerien weltweit mit Geschichte",
+            "Interaktive Karte — Weltkarte mit Destillerie-Pins",
+            "Abfüller-Lexikon — Unabhängige Abfüller mit Details",
+          ],
+        },
+        {
+          title: "Gastgeber-Werkzeuge & Übersicht",
+          subtitle: "Überblick für Gastgeber: Statistiken, Top-Whiskys, Briefing-Notizen.",
+          badge: "Für Gastgeber",
+          image: "slide-host.png",
+          features: [
+            "Gastgeber-Übersicht — Tastings, Teilnehmer, Bewertungen im Blick",
+            "Tasting-Zusammenfassung — Rückblick: Top-Whisky, Kontroversen",
+            "Gastgeber-Delegation — Rolle an anderen Teilnehmer übertragen",
+            "Ambiente — Kaminfeuer, Regen, Nacht — dezente Klänge",
+          ],
+        },
+        {
+          title: "Geführtes Tasting & Präsentationsmodus",
+          subtitle: "Live-Moderation: geteilter Bildschirm für den Gastgeber, Vollbild für Teilnehmer.",
+          badge: "Präsentation",
+          image: "slide-guided.png",
+          features: [
+            "Geteilter Bildschirm — Steuerung und Präsentation",
+            "Vollbild Teilnehmer — Große, klare Darstellung",
+            "Schrittweise Enthüllung — Nach und nach enthüllen mit Animationen",
+            "Automatische Aktivierung — Startet mit der Enthüllungsphase",
+          ],
+        },
+        {
+          title: "Mobile & Mehrsprachig",
+          subtitle: "Installierbar, offline nutzbar, komplett zweisprachig.",
+          badge: "Überall",
+          image: "slide-mobile.png",
+          features: [
+            "Progressive Web App — Auf dem Home-Screen installieren",
+            "Offline-Modus — Network-First Caching",
+            "Deutsch & Englisch — Vollständig zweisprachig, jederzeit umschaltbar",
+            "Dark & Light — Warmes Whisky-Dunkel oder helles Creme-Amber",
+          ],
+        },
+        {
+          title: "Bereit für das nächste Tasting?",
+          subtitle: "Starte eine Session, lade Freunde ein und entdecke, was dein Gaumen wirklich wahrnimmt.\n\nKostenlos — ohne Konto.\ncasksense.replit.app",
+          badge: "",
+          image: "slide-cta.png",
+          features: [] as string[],
+        },
+      ];
+
+      for (let i = 0; i < slideData.length; i++) {
+        const d = slideData[i];
+        const isCover = i === 0;
+        const isCta = i === slideData.length - 1;
+
+        if (i > 0) doc.addPage();
+
+        doc.setFillColor(NAVY);
+        doc.rect(0, 0, W, H, "F");
+
+        const imgData = d.image ? loadImage(d.image) : null;
+
+        if (imgData && (isCover || isCta)) {
+          try { doc.addImage(imgData, "PNG", 0, 0, W, H); } catch {}
+          doc.setFillColor(15, 23, 42);
+          doc.setGState(new (doc as any).GState({ opacity: 0.65 }));
+          doc.rect(0, 0, W, H, "F");
+          doc.setGState(new (doc as any).GState({ opacity: 1 }));
+        } else if (imgData && !isCover && !isCta) {
+          try { doc.addImage(imgData, "PNG", 160, 15, 125, 70); } catch {}
+        }
+
+        doc.setFillColor(AMBER);
+        doc.rect(0, 0, W, 1.5, "F");
+
+        if (d.badge) {
+          doc.setFontSize(8);
+          doc.setTextColor(AMBER);
+          if (isCover || isCta) {
+            doc.text(d.badge.toUpperCase(), W / 2, isCover ? 55 : 55, { align: "center" });
+          } else {
+            doc.text(d.badge.toUpperCase(), 20, 18);
+          }
+        }
+
+        doc.setTextColor(CREAM);
+        if (isCover || isCta) {
+          doc.setFontSize(36);
+          doc.text(d.title, W / 2, isCover ? 75 : 75, { align: "center" });
+        } else {
+          doc.setFontSize(24);
+          doc.text(d.title, 20, 28);
+        }
+
+        if (d.subtitle) {
+          doc.setFontSize(isCover ? 12 : 10);
+          doc.setTextColor(MUTED);
+          const subtitleLines = doc.splitTextToSize(d.subtitle, isCover || isCta ? 200 : 130);
+          if (isCover || isCta) {
+            doc.text(subtitleLines, W / 2, isCover ? 90 : 90, { align: "center" });
+          } else {
+            doc.text(subtitleLines, 20, 38);
+          }
+        }
+
+        if (d.features.length > 0) {
+          const cols = d.features.length > 4 ? 2 : 1;
+          const perCol = Math.ceil(d.features.length / cols);
+          const startY = 62;
+
+          for (let c = 0; c < cols; c++) {
+            const colFeatures = d.features.slice(c * perCol, (c + 1) * perCol);
+            const startX = 20 + c * 135;
+
+            for (let fi = 0; fi < colFeatures.length; fi++) {
+              const parts = colFeatures[fi].split(" — ");
+              const featureTitle = parts[0];
+              const featureDesc = parts.length > 1 ? parts[1] : "";
+              const yPos = startY + fi * 18;
+
+              doc.setFillColor(AMBER);
+              doc.rect(startX, yPos - 2, 3, 3, "F");
+
+              doc.setFontSize(10);
+              doc.setTextColor(CREAM);
+              doc.text(featureTitle, startX + 6, yPos + 1);
+
+              if (featureDesc) {
+                doc.setFontSize(8);
+                doc.setTextColor(MUTED);
+                doc.text(featureDesc, startX + 6, yPos + 7);
+              }
+            }
+          }
+        }
+
+        doc.setFillColor(AMBER);
+        doc.rect(0, H - 1.5, W, 1.5, "F");
+
+        doc.setFontSize(7);
+        doc.setTextColor(MUTED);
+        doc.text("CaskSense", 10, H - 5);
+
+        if (!isCover) {
+          doc.text(`${i} / ${slideData.length - 1}`, W - 10, H - 5, { align: "right" });
+        }
+      }
+
+      const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="CaskSense-Produkt-Tour.pdf"`);
+      res.send(pdfBuffer);
+    } catch (e: any) {
+      console.error("PDF generation error:", e);
+      res.status(500).json({ message: e.message || "PDF generation failed" });
+    }
+  });
+
   // ===== NOTIFICATIONS / NEWS FEED =====
 
   app.get("/api/notifications", async (req: Request, res: Response) => {

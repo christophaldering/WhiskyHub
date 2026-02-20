@@ -141,6 +141,13 @@ const resources = {
           title: "Community Contributors",
           desc: "These wonderful people help shape CaskSense with their ideas, feedback, and passion for whisky.",
         },
+        tourBanner: {
+          badge: "Interactive Product Tour",
+          title: "See CaskSense in action",
+          desc: "12 illustrated slides — from blind tastings and AI import to personal analytics and community features. Takes about 3 minutes.",
+          cta: "Start Feature Tour",
+          hint: "12 slides · ~3 min · no sign-up needed",
+        },
         cta: {
           title: "Ready for the next tasting?",
           desc: "Start a session, invite friends, and capture what you really perceive. Free to use — no account needed to start.",
@@ -2036,6 +2043,13 @@ const resources = {
         community: {
           title: "Community Contributors",
           desc: "Diese wunderbaren Menschen gestalten CaskSense mit ihren Ideen, ihrem Feedback und ihrer Leidenschaft für Whisky.",
+        },
+        tourBanner: {
+          badge: "Interaktive Produkt-Tour",
+          title: "CaskSense im Überblick erleben",
+          desc: "12 illustrierte Slides — von Blind-Tastings und KI-Import bis zu persönlichen Analysen und Community-Funktionen. Dauert ca. 3 Minuten.",
+          cta: "Feature-Tour starten",
+          hint: "12 Slides · ~3 Min. · ohne Anmeldung",
         },
         cta: {
           title: "Bereit für das nächste Tasting?",

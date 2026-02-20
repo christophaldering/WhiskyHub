@@ -7,9 +7,10 @@ import {
   Smartphone, ChevronLeft, ChevronRight, ArrowLeft, FileDown, Play, Pause,
   List, X, Star, Sparkles, FileSpreadsheet, QrCode, NotebookPen,
   Activity, Trophy, GitCompareArrows, Rss, Calendar, Landmark, Map,
-  MessageSquare, Volume2, Heart, Bell, Download
+  MessageSquare, Volume2, Heart, Bell, Download, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/lib/store";
 
 import slideCover from "@/assets/tour/slide-cover.png";
 import slideTasting from "@/assets/tour/slide-tasting.png";
@@ -397,11 +398,14 @@ function SlideContent({ slide, direction }: { slide: SlideData; direction: numbe
 
 export default function Tour() {
   const [, navigate] = useLocation();
+  const { currentParticipant } = useAppStore();
+  const isAdmin = currentParticipant?.role === "admin";
   const [current, setCurrent] = useState(0);
   const [autoPlay, setAutoPlay] = useState(false);
   const [showTOC, setShowTOC] = useState(false);
   const [direction, setDirection] = useState(0);
   const [downloading, setDownloading] = useState(false);
+  const [downloadingPptx, setDownloadingPptx] = useState(false);
   const total = slides.length;
 
   const next = useCallback(() => {
@@ -441,8 +445,27 @@ export default function Tour() {
     return () => clearInterval(id);
   }, [autoPlay, total]);
 
-  const handleDownloadPptx = async () => {
+  const handleDownloadPdf = async () => {
     setDownloading(true);
+    try {
+      const res = await fetch("/api/tour-pdf");
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "CaskSense-Produkt-Tour.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("PDF download error:", e);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleDownloadPptx = async () => {
+    setDownloadingPptx(true);
     try {
       const res = await fetch("/api/tour-pptx");
       if (!res.ok) throw new Error("Download failed");
@@ -456,7 +479,7 @@ export default function Tour() {
     } catch (e) {
       console.error("PPTX download error:", e);
     } finally {
-      setDownloading(false);
+      setDownloadingPptx(false);
     }
   };
 
@@ -492,14 +515,27 @@ export default function Tour() {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleDownloadPptx}
+            onClick={handleDownloadPdf}
             disabled={downloading}
             className="text-xs gap-1 px-2 font-serif"
-            data-testid="button-tour-download"
+            data-testid="button-tour-download-pdf"
           >
-            <FileDown className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{downloading ? "..." : "PPTX"}</span>
+            <FileText className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{downloading ? "..." : "PDF"}</span>
           </Button>
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadPptx}
+              disabled={downloadingPptx}
+              className="text-xs gap-1 px-2 font-serif"
+              data-testid="button-tour-download-pptx"
+            >
+              <FileDown className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{downloadingPptx ? "..." : "PPTX"}</span>
+            </Button>
+          )}
         </div>
       </header>
 
@@ -560,15 +596,29 @@ export default function Tour() {
       </div>
 
       {slide.type === "cta" && (
-        <div className="absolute bottom-20 left-0 right-0 flex justify-center gap-3 z-10">
-          <Button onClick={() => navigate("/app")} className="font-serif gap-2" size="lg" data-testid="button-tour-start">
-            Jetzt starten
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" onClick={handleDownloadPptx} disabled={downloading} className="font-serif gap-2" size="lg" data-testid="button-tour-download-pptx">
-            <FileDown className="w-4 h-4" />
-            {downloading ? "Wird erstellt..." : "PPTX herunterladen"}
-          </Button>
+        <div className="absolute bottom-20 left-0 right-0 flex flex-col items-center gap-3 z-10">
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button onClick={() => navigate("/")} className="font-serif gap-2" size="lg" data-testid="button-tour-back-landing">
+              <ArrowLeft className="w-4 h-4" />
+              Zurück zur Übersicht
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/app")} className="font-serif gap-2" size="lg" data-testid="button-tour-start">
+              Direkt zum Tool
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button variant="ghost" onClick={handleDownloadPdf} disabled={downloading} className="font-serif gap-2 text-sm" size="sm" data-testid="button-tour-download-pdf-cta">
+              <FileText className="w-4 h-4" />
+              {downloading ? "Wird erstellt..." : "PDF herunterladen"}
+            </Button>
+            {isAdmin && (
+              <Button variant="ghost" onClick={handleDownloadPptx} disabled={downloadingPptx} className="font-serif gap-2 text-sm" size="sm" data-testid="button-tour-download-pptx-cta">
+                <FileDown className="w-4 h-4" />
+                {downloadingPptx ? "Wird erstellt..." : "PPTX herunterladen"}
+              </Button>
+            )}
+          </div>
         </div>
       )}
 

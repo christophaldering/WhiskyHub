@@ -13,7 +13,7 @@ import {
   Glasses, BookOpen, Users, BarChart3, Brain, Camera,
   FileUp, Globe, ArrowRight, Wine, LogIn,
   ChevronDown, Heart, FileSpreadsheet, ClipboardPaste,
-  Sparkles
+  Sparkles, Presentation, Play
 } from "lucide-react";
 
 const fadeUp = {
@@ -114,7 +114,8 @@ export default function Landing() {
             <span className="font-serif font-black text-xl text-primary tracking-tight">CaskSense</span>
           </button>
           <div className="flex items-center gap-2 sm:gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/tour")} className="font-serif text-xs sm:text-sm" data-testid="landing-nav-tour">
+            <Button variant="outline" size="sm" onClick={() => navigate("/tour")} className="font-serif text-xs sm:text-sm gap-1.5 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700" data-testid="landing-nav-tour">
+              <Presentation className="w-3.5 h-3.5" />
               {t("landing.nav.featureTour")}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-sm hidden sm:inline-flex" data-testid="landing-nav-explore">
@@ -253,6 +254,46 @@ export default function Landing() {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Feature Tour Banner */}
+      <section className="py-16 sm:py-20 bg-gradient-to-r from-amber-900/10 via-amber-800/5 to-orange-900/10 border-y border-amber-700/20 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-amber-500/20 blur-3xl" />
+        </div>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 relative">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={0}
+            variants={fadeUp}
+            className="text-center space-y-6"
+          >
+            <div className="inline-flex items-center gap-2 bg-amber-500/15 text-amber-500 rounded-full px-4 py-1.5 text-sm font-medium">
+              <Presentation className="w-4 h-4" />
+              {t("landing.tourBanner.badge")}
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-black text-primary leading-tight">
+              {t("landing.tourBanner.title")}
+            </h2>
+            <p className="text-muted-foreground text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
+              {t("landing.tourBanner.desc")}
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+              <Button
+                size="lg"
+                onClick={() => navigate("/tour")}
+                className="font-serif text-base gap-2.5 px-8 py-6 bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-900/20"
+                data-testid="landing-tour-cta"
+              >
+                <Play className="w-5 h-5" />
+                {t("landing.tourBanner.cta")}
+              </Button>
+              <p className="text-sm text-muted-foreground/60">{t("landing.tourBanner.hint")}</p>
+            </div>
+          </motion.div>
         </div>
       </section>
 
