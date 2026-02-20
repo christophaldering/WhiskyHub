@@ -4,6 +4,7 @@
 CaskSense is a web application designed for hosting and participating in collaborative whisky tasting sessions. It enables a host to create tasting events, invite participants, and guide them through a structured whisky evaluation process. Participants rate whiskies across various dimensions, and the host manages the session's progression through distinct stages, including a multi-act reveal phase for presenting results with analytics and charts. The project aims to provide a sophisticated and engaging platform for whisky enthusiasts to share and compare their tasting experiences, offering features from session management to personalized analytics and a comprehensive whisky journal.
 
 ## Recent Changes
+- **Security: xlsx Replacement (Feb 2026)**: Replaced vulnerable `xlsx@0.18.5` package with `exceljs` for all spreadsheet read/write operations. New utility module `server/excel-utils.ts` wraps exceljs. All import/export endpoints updated to async pattern.
 - **Printable Sheets Enhancement (Feb 2026)**: PDFs now include participant name, profile photo, session code, and date. Separate "Download PDF" and "Print" (browser dialog) buttons. Moved printable sheets into the ⋯ more menu for less prominence. Subtle analog hint on the join page.
 - **Feedback System (Feb 2026)**: Floating feedback button (bottom-right) with category selector (New Feature / Improvement / Problem / Other), free-text message, and auto-populated participant name. Stored in `user_feedback` table. Admin panel has a new "Feedback" tab to review submissions.
 - **Product Tour (Feb 2026)**: New visual product tour at `/tour` with 12 illustrated slides, split-screen layouts, TOC sidebar, keyboard/autoplay navigation, and Framer Motion animations. German-only content. PPTX export via `/api/tour-pptx` using pptxgenjs with embedded illustrations. Old `/feature-tour` still available.
@@ -45,7 +46,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **PostgreSQL**: Core relational database.
 -   **Google Fonts**: For specified fonts (Playfair Display, Inter).
 -   **Nodemailer**: For sending email invitations.
--   **SheetJS (xlsx)**: For parsing Excel files during bulk whisky import.
+-   **ExcelJS**: For parsing and generating Excel files during bulk whisky import/export.
 -   **qrcode**: For generating QR code invitations.
 -   **Replit Object Storage**: For persistent storage of uploaded bottle images.
 -   **GPT-4o**: For AI-powered bottle identification.
