@@ -127,6 +127,7 @@ export default function News() {
             ))}
           </div>
         </GuestPreview>
+        <ChangelogSection />
       </div>
     );
   }
