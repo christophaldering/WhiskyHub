@@ -373,15 +373,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       ],
     },
     {
-      label: t('navGroup.reference'),
+      label: t('navGroup.whiskyKnowledge'),
       items: [
         { href: "/lexicon", icon: Library, label: t('nav.lexicon') },
         { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
         { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
         { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
+      ],
+    },
+    {
+      label: t('navGroup.aboutPlatform'),
+      items: [
+        { href: "/about", icon: Info, label: t('nav.about') },
         { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
         { href: "/features", icon: LayoutGrid, label: t('nav.features') },
-        { href: "/about", icon: Info, label: t('nav.about') },
         { href: "/donate", icon: Heart, label: t('nav.donate') },
         { href: "/", icon: Globe, label: t('nav.landingPage') },
       ],

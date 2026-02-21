@@ -332,7 +332,8 @@ const resources = {
         tools: "Tools",
         community: "Community",
         host: "Host",
-        reference: "Reference & Info",
+        whiskyKnowledge: "Whisky Knowledge",
+        aboutPlatform: "About CaskSense",
         admin: "Administration"
       },
       dataExport: {
@@ -2289,7 +2290,8 @@ const resources = {
         tools: "Werkzeuge",
         community: "Community",
         host: "Gastgeber",
-        reference: "Wissen & Info",
+        whiskyKnowledge: "Whisky-Wissen",
+        aboutPlatform: "Über CaskSense",
         admin: "Verwaltung"
       },
       dataExport: {
