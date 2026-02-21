@@ -3756,6 +3756,92 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  // ===== CHANGELOG (Platform Development Log) =====
+
+  app.get("/api/changelog", async (req: Request, res: Response) => {
+    try {
+      const category = req.query.category as string | undefined;
+      const from = req.query.from as string | undefined;
+      const to = req.query.to as string | undefined;
+      const entries = await storage.getChangelogEntries({ category, from, to, visibleOnly: true });
+      res.json(entries);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/changelog", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const category = req.query.category as string | undefined;
+      const from = req.query.from as string | undefined;
+      const to = req.query.to as string | undefined;
+      const entries = await storage.getChangelogEntries({ category, from, to });
+      res.json(entries);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/admin/changelog", async (req: Request, res: Response) => {
+    try {
+      const { participantId, title, description, category, date, visible } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      if (!title || !description || !date) return res.status(400).json({ message: "title, description, and date required" });
+      const validCategories = ["feature", "improvement", "bugfix", "security", "design"];
+      if (category && !validCategories.includes(category)) return res.status(400).json({ message: `Invalid category. Use: ${validCategories.join(", ")}` });
+      const entry = await storage.createChangelogEntry({
+        title, description, category: category || "feature", date,
+        visible: visible !== false, createdBy: participantId,
+      });
+      res.status(201).json(entry);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/admin/changelog/:id", async (req: Request, res: Response) => {
+    try {
+      const { participantId, ...updates } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const existing = await storage.getChangelogEntry(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Changelog entry not found" });
+      const { title, description, category, date, visible } = updates;
+      const entry = await storage.updateChangelogEntry(req.params.id, {
+        ...(title !== undefined && { title }),
+        ...(description !== undefined && { description }),
+        ...(category !== undefined && { category }),
+        ...(date !== undefined && { date }),
+        ...(visible !== undefined && { visible }),
+      });
+      res.json(entry);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/admin/changelog/:id", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+      const existing = await storage.getChangelogEntry(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Changelog entry not found" });
+      await storage.deleteChangelogEntry(req.params.id);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== ADMIN =====
 
   // --- AI Settings (Kill Switch) ---

@@ -25,6 +25,8 @@ import {
   type InsertUserFeedback, type UserFeedback,
   notifications,
   type InsertNotification, type Notification,
+  changelogEntries,
+  type InsertChangelogEntry, type ChangelogEntry,
 } from "@shared/schema";
 
 export interface WhiskyOfTheDay {
@@ -1382,6 +1384,47 @@ export class DatabaseStorage implements IStorage {
       const readByList: string[] = JSON.parse(n.readBy || "[]");
       return !readByList.includes(participantId);
     }).length;
+  }
+
+  async getChangelogEntries(options?: { category?: string; from?: string; to?: string; visibleOnly?: boolean }): Promise<ChangelogEntry[]> {
+    let query = db.select().from(changelogEntries).orderBy(desc(changelogEntries.date));
+    const results = await query;
+    let filtered = results;
+    if (options?.visibleOnly) {
+      filtered = filtered.filter(e => e.visible);
+    }
+    if (options?.category && options.category !== "all") {
+      filtered = filtered.filter(e => e.category === options.category);
+    }
+    if (options?.from) {
+      filtered = filtered.filter(e => e.date >= options.from!);
+    }
+    if (options?.to) {
+      filtered = filtered.filter(e => e.date <= options.to!);
+    }
+    return filtered;
+  }
+
+  async getChangelogEntry(id: string): Promise<ChangelogEntry | undefined> {
+    const [entry] = await db.select().from(changelogEntries).where(eq(changelogEntries.id, id));
+    return entry;
+  }
+
+  async createChangelogEntry(data: InsertChangelogEntry): Promise<ChangelogEntry> {
+    const [result] = await db.insert(changelogEntries).values(data).returning();
+    return result;
+  }
+
+  async updateChangelogEntry(id: string, data: Partial<InsertChangelogEntry>): Promise<ChangelogEntry> {
+    const [result] = await db.update(changelogEntries)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(changelogEntries.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteChangelogEntry(id: string): Promise<void> {
+    await db.delete(changelogEntries).where(eq(changelogEntries.id, id));
   }
 }
 

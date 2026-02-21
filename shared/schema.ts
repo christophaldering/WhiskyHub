@@ -465,3 +465,20 @@ export const adminAuditLog = pgTable("admin_audit_log", {
 });
 
 export type AdminAuditLogEntry = typeof adminAuditLog.$inferSelect;
+
+// --- Changelog Entries (platform development log) ---
+export const changelogEntries = pgTable("changelog_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull().default("feature"),
+  date: text("date").notNull(),
+  visible: boolean("visible").default(true),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertChangelogEntrySchema = createInsertSchema(changelogEntries).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertChangelogEntry = z.infer<typeof insertChangelogEntrySchema>;
+export type ChangelogEntry = typeof changelogEntries.$inferSelect;

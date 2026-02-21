@@ -7,11 +7,12 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
 import type { EncyclopediaSuggestion } from "@shared/schema";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart } from "lucide-react";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -192,6 +193,26 @@ function NewsletterManagement({ participants, currentParticipantId, t }: {
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [resendSelectedIds, setResendSelectedIds] = useState<Set<string>>(new Set());
   const [showResendDialog, setShowResendDialog] = useState<string | null>(null);
+  const [selectedChangelogs, setSelectedChangelogs] = useState<Set<string>>(new Set());
+
+  const { data: changelogEntries = [] } = useQuery({
+    queryKey: ["/api/changelog", "newsletter"],
+    queryFn: async () => {
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      const res = await fetch(`/api/changelog?from=${threeMonthsAgo.toISOString().split("T")[0]}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  const toggleChangelog = (id: string) => {
+    setSelectedChangelogs(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const { data: newsletters = [] } = useQuery<NewsletterArchiveItem[]>({
     queryKey: ["/admin/newsletters", currentParticipantId],
@@ -216,7 +237,13 @@ function NewsletterManagement({ participants, currentParticipantId, t }: {
   const handleGenerate = async (type: "welcome" | "update") => {
     setGenerating(true);
     try {
-      const result = await adminApi.generateNewsletter(currentParticipantId, type, customNotes || undefined);
+      let notesWithChangelog = customNotes || "";
+      if (selectedChangelogs.size > 0) {
+        const selected = changelogEntries.filter((e: any) => selectedChangelogs.has(e.id));
+        const changelogText = selected.map((e: any) => `- ${e.title}: ${e.description}`).join("\n");
+        notesWithChangelog += (notesWithChangelog ? "\n\n" : "") + "Folgende Neuerungen sollen im Newsletter erwähnt werden:\n" + changelogText;
+      }
+      const result = await adminApi.generateNewsletter(currentParticipantId, type, notesWithChangelog || undefined);
       setSubject(result.subject || "");
       setContentHtml(result.body || "");
       toast({ title: "Newsletter generated", description: "You can edit the content before sending." });
@@ -237,6 +264,7 @@ function NewsletterManagement({ participants, currentParticipantId, t }: {
       setContentHtml("");
       setSelectedIds(new Set());
       setCustomNotes("");
+      setSelectedChangelogs(new Set());
       queryClient.invalidateQueries({ queryKey: ["/admin/newsletters"] });
     } catch (e: any) {
       toast({ title: t("admin.error"), description: e.message, variant: "destructive" });
@@ -303,6 +331,67 @@ function NewsletterManagement({ participants, currentParticipantId, t }: {
               data-testid="input-newsletter-notes"
             />
           </div>
+
+          {changelogEntries.length > 0 && (
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground font-medium flex items-center gap-1.5 mb-2">
+                <Rocket className="w-3.5 h-3.5" /> Changelog-Einträge einbinden
+              </label>
+              <div className="bg-secondary/10 border border-border/40 rounded-lg p-3 max-h-48 overflow-y-auto space-y-1.5">
+                <div className="flex gap-2 mb-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-[11px] px-2"
+                    onClick={() => setSelectedChangelogs(new Set(changelogEntries.map((e: any) => e.id)))}
+                    data-testid="button-select-all-changelogs"
+                  >
+                    Alle auswählen
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-[11px] px-2"
+                    onClick={() => setSelectedChangelogs(new Set())}
+                    data-testid="button-deselect-all-changelogs"
+                  >
+                    Keine
+                  </Button>
+                  <span className="text-[11px] text-muted-foreground ml-auto self-center">
+                    {selectedChangelogs.size} ausgewählt
+                  </span>
+                </div>
+                {changelogEntries.map((entry: any) => {
+                  const catIcons: Record<string, string> = {
+                    feature: "🚀", improvement: "🔧", bugfix: "🐛", security: "🛡️", design: "🎨"
+                  };
+                  return (
+                    <label
+                      key={entry.id}
+                      className="flex items-start gap-2 cursor-pointer hover:bg-secondary/20 rounded p-1.5 transition-colors"
+                      data-testid={`checkbox-changelog-${entry.id}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedChangelogs.has(entry.id)}
+                        onChange={() => toggleChangelog(entry.id)}
+                        className="mt-0.5 rounded border-border"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-medium">
+                          {catIcons[entry.category] || "📝"} {entry.title}
+                        </span>
+                        <p className="text-[11px] text-muted-foreground truncate">{entry.description}</p>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                        {new Date(entry.date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {generating && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-3">
@@ -786,6 +875,10 @@ export default function AdminPanel() {
           <TabsTrigger value="ai-controls" data-testid="tab-ai-controls" className="flex-1 min-w-0">
             <Sparkles className="w-4 h-4 mr-1 flex-shrink-0" />
             <span className="truncate">AI Controls</span>
+          </TabsTrigger>
+          <TabsTrigger value="changelog" data-testid="tab-changelog" className="flex-1 min-w-0">
+            <RefreshCw className="w-4 h-4 mr-1 flex-shrink-0" />
+            <span className="truncate">Changelog</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1702,6 +1795,10 @@ export default function AdminPanel() {
         <TabsContent value="ai-controls">
           <AIControlsTab participantId={currentParticipant!.id} />
         </TabsContent>
+
+        <TabsContent value="changelog">
+          <ChangelogAdminTab participantId={currentParticipant!.id} />
+        </TabsContent>
       </Tabs>
     </motion.div>
   );
@@ -1882,6 +1979,225 @@ function AIControlsTab({ participantId }: { participantId: string }) {
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+const CHANGELOG_CATEGORIES = [
+  { value: "feature", label: "Neues Feature", color: "bg-blue-100 text-blue-700" },
+  { value: "improvement", label: "Verbesserung", color: "bg-green-100 text-green-700" },
+  { value: "bugfix", label: "Bugfix", color: "bg-orange-100 text-orange-700" },
+  { value: "security", label: "Sicherheit", color: "bg-red-100 text-red-700" },
+  { value: "design", label: "Design/UX", color: "bg-purple-100 text-purple-700" },
+];
+
+function ChangelogAdminTab({ participantId }: { participantId: string }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formTitle, setFormTitle] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+  const [formCategory, setFormCategory] = useState("feature");
+  const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0]);
+  const [formVisible, setFormVisible] = useState(true);
+  const [filterCategory, setFilterCategory] = useState("all");
+
+  const { data: entries = [], isLoading } = useQuery({
+    queryKey: ["/api/admin/changelog", participantId, filterCategory],
+    queryFn: async () => {
+      const params = new URLSearchParams({ participantId });
+      if (filterCategory !== "all") params.set("category", filterCategory);
+      const res = await fetch(`/api/admin/changelog?${params}`);
+      if (!res.ok) throw new Error("Failed to load changelog");
+      return res.json();
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/changelog", {
+        participantId, title: formTitle, description: formDescription,
+        category: formCategory, date: formDate, visible: formVisible,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Changelog-Eintrag erstellt" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] });
+      resetForm();
+    },
+    onError: (err: any) => toast({ title: "Fehler", description: err.message, variant: "destructive" }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("PATCH", `/api/admin/changelog/${editingId}`, {
+        participantId, title: formTitle, description: formDescription,
+        category: formCategory, date: formDate, visible: formVisible,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Changelog-Eintrag aktualisiert" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] });
+      resetForm();
+    },
+    onError: (err: any) => toast({ title: "Fehler", description: err.message, variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/admin/changelog/${id}?participantId=${participantId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Eintrag gelöscht" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] });
+    },
+    onError: (err: any) => toast({ title: "Fehler", description: err.message, variant: "destructive" }),
+  });
+
+  const resetForm = () => {
+    setShowForm(false); setEditingId(null); setFormTitle(""); setFormDescription("");
+    setFormCategory("feature"); setFormDate(new Date().toISOString().split("T")[0]); setFormVisible(true);
+  };
+
+  const startEdit = (entry: any) => {
+    setEditingId(entry.id); setFormTitle(entry.title); setFormDescription(entry.description);
+    setFormCategory(entry.category); setFormDate(entry.date); setFormVisible(entry.visible);
+    setShowForm(true);
+  };
+
+  const getCategoryBadge = (cat: string) => {
+    const cfg = CHANGELOG_CATEGORIES.find(c => c.value === cat);
+    return cfg ? <Badge className={`${cfg.color} border-0`}>{cfg.label}</Badge> : <Badge>{cat}</Badge>;
+  };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-48" data-testid="changelog-filter-category">
+              <SelectValue placeholder="Kategorie" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Kategorien</SelectItem>
+              {CHANGELOG_CATEGORIES.map(c => (
+                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-muted-foreground">{entries.length} Einträge</span>
+        </div>
+        <Button onClick={() => { resetForm(); setShowForm(true); }} data-testid="changelog-add">
+          <MessageSquarePlus className="w-4 h-4 mr-2" />
+          Neuer Eintrag
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <h3 className="font-semibold">{editingId ? "Eintrag bearbeiten" : "Neuer Changelog-Eintrag"}</h3>
+            <Input
+              placeholder="Titel..."
+              value={formTitle}
+              onChange={e => setFormTitle(e.target.value)}
+              data-testid="changelog-input-title"
+            />
+            <Textarea
+              placeholder="Beschreibung..."
+              value={formDescription}
+              onChange={e => setFormDescription(e.target.value)}
+              rows={3}
+              data-testid="changelog-input-description"
+            />
+            <div className="flex flex-wrap gap-3">
+              <Select value={formCategory} onValueChange={setFormCategory}>
+                <SelectTrigger className="w-48" data-testid="changelog-input-category">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CHANGELOG_CATEGORIES.map(c => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                type="date"
+                value={formDate}
+                onChange={e => setFormDate(e.target.value)}
+                className="w-48"
+                data-testid="changelog-input-date"
+              />
+              <div className="flex items-center gap-2">
+                <Switch checked={formVisible} onCheckedChange={setFormVisible} />
+                <span className="text-sm">{formVisible ? "Sichtbar" : "Verborgen"}</span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => editingId ? updateMutation.mutate() : createMutation.mutate()}
+                disabled={!formTitle || !formDescription || createMutation.isPending || updateMutation.isPending}
+                data-testid="changelog-save"
+              >
+                {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                {editingId ? "Aktualisieren" : "Erstellen"}
+              </Button>
+              <Button variant="outline" onClick={resetForm}>Abbrechen</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="space-y-2">
+        {entries.map((entry: any) => (
+          <Card key={entry.id} className={`${!entry.visible ? "opacity-60" : ""}`} data-testid={`changelog-entry-${entry.id}`}>
+            <CardContent className="py-3 px-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    {getCategoryBadge(entry.category)}
+                    <span className="text-xs text-muted-foreground">{new Date(entry.date).toLocaleDateString("de-DE")}</span>
+                    {!entry.visible && <Badge variant="outline" className="text-xs">Verborgen</Badge>}
+                  </div>
+                  <p className="font-medium text-sm">{entry.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{entry.description}</p>
+                </div>
+                <div className="flex gap-1 flex-shrink-0">
+                  <Button variant="ghost" size="sm" onClick={() => startEdit(entry)} data-testid={`changelog-edit-${entry.id}`}>
+                    <Eye className="w-3 h-3" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm" data-testid={`changelog-delete-${entry.id}`}>
+                        <Trash2 className="w-3 h-3 text-red-500" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Eintrag löschen?</AlertDialogTitle>
+                        <AlertDialogDescription>"{entry.title}" wird unwiderruflich gelöscht.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteMutation.mutate(entry.id)}>Löschen</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

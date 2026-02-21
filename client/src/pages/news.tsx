@@ -6,7 +6,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
 import { notificationApi } from "@/lib/api";
-import { Bell, CheckCheck, Wine, Users, Sparkles, Megaphone, Gift, ChevronRight, Plus, Send } from "lucide-react";
+import { Bell, CheckCheck, Wine, Users, Sparkles, Megaphone, Gift, ChevronRight, Plus, Send, Rocket, Wrench, Bug, Shield, Palette, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -242,6 +242,8 @@ export default function News() {
         </div>
       )}
 
+      <ChangelogSection />
+
       <Dialog open={showPostDialog} onOpenChange={setShowPostDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -290,5 +292,165 @@ export default function News() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+const CHANGELOG_CAT_CONFIG: Record<string, { icon: typeof Rocket; label: string; color: string }> = {
+  feature: { icon: Rocket, label: "Neues Feature", color: "text-blue-600 bg-blue-600/10" },
+  improvement: { icon: Wrench, label: "Verbesserung", color: "text-green-600 bg-green-600/10" },
+  bugfix: { icon: Bug, label: "Bugfix", color: "text-orange-600 bg-orange-600/10" },
+  security: { icon: Shield, label: "Sicherheit", color: "text-red-600 bg-red-600/10" },
+  design: { icon: Palette, label: "Design/UX", color: "text-purple-600 bg-purple-600/10" },
+};
+
+const TIME_PRESETS = [
+  { value: "7d", label: "Letzte 7 Tage" },
+  { value: "30d", label: "Letzter Monat" },
+  { value: "90d", label: "Letzte 3 Monate" },
+  { value: "365d", label: "Dieses Jahr" },
+  { value: "all", label: "Alles" },
+  { value: "custom", label: "Benutzerdefiniert..." },
+];
+
+function ChangelogSection() {
+  const [category, setCategory] = useState("all");
+  const [timePreset, setTimePreset] = useState("all");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [expanded, setExpanded] = useState(true);
+
+  const getDateRange = () => {
+    if (timePreset === "custom") {
+      return { from: customFrom || undefined, to: customTo || undefined };
+    }
+    if (timePreset === "all") return {};
+    const days = parseInt(timePreset);
+    const from = new Date();
+    from.setDate(from.getDate() - days);
+    return { from: from.toISOString().split("T")[0] };
+  };
+
+  const dateRange = getDateRange();
+
+  const { data: entries = [], isLoading } = useQuery({
+    queryKey: ["/api/changelog", category, timePreset, customFrom, customTo],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (category !== "all") params.set("category", category);
+      if (dateRange.from) params.set("from", dateRange.from);
+      if (dateRange.to) params.set("to", dateRange.to);
+      const res = await fetch(`/api/changelog?${params}`);
+      if (!res.ok) throw new Error("Failed to load changelog");
+      return res.json();
+    },
+  });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2, duration: 0.5 }}
+      className="mt-8"
+    >
+      <div
+        className="flex items-center justify-between cursor-pointer mb-4"
+        onClick={() => setExpanded(!expanded)}
+        data-testid="changelog-section-toggle"
+      >
+        <div className="flex items-center gap-2">
+          <Rocket className="w-5 h-5 text-primary" />
+          <h2 className="text-xl font-serif font-bold text-primary">Plattform-Entwicklung</h2>
+          <Badge variant="secondary" className="text-xs">{entries.length}</Badge>
+        </div>
+        <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${expanded ? "rotate-90" : ""}`} />
+      </div>
+
+      {expanded && (
+        <>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="w-44" data-testid="changelog-news-filter-category">
+                <Filter className="w-3.5 h-3.5 mr-1.5" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Kategorien</SelectItem>
+                {Object.entries(CHANGELOG_CAT_CONFIG).map(([key, cfg]) => (
+                  <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={timePreset} onValueChange={setTimePreset}>
+              <SelectTrigger className="w-48" data-testid="changelog-news-filter-time">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TIME_PRESETS.map(p => (
+                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {timePreset === "custom" && (
+              <div className="flex gap-2 items-center">
+                <Input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="w-40" data-testid="changelog-news-from" />
+                <span className="text-sm text-muted-foreground">bis</span>
+                <Input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="w-40" data-testid="changelog-news-to" />
+              </div>
+            )}
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="p-3 bg-card border rounded-lg animate-pulse">
+                  <div className="h-4 bg-secondary rounded w-2/3 mb-2" />
+                  <div className="h-3 bg-secondary/60 rounded w-full" />
+                </div>
+              ))}
+            </div>
+          ) : entries.length === 0 ? (
+            <div className="text-center py-8">
+              <Rocket className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">Keine Einträge für diesen Zeitraum.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {entries.map((entry: any, i: number) => {
+                const catConfig = CHANGELOG_CAT_CONFIG[entry.category] || CHANGELOG_CAT_CONFIG.feature;
+                const CatIcon = catConfig.icon;
+                return (
+                  <motion.div
+                    key={entry.id}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.02 }}
+                  >
+                    <Card data-testid={`changelog-news-entry-${entry.id}`}>
+                      <CardContent className="p-3 sm:p-4 flex items-start gap-3">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${catConfig.color}`}>
+                          <CatIcon className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-serif font-semibold">{entry.title}</p>
+                            <Badge variant="outline" className="text-[10px]">{catConfig.label}</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{entry.description}</p>
+                          <p className="text-[10px] text-muted-foreground/60 mt-1.5">
+                            {new Date(entry.date).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" })}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+    </motion.div>
   );
 }
