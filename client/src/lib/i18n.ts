@@ -323,7 +323,8 @@ const resources = {
         communityRankings: "Community Rankings",
         tasteTwins: "Taste Twins",
         news: "News",
-        landingPage: "Homepage",
+        landingPage: "Back to Homepage",
+        landingPageConfirm: "Do you really want to leave the app and go back to the homepage?",
       },
       navGroup: {
         main: "Main",
@@ -2271,7 +2272,8 @@ const resources = {
         communityRankings: "Community Rankings",
         tasteTwins: "Geschmackszwillinge",
         news: "Neuigkeiten",
-        landingPage: "Homepage",
+        landingPage: "Zurück zur Homepage",
+        landingPageConfirm: "Möchten Sie wirklich die App verlassen und zurück zur Homepage wechseln?",
       },
       navGroup: {
         main: "Übersicht",

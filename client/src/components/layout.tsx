@@ -105,7 +105,41 @@ function ProfileAvatar({ size = 36, showName = false, showSignOut = false }: { s
 }
 
 function NavItemRow({ item, location, onNavigate }: { item: NavItem; location: string; onNavigate: () => void }) {
+  const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const isActive = item.match ? item.match(location) : location === item.href;
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (item.href === "/") {
+      e.preventDefault();
+      e.stopPropagation();
+      if (window.confirm(t("nav.landingPageConfirm"))) {
+        onNavigate();
+        navigate("/");
+      }
+      return;
+    }
+    onNavigate();
+  };
+
+  if (item.href === "/") {
+    return (
+      <div
+        data-nav-active={isActive ? "true" : undefined}
+        className={cn(
+          "flex items-center gap-3 px-3 py-1.5 rounded-sm transition-all duration-300 cursor-pointer group",
+          isActive
+            ? "bg-secondary text-primary border-l-2 border-primary"
+            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+        )}
+        onClick={handleClick}
+      >
+        <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-primary")} />
+        <span className={cn("text-sm font-medium truncate", isActive && "font-semibold")}>{item.label}</span>
+      </div>
+    );
+  }
+
   return (
     <Link key={item.href} href={item.href}>
       <div

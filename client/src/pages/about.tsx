@@ -235,7 +235,11 @@ function OverviewSection() {
 
       <div className="text-center pt-2">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => {
+            if (window.confirm(t("nav.landingPageConfirm"))) {
+              navigate("/");
+            }
+          }}
           className="inline-flex items-center gap-2 px-6 py-2.5 border border-primary/30 text-primary rounded-sm font-serif text-sm tracking-wide hover:bg-primary/5 transition-colors"
           data-testid="button-about-homepage"
         >
