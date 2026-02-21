@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -782,6 +782,10 @@ export default function AdminPanel() {
           <TabsTrigger value="community" data-testid="tab-community" className="flex-1 min-w-0">
             <Heart className="w-4 h-4 mr-1 flex-shrink-0" />
             <span className="truncate">{t("admin.tabCommunity")}</span>
+          </TabsTrigger>
+          <TabsTrigger value="ai-controls" data-testid="tab-ai-controls" className="flex-1 min-w-0">
+            <Sparkles className="w-4 h-4 mr-1 flex-shrink-0" />
+            <span className="truncate">AI Controls</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1694,7 +1698,190 @@ export default function AdminPanel() {
             </div>
           </div>
         </TabsContent>
+
+        <TabsContent value="ai-controls">
+          <AIControlsTab participantId={currentParticipant!.id} />
+        </TabsContent>
       </Tabs>
     </motion.div>
+  );
+}
+
+function AIControlsTab({ participantId }: { participantId: string }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["/api/admin/ai-settings", participantId],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/ai-settings?participantId=${participantId}`);
+      if (!res.ok) throw new Error("Failed to load AI settings");
+      return res.json();
+    },
+  });
+
+  const [masterDisabled, setMasterDisabled] = useState<boolean | null>(null);
+  const [disabledFeatures, setDisabledFeatures] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (data && masterDisabled === null) {
+      setMasterDisabled(data.settings.ai_master_disabled);
+      setDisabledFeatures(data.settings.ai_features_disabled || []);
+    }
+  }, [data]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/ai-settings", {
+        participantId,
+        ai_master_disabled: masterDisabled,
+        ai_features_disabled: disabledFeatures,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "AI-Einstellungen gespeichert" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-settings"] });
+    },
+    onError: (err: any) => {
+      toast({ title: "Fehler", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const toggleFeature = (featureId: string) => {
+    setDisabledFeatures(prev =>
+      prev.includes(featureId)
+        ? prev.filter(f => f !== featureId)
+        : [...prev, featureId]
+    );
+  };
+
+  if (isLoading || masterDisabled === null) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const features = data?.features || [];
+  const auditLog = data?.auditLog || [];
+  const hasChanges =
+    masterDisabled !== data?.settings.ai_master_disabled ||
+    JSON.stringify([...disabledFeatures].sort()) !== JSON.stringify([...(data?.settings.ai_features_disabled || [])].sort());
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <ShieldAlert className="w-5 h-5 text-amber-600" />
+                AI Kill Switch
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Alle AI-Funktionen zentral steuern. Deaktivierte Features geben HTTP 503 zurück.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-4 rounded-lg border-2 border-amber-200 bg-amber-50 mb-6" data-testid="ai-master-toggle">
+            <div>
+              <p className="font-medium">Master Kill Switch</p>
+              <p className="text-sm text-muted-foreground">
+                {masterDisabled ? "Alle AI-Funktionen sind deaktiviert" : "AI-Funktionen sind aktiv"}
+              </p>
+            </div>
+            <Switch
+              checked={!masterDisabled}
+              onCheckedChange={(checked) => setMasterDisabled(!checked)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-3">
+              Einzelne Features
+            </h4>
+            {features.map((feature: { id: string; label: string; route: string }) => {
+              const isFeatureDisabled = disabledFeatures.includes(feature.id);
+              const isEffectivelyDisabled = masterDisabled || isFeatureDisabled;
+              return (
+                <div
+                  key={feature.id}
+                  className={`flex items-center justify-between p-3 rounded-lg border ${isEffectivelyDisabled ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}
+                  data-testid={`ai-feature-${feature.id}`}
+                >
+                  <div className="flex items-center gap-3">
+                    {isEffectivelyDisabled ? (
+                      <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium">{feature.label}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{feature.route}</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={!isFeatureDisabled}
+                    onCheckedChange={() => toggleFeature(feature.id)}
+                    disabled={masterDisabled}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 flex gap-3">
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={!hasChanges || saveMutation.isPending}
+              data-testid="ai-settings-save"
+            >
+              {saveMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <CheckSquare className="w-4 h-4 mr-2" />
+              )}
+              Änderungen speichern
+            </Button>
+            {hasChanges && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setMasterDisabled(data?.settings.ai_master_disabled);
+                  setDisabledFeatures(data?.settings.ai_features_disabled || []);
+                }}
+              >
+                Zurücksetzen
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {auditLog.length > 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Database className="w-5 h-5" />
+              Audit Log
+            </h3>
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {auditLog.map((entry: any, i: number) => (
+                <div key={i} className="flex items-start gap-3 p-2 text-sm border-b last:border-0">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap mt-0.5">
+                    {new Date(entry.createdAt).toLocaleString("de-DE")}
+                  </span>
+                  <span className="font-medium whitespace-nowrap">{entry.actorName}</span>
+                  <span className="text-muted-foreground">{entry.action}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

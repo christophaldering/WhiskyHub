@@ -15,6 +15,7 @@ import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail } from "./email";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
+import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES } from "./ai-settings";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -1843,6 +1844,7 @@ export async function registerRoutes(
 
   app.post("/api/whiskies/:id/ai-enrich", async (req, res) => {
     try {
+      if (await isAIDisabled("ai_enrich")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const { participantId } = req.body;
       const whisky = await storage.getWhisky(req.params.id);
       if (!whisky) return res.status(404).json({ message: "Whisky not found" });
@@ -1959,6 +1961,7 @@ Respond ONLY with valid JSON, no markdown.`;
 
   app.post("/api/whiskies/ai-insights", async (req, res) => {
     try {
+      if (await isAIDisabled("ai_insights")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const { participantId, whiskyId, whiskyName, distillery, region, age, abv, caskInfluence, category, peatLevel, language } = req.body;
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
@@ -2041,6 +2044,7 @@ Write in a warm, conversational tone. ALWAYS respond in ${lang}. Do NOT use mark
 
   app.post("/api/tastings/:id/ai-highlights", async (req, res) => {
     try {
+      if (await isAIDisabled("ai_highlights")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const { language } = req.body;
       const lang = language === "de" ? "German" : "English";
       const cacheKey = language === "de" ? "de" : "en";
@@ -2518,6 +2522,7 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
   // ===== Journal Bottle Identification (must be before parameterized /api/journal/:participantId routes) =====
   app.post("/api/journal/identify-bottle", docUpload.single("photo"), async (req: Request, res: Response) => {
     try {
+      if (await isAIDisabled("journal_identify")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const participantId = req.body.participantId as string;
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       const participant = await storage.getParticipant(participantId);
@@ -2787,6 +2792,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.post("/api/wishlist/identify", docUpload.single("photo"), async (req: Request, res: Response) => {
     try {
+      if (await isAIDisabled("wishlist_identify")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const participantId = req.body.participantId as string;
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       const participant = await storage.getParticipant(participantId);
@@ -2935,6 +2941,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.post("/api/wishlist/generate-summary", async (req: Request, res: Response) => {
     try {
+      if (await isAIDisabled("wishlist_summary")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const { participantId, whiskyName, distillery, region, age, abv, caskType, notes } = req.body;
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
@@ -2997,6 +3004,7 @@ ${flavorProfile.topWhiskies?.length ? `Top-rated whiskies: ${flavorProfile.topWh
 
   app.post("/api/extract-whisky-text", async (req: Request, res: Response) => {
     try {
+      if (await isAIDisabled("whisky_search")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const { text, participantId } = req.body;
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!text || typeof text !== "string" || text.trim().length < 3) return res.status(400).json({ message: "Text required (min 3 characters)" });
@@ -3750,6 +3758,56 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
   // ===== ADMIN =====
 
+  // --- AI Settings (Kill Switch) ---
+  app.get("/api/admin/ai-settings", async (req, res) => {
+    try {
+      const participantId = req.query.participantId as string;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const settings = await getAISettings();
+      const auditLog = await getAuditLog(20);
+      res.json({ settings, features: AI_FEATURES, auditLog });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Failed to load AI settings" });
+    }
+  });
+
+  app.post("/api/admin/ai-settings", async (req, res) => {
+    try {
+      const { participantId, ai_master_disabled, ai_features_disabled } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const requester = await storage.getParticipant(participantId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      if (typeof ai_master_disabled !== "boolean") {
+        return res.status(400).json({ message: "ai_master_disabled must be a boolean" });
+      }
+      if (!Array.isArray(ai_features_disabled) || !ai_features_disabled.every((f: any) => typeof f === "string")) {
+        return res.status(400).json({ message: "ai_features_disabled must be an array of strings" });
+      }
+
+      const validIds = AI_FEATURES.map(f => f.id);
+      const invalidFeatures = ai_features_disabled.filter((f: string) => !validIds.includes(f));
+      if (invalidFeatures.length > 0) {
+        return res.status(400).json({ message: `Invalid feature IDs: ${invalidFeatures.join(", ")}` });
+      }
+
+      const updated = await updateAISettings(
+        { ai_master_disabled, ai_features_disabled },
+        participantId,
+        requester.name
+      );
+      res.json({ settings: updated });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Failed to update AI settings" });
+    }
+  });
+
   app.get("/api/admin/overview", async (req, res) => {
     try {
       const participantId = req.query.participantId as string;
@@ -4294,6 +4352,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
   app.post("/api/admin/newsletters/generate", async (req, res) => {
     try {
+      if (await isAIDisabled("newsletter_generate")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const requesterId = req.body.requesterId as string;
       const requester = requesterId ? await storage.getParticipant(requesterId) : null;
       if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin only" });
@@ -4609,6 +4668,7 @@ Key CaskSense Features:
   // AI document analysis endpoint
   app.post("/api/benchmark/analyze", docUpload.single("file"), async (req: Request, res: Response) => {
     try {
+      if (await isAIDisabled("benchmark_analyze")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const participantId = req.body.participantId as string;
       const auth = await verifyHostOrAdmin(participantId);
       if (!auth) return res.status(403).json({ message: "Only hosts and admins can analyze documents" });
@@ -4837,6 +4897,7 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
 
   app.post("/api/photo-tasting/identify", docUpload.array("photos", 20), async (req: Request, res: Response) => {
     try {
+      if (await isAIDisabled("photo_tasting_identify")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const participantId = req.body.participantId as string;
       const auth = await verifyHostOrAdmin(participantId);
       if (!auth) return res.status(403).json({ message: "Only hosts and admins can use photo tasting creation" });
@@ -5493,6 +5554,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     });
   }, async (req: any, res: any) => {
     try {
+      if (await isAIDisabled("ai_import")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const files: Express.Multer.File[] = req.files || [];
       const pastedText: string = req.body.text || "";
       const hostId: string = req.body.hostId;
