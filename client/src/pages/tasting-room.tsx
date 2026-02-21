@@ -1785,7 +1785,7 @@ export default function TastingRoom() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={cn("fixed right-6 z-40", isHost ? "bottom-[7.5rem] md:bottom-24" : "bottom-20 md:bottom-6")}
+          className={cn("fixed right-6 z-40", isHost ? "bottom-[7.5rem] md:bottom-24" : "bottom-20 md:bottom-8")}
           data-testid="floating-am-glas-cta"
         >
           <Button

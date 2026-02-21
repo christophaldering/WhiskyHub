@@ -281,232 +281,146 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
 
   if (tasting.status === "deleted") {
     if (!isAdmin) return null;
-    if (isMobile) {
-      return (
-        <>
-          <div className="fixed bottom-16 inset-x-0 z-50 px-3 pb-2">
-            <div className="bg-card border border-border/50 shadow-2xl rounded-xl px-4 py-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-2 h-2 rounded-full bg-destructive/70 shrink-0" />
-                <span className="text-xs font-mono text-destructive/70 truncate">{t('session.actions.deleteSession')}</span>
-              </div>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => setShowPermanentDeleteDialog(true)}
-                className="shrink-0 h-8 text-xs"
-                data-testid="button-permanent-delete"
-              >
-                <AlertTriangle className="w-3.5 h-3.5 mr-1" />
-                {t('session.actions.permanentDelete')}
-              </Button>
-            </div>
-          </div>
-          <PermanentDeleteDialog />
-        </>
-      );
-    }
     return (
-      <div className="fixed bottom-6 right-6 z-50">
-        <div className="bg-card border border-border/50 shadow-2xl p-4 rounded-lg flex flex-col gap-2 min-w-[200px]">
-          <div className="text-xs uppercase tracking-widest text-muted-foreground font-mono mb-1">
-            Host Control
+      <>
+        <div className={`fixed inset-x-0 z-50 px-3 pb-2 ${isMobile ? "bottom-16" : "bottom-0 pb-4"}`}>
+          <div className="bg-card border border-border/50 shadow-2xl rounded-xl px-4 py-3 flex items-center justify-between gap-3 mx-auto max-w-xl">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-2 h-2 rounded-full bg-destructive/70 shrink-0" />
+              <span className="text-xs font-mono text-destructive/70 truncate">{t('session.actions.deleteSession')}</span>
+            </div>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => setShowPermanentDeleteDialog(true)}
+              className="shrink-0 h-8 text-xs"
+              data-testid="button-permanent-delete"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 mr-1" />
+              {t('session.actions.permanentDelete')}
+            </Button>
           </div>
-          <div className="text-sm font-serif font-bold text-destructive/70 mb-3">
-            {t('session.actions.deleteSession')}
-          </div>
-          <button
-            onClick={() => setShowPermanentDeleteDialog(true)}
-            className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-destructive transition-colors rounded-sm hover:bg-destructive/5 w-full"
-            data-testid="button-permanent-delete"
-          >
-            <AlertTriangle className="w-3.5 h-3.5" />
-            {t('session.actions.permanentDelete')}
-          </button>
         </div>
         <PermanentDeleteDialog />
-      </div>
+      </>
     );
   }
 
   if (tasting.status === "archived") {
-    if (isMobile) {
-      return (
-        <>
-          <div className="fixed bottom-16 inset-x-0 z-50 px-3 pb-2">
-            <div className="bg-card border border-border/50 shadow-2xl rounded-xl px-4 py-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-2 h-2 rounded-full bg-muted-foreground shrink-0" />
-                <span className="text-xs font-serif font-bold text-primary truncate">{t(`session.status.${tasting.status}`)}</span>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => canDelete ? setShowDeleteDialog(true) : undefined}
-                className="shrink-0 h-8 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
-                data-testid="button-delete-session"
-              >
-                <Trash2 className="w-3.5 h-3.5 mr-1" />
-                {t('session.actions.deleteSession')}
-              </Button>
-            </div>
-          </div>
-          <SoftDeleteDialog />
-        </>
-      );
-    }
-    return (
-      <div className="fixed bottom-6 right-6 z-50">
-        <div className="bg-card border border-border/50 shadow-2xl p-4 rounded-lg flex flex-col gap-2 min-w-[200px]">
-          <div className="text-xs uppercase tracking-widest text-muted-foreground font-mono mb-1">
-            Host Control
-          </div>
-          <div className="text-sm font-serif font-bold text-primary mb-3">
-            {t(`session.status.${tasting.status}`)}
-          </div>
-          <button
-            onClick={() => canDelete ? setShowDeleteDialog(true) : undefined}
-            className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-destructive transition-colors rounded-sm hover:bg-destructive/5 w-full"
-            data-testid="button-delete-session"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            {t('session.actions.deleteSession')}
-          </button>
-        </div>
-        <SoftDeleteDialog />
-      </div>
-    );
-  }
-
-  if (isMobile) {
     return (
       <>
-        <div className="fixed bottom-16 inset-x-0 z-50 px-3 pb-2">
-          <div className="bg-card border border-border/50 shadow-2xl rounded-xl px-3 py-2.5 flex items-center gap-2">
-            <div className="flex items-center gap-2 min-w-0 shrink">
-              <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
-              <span className="text-xs font-serif font-bold text-primary truncate">
-                {t(`session.status.${tasting.status}`)}
-                {tasting.status === "reveal" && tasting.currentAct && (
-                  <span className="ml-1 opacity-70">({t(`reveal.${tasting.currentAct}`)})</span>
-                )}
-              </span>
+        <div className={`fixed inset-x-0 z-50 px-3 pb-2 ${isMobile ? "bottom-16" : "bottom-0 pb-4"}`}>
+          <div className="bg-card border border-border/50 shadow-2xl rounded-xl px-4 py-3 flex items-center justify-between gap-3 mx-auto max-w-xl">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-2 h-2 rounded-full bg-muted-foreground shrink-0" />
+              <span className="text-xs font-serif font-bold text-primary truncate">{t(`session.status.${tasting.status}`)}</span>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-              {showBlindControls && !allRevealed && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => revealNext.mutate()}
-                  disabled={revealNext.isPending || allRevealed}
-                  className="h-8 text-xs px-2.5"
-                  data-testid="button-reveal-next"
-                >
-                  <Glasses className="w-3.5 h-3.5 mr-1" />
-                  {t("blind.revealNext")}
-                </Button>
-              )}
-              <Button
-                size="sm"
-                onClick={handleNextState}
-                disabled={updateStatus.isPending}
-                className="h-8 text-xs px-3 bg-primary text-primary-foreground shadow-md"
-                data-testid="button-next-state"
-              >
-                <Icon className="w-3.5 h-3.5 mr-1" /> {label}
-              </Button>
-              {(showArchiveDelete || showBlindControls) && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setShowDrawer(true)}
-                  className="h-8 w-8 p-0 text-muted-foreground"
-                  data-testid="button-host-drawer"
-                >
-                  <Settings2 className="w-4 h-4" />
-                </Button>
-              )}
-            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => canDelete ? setShowDeleteDialog(true) : undefined}
+              className="shrink-0 h-8 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
+              data-testid="button-delete-session"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1" />
+              {t('session.actions.deleteSession')}
+            </Button>
           </div>
         </div>
-
-        <Drawer open={showDrawer} onOpenChange={setShowDrawer}>
-          <DrawerContent>
-            <DrawerHeader className="text-left">
-              <DrawerTitle className="font-serif text-primary">Host Control</DrawerTitle>
-              <DrawerDescription className="text-xs">
-                {t(`session.status.${tasting.status}`)}
-                {tasting.status === "reveal" && tasting.currentAct && (
-                  <span className="ml-1 opacity-70">({t(`reveal.${tasting.currentAct}`)})</span>
-                )}
-              </DrawerDescription>
-            </DrawerHeader>
-            <div className="px-4 pb-6 space-y-4">
-              <Button
-                onClick={() => { handleNextState(); setShowDrawer(false); }}
-                disabled={updateStatus.isPending}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg h-11"
-                data-testid="button-next-state-drawer"
-              >
-                <Icon className="w-4 h-4 mr-2" /> {label}
-              </Button>
-
-              {showBlindControls && (
-                <div className="pt-2 border-t border-border/50">
-                  <BlindControlsContent />
-                </div>
-              )}
-
-              {showArchiveDelete && (
-                <div className="pt-2 border-t border-border/50">
-                  <SecondaryActions />
-                </div>
-              )}
-            </div>
-          </DrawerContent>
-        </Drawer>
-
         <SoftDeleteDialog />
-        <RevealConfirmDialog />
       </>
     );
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-      <div className="bg-card border border-border/50 shadow-2xl p-4 rounded-lg flex flex-col gap-2 min-w-[200px]">
-        <div className="text-xs uppercase tracking-widest text-muted-foreground font-mono mb-1">
-          Host Control
-        </div>
-        <div className="text-sm font-serif font-bold text-primary mb-3">
-          {t(`session.status.${tasting.status}`)}
-          {tasting.status === "reveal" && tasting.currentAct && (
-            <span className="ml-2 opacity-70">({t(`reveal.${tasting.currentAct}`)})</span>
-          )}
-        </div>
-        <Button
-          onClick={handleNextState}
-          disabled={updateStatus.isPending}
-          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg"
-          data-testid="button-next-state"
-        >
-          <Icon className="w-4 h-4 mr-2" /> {label}
-        </Button>
-        {showBlindControls && (
-          <div className="mt-3 pt-3 border-t border-border/50">
-            <BlindControlsContent />
+    <>
+      <div className={`fixed inset-x-0 z-50 px-3 pb-2 ${isMobile ? "bottom-16" : "bottom-0 pb-4"}`}>
+        <div className="bg-card border border-border/50 shadow-2xl rounded-xl px-3 py-2.5 flex items-center gap-2 mx-auto max-w-xl">
+          <div className="flex items-center gap-2 min-w-0 shrink">
+            <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+            <span className="text-xs font-serif font-bold text-primary truncate">
+              {t(`session.status.${tasting.status}`)}
+              {tasting.status === "reveal" && tasting.currentAct && (
+                <span className="ml-1 opacity-70">({t(`reveal.${tasting.currentAct}`)})</span>
+              )}
+            </span>
           </div>
-        )}
-
-        {showArchiveDelete && (
-          <div className="mt-3 pt-3 border-t border-border/50">
-            <SecondaryActions />
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+            {showBlindControls && !allRevealed && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => revealNext.mutate()}
+                disabled={revealNext.isPending || allRevealed}
+                className="h-8 text-xs px-2.5"
+                data-testid="button-reveal-next"
+              >
+                <Glasses className="w-3.5 h-3.5 mr-1" />
+                {t("blind.revealNext")}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={handleNextState}
+              disabled={updateStatus.isPending}
+              className="h-8 text-xs px-3 bg-primary text-primary-foreground shadow-md"
+              data-testid="button-next-state"
+            >
+              <Icon className="w-3.5 h-3.5 mr-1" /> {label}
+            </Button>
+            {(showArchiveDelete || showBlindControls) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowDrawer(true)}
+                className="h-8 w-8 p-0 text-muted-foreground"
+                data-testid="button-host-drawer"
+              >
+                <Settings2 className="w-4 h-4" />
+              </Button>
+            )}
           </div>
-        )}
+        </div>
       </div>
+
+      <Drawer open={showDrawer} onOpenChange={setShowDrawer}>
+        <DrawerContent>
+          <DrawerHeader className="text-left">
+            <DrawerTitle className="font-serif text-primary">Host Control</DrawerTitle>
+            <DrawerDescription className="text-xs">
+              {t(`session.status.${tasting.status}`)}
+              {tasting.status === "reveal" && tasting.currentAct && (
+                <span className="ml-1 opacity-70">({t(`reveal.${tasting.currentAct}`)})</span>
+              )}
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="px-4 pb-6 space-y-4">
+            <Button
+              onClick={() => { handleNextState(); setShowDrawer(false); }}
+              disabled={updateStatus.isPending}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg h-11"
+              data-testid="button-next-state-drawer"
+            >
+              <Icon className="w-4 h-4 mr-2" /> {label}
+            </Button>
+
+            {showBlindControls && (
+              <div className="pt-2 border-t border-border/50">
+                <BlindControlsContent />
+              </div>
+            )}
+
+            {showArchiveDelete && (
+              <div className="pt-2 border-t border-border/50">
+                <SecondaryActions />
+              </div>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
 
       <SoftDeleteDialog />
       <RevealConfirmDialog />
-    </div>
+    </>
   );
 }
