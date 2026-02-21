@@ -8,7 +8,7 @@ import { useAppStore } from "@/lib/store";
 import type { EncyclopediaSuggestion } from "@shared/schema";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -603,6 +603,7 @@ export default function AdminPanel() {
   const { currentParticipant } = useAppStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [adminTab, setAdminTab] = useState("participants");
   const [searchParticipants, setSearchParticipants] = useState("");
   const [searchTastings, setSearchTastings] = useState("");
   const [filterRole, setFilterRole] = useState("all");
@@ -827,60 +828,64 @@ export default function AdminPanel() {
         </Card>
       </div>
 
-      <Tabs defaultValue="participants" data-testid="admin-tabs">
-        <TabsList className="flex flex-wrap w-full mb-6 h-auto gap-1">
-          <TabsTrigger value="participants" data-testid="tab-participants" className="flex-1 min-w-0">
-            <Users className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">{t("admin.tabParticipants")}</span>
-          </TabsTrigger>
-          <TabsTrigger value="hosts" data-testid="tab-hosts" className="flex-1 min-w-0">
-            <Crown className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">{t("admin.tabHosts")}</span>
-          </TabsTrigger>
-          <TabsTrigger value="tastings" data-testid="tab-tastings" className="flex-1 min-w-0">
-            <Wine className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">{t("admin.tabTastings")}</span>
-          </TabsTrigger>
-          <TabsTrigger value="sessions" data-testid="tab-sessions" className="flex-1 min-w-0">
-            <Eye className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">Session Details</span>
-          </TabsTrigger>
-          <TabsTrigger value="journals" data-testid="tab-journals" className="flex-1 min-w-0">
-            <BookOpen className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">All Journals</span>
-          </TabsTrigger>
-          <TabsTrigger value="analytics" data-testid="tab-analytics" className="flex-1 min-w-0">
-            <BarChart3 className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">Analytics</span>
-          </TabsTrigger>
-          <TabsTrigger value="newsletter" data-testid="tab-newsletter" className="flex-1 min-w-0">
-            <Mail className="w-4 h-4 mr-1 flex-shrink-0" /> <span className="truncate">{t("admin.newsletterManagement")}</span>
-          </TabsTrigger>
-          <TabsTrigger value="suggestions" data-testid="tab-suggestions" className="flex-1 min-w-0">
-            <Lightbulb className="w-4 h-4 mr-1 flex-shrink-0" />
-            <span className="truncate">{t("encyclopedia.suggestions")}</span>
-            {suggestionsData && suggestionsData.filter(s => s.status === "pending").length > 0 && (
-              <Badge variant="destructive" className="ml-1 text-[10px] px-1.5 py-0 min-w-0" data-testid="badge-pending-suggestions">
-                {suggestionsData.filter(s => s.status === "pending").length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="feedback" data-testid="tab-feedback" className="flex-1 min-w-0">
-            <MessageSquarePlus className="w-4 h-4 mr-1 flex-shrink-0" />
-            <span className="truncate">Feedback</span>
-            {feedbackData && feedbackData.length > 0 && (
-              <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0 min-w-0">
-                {feedbackData.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="community" data-testid="tab-community" className="flex-1 min-w-0">
-            <Heart className="w-4 h-4 mr-1 flex-shrink-0" />
-            <span className="truncate">{t("admin.tabCommunity")}</span>
-          </TabsTrigger>
-          <TabsTrigger value="ai-controls" data-testid="tab-ai-controls" className="flex-1 min-w-0">
-            <Sparkles className="w-4 h-4 mr-1 flex-shrink-0" />
-            <span className="truncate">AI Controls</span>
-          </TabsTrigger>
-          <TabsTrigger value="changelog" data-testid="tab-changelog" className="flex-1 min-w-0">
-            <RefreshCw className="w-4 h-4 mr-1 flex-shrink-0" />
-            <span className="truncate">Changelog</span>
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={adminTab} onValueChange={setAdminTab} data-testid="admin-tabs">
+        <Select value={adminTab} onValueChange={setAdminTab}>
+          <SelectTrigger className="w-full mb-6" data-testid="admin-section-select">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="participants">
+              <span className="flex items-center gap-2"><Users className="w-4 h-4" /> {t("admin.tabParticipants")}</span>
+            </SelectItem>
+            <SelectItem value="hosts">
+              <span className="flex items-center gap-2"><Crown className="w-4 h-4" /> {t("admin.tabHosts")}</span>
+            </SelectItem>
+            <SelectItem value="tastings">
+              <span className="flex items-center gap-2"><Wine className="w-4 h-4" /> {t("admin.tabTastings")}</span>
+            </SelectItem>
+            <SelectItem value="sessions">
+              <span className="flex items-center gap-2"><Eye className="w-4 h-4" /> Session Details</span>
+            </SelectItem>
+            <SelectItem value="journals">
+              <span className="flex items-center gap-2"><BookOpen className="w-4 h-4" /> All Journals</span>
+            </SelectItem>
+            <SelectItem value="analytics">
+              <span className="flex items-center gap-2"><BarChart3 className="w-4 h-4" /> Analytics</span>
+            </SelectItem>
+            <SelectItem value="newsletter">
+              <span className="flex items-center gap-2"><Mail className="w-4 h-4" /> {t("admin.newsletterManagement")}</span>
+            </SelectItem>
+            <SelectItem value="suggestions">
+              <span className="flex items-center gap-2">
+                <Lightbulb className="w-4 h-4" /> {t("encyclopedia.suggestions")}
+                {suggestionsData && suggestionsData.filter(s => s.status === "pending").length > 0 && (
+                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0" data-testid="badge-pending-suggestions">
+                    {suggestionsData.filter(s => s.status === "pending").length}
+                  </Badge>
+                )}
+              </span>
+            </SelectItem>
+            <SelectItem value="feedback">
+              <span className="flex items-center gap-2">
+                <MessageSquarePlus className="w-4 h-4" /> Feedback
+                {feedbackData && feedbackData.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    {feedbackData.length}
+                  </Badge>
+                )}
+              </span>
+            </SelectItem>
+            <SelectItem value="community">
+              <span className="flex items-center gap-2"><Heart className="w-4 h-4" /> {t("admin.tabCommunity")}</span>
+            </SelectItem>
+            <SelectItem value="ai-controls">
+              <span className="flex items-center gap-2"><Sparkles className="w-4 h-4" /> AI Controls</span>
+            </SelectItem>
+            <SelectItem value="changelog">
+              <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4" /> Changelog</span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
 
         <TabsContent value="participants">
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
