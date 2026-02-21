@@ -27,7 +27,7 @@ type Block = {
 export default function About() {
   const [, navigate] = useLocation();
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("about");
 
   return (
     <div className="min-h-screen bg-background min-w-0 overflow-x-hidden" data-testid="about-page">
@@ -68,15 +68,15 @@ export default function About() {
       <div className="max-w-3xl mx-auto px-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
           <TabsList className="w-full grid grid-cols-4">
-            <TabsTrigger value="overview" className="gap-1.5" data-testid="tab-about-overview">
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t("about.tabOverview")}</span>
-              <span className="sm:hidden">{t("about.tabOverviewShort")}</span>
-            </TabsTrigger>
             <TabsTrigger value="about" className="gap-1.5" data-testid="tab-about-story">
               <Info className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t("about.tabStory")}</span>
               <span className="sm:hidden">{t("about.tabStoryShort")}</span>
+            </TabsTrigger>
+            <TabsTrigger value="overview" className="gap-1.5" data-testid="tab-about-overview">
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t("about.tabOverview")}</span>
+              <span className="sm:hidden">{t("about.tabOverviewShort")}</span>
             </TabsTrigger>
             <TabsTrigger value="changelog" className="gap-1.5" data-testid="tab-about-changelog">
               <Rocket className="w-3.5 h-3.5" />
