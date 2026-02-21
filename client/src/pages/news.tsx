@@ -441,6 +441,7 @@ function ChangelogSection() {
                           <p className="text-xs text-muted-foreground mt-1">{entry.description}</p>
                           <p className="text-[10px] text-muted-foreground/60 mt-1.5">
                             {new Date(entry.date).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" })}
+                            {entry.date.includes("T") && `, ${new Date(entry.date).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`}
                           </p>
                         </div>
                       </CardContent>
