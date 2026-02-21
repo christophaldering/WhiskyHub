@@ -1854,7 +1854,10 @@ export async function registerRoutes(
       }
 
       const { OpenAI } = await import("openai");
-      const openai = new OpenAI();
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
       const prompt = `You are a whisky expert. For the following whisky, provide:
 1. 3-4 interesting and potentially surprising facts (historical, production, or cultural)
 2. The distillery's official website URL (if known, otherwise null)
