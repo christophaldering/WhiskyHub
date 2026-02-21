@@ -382,8 +382,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
         { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         { href: "/about", icon: Info, label: t('nav.about') },
-        { href: "/", icon: Globe, label: t('nav.landingPage') },
         { href: "/donate", icon: Heart, label: t('nav.donate') },
+        { href: "/", icon: Globe, label: t('nav.landingPage') },
       ],
     },
     ...((isHost || isAdmin) ? [
