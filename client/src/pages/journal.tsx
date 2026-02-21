@@ -2,13 +2,16 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { journalApi, journalBottleApi, textExtractApi, wishlistApi } from "@/lib/api";
+import { journalApi, journalBottleApi, textExtractApi, wishlistApi, tastingHistoryApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, ArrowLeft, Pencil, Trash2, BookOpen, Wine, Calendar, Camera, X, Loader2, ScanLine, ExternalLink, Type, Send } from "lucide-react";
+import { Plus, ArrowLeft, Pencil, Trash2, BookOpen, Wine, Calendar, Camera, X, Loader2, ScanLine, ExternalLink, Type, Send, History, ChevronDown, ChevronUp, MapPin, Star } from "lucide-react";
 import { TastingNoteGenerator } from "@/components/tasting-note-generator";
 import type { JournalEntry } from "@shared/schema";
 import { GuestPreview } from "@/components/guest-preview";
@@ -173,7 +176,7 @@ export default function Journal() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6">
               <div>
                 <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-journal-title">
                   {t("journal.title")}
@@ -190,6 +193,19 @@ export default function Journal() {
               </Button>
             </div>
 
+            <Tabs defaultValue="journal" className="mb-6">
+              <TabsList className="w-full grid grid-cols-2">
+                <TabsTrigger value="journal" className="gap-1.5" data-testid="tab-journal-personal">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  {t("journal.tabPersonal")}
+                </TabsTrigger>
+                <TabsTrigger value="history" className="gap-1.5" data-testid="tab-journal-history">
+                  <History className="w-3.5 h-3.5" />
+                  {t("journal.tabFromTastings")}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="journal" className="mt-4">
             {isLoading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
@@ -257,6 +273,12 @@ export default function Journal() {
                 ))}
               </div>
             )}
+              </TabsContent>
+
+              <TabsContent value="history" className="mt-4">
+                <TastingHistoryList participantId={currentParticipant?.id} />
+              </TabsContent>
+            </Tabs>
           </motion.div>
         )}
 
@@ -1033,6 +1055,198 @@ function EntryForm({
           </Button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function TastingHistoryList({ participantId }: { participantId?: string }) {
+  const { t } = useTranslation();
+  const [expandedWhisky, setExpandedWhisky] = useState<string | null>(null);
+
+  const { data: history = [], isLoading } = useQuery({
+    queryKey: ["tasting-history", participantId],
+    queryFn: () => tastingHistoryApi.get(participantId!),
+    enabled: !!participantId,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-20 bg-card/50 rounded-lg animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (history.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <History className="w-12 h-12 mx-auto text-muted-foreground/40 mb-4" />
+        <p className="text-muted-foreground font-serif" data-testid="text-history-empty">
+          {t("journal.historyEmpty")}
+        </p>
+        <p className="text-sm text-muted-foreground/70 mt-1">{t("journal.historyEmptyDesc")}</p>
+      </div>
+    );
+  }
+
+  const totalTastings = history.reduce((sum: number, w: any) => sum + w.count, 0);
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-4 text-sm text-muted-foreground">
+        <Badge variant="secondary" className="text-xs">
+          {t("journal.historyWhiskyCount", { count: history.length })}
+        </Badge>
+        <Badge variant="outline" className="text-xs">
+          {t("journal.historyTastingCount", { count: totalTastings })}
+        </Badge>
+      </div>
+
+      <div className="space-y-2">
+        {history.map((whisky: any, i: number) => {
+          const isExpanded = expandedWhisky === whisky.whiskyName;
+          const validOveralls = whisky.tastings.filter((t: any) => t.overall != null);
+          const avgOverall = validOveralls.length > 0
+            ? validOveralls.reduce((s: number, t: any) => s + t.overall, 0) / validOveralls.length
+            : null;
+
+          return (
+            <motion.div
+              key={whisky.whiskyName + i}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.02 }}
+            >
+              <Card
+                className="cursor-pointer hover:border-primary/30 transition-colors"
+                onClick={() => setExpandedWhisky(isExpanded ? null : whisky.whiskyName)}
+                data-testid={`card-history-whisky-${i}`}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    {whisky.imageUrl ? (
+                      <div className="w-10 h-14 rounded overflow-hidden border border-border/30 bg-secondary/30 flex-shrink-0">
+                        <img src={whisky.imageUrl} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-14 rounded border border-border/30 bg-secondary/20 flex items-center justify-center flex-shrink-0">
+                        <Wine className="w-4 h-4 text-muted-foreground/40" />
+                      </div>
+                    )}
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-serif font-semibold text-foreground truncate">{whisky.whiskyName}</h3>
+                        {whisky.count > 1 && (
+                          <Badge variant="default" className="text-[10px] px-1.5 py-0 shrink-0">
+                            {whisky.count}×
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+                        {whisky.distillery && (
+                          <span>{whisky.distillery}</span>
+                        )}
+                        {whisky.age && (
+                          <span>{whisky.age} {t("journal.years")}</span>
+                        )}
+                        {whisky.abv && (
+                          <span>{whisky.abv}%</span>
+                        )}
+                        {whisky.region && (
+                          <span className="flex items-center gap-0.5">
+                            <MapPin className="w-2.5 h-2.5" />
+                            {whisky.region}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {avgOverall != null && (
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-primary font-serif">{avgOverall.toFixed(1)}</div>
+                        <div className="text-[9px] text-muted-foreground uppercase tracking-wider">{t("journal.avgScore")}</div>
+                      </div>
+                      )}
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </div>
+                  </div>
+
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <div className="mt-4 pt-3 border-t border-border/30 space-y-3">
+                          {whisky.tastings.map((tasting: any, j: number) => (
+                            <div key={j} className="bg-secondary/20 rounded-lg p-3" data-testid={`history-tasting-${i}-${j}`}>
+                              <div className="flex items-center justify-between mb-2">
+                                <div>
+                                  <p className="text-sm font-serif font-semibold">{tasting.tastingTitle}</p>
+                                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
+                                    {tasting.tastingDate && (
+                                      <span className="flex items-center gap-0.5">
+                                        <Calendar className="w-2.5 h-2.5" />
+                                        {new Date(tasting.tastingDate).toLocaleDateString("de-DE", { day: "numeric", month: "short", year: "numeric" })}
+                                      </span>
+                                    )}
+                                    {tasting.tastingLocation && (
+                                      <span className="flex items-center gap-0.5">
+                                        <MapPin className="w-2.5 h-2.5" />
+                                        {tasting.tastingLocation}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-base font-bold text-primary font-serif">{tasting.overall?.toFixed(1)}</span>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-4 gap-2 text-[11px]">
+                                <div>
+                                  <span className="text-muted-foreground">{t("journal.historyNose")}</span>
+                                  <span className="ml-1 font-medium">{tasting.nose?.toFixed(0)}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">{t("journal.historyTaste")}</span>
+                                  <span className="ml-1 font-medium">{tasting.taste?.toFixed(0)}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">{t("journal.historyFinish")}</span>
+                                  <span className="ml-1 font-medium">{tasting.finish?.toFixed(0)}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">{t("journal.historyBalance")}</span>
+                                  <span className="ml-1 font-medium">{tasting.balance?.toFixed(0)}</span>
+                                </div>
+                              </div>
+                              {tasting.notes && (
+                                <p className="text-xs text-muted-foreground mt-2 italic">"{tasting.notes}"</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })}
+      </div>
     </div>
   );
 }

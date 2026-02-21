@@ -2665,6 +2665,68 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
     }
   });
 
+  // ===== Tasting History =====
+  app.get("/api/participants/:id/tasting-history", async (req, res) => {
+    try {
+      const raw = await storage.getTastingHistory(req.params.id);
+      const grouped: Record<string, any> = {};
+      for (const row of raw) {
+        const nameKey = (row.whiskyName || "").toLowerCase().trim();
+        const distKey = (row.distillery || "").toLowerCase().trim();
+        const ageKey = row.age || "";
+        const key = `${nameKey}||${distKey}||${ageKey}`;
+        if (!grouped[key]) {
+          grouped[key] = {
+            whiskyName: row.whiskyName,
+            distillery: row.distillery,
+            age: row.age,
+            abv: row.abv,
+            type: row.type,
+            country: row.country,
+            region: row.region,
+            category: row.category,
+            caskInfluence: row.caskInfluence,
+            imageUrl: row.imageUrl,
+            count: 0,
+            tastings: [],
+          };
+        }
+        if (row.imageUrl && !grouped[key].imageUrl) {
+          grouped[key].imageUrl = row.imageUrl;
+        }
+        grouped[key].count++;
+        grouped[key].tastings.push({
+          tastingId: row.tastingId,
+          tastingTitle: row.tastingTitle,
+          tastingDate: row.tastingDate,
+          tastingLocation: row.tastingLocation,
+          nose: row.ratingNose,
+          taste: row.ratingTaste,
+          finish: row.ratingFinish,
+          balance: row.ratingBalance,
+          overall: row.ratingOverall,
+          notes: row.ratingNotes,
+          ratedAt: row.ratingUpdatedAt,
+        });
+      }
+      for (const g of Object.values(grouped)) {
+        g.tastings.sort((a: any, b: any) => {
+          const da = a.tastingDate || "";
+          const db = b.tastingDate || "";
+          return db.localeCompare(da);
+        });
+      }
+      const result = Object.values(grouped).sort((a: any, b: any) => {
+        const dateA = a.tastings[0]?.tastingDate || "";
+        const dateB = b.tastings[0]?.tastingDate || "";
+        return dateB.localeCompare(dateA);
+      });
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== Journal Entries =====
   app.get("/api/journal/:participantId", async (req, res) => {
     try {

@@ -118,6 +118,9 @@ export interface IStorage {
   // Rating Notes
   getRatingNotes(participantId: string): Promise<Array<{ id: string; notes: string | null }>>;
 
+  // Tasting History (whiskies tasted via sessions)
+  getTastingHistory(participantId: string): Promise<any[]>;
+
   // Journal Entries
   getAllJournalEntries(): Promise<JournalEntry[]>;
   getJournalEntries(participantId: string): Promise<JournalEntry[]>;
@@ -525,6 +528,42 @@ export class DatabaseStorage implements IStorage {
     }
     const [result] = await db.insert(ratings).values(data).returning();
     return result;
+  }
+
+  // --- Tasting History ---
+  async getTastingHistory(participantId: string): Promise<any[]> {
+    const results = await db
+      .select({
+        whiskyId: whiskies.id,
+        whiskyName: whiskies.name,
+        distillery: whiskies.distillery,
+        age: whiskies.age,
+        abv: whiskies.abv,
+        type: whiskies.type,
+        country: whiskies.country,
+        region: whiskies.region,
+        category: whiskies.category,
+        caskInfluence: whiskies.caskInfluence,
+        imageUrl: whiskies.imageUrl,
+        tastingId: tastings.id,
+        tastingTitle: tastings.title,
+        tastingDate: tastings.date,
+        tastingLocation: tastings.location,
+        ratingNose: ratings.nose,
+        ratingTaste: ratings.taste,
+        ratingFinish: ratings.finish,
+        ratingBalance: ratings.balance,
+        ratingOverall: ratings.overall,
+        ratingNotes: ratings.notes,
+        ratingUpdatedAt: ratings.updatedAt,
+      })
+      .from(ratings)
+      .innerJoin(whiskies, eq(ratings.whiskyId, whiskies.id))
+      .innerJoin(tastings, eq(ratings.tastingId, tastings.id))
+      .where(eq(ratings.participantId, participantId))
+      .orderBy(desc(tastings.date), desc(ratings.updatedAt));
+
+    return results;
   }
 
   // --- Profiles ---
