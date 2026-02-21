@@ -444,6 +444,14 @@ const resources = {
         },
         videoLink: "Video Link",
         videoLinkHint: "Zoom, Teams, Google Meet etc.",
+        titleUpdated: "Title updated",
+        timestamps: {
+          created: "Created",
+          opened: "Opened",
+          closed: "Closed",
+          revealed: "Revealed",
+          archived: "Archived",
+        },
         joinVideoCall: "Join Video Call",
         photos: {
           title: "Photos",
@@ -2393,6 +2401,14 @@ const resources = {
         },
         videoLink: "Video-Link",
         videoLinkHint: "Zoom, Teams, Google Meet etc.",
+        titleUpdated: "Titel aktualisiert",
+        timestamps: {
+          created: "Erstellt",
+          opened: "Geöffnet",
+          closed: "Geschlossen",
+          revealed: "Enthüllt",
+          archived: "Archiviert",
+        },
         joinVideoCall: "Zum Videoanruf",
         photos: {
           title: "Fotos",

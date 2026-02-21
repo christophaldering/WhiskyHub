@@ -55,9 +55,13 @@ export const tastings = pgTable("tastings", {
   aiHighlightsCache: text("ai_highlights_cache"), // Cached AI session highlights (JSON)
   aiHighlightsRatingCount: integer("ai_highlights_rating_count"), // Rating count when highlights were cached
   createdAt: timestamp("created_at").defaultNow(),
+  openedAt: timestamp("opened_at"),
+  closedAt: timestamp("closed_at"),
+  revealedAt: timestamp("revealed_at"),
+  archivedAt: timestamp("archived_at"),
 });
 
-export const insertTastingSchema = createInsertSchema(tastings).omit({ id: true, createdAt: true });
+export const insertTastingSchema = createInsertSchema(tastings).omit({ id: true, createdAt: true, openedAt: true, closedAt: true, revealedAt: true, archivedAt: true });
 export type InsertTasting = z.infer<typeof insertTastingSchema>;
 export type Tasting = typeof tastings.$inferSelect;
 

@@ -649,6 +649,25 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  app.patch("/api/tastings/:id/title", async (req, res) => {
+    try {
+      const { title, hostId } = req.body;
+      if (!hostId) return res.status(400).json({ message: "hostId required" });
+      const trimmedTitle = (title || "").trim();
+      if (!trimmedTitle) return res.status(400).json({ message: "Title must not be empty" });
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Not found" });
+      const requester = await storage.getParticipant(hostId);
+      if (tasting.hostId !== hostId && (!requester || requester.role !== "admin")) {
+        return res.status(403).json({ message: "Only the host or an admin can rename a tasting" });
+      }
+      const updated = await storage.updateTastingDetails(req.params.id, { title: trimmedTitle });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.patch("/api/tastings/:id/reflection", async (req, res) => {
     const { reflection } = req.body;
     const updated = await storage.updateTastingReflection(req.params.id, reflection);

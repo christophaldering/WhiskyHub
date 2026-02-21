@@ -19,7 +19,7 @@ import ReflectionPanel from "@/components/reflection-panel";
 import TastingPhotos from "@/components/tasting-photos";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3, Clock, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +36,108 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Whisky, Tasting } from "@shared/schema";
+
+function EditableTastingTitle({ tasting, isHost }: { tasting: Tasting; isHost: boolean }) {
+  const { t } = useTranslation();
+  const { currentParticipant } = useAppStore();
+  const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(tasting.title);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setTitle(tasting.title); }, [tasting.title]);
+  useEffect(() => { if (editing && inputRef.current) inputRef.current.focus(); }, [editing]);
+
+  const renameMutation = useMutation({
+    mutationFn: async (newTitle: string) => {
+      const res = await fetch(`/api/tastings/${tasting.id}/title`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle, hostId: currentParticipant?.id }),
+      });
+      if (!res.ok) throw new Error((await res.json()).message);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/tastings/${tasting.id}`] });
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+      setEditing(false);
+      toast({ title: t("session.titleUpdated") });
+    },
+    onError: (err: Error) => {
+      toast({ title: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleSave = () => {
+    const trimmed = title.trim();
+    if (!trimmed || trimmed === tasting.title) { setEditing(false); setTitle(tasting.title); return; }
+    renameMutation.mutate(trimmed);
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <Input
+          ref={inputRef}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") { setEditing(false); setTitle(tasting.title); } }}
+          className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight h-auto py-1 px-2"
+          data-testid="input-tasting-title"
+        />
+        <Button size="icon" variant="ghost" onClick={handleSave} disabled={renameMutation.isPending} data-testid="button-save-title">
+          <Check className="w-5 h-5 text-green-600" />
+        </Button>
+        <Button size="icon" variant="ghost" onClick={() => { setEditing(false); setTitle(tasting.title); }} data-testid="button-cancel-title">
+          <X className="w-5 h-5 text-muted-foreground" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 group">
+      <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{tasting.title}</h1>
+      {isHost && (
+        <button onClick={() => setEditing(true)} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary" data-testid="button-edit-title">
+          <Pencil className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function TastingTimestamps({ tasting }: { tasting: Tasting }) {
+  const { t } = useTranslation();
+  const fmt = (d: Date | string | null | undefined) => {
+    if (!d) return null;
+    const date = typeof d === "string" ? new Date(d) : d;
+    return date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + ", " + date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const items = [
+    { label: t("session.timestamps.created"), value: fmt(tasting.createdAt) },
+    { label: t("session.timestamps.opened"), value: fmt((tasting as any).openedAt) },
+    { label: t("session.timestamps.closed"), value: fmt((tasting as any).closedAt) },
+    { label: t("session.timestamps.revealed"), value: fmt((tasting as any).revealedAt) },
+    { label: t("session.timestamps.archived"), value: fmt((tasting as any).archivedAt) },
+  ].filter(i => i.value);
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-3 mt-2 flex-wrap text-[11px] text-muted-foreground/70">
+      <Clock className="w-3 h-3 shrink-0" />
+      {items.map((item, i) => (
+        <span key={i}>
+          {item.label}: {item.value}
+          {i < items.length - 1 && <span className="ml-3">•</span>}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 function QuickImageUpload({ whisky, tastingId, size = "lg" }: { whisky: Whisky; tastingId: string; size?: "md" | "lg" }) {
   const { t } = useTranslation();
@@ -1511,7 +1613,7 @@ export default function TastingRoom() {
         })()}
         <div className="flex flex-col gap-4">
           <div className="min-w-0 w-full">
-            <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{tasting.title}</h1>
+            <EditableTastingTitle tasting={tasting} isHost={isHost} />
             <div className="flex items-center gap-2 text-muted-foreground font-serif italic mt-2 text-base sm:text-lg flex-wrap">
               <span>{tasting.location}</span>
               <span>•</span>
@@ -1526,6 +1628,7 @@ export default function TastingRoom() {
                 </>
               )}
             </div>
+            <TastingTimestamps tasting={tasting} />
           </div>
           <div className="flex flex-col items-start sm:items-end gap-2 min-w-0 w-full md:w-auto">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">

@@ -353,6 +353,12 @@ export class DatabaseStorage implements IStorage {
   async updateTastingStatus(id: string, status: string, currentAct?: string): Promise<Tasting | undefined> {
     const updateData: any = { status };
     if (currentAct) updateData.currentAct = currentAct;
+    const now = new Date();
+    const existing = await this.getTasting(id);
+    if (status === "open" && !existing?.openedAt) updateData.openedAt = now;
+    if (status === "closed" && !existing?.closedAt) updateData.closedAt = now;
+    if (status === "reveal" && !existing?.revealedAt) updateData.revealedAt = now;
+    if (status === "archived" && !existing?.archivedAt) updateData.archivedAt = now;
     const [result] = await db.update(tastings).set(updateData).where(eq(tastings.id, id)).returning();
     return result;
   }
