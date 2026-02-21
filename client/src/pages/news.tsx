@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { GuestPreview } from "@/components/guest-preview";
 
@@ -112,22 +113,38 @@ export default function News() {
 
   if (!currentParticipant) {
     return (
-      <div className="space-y-10 max-w-4xl mx-auto min-w-0 overflow-x-hidden">
+      <div className="space-y-6 max-w-4xl mx-auto min-w-0 overflow-x-hidden">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("news.title")}</h1>
           <div className="w-12 h-1 bg-primary/50 mt-3" />
         </motion.div>
-        <GuestPreview featureTitle={t("news.title")} featureDescription={t("news.guestDesc")}>
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="w-full p-4 bg-card border border-border/50 rounded-lg">
-                <div className="h-4 bg-secondary rounded w-3/4 mb-2" />
-                <div className="h-3 bg-secondary/60 rounded w-full" />
+        <Tabs defaultValue="changelog" className="w-full">
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="notifications" className="gap-1.5" data-testid="tab-notifications">
+              <Bell className="w-3.5 h-3.5" />
+              {t("news.tabNotifications")}
+            </TabsTrigger>
+            <TabsTrigger value="changelog" className="gap-1.5" data-testid="tab-changelog">
+              <Rocket className="w-3.5 h-3.5" />
+              {t("news.tabChangelog")}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="notifications" className="mt-4">
+            <GuestPreview featureTitle={t("news.title")} featureDescription={t("news.guestDesc")}>
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="w-full p-4 bg-card border border-border/50 rounded-lg">
+                    <div className="h-4 bg-secondary rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-secondary/60 rounded w-full" />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </GuestPreview>
-        <ChangelogSection />
+            </GuestPreview>
+          </TabsContent>
+          <TabsContent value="changelog" className="mt-4">
+            <ChangelogSection />
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }
@@ -141,18 +158,6 @@ export default function News() {
             <div className="w-12 h-1 bg-primary/50 mt-3" />
           </div>
           <div className="flex items-center gap-2">
-            {unreadCount > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => markAllReadMutation.mutate()}
-                className="gap-1.5 text-xs"
-                data-testid="button-mark-all-read"
-              >
-                <CheckCheck className="w-3.5 h-3.5" />
-                {t("news.markAllRead")}
-              </Button>
-            )}
             {isAdmin && (
               <Button
                 size="sm"
@@ -168,82 +173,109 @@ export default function News() {
         </div>
       </motion.div>
 
-      {unreadCount > 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <Badge variant="secondary" className="text-xs">
-            {t("news.unreadCount", { count: unreadCount })}
-          </Badge>
-        </motion.div>
-      )}
+      <Tabs defaultValue="notifications" className="w-full">
+        <TabsList className="w-full grid grid-cols-2">
+          <TabsTrigger value="notifications" className="gap-1.5" data-testid="tab-notifications">
+            <Bell className="w-3.5 h-3.5" />
+            {t("news.tabNotifications")}
+            {unreadCount > 0 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-1">{unreadCount}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="changelog" className="gap-1.5" data-testid="tab-changelog">
+            <Rocket className="w-3.5 h-3.5" />
+            {t("news.tabChangelog")}
+          </TabsTrigger>
+        </TabsList>
 
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="w-full p-4 bg-card border border-border/50 rounded-lg animate-pulse">
-              <div className="h-4 bg-secondary rounded w-3/4 mb-2" />
-              <div className="h-3 bg-secondary/60 rounded w-full" />
-            </div>
-          ))}
-        </div>
-      ) : notifications.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center py-16"
-        >
-          <Bell className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-          <p className="text-muted-foreground font-serif">{t("news.empty")}</p>
-          <p className="text-sm text-muted-foreground/70 mt-1">{t("news.emptyDesc")}</p>
-        </motion.div>
-      ) : (
-        <div className="space-y-2">
-          {notifications.map((notif: any, i: number) => {
-            const config = typeConfig[notif.type] || typeConfig.platform_update;
-            const Icon = config.icon;
-            return (
-              <motion.div
-                key={notif.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.03 }}
+        <TabsContent value="notifications" className="mt-4">
+          {unreadCount > 0 && (
+            <div className="flex justify-end mb-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => markAllReadMutation.mutate()}
+                className="gap-1.5 text-xs"
+                data-testid="button-mark-all-read"
               >
-                <Card
-                  className={`cursor-pointer transition-all hover:shadow-md ${!notif.isRead ? "border-primary/30 bg-primary/[0.02]" : "opacity-75"}`}
-                  onClick={() => handleNotificationClick(notif)}
-                  data-testid={`card-notification-${notif.id}`}
-                >
-                  <CardContent className="p-3 sm:p-4 flex items-start gap-3">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${config.color}`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className={`text-sm font-serif font-semibold truncate ${!notif.isRead ? "text-primary" : "text-muted-foreground"}`} data-testid={`text-notification-title-${notif.id}`}>
-                            {notif.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {!notif.isRead && (
-                            <div className="w-2 h-2 rounded-full bg-primary" />
-                          )}
-                          {notif.linkUrl && (
-                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground/60 mt-1">{formatTime(notif.createdAt)}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
+                <CheckCheck className="w-3.5 h-3.5" />
+                {t("news.markAllRead")}
+              </Button>
+            </div>
+          )}
 
-      <ChangelogSection />
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="w-full p-4 bg-card border border-border/50 rounded-lg animate-pulse">
+                  <div className="h-4 bg-secondary rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-secondary/60 rounded w-full" />
+                </div>
+              ))}
+            </div>
+          ) : notifications.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-16"
+            >
+              <Bell className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+              <p className="text-muted-foreground font-serif">{t("news.empty")}</p>
+              <p className="text-sm text-muted-foreground/70 mt-1">{t("news.emptyDesc")}</p>
+            </motion.div>
+          ) : (
+            <div className="space-y-2">
+              {notifications.map((notif: any, i: number) => {
+                const config = typeConfig[notif.type] || typeConfig.platform_update;
+                const Icon = config.icon;
+                return (
+                  <motion.div
+                    key={notif.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                  >
+                    <Card
+                      className={`cursor-pointer transition-all hover:shadow-md ${!notif.isRead ? "border-primary/30 bg-primary/[0.02]" : "opacity-75"}`}
+                      onClick={() => handleNotificationClick(notif)}
+                      data-testid={`card-notification-${notif.id}`}
+                    >
+                      <CardContent className="p-3 sm:p-4 flex items-start gap-3">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${config.color}`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className={`text-sm font-serif font-semibold truncate ${!notif.isRead ? "text-primary" : "text-muted-foreground"}`} data-testid={`text-notification-title-${notif.id}`}>
+                                {notif.title}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {!notif.isRead && (
+                                <div className="w-2 h-2 rounded-full bg-primary" />
+                              )}
+                              {notif.linkUrl && (
+                                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground/60 mt-1">{formatTime(notif.createdAt)}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="changelog" className="mt-4">
+          <ChangelogSection />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={showPostDialog} onOpenChange={setShowPostDialog}>
         <DialogContent className="sm:max-w-md">
@@ -314,11 +346,12 @@ const TIME_PRESETS = [
 ];
 
 function ChangelogSection() {
+  const { currentParticipant } = useAppStore();
+  const isAdmin = currentParticipant?.role === "admin";
   const [category, setCategory] = useState("all");
   const [timePreset, setTimePreset] = useState("all");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
-  const [expanded, setExpanded] = useState(true);
 
   const getDateRange = () => {
     if (timePreset === "custom") {
@@ -346,113 +379,97 @@ function ChangelogSection() {
     },
   });
 
+  const publicCategories = ["feature", "improvement", "design"];
+  const visibleEntries = isAdmin ? entries : entries.filter((e: any) => publicCategories.includes(e.category));
+  const visibleCatConfig = isAdmin
+    ? CHANGELOG_CAT_CONFIG
+    : Object.fromEntries(Object.entries(CHANGELOG_CAT_CONFIG).filter(([key]) => publicCategories.includes(key)));
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2, duration: 0.5 }}
-      className="mt-8"
-    >
-      <div
-        className="flex items-center justify-between cursor-pointer mb-4"
-        onClick={() => setExpanded(!expanded)}
-        data-testid="changelog-section-toggle"
-      >
-        <div className="flex items-center gap-2">
-          <Rocket className="w-5 h-5 text-primary" />
-          <h2 className="text-xl font-serif font-bold text-primary">Plattform-Entwicklung</h2>
-          <Badge variant="secondary" className="text-xs">{entries.length}</Badge>
-        </div>
-        <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${expanded ? "rotate-90" : ""}`} />
+    <div>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <Select value={category} onValueChange={setCategory}>
+          <SelectTrigger className="w-44" data-testid="changelog-news-filter-category">
+            <Filter className="w-3.5 h-3.5 mr-1.5" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Kategorien</SelectItem>
+            {Object.entries(visibleCatConfig).map(([key, cfg]) => (
+              <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={timePreset} onValueChange={setTimePreset}>
+          <SelectTrigger className="w-48" data-testid="changelog-news-filter-time">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TIME_PRESETS.map(p => (
+              <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {timePreset === "custom" && (
+          <div className="flex gap-2 items-center">
+            <Input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="w-40" data-testid="changelog-news-from" />
+            <span className="text-sm text-muted-foreground">bis</span>
+            <Input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="w-40" data-testid="changelog-news-to" />
+          </div>
+        )}
       </div>
 
-      {expanded && (
-        <>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="w-44" data-testid="changelog-news-filter-category">
-                <Filter className="w-3.5 h-3.5 mr-1.5" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle Kategorien</SelectItem>
-                {Object.entries(CHANGELOG_CAT_CONFIG).map(([key, cfg]) => (
-                  <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={timePreset} onValueChange={setTimePreset}>
-              <SelectTrigger className="w-48" data-testid="changelog-news-filter-time">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TIME_PRESETS.map(p => (
-                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {timePreset === "custom" && (
-              <div className="flex gap-2 items-center">
-                <Input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="w-40" data-testid="changelog-news-from" />
-                <span className="text-sm text-muted-foreground">bis</span>
-                <Input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="w-40" data-testid="changelog-news-to" />
-              </div>
-            )}
-          </div>
-
-          {isLoading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="p-3 bg-card border rounded-lg animate-pulse">
-                  <div className="h-4 bg-secondary rounded w-2/3 mb-2" />
-                  <div className="h-3 bg-secondary/60 rounded w-full" />
-                </div>
-              ))}
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="p-3 bg-card border rounded-lg animate-pulse">
+              <div className="h-4 bg-secondary rounded w-2/3 mb-2" />
+              <div className="h-3 bg-secondary/60 rounded w-full" />
             </div>
-          ) : entries.length === 0 ? (
-            <div className="text-center py-8">
-              <Rocket className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">Keine Einträge für diesen Zeitraum.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {entries.map((entry: any, i: number) => {
-                const catConfig = CHANGELOG_CAT_CONFIG[entry.category] || CHANGELOG_CAT_CONFIG.feature;
-                const CatIcon = catConfig.icon;
-                return (
-                  <motion.div
-                    key={entry.id}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.02 }}
-                  >
-                    <Card data-testid={`changelog-news-entry-${entry.id}`}>
-                      <CardContent className="p-3 sm:p-4 flex items-start gap-3">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${catConfig.color}`}>
-                          <CatIcon className="w-4 h-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-serif font-semibold">{entry.title}</p>
-                            <Badge variant="outline" className="text-[10px]">{catConfig.label}</Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">{entry.description}</p>
-                          <p className="text-[10px] text-muted-foreground/60 mt-1.5">
-                            {new Date(entry.date).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" })}
-                            {entry.date.includes("T") && `, ${new Date(entry.date).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-        </>
+          ))}
+        </div>
+      ) : visibleEntries.length === 0 ? (
+        <div className="text-center py-8">
+          <Rocket className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Keine Einträge für diesen Zeitraum.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {visibleEntries.map((entry: any, i: number) => {
+            const catConfig = CHANGELOG_CAT_CONFIG[entry.category] || CHANGELOG_CAT_CONFIG.feature;
+            const CatIcon = catConfig.icon;
+            return (
+              <motion.div
+                key={entry.id}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.02 }}
+              >
+                <Card data-testid={`changelog-news-entry-${entry.id}`}>
+                  <CardContent className="p-3 sm:p-4 flex items-start gap-3">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${catConfig.color}`}>
+                      <CatIcon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-serif font-semibold">{entry.title}</p>
+                        <Badge variant="outline" className="text-[10px]">{catConfig.label}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{entry.description}</p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-1.5">
+                        {new Date(entry.date).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" })}
+                        {entry.date.includes("T") && `, ${new Date(entry.date).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 }

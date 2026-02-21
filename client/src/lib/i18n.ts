@@ -164,6 +164,8 @@ const resources = {
       },
       news: {
         title: "News",
+        tabNotifications: "Notifications",
+        tabChangelog: "Development",
         guestDesc: "Sign in to see your personal notifications – invitations, session updates, and platform news.",
         empty: "No news yet",
         emptyDesc: "When something happens – invitations, session results, or platform updates – it will appear here.",
@@ -2081,6 +2083,8 @@ const resources = {
       },
       news: {
         title: "Neuigkeiten",
+        tabNotifications: "Benachrichtigungen",
+        tabChangelog: "Entwicklung",
         guestDesc: "Melde dich an, um deine persönlichen Benachrichtigungen zu sehen – Einladungen, Session-Updates und Plattform-News.",
         empty: "Noch keine Neuigkeiten",
         emptyDesc: "Wenn etwas passiert – Einladungen, Ergebnisse oder Plattform-Updates – erscheint es hier.",
