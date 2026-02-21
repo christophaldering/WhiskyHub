@@ -323,7 +323,7 @@ const resources = {
         communityRankings: "Community Rankings",
         tasteTwins: "Taste Twins",
         news: "News",
-        landingPage: "About CaskSense",
+        landingPage: "Homepage",
       },
       navGroup: {
         main: "Main",
@@ -1013,6 +1013,8 @@ const resources = {
       },
       about: {
         title: "About CaskSense",
+        tabOverview: "Overview",
+        tabOverviewShort: "Overview",
         tabStory: "Our Story",
         tabStoryShort: "Story",
         tabChangelog: "Development",
@@ -2269,7 +2271,7 @@ const resources = {
         communityRankings: "Community Rankings",
         tasteTwins: "Geschmackszwillinge",
         news: "Neuigkeiten",
-        landingPage: "Über CaskSense",
+        landingPage: "Homepage",
       },
       navGroup: {
         main: "Übersicht",
@@ -2959,6 +2961,8 @@ const resources = {
       },
       about: {
         title: "Über CaskSense",
+        tabOverview: "Überblick",
+        tabOverviewShort: "Überblick",
         tabStory: "Die Geschichte",
         tabStoryShort: "Story",
         tabChangelog: "Entwicklung",

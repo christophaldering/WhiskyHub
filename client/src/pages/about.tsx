@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft, Info, Rocket, BarChart3, Wrench, Bug, Shield, Palette, Filter, Users, Wine, BookOpen, Code2 } from "lucide-react";
+import { ArrowLeft, Info, Rocket, BarChart3, Wrench, Bug, Shield, Palette, Filter, Users, Wine, BookOpen, Code2, Glasses, Brain, Globe, Camera, FileSpreadsheet, ClipboardPaste, FileUp, LayoutGrid } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +27,7 @@ type Block = {
 export default function About() {
   const [, navigate] = useLocation();
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState("about");
+  const [activeTab, setActiveTab] = useState("overview");
 
   return (
     <div className="min-h-screen bg-background min-w-0 overflow-x-hidden" data-testid="about-page">
@@ -67,7 +67,12 @@ export default function About() {
 
       <div className="max-w-3xl mx-auto px-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-          <TabsList className="w-full grid grid-cols-3">
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="overview" className="gap-1.5" data-testid="tab-about-overview">
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t("about.tabOverview")}</span>
+              <span className="sm:hidden">{t("about.tabOverviewShort")}</span>
+            </TabsTrigger>
             <TabsTrigger value="about" className="gap-1.5" data-testid="tab-about-story">
               <Info className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t("about.tabStory")}</span>
@@ -84,6 +89,10 @@ export default function About() {
               <span className="sm:hidden">{t("about.tabPlatformShort")}</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="overview" className="mt-6">
+            <OverviewSection />
+          </TabsContent>
 
           <TabsContent value="about" className="mt-6">
             <AboutStorySection />
@@ -115,6 +124,124 @@ export default function About() {
             {t("about.backToApp")}
           </button>
         </motion.div>
+      </div>
+    </div>
+  );
+}
+
+function OverviewSection() {
+  const { t } = useTranslation();
+  const [, navigate] = useLocation();
+
+  const features = [
+    { icon: Glasses, titleKey: "landing.features.blindTasting", descKey: "landing.features.blindTastingDesc", color: "text-amber-600 bg-amber-600/10" },
+    { icon: Brain, titleKey: "landing.features.aiImport", descKey: "landing.features.aiImportDesc", color: "text-orange-500 bg-orange-500/10" },
+    { icon: BookOpen, titleKey: "landing.features.journal", descKey: "landing.features.journalDesc", color: "text-amber-700 bg-amber-700/10" },
+    { icon: BarChart3, titleKey: "landing.features.analytics", descKey: "landing.features.analyticsDesc", color: "text-yellow-600 bg-yellow-600/10" },
+    { icon: Users, titleKey: "landing.features.community", descKey: "landing.features.communityDesc", color: "text-orange-600 bg-orange-600/10" },
+    { icon: Globe, titleKey: "landing.features.encyclopedia", descKey: "landing.features.encyclopediaDesc", color: "text-amber-500 bg-amber-500/10" },
+  ];
+
+  const steps = [
+    { icon: FileUp, titleKey: "landing.steps.create", descKey: "landing.steps.createDesc", num: "01" },
+    { icon: Users, titleKey: "landing.steps.invite", descKey: "landing.steps.inviteDesc", num: "02" },
+    { icon: Wine, titleKey: "landing.steps.taste", descKey: "landing.steps.tasteDesc", num: "03" },
+  ];
+
+  const importCards = [
+    { icon: Camera, title: t("landing.ai.card1Title"), desc: t("landing.ai.card1Desc"), color: "text-amber-500 bg-amber-500/15" },
+    { icon: FileSpreadsheet, title: t("landing.ai.card2Title"), desc: t("landing.ai.card2Desc"), color: "text-orange-500 bg-orange-500/15" },
+    { icon: ClipboardPaste, title: t("landing.ai.card3Title"), desc: t("landing.ai.card3Desc"), color: "text-yellow-600 bg-yellow-600/15" },
+  ];
+
+  return (
+    <div className="space-y-10">
+      <div>
+        <h3 className="text-lg font-serif font-bold text-primary mb-2">{t("landing.features.title")}</h3>
+        <p className="text-sm text-muted-foreground mb-5">{t("landing.features.subtitle")}</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {features.map((f, i) => (
+            <motion.div
+              key={f.titleKey}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <Card className="h-full" data-testid={`about-feature-${i}`}>
+                <CardContent className="p-4 flex gap-3">
+                  <div className={`w-10 h-10 rounded-lg ${f.color} flex items-center justify-center shrink-0`}>
+                    <f.icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-serif font-semibold text-sm text-primary">{t(f.titleKey)}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{t(f.descKey)}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-serif font-bold text-primary mb-5">{t("landing.howItWorks.title")}</h3>
+        <div className="grid sm:grid-cols-3 gap-4">
+          {steps.map((step, i) => (
+            <motion.div
+              key={step.titleKey}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <Card className="h-full text-center" data-testid={`about-step-${i}`}>
+                <CardContent className="p-4">
+                  <div className="text-2xl font-serif font-black text-primary/20 mb-2">{step.num}</div>
+                  <step.icon className="w-6 h-6 text-primary mx-auto mb-2" />
+                  <p className="font-serif font-semibold text-sm text-primary">{t(step.titleKey)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t(step.descKey)}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-serif font-bold text-primary mb-2">{t("landing.ai.title")}</h3>
+        <p className="text-sm text-muted-foreground mb-5">{t("landing.ai.subtitle")}</p>
+        <div className="space-y-3">
+          {importCards.map((card, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.08 }}
+            >
+              <Card data-testid={`about-import-${i}`}>
+                <CardContent className="p-4 flex gap-3 items-start">
+                  <div className={`w-9 h-9 rounded-lg ${card.color} flex items-center justify-center shrink-0`}>
+                    <card.icon className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <p className="font-serif font-semibold text-sm text-primary">{card.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{card.desc}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      <div className="text-center pt-2">
+        <button
+          onClick={() => navigate("/")}
+          className="inline-flex items-center gap-2 px-6 py-2.5 border border-primary/30 text-primary rounded-sm font-serif text-sm tracking-wide hover:bg-primary/5 transition-colors"
+          data-testid="button-about-homepage"
+        >
+          <Globe className="w-4 h-4" />
+          {t("nav.landingPage")}
+        </button>
       </div>
     </div>
   );
