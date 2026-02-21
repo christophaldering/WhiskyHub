@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "react-i18next";
-import { Play, Lock, Eye, Archive, ChevronRight, Glasses, Trash2, AlertTriangle } from "lucide-react";
+import { Play, Lock, Eye, Archive, ChevronRight, Glasses, Trash2, AlertTriangle, Settings2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { tastingApi, blindModeApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useAppStore } from "@/lib/store";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Tasting } from "@shared/schema";
 import {
   AlertDialog,
@@ -27,6 +28,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from "@/components/ui/drawer";
 
 interface SessionControlProps {
   tasting: Tasting;
@@ -37,9 +45,11 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const { currentParticipant } = useAppStore();
+  const isMobile = useIsMobile();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPermanentDeleteDialog, setShowPermanentDeleteDialog] = useState(false);
   const [showRevealConfirm, setShowRevealConfirm] = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
   const [confirmName, setConfirmName] = useState("");
 
   const isAdmin = currentParticipant?.role === "admin";
@@ -215,10 +225,89 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
     </Dialog>
   );
 
+  const BlindControlsContent = () => {
+    if (!showBlindControls) return null;
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="text-xs text-muted-foreground font-mono" data-testid="text-blind-progress">
+          {allRevealed
+            ? t("blind.allRevealed")
+            : t("blind.revealProgress", { current: revealIndex + 1, total: totalWhiskies })}
+        </div>
+        {!allRevealed && revealStep > 0 && (
+          <div className="text-xs text-muted-foreground/80" data-testid="text-blind-step">
+            {getStepLabel()}
+          </div>
+        )}
+        <Button
+          onClick={() => revealNext.mutate()}
+          disabled={revealNext.isPending || allRevealed}
+          variant="outline"
+          className="w-full"
+          data-testid="button-reveal-next"
+        >
+          <Glasses className="w-4 h-4 mr-2" /> {t("blind.revealNext")}
+        </Button>
+      </div>
+    );
+  };
+
+  const SecondaryActions = () => {
+    if (!showArchiveDelete) return null;
+    return (
+      <div className="flex flex-col gap-1">
+        {tasting.status !== "draft" && tasting.status !== "open" && (
+          <button
+            onClick={() => { handleArchive(); setShowDrawer(false); }}
+            className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors rounded-sm hover:bg-secondary/50 w-full"
+            data-testid="button-archive-session"
+          >
+            <Archive className="w-3.5 h-3.5" />
+            {t('session.actions.archive')}
+          </button>
+        )}
+        <button
+          onClick={() => { if (canDelete) { setShowDeleteDialog(true); setShowDrawer(false); } }}
+          className={`flex items-center gap-2 px-3 py-2 text-xs rounded-sm w-full transition-colors ${canDelete ? "text-muted-foreground hover:text-destructive hover:bg-destructive/5 cursor-pointer" : "text-muted-foreground/40 cursor-not-allowed"}`}
+          title={!canDelete ? t('session.actions.cannotDeleteActive') : undefined}
+          data-testid="button-delete-session"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          {t('session.actions.deleteSession')}
+        </button>
+      </div>
+    );
+  };
+
   if (tasting.status === "deleted") {
     if (!isAdmin) return null;
+    if (isMobile) {
+      return (
+        <>
+          <div className="fixed bottom-16 inset-x-0 z-50 px-3 pb-2">
+            <div className="bg-card border border-border/50 shadow-2xl rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-2 h-2 rounded-full bg-destructive/70 shrink-0" />
+                <span className="text-xs font-mono text-destructive/70 truncate">{t('session.actions.deleteSession')}</span>
+              </div>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setShowPermanentDeleteDialog(true)}
+                className="shrink-0 h-8 text-xs"
+                data-testid="button-permanent-delete"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 mr-1" />
+                {t('session.actions.permanentDelete')}
+              </Button>
+            </div>
+          </div>
+          <PermanentDeleteDialog />
+        </>
+      );
+    }
     return (
-      <div className="fixed bottom-20 md:bottom-6 right-6 z-50">
+      <div className="fixed bottom-6 right-6 z-50">
         <div className="bg-card border border-border/50 shadow-2xl p-4 rounded-lg flex flex-col gap-2 min-w-[200px]">
           <div className="text-xs uppercase tracking-widest text-muted-foreground font-mono mb-1">
             Host Control
@@ -241,8 +330,33 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
   }
 
   if (tasting.status === "archived") {
+    if (isMobile) {
+      return (
+        <>
+          <div className="fixed bottom-16 inset-x-0 z-50 px-3 pb-2">
+            <div className="bg-card border border-border/50 shadow-2xl rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-2 h-2 rounded-full bg-muted-foreground shrink-0" />
+                <span className="text-xs font-serif font-bold text-primary truncate">{t(`session.status.${tasting.status}`)}</span>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => canDelete ? setShowDeleteDialog(true) : undefined}
+                className="shrink-0 h-8 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
+                data-testid="button-delete-session"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1" />
+                {t('session.actions.deleteSession')}
+              </Button>
+            </div>
+          </div>
+          <SoftDeleteDialog />
+        </>
+      );
+    }
     return (
-      <div className="fixed bottom-20 md:bottom-6 right-6 z-50">
+      <div className="fixed bottom-6 right-6 z-50">
         <div className="bg-card border border-border/50 shadow-2xl p-4 rounded-lg flex flex-col gap-2 min-w-[200px]">
           <div className="text-xs uppercase tracking-widest text-muted-foreground font-mono mb-1">
             Host Control
@@ -264,8 +378,102 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
     );
   }
 
+  if (isMobile) {
+    return (
+      <>
+        <div className="fixed bottom-16 inset-x-0 z-50 px-3 pb-2">
+          <div className="bg-card border border-border/50 shadow-2xl rounded-xl px-3 py-2.5 flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0 shrink">
+              <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+              <span className="text-xs font-serif font-bold text-primary truncate">
+                {t(`session.status.${tasting.status}`)}
+                {tasting.status === "reveal" && tasting.currentAct && (
+                  <span className="ml-1 opacity-70">({t(`reveal.${tasting.currentAct}`)})</span>
+                )}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+              {showBlindControls && !allRevealed && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => revealNext.mutate()}
+                  disabled={revealNext.isPending || allRevealed}
+                  className="h-8 text-xs px-2.5"
+                  data-testid="button-reveal-next"
+                >
+                  <Glasses className="w-3.5 h-3.5 mr-1" />
+                  {t("blind.revealNext")}
+                </Button>
+              )}
+              <Button
+                size="sm"
+                onClick={handleNextState}
+                disabled={updateStatus.isPending}
+                className="h-8 text-xs px-3 bg-primary text-primary-foreground shadow-md"
+                data-testid="button-next-state"
+              >
+                <Icon className="w-3.5 h-3.5 mr-1" /> {label}
+              </Button>
+              {(showArchiveDelete || showBlindControls) && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowDrawer(true)}
+                  className="h-8 w-8 p-0 text-muted-foreground"
+                  data-testid="button-host-drawer"
+                >
+                  <Settings2 className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <Drawer open={showDrawer} onOpenChange={setShowDrawer}>
+          <DrawerContent>
+            <DrawerHeader className="text-left">
+              <DrawerTitle className="font-serif text-primary">Host Control</DrawerTitle>
+              <DrawerDescription className="text-xs">
+                {t(`session.status.${tasting.status}`)}
+                {tasting.status === "reveal" && tasting.currentAct && (
+                  <span className="ml-1 opacity-70">({t(`reveal.${tasting.currentAct}`)})</span>
+                )}
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-6 space-y-4">
+              <Button
+                onClick={() => { handleNextState(); setShowDrawer(false); }}
+                disabled={updateStatus.isPending}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg h-11"
+                data-testid="button-next-state-drawer"
+              >
+                <Icon className="w-4 h-4 mr-2" /> {label}
+              </Button>
+
+              {showBlindControls && (
+                <div className="pt-2 border-t border-border/50">
+                  <BlindControlsContent />
+                </div>
+              )}
+
+              {showArchiveDelete && (
+                <div className="pt-2 border-t border-border/50">
+                  <SecondaryActions />
+                </div>
+              )}
+            </div>
+          </DrawerContent>
+        </Drawer>
+
+        <SoftDeleteDialog />
+        <RevealConfirmDialog />
+      </>
+    );
+  }
+
   return (
-    <div className="fixed bottom-20 md:bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 right-6 z-50">
       <div className="bg-card border border-border/50 shadow-2xl p-4 rounded-lg flex flex-col gap-2 min-w-[200px]">
         <div className="text-xs uppercase tracking-widest text-muted-foreground font-mono mb-1">
           Host Control
@@ -285,50 +493,14 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
           <Icon className="w-4 h-4 mr-2" /> {label}
         </Button>
         {showBlindControls && (
-          <div className="mt-3 pt-3 border-t border-border/50 flex flex-col gap-2">
-            <div className="text-xs text-muted-foreground font-mono" data-testid="text-blind-progress">
-              {allRevealed
-                ? t("blind.allRevealed")
-                : t("blind.revealProgress", { current: revealIndex + 1, total: totalWhiskies })}
-            </div>
-            {!allRevealed && revealStep > 0 && (
-              <div className="text-xs text-muted-foreground/80" data-testid="text-blind-step">
-                {getStepLabel()}
-              </div>
-            )}
-            <Button
-              onClick={() => revealNext.mutate()}
-              disabled={revealNext.isPending || allRevealed}
-              variant="outline"
-              className="w-full"
-              data-testid="button-reveal-next"
-            >
-              <Glasses className="w-4 h-4 mr-2" /> {t("blind.revealNext")}
-            </Button>
+          <div className="mt-3 pt-3 border-t border-border/50">
+            <BlindControlsContent />
           </div>
         )}
 
         {showArchiveDelete && (
-          <div className="mt-3 pt-3 border-t border-border/50 flex flex-col gap-1">
-            {tasting.status !== "draft" && tasting.status !== "open" && (
-              <button
-                onClick={handleArchive}
-                className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors rounded-sm hover:bg-secondary/50 w-full"
-                data-testid="button-archive-session"
-              >
-                <Archive className="w-3.5 h-3.5" />
-                {t('session.actions.archive')}
-              </button>
-            )}
-            <button
-              onClick={() => canDelete ? setShowDeleteDialog(true) : undefined}
-              className={`flex items-center gap-2 px-3 py-2 text-xs rounded-sm w-full transition-colors ${canDelete ? "text-muted-foreground hover:text-destructive hover:bg-destructive/5 cursor-pointer" : "text-muted-foreground/40 cursor-not-allowed"}`}
-              title={!canDelete ? t('session.actions.cannotDeleteActive') : undefined}
-              data-testid="button-delete-session"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              {t('session.actions.deleteSession')}
-            </button>
+          <div className="mt-3 pt-3 border-t border-border/50">
+            <SecondaryActions />
           </div>
         )}
       </div>

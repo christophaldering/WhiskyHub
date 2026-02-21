@@ -18,6 +18,8 @@ import DiscussionPanel from "@/components/discussion-panel";
 import ReflectionPanel from "@/components/reflection-panel";
 import TastingPhotos from "@/components/tasting-photos";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3, Clock, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogDescription } from "@/components/ui/responsive-dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -332,16 +335,15 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
-      <DialogTrigger asChild>
+    <ResponsiveDialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }} trigger={
         <Button variant="outline" size="sm" className="border-primary/30 text-primary font-serif" data-testid="button-add-whisky">
           <Plus className="w-4 h-4 mr-1" /> {t("whisky.addExpression")}
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-serif text-2xl text-primary">{t("whisky.addExpression")}</DialogTitle>
-        </DialogHeader>
+      }>
+      <ResponsiveDialogContent>
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle className="font-serif text-2xl text-primary">{t("whisky.addExpression")}</ResponsiveDialogTitle>
+        </ResponsiveDialogHeader>
         <div className="space-y-4 mt-4">
           {/* Image Upload */}
           <div className="space-y-2">
@@ -544,8 +546,8 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
             {createWhisky.isPending ? "Adding..." : t("whisky.addToFlight")}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }
 
@@ -664,16 +666,15 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
   const currentImageUrl = removeExistingImage ? null : (imagePreview || whisky.imageUrl);
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (v) populateForm(); setOpen(v); }}>
-      <DialogTrigger asChild>
+    <ResponsiveDialog open={open} onOpenChange={(v) => { if (v) populateForm(); setOpen(v); }} trigger={
         <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" data-testid="button-edit-whisky">
           <Pencil className="w-4 h-4" />
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-serif text-2xl text-primary">{t("whisky.editExpression")}</DialogTitle>
-        </DialogHeader>
+      }>
+      <ResponsiveDialogContent>
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle className="font-serif text-2xl text-primary">{t("whisky.editExpression")}</ResponsiveDialogTitle>
+        </ResponsiveDialogHeader>
         <div className="space-y-4 mt-4">
           <div className="space-y-2">
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("whisky.bottlePhoto")}</Label>
@@ -893,8 +894,8 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
             {updateWhisky.isPending ? t("whisky.saving") : t("whisky.saveChanges")}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }
 
@@ -983,16 +984,15 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleDialogClose}>
-      <DialogTrigger asChild>
+    <ResponsiveDialog open={open} onOpenChange={handleDialogClose} trigger={
         <Button variant="outline" size="sm" className="border-primary/30 text-primary font-serif" data-testid="button-edit-tasting">
           <Settings className="w-4 h-4 mr-1" /> {t("session.actions.editDetails")}
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-serif text-2xl text-primary">{t("session.actions.editDetailsTitle")}</DialogTitle>
-          <DialogDescription className="flex items-center gap-1 text-xs">
+      }>
+      <ResponsiveDialogContent className="sm:max-w-md">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle className="font-serif text-2xl text-primary">{t("session.actions.editDetailsTitle")}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription className="flex items-center gap-1 text-xs">
             {updateMutation.isPending ? (
               <span className="text-muted-foreground">{t("session.actions.autoSaving")}</span>
             ) : saved ? (
@@ -1000,8 +1000,8 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
             ) : (
               <span className="text-muted-foreground">{t("session.actions.autoSaveHint")}</span>
             )}
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
         <div className="space-y-4 mt-4">
           <div>
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.actions.editTitle")}</Label>
@@ -1108,8 +1108,8 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
             {updateMutation.isPending ? "..." : t("session.actions.editDone")}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }
 
@@ -1209,17 +1209,16 @@ function TransferHostDialog({ tasting }: { tasting: Tasting }) {
   const otherParticipants = participants.filter((p: any) => p.participantId !== currentParticipant?.id);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <ResponsiveDialog open={open} onOpenChange={setOpen} trigger={
         <Button variant="outline" size="sm" className="border-primary/30 text-primary font-serif" data-testid="button-transfer-host">
           <UserCog className="w-4 h-4 mr-1" /> {t("session.transferHost.button")}
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md bg-card border-border">
-        <DialogHeader>
-          <DialogTitle className="font-serif text-xl text-primary">{t("session.transferHost.title")}</DialogTitle>
-          <DialogDescription>{t("session.transferHost.description")}</DialogDescription>
-        </DialogHeader>
+      }>
+      <ResponsiveDialogContent className="sm:max-w-md">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle className="font-serif text-xl text-primary">{t("session.transferHost.title")}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>{t("session.transferHost.description")}</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
         <div className="space-y-4 mt-4">
           {otherParticipants.length === 0 ? (
             <p className="text-sm text-muted-foreground" data-testid="text-no-participants">{t("session.transferHost.noParticipants")}</p>
@@ -1249,8 +1248,71 @@ function TransferHostDialog({ tasting }: { tasting: Tasting }) {
             {transferMutation.isPending ? "..." : t("session.transferHost.confirm")}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
+  );
+}
+
+function MoreActionsMenu({ tasting, whiskyList, isHost }: { tasting: Tasting; whiskyList: Whisky[]; isHost: boolean }) {
+  const { t } = useTranslation();
+  const isMobile = useIsMobile();
+  const [open, setOpen] = useState(false);
+
+  const content = (
+    <div className="flex flex-col gap-1">
+      <PrintableTastingSheets tasting={tasting} whiskies={whiskyList} />
+      <DuplicateTastingButton tasting={tasting} />
+      {isHost && <BriefingNotes whiskies={whiskyList} tastingTitle={tasting.title} />}
+      {isHost && <TransferHostDialog tasting={tasting} />}
+      {isHost && tasting.status !== "deleted" && <DeleteTastingButton tasting={tasting} />}
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-primary/30 text-primary font-serif"
+          onClick={() => setOpen(true)}
+          data-testid="button-more-actions"
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </Button>
+        <Drawer open={open} onOpenChange={setOpen}>
+          <DrawerContent>
+            <DrawerHeader className="text-left">
+              <DrawerTitle className="font-serif text-primary">{t("session.actions.moreActions", "Weitere Aktionen")}</DrawerTitle>
+              <DrawerDescription className="sr-only">{t("session.actions.moreActions", "Weitere Aktionen")}</DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-6">
+              {content}
+            </div>
+          </DrawerContent>
+        </Drawer>
+      </>
+    );
+  }
+
+  return (
+    <div className="relative group">
+      <Button
+        variant="outline"
+        size="sm"
+        className="border-primary/30 text-primary font-serif"
+        onClick={(e) => {
+          const el = e.currentTarget.nextElementSibling as HTMLElement;
+          if (el) el.classList.toggle("hidden");
+        }}
+        data-testid="button-more-actions"
+      >
+        <MoreHorizontal className="w-4 h-4" />
+      </Button>
+      <div className="hidden absolute right-0 top-full mt-1 z-50 bg-card border rounded-lg shadow-lg p-2 min-w-[200px] space-y-1">
+        {content}
+      </div>
+    </div>
   );
 }
 
@@ -1635,35 +1697,7 @@ export default function TastingRoom() {
               {isHost && (tasting.status === "draft" || tasting.status === "open") && <EditTastingDialog tasting={tasting} />}
               {isHost && (tasting.status === "draft" || tasting.status === "open") && <InvitePanel tastingId={tasting.id} />}
               <PdfExportDialog tasting={tasting} whiskies={whiskyList} />
-              {(() => {
-                const hasSecondary = isHost || true;
-                if (!hasSecondary) return null;
-                return (
-                  <div className="relative group">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-primary/30 text-primary font-serif"
-                      onClick={(e) => {
-                        const el = e.currentTarget.nextElementSibling as HTMLElement;
-                        if (el) el.classList.toggle("hidden");
-                      }}
-                      data-testid="button-more-actions"
-                    >
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                    <div className="hidden absolute right-0 top-full mt-1 z-50 bg-card border rounded-lg shadow-lg p-2 min-w-[200px] space-y-1">
-                      <div className="flex flex-col gap-1">
-                        <PrintableTastingSheets tasting={tasting} whiskies={whiskyList} />
-                        <DuplicateTastingButton tasting={tasting} />
-                        {isHost && <BriefingNotes whiskies={whiskyList} tastingTitle={tasting.title} />}
-                        {isHost && <TransferHostDialog tasting={tasting} />}
-                        {isHost && tasting.status !== "deleted" && <DeleteTastingButton tasting={tasting} />}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
+              <MoreActionsMenu tasting={tasting} whiskyList={whiskyList} isHost={isHost} />
               <span className="text-xs font-mono bg-secondary px-2 py-1 rounded text-muted-foreground">Code: {tasting.code}</span>
               <div className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm font-medium border border-border/50">
                 {t(`session.status.${tasting.status}`)}
@@ -1751,7 +1785,7 @@ export default function TastingRoom() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-6 right-6 z-40"
+          className={cn("fixed right-6 z-40", isHost ? "bottom-[7.5rem] md:bottom-24" : "bottom-20 md:bottom-6")}
           data-testid="floating-am-glas-cta"
         >
           <Button
