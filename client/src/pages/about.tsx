@@ -1,7 +1,15 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Info, Rocket, BarChart3, Wrench, Bug, Shield, Palette, Filter, Users, Wine, BookOpen, Code2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAppStore } from "@/lib/store";
 import authorPhoto from "@assets/22A3ABF8-0085-4C82-97DF-EAA0ACD46B4E_1771448218726.png";
 
 const fadeUp = {
@@ -19,8 +27,7 @@ type Block = {
 export default function About() {
   const [, navigate] = useLocation();
   const { t } = useTranslation();
-
-  const blocks = t("about.blocks", { returnObjects: true }) as Block[];
+  const [activeTab, setActiveTab] = useState("about");
 
   return (
     <div className="min-h-screen bg-background min-w-0 overflow-x-hidden" data-testid="about-page">
@@ -28,7 +35,7 @@ export default function About() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="relative py-20 md:py-28 text-center overflow-hidden"
+        className="relative py-12 md:py-20 text-center overflow-hidden"
       >
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
         <div className="relative z-10 max-w-3xl mx-auto px-6">
@@ -53,72 +60,43 @@ export default function About() {
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ delay: 0.9, duration: 0.8 }}
-            className="mt-6 h-px w-24 mx-auto bg-primary/30"
+            className="mt-4 h-px w-24 mx-auto bg-primary/30"
           />
         </div>
       </motion.div>
 
       <div className="max-w-3xl mx-auto px-6">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.7 }}
-          className="mb-12 flex justify-center"
-        >
-          <div className="relative rounded-lg overflow-hidden shadow-2xl max-w-sm w-full">
-            <img
-              src={authorPhoto}
-              alt="Christoph Aldering & Sammy"
-              className="w-full h-auto object-cover"
-              data-testid="img-about-author"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-          </div>
-        </motion.div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="about" className="gap-1.5" data-testid="tab-about-story">
+              <Info className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t("about.tabStory")}</span>
+              <span className="sm:hidden">{t("about.tabStoryShort")}</span>
+            </TabsTrigger>
+            <TabsTrigger value="changelog" className="gap-1.5" data-testid="tab-about-changelog">
+              <Rocket className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t("about.tabChangelog")}</span>
+              <span className="sm:hidden">{t("about.tabChangelogShort")}</span>
+            </TabsTrigger>
+            <TabsTrigger value="platform" className="gap-1.5" data-testid="tab-about-platform">
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t("about.tabPlatform")}</span>
+              <span className="sm:hidden">{t("about.tabPlatformShort")}</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="space-y-8 pb-12">
-          {blocks.map((block, i) => (
-            <motion.div
-              key={i}
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.6, delay: 0.05 * i }}
-              data-testid={`about-block-${i}`}
-            >
-              {block.heading ? (
-                <h2 className="text-xl md:text-2xl font-serif font-bold text-primary tracking-tight mb-3">
-                  {block.heading}
-                </h2>
-              ) : null}
-              {block.lines.map((line, j) => (
-                <p
-                  key={j}
-                  className={`font-serif leading-relaxed text-base md:text-lg ${
-                    block.italic ? "italic text-muted-foreground/80" : "text-muted-foreground"
-                  } ${block.accent ? "text-primary font-semibold text-lg md:text-xl" : ""} ${j > 0 ? "mt-3" : ""}`}
-                >
-                  {line}
-                </p>
-              ))}
-            </motion.div>
-          ))}
+          <TabsContent value="about" className="mt-6">
+            <AboutStorySection />
+          </TabsContent>
 
-          <motion.p
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-right font-serif text-primary font-semibold text-lg pt-4"
-            data-testid="text-about-signature"
-          >
-            — Christoph Aldering
-          </motion.p>
-        </div>
+          <TabsContent value="changelog" className="mt-6">
+            <ChangelogSection />
+          </TabsContent>
+
+          <TabsContent value="platform" className="mt-6">
+            <PlatformSection />
+          </TabsContent>
+        </Tabs>
 
         <motion.div
           variants={fadeUp}
@@ -126,7 +104,7 @@ export default function About() {
           whileInView="visible"
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="py-16 text-center border-t border-border/30"
+          className="py-12 text-center border-t border-border/30"
         >
           <button
             onClick={() => navigate("/app")}
@@ -138,6 +116,313 @@ export default function About() {
           </button>
         </motion.div>
       </div>
+    </div>
+  );
+}
+
+function AboutStorySection() {
+  const { t } = useTranslation();
+  const blocks = t("about.blocks", { returnObjects: true }) as Block[];
+
+  return (
+    <>
+      <motion.div
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.7 }}
+        className="mb-12 flex justify-center"
+      >
+        <div className="relative rounded-lg overflow-hidden shadow-2xl max-w-sm w-full">
+          <img
+            src={authorPhoto}
+            alt="Christoph Aldering & Sammy"
+            className="w-full h-auto object-cover"
+            data-testid="img-about-author"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+        </div>
+      </motion.div>
+
+      <div className="space-y-8 pb-6">
+        {blocks.map((block, i) => (
+          <motion.div
+            key={i}
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-30px" }}
+            transition={{ duration: 0.6, delay: 0.05 * i }}
+            data-testid={`about-block-${i}`}
+          >
+            {block.heading ? (
+              <h2 className="text-xl md:text-2xl font-serif font-bold text-primary tracking-tight mb-3">
+                {block.heading}
+              </h2>
+            ) : null}
+            {block.lines.map((line, j) => (
+              <p
+                key={j}
+                className={`font-serif leading-relaxed text-base md:text-lg ${
+                  block.italic ? "italic text-muted-foreground/80" : "text-muted-foreground"
+                } ${block.accent ? "text-primary font-semibold text-lg md:text-xl" : ""} ${j > 0 ? "mt-3" : ""}`}
+              >
+                {line}
+              </p>
+            ))}
+          </motion.div>
+        ))}
+
+        <motion.p
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-right font-serif text-primary font-semibold text-lg pt-4"
+          data-testid="text-about-signature"
+        >
+          — Christoph Aldering
+        </motion.p>
+      </div>
+    </>
+  );
+}
+
+const CHANGELOG_CAT_CONFIG: Record<string, { icon: typeof Rocket; label: string; color: string }> = {
+  feature: { icon: Rocket, label: "Neues Feature", color: "text-blue-600 bg-blue-600/10" },
+  improvement: { icon: Wrench, label: "Verbesserung", color: "text-green-600 bg-green-600/10" },
+  bugfix: { icon: Bug, label: "Bugfix", color: "text-orange-600 bg-orange-600/10" },
+  security: { icon: Shield, label: "Sicherheit", color: "text-red-600 bg-red-600/10" },
+  design: { icon: Palette, label: "Design/UX", color: "text-purple-600 bg-purple-600/10" },
+};
+
+const TIME_PRESETS = [
+  { value: "7d", label: "Letzte 7 Tage" },
+  { value: "30d", label: "Letzter Monat" },
+  { value: "90d", label: "Letzte 3 Monate" },
+  { value: "365d", label: "Dieses Jahr" },
+  { value: "all", label: "Alles" },
+  { value: "custom", label: "Benutzerdefiniert..." },
+];
+
+function ChangelogSection() {
+  const { currentParticipant } = useAppStore();
+  const isAdmin = currentParticipant?.role === "admin";
+  const [category, setCategory] = useState("all");
+  const [timePreset, setTimePreset] = useState("all");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+
+  const getDateRange = () => {
+    if (timePreset === "custom") {
+      return { from: customFrom || undefined, to: customTo || undefined };
+    }
+    if (timePreset === "all") return {};
+    const days = parseInt(timePreset);
+    const from = new Date();
+    from.setDate(from.getDate() - days);
+    return { from: from.toISOString().split("T")[0] };
+  };
+
+  const dateRange = getDateRange();
+
+  const { data: entries = [], isLoading } = useQuery({
+    queryKey: ["/api/changelog", category, timePreset, customFrom, customTo],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (category !== "all") params.set("category", category);
+      if (dateRange.from) params.set("from", dateRange.from);
+      if (dateRange.to) params.set("to", dateRange.to);
+      const res = await fetch(`/api/changelog?${params}`);
+      if (!res.ok) throw new Error("Failed to load changelog");
+      return res.json();
+    },
+  });
+
+  const publicCategories = ["feature", "improvement", "design"];
+  const visibleEntries = isAdmin ? entries : entries.filter((e: any) => publicCategories.includes(e.category));
+  const visibleCatConfig = isAdmin
+    ? CHANGELOG_CAT_CONFIG
+    : Object.fromEntries(Object.entries(CHANGELOG_CAT_CONFIG).filter(([key]) => publicCategories.includes(key)));
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <Select value={category} onValueChange={setCategory}>
+          <SelectTrigger className="w-44" data-testid="changelog-filter-category">
+            <Filter className="w-3.5 h-3.5 mr-1.5" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Kategorien</SelectItem>
+            {Object.entries(visibleCatConfig).map(([key, cfg]) => (
+              <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={timePreset} onValueChange={setTimePreset}>
+          <SelectTrigger className="w-48" data-testid="changelog-filter-time">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TIME_PRESETS.map(p => (
+              <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {timePreset === "custom" && (
+          <div className="flex gap-2 items-center">
+            <Input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="w-40" data-testid="changelog-from" />
+            <span className="text-sm text-muted-foreground">bis</span>
+            <Input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="w-40" data-testid="changelog-to" />
+          </div>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="p-3 bg-card border rounded-lg animate-pulse">
+              <div className="h-4 bg-secondary rounded w-2/3 mb-2" />
+              <div className="h-3 bg-secondary/60 rounded w-full" />
+            </div>
+          ))}
+        </div>
+      ) : visibleEntries.length === 0 ? (
+        <div className="text-center py-8">
+          <Rocket className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Keine Einträge für diesen Zeitraum.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {visibleEntries.map((entry: any, i: number) => {
+            const catConfig = CHANGELOG_CAT_CONFIG[entry.category] || CHANGELOG_CAT_CONFIG.feature;
+            const CatIcon = catConfig.icon;
+            return (
+              <motion.div
+                key={entry.id}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.02 }}
+              >
+                <Card data-testid={`changelog-entry-${entry.id}`}>
+                  <CardContent className="p-3 sm:p-4 flex items-start gap-3">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${catConfig.color}`}>
+                      <CatIcon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-serif font-semibold">{entry.title}</p>
+                        <Badge variant="outline" className="text-[10px]">{catConfig.label}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{entry.description}</p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-1.5">
+                        {new Date(entry.date).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" })}
+                        {entry.date.includes("T") && `, ${new Date(entry.date).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PlatformSection() {
+  const { t } = useTranslation();
+
+  const { data: stats } = useQuery({
+    queryKey: ["/api/platform-stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/platform-stats");
+      if (!res.ok) throw new Error("Failed to load stats");
+      return res.json();
+    },
+  });
+
+  const { data: versionInfo } = useQuery({
+    queryKey: ["/version"],
+    queryFn: async () => {
+      const res = await fetch("/version");
+      if (!res.ok) throw new Error("Failed to load version");
+      return res.json();
+    },
+  });
+
+  const statItems = [
+    { icon: Users, label: t("about.statParticipants"), value: stats?.totalParticipants ?? "–" },
+    { icon: Wine, label: t("about.statTastings"), value: stats?.totalTastings ?? "–" },
+    { icon: BookOpen, label: t("about.statWhiskies"), value: stats?.totalWhiskies ?? "–" },
+    { icon: BarChart3, label: t("about.statRatings"), value: stats?.totalRatings ?? "–" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-serif font-bold text-primary mb-4">{t("about.liveStats")}</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {statItems.map((item, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <item.icon className="w-5 h-5 text-primary mx-auto mb-2" />
+                  <p className="text-2xl font-serif font-bold text-primary">{item.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {versionInfo && (
+        <div>
+          <h3 className="text-lg font-serif font-bold text-primary mb-4">{t("about.versionInfo")}</h3>
+          <Card>
+            <CardContent className="p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Code2 className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">{t("about.version")}:</span>
+                <span className="text-sm font-mono font-semibold">{versionInfo.version}</span>
+              </div>
+              {versionInfo.gitSha && (
+                <div className="flex items-center gap-2">
+                  <Code2 className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Build:</span>
+                  <span className="text-sm font-mono">{versionInfo.gitSha}</span>
+                </div>
+              )}
+              {versionInfo.buildTime && (
+                <div className="flex items-center gap-2">
+                  <Code2 className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">{t("about.buildTime")}:</span>
+                  <span className="text-sm font-mono">{versionInfo.buildTime}</span>
+                </div>
+              )}
+              {versionInfo.env && (
+                <div className="flex items-center gap-2">
+                  <Code2 className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">{t("about.environment")}:</span>
+                  <Badge variant="outline" className="text-xs">{versionInfo.env}</Badge>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
