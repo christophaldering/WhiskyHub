@@ -12,6 +12,8 @@ CaskSense is a web application designed for hosting and participating in collabo
 - **Landing Page (Feb 2026)**: Added a public-facing landing page at `/` with Hero, Features, How It Works, Origin Story, Live Stats, AI Highlight, and CTA sections. The app dashboard moved from `/` to `/app`. All internal navigation updated accordingly. Full EN/DE translations. New `/api/platform-stats` endpoint serves live database counts.
 - **Changelog System (Feb 2026)**: New `changelog_entries` table with 5 categories (feature/improvement/bugfix/security/design). Public `/api/changelog` endpoint (visible entries only) and admin CRUD at `/api/admin/changelog`. 41 historical entries documenting all development since June 2025. News page has collapsible "Plattform-Entwicklung" section with category and time-window filters. Admin panel has "Changelog" tab for managing entries. Newsletter compose area includes checkbox list of recent changelog entries for AI-generated newsletter inclusion.
 - **Guest Mode & Progressive Onboarding (Feb 2026)**: Minimal guest experience for casual tasting participants. Landing page has a prominent quick-join input for tasting codes. New `/join/:code` route with streamlined name-entry → slider-rating → interest-level flow. `experienceLevel` field on participants (guest/curious/enthusiast) controls progressive nav menu visibility. Sidebar shows upgrade banner for non-enthusiast users. Hosts can preview guest view via host dashboard. Invite panel includes guest-mode hint. Full EN/DE translations.
+- **Authentication Security (Feb 2026)**: PIN now mandatory for all users (min 4 digits). All entry points (login, quick-tasting, guest join) enforce PIN. Server auto-migrates existing users without PIN. Data consent notice shown at registration. Account deletion with anonymization (ratings preserved, personal data cleared).
+- **UX Improvements (Feb 2026)**: Tasting calendar with All/Mine/Friends filter. News page with collapsible categories and timestamps. Admin panel shows email indicator for participants. Contact & feedback section on About page. Non-commercial hobby notice and contact info in landing page footer.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -31,7 +33,7 @@ The backend is an Express 5 HTTP server providing RESTful API endpoints. It serv
 PostgreSQL is the primary database, accessed via Drizzle ORM. The schema includes tables for participants, tastings, whiskies, ratings, profiles, journal entries, and other session-related data, using UUIDs for identifiers.
 
 ### Key Design Decisions
--   **Lightweight Authentication**: Participant authentication relies on name and an optional PIN stored client-side.
+-   **Lightweight Authentication**: Participant authentication relies on name and a mandatory PIN (min 4 digits) stored client-side. Account deletion anonymizes the name while preserving ratings.
 -   **Shared Schema**: A single source of truth for database schema and validation.
 -   **Session State Machine**: Tastings progress through defined stages (draft, open, closed, reveal, archived) controlled by the host, with a multi-act reveal stage.
 -   **Asynchronous Updates**: React Query polling is used for near real-time updates.
