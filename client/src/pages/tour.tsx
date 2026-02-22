@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import {
   Wine, Eye, EyeOff, Camera, Brain, Users, BookOpen, LayoutDashboard,
   Smartphone, ChevronLeft, ChevronRight, ArrowLeft, FileDown, Play, Pause,
-  List, X, Star, Sparkles, FileSpreadsheet, QrCode, NotebookPen,
-  Activity, Trophy, GitCompareArrows, Rss, Calendar, Landmark, Map,
+  List, X, Star, Sparkles, FileSpreadsheet, QrCode,
+  Trophy, Rss, Calendar, Landmark, Map,
   MessageSquare, Volume2, Heart, Bell, Download, FileText,
   Shield, Layers, Search, BarChart3, HandHeart, GlassWater, Compass,
   FlaskConical, GraduationCap, TrendingUp
@@ -134,22 +134,6 @@ const slides: SlideData[] = [
       { icon: FileSpreadsheet, title: "Excel/CSV Import", desc: "Tabellen hochladen, Spalten werden automatisch zugeordnet" },
       { icon: Brain, title: "Benchmark-Datenbank", desc: "Professionelle Bewertungen als Referenz — zum Vergleichen" },
       { icon: Download, title: "Whiskybase-Import", desc: "Bestehende Sammlung importieren — inklusive Links und Preise" },
-    ],
-  },
-  {
-    type: "content",
-    title: "Wenn die Neugier wächst",
-    subtitle: "Du willst wissen, welche Aromen dich ansprechen? Ob du eher Sherry-Fass oder Bourbon-Typ bist? CaskSense zeigt dir Muster, die du selbst noch nicht kanntest.",
-    image: slideAnalytics,
-    badge: "Für Neugierige",
-    layout: "right",
-    features: [
-      { icon: Activity, title: "Geschmacksprofil", desc: "Radar-Diagramm deiner Vorlieben — wächst mit jedem Tasting" },
-      { icon: Sparkles, title: "Aromenrad", desc: "Deine persönliche Aromen-Landkarte in 8 Kategorien" },
-      { icon: NotebookPen, title: "Whisky-Tagebuch", desc: "Notizen, Fotos, Stimmung — deine persönliche Bibliothek" },
-      { icon: Trophy, title: "37 Abzeichen", desc: "Kleine Meilensteine, die Spaß machen — kein Leistungsdruck" },
-      { icon: GitCompareArrows, title: "Direktvergleich", desc: "2–3 Whiskys Seite an Seite — was schmeckt dir besser?" },
-      { icon: Star, title: "Empfehlungen", desc: "Vorschläge basierend auf dem, was dir bisher geschmeckt hat" },
     ],
   },
   {
