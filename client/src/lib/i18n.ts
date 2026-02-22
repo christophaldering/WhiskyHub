@@ -404,6 +404,9 @@ const resources = {
           reveal: "Reveal Phase",
           archived: "Archived"
         },
+        presence: {
+          online: "online",
+        },
         actions: {
           start: "Open Session",
           close: "Close Evaluation",
@@ -2361,6 +2364,9 @@ const resources = {
           closed: "Bewertung geschlossen",
           reveal: "Enth\u00fcllungsphase",
           archived: "Archiviert"
+        },
+        presence: {
+          online: "online",
         },
         actions: {
           start: "Tasting \u00f6ffnen",

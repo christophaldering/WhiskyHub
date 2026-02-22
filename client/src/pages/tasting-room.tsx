@@ -1398,6 +1398,22 @@ export default function TastingRoom() {
     refetchInterval: inputFocused ? false : 5000,
   });
 
+  const { data: activePresence = [] } = useQuery({
+    queryKey: ["presence", id],
+    queryFn: () => tastingApi.getPresence(id!),
+    enabled: !!id && !!currentParticipant,
+    refetchInterval: 15000,
+  });
+
+  useEffect(() => {
+    if (!id || !currentParticipant) return;
+    tastingApi.heartbeat(id, currentParticipant.id).catch(() => {});
+    const interval = setInterval(() => {
+      tastingApi.heartbeat(id, currentParticipant.id).catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [id, currentParticipant]);
+
   const [focusMode, setFocusMode] = useState(false);
   const [overviewMode, setOverviewMode] = useState(false);
   const [guidedActive, setGuidedActive] = useState(false);
@@ -1690,6 +1706,17 @@ export default function TastingRoom() {
                 </>
               )}
             </div>
+            {activePresence.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-1" data-testid="presence-indicator">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                </span>
+                <span className="text-xs text-muted-foreground font-mono">
+                  {activePresence.length} {t("session.presence.online", "online")}
+                </span>
+              </div>
+            )}
             <TastingTimestamps tasting={tasting} />
           </div>
           <div className="flex flex-col items-start sm:items-end gap-2 min-w-0 w-full md:w-auto">

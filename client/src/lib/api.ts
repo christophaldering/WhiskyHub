@@ -49,6 +49,9 @@ export const tastingApi = {
   duplicate: (id: string, hostId: string) =>
     fetchJSON(`/tastings/${id}/duplicate`, { method: "POST", body: JSON.stringify({ hostId }) }),
   getParticipants: (id: string) => fetchJSON(`/tastings/${id}/participants`),
+  heartbeat: (id: string, participantId: string) =>
+    fetchJSON(`/tastings/${id}/heartbeat`, { method: "POST", body: JSON.stringify({ participantId }) }),
+  getPresence: (id: string) => fetchJSON(`/tastings/${id}/presence`),
   join: (id: string, participantId: string, code?: string) =>
     fetchJSON(`/tastings/${id}/join`, { method: "POST", body: JSON.stringify({ participantId, code }) }),
   getAnalytics: (id: string) => fetchJSON(`/tastings/${id}/analytics`),
