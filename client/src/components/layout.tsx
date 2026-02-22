@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, GlassWater } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
@@ -352,20 +352,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       ],
     },
     ...(isCurious ? [{
-      label: t('navGroup.myWhisky'),
+      label: t('navGroup.myProfile'),
       items: [
         { href: "/profile", icon: User, label: t('profile.title') },
-        { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
-        { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
         ...(isEnthusiast ? [
           { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
           { href: "/flavor-wheel", icon: CircleDot, label: t('nav.flavorWheel') },
           { href: "/badges", icon: Trophy, label: t('nav.badges') },
         ] : []),
+        ...(isEnthusiast ? [
+          { href: "/reminders", icon: Bell, label: t('nav.reminders') },
+        ] : []),
+      ],
+    }] : []),
+    ...(isCurious ? [{
+      label: t('navGroup.myTastings'),
+      items: [
+        { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
+        { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
+      ],
+    }] : []),
+    ...(isCurious ? [{
+      label: t('navGroup.myWhiskys'),
+      items: [
+        { href: "/my-whiskies", icon: GlassWater, label: t('nav.myWhiskies') },
         { href: "/wishlist", icon: Star, label: t('nav.wishlist') },
         ...(isEnthusiast ? [
           { href: "/collection", icon: Archive, label: t('nav.collection') },
-          { href: "/reminders", icon: Bell, label: t('nav.reminders') },
         ] : []),
       ],
     }] : []),

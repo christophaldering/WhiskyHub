@@ -42,6 +42,7 @@ import Reminders from "@/pages/reminders";
 import CommunityRankings from "@/pages/community-rankings";
 import TasteTwins from "@/pages/taste-twins";
 import TastingHistory from "@/pages/tasting-history";
+import MyWhiskies from "@/pages/my-whiskies";
 import About from "@/pages/about";
 import DataExport from "@/pages/data-export";
 import Intro from "@/pages/intro";
@@ -102,6 +103,7 @@ function Router() {
               <Route path="/photo-tasting" component={PhotoTasting} />
               <Route path="/reminders" component={Reminders} />
               <Route path="/my-tastings" component={TastingHistory} />
+              <Route path="/my-whiskies" component={MyWhiskies} />
               <Route path="/about-method" component={AboutMethod} />
               <Route path="/about" component={About} />
               <Route path="/data-export" component={DataExport} />

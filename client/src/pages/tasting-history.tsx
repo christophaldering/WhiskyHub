@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -10,6 +10,7 @@ import {
   Star, BarChart3, Loader2, Globe, Landmark, ArrowRight
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GuestPreview } from "@/components/guest-preview";
 
 export default function TastingHistory() {
@@ -65,6 +66,9 @@ export default function TastingHistory() {
 
   const stats = data?.stats;
   const tastings = data?.tastings || [];
+
+  const hostedTastings = useMemo(() => tastings.filter((t: any) => t.isHost), [tastings]);
+  const participatedTastings = useMemo(() => tastings.filter((t: any) => !t.isHost), [tastings]);
 
   const formatScore = (score: number | null) => {
     if (score == null) return "–";
@@ -171,164 +175,181 @@ export default function TastingHistory() {
         </motion.div>
       )}
 
-      {tastings.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-center py-16"
-        >
-          <Wine className="w-16 h-16 text-muted-foreground/20 mx-auto mb-4" />
-          <p className="text-muted-foreground font-serif text-lg italic" data-testid="text-no-history">
-            {t("tastingHistory.empty")}
-          </p>
-          <p className="text-sm text-muted-foreground/70 mt-2">{t("tastingHistory.emptyHint")}</p>
-        </motion.div>
-      ) : (
-        <div className="space-y-3">
-          {tastings.map((tasting: any, index: number) => {
-            const isExpanded = expandedTasting === tasting.id;
-            return (
-              <motion.div
-                key={tasting.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 * Math.min(index, 10), duration: 0.5 }}
-              >
-                <Card className="border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-300" data-testid={`card-history-${tasting.id}`}>
-                  <CardHeader
-                    className="cursor-pointer select-none py-4"
-                    onClick={() => setExpandedTasting(isExpanded ? null : tasting.id)}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="flex items-center gap-2 font-serif text-lg text-primary">
-                          {isExpanded ? <ChevronDown className="w-4 h-4 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 flex-shrink-0" />}
-                          <span className="truncate">{tasting.title}</span>
-                        </CardTitle>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 ml-6 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(tasting.date).toLocaleDateString()}
-                          </span>
-                          {tasting.location && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {tasting.location}
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {tasting.participantCount}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Wine className="w-3 h-3" />
-                            {tasting.whiskyCount} {t("tastingHistory.whiskiesShort")}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {tasting.myAvgOverall != null && (
-                          <span className={`text-lg font-mono font-bold ${scoreColor(tasting.myAvgOverall)}`} data-testid={`score-tasting-${tasting.id}`}>
-                            {formatScore(tasting.myAvgOverall)}
-                          </span>
-                        )}
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono uppercase ${statusColor(tasting.status)}`}>
-                          {statusLabel(tasting.status)}
-                        </span>
-                        {tasting.isHost && (
-                          <Crown className="w-3.5 h-3.5 text-amber-500" />
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <AnimatePresence>
-                    {isExpanded && (
+      <Tabs defaultValue="all" className="mt-2">
+        <TabsList className="w-full grid grid-cols-3">
+          <TabsTrigger value="all" className="gap-1.5 text-xs" data-testid="tab-tastings-all">
+            {t("tastingHistory.tabAll")} ({tastings.length})
+          </TabsTrigger>
+          <TabsTrigger value="participated" className="gap-1.5 text-xs" data-testid="tab-tastings-participated">
+            <Users className="w-3.5 h-3.5" />
+            {t("tastingHistory.tabParticipated")} ({participatedTastings.length})
+          </TabsTrigger>
+          <TabsTrigger value="hosted" className="gap-1.5 text-xs" data-testid="tab-tastings-hosted">
+            <Crown className="w-3.5 h-3.5" />
+            {t("tastingHistory.tabHosted")} ({hostedTastings.length})
+          </TabsTrigger>
+        </TabsList>
+        {["all", "participated", "hosted"].map(tab => {
+          const items = tab === "hosted" ? hostedTastings : tab === "participated" ? participatedTastings : tastings;
+          return (
+            <TabsContent key={tab} value={tab} className="mt-4">
+              {items.length === 0 ? (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
+                  <Wine className="w-16 h-16 text-muted-foreground/20 mx-auto mb-4" />
+                  <p className="text-muted-foreground font-serif text-lg italic" data-testid="text-no-history">
+                    {t("tastingHistory.empty")}
+                  </p>
+                  <p className="text-sm text-muted-foreground/70 mt-2">{t("tastingHistory.emptyHint")}</p>
+                </motion.div>
+              ) : (
+                <div className="space-y-3">
+                  {items.map((tasting: any, index: number) => {
+                    const isExpanded = expandedTasting === tasting.id;
+                    return (
                       <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="overflow-hidden"
+                        key={tasting.id}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.05 * Math.min(index, 10), duration: 0.5 }}
                       >
-                        <CardContent className="pt-0 pb-4">
-                          <div className="border-t border-border/30 pt-3 space-y-2">
-                            <div className="flex items-center justify-between mb-3">
-                              <p className="text-xs text-muted-foreground">
-                                {t("tastingHistory.hostedBy")}: <span className="font-medium text-foreground">{tasting.hostName}</span>
-                                {tasting.ratedCount > 0 && (
-                                  <> &bull; {tasting.ratedCount}/{tasting.whiskyCount} {t("tastingHistory.rated")}</>
-                                )}
-                              </p>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); navigate(`/tasting/${tasting.id}`); }}
-                                className="text-xs text-primary hover:underline flex items-center gap-1"
-                                data-testid={`link-open-tasting-${tasting.id}`}
-                              >
-                                {t("tastingHistory.openSession")} <ArrowRight className="w-3 h-3" />
-                              </button>
-                            </div>
-
-                            <div className="grid gap-2">
-                              {tasting.whiskies.map((whisky: any, wi: number) => (
-                                <div
-                                  key={whisky.id}
-                                  className="flex items-center gap-3 p-2.5 rounded-lg bg-secondary/30 border border-border/20"
-                                  data-testid={`whisky-row-${whisky.id}`}
-                                >
-                                  <span className="text-xs font-mono text-muted-foreground/60 w-5 text-right flex-shrink-0">
-                                    {wi + 1}
+                        <Card className="border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-300" data-testid={`card-history-${tasting.id}`}>
+                          <CardHeader
+                            className="cursor-pointer select-none py-4"
+                            onClick={() => setExpandedTasting(isExpanded ? null : tasting.id)}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <CardTitle className="flex items-center gap-2 font-serif text-lg text-primary">
+                                  {isExpanded ? <ChevronDown className="w-4 h-4 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 flex-shrink-0" />}
+                                  <span className="truncate">{tasting.title}</span>
+                                </CardTitle>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 ml-6 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {new Date(tasting.date).toLocaleDateString()}
                                   </span>
-                                  {whisky.imageUrl ? (
-                                    <img src={whisky.imageUrl} alt={whisky.name} className="w-8 h-10 rounded object-cover flex-shrink-0" />
-                                  ) : (
-                                    <div className="w-8 h-10 rounded bg-secondary/60 flex items-center justify-center flex-shrink-0">
-                                      <Wine className="w-4 h-4 text-muted-foreground/30" />
-                                    </div>
+                                  {tasting.location && (
+                                    <span className="flex items-center gap-1">
+                                      <MapPin className="w-3 h-3" />
+                                      {tasting.location}
+                                    </span>
                                   )}
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-serif font-medium text-foreground truncate">
-                                      {whisky.distillery && <span className="text-primary">{whisky.distillery} </span>}
-                                      {whisky.name}
-                                    </p>
-                                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
-                                      {whisky.age && <span>{whisky.age}y</span>}
-                                      {whisky.abv && <span>{whisky.abv}%</span>}
-                                      {whisky.region && <span>{whisky.region}</span>}
-                                      {whisky.caskInfluence && <span>{whisky.caskInfluence}</span>}
+                                  <span className="flex items-center gap-1">
+                                    <Users className="w-3 h-3" />
+                                    {tasting.participantCount}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Wine className="w-3 h-3" />
+                                    {tasting.whiskyCount} {t("tastingHistory.whiskiesShort")}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                {tasting.myAvgOverall != null && (
+                                  <span className={`text-lg font-mono font-bold ${scoreColor(tasting.myAvgOverall)}`} data-testid={`score-tasting-${tasting.id}`}>
+                                    {formatScore(tasting.myAvgOverall)}
+                                  </span>
+                                )}
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono uppercase ${statusColor(tasting.status)}`}>
+                                  {statusLabel(tasting.status)}
+                                </span>
+                                {tasting.isHost && (
+                                  <Crown className="w-3.5 h-3.5 text-amber-500" />
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                className="overflow-hidden"
+                              >
+                                <CardContent className="pt-0 pb-4">
+                                  <div className="border-t border-border/30 pt-3 space-y-2">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <p className="text-xs text-muted-foreground">
+                                        {t("tastingHistory.hostedBy")}: <span className="font-medium text-foreground">{tasting.hostName}</span>
+                                        {tasting.ratedCount > 0 && (
+                                          <> &bull; {tasting.ratedCount}/{tasting.whiskyCount} {t("tastingHistory.rated")}</>
+                                        )}
+                                      </p>
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); navigate(`/tasting/${tasting.id}`); }}
+                                        className="text-xs text-primary hover:underline flex items-center gap-1"
+                                        data-testid={`link-open-tasting-${tasting.id}`}
+                                      >
+                                        {t("tastingHistory.openSession")} <ArrowRight className="w-3 h-3" />
+                                      </button>
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                      {tasting.whiskies.map((whisky: any, wi: number) => (
+                                        <div
+                                          key={whisky.id}
+                                          className="flex items-center gap-3 p-2.5 rounded-lg bg-secondary/30 border border-border/20"
+                                          data-testid={`whisky-row-${whisky.id}`}
+                                        >
+                                          <span className="text-xs font-mono text-muted-foreground/60 w-5 text-right flex-shrink-0">
+                                            {wi + 1}
+                                          </span>
+                                          {whisky.imageUrl ? (
+                                            <img src={whisky.imageUrl} alt={whisky.name} className="w-8 h-10 rounded object-cover flex-shrink-0" />
+                                          ) : (
+                                            <div className="w-8 h-10 rounded bg-secondary/60 flex items-center justify-center flex-shrink-0">
+                                              <Wine className="w-4 h-4 text-muted-foreground/30" />
+                                            </div>
+                                          )}
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-serif font-medium text-foreground truncate">
+                                              {whisky.distillery && <span className="text-primary">{whisky.distillery} </span>}
+                                              {whisky.name}
+                                            </p>
+                                            <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+                                              {whisky.age && <span>{whisky.age}y</span>}
+                                              {whisky.abv && <span>{whisky.abv}%</span>}
+                                              {whisky.region && <span>{whisky.region}</span>}
+                                              {whisky.caskInfluence && <span>{whisky.caskInfluence}</span>}
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-3 flex-shrink-0">
+                                            {whisky.myRating ? (
+                                              <div className="text-right">
+                                                <p className={`text-sm font-mono font-bold ${scoreColor(whisky.myRating.overall)}`}>
+                                                  {formatScore(whisky.myRating.overall)}
+                                                </p>
+                                                <div className="flex gap-1.5 text-[9px] text-muted-foreground">
+                                                  <span>N:{formatScore(whisky.myRating.nose)}</span>
+                                                  <span>T:{formatScore(whisky.myRating.taste)}</span>
+                                                  <span>F:{formatScore(whisky.myRating.finish)}</span>
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <span className="text-xs text-muted-foreground/40 italic">{t("tastingHistory.notRated")}</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-3 flex-shrink-0">
-                                    {whisky.myRating ? (
-                                      <div className="text-right">
-                                        <p className={`text-sm font-mono font-bold ${scoreColor(whisky.myRating.overall)}`}>
-                                          {formatScore(whisky.myRating.overall)}
-                                        </p>
-                                        <div className="flex gap-1.5 text-[9px] text-muted-foreground">
-                                          <span>N:{formatScore(whisky.myRating.nose)}</span>
-                                          <span>T:{formatScore(whisky.myRating.taste)}</span>
-                                          <span>F:{formatScore(whisky.myRating.finish)}</span>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <span className="text-xs text-muted-foreground/40 italic">{t("tastingHistory.notRated")}</span>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </CardContent>
+                                </CardContent>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </Card>
                       </motion.div>
-                    )}
-                  </AnimatePresence>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+          );
+        })}
+      </Tabs>
     </div>
   );
 }
