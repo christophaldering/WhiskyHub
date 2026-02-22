@@ -1,9 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, GlassWater } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, GlassWater, Armchair } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { UiThemeToggle } from "@/components/ui-theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
+import { useVariantSwitch } from "@/lib/route-mapping";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -161,6 +161,23 @@ function NavItemRow({ item, location, onNavigate }: { item: NavItem; location: s
   );
 }
 
+function VariantSwitchButton({ onNavigate }: { onNavigate: () => void }) {
+  const { t } = useTranslation();
+  const { switchVariant } = useVariantSwitch();
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => { switchVariant(); onNavigate(); }}
+      className="w-full text-xs gap-2 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+      data-testid="classic-switch-to-lounge"
+    >
+      <Armchair className="w-3.5 h-3.5" />
+      {t('loungeNav.switchToLounge')}
+    </Button>
+  );
+}
+
 function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
   navInnerRef?: React.RefObject<HTMLElement | null>;
   location: string;
@@ -283,9 +300,7 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
             Signed in as <span className="font-semibold text-foreground">{currentParticipant.name}</span>
           </div>
         )}
-        <div className="flex items-center gap-2 flex-wrap">
-          <UiThemeToggle />
-        </div>
+        <VariantSwitchButton onNavigate={onNavigate} />
         <div className="flex items-center gap-2 flex-wrap">
           <LanguageToggle />
           <ThemeToggle />
@@ -490,7 +505,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
         <div className="flex items-center gap-2">
           <ProfileAvatar size={48} showName showSignOut />
-          <UiThemeToggle compact />
           <LanguageToggle />
           <ThemeToggle />
           <Sheet open={open} onOpenChange={setOpen}>
