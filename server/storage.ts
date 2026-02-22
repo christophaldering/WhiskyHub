@@ -27,6 +27,8 @@ import {
   type InsertNotification, type Notification,
   changelogEntries,
   type InsertChangelogEntry, type ChangelogEntry,
+  sessionPresence,
+  type SessionPresence,
 } from "@shared/schema";
 
 export interface WhiskyOfTheDay {
@@ -253,6 +255,11 @@ export interface IStorage {
   markNotificationRead(notificationId: string, participantId: string): Promise<void>;
   markAllNotificationsRead(participantId: string): Promise<void>;
   getUnreadNotificationCount(participantId: string): Promise<number>;
+
+  // Session Presence
+  upsertPresence(tastingId: string, participantId: string): Promise<void>;
+  getActiveParticipants(tastingId: string, thresholdSeconds?: number): Promise<{ participantId: string; participantName: string; lastSeenAt: Date }[]>;
+  cleanupStalePresence(thresholdSeconds?: number): Promise<void>;
 
   // Platform Stats
   getPlatformStats(): Promise<{
@@ -1470,6 +1477,40 @@ export class DatabaseStorage implements IStorage {
 
   async deleteChangelogEntry(id: string): Promise<void> {
     await db.delete(changelogEntries).where(eq(changelogEntries.id, id));
+  }
+
+  // --- Session Presence ---
+  async upsertPresence(tastingId: string, participantId: string): Promise<void> {
+    const existing = await db.select().from(sessionPresence)
+      .where(and(eq(sessionPresence.tastingId, tastingId), eq(sessionPresence.participantId, participantId)));
+    if (existing.length > 0) {
+      await db.update(sessionPresence)
+        .set({ lastSeenAt: new Date() })
+        .where(and(eq(sessionPresence.tastingId, tastingId), eq(sessionPresence.participantId, participantId)));
+    } else {
+      await db.insert(sessionPresence).values({ tastingId, participantId, lastSeenAt: new Date() });
+    }
+  }
+
+  async getActiveParticipants(tastingId: string, thresholdSeconds: number = 60): Promise<{ participantId: string; participantName: string; lastSeenAt: Date }[]> {
+    const cutoff = new Date(Date.now() - thresholdSeconds * 1000);
+    const results = await db.select({
+      participantId: sessionPresence.participantId,
+      participantName: participants.name,
+      lastSeenAt: sessionPresence.lastSeenAt,
+    })
+    .from(sessionPresence)
+    .innerJoin(participants, eq(sessionPresence.participantId, participants.id))
+    .where(and(
+      eq(sessionPresence.tastingId, tastingId),
+      sql`${sessionPresence.lastSeenAt} > ${cutoff}`
+    ));
+    return results;
+  }
+
+  async cleanupStalePresence(thresholdSeconds: number = 300): Promise<void> {
+    const cutoff = new Date(Date.now() - thresholdSeconds * 1000);
+    await db.delete(sessionPresence).where(sql`${sessionPresence.lastSeenAt} < ${cutoff}`);
   }
 }
 

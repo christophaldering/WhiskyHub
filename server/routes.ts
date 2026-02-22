@@ -797,6 +797,26 @@ export async function registerRoutes(
     res.json(list);
   });
 
+  app.post("/api/tastings/:id/heartbeat", async (req, res) => {
+    try {
+      const { participantId } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      await storage.upsertPresence(req.params.id, participantId);
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/tastings/:id/presence", async (req, res) => {
+    try {
+      const active = await storage.getActiveParticipants(req.params.id, 60);
+      res.json(active);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.post("/api/tastings/:id/join", async (req, res) => {
     try {
       const { participantId, code } = req.body;

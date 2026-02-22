@@ -486,3 +486,13 @@ export const changelogEntries = pgTable("changelog_entries", {
 export const insertChangelogEntrySchema = createInsertSchema(changelogEntries).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertChangelogEntry = z.infer<typeof insertChangelogEntrySchema>;
 export type ChangelogEntry = typeof changelogEntries.$inferSelect;
+
+// --- Session Presence (heartbeat tracking for active participants) ---
+export const sessionPresence = pgTable("session_presence", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tastingId: varchar("tasting_id").notNull(),
+  participantId: varchar("participant_id").notNull(),
+  lastSeenAt: timestamp("last_seen_at").notNull().defaultNow(),
+});
+
+export type SessionPresence = typeof sessionPresence.$inferSelect;
