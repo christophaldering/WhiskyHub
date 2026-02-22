@@ -129,6 +129,12 @@ export default function Landing() {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground/60 mt-2">{t("landing.quickJoin.hint")}</p>
+                <p className="text-xs text-muted-foreground/70 mt-2">
+                  {t("landing.quickJoin.noCode")}{" "}
+                  <button onClick={() => navigate("/app")} className="text-primary font-semibold hover:underline underline-offset-2 transition-colors" data-testid="link-no-code-signin">
+                    {t("landing.quickJoin.noCodeLink")} →
+                  </button>
+                </p>
               </div>
             </motion.div>
             <motion.div
@@ -233,7 +239,7 @@ export default function Landing() {
             onClick={() => { setPreviewExperienceLevel("guest"); navigate("/app"); }}
           >
             <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl -translate-y-12 translate-x-12 opacity-60" />
-            <div className="relative flex flex-col sm:flex-row sm:items-center gap-5">
+            <div className="relative flex flex-col sm:flex-row sm:items-start gap-5">
               <div className="flex-shrink-0">
                 <div className="w-14 h-14 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Wine className="w-7 h-7" />
@@ -241,10 +247,17 @@ export default function Landing() {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-serif font-black text-primary text-xl sm:text-2xl mb-1">{t("landing.roles.guest.name")}</h3>
+                <Button
+                  size="sm"
+                  className="text-xs gap-1.5 h-8 font-serif bg-emerald-600 hover:bg-emerald-700 text-white mb-3"
+                  onClick={(e) => { e.stopPropagation(); setPreviewExperienceLevel("guest"); navigate("/app"); }}
+                  data-testid="button-try-view-guest"
+                >
+                  {t("landing.roles.tryView")}
+                  <ArrowRight className="w-3 h-3" />
+                </Button>
                 <p className="text-emerald-700/80 dark:text-emerald-400/80 font-medium text-sm mb-2">{t("landing.roles.guest.tagline")}</p>
-                <p className="text-muted-foreground text-sm leading-relaxed">{t("landing.roles.guest.desc")}</p>
-              </div>
-              <div className="flex-shrink-0 flex flex-col items-start sm:items-end gap-3">
+                <p className="text-muted-foreground text-sm leading-relaxed mb-3">{t("landing.roles.guest.desc")}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {(t("landing.roles.guest.features") as string).split(", ").map((feat) => (
                     <span key={feat} className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-foreground/70 font-medium">
@@ -252,15 +265,6 @@ export default function Landing() {
                     </span>
                   ))}
                 </div>
-                <Button
-                  size="sm"
-                  className="text-xs gap-1 h-8 font-serif bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={(e) => { e.stopPropagation(); setPreviewExperienceLevel("guest"); navigate("/app"); }}
-                  data-testid="button-try-view-guest"
-                >
-                  {t("landing.roles.tryView")}
-                  <ArrowRight className="w-3 h-3" />
-                </Button>
               </div>
             </div>
           </motion.div>
@@ -280,9 +284,9 @@ export default function Landing() {
           {/* Explorer / Connoisseur / Analyst — three columns below */}
           <div className="grid sm:grid-cols-3 gap-5">
             {([
-              { key: "explorer", icon: Search, color: "bg-blue-500/15 text-blue-600", borderColor: "border-blue-500/30 hover:border-blue-500/50", accent: "bg-blue-500/10", anchor: "profile" },
-              { key: "connoisseur", icon: Star, color: "bg-amber-500/15 text-amber-600", borderColor: "border-amber-500/30 hover:border-amber-500/50", accent: "bg-amber-500/10", anchor: "dimensions" },
-              { key: "analyst", icon: Beaker, color: "bg-purple-500/15 text-purple-600", borderColor: "border-purple-500/30 hover:border-purple-500/50", accent: "bg-purple-500/10", anchor: "science" },
+              { key: "explorer", icon: Search, color: "bg-blue-500/15 text-blue-600", borderColor: "border-blue-500/30 hover:border-blue-500/50", accent: "bg-blue-500/10", btnClass: "bg-blue-600 hover:bg-blue-700 text-white", anchor: "profile" },
+              { key: "connoisseur", icon: Star, color: "bg-amber-500/15 text-amber-600", borderColor: "border-amber-500/30 hover:border-amber-500/50", accent: "bg-amber-500/10", btnClass: "bg-amber-600 hover:bg-amber-700 text-white", anchor: "dimensions" },
+              { key: "analyst", icon: Beaker, color: "bg-purple-500/15 text-purple-600", borderColor: "border-purple-500/30 hover:border-purple-500/50", accent: "bg-purple-500/10", btnClass: "bg-purple-600 hover:bg-purple-700 text-white", anchor: "science" },
             ] as const).map((role, i) => (
               <motion.div
                 key={role.key}
@@ -291,44 +295,41 @@ export default function Landing() {
                 viewport={{ once: true }}
                 custom={i + 2}
                 variants={fadeUp}
-                className={`bg-card border ${role.borderColor} rounded-xl p-5 transition-all group relative overflow-hidden cursor-pointer`}
+                className={`bg-card border ${role.borderColor} rounded-xl p-5 transition-all group relative overflow-hidden cursor-pointer flex flex-col`}
                 data-testid={`landing-role-${role.key}`}
                 onClick={() => { setPreviewExperienceLevel(role.key); navigate("/app"); }}
               >
                 <div className={`absolute top-0 right-0 w-24 h-24 ${role.accent} rounded-full blur-2xl -translate-y-8 translate-x-8 opacity-60`} />
-                <div className="relative">
-                  <div className={`w-11 h-11 rounded-lg ${role.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                <div className="relative flex flex-col flex-1">
+                  <div className={`w-11 h-11 rounded-lg ${role.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
                     <role.icon className="w-5 h-5" />
                   </div>
                   <h3 className="font-serif font-bold text-primary text-base mb-2">{t(`landing.roles.${role.key}.name`)}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-4">{t(`landing.roles.${role.key}.desc`)}</p>
+                  <Button
+                    size="sm"
+                    className={`text-xs gap-1.5 h-7 font-serif ${role.btnClass} mb-3 w-fit`}
+                    onClick={(e) => { e.stopPropagation(); setPreviewExperienceLevel(role.key); navigate("/app"); }}
+                    data-testid={`button-try-view-${role.key}`}
+                  >
+                    {t("landing.roles.tryView")}
+                    <ArrowRight className="w-3 h-3" />
+                  </Button>
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-3">{t(`landing.roles.${role.key}.desc`)}</p>
                   <p className="text-[11px] text-muted-foreground/60 font-medium mb-1.5">{t(`landing.roles.${role.key}.plus`)}</p>
-                  <div className="flex flex-wrap gap-1.5 mb-3">
+                  <div className="flex flex-wrap gap-1.5 mb-3 flex-1">
                     {(t(`landing.roles.${role.key}.features`) as string).split(", ").map((feat) => (
-                      <span key={feat} className={`text-[11px] px-2 py-0.5 rounded-full ${role.accent} text-foreground/70 font-medium`}>
+                      <span key={feat} className={`text-[11px] px-2 py-0.5 rounded-full ${role.accent} text-foreground/70 font-medium h-fit`}>
                         {feat}
                       </span>
                     ))}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); navigate(`/background#${role.anchor}`); }}
-                      className="text-[11px] text-muted-foreground/60 hover:text-primary underline underline-offset-2 transition-colors"
-                      data-testid={`link-learn-more-${role.key}`}
-                    >
-                      {t("background.learnMore")} →
-                    </button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs gap-1 h-7 font-serif"
-                      onClick={(e) => { e.stopPropagation(); setPreviewExperienceLevel(role.key); navigate("/app"); }}
-                      data-testid={`button-try-view-${role.key}`}
-                    >
-                      {t("landing.roles.tryView")}
-                      <ArrowRight className="w-3 h-3" />
-                    </Button>
-                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); navigate(`/background#${role.anchor}`); }}
+                    className="text-[11px] text-muted-foreground/60 hover:text-primary underline underline-offset-2 transition-colors mt-auto"
+                    data-testid={`link-learn-more-${role.key}`}
+                  >
+                    {t("background.learnMore")} →
+                  </button>
                 </div>
               </motion.div>
             ))}

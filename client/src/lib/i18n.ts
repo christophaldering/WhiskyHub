@@ -118,6 +118,8 @@ const resources = {
           placeholder: "CODE EINGEBEN...",
           go: "Join",
           hint: "Your host will share the code with you.",
+          noCode: "No code?",
+          noCodeLink: "Sign in or create a tasting",
         },
         stats: {
           tastings: "Tastings",
@@ -2516,6 +2518,8 @@ const resources = {
           placeholder: "CODE EINGEBEN...",
           go: "Beitreten",
           hint: "Den Code bekommst du von deinem Gastgeber.",
+          noCode: "Kein Code?",
+          noCodeLink: "Anmelden oder Tasting erstellen",
         },
         stats: {
           tastings: "Tastings",
