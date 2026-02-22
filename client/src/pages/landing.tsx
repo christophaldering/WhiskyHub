@@ -131,8 +131,8 @@ export default function Landing() {
                 <p className="text-xs text-muted-foreground/60 mt-2">{t("landing.quickJoin.hint")}</p>
                 <p className="text-xs text-muted-foreground/70 mt-2">
                   {t("landing.quickJoin.noCode")}{" "}
-                  <button onClick={() => navigate("/app")} className="text-primary font-semibold hover:underline underline-offset-2 transition-colors" data-testid="link-no-code-signin">
-                    {t("landing.quickJoin.noCodeLink")} →
+                  <button onClick={() => document.getElementById("your-pace")?.scrollIntoView({ behavior: "smooth" })} className="text-primary font-semibold hover:underline underline-offset-2 transition-colors" data-testid="link-no-code-signin">
+                    {t("landing.quickJoin.noCodeLink")} ↓
                   </button>
                 </p>
               </div>
@@ -214,7 +214,7 @@ export default function Landing() {
       </section>
 
       {/* Experience Levels */}
-      <section className="py-10 sm:py-14 bg-gradient-to-b from-background via-amber-900/5 to-background">
+      <section id="your-pace" className="py-10 sm:py-14 bg-gradient-to-b from-background via-amber-900/5 to-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <motion.div
             initial="hidden"
@@ -253,7 +253,7 @@ export default function Landing() {
                   onClick={(e) => { e.stopPropagation(); setPreviewExperienceLevel("guest"); navigate("/app"); }}
                   data-testid="button-try-view-guest"
                 >
-                  {t("landing.roles.tryView")}
+                  {t("landing.roles.tryGuest")}
                   <ArrowRight className="w-3 h-3" />
                 </Button>
                 <p className="text-emerald-700/80 dark:text-emerald-400/80 font-medium text-sm mb-2">{t("landing.roles.guest.tagline")}</p>
@@ -284,9 +284,9 @@ export default function Landing() {
           {/* Explorer / Connoisseur / Analyst — three columns below */}
           <div className="grid sm:grid-cols-3 gap-5">
             {([
-              { key: "explorer", icon: Search, color: "bg-blue-500/15 text-blue-600", borderColor: "border-blue-500/30 hover:border-blue-500/50", accent: "bg-blue-500/10", btnClass: "bg-blue-600 hover:bg-blue-700 text-white", anchor: "profile" },
-              { key: "connoisseur", icon: Star, color: "bg-amber-500/15 text-amber-600", borderColor: "border-amber-500/30 hover:border-amber-500/50", accent: "bg-amber-500/10", btnClass: "bg-amber-600 hover:bg-amber-700 text-white", anchor: "dimensions" },
-              { key: "analyst", icon: Beaker, color: "bg-purple-500/15 text-purple-600", borderColor: "border-purple-500/30 hover:border-purple-500/50", accent: "bg-purple-500/10", btnClass: "bg-purple-600 hover:bg-purple-700 text-white", anchor: "science" },
+              { key: "explorer", icon: Search, color: "bg-blue-500/15 text-blue-600", borderColor: "border-blue-500/30 hover:border-blue-500/50", accent: "bg-blue-500/10", btnClass: "bg-blue-600 hover:bg-blue-700 text-white", ctaKey: "tryExplorer", anchor: "profile" },
+              { key: "connoisseur", icon: Star, color: "bg-amber-500/15 text-amber-600", borderColor: "border-amber-500/30 hover:border-amber-500/50", accent: "bg-amber-500/10", btnClass: "bg-amber-600 hover:bg-amber-700 text-white", ctaKey: "tryConnoisseur", anchor: "dimensions" },
+              { key: "analyst", icon: Beaker, color: "bg-purple-500/15 text-purple-600", borderColor: "border-purple-500/30 hover:border-purple-500/50", accent: "bg-purple-500/10", btnClass: "bg-purple-600 hover:bg-purple-700 text-white", ctaKey: "tryAnalyst", anchor: "science" },
             ] as const).map((role, i) => (
               <motion.div
                 key={role.key}
@@ -311,7 +311,7 @@ export default function Landing() {
                     onClick={(e) => { e.stopPropagation(); setPreviewExperienceLevel(role.key); navigate("/app"); }}
                     data-testid={`button-try-view-${role.key}`}
                   >
-                    {t("landing.roles.tryView")}
+                    {t(`landing.roles.${role.ctaKey}`)}
                     <ArrowRight className="w-3 h-3" />
                   </Button>
                   <p className="text-muted-foreground text-sm leading-relaxed mb-3">{t(`landing.roles.${role.key}.desc`)}</p>

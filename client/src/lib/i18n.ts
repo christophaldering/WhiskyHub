@@ -119,7 +119,7 @@ const resources = {
           go: "Join",
           hint: "Your host will share the code with you.",
           noCode: "No code?",
-          noCodeLink: "Sign in or create a tasting",
+          noCodeLink: "Choose your pace below",
         },
         stats: {
           tastings: "Tastings",
@@ -211,6 +211,10 @@ const resources = {
           title: "Your Pace, Your Experience",
           subtitle: "CaskSense adapts to how deep you want to go. Start simple — unlock more whenever you're ready.",
           tryView: "Explore this view",
+          tryGuest: "Just start tasting",
+          tryExplorer: "Start your journal",
+          tryConnoisseur: "Dive deeper",
+          tryAnalyst: "Explore the data",
           guest: {
             name: "Just Tasting",
             tagline: "As little tech as possible. Just what makes a good tasting better.",
@@ -2519,7 +2523,7 @@ const resources = {
           go: "Beitreten",
           hint: "Den Code bekommst du von deinem Gastgeber.",
           noCode: "Kein Code?",
-          noCodeLink: "Anmelden oder Tasting erstellen",
+          noCodeLink: "Wähle dein Level weiter unten",
         },
         stats: {
           tastings: "Tastings",
@@ -2611,6 +2615,10 @@ const resources = {
           title: "Dein Tempo, dein Erlebnis",
           subtitle: "CaskSense passt sich an, wie tief du eintauchen möchtest. Starte einfach — entdecke mehr, wann immer du bereit bist.",
           tryView: "Dieses Level entdecken",
+          tryGuest: "Einfach lostrinken",
+          tryExplorer: "Dein Journal starten",
+          tryConnoisseur: "Tiefer eintauchen",
+          tryAnalyst: "Daten erkunden",
           guest: {
             name: "Einfach Tasting",
             tagline: "So wenig Technik wie möglich. Nur das, was ein gutes Tasting wirklich besser macht.",
