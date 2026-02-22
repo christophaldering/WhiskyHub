@@ -488,6 +488,69 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/participants/:id/email", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        return res.status(400).json({ message: "A valid email is required" });
+      }
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      const updated = await storage.updateParticipant(participant.id, { email: email.trim() });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/participants/:id/pin", async (req, res) => {
+    try {
+      const { currentPin, newPin } = req.body;
+      if (!newPin || typeof newPin !== "string" || newPin.length < 4) {
+        return res.status(400).json({ message: "New PIN must be at least 4 digits" });
+      }
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      if (participant.pin && participant.pin !== currentPin) {
+        return res.status(403).json({ message: "Current PIN is incorrect" });
+      }
+      const updated = await storage.updateParticipantPin(participant.id, newPin);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/participants/:id/export-data", async (req, res) => {
+    try {
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      const profile = await storage.getProfile(participant.id);
+      const journal = await storage.getJournalEntries(participant.id);
+      const wishlist = await storage.getWishlistEntries(participant.id);
+      const stats = await storage.getParticipantStats(participant.id);
+      const ratingNotes = await storage.getRatingNotes(participant.id);
+
+      res.json({
+        participant: {
+          id: participant.id,
+          name: participant.name,
+          email: participant.email,
+          experienceLevel: participant.experienceLevel,
+          createdAt: participant.createdAt,
+        },
+        profile: profile || null,
+        ratingNotes,
+        journal,
+        wishlist,
+        stats,
+        exportedAt: new Date().toISOString(),
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.post("/api/participants/:id/heartbeat", async (req, res) => {
     try {
       const participant = await storage.getParticipant(req.params.id);
@@ -4852,6 +4915,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             canAccessWhiskyDb: p.canAccessWhiskyDb || false,
             newsletterOptIn: p.newsletterOptIn || false,
             communityContributor: p.communityContributor || false,
+            experienceLevel: p.experienceLevel || "connoisseur",
           };
         })
       );
@@ -4965,6 +5029,52 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const result = await storage.updateCommunityContributor(req.params.id, status);
       if (!result) return res.status(404).json({ message: "Participant not found" });
       res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/admin/participants/batch-experience-level", async (req, res) => {
+    try {
+      const { requesterId, level, participantIds } = req.body;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      if (!level || !["guest", "explorer", "connoisseur", "analyst"].includes(level)) {
+        return res.status(400).json({ message: "Invalid level" });
+      }
+      const ids = participantIds as string[];
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "participantIds required" });
+      }
+      const results = [];
+      for (const id of ids) {
+        const updated = await storage.updateParticipant(id, { experienceLevel: level });
+        if (updated) results.push(updated);
+      }
+      res.json({ updated: results.length });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/admin/participants/:id/experience-level", async (req, res) => {
+    try {
+      const requesterId = req.body.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const { level } = req.body;
+      if (!level || !["guest", "explorer", "connoisseur", "analyst"].includes(level)) {
+        return res.status(400).json({ message: "Invalid level" });
+      }
+      const updated = await storage.updateParticipant(req.params.id, { experienceLevel: level });
+      if (!updated) return res.status(404).json({ message: "Participant not found" });
+      res.json(updated);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

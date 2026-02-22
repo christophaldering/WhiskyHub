@@ -57,6 +57,7 @@ import QuickTasting from "@/pages/quick-tasting";
 import Research from "@/pages/research";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
+import Account from "@/pages/account";
 import { BuildFooter } from "@/components/build-footer";
 import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
@@ -119,6 +120,7 @@ function Router() {
               <Route path="/analytics" component={Analytics} />
               <Route path="/method" component={Method} />
               <Route path="/research" component={Research} />
+              <Route path="/account" component={Account} />
               <Route path="/data-export" component={DataExport} />
               <Route path="/invite/:token" component={InviteAccept} />
               <Route component={NotFound} />

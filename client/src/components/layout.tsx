@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, LogIn, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, ArrowRight, GlassWater, Microscope, X } from "lucide-react";
+import { Home, LogOut, LogIn, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, ArrowRight, GlassWater, Microscope, X, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
@@ -10,7 +10,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { WelcomeOverlay } from "@/components/welcome-overlay";
 import { FeedbackButton } from "@/components/feedback-button";
 import { LevelOnboarding } from "@/components/level-onboarding";
-import { SpotlightProvider, type SpotlightHint } from "@/components/spotlight-hint";
+import { SpotlightProvider, TourProvider, type SpotlightHint, type TourDefinition } from "@/components/spotlight-hint";
 import { useTranslation } from "react-i18next";
 import { useAppStore, LANDING_VERSION } from "@/lib/store";
 import { LoginDialog } from "@/components/login-dialog";
@@ -564,14 +564,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/", icon: Globe, label: t('nav.landingPage') },
       ],
     },
-    ...(currentParticipant?.role === "admin" ? [
-      {
-        label: t('navGroup.admin'),
-        items: [
+    ...(currentParticipant ? [{
+      label: t('navGroup.admin'),
+      items: [
+        { href: "/account", icon: Settings, label: t('nav.account') },
+        ...(currentParticipant.role === "admin" ? [
           { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
-        ],
-      },
-    ] : []),
+        ] : []),
+      ],
+    }] : []),
   ], [t, isHost, isAdmin, expLevel, currentParticipant?.canAccessWhiskyDb, currentParticipant?.role, previewExperienceLevel]);
 
   const desktopNavRef = useRef<HTMLElement>(null);
@@ -612,6 +613,50 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ];
   }, [currentParticipant, t]);
 
+  const tourDefinitions: TourDefinition[] = useMemo(() => {
+    if (!currentParticipant) return [];
+    const p = "right" as const;
+    return [
+      {
+        id: "tour-guest",
+        level: "guest" as const,
+        steps: [
+          { id: "guest-1", targetSelector: '[href="/app"]', message: t("tour.guest.step1"), position: p },
+          { id: "guest-2", targetSelector: '[href="/sessions"]', message: t("tour.guest.step2"), position: p },
+          { id: "guest-3", targetSelector: '[href="/news"]', message: t("tour.guest.step3"), position: p },
+          { id: "guest-4", targetSelector: '[data-testid="select-experience-level"]', message: t("tour.guest.step4"), position: p },
+        ],
+      },
+      ...(atLeast("explorer") ? [{
+        id: "tour-explorer",
+        level: "explorer" as const,
+        steps: [
+          { id: "explorer-1", targetSelector: '[href="/journal"]', message: t("tour.explorer.step1"), position: p },
+          { id: "explorer-2", targetSelector: '[href="/flavor-profile"]', message: t("tour.explorer.step2"), position: p },
+          { id: "explorer-3", targetSelector: '[href="/badges"]', message: t("tour.explorer.step3"), position: p },
+        ],
+      }] : []),
+      ...(atLeast("connoisseur") ? [{
+        id: "tour-connoisseur",
+        level: "connoisseur" as const,
+        steps: [
+          { id: "connoisseur-1", targetSelector: '[href="/recommendations"]', message: t("tour.connoisseur.step1"), position: p },
+          { id: "connoisseur-2", targetSelector: '[href="/comparison"]', message: t("tour.connoisseur.step2"), position: p },
+          { id: "connoisseur-3", targetSelector: '[href="/lexicon"]', message: t("tour.connoisseur.step3"), position: p },
+        ],
+      }] : []),
+      ...(atLeast("analyst") ? [{
+        id: "tour-analyst",
+        level: "analyst" as const,
+        steps: [
+          { id: "analyst-1", targetSelector: '[href="/analytics"]', message: t("tour.analyst.step1"), position: p },
+          { id: "analyst-2", targetSelector: '[href="/flavor-wheel"]', message: t("tour.analyst.step2"), position: p },
+          { id: "analyst-3", targetSelector: '[href="/benchmark"]', message: t("tour.analyst.step3"), position: p },
+        ],
+      }] : []),
+    ];
+  }, [currentParticipant, t, expLevel]);
+
   return (
     <FullBleedContext.Provider value={{ setFullBleed }}>
     <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden font-sans">
@@ -620,6 +665,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <WelcomeOverlay />
       <LevelOnboarding />
       <SpotlightProvider hints={spotlightHints} />
+      <TourProvider tours={tourDefinitions} />
 
       <header className="md:hidden sticky top-0 z-50 flex items-center justify-between p-4 border-b border-border/40 bg-card/95 backdrop-blur-lg">
         <div className="flex items-center gap-2">

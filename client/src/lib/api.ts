@@ -551,6 +551,10 @@ export const adminApi = {
     fetchJSON(`/admin/newsletters/${newsletterId}/resend`, { method: "POST", body: JSON.stringify({ requesterId, recipientIds }) }),
   updateCommunityContributor: (participantId: string, status: boolean, requesterId: string) =>
     fetchJSON(`/admin/participants/${participantId}/community-contributor`, { method: "PATCH", body: JSON.stringify({ status, requesterId }) }),
+  updateExperienceLevel: (participantId: string, level: string, requesterId: string) =>
+    fetchJSON(`/admin/participants/${participantId}/experience-level`, { method: "PATCH", body: JSON.stringify({ level, requesterId }) }),
+  batchExperienceLevel: (participantIds: string[], level: string, requesterId: string) =>
+    fetchJSON(`/admin/participants/batch-experience-level`, { method: "PATCH", body: JSON.stringify({ participantIds, level, requesterId }) }),
 };
 
 export const tastingPhotoApi = {

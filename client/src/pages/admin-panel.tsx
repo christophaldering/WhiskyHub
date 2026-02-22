@@ -42,6 +42,7 @@ interface AdminParticipant {
   canAccessWhiskyDb: boolean;
   newsletterOptIn: boolean;
   communityContributor: boolean;
+  experienceLevel: string;
 }
 
 interface AdminTasting {
@@ -696,6 +697,26 @@ export default function AdminPanel() {
     onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
   });
 
+  const levelMutation = useMutation({
+    mutationFn: ({ participantId, level }: { participantId: string; level: string }) =>
+      adminApi.updateExperienceLevel(participantId, level, currentParticipant!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      toast({ title: t("admin.levelUpdated") });
+    },
+    onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
+  });
+
+  const batchLevelMutation = useMutation({
+    mutationFn: ({ participantIds, level }: { participantIds: string[]; level: string }) =>
+      adminApi.batchExperienceLevel(participantIds, level, currentParticipant!.id),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      toast({ title: `${data.updated} participants updated` });
+    },
+    onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
+  });
+
   const contributorMutation = useMutation({
     mutationFn: ({ participantId, status }: { participantId: string; status: boolean }) =>
       adminApi.updateCommunityContributor(participantId, status, currentParticipant!.id),
@@ -903,6 +924,26 @@ export default function AdminPanel() {
                 data-testid="input-search-participants"
               />
             </div>
+            <Select
+              value=""
+              onValueChange={(level) => {
+                if (data?.participants) {
+                  const ids = data.participants.map((p: AdminParticipant) => p.id);
+                  batchLevelMutation.mutate({ participantIds: ids, level });
+                }
+              }}
+            >
+              <SelectTrigger className="w-[160px]" data-testid="select-batch-level">
+                <Star className="w-3 h-3 mr-1" />
+                <span className="text-xs">Alle Level setzen</span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="guest">Guest</SelectItem>
+                <SelectItem value="explorer">Explorer</SelectItem>
+                <SelectItem value="connoisseur">Connoisseur</SelectItem>
+                <SelectItem value="analyst">Analyst</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={filterRole} onValueChange={setFilterRole}>
               <SelectTrigger className="w-[140px]" data-testid="select-filter-role">
                 <SelectValue />
@@ -976,6 +1017,21 @@ export default function AdminPanel() {
                               <SelectItem value="user">{t("admin.roleUser")}</SelectItem>
                               <SelectItem value="host">{t("admin.roleHost")}</SelectItem>
                               <SelectItem value="admin">{t("admin.roleAdmin")}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select
+                            value={p.experienceLevel || "connoisseur"}
+                            onValueChange={(level) => levelMutation.mutate({ participantId: p.id, level })}
+                          >
+                            <SelectTrigger className="w-[120px] h-8 text-xs" data-testid={`select-level-${p.id}`}>
+                              <Star className="w-3 h-3 mr-1" />
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="guest">Guest</SelectItem>
+                              <SelectItem value="explorer">Explorer</SelectItem>
+                              <SelectItem value="connoisseur">Connoisseur</SelectItem>
+                              <SelectItem value="analyst">Analyst</SelectItem>
                             </SelectContent>
                           </Select>
                           {p.isHost && p.role !== "admin" && (
