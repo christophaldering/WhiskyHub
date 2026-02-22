@@ -8,7 +8,8 @@ import {
   List, X, Star, Sparkles, FileSpreadsheet, QrCode, NotebookPen,
   Activity, Trophy, GitCompareArrows, Rss, Calendar, Landmark, Map,
   MessageSquare, Volume2, Heart, Bell, Download, FileText,
-  Shield, Layers, Search, BarChart3, HandHeart, GlassWater, Compass
+  Shield, Layers, Search, BarChart3, HandHeart, GlassWater, Compass,
+  FlaskConical, GraduationCap, TrendingUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
@@ -153,11 +154,26 @@ const slides: SlideData[] = [
   },
   {
     type: "content",
+    title: "Mehr als Bauchgefühl",
+    subtitle: "CaskSense kennt Methoden aus Psychometrie und Persönlichkeitsforschung — und macht sie zugänglich. Wer tiefer eintauchen will, findet hier Werkzeuge, die über Hobby hinausgehen.",
+    image: slideAnalytics,
+    badge: "Für Wissbegierige",
+    layout: "left",
+    features: [
+      { icon: FlaskConical, title: "Psychometrische Skalen", desc: "Bewertungsskalen, die auf erprobten Methoden aufbauen — nicht zusammengewürfelt" },
+      { icon: BarChart3, title: "Benchmark-Datenbank", desc: "Eigene Bewertungen im Kontext professioneller Referenzen einordnen" },
+      { icon: TrendingUp, title: "Messqualität & Konsistenz", desc: "Wie zuverlässig bewertest du? CaskSense zeigt es — und hilft, präziser zu werden" },
+      { icon: Brain, title: "KI-gestützte Mustererkennung", desc: "Zusammenhänge in deinen Bewertungen, die dir selbst nicht auffallen" },
+      { icon: GraduationCap, title: "Wissenschaftliche Vertiefung", desc: "Ansätze aus Datenanalyse und prädiktiver Validität — bis hin zu wissenschaftlichen Publikationen" },
+    ],
+  },
+  {
+    type: "content",
     title: "Gemeinschaft & Austausch",
     subtitle: "Whisky trinkt man nicht allein. Finde Gleichgesinnte, teile Einträge und entdecke, was die anderen am Tisch anders schmecken.",
     image: slideCommunity,
     badge: "Gemeinsam",
-    layout: "left",
+    layout: "right",
     features: [
       { icon: Users, title: "Freunde", desc: "Whisky-Freunde hinzufügen und deren Einträge sehen" },
       { icon: Rss, title: "Aktivitäts-Feed", desc: "Was trinken die anderen? Timeline deiner Tasting-Runde" },
