@@ -106,13 +106,16 @@ function ProfileAvatar({ size = 36, showName = false, showSignOut = false }: { s
   );
 }
 
+const PUBLIC_NAV_ROUTES = ["/", "/about", "/news", "/about-method", "/features", "/research", "/donate"];
+
 function NavItemRow({ item, location, onNavigate, isPreviewMode, onLoginRequest }: { item: NavItem; location: string; onNavigate: () => void; isPreviewMode?: boolean; onLoginRequest?: () => void }) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const isActive = item.match ? item.match(location) : location === item.href;
+  const isPublicRoute = PUBLIC_NAV_ROUTES.includes(item.href);
 
   const handleClick = (e: React.MouseEvent) => {
-    if (isPreviewMode) {
+    if (isPreviewMode && !isPublicRoute) {
       e.preventDefault();
       e.stopPropagation();
       onLoginRequest?.();
@@ -121,10 +124,11 @@ function NavItemRow({ item, location, onNavigate, isPreviewMode, onLoginRequest 
     if (item.href === "/") {
       e.preventDefault();
       e.stopPropagation();
-      if (window.confirm(t("nav.landingPageConfirm"))) {
-        onNavigate();
-        navigate("/");
+      if (!isPreviewMode && !window.confirm(t("nav.landingPageConfirm"))) {
+        return;
       }
+      onNavigate();
+      navigate("/");
       return;
     }
     onNavigate();
@@ -136,7 +140,7 @@ function NavItemRow({ item, location, onNavigate, isPreviewMode, onLoginRequest 
         data-nav-active={isActive ? "true" : undefined}
         className={cn(
           "flex items-center gap-3 px-3 py-1.5 rounded-sm transition-all duration-300 cursor-pointer group",
-          isPreviewMode && "opacity-60",
+          isPreviewMode && !isPublicRoute && "opacity-60",
           isActive
             ? "bg-secondary text-primary border-l-2 border-primary"
             : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
@@ -155,13 +159,13 @@ function NavItemRow({ item, location, onNavigate, isPreviewMode, onLoginRequest 
         data-nav-active={isActive ? "true" : undefined}
         className={cn(
           "flex items-center gap-3 px-3 py-1.5 rounded-sm transition-all duration-300 cursor-pointer group",
-          isPreviewMode && "opacity-60",
+          isPreviewMode && !isPublicRoute && "opacity-60",
           isActive
             ? "bg-secondary text-primary border-l-2 border-primary"
             : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
         )}
         onClick={(e) => {
-          if (isPreviewMode) {
+          if (isPreviewMode && !isPublicRoute) {
             e.preventDefault();
             e.stopPropagation();
             onLoginRequest?.();
