@@ -7,7 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
 import type { EncyclopediaSuggestion } from "@shared/schema";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket } from "lucide-react";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock } from "lucide-react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -883,6 +883,9 @@ export default function AdminPanel() {
             </SelectItem>
             <SelectItem value="changelog">
               <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4" /> Changelog</span>
+            </SelectItem>
+            <SelectItem value="online">
+              <span className="flex items-center gap-2"><Wifi className="w-4 h-4" /> Online</span>
             </SelectItem>
           </SelectContent>
         </Select>
@@ -1820,6 +1823,10 @@ export default function AdminPanel() {
         <TabsContent value="changelog">
           <ChangelogAdminTab participantId={currentParticipant!.id} />
         </TabsContent>
+
+        <TabsContent value="online">
+          <OnlineUsersTab />
+        </TabsContent>
       </Tabs>
     </motion.div>
   );
@@ -2219,6 +2226,89 @@ function ChangelogAdminTab({ participantId }: { participantId: string }) {
           </Card>
         ))}
       </div>
+    </div>
+  );
+}
+
+function OnlineUsersTab() {
+  const LEVEL_ICONS: Record<string, typeof User> = { guest: User, curious: Star, enthusiast: Sparkles, scientist: Brain };
+  const LEVEL_COLORS: Record<string, string> = { guest: "text-slate-500", curious: "text-amber-500", enthusiast: "text-primary", scientist: "text-violet-500" };
+
+  const { data: onlineUsers = [], isLoading } = useQuery({
+    queryKey: ["/api/admin/online-users"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/online-users?minutes=10");
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    refetchInterval: 15000,
+  });
+
+  const formatTime = (ts: string) => {
+    const d = new Date(ts);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return "gerade eben";
+    if (diffMin < 60) return `vor ${diffMin} Min.`;
+    return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-serif font-bold text-lg flex items-center gap-2">
+          <Wifi className="w-5 h-5 text-green-500" />
+          Online-Nutzer
+          <Badge variant="secondary" className="ml-1">{onlineUsers.length}</Badge>
+        </h3>
+        <span className="text-xs text-muted-foreground flex items-center gap-1">
+          <Clock className="w-3 h-3" /> Auto-Refresh 15s
+        </span>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : onlineUsers.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            Keine Nutzer aktuell online.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-2">
+          {onlineUsers.map((u: any) => {
+            const LevelIcon = LEVEL_ICONS[u.experienceLevel] || User;
+            const levelColor = LEVEL_COLORS[u.experienceLevel] || "text-muted-foreground";
+            const isRecent = new Date().getTime() - new Date(u.lastSeenAt).getTime() < 2 * 60 * 1000;
+            return (
+              <Card key={u.id} className="border-border/40" data-testid={`online-user-${u.id}`}>
+                <CardContent className="py-3 px-4 flex items-center gap-3">
+                  <div className="relative">
+                    <div className={`w-9 h-9 rounded-full bg-secondary/50 flex items-center justify-center`}>
+                      <LevelIcon className={`w-4 h-4 ${levelColor}`} />
+                    </div>
+                    <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${isRecent ? "bg-green-500" : "bg-amber-400"}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm truncate">{u.name}</span>
+                      {u.role === "admin" && <Badge variant="destructive" className="text-[9px] px-1 py-0">Admin</Badge>}
+                    </div>
+                    {u.email && <div className="text-[11px] text-muted-foreground truncate">{u.email}</div>}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-[11px] text-muted-foreground">{formatTime(u.lastSeenAt)}</div>
+                    <div className={`text-[10px] capitalize ${levelColor}`}>{u.experienceLevel || "—"}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

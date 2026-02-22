@@ -18,10 +18,11 @@ export const participants = pgTable("participants", {
   newsletterOptIn: boolean("newsletter_opt_in").default(false),
   communityContributor: boolean("community_contributor").default(false),
   experienceLevel: text("experience_level").default("enthusiast"),
+  lastSeenAt: timestamp("last_seen_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertParticipantSchema = createInsertSchema(participants).omit({ id: true, createdAt: true, emailVerified: true, verificationCode: true, verificationExpiry: true });
+export const insertParticipantSchema = createInsertSchema(participants).omit({ id: true, createdAt: true, emailVerified: true, verificationCode: true, verificationExpiry: true, lastSeenAt: true });
 export type InsertParticipant = z.infer<typeof insertParticipantSchema>;
 export type Participant = typeof participants.$inferSelect;
 

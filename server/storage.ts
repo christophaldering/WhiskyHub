@@ -1,4 +1,4 @@
-import { eq, ne, and, asc, desc, sql, inArray } from "drizzle-orm";
+import { eq, ne, and, asc, desc, sql, inArray, gte } from "drizzle-orm";
 import { db } from "./db";
 import {
   participants, tastings, tastingParticipants, whiskies, ratings,
@@ -45,6 +45,8 @@ export interface IStorage {
   getParticipantByEmail(email: string): Promise<Participant | undefined>;
   createParticipant(data: InsertParticipant): Promise<Participant>;
   updateParticipant(id: string, data: Partial<{name: string; email: string; pin: string; newsletterOptIn: boolean; experienceLevel: string}>): Promise<Participant | undefined>;
+  updateLastSeen(id: string): Promise<void>;
+  getOnlineParticipants(thresholdMinutes?: number): Promise<Participant[]>;
   updateParticipantLanguage(id: string, language: string): Promise<Participant | undefined>;
   updateParticipantPin(id: string, pin: string): Promise<Participant | undefined>;
   setVerificationCode(id: string, code: string, expiry: Date): Promise<Participant | undefined>;
@@ -298,6 +300,15 @@ export class DatabaseStorage implements IStorage {
   async updateParticipant(id: string, data: Partial<{name: string; email: string; pin: string; newsletterOptIn: boolean; experienceLevel: string}>): Promise<Participant | undefined> {
     const [result] = await db.update(participants).set(data).where(eq(participants.id, id)).returning();
     return result;
+  }
+
+  async updateLastSeen(id: string): Promise<void> {
+    await db.update(participants).set({ lastSeenAt: new Date() }).where(eq(participants.id, id));
+  }
+
+  async getOnlineParticipants(thresholdMinutes: number = 5): Promise<Participant[]> {
+    const cutoff = new Date(Date.now() - thresholdMinutes * 60 * 1000);
+    return db.select().from(participants).where(gte(participants.lastSeenAt, cutoff)).orderBy(desc(participants.lastSeenAt));
   }
 
   async updateParticipantLanguage(id: string, language: string): Promise<Participant | undefined> {

@@ -365,6 +365,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     });
   }, [location]);
 
+  useEffect(() => {
+    if (!currentParticipant?.id) return;
+    participantApi.heartbeat(currentParticipant.id).catch(() => {});
+    const interval = setInterval(() => {
+      participantApi.heartbeat(currentParticipant.id).catch(() => {});
+    }, 2 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [currentParticipant?.id]);
+
   const isHost = currentParticipant && allTastings.some((t: any) => t.hostId === currentParticipant.id);
   const isAdmin = currentParticipant?.role === "admin";
   const expLevel = currentParticipant?.experienceLevel || "enthusiast";

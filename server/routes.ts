@@ -13,7 +13,7 @@ import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertPart
 import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
-import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail } from "./email";
+import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification } from "./email";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES } from "./ai-settings";
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from "docx";
@@ -273,6 +273,19 @@ export async function registerRoutes(
 ): Promise<Server> {
   const objectStorage = new ObjectStorageService();
 
+  const ADMIN_NOTIFICATION_EMAIL = "christoph.aldering@googlemail.com";
+
+  function notifyAdminLogin(participant: { name: string; email?: string | null; experienceLevel?: string | null }, isNew: boolean) {
+    const emailContent = buildAdminLoginNotification({
+      participantName: participant.name,
+      participantEmail: participant.email || undefined,
+      isNewRegistration: isNew,
+      experienceLevel: participant.experienceLevel || undefined,
+      timestamp: new Date(),
+    });
+    sendEmail({ to: ADMIN_NOTIFICATION_EMAIL, ...emailContent }).catch(() => {});
+  }
+
   // ===== HEALTH & VERSION =====
 
   app.get("/health", (_req, res) => {
@@ -301,6 +314,7 @@ export async function registerRoutes(
             await storage.updateParticipantRole(existing.id, "admin");
           }
           const updated = await storage.getParticipant(existing.id);
+          if (updated) { storage.updateLastSeen(updated.id).catch(() => {}); notifyAdminLogin(updated, false); }
           return res.json(updated);
         }
         if (data.pin !== existing.pin) {
@@ -309,8 +323,11 @@ export async function registerRoutes(
         if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
           await storage.updateParticipantRole(existing.id, "admin");
           const updated = await storage.getParticipant(existing.id);
+          if (updated) { storage.updateLastSeen(updated.id).catch(() => {}); notifyAdminLogin(updated, false); }
           return res.json(updated);
         }
+        storage.updateLastSeen(existing.id).catch(() => {});
+        notifyAdminLogin(existing, false);
         return res.json(existing);
       }
       if (!data.pin) {
@@ -363,6 +380,7 @@ export async function registerRoutes(
       }
 
       const finalParticipant = await storage.getParticipant(participant.id);
+      if (finalParticipant) { storage.updateLastSeen(finalParticipant.id).catch(() => {}); notifyAdminLogin(finalParticipant, true); }
       res.status(201).json(finalParticipant);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -389,6 +407,7 @@ export async function registerRoutes(
           await storage.updateParticipantRole(existing.id, "admin");
         }
         const updated = await storage.getParticipant(existing.id);
+        if (updated) { storage.updateLastSeen(updated.id).catch(() => {}); notifyAdminLogin(updated, false); }
         return res.json(updated);
       }
       if (pin !== existing.pin) {
@@ -397,8 +416,11 @@ export async function registerRoutes(
       if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
         await storage.updateParticipantRole(existing.id, "admin");
         const updated = await storage.getParticipant(existing.id);
+        if (updated) { storage.updateLastSeen(updated.id).catch(() => {}); notifyAdminLogin(updated, false); }
         return res.json(updated);
       }
+      storage.updateLastSeen(existing.id).catch(() => {});
+      notifyAdminLogin(existing, false);
       return res.json(existing);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -420,13 +442,18 @@ export async function registerRoutes(
           if (pin !== existing.pin) {
             return res.status(401).json({ message: "Invalid PIN" });
           }
+          storage.updateLastSeen(existing.id).catch(() => {});
+          notifyAdminLogin(existing, false);
           return res.json({ id: existing.id, name: existing.name, role: existing.role, canAccessWhiskyDb: existing.canAccessWhiskyDb || false, experienceLevel: existing.experienceLevel || "guest", guest: true });
         }
-        // Existing user without PIN — set their PIN now
         await storage.updateParticipant(existing.id, { pin });
+        storage.updateLastSeen(existing.id).catch(() => {});
+        notifyAdminLogin(existing, false);
         return res.json({ id: existing.id, name: existing.name, role: existing.role, canAccessWhiskyDb: existing.canAccessWhiskyDb || false, experienceLevel: existing.experienceLevel || "guest", guest: true });
       }
       const participant = await storage.createParticipant({ name: name.trim(), pin, experienceLevel: "guest" });
+      storage.updateLastSeen(participant.id).catch(() => {});
+      notifyAdminLogin(participant, true);
       res.status(201).json({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb || false, experienceLevel: "guest", guest: true });
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -444,6 +471,34 @@ export async function registerRoutes(
       res.json(updated);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/participants/:id/heartbeat", async (req, res) => {
+    try {
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      await storage.updateLastSeen(participant.id);
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/online-users", async (req, res) => {
+    try {
+      const minutes = parseInt(req.query.minutes as string) || 5;
+      const online = await storage.getOnlineParticipants(minutes);
+      res.json(online.map(p => ({
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        experienceLevel: p.experienceLevel,
+        lastSeenAt: p.lastSeenAt,
+        role: p.role,
+      })));
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
     }
   });
 

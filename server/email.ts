@@ -133,6 +133,45 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
   }
 }
 
+export function buildAdminLoginNotification(params: {
+  participantName: string;
+  participantEmail?: string;
+  isNewRegistration: boolean;
+  experienceLevel?: string;
+  timestamp: Date;
+}): { subject: string; html: string } {
+  const { participantName, participantEmail, isNewRegistration, experienceLevel, timestamp } = params;
+  const timeStr = timestamp.toLocaleString("de-DE", { timeZone: "Europe/Berlin", dateStyle: "medium", timeStyle: "short" });
+  const typeLabel = isNewRegistration ? "Neue Registrierung" : "Login";
+  const subject = `CaskSense ${typeLabel}: ${participantName}`;
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:'Georgia',serif;background:#f9f9f7;color:#333;">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border:1px solid #e5e5e0;border-radius:4px;overflow:hidden;">
+    <div style="padding:24px 32px 12px;border-bottom:1px solid #e5e5e0;">
+      <h1 style="margin:0;font-size:20px;color:#4a5568;font-weight:700;">CaskSense Admin</h1>
+      <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a0aec0;">${typeLabel}</p>
+    </div>
+    <div style="padding:24px 32px;">
+      <table style="width:100%;font-size:14px;line-height:1.8;color:#555;">
+        <tr><td style="font-weight:700;color:#4a5568;width:100px;">Name:</td><td>${participantName}</td></tr>
+        ${participantEmail ? `<tr><td style="font-weight:700;color:#4a5568;">E-Mail:</td><td>${participantEmail}</td></tr>` : ""}
+        <tr><td style="font-weight:700;color:#4a5568;">Level:</td><td>${experienceLevel || "—"}</td></tr>
+        <tr><td style="font-weight:700;color:#4a5568;">Zeit:</td><td>${timeStr}</td></tr>
+        <tr><td style="font-weight:700;color:#4a5568;">Typ:</td><td style="color:${isNewRegistration ? "#38a169" : "#4a5568"};font-weight:600;">${isNewRegistration ? "Neue Registrierung" : "Bestehender Nutzer"}</td></tr>
+      </table>
+    </div>
+    <div style="padding:12px 32px;border-top:1px solid #e5e5e0;background:#fafaf8;">
+      <p style="margin:0;font-size:11px;color:#a0aec0;text-align:center;">CaskSense Admin-Benachrichtigung</p>
+    </div>
+  </div>
+</body>
+</html>`;
+  return { subject, html };
+}
+
 export function buildVerificationEmail(params: {
   name: string;
   code: string;

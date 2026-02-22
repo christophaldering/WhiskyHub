@@ -32,6 +32,8 @@ export const participantApi = {
     fetchJSON(`/participants/${id}/resend-verification`, { method: "POST", body: JSON.stringify({}) }),
   updateExperienceLevel: (id: string, level: string) =>
     fetchJSON(`/participants/${id}/experience-level`, { method: "PATCH", body: JSON.stringify({ level }) }),
+  heartbeat: (id: string) =>
+    fetchJSON(`/participants/${id}/heartbeat`, { method: "POST", body: JSON.stringify({}) }),
 };
 
 // ===== Tastings =====
