@@ -12,6 +12,7 @@ import christophImage from "@assets/22A3ABF8-0085-4C82-97DF-EAA0ACD46B4E_1771546
 import slideBlind from "@/assets/tour/slide-blind.png";
 import slideAnalytics from "@/assets/tour/slide-analytics.png";
 import slideFlightboard from "@/assets/tour/slide-flightboard.png";
+import { LanguageToggle } from "@/components/language-toggle";
 import {
   Glasses, BookOpen, Users, BarChart3, Brain,
   Globe, ArrowRight, Wine,
@@ -74,6 +75,7 @@ export default function Landing() {
             <span className="font-serif font-black text-xl text-primary tracking-tight">CaskSense</span>
           </button>
           <div className="flex items-center gap-2 sm:gap-3">
+            <LanguageToggle />
             <Button variant="outline" size="sm" onClick={() => navigate("/tour")} className="font-serif text-xs sm:text-sm gap-1.5 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700" data-testid="landing-nav-tour">
               <Presentation className="w-3.5 h-3.5" />
               {t("landing.nav.featureTour")}
@@ -137,15 +139,6 @@ export default function Landing() {
                 </div>
                 <p className="text-xs text-muted-foreground/60 mt-2">{t("landing.quickJoin.hint")}</p>
               </div>
-              <div className="flex items-center gap-3 max-w-md">
-                <div className="flex-1 h-px bg-border/40" />
-                <span className="text-xs text-muted-foreground/50 font-serif uppercase tracking-widest">oder</span>
-                <div className="flex-1 h-px bg-border/40" />
-              </div>
-              <Button size="lg" variant="outline" onClick={() => navigate("/tour")} className="font-serif text-base gap-2 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 hover:border-amber-500/60" data-testid="landing-hero-tour">
-                <Play className="w-4 h-4" />
-                {t("landing.hero.tourCta")}
-              </Button>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, x: 40 }}
@@ -159,6 +152,67 @@ export default function Landing() {
               </div>
             </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* Tour Teaser — compact 2-column */}
+      <section className="py-8 sm:py-10 bg-gradient-to-br from-amber-900/10 via-amber-800/5 to-orange-900/8 border-y border-amber-700/20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={0}
+            variants={fadeUp}
+            className="grid md:grid-cols-2 gap-6 items-center"
+          >
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-1.5 bg-amber-500/20 text-amber-500 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest">
+                <Presentation className="w-3.5 h-3.5" />
+                {t("landing.tourBanner.badge")}
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-serif font-black text-primary leading-tight">
+                {t("landing.tourBanner.title")}
+              </h2>
+              <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+                {t("landing.tourBanner.desc")}
+              </p>
+              <div className="flex items-center gap-3 pt-1">
+                <Button
+                  size="sm"
+                  onClick={() => navigate("/tour")}
+                  className="font-serif text-sm gap-2 px-5 bg-amber-600 hover:bg-amber-700 text-white shadow-md"
+                  data-testid="landing-tour-cta"
+                >
+                  <Play className="w-4 h-4" />
+                  {t("landing.tourBanner.cta")}
+                </Button>
+                <span className="text-xs text-muted-foreground/50">{t("landing.tourBanner.hint")}</span>
+              </div>
+            </div>
+            <div className="flex justify-center gap-2 sm:gap-3">
+              {tourPreviewSlides.map((src, i) => (
+                <motion.button
+                  key={i}
+                  onClick={() => navigate("/tour")}
+                  className="relative rounded-lg overflow-hidden border border-amber-500/20 hover:border-amber-500/50 shadow-md hover:shadow-lg transition-all group cursor-pointer flex-shrink-0"
+                  style={{ width: i === 1 ? "180px" : "120px", height: i === 1 ? "110px" : "80px" }}
+                  whileHover={{ scale: 1.05, y: -3 }}
+                  data-testid={`tour-preview-${i}`}
+                >
+                  <img src={src} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/50 to-transparent group-hover:from-background/20 transition-all" />
+                  {i === 1 && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-full bg-amber-600/90 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                        <Play className="w-4 h-4 text-white ml-0.5" />
+                      </div>
+                    </div>
+                  )}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -357,84 +411,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Tour Banner */}
-      <section className="py-16 sm:py-24 bg-gradient-to-br from-amber-900/15 via-amber-800/8 to-orange-900/12 border-y border-amber-700/25 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-amber-500/10 blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-orange-500/8 blur-3xl" />
-        </div>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={0}
-            variants={fadeUp}
-            className="text-center space-y-6 mb-10"
-          >
-            <div className="inline-flex items-center gap-2 bg-amber-500/20 text-amber-500 rounded-full px-5 py-2 text-sm font-bold uppercase tracking-widest animate-pulse">
-              <Presentation className="w-4 h-4" />
-              {t("landing.tourBanner.badge")}
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-black text-primary leading-tight">
-              {t("landing.tourBanner.title")}
-            </h2>
-            <p className="text-muted-foreground text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
-              {t("landing.tourBanner.desc")}
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={1}
-            variants={fadeUp}
-            className="flex justify-center gap-3 sm:gap-4 mb-10 overflow-hidden"
-          >
-            {tourPreviewSlides.map((src, i) => (
-              <motion.button
-                key={i}
-                onClick={() => navigate("/tour")}
-                className="relative rounded-xl overflow-hidden border-2 border-amber-500/20 hover:border-amber-500/60 shadow-lg hover:shadow-xl hover:shadow-amber-900/20 transition-all duration-300 group cursor-pointer flex-shrink-0"
-                style={{ width: i === 1 ? "220px" : "160px", height: i === 1 ? "140px" : "100px" }}
-                whileHover={{ scale: 1.05, y: -4 }}
-                data-testid={`tour-preview-${i}`}
-              >
-                <img src={src} alt="" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent group-hover:from-background/30 transition-all" />
-                {i === 1 && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-amber-600/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                      <Play className="w-5 h-5 text-white ml-0.5" />
-                    </div>
-                  </div>
-                )}
-              </motion.button>
-            ))}
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={2}
-            variants={fadeUp}
-            className="flex flex-col items-center gap-4"
-          >
-            <Button
-              size="lg"
-              onClick={() => navigate("/tour")}
-              className="font-serif text-lg gap-3 px-10 py-7 bg-amber-600 hover:bg-amber-700 text-white shadow-xl shadow-amber-900/25 hover:shadow-2xl hover:shadow-amber-900/30 transition-all"
-              data-testid="landing-tour-cta"
-            >
-              <Play className="w-5 h-5" />
-              {t("landing.tourBanner.cta")}
-            </Button>
-            <p className="text-sm text-muted-foreground/60">{t("landing.tourBanner.hint")}</p>
-          </motion.div>
-        </div>
-      </section>
 
       {/* Origin Story */}
       <section className="py-20 sm:py-28" id="story">
@@ -565,13 +541,8 @@ export default function Landing() {
               <span className="font-serif font-bold text-primary">CaskSense</span>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-sm text-muted-foreground">
-              <button onClick={() => navigate("/about")} className="hover:text-primary transition-colors">{t("landing.footer.about")}</button>
-              <button onClick={() => navigate("/tour")} className="hover:text-primary transition-colors">{t("landing.footer.featureTour")}</button>
-              <button onClick={() => navigate("/background")} className="hover:text-primary transition-colors">{t("background.title")}</button>
-              <button onClick={() => navigate("/features")} className="hover:text-primary transition-colors">{t("landing.footer.features")}</button>
-              <button onClick={() => navigate("/app")} className="hover:text-primary transition-colors">{t("landing.footer.app")}</button>
-              <a href="mailto:christoph.aldering@googlemail.com" className="hover:text-primary transition-colors" data-testid="link-footer-contact">{t("landing.footer.contact")}</a>
               <button onClick={() => navigate("/impressum")} className="hover:text-primary transition-colors" data-testid="link-footer-impressum">{t("legal.impressum.title")}</button>
+              <a href="mailto:christoph.aldering@googlemail.com" className="hover:text-primary transition-colors" data-testid="link-footer-contact">{t("landing.footer.contact")}</a>
               <button onClick={() => navigate("/privacy")} className="hover:text-primary transition-colors" data-testid="link-footer-privacy">{t("legal.privacy.title")}</button>
             </div>
           </div>
