@@ -417,14 +417,20 @@ export default function Landing() {
               <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
                 {t("landing.story.p2")}
               </p>
+              <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
+                {t("landing.story.p3")}
+              </p>
               <blockquote className="border-l-3 border-amber-500/60 pl-5 py-2 my-6">
                 <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
                   {t("landing.story.quote1")}
                 </p>
+                <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
+                  {t("landing.story.quote1b")}
+                </p>
+                <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
+                  {t("landing.story.quote1c")}
+                </p>
               </blockquote>
-              <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
-                {t("landing.story.p3")}
-              </p>
               <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
                 {t("landing.story.p4")}
               </p>
@@ -432,12 +438,12 @@ export default function Landing() {
                 <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
                   {t("landing.story.quote2")}
                 </p>
+                <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
+                  {t("landing.story.quote2b")}
+                </p>
               </blockquote>
               <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
                 {t("landing.story.p5")}
-              </p>
-              <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
-                {t("landing.story.p6")}
               </p>
             </motion.div>
           </div>
@@ -448,18 +454,16 @@ export default function Landing() {
             viewport={{ once: true }}
             custom={2}
             variants={fadeUp}
-            className="text-center space-y-8"
+            className="text-center space-y-4 pt-6"
           >
             <p className="text-muted-foreground text-base lg:text-lg">
-              {t("landing.story.p7")}
+              {t("landing.story.p6")}
             </p>
-            <div className="flex flex-col items-center gap-3 py-6">
-              <span className="text-2xl sm:text-3xl font-serif font-black text-primary">{t("landing.story.joy1")}</span>
-              <span className="text-2xl sm:text-3xl font-serif font-black text-amber-500">{t("landing.story.joy2")}</span>
-              <span className="text-2xl sm:text-3xl font-serif font-black text-orange-500">{t("landing.story.joy3")}</span>
-            </div>
-            <p className="text-muted-foreground/70 text-sm sm:text-base italic max-w-lg mx-auto">
-              {t("landing.story.closing")}
+            <p className="text-2xl sm:text-3xl font-serif font-black text-primary">
+              {t("landing.story.closingLine1")}
+            </p>
+            <p className="text-muted-foreground/70 text-base sm:text-lg italic max-w-lg mx-auto pt-4">
+              {t("landing.story.closingLine2")}
             </p>
           </motion.div>
         </div>
