@@ -297,6 +297,16 @@ export const platformStatsApi = {
   get: () => fetchJSON(`/platform-stats`),
 };
 
+export const platformAnalyticsApi = {
+  get: (requesterId: string) => fetchJSON(`/platform-analytics?requesterId=${requesterId}`),
+  getAiAnalysis: (requesterId: string, analyticsData: any) =>
+    fetchJSON(`/platform-analytics/ai-analysis`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ requesterId, analyticsData }),
+    }),
+};
+
 // ===== Flavor Profile =====
 export const flavorProfileApi = {
   get: (participantId: string) => fetchJSON(`/participants/${participantId}/flavor-profile`),

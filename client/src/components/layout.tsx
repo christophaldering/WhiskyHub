@@ -387,6 +387,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       items: [
         { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
         { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
+        { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
         { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
         { href: "/export-notes", icon: Download, label: t('nav.exportNotes') },
         { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },

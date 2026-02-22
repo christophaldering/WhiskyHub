@@ -7134,5 +7134,289 @@ Important rules:
     }
   });
 
+  // ===== PLATFORM ANALYTICS (measurement quality, predictive validity) =====
+
+  app.get("/api/platform-analytics", async (req, res) => {
+    try {
+      const requesterId = req.query.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+
+      const allTastings = await storage.getAllTastings();
+      const completedTastings = allTastings.filter(t => t.status === "reveal" || t.status === "archived");
+
+      if (completedTastings.length === 0) {
+        return res.json({
+          measurementQuality: { interRaterAgreement: [], raterConsistency: [], distributionAnalysis: null },
+          predictiveValidity: { categoryCorrelations: null, propertyRankings: [], raterClusters: [] },
+          summary: { totalTastings: 0, totalRatings: 0, totalParticipants: 0, totalWhiskies: 0 },
+        });
+      }
+
+      // Gather all ratings from completed tastings
+      const allRatingsNested = await Promise.all(
+        completedTastings.map(async t => {
+          const ratings = await storage.getRatingsForTasting(t.id);
+          const whiskies = await storage.getWhiskiesForTasting(t.id);
+          const scale = t.ratingScale ?? 100;
+          return { tasting: t, ratings, whiskies, scale };
+        })
+      );
+
+      const allRatings = allRatingsNested.flatMap(t =>
+        t.ratings.map(r => ({ ...r, scale: t.scale }))
+      );
+      const allWhiskies = allRatingsNested.flatMap(t => t.whiskies);
+      const whiskyMap = new Map(allWhiskies.map(w => [w.id, w]));
+      const participantIds = Array.from(new Set(allRatings.map(r => r.participantId)));
+
+      // --- 1. MEASUREMENT QUALITY ---
+
+      // 1a. Inter-Rater Agreement per tasting (Kendall's W approximation via score variance)
+      const interRaterAgreement = allRatingsNested.map(({ tasting, ratings, whiskies, scale }) => {
+        if (ratings.length < 2 || whiskies.length < 2) {
+          return { tastingId: tasting.id, title: tasting.title, date: tasting.date, agreement: null, raterCount: new Set(ratings.map(r => r.participantId)).size, whiskyCount: whiskies.length };
+        }
+        const raters = Array.from(new Set(ratings.map(r => r.participantId)));
+        const norm = 100 / scale;
+        // Build rank matrix: for each rater, rank whiskies by overall score
+        const raterRankings: number[][] = [];
+        for (const raterId of raters) {
+          const raterRatings = ratings.filter(r => r.participantId === raterId);
+          if (raterRatings.length < 2) continue;
+          const sorted = [...raterRatings].sort((a, b) => b.overall - a.overall);
+          const rankMap = new Map<string, number>();
+          sorted.forEach((r, i) => rankMap.set(r.whiskyId, i + 1));
+          const ranks = whiskies.map(w => rankMap.get(w.id) ?? (whiskies.length / 2));
+          raterRankings.push(ranks);
+        }
+        if (raterRankings.length < 2) {
+          return { tastingId: tasting.id, title: tasting.title, date: tasting.date, agreement: null, raterCount: raters.length, whiskyCount: whiskies.length };
+        }
+        const k = raterRankings.length; // number of raters
+        const n = whiskies.length; // number of items
+        // Kendall's W = 12 * S / (k^2 * (n^3 - n))
+        const sumRanks = whiskies.map((_, j) => raterRankings.reduce((s, ranks) => s + ranks[j], 0));
+        const meanRank = sumRanks.reduce((a, b) => a + b, 0) / n;
+        const S = sumRanks.reduce((acc, sr) => acc + Math.pow(sr - meanRank, 2), 0);
+        const W = (12 * S) / (k * k * (n * n * n - n));
+        return {
+          tastingId: tasting.id, title: tasting.title, date: tasting.date,
+          agreement: Math.round(Math.min(1, Math.max(0, W)) * 1000) / 1000,
+          raterCount: k, whiskyCount: n,
+        };
+      });
+
+      // 1b. Rater Consistency: per participant, std dev of their normalized overall scores
+      const raterConsistency = participantIds.map(pid => {
+        const pRatings = allRatings.filter(r => r.participantId === pid);
+        if (pRatings.length < 2) return { participantId: pid, consistency: null, ratingCount: pRatings.length, avgScore: null, bias: null };
+        const normScores = pRatings.map(r => r.overall * (100 / r.scale));
+        const avg = normScores.reduce((a, b) => a + b, 0) / normScores.length;
+        const stdDev = Math.sqrt(normScores.reduce((acc, v) => acc + Math.pow(v - avg, 2), 0) / normScores.length);
+        const globalAvg = allRatings.reduce((a, r) => a + r.overall * (100 / r.scale), 0) / allRatings.length;
+        return {
+          participantId: pid,
+          consistency: Math.round(stdDev * 10) / 10,
+          ratingCount: pRatings.length,
+          avgScore: Math.round(avg * 10) / 10,
+          bias: Math.round((avg - globalAvg) * 10) / 10,
+        };
+      });
+
+      // Get participant names
+      const allParticipants = await storage.getAllParticipants();
+      const participantMap = new Map(allParticipants.map(p => [p.id, p.name]));
+      const raterConsistencyWithNames = raterConsistency.map(rc => ({
+        ...rc,
+        name: participantMap.get(rc.participantId) ?? "Unknown",
+      }));
+
+      // 1c. Distribution Analysis: histogram of normalized overall scores
+      const normalizedOveralls = allRatings.map(r => r.overall * (100 / r.scale));
+      const bucketSize = 5;
+      const histogram: { range: string; count: number }[] = [];
+      for (let i = 0; i < 100; i += bucketSize) {
+        const upper = i + bucketSize;
+        const count = normalizedOveralls.filter(s => s >= i && (upper >= 100 ? s <= upper : s < upper)).length;
+        histogram.push({ range: `${i}-${upper}`, count });
+      }
+      const distMean = normalizedOveralls.reduce((a, b) => a + b, 0) / normalizedOveralls.length;
+      const distStdDev = Math.sqrt(normalizedOveralls.reduce((acc, v) => acc + Math.pow(v - distMean, 2), 0) / normalizedOveralls.length);
+      const sortedOveralls = [...normalizedOveralls].sort((a, b) => a - b);
+      const distMedian = sortedOveralls.length % 2 === 0
+        ? (sortedOveralls[sortedOveralls.length / 2 - 1] + sortedOveralls[sortedOveralls.length / 2]) / 2
+        : sortedOveralls[Math.floor(sortedOveralls.length / 2)];
+      const skewness = normalizedOveralls.length > 2 && distStdDev > 0
+        ? (normalizedOveralls.reduce((acc, v) => acc + Math.pow((v - distMean) / distStdDev, 3), 0) / normalizedOveralls.length)
+        : 0;
+
+      const distributionAnalysis = {
+        histogram,
+        mean: Math.round(distMean * 10) / 10,
+        median: Math.round(distMedian * 10) / 10,
+        stdDev: Math.round(distStdDev * 10) / 10,
+        skewness: Math.round(skewness * 100) / 100,
+        totalRatings: normalizedOveralls.length,
+      };
+
+      // --- 2. PREDICTIVE VALIDITY ---
+
+      // 2a. Category Correlations: Pearson correlation between sub-scores and overall
+      const corrData = allRatings.map(r => {
+        const norm = 100 / r.scale;
+        return { nose: r.nose * norm, taste: r.taste * norm, finish: r.finish * norm, balance: r.balance * norm, overall: r.overall * norm };
+      });
+      const pearson = (xs: number[], ys: number[]): number => {
+        const n = xs.length;
+        if (n < 3) return 0;
+        const mx = xs.reduce((a, b) => a + b, 0) / n;
+        const my = ys.reduce((a, b) => a + b, 0) / n;
+        let num = 0, dx2 = 0, dy2 = 0;
+        for (let i = 0; i < n; i++) {
+          const dx = xs[i] - mx, dy = ys[i] - my;
+          num += dx * dy; dx2 += dx * dx; dy2 += dy * dy;
+        }
+        const denom = Math.sqrt(dx2 * dy2);
+        return denom === 0 ? 0 : num / denom;
+      };
+      const overalls = corrData.map(d => d.overall);
+      const categoryCorrelations = {
+        nose: Math.round(pearson(corrData.map(d => d.nose), overalls) * 1000) / 1000,
+        taste: Math.round(pearson(corrData.map(d => d.taste), overalls) * 1000) / 1000,
+        finish: Math.round(pearson(corrData.map(d => d.finish), overalls) * 1000) / 1000,
+        balance: Math.round(pearson(corrData.map(d => d.balance), overalls) * 1000) / 1000,
+      };
+
+      // 2b. Property Rankings: average score by whisky properties
+      const propGroups: { property: string; values: { value: string; avgScore: number; count: number }[] }[] = [];
+      for (const prop of ["region", "category", "caskInfluence", "peatLevel", "ageBand"] as const) {
+        const acc: Record<string, { total: number; count: number }> = {};
+        for (const r of allRatings) {
+          const w = whiskyMap.get(r.whiskyId);
+          if (!w) continue;
+          const val = w[prop];
+          if (!val) continue;
+          if (!acc[val]) acc[val] = { total: 0, count: 0 };
+          acc[val].total += r.overall * (100 / r.scale);
+          acc[val].count++;
+        }
+        const values = Object.entries(acc)
+          .map(([value, { total, count }]) => ({ value, avgScore: Math.round((total / count) * 10) / 10, count }))
+          .sort((a, b) => b.avgScore - a.avgScore);
+        if (values.length > 0) {
+          propGroups.push({ property: prop, values });
+        }
+      }
+
+      // 2c. Rater Clustering: k-means-like grouping based on flavor preferences
+      const raterProfiles = participantIds.map(pid => {
+        const pRatings = allRatings.filter(r => r.participantId === pid);
+        if (pRatings.length < 3) return null;
+        const norm = (r: typeof pRatings[0]) => 100 / r.scale;
+        const avgNose = pRatings.reduce((a, r) => a + r.nose * norm(r), 0) / pRatings.length;
+        const avgTaste = pRatings.reduce((a, r) => a + r.taste * norm(r), 0) / pRatings.length;
+        const avgFinish = pRatings.reduce((a, r) => a + r.finish * norm(r), 0) / pRatings.length;
+        const avgBalance = pRatings.reduce((a, r) => a + r.balance * norm(r), 0) / pRatings.length;
+        return { participantId: pid, name: participantMap.get(pid) ?? "Unknown", nose: avgNose, taste: avgTaste, finish: avgFinish, balance: avgBalance, ratingCount: pRatings.length };
+      }).filter(Boolean);
+
+      // Simple clustering: classify by dominant dimension
+      const raterClusters = (raterProfiles as NonNullable<typeof raterProfiles[0]>[]).map(rp => {
+        const dims = [
+          { dim: "nose", val: rp.nose },
+          { dim: "taste", val: rp.taste },
+          { dim: "finish", val: rp.finish },
+          { dim: "balance", val: rp.balance },
+        ];
+        const dominant = dims.sort((a, b) => b.val - a.val)[0];
+        return { ...rp, dominantDimension: dominant.dim, nose: Math.round(rp.nose * 10) / 10, taste: Math.round(rp.taste * 10) / 10, finish: Math.round(rp.finish * 10) / 10, balance: Math.round(rp.balance * 10) / 10 };
+      });
+
+      // --- SUMMARY ---
+      const summary = {
+        totalTastings: completedTastings.length,
+        totalRatings: allRatings.length,
+        totalParticipants: participantIds.length,
+        totalWhiskies: new Set(allRatings.map(r => r.whiskyId)).size,
+      };
+
+      res.json({
+        measurementQuality: {
+          interRaterAgreement,
+          raterConsistency: raterConsistencyWithNames,
+          distributionAnalysis,
+        },
+        predictiveValidity: {
+          categoryCorrelations,
+          propertyRankings: propGroups,
+          raterClusters,
+        },
+        summary,
+      });
+    } catch (e: any) {
+      console.error("Platform analytics error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // AI-powered analytics analysis
+  app.post("/api/platform-analytics/ai-analysis", async (req, res) => {
+    try {
+      const { requesterId, analyticsData } = req.body;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+
+      if (isAIDisabled("newsletter")) {
+        return res.status(403).json({ message: "AI features are disabled" });
+      }
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+      });
+
+      const participant = await storage.getParticipant(requesterId);
+      const lang = participant?.language === "de" ? "de" : "en";
+
+      const systemPrompt = lang === "de"
+        ? `Du bist ein Whisky-Tasting-Analytiker und Statistik-Experte. Analysiere die folgenden Bewertungsdaten und liefere wertvolle Erkenntnisse. Antworte auf Deutsch. Strukturiere deine Antwort in klar benannte Abschnitte mit Markdown-Überschriften (##). Sei prägnant aber tiefgründig. Verwende Whisky-Fachbegriffe. Maximal 500 Wörter.`
+        : `You are a whisky tasting analyst and statistics expert. Analyze the following rating data and provide valuable insights. Respond in English. Structure your response with clear Markdown headings (##). Be concise but insightful. Use whisky terminology. Maximum 500 words.`;
+
+      const userPrompt = JSON.stringify({
+        summary: analyticsData.summary,
+        measurementQuality: {
+          interRaterAgreement: analyticsData.measurementQuality?.interRaterAgreement?.slice(0, 10),
+          distributionAnalysis: analyticsData.measurementQuality?.distributionAnalysis,
+          avgConsistency: analyticsData.measurementQuality?.raterConsistency?.length > 0
+            ? Math.round(analyticsData.measurementQuality.raterConsistency
+                .filter((r: any) => r.consistency !== null)
+                .reduce((a: number, r: any) => a + r.consistency, 0) / analyticsData.measurementQuality.raterConsistency.filter((r: any) => r.consistency !== null).length * 10) / 10
+            : null,
+        },
+        predictiveValidity: {
+          categoryCorrelations: analyticsData.predictiveValidity?.categoryCorrelations,
+          topProperties: analyticsData.predictiveValidity?.propertyRankings?.map((p: any) => ({
+            property: p.property,
+            top3: p.values.slice(0, 3),
+          })),
+        },
+      });
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        max_tokens: 1200,
+        temperature: 0.7,
+      });
+
+      const analysis = completion.choices[0]?.message?.content || "";
+      res.json({ analysis });
+    } catch (e: any) {
+      console.error("AI analytics error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }
