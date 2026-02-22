@@ -1362,6 +1362,8 @@ export async function registerRoutes(
     const participantIds = [...new Set(allRatings.map(r => r.participantId))];
     const participantCount = participantIds.length;
 
+    const validRequesterId = requesterId && participantIds.includes(requesterId) ? requesterId : null;
+
     const whiskyAnalytics = whiskyList.map(w => {
       const wr = allRatings.filter(r => r.whiskyId === w.id);
       const count = wr.length;
@@ -1384,8 +1386,8 @@ export async function registerRoutes(
       };
 
       let myRating = null;
-      if (requesterId) {
-        const mine = wr.find(r => r.participantId === requesterId);
+      if (validRequesterId) {
+        const mine = wr.find(r => r.participantId === validRequesterId);
         if (mine) {
           myRating = {
             nose: norm(mine.nose),
@@ -1503,6 +1505,9 @@ export async function registerRoutes(
       return n % 2 === 0 ? (s[n / 2 - 1] + s[n / 2]) / 2 : s[Math.floor(n / 2)];
     };
 
+    const participantIdsInTasting = [...new Set(allRatings.map(r => r.participantId))];
+    const validRequesterId = requesterId && participantIdsInTasting.includes(requesterId) ? requesterId : null;
+
     const ExcelJS = (await import("exceljs")).default;
     const workbook = new ExcelJS.Workbook();
     workbook.creator = "CaskSense";
@@ -1553,7 +1558,7 @@ export async function registerRoutes(
 
     summarySheet.getRow(1).font = { bold: true };
 
-    if (requesterId) {
+    if (validRequesterId) {
       const mySheet = workbook.addWorksheet("My Ratings");
       mySheet.columns = [
         { header: "Whisky", key: "name", width: 30 },
@@ -1567,7 +1572,7 @@ export async function registerRoutes(
       ];
 
       for (const w of whiskyList) {
-        const mine = allRatings.find(r => r.whiskyId === w.id && r.participantId === requesterId);
+        const mine = allRatings.find(r => r.whiskyId === w.id && r.participantId === validRequesterId);
         const wr = allRatings.filter(r => r.whiskyId === w.id);
         const groupMedian = calcMedian(wr.map(r => norm(r.overall)));
         if (mine) {
