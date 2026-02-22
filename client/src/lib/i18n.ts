@@ -397,6 +397,7 @@ const resources = {
         back: "Back"
       },
       session: {
+        viewResults: "View Results",
         status: {
           draft: "Draft",
           open: "Open for Evaluation",
@@ -2360,6 +2361,7 @@ const resources = {
         back: "Zurück"
       },
       session: {
+        viewResults: "Ergebnisse anzeigen",
         status: {
           draft: "Entwurf",
           open: "Offen zur Bewertung",

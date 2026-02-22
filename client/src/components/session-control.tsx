@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "react-i18next";
-import { Play, Lock, Eye, Archive, ChevronRight, Glasses, Trash2, AlertTriangle, Settings2 } from "lucide-react";
+import { Play, Lock, Eye, Archive, ChevronRight, Glasses, Trash2, AlertTriangle, Settings2, Trophy } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { tastingApi, blindModeApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -92,7 +92,7 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
       if (currentAct === "act1") updateStatus.mutate({ status: "reveal", currentAct: "act2" });
       else if (currentAct === "act2") updateStatus.mutate({ status: "reveal", currentAct: "act3" });
       else if (currentAct === "act3") updateStatus.mutate({ status: "reveal", currentAct: "act4" });
-      else updateStatus.mutate({ status: "archived" });
+      else if (currentAct === "act4") handleArchive();
     }
   };
 
@@ -111,12 +111,15 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
     setConfirmName("");
   };
 
+  const isLastAct = tasting.status === "reveal" && tasting.currentAct === "act4";
+
   const getButtonConfig = () => {
     const status = tasting.status;
     if (status === "draft") return { label: t('session.actions.start'), icon: Play };
     if (status === "open") return { label: t('session.actions.close'), icon: Lock };
     if (status === "closed") return { label: t('session.actions.reveal'), icon: Eye };
-    if (status === "reveal") return { label: t('session.actions.nextAct'), icon: ChevronRight };
+    if (status === "reveal" && !isLastAct) return { label: t('session.actions.nextAct'), icon: ChevronRight };
+    if (status === "reveal" && isLastAct) return { label: t('session.actions.archive'), icon: Archive };
     return { label: t('session.actions.archive'), icon: Archive };
   };
 
@@ -315,16 +318,27 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
               <div className="w-2 h-2 rounded-full bg-muted-foreground shrink-0" />
               <span className="text-xs font-serif font-bold text-primary truncate">{t(`session.status.${tasting.status}`)}</span>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => canDelete ? setShowDeleteDialog(true) : undefined}
-              className="shrink-0 h-8 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
-              data-testid="button-delete-session"
-            >
-              <Trash2 className="w-3.5 h-3.5 mr-1" />
-              {t('session.actions.deleteSession')}
-            </Button>
+            <div className="flex items-center gap-1.5">
+              <Button
+                size="sm"
+                onClick={() => navigate(`/recap/${tasting.id}`)}
+                className="shrink-0 h-8 text-xs bg-primary text-primary-foreground"
+                data-testid="button-view-results"
+              >
+                <Trophy className="w-3.5 h-3.5 mr-1" />
+                {t("session.viewResults")}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => canDelete ? setShowDeleteDialog(true) : undefined}
+                className="shrink-0 h-8 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
+                data-testid="button-delete-session"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1" />
+                {t('session.actions.deleteSession')}
+              </Button>
+            </div>
           </div>
         </div>
         <SoftDeleteDialog />

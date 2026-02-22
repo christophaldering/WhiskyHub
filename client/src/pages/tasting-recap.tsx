@@ -6,9 +6,10 @@ import { recapApi, tastingApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, ChevronDown } from "lucide-react";
+import { Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, ChevronDown, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
 
 interface RecapData {
   tasting: { id: string; title: string; date: string; location: string; status: string };
@@ -97,6 +98,139 @@ export default function TastingRecap() {
   };
 
   const handlePrint = () => window.print();
+
+  const handlePdfDownload = () => {
+    if (!recap) return;
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pw = doc.internal.pageSize.getWidth();
+    const margin = 18;
+    const cw = pw - margin * 2;
+    let y = 20;
+    const gold: [number, number, number] = [200, 168, 100];
+    const dark: [number, number, number] = [30, 30, 32];
+    const muted: [number, number, number] = [120, 120, 125];
+    const white: [number, number, number] = [255, 255, 255];
+    const bg: [number, number, number] = [245, 243, 240];
+
+    const addPage = () => { doc.addPage(); y = 20; };
+    const checkSpace = (need: number) => { if (y + need > 275) addPage(); };
+
+    doc.setFillColor(...bg);
+    doc.rect(0, 0, pw, doc.internal.pageSize.getHeight(), "F");
+
+    doc.setFontSize(22);
+    doc.setTextColor(...dark);
+    doc.text(recap.tasting.title, pw / 2, y, { align: "center" });
+    y += 10;
+
+    doc.setFontSize(9);
+    doc.setTextColor(...muted);
+    const meta: string[] = [];
+    if (recap.tasting.date) meta.push(formatDate(recap.tasting.date));
+    if (recap.tasting.location) meta.push(recap.tasting.location);
+    meta.push(`${t("recap.host")}: ${recap.hostName}`);
+    meta.push(`${recap.participantCount} ${t("recap.participants")}`);
+    meta.push(`${recap.whiskyCount} ${t("recap.whiskies")}`);
+    doc.text(meta.join("  ·  "), pw / 2, y, { align: "center" });
+    y += 12;
+
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pw - margin, y);
+    y += 10;
+
+    if (recap.topRated.length > 0) {
+      doc.setFontSize(14);
+      doc.setTextColor(...dark);
+      doc.text(`🏆 ${t("recap.topRated")}`, margin, y);
+      y += 8;
+
+      recap.topRated.slice(0, 5).forEach((w, i) => {
+        checkSpace(10);
+        const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
+        doc.setFontSize(11);
+        doc.setTextColor(...dark);
+        doc.text(`${medal}  ${w.name}`, margin + 4, y);
+        doc.setFontSize(11);
+        doc.setTextColor(...gold);
+        doc.text(w.avgScore.toFixed(1), pw - margin, y, { align: "right" });
+        if (w.distillery) {
+          y += 4.5;
+          doc.setFontSize(8);
+          doc.setTextColor(...muted);
+          doc.text(w.distillery, margin + 12, y);
+        }
+        y += 7;
+      });
+      y += 4;
+    }
+
+    if (recap.mostDivisive) {
+      checkSpace(16);
+      doc.setFontSize(14);
+      doc.setTextColor(...dark);
+      doc.text(`⚡ ${t("recap.mostDivisive")}`, margin, y);
+      y += 7;
+      doc.setFontSize(10);
+      doc.setTextColor(...muted);
+      doc.text(`${recap.mostDivisive.name}  (σ ${recap.mostDivisive.stddev.toFixed(2)})`, margin + 4, y);
+      y += 10;
+    }
+
+    checkSpace(50);
+    doc.setFontSize(14);
+    doc.setTextColor(...dark);
+    doc.text(`📊 ${t("recap.overallAverages")}`, margin, y);
+    y += 8;
+
+    const dims = [
+      { label: t("evaluation.nose"), value: recap.overallAverages.nose },
+      { label: t("evaluation.taste"), value: recap.overallAverages.taste },
+      { label: t("evaluation.finish"), value: recap.overallAverages.finish },
+      { label: t("evaluation.balance"), value: recap.overallAverages.balance },
+      { label: t("evaluation.overall"), value: recap.overallAverages.overall },
+    ];
+    const barMaxW = cw - 40;
+    dims.forEach((d) => {
+      checkSpace(10);
+      doc.setFontSize(9);
+      doc.setTextColor(...muted);
+      doc.text(d.label, margin + 4, y);
+      const bw = (d.value / 100) * barMaxW;
+      doc.setFillColor(...gold);
+      doc.roundedRect(margin + 36, y - 3.5, bw, 4.5, 1, 1, "F");
+      doc.setFontSize(8);
+      doc.setTextColor(...dark);
+      doc.text(d.value.toFixed(1), margin + 38 + bw, y, { align: "left" });
+      y += 7;
+    });
+    y += 6;
+
+    if (recap.participantHighlights.length > 0) {
+      checkSpace(20);
+      doc.setFontSize(14);
+      doc.setTextColor(...dark);
+      doc.text(`⭐ ${t("recap.participantHighlights")}`, margin, y);
+      y += 8;
+
+      recap.participantHighlights.forEach((p) => {
+        checkSpace(8);
+        doc.setFontSize(9);
+        doc.setTextColor(...dark);
+        doc.text(p.name, margin + 4, y);
+        doc.setTextColor(...muted);
+        doc.text(`${p.ratingsCount} ${t("recap.ratings")}  ·  Ø ${p.avgScore.toFixed(1)}`, pw - margin, y, { align: "right" });
+        y += 6;
+      });
+    }
+
+    doc.setFontSize(7);
+    doc.setTextColor(...muted);
+    doc.text("CaskSense", pw / 2, 288, { align: "center" });
+
+    const slug = recap.tasting.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+    doc.save(`casksense-${slug}-recap.pdf`);
+  };
 
   if (!params.id && !selectedTastingId) {
     return (
@@ -210,6 +344,9 @@ export default function TastingRecap() {
                 {t("recap.back")}
               </Button>
             )}
+            <Button variant="outline" size="sm" onClick={handlePdfDownload} data-testid="button-pdf-recap">
+              <FileDown className="w-4 h-4 mr-1" /> PDF
+            </Button>
             <Button variant="outline" size="sm" onClick={handleCopy} data-testid="button-copy-recap">
               <Copy className="w-4 h-4 mr-1" /> {t("recap.copyRecap")}
             </Button>

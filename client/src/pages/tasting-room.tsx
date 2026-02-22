@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3, Clock, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3, Clock, Check, Trophy, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1318,6 +1318,7 @@ function MoreActionsMenu({ tasting, whiskyList, isHost }: { tasting: Tasting; wh
 
 export default function TastingRoom() {
   const { id } = useParams();
+  const [, navigate] = useLocation();
   const { t } = useTranslation();
   const { currentParticipant, setParticipant } = useAppStore();
   const [showLogin, setShowLogin] = useState(false);
@@ -1563,7 +1564,7 @@ export default function TastingRoom() {
   const isRevealPhase = tasting.status === "reveal";
   const shouldAutoPresenter = isRevealPhase && isHost && !presenterExited;
 
-  if ((presenterActive || shouldAutoPresenter) && tasting && whiskyList.length > 0 && isRevealPhase) {
+  if ((presenterActive || shouldAutoPresenter) && tasting && whiskyList.length > 0 && (isRevealPhase || tasting.status === "archived")) {
     return (
       <RevealPresenter
         tasting={tasting}
@@ -1731,7 +1732,7 @@ export default function TastingRoom() {
               </div>
             </div>
             <div className="flex items-center gap-1 mt-1 flex-wrap">
-              {isRevealPhase && (isHost ? presenterExited : true) && (
+              {(isRevealPhase || tasting.status === "archived") && (isHost ? presenterExited : true) && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -1741,6 +1742,18 @@ export default function TastingRoom() {
                 >
                   <Monitor className="w-3.5 h-3.5 mr-1" />
                   {t("presenter.enterPresenter")}
+                </Button>
+              )}
+              {tasting.status === "archived" && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => navigate(`/recap/${tasting.id}`)}
+                  className="font-serif text-xs mr-1"
+                  data-testid="button-view-recap"
+                >
+                  <Trophy className="w-3.5 h-3.5 mr-1" />
+                  {t("session.viewResults")}
                 </Button>
               )}
               {tasting.status === "open" && whiskyList.length > 0 && tasting.guidedMode && (
@@ -1800,7 +1813,7 @@ export default function TastingRoom() {
         </div>
       )}
 
-      {(tasting.status === "open" || tasting.status === "reveal" || tasting.status === "closed") && (
+      {(tasting.status === "open" || tasting.status === "reveal" || tasting.status === "closed" || tasting.status === "archived") && (
         <TastingPhotos tastingId={tasting.id} isHost={isHost} whiskies={whiskyList} />
       )}
 
