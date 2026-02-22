@@ -284,25 +284,43 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
                 <LogOut className="w-3.5 h-3.5" />
               </Button>
             </div>
-            <div className="flex items-center gap-2 px-1">
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold whitespace-nowrap">{t('nav.levelSelector.label')}</span>
-              <select
-                value={currentParticipant.experienceLevel || "enthusiast"}
-                onChange={async (e) => {
-                  const newLevel = e.target.value;
-                  try {
-                    await participantApi.updateExperienceLevel(currentParticipant.id, newLevel);
-                    setParticipant({ ...currentParticipant, experienceLevel: newLevel });
-                  } catch {}
-                }}
-                className="flex-1 text-xs bg-secondary/50 border border-border/40 rounded-md px-2 py-1.5 text-foreground cursor-pointer hover:border-primary/40 transition-colors focus:outline-none focus:ring-1 focus:ring-primary/30"
-                data-testid="select-experience-level"
-              >
-                <option value="guest">{t('nav.levelSelector.guest')}</option>
-                <option value="curious">{t('nav.levelSelector.curious')}</option>
-                <option value="enthusiast">{t('nav.levelSelector.enthusiast')}</option>
-                <option value="scientist">{t('nav.levelSelector.scientist')}</option>
-              </select>
+            <div className="space-y-1 px-1">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t('nav.levelSelector.label')}</span>
+              <div className="grid grid-cols-4 gap-1" data-testid="select-experience-level">
+                {([
+                  { id: "guest", icon: User, color: "text-slate-500", activeBg: "bg-slate-100 border-slate-300" },
+                  { id: "curious", icon: Star, color: "text-amber-500", activeBg: "bg-amber-50 border-amber-300" },
+                  { id: "enthusiast", icon: Sparkles, color: "text-primary", activeBg: "bg-primary/10 border-primary/50" },
+                  { id: "scientist", icon: Brain, color: "text-violet-500", activeBg: "bg-violet-50 border-violet-300" },
+                ] as const).map((lvl) => {
+                  const Icon = lvl.icon;
+                  const isActive = (currentParticipant.experienceLevel || "enthusiast") === lvl.id;
+                  return (
+                    <button
+                      key={lvl.id}
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await participantApi.updateExperienceLevel(currentParticipant.id, lvl.id);
+                          setParticipant({ ...currentParticipant, experienceLevel: lvl.id });
+                        } catch {}
+                      }}
+                      className={`flex flex-col items-center gap-0.5 p-1.5 rounded-md border text-center transition-all ${
+                        isActive
+                          ? `${lvl.activeBg} ring-1 ring-primary/10`
+                          : "border-transparent hover:border-border/40 hover:bg-secondary/30"
+                      }`}
+                      title={t(`nav.levelSelector.${lvl.id}`)}
+                      data-testid={`button-sidebar-level-${lvl.id}`}
+                    >
+                      <Icon className={`w-3.5 h-3.5 ${isActive ? lvl.color : "text-muted-foreground/50"}`} />
+                      <span className={`text-[9px] leading-tight ${isActive ? "font-semibold text-foreground" : "text-muted-foreground/60"}`}>
+                        {t(`nav.levelSelector.${lvl.id}`)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

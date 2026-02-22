@@ -7,7 +7,8 @@ import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
+import { Mail, ArrowLeft, CheckCircle, User, Star, Sparkles, Brain } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface LoginDialogProps {
   open: boolean;
@@ -24,6 +25,14 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const [loading, setLoading] = useState(false);
   const [isReturning, setIsReturning] = useState(true);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
+  const [experienceLevel, setExperienceLevel] = useState("enthusiast");
+
+  const LEVEL_OPTIONS = [
+    { id: "guest", icon: User, color: "text-slate-500", border: "border-slate-300", bg: "bg-slate-50" },
+    { id: "curious", icon: Star, color: "text-amber-500", border: "border-amber-300", bg: "bg-amber-50" },
+    { id: "enthusiast", icon: Sparkles, color: "text-primary", border: "border-primary/50", bg: "bg-primary/5" },
+    { id: "scientist", icon: Brain, color: "text-violet-500", border: "border-violet-300", bg: "bg-violet-50" },
+  ] as const;
 
   const [verifyMode, setVerifyMode] = useState(false);
   const [pendingParticipant, setPendingParticipant] = useState<{ id: string; name: string; role?: string; email?: string } | null>(null);
@@ -83,15 +92,18 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           name.trim(),
           pin,
           email.trim(),
-          newsletterOptIn
+          newsletterOptIn,
+          experienceLevel
         );
 
         if (!participant.emailVerified) {
           setPendingParticipant({ id: participant.id, name: participant.name, role: participant.role, email: participant.email });
+          localStorage.setItem(`casksense_level_chosen_${participant.id}`, "true");
           setVerifyMode(true);
           setVerifyCode("");
           setVerifyError("");
         } else {
+          localStorage.setItem(`casksense_level_chosen_${participant.id}`, "true");
           setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb, experienceLevel: participant.experienceLevel });
           onClose();
         }
@@ -492,6 +504,40 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
               </button>
             )}
           </div>
+
+          {!isReturning && (
+            <div className="space-y-2">
+              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('quickTasting.interestTitle')}</Label>
+              <p className="text-[10px] text-muted-foreground/70">{t('quickTasting.interestSubtitle')}</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {LEVEL_OPTIONS.map((lvl) => {
+                  const Icon = lvl.icon;
+                  const isSelected = experienceLevel === lvl.id;
+                  return (
+                    <button
+                      key={lvl.id}
+                      type="button"
+                      onClick={() => setExperienceLevel(lvl.id)}
+                      className={cn(
+                        "flex items-center gap-2 p-2 rounded-lg border text-left transition-all",
+                        isSelected
+                          ? `${lvl.border} ${lvl.bg} ring-1 ring-primary/20`
+                          : "border-border/40 hover:border-border"
+                      )}
+                      data-testid={`button-reg-level-${lvl.id}`}
+                    >
+                      <Icon className={cn("w-4 h-4 flex-shrink-0", isSelected ? lvl.color : "text-muted-foreground/50")} />
+                      <div className="min-w-0">
+                        <div className={cn("text-[11px] font-serif font-semibold leading-tight", isSelected ? "text-primary" : "text-muted-foreground")}>
+                          {t(`quickTasting.level.${lvl.id}.title`)}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
 
