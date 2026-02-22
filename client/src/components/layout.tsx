@@ -514,21 +514,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ] : []),
       ],
     }] : []),
-    ...((isHost || isAdmin) ? [
-      {
-        label: t('navGroup.host'),
-        items: [
-          { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
-          { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
-          ...((isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
-            { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
-          ] : []),
-          ...(atLeast("analyst") ? [
-            { href: "/benchmark", icon: Brain, label: t('nav.benchmark') },
-          ] : []),
-        ],
-      },
-    ] : []),
+    {
+      label: t('navGroup.host'),
+      items: [
+        { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
+        { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
+        ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
+          { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
+        ] : []),
+        ...(atLeast("analyst") ? [
+          { href: "/benchmark", icon: Brain, label: t('nav.benchmark') },
+        ] : []),
+      ],
+    },
     ...(atLeast("connoisseur") ? [{
       label: t('navGroup.community'),
       items: [
