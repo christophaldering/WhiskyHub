@@ -571,6 +571,8 @@ export default function Landing() {
               <button onClick={() => navigate("/features")} className="hover:text-primary transition-colors">{t("landing.footer.features")}</button>
               <button onClick={() => navigate("/app")} className="hover:text-primary transition-colors">{t("landing.footer.app")}</button>
               <a href="mailto:christoph.aldering@googlemail.com" className="hover:text-primary transition-colors" data-testid="link-footer-contact">{t("landing.footer.contact")}</a>
+              <button onClick={() => navigate("/impressum")} className="hover:text-primary transition-colors" data-testid="link-footer-impressum">{t("legal.impressum.title")}</button>
+              <button onClick={() => navigate("/privacy")} className="hover:text-primary transition-colors" data-testid="link-footer-privacy">{t("legal.privacy.title")}</button>
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-amber-800/10 flex flex-col sm:flex-row items-center justify-between gap-2">

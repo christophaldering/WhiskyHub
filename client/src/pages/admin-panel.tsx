@@ -319,6 +319,7 @@ function NewsletterManagement({ participants, currentParticipantId, t }: {
               {t("admin.newsletterGenerateUpdate")}
             </Button>
           </div>
+          <p className="text-[10px] text-muted-foreground/50" data-testid="text-ai-notice-newsletter">{t("legal.aiNotice")}</p>
 
           <div>
             <label className="text-xs uppercase tracking-widest text-muted-foreground font-medium">{t("admin.newsletterCustomNotes")}</label>

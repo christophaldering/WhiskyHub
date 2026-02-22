@@ -329,6 +329,10 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
           <ThemeToggle />
           <AmbientToggle />
         </div>
+        <div className="flex items-center gap-3 pt-1">
+          <a href="/impressum" className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors" data-testid="link-sidebar-impressum">{t("legal.impressum.title")}</a>
+          <a href="/privacy" className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors" data-testid="link-sidebar-privacy">{t("legal.privacy.title")}</a>
+        </div>
       </div>
     </div>
   );

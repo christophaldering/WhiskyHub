@@ -202,6 +202,7 @@ export default function PhotoTasting() {
           {t("photoTasting.title")}
         </h1>
         <p className="text-muted-foreground mt-2 max-w-2xl">{t("photoTasting.subtitle")}</p>
+        <p className="text-[10px] text-muted-foreground/50 mt-1" data-testid="text-ai-notice-photo">{t("legal.aiNotice")}</p>
         <div className="w-12 h-1 bg-primary/50 mt-3" />
       </motion.div>
 

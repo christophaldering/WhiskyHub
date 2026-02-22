@@ -610,15 +610,19 @@ function EntryForm({
 
         <div className="border-t border-border/30 pt-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider">Whisky</h3>
-            <label
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all ${
-                scanning
-                  ? "bg-primary/20 text-primary"
-                  : "bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground"
-              }`}
-              data-testid="button-scan-bottle"
-            >
+            <div>
+              <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider">Whisky</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground/50 hidden sm:inline" data-testid="text-ai-notice-scan">{t("legal.aiNotice")}</span>
+              <label
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all ${
+                  scanning
+                    ? "bg-primary/20 text-primary"
+                    : "bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid="button-scan-bottle"
+              >
               {scanning ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -672,6 +676,7 @@ function EntryForm({
                 }}
               />
             </label>
+            </div>
           </div>
 
           {scanError && (

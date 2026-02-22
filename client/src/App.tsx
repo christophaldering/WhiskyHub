@@ -55,7 +55,10 @@ import Background from "@/pages/background";
 import News from "@/pages/news";
 import QuickTasting from "@/pages/quick-tasting";
 import Research from "@/pages/research";
+import Impressum from "@/pages/impressum";
+import Privacy from "@/pages/privacy";
 import { BuildFooter } from "@/components/build-footer";
+import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
 
 function Router() {
@@ -67,6 +70,8 @@ function Router() {
         <Route path="/tour" component={Tour} />
         <Route path="/background" component={Background} />
         <Route path="/join/:code" component={QuickTasting} />
+        <Route path="/impressum" component={Impressum} />
+        <Route path="/privacy" component={Privacy} />
         <Route path="/intro" component={Intro} />
         <Route>
           <Layout>
@@ -131,6 +136,7 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
+        <StorageConsent />
         <BuildFooter />
       </TooltipProvider>
     </QueryClientProvider>

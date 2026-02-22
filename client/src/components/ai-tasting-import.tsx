@@ -180,6 +180,7 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
           <DialogDescription className="font-serif text-sm">
             {t("aiImport.description")}
           </DialogDescription>
+          <p className="text-[10px] text-muted-foreground/50 mt-1" data-testid="text-ai-notice-import">{t("legal.aiNotice")}</p>
         </DialogHeader>
 
         <AnimatePresence mode="wait">

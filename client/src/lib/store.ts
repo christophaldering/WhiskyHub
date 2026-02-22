@@ -32,6 +32,8 @@ interface AppState extends AmbientState {
   setPreviewExperienceLevel: (level: string) => void;
   lastSeenLandingVersion: number;
   setLastSeenLandingVersion: (version: number) => void;
+  storageConsentDismissed: boolean;
+  setStorageConsentDismissed: (dismissed: boolean) => void;
   language: string;
   setLanguage: (lang: string) => void;
   theme: Theme;
@@ -62,6 +64,8 @@ export const useAppStore = create<AppState>()(
       setPreviewExperienceLevel: (level) => set({ previewExperienceLevel: level }),
       lastSeenLandingVersion: 0,
       setLastSeenLandingVersion: (version) => set({ lastSeenLandingVersion: version }),
+      storageConsentDismissed: false,
+      setStorageConsentDismissed: (dismissed) => set({ storageConsentDismissed: dismissed }),
       language: "en",
       setLanguage: (lang) => set({ language: lang }),
       ambientPlaying: false,

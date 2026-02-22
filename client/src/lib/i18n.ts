@@ -2324,6 +2324,85 @@ const resources = {
             summary: "Compares Quantitative Descriptive Analysis (QDA), Napping, and RATA methods for assessing Scotch whisky spirit. Demonstrates trade-offs between precision and practicality — informing how platforms like CaskSense balance depth with accessibility."
           }
         }
+      },
+      legal: {
+        back: "Back",
+        impressum: {
+          title: "Legal Notice (Impressum)",
+          responsibleTitle: "Responsible Person",
+          contactTitle: "Contact",
+          disclaimerTitle: "Disclaimer",
+          disclaimerText: "CaskSense is a private, non-commercial hobby project. The content of this website has been compiled with the greatest possible care. However, no guarantee can be given for the accuracy, completeness, or timeliness of the content.",
+          projectNoteTitle: "About this Project",
+          projectNoteText: "CaskSense is a passion project for whisky enthusiasts. It is not a commercial venture and does not generate revenue. No tracking, no advertising, no sale of user data.",
+        },
+        privacy: {
+          title: "Privacy Policy",
+          lastUpdated: "Last updated",
+          lastUpdatedDate: "February 2026",
+          overview: {
+            title: "Overview",
+            text: "CaskSense is a private hobby project operated by Christoph Aldering. We take your privacy seriously and process your data only to the extent necessary for providing our service. This policy explains what data we collect, why, and how you can control it.",
+          },
+          dataCollected: {
+            title: "Data We Collect",
+            text: "• Display name (freely chosen, no real name required)\n• 4-digit PIN (for session authentication)\n• Whisky ratings and tasting notes you submit\n• Journal entries and wishlist items you create\n• Profile information you voluntarily provide (experience level, preferences)\n• Uploaded images (bottle photos, tasting cover images)\n\nWe do not collect email addresses unless you voluntarily provide one for session invitations or newsletter subscription.",
+          },
+          purpose: {
+            title: "Purpose of Data Processing",
+            text: "Your data is used exclusively for:\n• Enabling participation in whisky tasting sessions\n• Calculating aggregated group results and analytics\n• Providing your personal journal and flavor profile\n• Sending session invitations (only with your email, if provided)\n\nWe do not use your data for advertising, tracking, profiling, or sale to third parties.",
+          },
+          localStorage: {
+            title: "Local Storage & Cookies",
+            text: "CaskSense uses your browser's local storage (localStorage) to save your session, preferences (language, theme, experience level), and UI settings. We do not use tracking cookies, analytics tools, or third-party tracking scripts. No data is shared with advertising networks.",
+          },
+          aiProcessing: {
+            title: "AI Processing (OpenAI)",
+            text: "CaskSense offers optional AI-powered features:\n• Bottle identification: When you upload a photo for scanning, the image is sent to OpenAI's API for analysis. The image is processed in real-time and not stored by OpenAI for training.\n• Newsletter generation (admin only): Tasting data summaries may be sent to OpenAI to generate newsletter text.\n• Tasting import: Uploaded spreadsheets or images may be processed via OpenAI for data extraction.\n\nAI features are always optional. You can fully use CaskSense without them. OpenAI's data processing is governed by their API data usage policy, which states that API data is not used for model training.",
+          },
+          email: {
+            title: "Email Communication",
+            text: "If you provide your email address, it may be used to:\n• Send session invitations from a host\n• Send newsletter updates (opt-in only)\n\nYou can remove your email from your profile at any time. We use Nodemailer with Gmail for sending. We do not share your email with third parties.",
+          },
+          thirdParty: {
+            title: "Third-Party Services",
+            text: "• Replit: Hosting and infrastructure (PostgreSQL database, object storage for images)\n• OpenAI: Optional AI features (see above)\n• Google Fonts: Web fonts loaded from Google's servers\n\nNo analytics, advertising, or social media tracking services are used.",
+          },
+          retention: {
+            title: "Data Retention",
+            text: "Your data is stored as long as your account exists. Tasting ratings are retained as part of aggregated group results even after account deletion (in anonymized form). You can delete your account at any time through your profile settings.",
+          },
+          rights: {
+            title: "Your Rights (GDPR)",
+            text: "Under the EU General Data Protection Regulation (GDPR), you have the right to:\n• Access your personal data\n• Correct inaccurate data\n• Delete your account and personal data\n• Export your data in a portable format\n• Object to data processing\n\nTo exercise these rights, contact us at christoph.aldering@googlemail.com or use the built-in features (profile settings, data export).",
+          },
+          deletion: {
+            title: "Account Deletion",
+            text: "You can delete your account through your profile settings. This will:\n• Remove your display name, PIN, and profile information\n• Anonymize your ratings (they remain as part of aggregated group statistics without your identity)\n• Delete your journal entries and wishlist\n\nThis process is irreversible.",
+          },
+          dataExport: {
+            title: "Data Export",
+            text: "You can export all your personal data (ratings, journal entries, profile, wishlist) at any time through the Data Export page in the app. Data is provided in JSON and Excel formats.",
+          },
+          children: {
+            title: "Children",
+            text: "CaskSense is a platform about alcoholic beverages and is intended for users of legal drinking age. We do not knowingly collect data from minors.",
+          },
+          changes: {
+            title: "Changes to This Policy",
+            text: "We may update this privacy policy from time to time. Changes will be noted with an updated date at the top of this page. Continued use of CaskSense after changes constitutes acceptance of the revised policy.",
+          },
+          contact: {
+            title: "Contact",
+            text: "For privacy-related questions or requests, please contact:\n\nChristoph Aldering\nchristoph.aldering@googlemail.com",
+          },
+        },
+        storageConsent: {
+          text: "CaskSense uses local storage for your settings. No tracking cookies.",
+          learnMore: "Privacy Policy",
+          dismiss: "OK",
+        },
+        aiNotice: "Your data is sent to OpenAI for analysis. No data is used for AI training.",
       }
     }
   },
@@ -4643,6 +4722,85 @@ const resources = {
             summary: "Vergleicht Quantitative Deskriptive Analyse (QDA), Napping und RATA-Methoden zur Bewertung von Scotch-Whisky-Spirit. Zeigt Kompromisse zwischen Präzision und Praktikabilität — relevant für Plattformen wie CaskSense."
           }
         }
+      },
+      legal: {
+        back: "Zurück",
+        impressum: {
+          title: "Impressum",
+          responsibleTitle: "Verantwortlich",
+          contactTitle: "Kontakt",
+          disclaimerTitle: "Haftungsausschluss",
+          disclaimerText: "CaskSense ist ein privates, nicht-kommerzielles Hobbyprojekt. Die Inhalte dieser Webseite wurden mit größtmöglicher Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte kann jedoch keine Gewähr übernommen werden.",
+          projectNoteTitle: "Über dieses Projekt",
+          projectNoteText: "CaskSense ist ein Leidenschaftsprojekt für Whisky-Enthusiasten. Es handelt sich nicht um ein kommerzielles Angebot und es werden keine Einnahmen erzielt. Kein Tracking, keine Werbung, kein Verkauf von Nutzerdaten.",
+        },
+        privacy: {
+          title: "Datenschutzerklärung",
+          lastUpdated: "Zuletzt aktualisiert",
+          lastUpdatedDate: "Februar 2026",
+          overview: {
+            title: "Überblick",
+            text: "CaskSense ist ein privates Hobbyprojekt, betrieben von Christoph Aldering. Wir nehmen deinen Datenschutz ernst und verarbeiten deine Daten nur im für den Betrieb notwendigen Umfang. Diese Erklärung informiert darüber, welche Daten wir erfassen, warum und wie du sie kontrollieren kannst.",
+          },
+          dataCollected: {
+            title: "Welche Daten wir erfassen",
+            text: "• Anzeigename (frei wählbar, kein Klarname erforderlich)\n• 4-stellige PIN (zur Sitzungs-Authentifizierung)\n• Whisky-Bewertungen und Verkostungsnotizen\n• Tagebucheinträge und Wunschlisten-Einträge\n• Profilinformationen, die du freiwillig angibst (Erfahrungslevel, Vorlieben)\n• Hochgeladene Bilder (Flaschenfotos, Tasting-Titelbilder)\n\nE-Mail-Adressen werden nur erfasst, wenn du sie freiwillig für Sitzungseinladungen oder den Newsletter angibst.",
+          },
+          purpose: {
+            title: "Zweck der Datenverarbeitung",
+            text: "Deine Daten werden ausschließlich verwendet für:\n• Teilnahme an Whisky-Verkostungen\n• Berechnung aggregierter Gruppenergebnisse und Analysen\n• Bereitstellung deines persönlichen Tagebuchs und Geschmacksprofils\n• Versand von Sitzungseinladungen (nur mit deiner E-Mail, falls angegeben)\n\nWir verwenden deine Daten nicht für Werbung, Tracking, Profiling oder den Verkauf an Dritte.",
+          },
+          localStorage: {
+            title: "Lokaler Speicher & Cookies",
+            text: "CaskSense nutzt den lokalen Speicher (localStorage) deines Browsers, um Sitzungsdaten, Einstellungen (Sprache, Theme, Erfahrungslevel) und UI-Präferenzen zu speichern. Wir verwenden keine Tracking-Cookies, Analyse-Tools oder Tracking-Scripts von Drittanbietern. Es werden keine Daten an Werbenetzwerke weitergegeben.",
+          },
+          aiProcessing: {
+            title: "KI-Verarbeitung (OpenAI)",
+            text: "CaskSense bietet optionale KI-gestützte Funktionen:\n• Flaschenerkennung: Wenn du ein Foto zum Scannen hochlädst, wird das Bild an die OpenAI-API zur Analyse gesendet. Das Bild wird in Echtzeit verarbeitet und nicht von OpenAI für Training gespeichert.\n• Newsletter-Erstellung (nur Admin): Verkostungsdaten-Zusammenfassungen können an OpenAI gesendet werden, um Newsletter-Text zu generieren.\n• Tasting-Import: Hochgeladene Tabellen oder Bilder können über OpenAI zur Datenextraktion verarbeitet werden.\n\nKI-Funktionen sind immer optional. Du kannst CaskSense vollständig ohne sie nutzen. Die Datenverarbeitung von OpenAI unterliegt deren API-Nutzungsrichtlinie, die besagt, dass API-Daten nicht für Modell-Training verwendet werden.",
+          },
+          email: {
+            title: "E-Mail-Kommunikation",
+            text: "Wenn du deine E-Mail-Adresse angibst, kann sie verwendet werden für:\n• Versand von Sitzungseinladungen durch einen Host\n• Versand von Newsletter-Updates (nur mit Opt-in)\n\nDu kannst deine E-Mail jederzeit aus deinem Profil entfernen. Wir verwenden Nodemailer mit Gmail zum Versand. Deine E-Mail wird nicht an Dritte weitergegeben.",
+          },
+          thirdParty: {
+            title: "Drittanbieter-Dienste",
+            text: "• Replit: Hosting und Infrastruktur (PostgreSQL-Datenbank, Objektspeicher für Bilder)\n• OpenAI: Optionale KI-Funktionen (siehe oben)\n• Google Fonts: Web-Schriften, geladen von Google-Servern\n\nEs werden keine Analyse-, Werbe- oder Social-Media-Tracking-Dienste verwendet.",
+          },
+          retention: {
+            title: "Datenspeicherung",
+            text: "Deine Daten werden gespeichert, solange dein Konto besteht. Bewertungen bleiben als Teil aggregierter Gruppenergebnisse auch nach Kontolöschung erhalten (in anonymisierter Form). Du kannst dein Konto jederzeit über die Profileinstellungen löschen.",
+          },
+          rights: {
+            title: "Deine Rechte (DSGVO)",
+            text: "Nach der EU-Datenschutz-Grundverordnung (DSGVO) hast du das Recht auf:\n• Auskunft über deine personenbezogenen Daten\n• Berichtigung unrichtiger Daten\n• Löschung deines Kontos und deiner personenbezogenen Daten\n• Export deiner Daten in einem portablen Format\n• Widerspruch gegen die Datenverarbeitung\n\nUm diese Rechte auszuüben, kontaktiere uns unter christoph.aldering@googlemail.com oder nutze die eingebauten Funktionen (Profileinstellungen, Datenexport).",
+          },
+          deletion: {
+            title: "Kontolöschung",
+            text: "Du kannst dein Konto über die Profileinstellungen löschen. Dabei wird:\n• Dein Anzeigename, PIN und Profilinformationen entfernt\n• Deine Bewertungen anonymisiert (sie bleiben als Teil aggregierter Gruppenstatistiken ohne deine Identität)\n• Deine Tagebucheinträge und Wunschliste gelöscht\n\nDieser Vorgang ist unwiderruflich.",
+          },
+          dataExport: {
+            title: "Datenexport",
+            text: "Du kannst alle deine persönlichen Daten (Bewertungen, Tagebucheinträge, Profil, Wunschliste) jederzeit über die Datenexport-Seite in der App exportieren. Die Daten werden im JSON- und Excel-Format bereitgestellt.",
+          },
+          children: {
+            title: "Minderjährige",
+            text: "CaskSense ist eine Plattform über alkoholische Getränke und richtet sich an Nutzer im gesetzlichen Trinkalter. Wir erheben wissentlich keine Daten von Minderjährigen.",
+          },
+          changes: {
+            title: "Änderungen dieser Erklärung",
+            text: "Wir können diese Datenschutzerklärung von Zeit zu Zeit aktualisieren. Änderungen werden mit einem aktualisierten Datum am Anfang dieser Seite vermerkt. Die weitere Nutzung von CaskSense nach Änderungen gilt als Zustimmung zur überarbeiteten Erklärung.",
+          },
+          contact: {
+            title: "Kontakt",
+            text: "Für datenschutzbezogene Fragen oder Anfragen kontaktiere bitte:\n\nChristoph Aldering\nchristoph.aldering@googlemail.com",
+          },
+        },
+        storageConsent: {
+          text: "CaskSense nutzt lokalen Speicher für deine Einstellungen. Keine Tracking-Cookies.",
+          learnMore: "Datenschutz",
+          dismiss: "OK",
+        },
+        aiNotice: "Deine Daten werden zur Analyse an OpenAI gesendet. Keine Daten werden für KI-Training verwendet.",
       }
     }
   },
