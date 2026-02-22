@@ -1,28 +1,7 @@
 # CaskSense - Whisky Tasting Application
 
 ## Overview
-CaskSense is a web application designed for hosting and participating in collaborative whisky tasting sessions. It enables a host to create tasting events, invite participants, and guide them through a structured whisky evaluation process. Participants rate whiskies across various dimensions, and the host manages the session's progression through distinct stages, including a multi-act reveal phase for presenting results with analytics and charts. The project aims to provide a sophisticated and engaging platform for whisky enthusiasts to share and compare their tasting experiences, offering features from session management to personalized analytics and a comprehensive whisky journal.
-
-## Recent Changes
-- **Versioning System (Feb 2026)**: Established semantic versioning (SemVer) with version 2.0.0. Single source of truth via `shared/version.ts` and `package.json`. Release date tracked in `APP_RELEASE_DATE`. Changelog entries can be tagged with a version. About page shows prominent version card with release date. Build footer displays version. Bump script at `scripts/bump-version.sh [major|minor|patch]` updates both files.
-- **Security: xlsx Replacement (Feb 2026)**: Replaced vulnerable `xlsx@0.18.5` package with `exceljs` for all spreadsheet read/write operations. New utility module `server/excel-utils.ts` wraps exceljs. All import/export endpoints updated to async pattern.
-- **Printable Sheets Enhancement (Feb 2026)**: PDFs now include participant name, profile photo, session code, and date. Separate "Download PDF" and "Print" (browser dialog) buttons. Moved printable sheets into the ⋯ more menu for less prominence. Subtle analog hint on the join page.
-- **Feedback System (Feb 2026)**: Floating feedback button (bottom-right) with category selector (New Feature / Improvement / Problem / Other), free-text message, and auto-populated participant name. Stored in `user_feedback` table. Admin panel has a new "Feedback" tab to review submissions.
-- **Product Tour (Feb 2026)**: New visual product tour at `/tour` with 12 illustrated slides, split-screen layouts, TOC sidebar, keyboard/autoplay navigation, and Framer Motion animations. German-only content. PPTX export via `/api/tour-pptx` using pptxgenjs with embedded illustrations. Old `/feature-tour` still available.
-- **Landing Page (Feb 2026)**: Added a public-facing landing page at `/` with Hero, Features, How It Works, Origin Story, Live Stats, AI Highlight, and CTA sections. The app dashboard moved from `/` to `/app`. All internal navigation updated accordingly. Full EN/DE translations. New `/api/platform-stats` endpoint serves live database counts.
-- **Changelog System (Feb 2026)**: New `changelog_entries` table with 5 categories (feature/improvement/bugfix/security/design). Public `/api/changelog` endpoint (visible entries only) and admin CRUD at `/api/admin/changelog`. 41 historical entries documenting all development since June 2025. News page has collapsible "Plattform-Entwicklung" section with category and time-window filters. Admin panel has "Changelog" tab for managing entries. Newsletter compose area includes checkbox list of recent changelog entries for AI-generated newsletter inclusion.
-- **Guest Mode & Progressive Onboarding (Feb 2026)**: Minimal guest experience for casual tasting participants. Landing page has a prominent quick-join input for tasting codes. New `/join/:code` route with streamlined name-entry → slider-rating → interest-level flow. `experienceLevel` field on participants (guest/curious/enthusiast) controls progressive nav menu visibility. Sidebar shows upgrade banner for non-enthusiast users. Hosts can preview guest view via host dashboard. Invite panel includes guest-mode hint. Full EN/DE translations.
-- **Authentication Security (Feb 2026)**: PIN now mandatory for all users (min 4 digits). All entry points (login, quick-tasting, guest join) enforce PIN. Server auto-migrates existing users without PIN. Data consent notice shown at registration. Account deletion with anonymization (ratings preserved, personal data cleared).
-- **UX Improvements (Feb 2026)**: Tasting calendar with All/Mine/Friends filter. News page with collapsible categories and timestamps. Admin panel shows email indicator for participants. Contact & feedback section on About page. Non-commercial hobby notice and contact info in landing page footer.
-- **Rating Scale Choice (Feb 2026)**: Hosts can choose from 4 rating scales (5/10/20/100 points) when creating or editing a tasting. Default is 100-point scale. All sliders, inputs, and charts adapt dynamically. Cross-tasting aggregations (flavor profile, global averages) normalize to 0-100 for fair comparison. Login dialog defaults to "Sign In" mode. Tasting photos grid supports landscape/portrait orientation toggle. Word (.docx) export for tasting notes.
-- **Platform Analytics (Feb 2026)**: New `/analytics` page with three tabs: Measurement Quality (Kendall's W inter-rater agreement, rater consistency with bias detection, score distribution histogram with mean/median/stddev/skewness), Predictive Validity (Pearson correlations between sub-categories and overall, property rankings by region/cask/peat/age, rater taste profile radar charts), and AI Analysis (GPT-4o powered insights from aggregated data). Located in Tools nav group. Only analyzes completed tastings (reveal/archived).
-- **Tasting Analytics (Feb 2026)**: Privacy-respecting per-tasting analytics visible during reveal/archived phases. Shows aggregated group statistics (median, avg, stddev, IQR), Kendall's W inter-rater agreement, score distributions, and whisky ranking by median. Each participant sees only their own individual ratings alongside group aggregates — no other participant's individual data is ever exposed. Radar charts compare personal ratings vs group average per whisky. Excel download (`/api/tastings/:id/analytics/download`) generates Summary sheet (aggregated) and optional "My Ratings" sheet (requester's own data only). RequesterId validated against tasting participants for privacy.
-- **Background & Methodology Page (Feb 2026)**: New `/background` page with 4 progressive sections: "How a Tasting Works" (guest level), "Your Personal Profile" (curious), "Rating Dimensions" (enthusiast), "Scientific Basis" (scientist). Hash navigation with scroll-into-view. Landing page role cards link to corresponding sections via "Learn more" buttons. Full EN/DE translations.
-- **UI: Sidebar Logout (Feb 2026)**: Moved logout button from hidden bottom of sidebar to inline with "Signed in as" text, always visible as icon button.
-- **Whisky Profile (Feb 2026)**: Dimensional taste profile on the Flavor Profile page (`/flavor-profile`, second tab). API at `GET /api/participants/:id/whisky-profile` computes rating style (mean, stddev, scale range, systematic deviation vs platform median), taste structure (per-dimension normalized averages), whisky-level comparison (user vs platform median with IQR), and confidence indicators (preliminary <5, tendency 5-14, stable ≥15 observations). Supports `source=all|journal` and `compare=none|friends|platform` query params. Whisky comparison is opt-in. No personality typing, no percentiles, no rankings. Methodology page at `/method` with enthusiast and expert sections. Uses median for robustness, normalizes all scales to 0-100. Storage method `getWhiskiesByIds()` for batch whisky lookup.
-- **Smart Rating Improvements (Feb 2026)**: Dynamic step sizing per scale (100pt→integer, 20pt→0.5, smaller→0.1). Auto-calculated overall score as average of sub-scores with manual override capability and visual indicator (auto/manual label with reset button). Simplified rating view for Guest/Curious experience levels: only nose/taste/finish + overall (no balance dimension), computeAvg adapts to 3-dimension average. Applied across all 5 rating components.
-- **Cask Type Helper (Feb 2026)**: New `CaskTypeSelect` component (`client/src/components/cask-type-select.tsx`) with 8 categories (Bourbon, Sherry, Wine, Port, Fortified, Rum/Spirits, Beer/Stout, Other/Special) and ~30 subcategories with flavor hint descriptions in EN/DE. Searchable popover with custom type input fallback. Integrated into tasting-room whisky forms, journal, and wishlist.
-- **AI Bottle Scan Cache (Feb 2026)**: In-memory SHA-256 hash-based cache for AI bottle recognition results. 24-hour TTL, max 500 entries with LRU eviction (timestamp refresh on hit). Applied to both `/api/journal/identify-bottle` and `/api/photo-tasting/identify` endpoints. Cached responses go through full enrichment pipeline on photo-tasting endpoint.
+CaskSense is a web application for hosting and participating in collaborative whisky tasting sessions. It allows hosts to create events, invite participants, and guide them through a structured whisky evaluation. Participants rate whiskies, and the host manages session progression through various stages, including a multi-act reveal phase with analytics and charts. The platform aims to provide an engaging experience for whisky enthusiasts to share, compare, and deepen their understanding of whisky through session management, personalized analytics, and a comprehensive whisky journal. The project envisions becoming the leading platform for structured whisky tasting, fostering a global community and offering sophisticated tools for both casual and expert enthusiasts.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -30,47 +9,39 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Full-Stack Structure
-The application employs a monorepo structure, separating client, server, and shared code, built entirely with TypeScript and ESM modules. A shared `schema.ts` defines Drizzle ORM and Zod validation schemas for consistent data handling.
+The application uses a monorepo structure with client, server, and shared code, all built with TypeScript and ESM modules. A shared `schema.ts` file defines Drizzle ORM and Zod validation schemas for data consistency.
 
 ### Frontend (`client/`)
-The frontend is a React application built with Vite, utilizing Wouter for routing, TanStack React Query for server state, and Zustand for client-side state. The UI uses shadcn/ui (new-york style) based on Radix UI and Tailwind CSS, featuring a custom muted slate blue theme and light mode. Animations are handled by Framer Motion, data visualizations by Recharts, and internationalization via react-i18next (English and German). Fonts are Playfair Display and Inter. PWA support is included for installability and offline access.
+The frontend is a React application built with Vite, using Wouter for routing, TanStack React Query for server state management, and Zustand for client-side state. The UI is developed with shadcn/ui (new-york style) based on Radix UI and Tailwind CSS, featuring a custom muted slate blue theme and light mode. Framer Motion handles animations, Recharts provides data visualizations, and react-i18next is used for internationalization (English and German). Fonts are Playfair Display and Inter. PWA support is included for installability and offline access. UI elements adapt dynamically to chosen rating scales (5/10/20/100 points). Progressive onboarding for different experience levels (guest, curious, enthusiast) guides users through features.
 
 ### Backend (`server/`)
-The backend is an Express 5 HTTP server providing RESTful API endpoints. It serves frontend assets in production and integrates with the Vite dev server for development. Participant identification is client-side.
+The backend is an Express 5 HTTP server that provides RESTful API endpoints. It serves frontend assets in production and integrates with the Vite development server. Participant identification is managed client-side.
 
 ### Database
-PostgreSQL is the primary database, accessed via Drizzle ORM. The schema includes tables for participants, tastings, whiskies, ratings, profiles, journal entries, and other session-related data, using UUIDs for identifiers.
+PostgreSQL is the primary database, accessed via Drizzle ORM. The schema includes tables for participants, tastings, whiskies, ratings, profiles, and journal entries, using UUIDs for identifiers.
 
 ### Key Design Decisions
--   **Lightweight Authentication**: Participant authentication relies on name and a mandatory PIN (min 4 digits) stored client-side. Account deletion anonymizes the name while preserving ratings.
--   **Shared Schema**: A single source of truth for database schema and validation.
--   **Session State Machine**: Tastings progress through defined stages (draft, open, closed, reveal, archived) controlled by the host, with a multi-act reveal stage.
--   **Asynchronous Updates**: React Query polling is used for near real-time updates.
--   **Bulk Import & Photo Uploads**: Hosts can import whisky data from spreadsheets and upload bottle photos, stored in Replit Object Storage.
--   **Whiskybase Integration**: External links to Whiskybase for research and collection import.
--   **Tasting Features**: Includes whisky management, flight board view, PDF export of tasting menus, blind mode, discussion panel, tasting note generator, and cover image banner for sessions (uploadable by host for any tasting type, auto-set from group photo in photo-tastings). Cover images are hidden during blind tastings with host-controlled reveal. Host delegation allows transferring the host role to another participant during a session.
--   **Personalization & Analytics**: Participant profiles, whisky journal, achievement badges, personal flavor profiles (radar charts), whisky recommendations, side-by-side comparisons, and flavor wheel visualization.
--   **Host Tools**: Host briefing notes, tasting curation wizard, calendar view, and dashboard summary.
--   **Communication**: Session invitations via email (Nodemailer) or QR codes, and a friend activity feed. Tasting Reminders via email with configurable timing offsets.
--   **Knowledge Base**: Whisky Lexicon, Distillery Encyclopedia, and Independent Bottlers Encyclopedia.
--   **AI Integration**: AI-powered bottle identification for journal entries (GPT-4o) and AI-powered newsletter content generation.
+-   **Authentication**: Participant authentication uses a name and a mandatory 4-digit PIN. Account deletion anonymizes personal data while preserving ratings.
+-   **Shared Schema**: A single source of truth for database schema and validation ensures consistency across the stack.
+-   **Session State Machine**: Tastings progress through defined stages (draft, open, closed, reveal, archived) with host-controlled advancement and a multi-act reveal stage for results.
+-   **Asynchronous Updates**: React Query polling enables near real-time updates for session data.
+-   **Data Import & Management**: Hosts can import whisky data from spreadsheets and upload bottle photos, stored in Replit Object Storage.
+-   **Tasting Features**: Includes whisky management, flight board view, PDF export of tasting menus, blind mode, discussion panel, tasting note generator, and host-uploadable cover images. Host delegation allows transferring host roles.
+-   **Personalization & Analytics**: Features participant profiles, a whisky journal, achievement badges, personal flavor profiles (radar charts), whisky recommendations, side-by-side comparisons, and a flavor wheel. Privacy-respecting per-tasting analytics are provided, showing aggregated group statistics alongside individual participant data. Platform-wide analytics include measurement quality, predictive validity, and AI analysis.
+-   **Host Tools**: Host briefing notes, a tasting curation wizard, calendar view, and a dashboard summary.
+-   **Communication**: Session invitations via email or QR codes, with a friend activity feed and configurable tasting reminders.
+-   **Knowledge Base**: Includes a Whisky Lexicon, Distillery Encyclopedia, and Independent Bottlers Encyclopedia.
+-   **AI Integration**: AI-powered bottle identification for journal entries and AI-powered newsletter content generation. AI bottle scan results are cached for efficiency.
+-   **Guest Mode**: Offers a streamlined guest experience for quick participation, with progressive navigation menu visibility based on `experienceLevel`.
+-   **Rating System**: Dynamic step sizing for rating sliders and auto-calculated overall scores with manual override. Simplified rating view for Guest/Curious levels.
 
 ## External Dependencies
 
--   **PostgreSQL**: Core relational database.
--   **Google Fonts**: For specified fonts (Playfair Display, Inter).
--   **Nodemailer**: For sending email invitations.
--   **ExcelJS**: For parsing and generating Excel files during bulk whisky import/export.
+-   **PostgreSQL**: Primary database.
+-   **Google Fonts**: For web fonts.
+-   **Nodemailer**: For sending email notifications and invitations.
+-   **ExcelJS**: For reading and writing Excel files.
 -   **qrcode**: For generating QR code invitations.
--   **Replit Object Storage**: For persistent storage of uploaded bottle images.
--   **GPT-4o**: For AI-powered bottle identification.
--   **Capacitor**: For wrapping the PWA as native iOS/Android apps for App Store/Play Store distribution.
-
-## Mobile App (Capacitor)
-
-The project is configured for native mobile app builds via Capacitor:
--   **Config**: `capacitor.config.ts` (App ID: `com.casksense.app`)
--   **Icons**: Generated in `client/public/icons/` (all required sizes from 20x20 to 1024x1024)
--   **Build Guide**: See `MOBILE_APP_GUIDE.md` for step-by-step instructions
--   **Build Command**: `npm run build && npx cap sync` to prepare, then `npx cap open ios/android`
--   **Plugins**: SplashScreen, StatusBar configured with dark theme
+-   **Replit Object Storage**: For storing uploaded images.
+-   **GPT-4o**: For AI-powered features like bottle identification and content generation.
+-   **Capacitor**: For wrapping the PWA as native iOS and Android applications.

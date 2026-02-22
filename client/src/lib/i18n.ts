@@ -103,7 +103,7 @@ const resources = {
           badge: "Whisky. Perception. A bit of structure.",
           title: "Between structure, wonder and palate.",
           subtitle: "A small experiment in perception, enjoyment and AI.",
-          cta: "Start Your First Tasting",
+          cta: "Get Started",
           tourCta: "Take a Tour",
           scrollHint: "Scroll down to explore features & tour",
           learnMore: "Learn More",
@@ -152,21 +152,21 @@ const resources = {
         },
         story: {
           title: "How CaskSense came to be",
-          label: "A personal note",
+          label: "Where psychology meets whisky",
           photoCaption: "Christoph & Sammy — he brings us into the here and now.",
-          p1: "Something has been on my mind these past weeks. A few impulses — from Philipp Depiereux and Niels Van Quaquebeke, among others — sparked my curiosity. I jumped into an AI development tool. No plan. No business case. Just trying things out.",
-          p2: "And after twenty minutes, there's a working prototype. Not perfect, but solid. Logical. Surprisingly good.",
-          quote1: "I describe a problem, think on the meta level, adjust — and the software grows with me. Fast. Very fast.",
-          p3: "What does it mean when code becomes largely generatable? For programming. For knowledge work. For my own professional context?",
-          p4: "Almost more fascinating is another observation: I notice how I thank the AI. And how hard it is for me to push good results further. One more iteration. One more improvement. It's late. I'm tired. And I almost feel guilty about optimising further — even though no one on the other side is getting tired.",
-          quote2: "Productivity and fatigue decouple.",
-          p5: "From this mix of wonder and reflection, a small experiment emerged: CaskSense. Whisky became a welcome occasion to put these impulses into practice. Enjoyment as a playground.",
-          p6: "It was never about a business model. It was about learning. And about the very real question of how processes in my professional work can be made significantly more efficient, more productive — and perhaps qualitatively better — with digital tools and AI. Within legal and ethical boundaries, of course.",
+          p1: "As a psychologist, I've spent years studying how people perceive, judge, and decide. Perception is never objective — it's shaped by expectations, context, memory, and personality. When I started hosting whisky tastings with friends, I realised I was looking at a natural laboratory for exactly these questions.",
+          p2: "How do two people taste the same dram yet describe entirely different worlds? Why does knowing the label change the experience? What does your palate actually tell you about yourself? Research on sensory perception, inter-rater reliability, and individual differences in flavour processing — topics from my professional life — suddenly became very tangible. With a glass in hand.",
+          quote1: "Whisky tasting is applied perception psychology — with better company and a warmer glow.",
+          p3: "When I discovered modern AI development tools, something clicked. I could build the instrument I'd been sketching in my head: a structured tasting platform that captures real perception data, applies psychometric methods, and makes the results visible — not as dry statistics, but as a shared experience.",
+          p4: "CaskSense grew from there. It uses inter-rater agreement (Kendall's W), normalised rating scales, dimensional taste profiles, and blind conditions — methods any empirical researcher would recognise. But wrapped in a warm, social evening with friends and good whisky.",
+          quote2: "The empiricist in me found a playground. The whisky lover found a home.",
+          p5: "What fascinates me most is the intersection: personality research meets sensory science. Studies show that the Big Five personality traits correlate with flavour preferences — and that expertise fundamentally changes how we perceive. CaskSense lets you explore these connections with your own data, your own palate, your own journey.",
+          p6: "This was never about a business model. It's about curiosity — the same curiosity that drives good research. And about the quiet satisfaction of building something that bridges two worlds I care about: understanding people, and enjoying whisky.",
           p7: "But beyond all these considerations, CaskSense is also simply something else:",
-          joy1: "Joy in living.",
+          joy1: "Joy in perception.",
           joy2: "Joy in creating.",
           joy3: "Joy in the dram.",
-          closing: "If you're curious, feel free to take a look. Not as a case study. But as an expression of curiosity.",
+          closing: "If you're curious, feel free to take a look. Not as a case study — but as an invitation to explore what your palate reveals.",
         },
         ai: {
           badge: "AI-powered",
@@ -205,6 +205,7 @@ const resources = {
         roles: {
           title: "Your Pace, Your Experience",
           subtitle: "CaskSense adapts to how deep you want to go. Start simple — unlock more whenever you're ready.",
+          tryView: "Explore this view",
           guest: {
             name: "Just Tasting",
             desc: "Join a session, rate whiskies, see the results. That's it — simple and fun.",
@@ -492,6 +493,7 @@ const resources = {
         communityRankings: "Community Rankings",
         tasteTwins: "Taste Twins",
         news: "News",
+        research: "Research & Science",
         landingPage: "Back to Homepage",
         landingPageConfirm: "Do you really want to leave the app and go back to the homepage?",
       },
@@ -2250,6 +2252,74 @@ const resources = {
         topRated: "Top rated",
         addToTasting: "Add to Tasting",
         added: "Added"
+      },
+      research: {
+        title: "Research & Science",
+        subtitle: "Peer-reviewed studies on the intersection of personality, perception, and whisky.",
+        intro: "CaskSense is built on insights from sensory science, personality psychology, and psychometrics. The studies below explore how personality traits shape flavour preferences, how cognitive biases influence tastings, and how modern methods advance whisky evaluation.",
+        tabPersonality: "Personality & Taste",
+        tabPersonalityShort: "Personality",
+        tabPerception: "Perception & Bias",
+        tabPerceptionShort: "Perception",
+        tabMethods: "Methods & Analysis",
+        tabMethodsShort: "Methods",
+        personalityDesc: "How do the Big Five personality traits influence what we taste — and what we prefer? These studies explore the link between who we are and how we perceive flavour.",
+        perceptionDesc: "Tasting is never purely objective. Order effects, expertise gaps, and neural wiring all shape what we experience in the glass.",
+        methodsDesc: "How do researchers and industry professionals evaluate whisky? These studies compare rapid sensory methods, NLP-based descriptor analysis, and traditional panel approaches.",
+        readStudy: "Read study",
+        disclaimer: "All studies listed are peer-reviewed and publicly accessible. CaskSense is not affiliated with the authors or institutions. Links lead to the original publications.",
+        studies: {
+          flavourBehaviour: {
+            title: "Flavour Behaviour: Big Five Personality & Whisky Preferences",
+            journal: "University of Edinburgh & Scotch Malt Whisky Society (2016)",
+            summary: "A collaboration between Dr. Adam Moore and the Scotch Malt Whisky Society studying 300+ participants across 6 cities. Found that Big Five personality traits correlate with whisky flavour preferences — e.g., open individuals gravitate toward complex, unusual profiles."
+          },
+          personalityWine: {
+            title: "Tasting Through the Lens of the Mind: Personality and Wine Sensory Effects",
+            journal: "MDPI Foods / PMC (2025)",
+            summary: "Examines how Big Five personality traits shape wine perception. Extroverts tend to prefer acidic profiles, while those high in openness favour persistent, complex flavours. Demonstrates that personality is a meaningful predictor of sensory experience."
+          },
+          contextPersonality: {
+            title: "Sensory Acceptability and Personality in Consumption Contexts",
+            journal: "Food Quality and Preference (2020)",
+            summary: "Explores how individual differences — including PROP taste sensitivity and personality traits — affect which drinking contexts people prefer. Shows that sensory acceptability alone does not explain preferences; personality and context interact."
+          },
+          recencyEffect: {
+            title: "In the Real World, People Prefer Their Last Whisky",
+            journal: "PLOS ONE (2018)",
+            summary: "Analysed 136 tastings with 216 whisky types and found a strong recency effect: participants consistently rated the last whisky in a sequence higher. A reminder that tasting order matters — and that CaskSense's blind mode helps counteract such biases."
+          },
+          alcoholSensory: {
+            title: "Alcohol Sensory Processing and Its Relevance for Ingestion",
+            journal: "Advances in Nutrition / PMC (2015)",
+            summary: "A comprehensive review of how taste, olfaction, and chemosensory irritation interact during alcohol perception. Explains why the same whisky can taste different depending on concentration, temperature, and individual sensitivity."
+          },
+          brainConnectivity: {
+            title: "Brain Connectivity Predicts Alcohol Intake Patterns",
+            journal: "Neuropsychopharmacology / Nature (2025)",
+            summary: "An fMRI study of 1,003 adults showing that olfactory and gustatory brain connectivity networks predict alcohol intake patterns. Suggests that flavour perception is deeply embedded in neural architecture — not just learned preference."
+          },
+          expertConsumer: {
+            title: "Flavor Language: Expert Reviews vs Consumer Preferences in Whiskey",
+            journal: "Food Quality and Preference (2023)",
+            summary: "Analyses the gap between expert whiskey descriptors and consumer preferences for expensive American whiskeys. Finds that expert vocabulary often does not align with what consumers actually value — relevant for how we communicate about taste."
+          },
+          rapidMethods: {
+            title: "Quick Insights into Whisky — Rapid Sensory Methods and Chemical Analysis",
+            journal: "Analytical and Bioanalytical Chemistry / PMC (2023)",
+            summary: "Compares RATA (Rate-All-That-Apply) and QDA (Quantitative Descriptive Analysis) methods for whisky evaluation. Finds that rapid methods can deliver reliable sensory profiles with significantly less effort — the principle behind CaskSense's slider-based approach."
+          },
+          whiskyLexicon: {
+            title: "Sensory Descriptor Analysis of Whisky Lexicons via Deep Learning",
+            journal: "MDPI Foods / PMC (2021)",
+            summary: "Uses NLP and deep learning to analyse whisky tasting descriptors at scale. Maps the semantic structure of how experts describe whisky — laying groundwork for automated flavour profiling and recommendation systems."
+          },
+          flavourAssessment: {
+            title: "Three Approaches to Scotch Whisky Flavour Assessment",
+            journal: "Applied Sciences / MDPI (2021)",
+            summary: "Compares Quantitative Descriptive Analysis (QDA), Napping, and RATA methods for assessing Scotch whisky spirit. Demonstrates trade-offs between precision and practicality — informing how platforms like CaskSense balance depth with accessibility."
+          }
+        }
       }
     }
   },
@@ -2348,7 +2418,7 @@ const resources = {
           badge: "Whisky. Wahrnehmung. Ein bisschen Struktur.",
           title: "Zwischen Struktur, Staunen und Gaumen.",
           subtitle: "Ein kleines Experiment in Wahrnehmung, Genuss und KI.",
-          cta: "Erstes Tasting starten",
+          cta: "Loslegen",
           tourCta: "Rundgang starten",
           scrollHint: "Scrolle nach unten für Features & Rundgang",
           learnMore: "Mehr erfahren",
@@ -2397,21 +2467,21 @@ const resources = {
         },
         story: {
           title: "Wie CaskSense entstanden ist",
-          label: "Eine persönliche Notiz",
+          label: "Wo Psychologie auf Whisky trifft",
           photoCaption: "Christoph & Sammy – er holt uns ins Hier und Jetzt.",
-          p1: "In den letzten Wochen hat mich etwas ziemlich beschäftigt. Ein paar Impulse – unter anderem von Philipp Depiereux und Niels Van Quaquebeke – haben meine Neugier geweckt. Ich bin in ein KI-Development-Tool eingestiegen. Ohne Plan. Ohne Business Case. Einfach ausprobieren.",
-          p2: "Und dann steht nach 20 Minuten ein funktionierendes Gerüst da. Nicht perfekt, aber tragfähig. Logisch. Überraschend gut.",
-          quote1: "Ich beschreibe ein Problem, denke auf der Meta-Ebene, justiere – und die Software wächst mit. Schnell. Sehr schnell.",
-          p3: "Was bedeutet es, wenn Code in weiten Teilen generierbar wird? Für Programmierleistung. Für Wissensarbeit. Für meinen eigenen beruflichen Kontext?",
-          p4: "Fast noch spannender finde ich eine andere Beobachtung: Ich merke, wie ich mich bei der KI bedanke. Und wie es mir schwerfällt, gute Ergebnisse noch weiter zu pushen. Noch eine Iteration. Noch eine Verbesserung. Es ist spät. Ich bin müde. Und ich habe fast ein schlechtes Gewissen, weiter zu optimieren – obwohl da kein Mensch müde wird.",
-          quote2: "Produktivität und Ermüdung entkoppeln sich.",
-          p5: "Aus dieser Mischung aus Staunen und Nachdenken ist ein kleines Experiment entstanden: CaskSense. Whisky wurde zum willkommenen Anlass, diese Impulse einmal zu operationalisieren. Genuss als Spielfeld.",
-          p6: "Dabei ging es mir nicht um ein Geschäftsmodell. Sondern um Lernen. Und um die sehr real gewordene Frage, wie sich Prozesse in meinem beruflichen Kontext digital und KI-gestützt deutlich effizienter, produktiver – und vielleicht auch qualitativ besser – gestalten lassen. Natürlich unter Beachtung rechtlicher und ethischer Rahmenbedingungen.",
+          p1: "Als Psychologe beschäftige ich mich seit Jahren damit, wie Menschen wahrnehmen, urteilen und entscheiden. Wahrnehmung ist nie objektiv – sie wird von Erwartungen, Kontext, Erinnerung und Persönlichkeit geformt. Als ich anfing, Whisky-Tastings mit Freunden zu veranstalten, wurde mir klar: Hier schaue ich auf ein natürliches Labor für genau diese Fragen.",
+          p2: "Wie können zwei Menschen denselben Dram verkosten und völlig verschiedene Welten beschreiben? Warum verändert das Wissen um das Etikett das Erlebnis? Was verrät dir dein Gaumen eigentlich über dich selbst? Forschung zu sensorischer Wahrnehmung, Beurteilerübereinstimmung und individuellen Unterschieden in der Geschmacksverarbeitung – Themen aus meinem Berufsleben – wurden plötzlich sehr greifbar. Mit einem Glas in der Hand.",
+          quote1: "Whisky-Tasting ist angewandte Wahrnehmungspsychologie – mit besserer Gesellschaft und einem wärmeren Nachklang.",
+          p3: "Als ich moderne KI-Entwicklungstools entdeckte, machte es klick. Ich konnte das Instrument bauen, das ich im Kopf skizziert hatte: eine strukturierte Tasting-Plattform, die echte Wahrnehmungsdaten erfasst, psychometrische Methoden anwendet und die Ergebnisse sichtbar macht – nicht als trockene Statistik, sondern als gemeinsames Erlebnis.",
+          p4: "CaskSense ist daraus gewachsen. Es nutzt Beurteilerübereinstimmung (Kendalls W), normierte Bewertungsskalen, dimensionale Geschmacksprofile und Blind-Bedingungen – Methoden, die jeder empirische Forscher wiedererkennt. Aber verpackt in einen warmen, geselligen Abend mit Freunden und gutem Whisky.",
+          quote2: "Der Empiriker in mir hat ein Spielfeld gefunden. Der Whisky-Liebhaber ein Zuhause.",
+          p5: "Am meisten fasziniert mich die Schnittstelle: Persönlichkeitsforschung trifft Sensorik. Studien zeigen, dass die Big-Five-Persönlichkeitsmerkmale mit Geschmackspräferenzen korrelieren – und dass Expertise grundlegend verändert, wie wir wahrnehmen. CaskSense lässt dich diese Zusammenhänge mit deinen eigenen Daten, deinem eigenen Gaumen, deiner eigenen Reise erkunden.",
+          p6: "Dabei ging es nie um ein Geschäftsmodell. Es geht um Neugier – dieselbe Neugier, die gute Forschung antreibt. Und um die leise Zufriedenheit, etwas zu bauen, das zwei Welten verbindet, die mir am Herzen liegen: Menschen verstehen und Whisky genießen.",
           p7: "Aber jenseits all dieser Überlegungen ist CaskSense auch einfach etwas anderes:",
-          joy1: "Freude am Leben.",
+          joy1: "Freude an der Wahrnehmung.",
           joy2: "Freude am Gestalten.",
           joy3: "Freude am Dram.",
-          closing: "Wer Lust hat, kann es sich gern anschauen. Nicht als Case Study. Sondern als Ausdruck von Neugier.",
+          closing: "Wer Lust hat, kann es sich gern anschauen. Nicht als Case Study – sondern als Einladung, zu erkunden, was der eigene Gaumen verrät.",
         },
         ai: {
           badge: "KI-gestützt",
@@ -2450,6 +2520,7 @@ const resources = {
         roles: {
           title: "Dein Tempo, dein Erlebnis",
           subtitle: "CaskSense passt sich an, wie tief du eintauchen möchtest. Starte einfach — entdecke mehr, wann immer du bereit bist.",
+          tryView: "Dieses Level entdecken",
           guest: {
             name: "Einfach mitmachen",
             desc: "An einer Session teilnehmen, Whiskys bewerten, Ergebnisse sehen. Mehr braucht's nicht — einfach und locker.",
@@ -2737,6 +2808,7 @@ const resources = {
         communityRankings: "Community Rankings",
         tasteTwins: "Geschmackszwillinge",
         news: "Neuigkeiten",
+        research: "Forschung & Wissenschaft",
         landingPage: "Zurück zur Homepage",
         landingPageConfirm: "Möchten Sie wirklich die App verlassen und zurück zur Homepage wechseln?",
       },
@@ -4495,6 +4567,74 @@ const resources = {
         topRated: "Spitzenbewertung",
         addToTasting: "Zum Tasting hinzufügen",
         added: "Hinzugefügt"
+      },
+      research: {
+        title: "Forschung & Wissenschaft",
+        subtitle: "Begutachtete Studien an der Schnittstelle von Persönlichkeit, Wahrnehmung und Whisky.",
+        intro: "CaskSense basiert auf Erkenntnissen aus Sensorik, Persönlichkeitspsychologie und Psychometrie. Die folgenden Studien untersuchen, wie Persönlichkeitsmerkmale Geschmacksvorlieben prägen, wie kognitive Verzerrungen Verkostungen beeinflussen und wie moderne Methoden die Whisky-Bewertung voranbringen.",
+        tabPersonality: "Persönlichkeit & Geschmack",
+        tabPersonalityShort: "Persönlichkeit",
+        tabPerception: "Wahrnehmung & Bias",
+        tabPerceptionShort: "Wahrnehmung",
+        tabMethods: "Methoden & Analyse",
+        tabMethodsShort: "Methoden",
+        personalityDesc: "Wie beeinflussen die Big-Five-Persönlichkeitsmerkmale, was wir schmecken — und was wir bevorzugen? Diese Studien untersuchen den Zusammenhang zwischen Persönlichkeit und Geschmackswahrnehmung.",
+        perceptionDesc: "Verkostung ist nie rein objektiv. Reihenfolge-Effekte, Expertenlücken und neuronale Vernetzung beeinflussen, was wir im Glas erleben.",
+        methodsDesc: "Wie bewerten Forscher und Branchenprofis Whisky? Diese Studien vergleichen schnelle sensorische Methoden, NLP-basierte Deskriptoranalyse und traditionelle Panelansätze.",
+        readStudy: "Studie lesen",
+        disclaimer: "Alle aufgeführten Studien sind begutachtet und öffentlich zugänglich. CaskSense steht in keiner Verbindung zu den Autoren oder Institutionen. Links führen zu den Originalpublikationen.",
+        studies: {
+          flavourBehaviour: {
+            title: "Flavour Behaviour: Big-Five-Persönlichkeit & Whisky-Präferenzen",
+            journal: "University of Edinburgh & Scotch Malt Whisky Society (2016)",
+            summary: "Eine Zusammenarbeit von Dr. Adam Moore und der Scotch Malt Whisky Society mit über 300 Teilnehmern in 6 Städten. Ergebnis: Big-Five-Persönlichkeitsmerkmale korrelieren mit Whisky-Geschmackspräferenzen — z.B. bevorzugen offene Persönlichkeiten komplexe, ungewöhnliche Profile."
+          },
+          personalityWine: {
+            title: "Verkostung durch die Linse des Geistes: Persönlichkeit und sensorische Weineffekte",
+            journal: "MDPI Foods / PMC (2025)",
+            summary: "Untersucht, wie Big-Five-Persönlichkeitsmerkmale die Weinwahrnehmung formen. Extrovertierte bevorzugen tendenziell säurebetonte Profile, während Personen mit hoher Offenheit persistente, komplexe Aromen bevorzugen."
+          },
+          contextPersonality: {
+            title: "Sensorische Akzeptanz und Persönlichkeit in Konsumkontexten",
+            journal: "Food Quality and Preference (2020)",
+            summary: "Untersucht, wie individuelle Unterschiede — einschließlich PROP-Geschmacksempfindlichkeit und Persönlichkeitsmerkmale — die bevorzugten Trinkkontexte beeinflussen. Zeigt, dass sensorische Akzeptanz allein Präferenzen nicht erklärt."
+          },
+          recencyEffect: {
+            title: "In der realen Welt bevorzugen Menschen ihren letzten Whisky",
+            journal: "PLOS ONE (2018)",
+            summary: "Analyse von 136 Verkostungen mit 216 Whisky-Typen ergab einen starken Recency-Effekt: Teilnehmer bewerteten den letzten Whisky in einer Reihe konsequent höher. Eine Erinnerung daran, dass die Reihenfolge wichtig ist — und dass der Blindmodus von CaskSense solchen Verzerrungen entgegenwirkt."
+          },
+          alcoholSensory: {
+            title: "Sensorische Verarbeitung von Alkohol und ihre Relevanz für die Aufnahme",
+            journal: "Advances in Nutrition / PMC (2015)",
+            summary: "Ein umfassender Review darüber, wie Geschmack, Geruch und chemosensorische Reizung bei der Alkoholwahrnehmung zusammenwirken. Erklärt, warum derselbe Whisky je nach Konzentration, Temperatur und individueller Empfindlichkeit unterschiedlich schmecken kann."
+          },
+          brainConnectivity: {
+            title: "Gehirnkonnektivität sagt Alkoholkonsummuster voraus",
+            journal: "Neuropsychopharmacology / Nature (2025)",
+            summary: "Eine fMRT-Studie mit 1.003 Erwachsenen zeigt, dass olfaktorische und gustatorische Gehirn-Konnektivitätsnetzwerke Alkoholkonsummuster vorhersagen. Legt nahe, dass Geschmackswahrnehmung tief in der neuronalen Architektur verankert ist."
+          },
+          expertConsumer: {
+            title: "Aromasprache: Expertenbewertungen vs. Verbraucherpräferenzen bei Whiskey",
+            journal: "Food Quality and Preference (2023)",
+            summary: "Analysiert die Kluft zwischen Experten-Whiskey-Deskriptoren und Verbraucherpräferenzen bei teuren amerikanischen Whiskeys. Stellt fest, dass das Expertenvokabular oft nicht mit dem übereinstimmt, was Verbraucher tatsächlich schätzen."
+          },
+          rapidMethods: {
+            title: "Schnelle Einblicke in Whisky — Effiziente sensorische Methoden und chemische Analyse",
+            journal: "Analytical and Bioanalytical Chemistry / PMC (2023)",
+            summary: "Vergleicht RATA (Rate-All-That-Apply) und QDA (Quantitative Deskriptive Analyse) für die Whisky-Bewertung. Schnelle Methoden können zuverlässige sensorische Profile mit deutlich weniger Aufwand liefern — das Prinzip hinter CaskSenses Slider-Ansatz."
+          },
+          whiskyLexicon: {
+            title: "Sensorische Deskriptoranalyse von Whisky-Lexika mittels Deep Learning",
+            journal: "MDPI Foods / PMC (2021)",
+            summary: "Nutzt NLP und Deep Learning zur Analyse von Whisky-Verkostungsdeskriptoren im großen Maßstab. Kartiert die semantische Struktur der Whisky-Beschreibungssprache — Grundlage für automatisierte Geschmacksprofilierung und Empfehlungssysteme."
+          },
+          flavourAssessment: {
+            title: "Drei Ansätze zur Bewertung von Scotch-Whisky-Aromen",
+            journal: "Applied Sciences / MDPI (2021)",
+            summary: "Vergleicht Quantitative Deskriptive Analyse (QDA), Napping und RATA-Methoden zur Bewertung von Scotch-Whisky-Spirit. Zeigt Kompromisse zwischen Präzision und Praktikabilität — relevant für Plattformen wie CaskSense."
+          }
+        }
       }
     }
   },

@@ -3,10 +3,9 @@ import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { platformStatsApi, communityApi } from "@/lib/api";
+import { platformStatsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LoginDialog } from "@/components/login-dialog";
 import { useAppStore } from "@/lib/store";
 import heroImage from "@/assets/images/hero-whisky.png";
 import christophImage from "@assets/22A3ABF8-0085-4C82-97DF-EAA0ACD46B4E_1771546683886.jpeg";
@@ -14,10 +13,10 @@ import slideBlind from "@/assets/tour/slide-blind.png";
 import slideAnalytics from "@/assets/tour/slide-analytics.png";
 import slideFlightboard from "@/assets/tour/slide-flightboard.png";
 import {
-  Glasses, BookOpen, Users, BarChart3, Brain, Camera,
-  FileUp, Globe, ArrowRight, Wine, LogIn,
-  ChevronDown, Heart, FileSpreadsheet, ClipboardPaste,
-  Sparkles, Presentation, Play, Star, Search, Beaker, CheckCircle2
+  Glasses, BookOpen, Users, BarChart3, Brain,
+  Globe, ArrowRight, Wine,
+  ChevronDown, Heart,
+  Presentation, Play, Star, Search, Beaker, CheckCircle2
 } from "lucide-react";
 
 const tourPreviewSlides = [slideBlind, slideFlightboard, slideAnalytics];
@@ -47,19 +46,12 @@ function AnimatedCounter({ value, suffix = "" }: { value: number; suffix?: strin
 export default function Landing() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
-  const { currentParticipant } = useAppStore();
-  const [loginOpen, setLoginOpen] = useState(false);
+  const { setPreviewExperienceLevel } = useAppStore();
   const [tastingCode, setTastingCode] = useState("");
 
   const { data: stats } = useQuery({
     queryKey: ["platform-stats"],
     queryFn: platformStatsApi.get,
-    staleTime: 60_000,
-  });
-
-  const { data: contributors = [] } = useQuery({
-    queryKey: ["community-contributors"],
-    queryFn: communityApi.getContributors,
     staleTime: 60_000,
   });
 
@@ -70,45 +62,6 @@ export default function Landing() {
     { icon: BarChart3, titleKey: "landing.features.analytics", descKey: "landing.features.analyticsDesc", color: "text-yellow-600 bg-yellow-600/10" },
     { icon: Users, titleKey: "landing.features.community", descKey: "landing.features.communityDesc", color: "text-orange-600 bg-orange-600/10" },
     { icon: Globe, titleKey: "landing.features.encyclopedia", descKey: "landing.features.encyclopediaDesc", color: "text-amber-500 bg-amber-500/10" },
-  ];
-
-  const steps = [
-    { icon: FileUp, titleKey: "landing.steps.create", descKey: "landing.steps.createDesc", num: "01" },
-    { icon: Users, titleKey: "landing.steps.invite", descKey: "landing.steps.inviteDesc", num: "02" },
-    { icon: Wine, titleKey: "landing.steps.taste", descKey: "landing.steps.tasteDesc", num: "03" },
-  ];
-
-  const importCards = [
-    {
-      icon: Camera,
-      tag: t("landing.ai.card1Tag"),
-      title: t("landing.ai.card1Title"),
-      desc: t("landing.ai.card1Desc"),
-      gradient: "from-amber-500/20 via-amber-600/10 to-transparent",
-      borderColor: "border-amber-500/30 hover:border-amber-500/60",
-      iconBg: "bg-amber-500/15 text-amber-500",
-      tagBg: "bg-amber-500/10 text-amber-600",
-    },
-    {
-      icon: FileSpreadsheet,
-      tag: t("landing.ai.card2Tag"),
-      title: t("landing.ai.card2Title"),
-      desc: t("landing.ai.card2Desc"),
-      gradient: "from-orange-500/20 via-orange-600/10 to-transparent",
-      borderColor: "border-orange-500/30 hover:border-orange-500/60",
-      iconBg: "bg-orange-500/15 text-orange-500",
-      tagBg: "bg-orange-500/10 text-orange-600",
-    },
-    {
-      icon: ClipboardPaste,
-      tag: t("landing.ai.card3Tag"),
-      title: t("landing.ai.card3Title"),
-      desc: t("landing.ai.card3Desc"),
-      gradient: "from-yellow-500/20 via-yellow-600/10 to-transparent",
-      borderColor: "border-yellow-500/30 hover:border-yellow-500/60",
-      iconBg: "bg-yellow-600/15 text-yellow-600",
-      tagBg: "bg-yellow-600/10 text-yellow-700",
-    },
   ];
 
   return (
@@ -128,23 +81,10 @@ export default function Landing() {
             <Button variant="ghost" size="sm" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-sm hidden sm:inline-flex" data-testid="landing-nav-explore">
               {t("landing.nav.explore")}
             </Button>
-            {currentParticipant ? (
-              <Button size="sm" onClick={() => navigate("/app")} className="font-serif text-sm gap-1.5" data-testid="landing-nav-start">
-                {t("landing.nav.getStarted")}
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Button>
-            ) : (
-              <>
-                <Button variant="outline" size="sm" onClick={() => setLoginOpen(true)} className="font-serif text-sm gap-1.5" data-testid="landing-nav-login">
-                  <LogIn className="w-3.5 h-3.5" />
-                  {t("landing.nav.login")}
-                </Button>
-                <Button size="sm" onClick={() => navigate("/app")} className="font-serif text-sm gap-1.5" data-testid="landing-nav-start">
-                  {t("landing.nav.getStarted")}
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </>
-            )}
+            <Button size="sm" onClick={() => navigate("/app")} className="font-serif text-sm gap-1.5" data-testid="landing-nav-start">
+              {t("landing.nav.getStarted")}
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
           </div>
         </div>
       </nav>
@@ -233,6 +173,92 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Experience Levels */}
+      <section className="py-20 sm:py-28 bg-gradient-to-b from-background via-amber-900/5 to-background">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={0}
+            variants={fadeUp}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.roles.title")}</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("landing.roles.subtitle")}</p>
+          </motion.div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {([
+              { key: "guest", icon: Wine, color: "bg-emerald-500/15 text-emerald-600", borderColor: "border-emerald-500/30 hover:border-emerald-500/50", accent: "bg-emerald-500/10", anchor: "tasting" },
+              { key: "curious", icon: Search, color: "bg-blue-500/15 text-blue-600", borderColor: "border-blue-500/30 hover:border-blue-500/50", accent: "bg-blue-500/10", anchor: "profile" },
+              { key: "enthusiast", icon: Star, color: "bg-amber-500/15 text-amber-600", borderColor: "border-amber-500/30 hover:border-amber-500/50", accent: "bg-amber-500/10", anchor: "dimensions" },
+              { key: "scientist", icon: Beaker, color: "bg-purple-500/15 text-purple-600", borderColor: "border-purple-500/30 hover:border-purple-500/50", accent: "bg-purple-500/10", anchor: "science" },
+            ] as const).map((role, i) => (
+              <motion.div
+                key={role.key}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                custom={i}
+                variants={fadeUp}
+                className={`bg-card border ${role.borderColor} rounded-xl p-5 transition-all group relative overflow-hidden cursor-pointer`}
+                data-testid={`landing-role-${role.key}`}
+                onClick={() => { setPreviewExperienceLevel(role.key); navigate("/app"); }}
+              >
+                <div className={`absolute top-0 right-0 w-24 h-24 ${role.accent} rounded-full blur-2xl -translate-y-8 translate-x-8 opacity-60`} />
+                <div className="relative">
+                  <div className={`w-11 h-11 rounded-lg ${role.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                    <role.icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-serif font-bold text-primary text-base mb-2">{t(`landing.roles.${role.key}.name`)}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-4">{t(`landing.roles.${role.key}.desc`)}</p>
+                  {role.key !== "guest" && (
+                    <p className="text-[11px] text-muted-foreground/60 font-medium mb-1.5">{t(`landing.roles.${role.key}.plus`)}</p>
+                  )}
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {(t(`landing.roles.${role.key}.features`) as string).split(", ").map((feat) => (
+                      <span key={feat} className={`text-[11px] px-2 py-0.5 rounded-full ${role.accent} text-foreground/70 font-medium`}>
+                        {feat}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate(`/background#${role.anchor}`); }}
+                      className="text-[11px] text-muted-foreground/60 hover:text-primary underline underline-offset-2 transition-colors"
+                      data-testid={`link-learn-more-${role.key}`}
+                    >
+                      {t("background.learnMore")} →
+                    </button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs gap-1 h-7 font-serif"
+                      onClick={(e) => { e.stopPropagation(); setPreviewExperienceLevel(role.key); navigate("/app"); }}
+                      data-testid={`button-try-view-${role.key}`}
+                    >
+                      {t("landing.roles.tryView")}
+                      <ArrowRight className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={5}
+            variants={fadeUp}
+            className="text-center text-sm text-muted-foreground/60 mt-8"
+          >
+            <CheckCircle2 className="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
+            {t("landing.roles.guest.name")} {String.fromCharCode(8594)} {t("landing.roles.scientist.name")} — {t("landing.roles.subtitle").split("—")[1]?.trim() || ""}
+          </motion.p>
+        </div>
+      </section>
+
       {/* Live Stats */}
       {stats && (stats.totalTastings > 0 || stats.totalParticipants > 0) && (
         <section className="border-y border-amber-800/20 bg-amber-900/5">
@@ -264,81 +290,8 @@ export default function Landing() {
         </section>
       )}
 
-      {/* Experience Levels */}
-      <section className="py-20 sm:py-28 bg-gradient-to-b from-background via-amber-900/5 to-background">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={0}
-            variants={fadeUp}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.roles.title")}</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("landing.roles.subtitle")}</p>
-          </motion.div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {([
-              { key: "guest", icon: Wine, color: "bg-emerald-500/15 text-emerald-600", borderColor: "border-emerald-500/30 hover:border-emerald-500/50", accent: "bg-emerald-500/10", anchor: "tasting" },
-              { key: "curious", icon: Search, color: "bg-blue-500/15 text-blue-600", borderColor: "border-blue-500/30 hover:border-blue-500/50", accent: "bg-blue-500/10", anchor: "profile" },
-              { key: "enthusiast", icon: Star, color: "bg-amber-500/15 text-amber-600", borderColor: "border-amber-500/30 hover:border-amber-500/50", accent: "bg-amber-500/10", anchor: "dimensions" },
-              { key: "scientist", icon: Beaker, color: "bg-purple-500/15 text-purple-600", borderColor: "border-purple-500/30 hover:border-purple-500/50", accent: "bg-purple-500/10", anchor: "science" },
-            ] as const).map((role, i) => (
-              <motion.div
-                key={role.key}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={i}
-                variants={fadeUp}
-                className={`bg-card border ${role.borderColor} rounded-xl p-5 transition-all group relative overflow-hidden`}
-                data-testid={`landing-role-${role.key}`}
-              >
-                <div className={`absolute top-0 right-0 w-24 h-24 ${role.accent} rounded-full blur-2xl -translate-y-8 translate-x-8 opacity-60`} />
-                <div className="relative">
-                  <div className={`w-11 h-11 rounded-lg ${role.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                    <role.icon className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-serif font-bold text-primary text-base mb-2">{t(`landing.roles.${role.key}.name`)}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-4">{t(`landing.roles.${role.key}.desc`)}</p>
-                  {role.key !== "guest" && (
-                    <p className="text-[11px] text-muted-foreground/60 font-medium mb-1.5">{t(`landing.roles.${role.key}.plus`)}</p>
-                  )}
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {(t(`landing.roles.${role.key}.features`) as string).split(", ").map((feat) => (
-                      <span key={feat} className={`text-[11px] px-2 py-0.5 rounded-full ${role.accent} text-foreground/70 font-medium`}>
-                        {feat}
-                      </span>
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => navigate(`/background#${role.anchor}`)}
-                    className="text-[11px] text-muted-foreground/60 hover:text-primary underline underline-offset-2 transition-colors"
-                    data-testid={`link-learn-more-${role.key}`}
-                  >
-                    {t("background.learnMore")} →
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-          <motion.p
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={5}
-            variants={fadeUp}
-            className="text-center text-sm text-muted-foreground/60 mt-8"
-          >
-            <CheckCircle2 className="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
-            {t("landing.roles.guest.name")} {String.fromCharCode(8594)} {t("landing.roles.scientist.name")} — {t("landing.roles.subtitle").split("—")[1]?.trim() || ""}
-          </motion.p>
-        </div>
-      </section>
-
       {/* Features */}
-      <section id="features" className="py-20 sm:py-28">
+      <section id="features" className="py-12 sm:py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <motion.div
             initial="hidden"
@@ -346,12 +299,11 @@ export default function Landing() {
             viewport={{ once: true }}
             custom={0}
             variants={fadeUp}
-            className="text-center mb-16"
+            className="text-center mb-8"
           >
-            <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.features.title")}</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("landing.features.subtitle")}</p>
+            <h2 className="text-2xl sm:text-3xl font-serif font-black text-primary">{t("landing.features.title")}</h2>
           </motion.div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             {features.map((f, i) => (
               <motion.div
                 key={f.titleKey}
@@ -360,14 +312,13 @@ export default function Landing() {
                 viewport={{ once: true }}
                 custom={i}
                 variants={fadeUp}
-                className="bg-card border border-border/50 rounded-xl p-6 hover:shadow-md hover:border-amber-700/30 transition-all group"
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 bg-card/50 border border-border/30"
                 data-testid={`landing-feature-${i}`}
               >
-                <div className={`w-12 h-12 rounded-lg ${f.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <f.icon className="w-6 h-6" />
+                <div className={`w-8 h-8 rounded-md ${f.color} flex items-center justify-center shrink-0`}>
+                  <f.icon className="w-4 h-4" />
                 </div>
-                <h3 className="font-serif font-bold text-primary text-lg mb-2">{t(f.titleKey)}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{t(f.descKey)}</p>
+                <span className="font-serif font-semibold text-primary text-sm">{t(f.titleKey)}</span>
               </motion.div>
             ))}
           </div>
@@ -548,170 +499,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ========== IMPORT SHOWCASE ========== */}
-      <section id="import-showcase" className="py-20 sm:py-28 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-amber-900/8 via-orange-900/5 to-background" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={0}
-            variants={fadeUp}
-            className="text-center mb-6"
-          >
-            <div className="inline-flex items-center gap-2 bg-orange-500/10 text-orange-400 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
-              <Sparkles className="w-4 h-4" />
-              {t("landing.ai.badge")}
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-black text-primary mb-4 leading-tight">
-              {t("landing.ai.showcaseTitle")}
-            </h2>
-            <p className="text-muted-foreground text-lg sm:text-xl max-w-2xl mx-auto">
-              {t("landing.ai.showcaseSubtitle")}
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 mt-12">
-            {importCards.map((card, i) => (
-              <motion.div
-                key={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={i}
-                variants={fadeUp}
-                className={`relative rounded-2xl border ${card.borderColor} bg-card overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-amber-900/10 group`}
-                data-testid={`landing-import-card-${i}`}
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-50 group-hover:opacity-80 transition-opacity`} />
-                <div className="relative p-6 sm:p-8 flex flex-col h-full">
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className={`w-14 h-14 rounded-xl ${card.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                      <card.icon className="w-7 h-7" />
-                    </div>
-                    <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${card.tagBg}`}>
-                      {card.tag}
-                    </span>
-                  </div>
-                  <h3 className="font-serif font-black text-primary text-xl sm:text-2xl mb-3 leading-snug">
-                    {card.title}
-                  </h3>
-                  <p className="text-muted-foreground text-sm sm:text-base leading-relaxed flex-1">
-                    {card.desc}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={3}
-            variants={fadeUp}
-            className="text-center mt-10"
-          >
-            <p className="text-muted-foreground/80 text-sm italic max-w-xl mx-auto">
-              {t("landing.ai.desc")}
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="py-20 sm:py-28 bg-amber-900/5 border-y border-amber-800/15">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={0}
-            variants={fadeUp}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.howItWorks.title")}</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("landing.howItWorks.subtitle")}</p>
-          </motion.div>
-          <div className="grid md:grid-cols-3 gap-8 relative">
-            <div className="hidden md:block absolute top-16 left-[20%] right-[20%] h-0.5 bg-gradient-to-r from-amber-700/20 via-amber-600/40 to-amber-700/20" />
-            {steps.map((s, i) => (
-              <motion.div
-                key={s.num}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={i}
-                variants={fadeUp}
-                className="relative text-center"
-                data-testid={`landing-step-${i}`}
-              >
-                <div className="w-16 h-16 rounded-full bg-amber-800/10 border-2 border-amber-700/30 flex items-center justify-center mx-auto mb-5 relative z-10 bg-background">
-                  <span className="text-2xl font-serif font-black text-primary">{s.num}</span>
-                </div>
-                <h3 className="font-serif font-bold text-primary text-lg mb-2">{t(s.titleKey)}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mx-auto">{t(s.descKey)}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Community Contributors */}
-      {contributors.length > 0 && (
-        <section className="py-20 sm:py-28 bg-amber-900/5 border-y border-amber-800/10">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              custom={0}
-              variants={fadeUp}
-              className="mb-10"
-            >
-              <Heart className="w-8 h-8 text-amber-600 mx-auto mb-4" />
-              <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-3">
-                {t("landing.community.title")}
-              </h2>
-              <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-                {t("landing.community.desc")}
-              </p>
-            </motion.div>
-            <div className="flex flex-wrap justify-center gap-4">
-              {contributors.map((c: { id: string; name: string; photoUrl: string | null }, i: number) => (
-                <motion.div
-                  key={c.id}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                  custom={i}
-                  variants={fadeUp}
-                  className="flex flex-col items-center gap-2"
-                  data-testid={`contributor-${c.id}`}
-                >
-                  {c.photoUrl ? (
-                    <img
-                      src={c.photoUrl}
-                      alt={c.name}
-                      className="w-16 h-16 rounded-full object-cover border-2 border-amber-500/30 shadow-md"
-                      data-testid={`img-contributor-${c.id}`}
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-500/30 flex items-center justify-center shadow-md" data-testid={`img-contributor-${c.id}`}>
-                      <span className="text-xl font-serif font-bold text-amber-700">
-                        {c.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  <span className="text-sm font-serif font-semibold text-primary" data-testid={`text-contributor-name-${c.id}`}>{c.name}</span>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* Final CTA */}
       <section className="py-20 sm:py-28">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
@@ -763,7 +550,6 @@ export default function Landing() {
         </div>
       </footer>
 
-      <LoginDialog open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>
   );
 }

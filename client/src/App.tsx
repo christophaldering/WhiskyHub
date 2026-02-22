@@ -54,6 +54,7 @@ import Tour from "@/pages/tour";
 import Background from "@/pages/background";
 import News from "@/pages/news";
 import QuickTasting from "@/pages/quick-tasting";
+import Research from "@/pages/research";
 import { BuildFooter } from "@/components/build-footer";
 import "@/lib/i18n";
 
@@ -112,6 +113,7 @@ function Router() {
               <Route path="/about" component={About} />
               <Route path="/analytics" component={Analytics} />
               <Route path="/method" component={Method} />
+              <Route path="/research" component={Research} />
               <Route path="/data-export" component={DataExport} />
               <Route path="/invite/:token" component={InviteAccept} />
               <Route component={NotFound} />
