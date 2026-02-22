@@ -1,0 +1,151 @@
+You are working inside the existing CaskSense codebase. Implement a second full UI theme + layout variant (“Private Tasting Lounge”) alongside the existing theme, with a switch on the public landing page AND a switch inside the authenticated app. The goal is to let users toggle between:
+- Theme A (current/default): existing look & feel
+- Theme B (“Private Tasting Lounge”): warm-classic, intimate, private, lounge-like
+
+DO NOT break existing functionality. Keep all routes and components working. This is a UI/theming change with minimal business-logic impact.
+
+========================
+1) REQUIREMENTS (MUST)
+========================
+A) Global Theme Engine
+- Introduce a central theme system with two themes: "classic" (existing) and "lounge".
+- The theme affects: colors, typography, spacing, card surfaces, shadows, button styles, charts (radar/wheel), and overall layout density.
+- Theme can be toggled:
+  1) On Landing Page (/): a switch / segmented control to preview and select theme A/B.
+  2) Inside App (sidebar footer or settings): toggle theme A/B.
+- Persist theme choice:
+  - Store in localStorage immediately (works without account).
+  - If the user is logged in and there is a profile/settings persistence layer, also store it as a user preference (optional but implement if easy).
+
+B) Layout Variant for Theme B
+- Theme B is not only a color palette: it has slightly different layout decisions:
+  - More “room-like” feel: increased padding, calmer spacing, fewer dense tables.
+  - “Lounge” dashboard: hero-like sections, less KPI-grid vibe, more curated “welcome back” + tasteful insights.
+  - Community/leaderboard should be visually de-emphasized (still accessible, but quieter).
+- Keep routes the same. Only adjust composition/styling.
+
+C) Landing Page Theme Toggle
+- On / show a toggle: “Classic” vs “Lounge”.
+- Switching should live-update the landing visuals (hero, feature cards, background, CTA styles).
+- Provide a small “Preview Mode” note on landing (subtle). No heavy marketing copy changes required.
+
+D) In-App Theme Toggle
+- Add a toggle in:
+  - Settings/Profile page OR
+  - Sidebar footer (preferred), with icon + label.
+- Must update instantly without reload.
+
+E) Accessibility + UX
+- Ensure contrast meets basic readability (esp. lounge dark backgrounds).
+- Provide a safe focus ring and keyboard navigability for the toggle.
+
+========================
+2) THEME B DESIGN SPEC
+========================
+Name: “Private Tasting Lounge”
+Mood: intimate, private, warm-classic, “espresso / leather / amber”, not elitist.
+
+Colors (tokens, not hard-coded):
+- background: deep espresso / warm charcoal
+- surface/card: slightly lighter warm slate/brown
+- text primary: warm off-white / parchment
+- text secondary: muted sand/grey
+- accent: amber/gold (subtle, not neon)
+- borders: low-contrast warm grey
+- danger: keep existing danger color but ensure it reads on dark
+- success/info: muted versions, avoid bright neon
+
+Typography:
+- Headings: elegant serif (if a serif is already available or can be added safely; otherwise use existing font but simulate serif via font-weight + letterspacing).
+- Body: existing sans is fine.
+- Increase line-height slightly for “calm”.
+
+Components:
+- Cards: softer shadows, rounded corners, subtle border.
+- Buttons: primary = amber accent with dark text OR dark button with amber outline (choose what fits the existing component library).
+- Tables: reduce grid harshness, use zebra or subtle dividers.
+
+Charts:
+- Radar & flavor wheel should follow theme tokens (no hard-coded bright colors).
+- If the chart library currently uses fixed colors, refactor to pull from theme tokens.
+- Do not redesign chart logic; only adjust palette + background + labels.
+
+Layout density:
+- Theme B increases spacing/padding slightly across main containers.
+- Avoid clutter: prefer “sections” with titles and short insight lines.
+
+Copy tone:
+- Do not rewrite the whole app; but in Theme B you MAY adjust a few headings where trivial:
+  - Dashboard header: “Welcome back” / “Your Lounge” (localized DE/EN).
+  - Community blocks: “Guests” instead of “Community” (only if it does not break routing/menus; otherwise keep labels but style them quieter).
+
+========================
+3) IMPLEMENTATION PLAN
+========================
+Step 1: Identify the styling system
+- Determine whether the app uses Tailwind, CSS variables, styled-components, shadcn/ui, MUI, etc.
+- Implement themes via CSS variables at the root (recommended):
+  - e.g. :root[data-theme="classic"] { --bg: ... } and :root[data-theme="lounge"] { ... }
+- If Tailwind is used, implement via CSS variables + utility classes referencing them, or use Tailwind theme extension.
+
+Step 2: Create a ThemeProvider + hook
+- Add a ThemeProvider at the app root that:
+  - reads theme from localStorage on first load
+  - defaults to "classic"
+  - writes updates to localStorage
+  - sets document root attribute: data-theme="classic|lounge"
+- Provide hook: useTheme() returns theme and setTheme().
+
+Step 3: Create ThemeToggle component
+- Segmented control or switch, with labels:
+  - Classic
+  - Lounge
+- Use in:
+  - Landing page header or hero section
+  - Sidebar footer (inside app) and/or profile settings
+- If localization exists, add DE/EN strings:
+  - “Klassisch” / “Lounge”
+  - “Design” / “Theme”
+
+Step 4: Landing Page preview wiring
+- Ensure landing uses theme tokens for background, cards, CTA.
+- When toggling theme on landing:
+  - update ThemeProvider state
+  - update UI instantly
+  - store choice to localStorage
+
+Step 5: App layout adjustments for Lounge theme
+- Without changing routes, apply a conditional layout variant:
+  - In Dashboard page (/app): if theme === "lounge":
+    - Use hero-like welcome section
+    - Show taste profile visuals more prominently
+    - De-emphasize pure stats blocks (still present, but not dominant)
+- In sidebar:
+  - Optional: small “Lounge” styling: warmer background, subtle separators.
+- Ensure all pages remain readable and functional.
+
+Step 6: (Optional) Persist theme to user profile
+- If there is an API / DB for profile settings:
+  - on theme change, if logged in, PATCH user settings { theme }.
+  - on login, prefer user setting over localStorage.
+
+========================
+4) ACCEPTANCE CRITERIA
+========================
+- A theme toggle exists on / and inside the app.
+- Switching theme updates UI instantly (no full reload).
+- Theme selection persists across refresh and between landing/app.
+- Theme B clearly feels warm, intimate, lounge-like (spacing + surfaces + typography), not just recolored.
+- No broken routes, no broken charts, no unreadable text.
+- Works in both DE and EN UI.
+
+========================
+5) DELIVERABLES
+========================
+- New theme system with two themes, implemented via tokens (CSS variables).
+- ThemeProvider + useTheme hook.
+- ThemeToggle component used on landing and in app.
+- Minimal layout polish for /app dashboard under lounge theme.
+- Update docs/README briefly: how to add future themes.
+
+Now implement this in the current repository. Make small, safe changes and prefer reusing existing components. Add short comments where needed.
