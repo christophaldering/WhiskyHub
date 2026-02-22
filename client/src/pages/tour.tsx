@@ -68,53 +68,11 @@ const slides: SlideData[] = [
   },
   {
     type: "content",
-    title: "Tasting-Sessions",
-    subtitle: "Ein Gastgeber erstellt die Session, lädt per QR-Code oder Link ein — und alle bewerten gemeinsam, von der Nase bis zum Abgang.",
-    image: slideTasting,
-    badge: "Kernfunktion",
-    layout: "left",
-    features: [
-      { icon: Wine, title: "Sessions erstellen", desc: "Name, Datum, Line-up — in Sekunden startklar" },
-      { icon: QrCode, title: "QR-Code Einladungen", desc: "Scannen und sofort dabei — kein Konto nötig" },
-      { icon: Star, title: "Strukturierte Bewertung", desc: "Nase, Geschmack, Abgang, Balance — auf deiner Wunschskala" },
-      { icon: MessageSquare, title: "Live-Diskussion", desc: "Austausch in Echtzeit während des Tastings" },
-    ],
-  },
-  {
-    type: "content",
-    title: "Blind Tasting & Enthüllung",
-    subtitle: "Der Höhepunkt jeder Runde: Whiskys ohne Vorurteile verkosten. Der Gastgeber enthüllt — dramatisch, Flasche für Flasche, mit Überraschungsgarantie.",
-    image: slideBlind,
-    badge: "Highlight",
-    layout: "right",
-    features: [
-      { icon: EyeOff, title: "Blind-Modus", desc: "Etiketten weg, Namen verborgen — nur dein Gaumen zählt" },
-      { icon: Eye, title: "Schrittweise Enthüllung", desc: "Der Gastgeber bestimmt den Moment — mit Diagrammen und Wow-Effekt" },
-      { icon: Sparkles, title: "ABV & Alter raten", desc: "Zusätzlicher Spaß für alle, die sich trauen" },
-      { icon: Camera, title: "Cover-Bild Enthüllung", desc: "Gruppenfoto oder Flaschenbild als krönender Abschluss" },
-    ],
-  },
-  {
-    type: "content",
-    title: "Verkostungsbrett & Präsentation",
-    subtitle: "Alle Whiskys auf einen Blick — nummeriert, mit Fotos und Notizen. Das visuelle Herzstück für jeden Tisch.",
-    image: slideFlightboard,
-    badge: "Visuell",
-    layout: "left",
-    features: [
-      { icon: LayoutDashboard, title: "Verkostungsbrett", desc: "Überblick über alle Flaschen — klar nummeriert und sortiert" },
-      { icon: Camera, title: "Flaschenfotos", desc: "Bilder hochladen — auch direkt vom Handy" },
-      { icon: FileDown, title: "PDF Tasting-Menü", desc: "Professionelles Menü zum Ausdrucken oder Teilen" },
-      { icon: Sparkles, title: "Tasting-Notiz Generator", desc: "Aromen auswählen statt formulieren — interaktiv und schnell" },
-    ],
-  },
-  {
-    type: "content",
     title: "Dein Tempo, dein Erlebnis",
     subtitle: "CaskSense wächst mit deiner Neugier. Manche wollen nur verkosten — andere wollen alles wissen. Beides ist richtig. Du entscheidest, wie tief du eintauchst.",
     image: slideCommunity,
     badge: "Von Einfach bis Analytisch",
-    layout: "right",
+    layout: "left",
     features: [
       { icon: Wine, title: "Just Tasting", desc: "Kommen, trinken, bewerten, gehen. Null Technik-Stress." },
       { icon: Compass, title: "Explorer", desc: "Dein Journal starten, Aromen entdecken, Favoriten merken." },
@@ -124,11 +82,67 @@ const slides: SlideData[] = [
   },
   {
     type: "content",
+    title: "Tasting-Sessions",
+    subtitle: "Ein Gastgeber erstellt die Session, lädt per QR-Code oder Link ein — und alle bewerten gemeinsam, von der Nase bis zum Abgang.",
+    image: slideTasting,
+    badge: "Kernfunktion",
+    layout: "right",
+    features: [
+      { icon: Wine, title: "Sessions erstellen", desc: "Name, Datum, Line-up — in Sekunden startklar" },
+      { icon: QrCode, title: "QR-Code Einladungen", desc: "Scannen und sofort dabei — kein Konto nötig" },
+      { icon: Star, title: "Strukturierte Bewertung", desc: "Nase, Geschmack, Abgang, Balance — auf deiner Wunschskala" },
+      { icon: MessageSquare, title: "Live-Diskussion", desc: "Austausch in Echtzeit während des Tastings" },
+    ],
+  },
+  {
+    type: "content",
+    title: "Geführtes Tasting & Präsentation",
+    subtitle: "Für den großen Auftritt: geteilter Bildschirm für den Gastgeber, Vollbild-Ansicht für alle — perfekt mit Beamer oder Fernseher.",
+    image: slideGuided,
+    badge: "Showtime",
+    layout: "left",
+    features: [
+      { icon: LayoutDashboard, title: "Geteilter Bildschirm", desc: "Steuerung links, Präsentation rechts — alles unter Kontrolle" },
+      { icon: Eye, title: "Vollbild-Ansicht", desc: "Große, klare Darstellung — auch auf dem Fernseher" },
+      { icon: Sparkles, title: "Schrittweise Enthüllung", desc: "Jede Flasche ein eigener Moment — mit Animationen" },
+      { icon: Star, title: "Startet automatisch", desc: "Präsentationsmodus aktiviert sich mit der Enthüllungsphase" },
+    ],
+  },
+  {
+    type: "content",
+    title: "Verkostungsbrett & Präsentation",
+    subtitle: "Alle Whiskys auf einen Blick — nummeriert, mit Fotos und Notizen. Das visuelle Herzstück für jeden Tisch.",
+    image: slideFlightboard,
+    badge: "Visuell",
+    layout: "right",
+    features: [
+      { icon: LayoutDashboard, title: "Verkostungsbrett", desc: "Überblick über alle Flaschen — klar nummeriert und sortiert" },
+      { icon: Camera, title: "Flaschenfotos", desc: "Bilder hochladen — auch direkt vom Handy" },
+      { icon: FileDown, title: "PDF Tasting-Menü", desc: "Professionelles Menü zum Ausdrucken oder Teilen" },
+      { icon: Sparkles, title: "Tasting-Notiz Generator", desc: "Aromen auswählen statt formulieren — interaktiv und schnell" },
+    ],
+  },
+  {
+    type: "content",
+    title: "Blind Tasting & Enthüllung",
+    subtitle: "Ein beliebtes Extra: Whiskys ohne Vorurteile verkosten. Der Gastgeber enthüllt — dramatisch, Flasche für Flasche, mit Überraschungsgarantie.",
+    image: slideBlind,
+    badge: "Beliebtes Extra",
+    layout: "left",
+    features: [
+      { icon: EyeOff, title: "Blind-Modus", desc: "Etiketten weg, Namen verborgen — nur dein Gaumen zählt" },
+      { icon: Eye, title: "Schrittweise Enthüllung", desc: "Der Gastgeber bestimmt den Moment — mit Diagrammen und Wow-Effekt" },
+      { icon: Sparkles, title: "ABV & Alter raten", desc: "Zusätzlicher Spaß für alle, die sich trauen" },
+      { icon: Camera, title: "Cover-Bild Enthüllung", desc: "Gruppenfoto oder Flaschenbild als krönender Abschluss" },
+    ],
+  },
+  {
+    type: "content",
     title: "Clevere Helfer im Hintergrund",
     subtitle: "Niemand muss Daten eintippen. Die KI liest Etiketten, erkennt Flaschen und füllt Felder aus — damit du dich aufs Wesentliche konzentrieren kannst.",
     image: slideAi,
     badge: "Optional & hilfreich",
-    layout: "left",
+    layout: "right",
     features: [
       { icon: Camera, title: "Foto-Erkennung", desc: "Flasche fotografieren — KI erledigt die Dateneingabe" },
       { icon: FileSpreadsheet, title: "Excel/CSV Import", desc: "Tabellen hochladen, Spalten werden automatisch zugeordnet" },
@@ -168,20 +182,6 @@ const slides: SlideData[] = [
   },
   {
     type: "content",
-    title: "Wissensdatenbank",
-    subtitle: "Was ist ein Finish? Wo liegt Islay? Was macht Gordon & MacPhail besonders? Hintergrundwissen, wenn du es brauchst — nicht, wenn du es nicht brauchst.",
-    image: slideKnowledge,
-    badge: "Zum Stöbern",
-    layout: "right",
-    features: [
-      { icon: BookOpen, title: "Whisky-Lexikon", desc: "53 Begriffe in 5 Kategorien — verständlich erklärt" },
-      { icon: Landmark, title: "Destillerien", desc: "~100 Destillerien weltweit mit Geschichte und Charakter" },
-      { icon: Map, title: "Interaktive Karte", desc: "Weltkarte mit Destillerie-Pins — zoomen und entdecken" },
-      { icon: Heart, title: "Abfüller-Lexikon", desc: "Unabhängige Abfüller und was sie besonders macht" },
-    ],
-  },
-  {
-    type: "content",
     title: "Gastgeber-Werkzeuge",
     subtitle: "Du organisierst das Tasting? CaskSense gibt dir alles an die Hand: Übersicht, Briefing, Zusammenfassung — und sogar dezente Hintergrundklänge.",
     image: slideHost,
@@ -196,16 +196,16 @@ const slides: SlideData[] = [
   },
   {
     type: "content",
-    title: "Geführtes Tasting & Präsentation",
-    subtitle: "Für den großen Auftritt: geteilter Bildschirm für den Gastgeber, Vollbild-Ansicht für alle — perfekt mit Beamer oder Fernseher.",
-    image: slideGuided,
-    badge: "Showtime",
+    title: "Wissensdatenbank",
+    subtitle: "Was ist ein Finish? Wo liegt Islay? Was macht Gordon & MacPhail besonders? Hintergrundwissen, wenn du es brauchst — nicht, wenn du es nicht brauchst.",
+    image: slideKnowledge,
+    badge: "Zum Stöbern",
     layout: "right",
     features: [
-      { icon: LayoutDashboard, title: "Geteilter Bildschirm", desc: "Steuerung links, Präsentation rechts — alles unter Kontrolle" },
-      { icon: Eye, title: "Vollbild-Ansicht", desc: "Große, klare Darstellung — auch auf dem Fernseher" },
-      { icon: Sparkles, title: "Schrittweise Enthüllung", desc: "Jede Flasche ein eigener Moment — mit Animationen" },
-      { icon: Star, title: "Startet automatisch", desc: "Präsentationsmodus aktiviert sich mit der Enthüllungsphase" },
+      { icon: BookOpen, title: "Whisky-Lexikon", desc: "53 Begriffe in 5 Kategorien — verständlich erklärt" },
+      { icon: Landmark, title: "Destillerien", desc: "~100 Destillerien weltweit mit Geschichte und Charakter" },
+      { icon: Map, title: "Interaktive Karte", desc: "Weltkarte mit Destillerie-Pins — zoomen und entdecken" },
+      { icon: Heart, title: "Abfüller-Lexikon", desc: "Unabhängige Abfüller und was sie besonders macht" },
     ],
   },
   {
@@ -388,21 +388,21 @@ function SlideContent({ slide, direction }: { slide: SlideData; direction: numbe
             {slide.subtitle}
           </p>
           {slide.features && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
               {slide.features.map((f, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + i * 0.06, duration: 0.4 }}
-                  className="flex items-start gap-2.5 bg-card/60 border border-border/20 rounded-xl px-3 py-2.5"
+                  className="flex items-start gap-3 bg-card/60 border border-border/20 rounded-xl px-4 py-3.5"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <f.icon className="w-4 h-4 text-primary/70" />
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <f.icon className="w-5 h-5 text-primary/80" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-foreground leading-tight">{f.title}</p>
-                    <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">{f.desc}</p>
+                    <p className="text-sm font-semibold text-foreground leading-tight">{f.title}</p>
+                    <p className="text-xs text-muted-foreground leading-snug mt-1">{f.desc}</p>
                   </div>
                 </motion.div>
               ))}
