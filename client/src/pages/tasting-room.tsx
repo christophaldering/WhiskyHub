@@ -1371,7 +1371,7 @@ export default function TastingRoom() {
     setGuestError("");
     try {
       const guest = await participantApi.guestJoin(guestName.trim());
-      setParticipant({ id: guest.id, name: guest.name, role: guest.role, canAccessWhiskyDb: guest.canAccessWhiskyDb });
+      setParticipant({ id: guest.id, name: guest.name, role: guest.role, canAccessWhiskyDb: guest.canAccessWhiskyDb, experienceLevel: guest.experienceLevel });
       if (guest.guest && !guest.pin) {
         setShowSecureAccount(true);
       }

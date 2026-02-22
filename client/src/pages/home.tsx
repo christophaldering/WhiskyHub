@@ -288,7 +288,7 @@ export default function Home() {
     setQuickJoinError("");
     try {
       const guest = await participantApi.guestJoin(quickName.trim(), quickPin);
-      setParticipant({ id: guest.id, name: guest.name, role: guest.role, canAccessWhiskyDb: guest.canAccessWhiskyDb });
+      setParticipant({ id: guest.id, name: guest.name, role: guest.role, canAccessWhiskyDb: guest.canAccessWhiskyDb, experienceLevel: guest.experienceLevel });
       setShowQuickJoin(false);
       setQuickName("");
       setQuickPin("");
@@ -346,7 +346,7 @@ export default function Home() {
     setGuestCreateError("");
     try {
       const participant = await participantApi.guestJoin(guestCreateName.trim(), guestCreatePin);
-      setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
+      setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb, experienceLevel: participant.experienceLevel });
       setShowGuestCreate(false);
       setGuestCreateName("");
       setGuestCreatePin("");
