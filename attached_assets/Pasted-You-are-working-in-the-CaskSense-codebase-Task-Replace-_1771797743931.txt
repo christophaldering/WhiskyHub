@@ -1,0 +1,49 @@
+You are working in the CaskSense codebase. 
+Task: Replace the existing “How CaskSense was created / Christoph & Sammy” short description on the public landing page with the EXACT text provided below (Version B). 
+
+CRITICAL REQUIREMENTS:
+1) Copy the text exactly (wording, punctuation, line breaks) as provided.
+2) Do NOT paraphrase, shorten, expand, or “improve” the text.
+3) Do NOT change the tone, headings, or ordering.
+4) Do NOT add marketing claims or additional statements.
+5) Keep it in German.
+6) Ensure it renders nicely on desktop and mobile (proper paragraph spacing).
+7) Preserve typographic line breaks for the closing lines (“Vielleicht ist es am Ende…” etc.).
+8) If there is an existing English version, leave it unchanged unless there is a dedicated German-only block. Only replace the German block.
+
+IMPLEMENTATION STEPS:
+A) Locate the landing page section that currently contains the “Wie CaskSense entstanden ist” / founder story copy (likely on route “/” in a component like Landing, Home, About, Story, FounderStory, or similar).
+B) Identify the text source (inline JSX/TSX, markdown, CMS, JSON locale file, etc.).
+C) Replace only that block with the exact text below.
+D) Confirm the final rendered output matches exactly (including line breaks).
+
+EXACT REPLACEMENT TEXT (Version B) – USE VERBATIM:
+
+## Wie CaskSense entstanden ist
+
+Als Psychologe beschäftige ich mich seit Jahren mit Wahrnehmung, Urteilen und Entscheidungsprozessen. Mich interessiert, wie unterschiedlich Menschen dieselbe Situation erleben – und wie sehr Kontext, Erwartung und Erfahrung unser Urteil formen.
+
+Bei Whisky-Tastings mit Freunden wurde mir klar: Hier zeigt sich genau das – nur unmittelbarer. Zwei Menschen trinken denselben Dram und beschreiben unterschiedliche Welten. Ein Etikett verändert das Erlebnis. Blindheit schafft Überraschung. Konsens entsteht – oder auch nicht.
+
+Was ich aus der Diagnostik kenne – Beurteilerübereinstimmung, Skalennutzung, individuelle Unterschiede – stand plötzlich nicht mehr in Studien, sondern im Raum. Mit Lachen, Diskussion und einem Glas in der Hand.
+
+CaskSense ist der Versuch, diesen Moment festzuhalten.  
+Nicht als Messinstrument für Persönlichkeit.  
+Sondern als Reflexionsinstrument für Wahrnehmung.
+
+Die Plattform erfasst Bewertungen strukturiert, nutzt robuste statistische Verfahren wie Medianvergleiche und Streuungsmaße und macht Muster sichtbar – immer transparent, immer ohne Ranglogik, immer ohne Schubladen. Keine Typen, keine Etiketten. Nur Dimensionen und Tendenzen.
+
+Mich interessiert nicht, wer „recht“ hat.  
+Mich interessiert, wie unterschiedlich wir erleben – und was sich dabei erkennen lässt.
+
+CaskSense ist aus Neugier entstanden, nicht aus einem Geschäftsmodell. Aus der Freude, etwas zu bauen, das zwei Leidenschaften verbindet: Menschen verstehen und Whisky genießen.
+
+Vielleicht ist es am Ende ganz einfach:  
+Ein Raum, in dem Wahrnehmung sichtbar wird.
+
+Und ein guter Dram dazu.
+
+After implementing, output:
+- the file(s) changed
+- the exact snippet as it appears in code
+- confirmation that the rendered landing page shows the exact text unchanged.
