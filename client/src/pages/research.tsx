@@ -254,25 +254,21 @@ export default function Research() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
           <TabsList className="w-full grid grid-cols-4">
-            <TabsTrigger value="personality" className="gap-1.5" data-testid="tab-personality">
-              <Users className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t("research.tabPersonality")}</span>
-              <span className="sm:hidden">{t("research.tabPersonalityShort")}</span>
+            <TabsTrigger value="personality" className="gap-1 text-[11px] sm:text-xs px-2" data-testid="tab-personality">
+              <Users className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{t("research.tabPersonalityShort")}</span>
             </TabsTrigger>
-            <TabsTrigger value="perception" className="gap-1.5" data-testid="tab-perception">
-              <Brain className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t("research.tabPerception")}</span>
-              <span className="sm:hidden">{t("research.tabPerceptionShort")}</span>
+            <TabsTrigger value="perception" className="gap-1 text-[11px] sm:text-xs px-2" data-testid="tab-perception">
+              <Brain className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{t("research.tabPerceptionShort")}</span>
             </TabsTrigger>
-            <TabsTrigger value="methods" className="gap-1.5" data-testid="tab-methods">
-              <Microscope className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t("research.tabMethods")}</span>
-              <span className="sm:hidden">{t("research.tabMethodsShort")}</span>
+            <TabsTrigger value="methods" className="gap-1 text-[11px] sm:text-xs px-2" data-testid="tab-methods">
+              <Microscope className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{t("research.tabMethodsShort")}</span>
             </TabsTrigger>
-            <TabsTrigger value="measurement" className="gap-1.5" data-testid="tab-measurement">
-              <Scale className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t("research.tabMeasurement")}</span>
-              <span className="sm:hidden">{t("research.tabMeasurementShort")}</span>
+            <TabsTrigger value="measurement" className="gap-1 text-[11px] sm:text-xs px-2" data-testid="tab-measurement">
+              <Scale className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{t("research.tabMeasurementShort")}</span>
             </TabsTrigger>
           </TabsList>
 
