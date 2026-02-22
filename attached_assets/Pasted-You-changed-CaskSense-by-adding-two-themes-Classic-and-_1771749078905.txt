@@ -1,0 +1,133 @@
+You changed CaskSense by adding two “themes” (Classic and Lounge). However, you misunderstood my intent.
+
+IMPORTANT CLARIFICATION:
+I do NOT want Lounge to be just a recolor / CSS theme of the exact same structure.  
+I want Lounge to be a REAL “second layout / information architecture” (a second UX composition) that still uses the SAME underlying data + same business logic.
+
+So we need:
+1) TWO UI variants:
+   - Variant A: “Classic” (keep existing structure and navigation)
+   - Variant B: “Lounge” (a different, curated, room-based structure + calmer hierarchy, as discussed in this chat)
+2) ONE shared data layer:
+   - Both variants must read/write the SAME database and the SAME backend APIs.
+   - Any input in Classic must instantly be visible in Lounge and vice versa.
+   - No duplicated DB. No duplicated business logic. No “separate app”. Only two UI shells over the same system.
+3) Bidirectional switching:
+   - Users must be able to switch Classic ↔ Lounge at any time.
+   - Switching must “land” the user on the most meaningful equivalent page in the other variant.
+   - Because navigation structures differ, implement a ROUTE MAPPING layer.
+
+========================
+A) INTENT / PRODUCT DIRECTION (Lounge)
+========================
+“Lounge” should feel like entering an intimate, private tasting room with trusted guests.
+It is NOT elitist, not loud, not KPI-heavy, not competitive.
+
+Primary “wow” factors in Lounge:
+B) Taste analysis / self-discovery (but expressed in calm, human language)
+D) Visual aesthetics (warm classic: espresso/leather/amber)
+
+Social/community is present but de-emphasized (no aggressive leaderboards).
+
+========================
+B) LOUNGE INFORMATION ARCHITECTURE (NEW NAV)
+========================
+In Lounge, the main navigation should be re-bundled into “rooms” (experience areas), NOT feature modules.
+
+Lounge Navigation (Variant B) should be:
+1) Lounge (Home)
+   - Curated “welcome back” experience
+   - Your taste “today” (radar) + group context (if in sessions)
+   - Last tasting highlights: consensus vs polarization, top whisky of the night, a calm insight line
+2) Tastings (central)
+   - My Tastings
+   - Join Quick Tasting
+   - Calendar
+   - Host controls when relevant
+3) Guests (instead of generic “Community”)
+   - Friends
+   - Activity (quiet)
+   - Taste Twins (rename to “Verwandte Gaumen” / “Related Palates” if localization allows)
+   - Shared tastings / “Our circle”
+   - Leaderboard/rankings should be hidden or moved deeper (optional)
+4) My Salon (personal reflection)
+   - Profile
+   - Journal
+   - My Whiskies
+   - “My Taste” (Flavor Profile + Flavor Wheel + Development in one place with tabs)
+5) Library (exploration + knowledge)
+   - Recommendations
+   - Compare
+   - Pairings
+   - Benchmark (but framed as “Compared to your circle / community”)
+   - Lexicon / Distilleries / Map / Bottlers
+
+Keep ALL existing features. Lounge is a re-organization + different emphasis + calmer layout density.
+
+Classic Navigation (Variant A) remains as it is today.
+
+========================
+C) ROUTING + SWITCHING REQUIREMENTS
+========================
+Because Classic and Lounge have different navigation, switching must map pages.
+
+Implement:
+1) A single “variant” state: classic | lounge (stored in localStorage + optional user preference).
+2) Two route shells:
+   - /app/* (Classic)
+   - /lounge/* (Lounge)
+   (If you prefer a different base path, propose it, but keep it consistent.)
+3) A route mapping table so that switching keeps context:
+   - Example mappings:
+     Classic /app -> Lounge /lounge
+     /profile -> /lounge/my-salon/profile
+     /journal -> /lounge/my-salon/journal
+     /my-whiskies -> /lounge/my-salon/my-whiskies
+     /flavor-profile OR /flavor-wheel -> /lounge/my-salon/my-taste (tab selected accordingly)
+     /sessions -> /lounge/tastings
+     /calendar -> /lounge/tastings/calendar
+     /friends -> /lounge/guests/friends
+     /activity -> /lounge/guests/activity
+     /leaderboard or /community-rankings -> /lounge/guests (deeper section) or /lounge/guests/insights
+     /recommendations -> /lounge/library/recommendations
+     /comparison -> /lounge/library/comparison
+     /pairings -> /lounge/library/pairings
+     /benchmark -> /lounge/library/benchmark
+     /lexicon, /distilleries, /distillery-map, /bottlers -> /lounge/library/(same content)
+4) “Best effort” mapping:
+   - If a mapping is missing, fall back to Lounge Home (/lounge) or Classic Dashboard (/app).
+
+Switching must NOT reload data. It should be instant navigation using the same session/auth.
+
+========================
+D) SHARED DATA LAYER (CRITICAL)
+========================
+- Do NOT duplicate backend, DB, or business logic.
+- All data read/write must be shared.
+- Classic and Lounge are only two UI compositions.
+- Implement shared services/hooks; both shells import the same components / data hooks where possible.
+
+When a feature or page is changed in Classic, Lounge must automatically benefit because the underlying component/data logic is reused. The Lounge shell should be mostly composition + navigation + styling. Avoid copy/paste forks.
+
+========================
+E) IMPLEMENTATION PLAN (REQUEST)
+========================
+Step 1: Keep the existing theme token system, but add a second ROUTER SHELL (Lounge).
+Step 2: Build the Lounge sidebar/navigation according to the IA above.
+Step 3: Re-compose the Lounge Home (curated layout). Keep existing widgets/components but change hierarchy, spacing, and emphasis.
+Step 4: Implement the route mapping table and switching logic (Classic <-> Lounge).
+Step 5: Ensure all pages in Lounge route to the same underlying feature components and data hooks.
+Step 6: Verify: create/update something in Classic, confirm it appears in Lounge and vice versa.
+
+========================
+F) QUESTIONS (YOU MUST ANSWER BEFORE CODING)
+========================
+1) Please summarize back to me, in your own words, what I mean by “Lounge is a second layout/structure, not only a color theme.”
+2) Confirm that you will NOT duplicate the database or backend logic.
+3) Confirm your proposed base paths for the two variants (e.g. /app/* and /lounge/*).
+4) Show me the initial route mapping table you will implement (at least the main routes listed above).
+5) Identify which existing pages/components can be reused directly and which need new “composition wrappers” only.
+
+Only after you answer these 5 questions with a clear summary, proceed to implement the changes.
+
+Now begin with the 5 answers, then implement.
