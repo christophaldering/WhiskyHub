@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { BookOpen, ExternalLink, FlaskConical, Brain, BarChart3, Users, Wine, Microscope } from "lucide-react";
+import { BookOpen, ExternalLink, FlaskConical, Brain, BarChart3, Users, Wine, Microscope, Scale } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +27,7 @@ const personalityStudies: Study[] = [
     journalKey: "research.studies.flavourBehaviour.journal",
     year: 2016,
     summaryKey: "research.studies.flavourBehaviour.summary",
-    url: "https://blog.5pm.co.uk/2016/08/23877",
+    url: "https://scotchwhisky.com/magazine/latest-news/10461/smws-designs-whisky-personality-test/",
     tags: ["Big Five", "Whisky"],
   },
   {
@@ -43,7 +43,7 @@ const personalityStudies: Study[] = [
     journalKey: "research.studies.contextPersonality.journal",
     year: 2020,
     summaryKey: "research.studies.contextPersonality.summary",
-    url: "https://www.sciencedirect.com/science/article/abs/pii/S0950329320302470",
+    url: "https://doi.org/10.1016/j.appet.2020.104607",
     tags: ["Personality", "Context"],
   },
 ];
@@ -78,7 +78,7 @@ const perceptionStudies: Study[] = [
     journalKey: "research.studies.expertConsumer.journal",
     year: 2023,
     summaryKey: "research.studies.expertConsumer.summary",
-    url: "https://www.sciencedirect.com/science/article/abs/pii/S0950329323000861",
+    url: "https://doi.org/10.1016/j.fqap.2023.104861",
     tags: ["Language", "Whiskey"],
   },
 ];
@@ -105,8 +105,43 @@ const methodStudies: Study[] = [
     journalKey: "research.studies.flavourAssessment.journal",
     year: 2021,
     summaryKey: "research.studies.flavourAssessment.summary",
-    url: "https://www.mdpi.com/2076-3417/11/4/1410",
+    url: "https://doi.org/10.3390/app11041410",
     tags: ["Scotch", "Methods"],
+  },
+];
+
+const measurementStudies: Study[] = [
+  {
+    titleKey: "research.studies.winePsychology.title",
+    journalKey: "research.studies.winePsychology.journal",
+    year: 2020,
+    summaryKey: "research.studies.winePsychology.summary",
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC7221102/",
+    tags: ["Psychology", "Bias"],
+  },
+  {
+    titleKey: "research.studies.panelPerformance.title",
+    journalKey: "research.studies.panelPerformance.journal",
+    year: 2021,
+    summaryKey: "research.studies.panelPerformance.summary",
+    url: "https://www.mdpi.com/2076-3417/11/24/11977",
+    tags: ["Reliability", "Panels"],
+  },
+  {
+    titleKey: "research.studies.sensoryCharacterization.title",
+    journalKey: "research.studies.sensoryCharacterization.journal",
+    year: 2022,
+    summaryKey: "research.studies.sensoryCharacterization.summary",
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC8834440/",
+    tags: ["Methods", "Profiling"],
+  },
+  {
+    titleKey: "research.studies.interRaterKappa.title",
+    journalKey: "research.studies.interRaterKappa.journal",
+    year: 2012,
+    summaryKey: "research.studies.interRaterKappa.summary",
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC3900052/",
+    tags: ["Kappa", "Statistics"],
   },
 ];
 
@@ -218,7 +253,7 @@ export default function Research() {
         </motion.p>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-          <TabsList className="w-full grid grid-cols-3">
+          <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger value="personality" className="gap-1.5" data-testid="tab-personality">
               <Users className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t("research.tabPersonality")}</span>
@@ -233,6 +268,11 @@ export default function Research() {
               <Microscope className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t("research.tabMethods")}</span>
               <span className="sm:hidden">{t("research.tabMethodsShort")}</span>
+            </TabsTrigger>
+            <TabsTrigger value="measurement" className="gap-1.5" data-testid="tab-measurement">
+              <Scale className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t("research.tabMeasurement")}</span>
+              <span className="sm:hidden">{t("research.tabMeasurementShort")}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -262,7 +302,57 @@ export default function Research() {
               ))}
             </div>
           </TabsContent>
+
+          <TabsContent value="measurement" className="mt-6">
+            <p className="text-xs text-muted-foreground mb-4">{t("research.measurementDesc")}</p>
+            <div className="grid gap-4">
+              {measurementStudies.map((study, i) => (
+                <StudyCard key={study.titleKey} study={study} index={i + 10} />
+              ))}
+            </div>
+          </TabsContent>
         </Tabs>
+
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={fadeUp}
+          className="mt-12 space-y-6"
+        >
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <BookOpen className="w-4 h-4 text-primary/60" />
+              <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{t("research.knowledgeLabel")}</span>
+            </div>
+            <h2 className="text-xl md:text-2xl font-serif font-bold text-primary" data-testid="text-knowledge-title">
+              {t("research.knowledgeTitle")}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-2 max-w-lg mx-auto">
+              {t("research.knowledgeIntro")}
+            </p>
+          </div>
+
+          <div className="grid gap-4">
+            {(t("research.concepts", { returnObjects: true }) as Array<{ term: string; explanation: string; whiskyLink: string }>).map((concept, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <Card data-testid={`concept-card-${i}`}>
+                  <CardContent className="p-5">
+                    <h3 className="font-serif font-semibold text-sm text-primary mb-1.5">{concept.term}</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed mb-2">{concept.explanation}</p>
+                    <p className="text-xs text-primary/70 leading-relaxed italic">{concept.whiskyLink}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0 }}

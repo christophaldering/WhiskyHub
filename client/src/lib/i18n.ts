@@ -2266,8 +2266,8 @@ const resources = {
       },
       research: {
         title: "Research & Science",
-        subtitle: "Peer-reviewed studies on the intersection of personality, perception, and whisky.",
-        intro: "CaskSense is built on insights from sensory science, personality psychology, and psychometrics. The studies below explore how personality traits shape flavour preferences, how cognitive biases influence tastings, and how modern methods advance whisky evaluation.",
+        subtitle: "Where curiosity about whisky meets curiosity about how we perceive.",
+        intro: "I'm a psychologist — and a whisky enthusiast. CaskSense is my hobby project where I explore what happens when psychometric methods meet sensory experience. The following studies have inspired or informed the thinking behind CaskSense. They're not the foundation — they're the fuel for curiosity.",
         tabPersonality: "Personality & Taste",
         tabPersonalityShort: "Personality",
         tabPerception: "Perception & Bias",
@@ -2277,8 +2277,11 @@ const resources = {
         personalityDesc: "How do the Big Five personality traits influence what we taste — and what we prefer? These studies explore the link between who we are and how we perceive flavour.",
         perceptionDesc: "Tasting is never purely objective. Order effects, expertise gaps, and neural wiring all shape what we experience in the glass.",
         methodsDesc: "How do researchers and industry professionals evaluate whisky? These studies compare rapid sensory methods, NLP-based descriptor analysis, and traditional panel approaches.",
+        tabMeasurement: "Measuring & Judging",
+        tabMeasurementShort: "Measuring",
+        measurementDesc: "How reliable are sensory judgments? What makes a good rating scale? These studies examine the fundamentals of measuring taste — from inter-rater agreement to panel performance.",
         readStudy: "Read study",
-        disclaimer: "All studies listed are peer-reviewed and publicly accessible. CaskSense is not affiliated with the authors or institutions. Links lead to the original publications.",
+        disclaimer: "All listed studies are peer-reviewed. Links lead to the original publications where available. CaskSense is not affiliated with the authors or institutions.",
         studies: {
           flavourBehaviour: {
             title: "Flavour Behaviour: Big Five Personality & Whisky Preferences",
@@ -2292,7 +2295,7 @@ const resources = {
           },
           contextPersonality: {
             title: "Sensory Acceptability and Personality in Consumption Contexts",
-            journal: "Food Quality and Preference (2020)",
+            journal: "Appetite (2020)",
             summary: "Explores how individual differences — including PROP taste sensitivity and personality traits — affect which drinking contexts people prefer. Shows that sensory acceptability alone does not explain preferences; personality and context interact."
           },
           recencyEffect: {
@@ -2329,8 +2332,78 @@ const resources = {
             title: "Three Approaches to Scotch Whisky Flavour Assessment",
             journal: "Applied Sciences / MDPI (2021)",
             summary: "Compares Quantitative Descriptive Analysis (QDA), Napping, and RATA methods for assessing Scotch whisky spirit. Demonstrates trade-offs between precision and practicality — informing how platforms like CaskSense balance depth with accessibility."
+          },
+          winePsychology: {
+            title: "Wine Psychology: Basic & Applied",
+            journal: "Cognitive Research: Principles and Implications / PMC (2020)",
+            summary: "A comprehensive review of how visual cues, expectations, and cognitive biases shape wine perception. Experts show greater visual bias than novices — a counterintuitive finding relevant to any structured tasting."
+          },
+          panelPerformance: {
+            title: "Sensory Panel Performance Evaluation — A Practical Review",
+            journal: "Applied Sciences / MDPI (2021)",
+            summary: "Reviews how to measure panel reliability: agreement, discrimination, repeatability, and scale usage. Provides statistical tools and software recommendations for evaluating sensory assessors."
+          },
+          sensoryCharacterization: {
+            title: "From Classical Descriptive Analysis to Novel Profiling Methods",
+            journal: "Foods / PMC (2022)",
+            summary: "An overview of sensory profiling techniques — from traditional QDA to rapid methods like CATA and Napping. Discusses reliability indices and how expertise affects consistency."
+          },
+          interRaterKappa: {
+            title: "Interrater Reliability: The Kappa Statistic",
+            journal: "Biochemia Medica / PMC (2012)",
+            summary: "The standard reference on Cohen's Kappa for measuring agreement between raters. Explains interpretation benchmarks (slight to almost perfect) — the statistical backbone behind CaskSense's group consensus metrics."
           }
-        }
+        },
+        knowledgeLabel: "Concepts",
+        knowledgeTitle: "The Ideas Behind the Numbers",
+        knowledgeIntro: "A few key concepts from psychology and measurement theory — explained for curious people, connected to whisky tasting.",
+        concepts: [
+          {
+            term: "Measuring",
+            explanation: "Measurement means assigning numbers to observations according to rules. It sounds simple, but the question 'How good is this whisky on a scale of 1 to 10?' is surprisingly complex — because it assumes that taste can be captured by a number, and that your 7 means the same as mine.",
+            whiskyLink: "In CaskSense, we offer different scales (5, 10, 20, 100 points) and normalise across them — so comparisons remain meaningful regardless of scale choice."
+          },
+          {
+            term: "Testing",
+            explanation: "In psychology, a test is a standardised procedure for measuring a characteristic. It needs to be reliable (consistent results) and valid (measuring what it claims to). A whisky rating is, in a sense, a test of your sensory perception.",
+            whiskyLink: "CaskSense treats your ratings like test data: we calculate internal consistency, check for patterns, and let you see how stable your judgments are over time."
+          },
+          {
+            term: "Perceiving",
+            explanation: "Perception is never a passive recording of reality. What you taste is shaped by expectations, context, previous experiences, and even the colour of the glass. Two people tasting the same whisky perceive different things.",
+            whiskyLink: "Blind mode removes visual and label bias. Flight order randomisation counteracts sequence effects. Both are ways CaskSense helps you perceive more honestly."
+          },
+          {
+            term: "Observing",
+            explanation: "Observation means systematically watching and recording. Unlike casual noticing, structured observation follows a protocol — what to attend to, when, and how. This is what separates a tasting from just drinking.",
+            whiskyLink: "CaskSense structures your observation: nose, palate, finish, balance — each rated separately, so you attend to dimensions you might otherwise overlook."
+          },
+          {
+            term: "Judging",
+            explanation: "Judgment is forming an opinion based on available information. Judgments are always subjective, but they can be more or less systematic. Biases like anchoring, halo effects, and recency shape our conclusions without us noticing.",
+            whiskyLink: "CaskSense visualises group judgments (Kendall's W, consensus charts) so you can see where the group agrees — and where individual palates diverge."
+          },
+          {
+            term: "Evaluating",
+            explanation: "Evaluation goes beyond judgment — it means assessing quality against criteria. A whisky isn't just 'good' or 'bad'; it can be well-balanced, complex, clean, or flawed. Evaluation requires a framework.",
+            whiskyLink: "The dimensional rating system (nose, palate, finish, balance) provides that framework — moving beyond a single number toward a multidimensional assessment."
+          },
+          {
+            term: "Predicting",
+            explanation: "Can we predict what someone will enjoy? Personality research suggests yes, to some degree. The Big Five traits correlate with flavour preferences — openness with complexity, extraversion with intensity.",
+            whiskyLink: "CaskSense's recommendation engine uses your rating history and flavour profile to suggest whiskies you're likely to enjoy — prediction based on your own data."
+          },
+          {
+            term: "Test Theory & Quality Criteria",
+            explanation: "Classical test theory states that every measurement consists of a true value plus error. Three quality criteria matter: objectivity (independent of who measures), reliability (consistent results), and validity (measures what it claims). These apply to whisky ratings too.",
+            whiskyLink: "CaskSense calculates consistency metrics for your ratings. Blind mode increases objectivity. Structured scales improve reliability. Dimensional assessment improves validity."
+          },
+          {
+            term: "Correlation",
+            explanation: "Correlation measures how strongly two things vary together — from -1 (perfectly opposite) through 0 (unrelated) to +1 (perfectly aligned). Important: correlation does not mean causation. Just because expensive whiskies get higher ratings doesn't mean price causes quality.",
+            whiskyLink: "CaskSense shows correlations in your profile: how your ratings relate to ABV, age, region, or cask type. These patterns help you understand your palate — without claiming cause and effect."
+          }
+        ]
       },
       legal: {
         back: "Back",
@@ -4671,8 +4744,8 @@ const resources = {
       },
       research: {
         title: "Forschung & Wissenschaft",
-        subtitle: "Begutachtete Studien an der Schnittstelle von Persönlichkeit, Wahrnehmung und Whisky.",
-        intro: "CaskSense basiert auf Erkenntnissen aus Sensorik, Persönlichkeitspsychologie und Psychometrie. Die folgenden Studien untersuchen, wie Persönlichkeitsmerkmale Geschmacksvorlieben prägen, wie kognitive Verzerrungen Verkostungen beeinflussen und wie moderne Methoden die Whisky-Bewertung voranbringen.",
+        subtitle: "Wo die Neugier auf Whisky der Neugier auf unsere Wahrnehmung begegnet.",
+        intro: "Ich bin Psychologe — und Whisky-Enthusiast. CaskSense ist mein Hobbyprojekt, in dem ich erkunde, was passiert, wenn psychometrische Methoden auf sensorisches Erleben treffen. Die folgenden Studien haben das Denken hinter CaskSense inspiriert oder geprägt. Sie sind nicht das Fundament — sie sind der Treibstoff für Neugier.",
         tabPersonality: "Persönlichkeit & Geschmack",
         tabPersonalityShort: "Persönlichkeit",
         tabPerception: "Wahrnehmung & Bias",
@@ -4682,8 +4755,11 @@ const resources = {
         personalityDesc: "Wie beeinflussen die Big-Five-Persönlichkeitsmerkmale, was wir schmecken — und was wir bevorzugen? Diese Studien untersuchen den Zusammenhang zwischen Persönlichkeit und Geschmackswahrnehmung.",
         perceptionDesc: "Verkostung ist nie rein objektiv. Reihenfolge-Effekte, Expertenlücken und neuronale Vernetzung beeinflussen, was wir im Glas erleben.",
         methodsDesc: "Wie bewerten Forscher und Branchenprofis Whisky? Diese Studien vergleichen schnelle sensorische Methoden, NLP-basierte Deskriptoranalyse und traditionelle Panelansätze.",
+        tabMeasurement: "Messen & Beurteilen",
+        tabMeasurementShort: "Messen",
+        measurementDesc: "Wie verlässlich sind sensorische Urteile? Was macht eine gute Bewertungsskala aus? Diese Studien untersuchen die Grundlagen des Messens von Geschmack — von Beurteilerübereinstimmung bis zur Panel-Performance.",
         readStudy: "Studie lesen",
-        disclaimer: "Alle aufgeführten Studien sind begutachtet und öffentlich zugänglich. CaskSense steht in keiner Verbindung zu den Autoren oder Institutionen. Links führen zu den Originalpublikationen.",
+        disclaimer: "Alle aufgeführten Studien sind begutachtet. Links führen zu den Originalpublikationen, sofern frei zugänglich. CaskSense steht in keiner Verbindung zu den Autoren oder Institutionen.",
         studies: {
           flavourBehaviour: {
             title: "Flavour Behaviour: Big-Five-Persönlichkeit & Whisky-Präferenzen",
@@ -4697,7 +4773,7 @@ const resources = {
           },
           contextPersonality: {
             title: "Sensorische Akzeptanz und Persönlichkeit in Konsumkontexten",
-            journal: "Food Quality and Preference (2020)",
+            journal: "Appetite (2020)",
             summary: "Untersucht, wie individuelle Unterschiede — einschließlich PROP-Geschmacksempfindlichkeit und Persönlichkeitsmerkmale — die bevorzugten Trinkkontexte beeinflussen. Zeigt, dass sensorische Akzeptanz allein Präferenzen nicht erklärt."
           },
           recencyEffect: {
@@ -4734,8 +4810,78 @@ const resources = {
             title: "Drei Ansätze zur Bewertung von Scotch-Whisky-Aromen",
             journal: "Applied Sciences / MDPI (2021)",
             summary: "Vergleicht Quantitative Deskriptive Analyse (QDA), Napping und RATA-Methoden zur Bewertung von Scotch-Whisky-Spirit. Zeigt Kompromisse zwischen Präzision und Praktikabilität — relevant für Plattformen wie CaskSense."
+          },
+          winePsychology: {
+            title: "Weinpsychologie: Grundlagen & Anwendung",
+            journal: "Cognitive Research: Principles and Implications / PMC (2020)",
+            summary: "Ein umfassender Review darüber, wie visuelle Reize, Erwartungen und kognitive Verzerrungen die Weinwahrnehmung formen. Experten zeigen stärkere visuelle Verzerrungen als Laien — ein kontraintuitiver Befund, relevant für jede strukturierte Verkostung."
+          },
+          panelPerformance: {
+            title: "Bewertung der Performance sensorischer Panels — Ein praktischer Überblick",
+            journal: "Applied Sciences / MDPI (2021)",
+            summary: "Untersucht, wie die Zuverlässigkeit von Bewertungs-Panels gemessen wird: Übereinstimmung, Diskrimination, Wiederholbarkeit und Skalennutzung. Bietet statistische Werkzeuge und Software-Empfehlungen zur Bewertung sensorischer Beurteiler."
+          },
+          sensoryCharacterization: {
+            title: "Von klassischer deskriptiver Analyse zu neuartigen Profilierungsmethoden",
+            journal: "Foods / PMC (2022)",
+            summary: "Ein Überblick über sensorische Profilierungstechniken — von traditioneller QDA bis zu schnellen Methoden wie CATA und Napping. Diskutiert Reliabilitätsindizes und wie Expertise die Konsistenz beeinflusst."
+          },
+          interRaterKappa: {
+            title: "Interrater-Reliabilität: Die Kappa-Statistik",
+            journal: "Biochemia Medica / PMC (2012)",
+            summary: "Die Standard-Referenz zu Cohens Kappa für die Messung der Übereinstimmung zwischen Beurteilern. Erklärt Interpretations-Benchmarks (gering bis fast perfekt) — das statistische Rückgrat hinter CaskSenses Gruppenkonsens-Metriken."
           }
-        }
+        },
+        knowledgeLabel: "Konzepte",
+        knowledgeTitle: "Die Ideen hinter den Zahlen",
+        knowledgeIntro: "Ein paar Schlüsselkonzepte aus Psychologie und Messtheorie — erklärt für neugierige Menschen, verbunden mit Whisky-Tasting.",
+        concepts: [
+          {
+            term: "Messen",
+            explanation: "Messen bedeutet, Beobachtungen nach Regeln Zahlen zuzuordnen. Klingt einfach, aber die Frage 'Wie gut ist dieser Whisky auf einer Skala von 1 bis 10?' ist erstaunlich komplex — weil sie voraussetzt, dass Geschmack durch eine Zahl erfassbar ist und dass deine 7 dasselbe bedeutet wie meine.",
+            whiskyLink: "In CaskSense bieten wir verschiedene Skalen (5, 10, 20, 100 Punkte) und normalisieren über sie hinweg — damit Vergleiche sinnvoll bleiben, unabhängig von der Skalenwahl."
+          },
+          {
+            term: "Testen",
+            explanation: "In der Psychologie ist ein Test ein standardisiertes Verfahren zur Messung einer Eigenschaft. Er muss reliabel (zuverlässige Ergebnisse) und valide (misst, was er vorgibt) sein. Eine Whisky-Bewertung ist, in gewissem Sinne, ein Test deiner sensorischen Wahrnehmung.",
+            whiskyLink: "CaskSense behandelt deine Bewertungen wie Testdaten: Wir berechnen interne Konsistenz, prüfen auf Muster und zeigen dir, wie stabil deine Urteile über die Zeit sind."
+          },
+          {
+            term: "Wahrnehmen",
+            explanation: "Wahrnehmung ist nie ein passives Abbilden der Realität. Was du schmeckst, wird geprägt von Erwartungen, Kontext, Vorerfahrungen und sogar der Farbe des Glases. Zwei Menschen, die denselben Whisky verkosten, nehmen Verschiedenes wahr.",
+            whiskyLink: "Der Blind-Modus entfernt visuelle Verzerrungen und Label-Bias. Die Randomisierung der Reihenfolge wirkt Positionseffekten entgegen. Beides hilft dir, ehrlicher wahrzunehmen."
+          },
+          {
+            term: "Beobachten",
+            explanation: "Beobachtung bedeutet systematisches Hinschauen und Festhalten. Anders als beiläufiges Bemerken folgt strukturierte Beobachtung einem Protokoll — worauf achten, wann und wie. Das unterscheidet ein Tasting vom bloßen Trinken.",
+            whiskyLink: "CaskSense strukturiert deine Beobachtung: Nase, Gaumen, Abgang, Balance — jedes einzeln bewertet, damit du Dimensionen beachtest, die dir sonst entgehen würden."
+          },
+          {
+            term: "Beurteilen",
+            explanation: "Beurteilen heißt, sich auf Basis verfügbarer Informationen eine Meinung zu bilden. Urteile sind immer subjektiv, aber sie können mehr oder weniger systematisch sein. Verzerrungen wie Ankereffekte, Halo-Effekte und Recency prägen unsere Schlüsse, ohne dass wir es merken.",
+            whiskyLink: "CaskSense visualisiert Gruppenurteile (Kendall's W, Konsensdiagramme), damit du sehen kannst, wo die Gruppe übereinstimmt — und wo individuelle Gaumen auseinandergehen."
+          },
+          {
+            term: "Bewerten",
+            explanation: "Bewertung geht über Beurteilung hinaus — sie bedeutet, Qualität anhand von Kriterien einzuschätzen. Ein Whisky ist nicht einfach 'gut' oder 'schlecht'; er kann ausgewogen, komplex, sauber oder fehlerhaft sein. Bewertung braucht einen Rahmen.",
+            whiskyLink: "Das dimensionale Bewertungssystem (Nase, Gaumen, Abgang, Balance) liefert diesen Rahmen — jenseits einer einzelnen Zahl hin zu einer mehrdimensionalen Einschätzung."
+          },
+          {
+            term: "Prognostizieren",
+            explanation: "Können wir vorhersagen, was jemand genießen wird? Persönlichkeitsforschung legt nahe: ja, bis zu einem gewissen Grad. Die Big-Five-Merkmale korrelieren mit Geschmackspräferenzen — Offenheit mit Komplexität, Extraversion mit Intensität.",
+            whiskyLink: "CaskSenses Empfehlungsalgorithmus nutzt deine Bewertungshistorie und dein Geschmacksprofil, um Whiskys vorzuschlagen, die dir wahrscheinlich gefallen — Prognose basierend auf deinen eigenen Daten."
+          },
+          {
+            term: "Testtheorie & Gütekriterien",
+            explanation: "Die klassische Testtheorie besagt: Jede Messung besteht aus einem wahren Wert plus Fehler. Drei Gütekriterien zählen: Objektivität (unabhängig davon, wer misst), Reliabilität (zuverlässige Ergebnisse) und Validität (misst, was sie vorgibt). Das gilt auch für Whisky-Bewertungen.",
+            whiskyLink: "CaskSense berechnet Konsistenzmaße für deine Bewertungen. Der Blind-Modus erhöht die Objektivität. Strukturierte Skalen verbessern die Reliabilität. Dimensionale Bewertung verbessert die Validität."
+          },
+          {
+            term: "Korrelation",
+            explanation: "Korrelation misst, wie stark zwei Dinge gemeinsam variieren — von -1 (perfekt gegenläufig) über 0 (kein Zusammenhang) bis +1 (perfekt gleichläufig). Wichtig: Korrelation bedeutet nicht Kausalität. Nur weil teure Whiskys höhere Bewertungen bekommen, heißt das nicht, dass der Preis Qualität verursacht.",
+            whiskyLink: "CaskSense zeigt Korrelationen in deinem Profil: wie deine Bewertungen mit ABV, Alter, Region oder Fasstyp zusammenhängen. Diese Muster helfen dir, deinen Gaumen zu verstehen — ohne Ursache und Wirkung zu behaupten."
+          }
+        ]
       },
       legal: {
         back: "Zurück",
