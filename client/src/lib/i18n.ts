@@ -261,6 +261,10 @@ const resources = {
         myHostedTastings: "My Hosted Tastings",
         hostDashboard: "Host Dashboard",
       },
+      spotlight: {
+        dismiss: "Got it",
+        experienceLevel: "New: Choose your Experience Level to customize the app to your needs. From basic tasting to full analytics.",
+      },
       news: {
         title: "News",
         tabNotifications: "Notifications",
@@ -2724,6 +2728,10 @@ const resources = {
         myHostedTastings: "Meine gehosteten Tastings",
         hostDashboard: "Host Dashboard",
       },
+      spotlight: {
+        dismiss: "Verstanden",
+        experienceLevel: "Neu: Wähle dein Experience-Level, um die App an deine Bedürfnisse anzupassen. Von einfachem Tasting bis zur vollen Analyse.",
+      },
       news: {
         title: "Neuigkeiten",
         tabNotifications: "Benachrichtigungen",
@@ -2925,7 +2933,7 @@ const resources = {
         upgradeTitle: "Mehr Features entdecken",
         upgradeDesc: "Erweitere dein Erlebnis — Profile, Analysen, Community und über 50 weitere Funktionen warten.",
         levelSelector: {
-          label: "Erwartung",
+          label: "Experience",
           guest: "Basic",
           explorer: "Entdecker",
           connoisseur: "Kenner",

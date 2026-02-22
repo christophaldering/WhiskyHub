@@ -216,3 +216,12 @@ iframe {
 .tiptap blockquote { border-left: 3px solid hsl(var(--border)); padding-left: 1rem; margin: 0.5rem 0; color: hsl(var(--muted-foreground)); }
 .tiptap pre { background: hsl(var(--secondary)); border-radius: 0.375rem; padding: 0.75rem; font-family: monospace; font-size: 0.85rem; overflow-x: auto; }
 .tiptap code { background: hsl(var(--secondary)); padding: 0.1rem 0.3rem; border-radius: 0.25rem; font-size: 0.85rem; }
+
+@keyframes spotlight-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.4); }
+  50% { box-shadow: 0 0 12px 4px rgba(217, 119, 6, 0.25); }
+}
+.spotlight-target-glow {
+  animation: spotlight-pulse 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}

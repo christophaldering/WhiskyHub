@@ -10,6 +10,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { WelcomeOverlay } from "@/components/welcome-overlay";
 import { FeedbackButton } from "@/components/feedback-button";
 import { LevelOnboarding } from "@/components/level-onboarding";
+import { SpotlightProvider, type SpotlightHint } from "@/components/spotlight-hint";
 import { useTranslation } from "react-i18next";
 import { useAppStore, LANDING_VERSION } from "@/lib/store";
 import { LoginDialog } from "@/components/login-dialog";
@@ -599,6 +600,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const handleNavigate = useCallback(() => setOpen(false), []);
 
+  const spotlightHints: SpotlightHint[] = useMemo(() => {
+    if (!currentParticipant) return [];
+    return [
+      {
+        id: "experience-level-v1",
+        targetSelector: '[data-testid="select-experience-level"]',
+        message: t("spotlight.experienceLevel"),
+        position: "right",
+      },
+    ];
+  }, [currentParticipant, t]);
+
   return (
     <FullBleedContext.Provider value={{ setFullBleed }}>
     <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden font-sans">
@@ -606,6 +619,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <WelcomeOverlay />
       <LevelOnboarding />
+      <SpotlightProvider hints={spotlightHints} />
 
       <header className="md:hidden sticky top-0 z-50 flex items-center justify-between p-4 border-b border-border/40 bg-card/95 backdrop-blur-lg">
         <div className="flex items-center gap-2">
