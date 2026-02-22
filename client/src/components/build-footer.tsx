@@ -8,6 +8,7 @@ export function BuildFooter() {
     retry: false,
   });
 
+  const version = data?.version ?? APP_VERSION;
   const sha = data?.gitSha ?? "dev";
   const env = data?.env ?? (import.meta.env.DEV ? "dev" : "prod");
 
@@ -17,7 +18,7 @@ export function BuildFooter() {
       data-testid="footer-build-info"
     >
       <span className="text-[10px] text-muted-foreground/40 font-mono tracking-wide select-none">
-        {APP_NAME} &bull; Build {sha} &bull; {env}
+        {APP_NAME} v{version} &bull; Build {sha} &bull; {env}
       </span>
     </footer>
   );

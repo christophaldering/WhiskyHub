@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft, Info, Rocket, BarChart3, Wrench, Bug, Shield, Palette, Filter, Users, Wine, BookOpen, Code2, Glasses, Brain, Globe, Camera, FileSpreadsheet, ClipboardPaste, FileUp, LayoutGrid } from "lucide-react";
+import { ArrowLeft, Info, Rocket, BarChart3, Wrench, Bug, Shield, Palette, Filter, Users, Wine, BookOpen, Code2, Glasses, Brain, Globe, Camera, FileSpreadsheet, ClipboardPaste, FileUp, LayoutGrid, Calendar } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -449,6 +449,9 @@ function ChangelogSection() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-serif font-semibold">{entry.title}</p>
                         <Badge variant="outline" className="text-[10px]">{catConfig.label}</Badge>
+                        {entry.version && (
+                          <Badge variant="secondary" className="text-[10px] font-mono">v{entry.version}</Badge>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">{entry.description}</p>
                       <p className="text-[10px] text-muted-foreground/60 mt-1.5">
@@ -522,13 +525,24 @@ function PlatformSection() {
       {versionInfo && (
         <div>
           <h3 className="text-lg font-serif font-bold text-primary mb-4">{t("about.versionInfo")}</h3>
-          <Card>
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Code2 className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{t("about.version")}:</span>
-                <span className="text-sm font-mono font-semibold">{versionInfo.version}</span>
+          <Card className="overflow-hidden" data-testid="card-version-info">
+            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <span className="text-xl font-serif font-bold text-primary">v{versionInfo.version?.split(".")[0]}</span>
               </div>
+              <div>
+                <p className="text-2xl font-serif font-bold text-primary tracking-tight" data-testid="text-version-number">
+                  v{versionInfo.version}
+                </p>
+                {versionInfo.releaseDate && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {new Date(versionInfo.releaseDate + "T00:00:00").toLocaleDateString(t("about.locale") || "de-DE", { day: "numeric", month: "long", year: "numeric" })}
+                  </p>
+                )}
+              </div>
+            </div>
+            <CardContent className="p-4 space-y-2 border-t border-border/30">
               {versionInfo.gitSha && (
                 <div className="flex items-center gap-2">
                   <Code2 className="w-4 h-4 text-muted-foreground" />
@@ -540,7 +554,7 @@ function PlatformSection() {
                 <div className="flex items-center gap-2">
                   <Code2 className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">{t("about.buildTime")}:</span>
-                  <span className="text-sm font-mono">{versionInfo.buildTime}</span>
+                  <span className="text-sm font-mono text-muted-foreground">{new Date(versionInfo.buildTime).toLocaleString(t("about.locale") || "de-DE")}</span>
                 </div>
               )}
               {versionInfo.env && (

@@ -1041,8 +1041,10 @@ const resources = {
         statRatings: "Ratings",
         versionInfo: "Version Info",
         version: "Version",
+        releaseDate: "Release Date",
         buildTime: "Build Time",
         environment: "Environment",
+        locale: "en-GB",
         backToApp: "Back to App",
         blocks: [
           { lines: ["I'm a psychologist, diagnostician, entrepreneur.", "But what truly blew me away recently was something entirely different."] },
@@ -3002,8 +3004,10 @@ const resources = {
         statRatings: "Bewertungen",
         versionInfo: "Versions-Info",
         version: "Version",
+        releaseDate: "Release-Datum",
         buildTime: "Build-Zeitpunkt",
         environment: "Umgebung",
+        locale: "de-DE",
         backToApp: "Zurück zur App",
         blocks: [
           { lines: ["Ich bin Psychologe, Diagnostiker, Unternehmer.", "Aber was mich zuletzt wirklich \u201Evon den Socken gehauen\u201C hat, war etwas ganz anderes."] },

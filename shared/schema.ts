@@ -477,6 +477,7 @@ export const changelogEntries = pgTable("changelog_entries", {
   description: text("description").notNull(),
   category: text("category").notNull().default("feature"),
   date: text("date").notNull(),
+  version: text("version"),
   visible: boolean("visible").default(true),
   createdBy: text("created_by"),
   createdAt: timestamp("created_at").defaultNow(),

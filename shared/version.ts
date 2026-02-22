@@ -1,5 +1,6 @@
-export const APP_VERSION = "1.0.0";
+export const APP_VERSION = "2.0.0";
 export const APP_NAME = "CaskSense";
+export const APP_RELEASE_DATE = "2026-02-21";
 
 export function getVersionInfo() {
   const gitSha = typeof process !== "undefined" && process.env?.GIT_SHA
@@ -12,5 +13,5 @@ export function getVersionInfo() {
     ? "prod"
     : "dev";
 
-  return { version: APP_VERSION, gitSha, buildTime, env };
+  return { version: APP_VERSION, releaseDate: APP_RELEASE_DATE, gitSha, buildTime, env };
 }
