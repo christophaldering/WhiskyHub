@@ -21,8 +21,8 @@ export const participantApi = {
     fetchJSON("/participants", { method: "POST", body: JSON.stringify({ name, pin, email, newsletterOptIn }) }),
   loginByEmail: (email: string, pin: string) =>
     fetchJSON("/participants/login", { method: "POST", body: JSON.stringify({ email, pin }) }),
-  guestJoin: (name: string) =>
-    fetchJSON("/participants/guest", { method: "POST", body: JSON.stringify({ name }) }),
+  guestJoin: (name: string, pin: string) =>
+    fetchJSON("/participants/guest", { method: "POST", body: JSON.stringify({ name, pin }) }),
   get: (id: string) => fetchJSON(`/participants/${id}`),
   setLanguage: (id: string, language: string) =>
     fetchJSON(`/participants/${id}/language`, { method: "PATCH", body: JSON.stringify({ language }) }),

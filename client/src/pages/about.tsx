@@ -317,6 +317,45 @@ function AboutStorySection() {
           — Christoph Aldering
         </motion.p>
       </div>
+
+      <motion.div
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        transition={{ duration: 0.7 }}
+        className="mt-10 pt-8 border-t border-border/30"
+        data-testid="about-contact-section"
+      >
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            <h3 className="text-lg font-serif font-bold text-primary">{t("about.contactTitle")}</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{t("about.contactNotice")}</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">{t("about.contactFeedback")}</p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <a
+                href={`mailto:${t("about.contactEmail")}`}
+                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                data-testid="link-about-email"
+              >
+                <Code2 className="w-4 h-4" />
+                {t("about.contactEmail")}
+              </a>
+              <a
+                href={t("about.contactLinkedInUrl")}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                data-testid="link-about-linkedin"
+              >
+                <Globe className="w-4 h-4" />
+                {t("about.contactLinkedIn")}
+              </a>
+            </div>
+            <p className="text-xs text-muted-foreground/60 italic pt-1">{t("about.donationHint")}</p>
+          </CardContent>
+        </Card>
+      </motion.div>
     </>
   );
 }

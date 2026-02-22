@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
 import { profileApi, participantApi, participantUpdateApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Camera, X, User, KeyRound, Mail } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Camera, X, User, KeyRound, Mail, Trash2 } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
 
 const REGIONS = [
@@ -29,6 +31,7 @@ export default function Profile() {
   const { currentParticipant, setParticipant } = useAppStore();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState("");
@@ -141,6 +144,26 @@ export default function Profile() {
       setNewPin("");
       setConfirmPin("");
       toast({ title: t("profile.saved") });
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentParticipant) return;
+      const res = await fetch(`/api/participants/${currentParticipant.id}/anonymize`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: "Request failed" }));
+        throw new Error(err.message);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: t("profile.deleteAccountSuccess") });
+      setParticipant(null);
+      navigate("/");
     },
     onError: (error: Error) => {
       toast({ title: error.message, variant: "destructive" });
@@ -496,6 +519,52 @@ export default function Profile() {
           >
             {saveMutation.isPending ? t("profile.saving") : t("profile.save")}
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="w-full border-destructive/30 bg-card shadow-sm">
+        <CardHeader>
+          <h2 className="font-serif text-lg text-destructive flex items-center gap-2" data-testid="text-danger-zone">
+            <Trash2 className="w-4 h-4" />
+            {t("profile.dangerZone")}
+          </h2>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            {t("profile.deleteAccountDesc")}
+          </p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                className="font-serif"
+                data-testid="button-delete-account"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {t("profile.deleteAccount")}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t("profile.deleteAccount")}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t("profile.deleteAccountDesc")}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid="button-delete-account-cancel">
+                  {t("profile.deleteAccountCancel")}
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteMutation.mutate()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  data-testid="button-delete-account-confirm"
+                >
+                  {t("profile.deleteAccountConfirm")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     </div>

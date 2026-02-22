@@ -663,13 +663,17 @@ export default function Landing() {
               <Wine className="w-5 h-5 text-primary" />
               <span className="font-serif font-bold text-primary">CaskSense</span>
             </div>
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-sm text-muted-foreground">
               <button onClick={() => navigate("/about")} className="hover:text-primary transition-colors">{t("landing.footer.about")}</button>
               <button onClick={() => navigate("/tour")} className="hover:text-primary transition-colors">{t("landing.footer.featureTour")}</button>
               <button onClick={() => navigate("/features")} className="hover:text-primary transition-colors">{t("landing.footer.features")}</button>
               <button onClick={() => navigate("/app")} className="hover:text-primary transition-colors">{t("landing.footer.app")}</button>
+              <a href="mailto:christoph.aldering@googlemail.com" className="hover:text-primary transition-colors" data-testid="link-footer-contact">{t("landing.footer.contact")}</a>
             </div>
-            <p className="text-xs text-muted-foreground">
+          </div>
+          <div className="mt-4 pt-4 border-t border-amber-800/10 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p className="text-[11px] text-muted-foreground/50 italic">{t("landing.footer.hobbyNotice")}</p>
+            <p className="text-xs text-muted-foreground/50">
               &copy; {new Date().getFullYear()} CaskSense
             </p>
           </div>

@@ -21,9 +21,12 @@ import type { Whisky, Tasting } from "@shared/schema";
 
 type InterestLevel = "guest" | "curious" | "enthusiast";
 
-function NameEntry({ onJoin, loading }: { onJoin: (name: string) => void; loading: boolean }) {
+function NameEntry({ onJoin, loading }: { onJoin: (name: string, pin: string) => void; loading: boolean }) {
   const { t } = useTranslation();
   const [name, setName] = useState("");
+  const [pin, setPin] = useState("");
+
+  const canSubmit = name.trim().length > 0 && pin.length >= 4;
 
   return (
     <motion.div
@@ -45,14 +48,26 @@ function NameEntry({ onJoin, loading }: { onJoin: (name: string) => void; loadin
             onChange={(e) => setName(e.target.value)}
             placeholder={t("quickTasting.namePlaceholder")}
             className="text-center text-lg h-12 font-serif"
-            onKeyDown={(e) => e.key === "Enter" && name.trim() && onJoin(name.trim())}
             autoFocus
             data-testid="input-quick-name"
           />
+          <div className="space-y-1">
+            <Input
+              type="password"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              placeholder={t("guestAuth.pinPlaceholder")}
+              maxLength={6}
+              className="text-center text-lg h-12 font-serif"
+              onKeyDown={(e) => e.key === "Enter" && canSubmit && onJoin(name.trim(), pin)}
+              data-testid="input-quick-pin"
+            />
+            <p className="text-[11px] text-muted-foreground/70">{t("guestAuth.pinReminder")}</p>
+          </div>
           <Button
             size="lg"
-            onClick={() => onJoin(name.trim())}
-            disabled={!name.trim() || loading}
+            onClick={() => onJoin(name.trim(), pin)}
+            disabled={!canSubmit || loading}
             className="w-full font-serif text-base gap-2"
             data-testid="button-quick-join"
           >
@@ -60,7 +75,9 @@ function NameEntry({ onJoin, loading }: { onJoin: (name: string) => void; loadin
             <ArrowRight className="w-4 h-4" />
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground/60">{t("quickTasting.noAccountNeeded")}</p>
+        <div className="bg-secondary/30 rounded-lg p-3 text-left space-y-2">
+          <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{t("guestAuth.hobbyNotice")}</p>
+        </div>
       </div>
     </motion.div>
   );
@@ -348,11 +365,11 @@ export default function QuickTasting() {
     enabled: !!tasting?.id,
   });
 
-  const handleGuestJoin = async (name: string) => {
+  const handleGuestJoin = async (name: string, pin: string) => {
     setJoining(true);
     setJoinError("");
     try {
-      const participant = await participantApi.guestJoin(name);
+      const participant = await participantApi.guestJoin(name, pin);
       setParticipant({
         id: participant.id,
         name: participant.name,

@@ -219,6 +219,7 @@ export default function Home() {
 
   const [showQuickJoin, setShowQuickJoin] = useState(false);
   const [quickName, setQuickName] = useState("");
+  const [quickPin, setQuickPin] = useState("");
   const [quickJoinLoading, setQuickJoinLoading] = useState(false);
   const [quickJoinError, setQuickJoinError] = useState("");
 
@@ -282,14 +283,15 @@ export default function Home() {
   };
 
   const handleQuickJoin = async () => {
-    if (!quickName.trim()) return;
+    if (!quickName.trim() || quickPin.length < 4) return;
     setQuickJoinLoading(true);
     setQuickJoinError("");
     try {
-      const guest = await participantApi.guestJoin(quickName.trim());
+      const guest = await participantApi.guestJoin(quickName.trim(), quickPin);
       setParticipant({ id: guest.id, name: guest.name, role: guest.role, canAccessWhiskyDb: guest.canAccessWhiskyDb });
       setShowQuickJoin(false);
       setQuickName("");
+      setQuickPin("");
       await doJoinSession(guest.id);
     } catch (e: any) {
       if (e.message?.includes("already taken")) {
@@ -339,13 +341,11 @@ export default function Home() {
   };
 
   const handleGuestCreateSubmit = async () => {
-    if (!guestCreateName.trim()) return;
+    if (!guestCreateName.trim() || guestCreatePin.length < 4) return;
     setGuestCreateLoading(true);
     setGuestCreateError("");
     try {
-      const participant = guestCreatePin
-        ? await participantApi.loginOrCreate(guestCreateName.trim(), guestCreatePin)
-        : await participantApi.guestJoin(guestCreateName.trim());
+      const participant = await participantApi.guestJoin(guestCreateName.trim(), guestCreatePin);
       setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
       setShowGuestCreate(false);
       setGuestCreateName("");
@@ -394,18 +394,34 @@ export default function Home() {
                 className="bg-secondary/20"
                 autoFocus
                 data-testid="input-quick-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t("guestAuth.pinLabel")}</Label>
+              <Input
+                type="password"
+                value={quickPin}
+                onChange={(e) => setQuickPin(e.target.value)}
+                placeholder={t("guestAuth.pinPlaceholder")}
+                maxLength={6}
+                className="bg-secondary/20"
+                data-testid="input-quick-pin"
                 onKeyDown={(e) => e.key === "Enter" && handleQuickJoin()}
               />
+              <p className="text-[11px] text-muted-foreground/70">{t("guestAuth.pinReminder")}</p>
             </div>
             {quickJoinError && <p className="text-sm text-destructive" data-testid="text-quick-join-error">{quickJoinError}</p>}
             <Button
               onClick={handleQuickJoin}
-              disabled={quickJoinLoading || !quickName.trim()}
+              disabled={quickJoinLoading || !quickName.trim() || quickPin.length < 4}
               className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
               data-testid="button-quick-join"
             >
               {quickJoinLoading ? t("home.joining") : t("home.joinNow")}
             </Button>
+            <div className="bg-secondary/30 rounded-lg p-3">
+              <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{t("guestAuth.hobbyNotice")}</p>
+            </div>
             <div className="text-center">
               <button
                 type="button"
@@ -445,25 +461,31 @@ export default function Home() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t("aiImport.guestPin")}</Label>
+              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t("guestAuth.pinLabel")}</Label>
               <Input
                 value={guestCreatePin}
                 onChange={(e) => setGuestCreatePin(e.target.value)}
-                placeholder={t("aiImport.guestPinPlaceholder")}
+                placeholder={t("guestAuth.pinPlaceholder")}
                 type="password"
+                maxLength={6}
                 className="bg-secondary/20"
                 data-testid="input-guest-create-pin"
+                onKeyDown={(e) => e.key === "Enter" && handleGuestCreateSubmit()}
               />
+              <p className="text-[11px] text-muted-foreground/70">{t("guestAuth.pinReminder")}</p>
             </div>
             {guestCreateError && <p className="text-sm text-destructive" data-testid="text-guest-create-error">{guestCreateError}</p>}
             <Button
               onClick={handleGuestCreateSubmit}
-              disabled={guestCreateLoading || !guestCreateName.trim()}
+              disabled={guestCreateLoading || !guestCreateName.trim() || guestCreatePin.length < 4}
               className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
               data-testid="button-guest-create-submit"
             >
               {guestCreateLoading ? t("home.joining") : t("home.joinNow")}
             </Button>
+            <div className="bg-secondary/30 rounded-lg p-3">
+              <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{t("guestAuth.hobbyNotice")}</p>
+            </div>
             <div className="text-center">
               <button
                 type="button"

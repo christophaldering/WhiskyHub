@@ -1,12 +1,15 @@
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { calendarApi } from "@/lib/api";
+import { calendarApi, friendsApi } from "@/lib/api";
 import { motion } from "framer-motion";
 import { useState, useMemo } from "react";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, MapPin, Users, Wine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/lib/store";
+
+type CalendarFilter = "all" | "mine" | "friends";
 
 interface CalendarEvent {
   id: string;
@@ -14,7 +17,9 @@ interface CalendarEvent {
   date: string;
   location: string;
   status: string;
+  hostId: string;
   hostName: string;
+  participantIds: string[];
   participantCount: number;
   whiskyCount: number;
   code: string;
@@ -57,15 +62,48 @@ export default function TastingCalendar() {
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [filter, setFilter] = useState<CalendarFilter>("all");
+  const currentParticipant = useAppStore((s) => s.currentParticipant);
+  const participantId = currentParticipant?.id;
 
   const { data: events = [], isLoading } = useQuery<CalendarEvent[]>({
     queryKey: ["calendar"],
     queryFn: calendarApi.getAll,
   });
 
+  const { data: friends = [] } = useQuery<{ id: string; friendParticipantId?: string }[]>({
+    queryKey: ["friends", participantId],
+    queryFn: () => friendsApi.getAll(participantId!),
+    enabled: !!participantId,
+  });
+
+  const friendParticipantIds = useMemo(() => {
+    const ids = new Set<string>();
+    friends.forEach((f: any) => {
+      if (f.friendParticipantId) ids.add(f.friendParticipantId);
+    });
+    return ids;
+  }, [friends]);
+
+  const filteredEvents = useMemo(() => {
+    if (filter === "all" || !participantId) return events;
+    if (filter === "mine") {
+      return events.filter(
+        (ev) => ev.hostId === participantId || ev.participantIds?.includes(participantId)
+      );
+    }
+    if (filter === "friends") {
+      return events.filter((ev) => {
+        if (friendParticipantIds.has(ev.hostId)) return true;
+        return ev.participantIds?.some((pid) => friendParticipantIds.has(pid));
+      });
+    }
+    return events;
+  }, [events, filter, participantId, friendParticipantIds]);
+
   const eventsByDate = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
-    events.forEach(ev => {
+    filteredEvents.forEach(ev => {
       const d = parseDate(ev.date);
       if (d) {
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -74,7 +112,7 @@ export default function TastingCalendar() {
       }
     });
     return map;
-  }, [events]);
+  }, [filteredEvents]);
 
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
@@ -104,7 +142,7 @@ export default function TastingCalendar() {
   const selectedEvents = selectedDate ? eventsByDate.get(selectedDate) || [] : [];
 
   const upcomingEvents = useMemo(() => {
-    return events
+    return filteredEvents
       .filter(ev => {
         const d = parseDate(ev.date);
         return d && d.getTime() >= now.getTime() - 86400000;
@@ -115,7 +153,7 @@ export default function TastingCalendar() {
         return (da?.getTime() || 0) - (db?.getTime() || 0);
       })
       .slice(0, 5);
-  }, [events]);
+  }, [filteredEvents]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="calendar-page">
@@ -126,7 +164,22 @@ export default function TastingCalendar() {
             {t("calendar.title")}
           </h1>
         </div>
-        <p className="text-sm text-muted-foreground mb-8">{t("calendar.subtitle")}</p>
+        <p className="text-sm text-muted-foreground mb-4">{t("calendar.subtitle")}</p>
+
+        <div className="flex items-center gap-2 mb-6" data-testid="calendar-filter-tabs">
+          {(["all", "mine", "friends"] as CalendarFilter[]).map((f) => (
+            <Button
+              key={f}
+              variant={filter === f ? "default" : "outline"}
+              size="sm"
+              className="text-xs font-serif h-8"
+              onClick={() => { setFilter(f); setSelectedDate(null); }}
+              data-testid={`button-filter-${f}`}
+            >
+              {t(`calendar.filter${f.charAt(0).toUpperCase() + f.slice(1)}`)}
+            </Button>
+          ))}
+        </div>
 
         {isLoading ? (
           <div className="h-80 bg-card/50 rounded-lg animate-pulse" />
@@ -239,12 +292,12 @@ export default function TastingCalendar() {
                 <h3 className="text-sm font-serif font-semibold mb-2">{t("calendar.stats")}</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="text-center">
-                    <p className="text-2xl font-serif font-bold text-primary">{events.length}</p>
+                    <p className="text-2xl font-serif font-bold text-primary">{filteredEvents.length}</p>
                     <p className="text-[10px] text-muted-foreground">{t("calendar.totalTastings")}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-serif font-bold text-primary">
-                      {events.filter(e => e.status === "open" || e.status === "draft").length}
+                      {filteredEvents.filter(e => e.status === "open" || e.status === "draft").length}
                     </p>
                     <p className="text-[10px] text-muted-foreground">{t("calendar.active")}</p>
                   </div>

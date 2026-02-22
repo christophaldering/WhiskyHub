@@ -406,18 +406,26 @@ export async function registerRoutes(
 
   app.post("/api/participants/guest", async (req, res) => {
     try {
-      const { name } = req.body;
+      const { name, pin } = req.body;
       if (!name || typeof name !== "string" || name.trim().length < 1) {
         return res.status(400).json({ message: "Name is required" });
+      }
+      if (!pin || typeof pin !== "string" || pin.trim().length < 4) {
+        return res.status(400).json({ message: "PIN is required (min. 4 digits)" });
       }
       const existing = await storage.getParticipantByName(name.trim());
       if (existing) {
         if (existing.pin) {
-          return res.status(409).json({ message: "This name is already taken by a registered user. Please sign in or choose a different name." });
+          if (pin !== existing.pin) {
+            return res.status(401).json({ message: "Invalid PIN" });
+          }
+          return res.json({ id: existing.id, name: existing.name, role: existing.role, canAccessWhiskyDb: existing.canAccessWhiskyDb || false, experienceLevel: existing.experienceLevel || "guest", guest: true });
         }
+        // Existing user without PIN — set their PIN now
+        await storage.updateParticipant(existing.id, { pin });
         return res.json({ id: existing.id, name: existing.name, role: existing.role, canAccessWhiskyDb: existing.canAccessWhiskyDb || false, experienceLevel: existing.experienceLevel || "guest", guest: true });
       }
-      const participant = await storage.createParticipant({ name: name.trim(), experienceLevel: "guest" });
+      const participant = await storage.createParticipant({ name: name.trim(), pin, experienceLevel: "guest" });
       res.status(201).json({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb || false, experienceLevel: "guest", guest: true });
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -527,6 +535,37 @@ export async function registerRoutes(
     const updated = await storage.updateParticipantLanguage(req.params.id, language);
     if (!updated) return res.status(404).json({ message: "Not found" });
     res.json(updated);
+  });
+
+  app.delete("/api/participants/:id/anonymize", async (req, res) => {
+    try {
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      const hash = crypto.randomBytes(4).toString("hex");
+      const anonymizedName = `Anonym-${hash}`;
+      await storage.updateParticipant(participant.id, {
+        name: anonymizedName,
+        email: "",
+        pin: "",
+        newsletterOptIn: false,
+      });
+      const profile = await storage.getProfile(participant.id);
+      if (profile) {
+        await storage.upsertProfile({
+          participantId: participant.id,
+          bio: "",
+          favoriteWhisky: "",
+          goToDram: "",
+          preferredRegions: "",
+          preferredPeatLevel: "",
+          preferredCaskInfluence: "",
+          photoUrl: "",
+        });
+      }
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
   });
 
   app.post("/api/participants/forgot-pin", async (req, res) => {
@@ -3386,7 +3425,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             date: t.date,
             location: t.location,
             status: t.status,
+            hostId: t.hostId,
             hostName: host?.name || "Unknown",
+            participantIds: participants.map((p) => p.participantId),
             participantCount: participants.length,
             whiskyCount: whiskies.length,
             code: t.code,

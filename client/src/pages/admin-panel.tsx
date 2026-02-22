@@ -936,9 +936,25 @@ export default function AdminPanel() {
                                 <span className="text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded">{t("admin.you")}</span>
                               )}
                             </div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {p.email || t("admin.noEmail")} · {p.hostedTastings} {t("admin.hostedTastings")}
-                              {p.createdAt && ` · ${new Date(p.createdAt).toLocaleDateString()}`}
+                            <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span data-testid={`email-indicator-${p.id}`}>
+                                    {p.email ? (
+                                      <Mail className="w-3.5 h-3.5 text-green-500 inline-block" />
+                                    ) : (
+                                      <span className="text-muted-foreground/50">—</span>
+                                    )}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{p.email || t("admin.noEmail")}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <span className="truncate">
+                                {p.email || t("admin.noEmail")} · {p.hostedTastings} {t("admin.hostedTastings")}
+                                {p.createdAt && ` · ${new Date(p.createdAt).toLocaleDateString()}`}
+                              </span>
                             </div>
                           </div>
                         </div>

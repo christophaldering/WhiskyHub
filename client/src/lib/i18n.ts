@@ -39,10 +39,10 @@ const resources = {
       },
       quickTasting: {
         welcome: "Welcome to the Tasting",
-        namePrompt: "Just tell us your name — no account needed.",
+        namePrompt: "Enter your name and choose a PIN to get started.",
         namePlaceholder: "Your name",
         joinButton: "Join Tasting",
-        noAccountNeeded: "No account needed. Just rate and enjoy.",
+        noAccountNeeded: "No email needed. Just name + PIN and you're in.",
         notesPlaceholder: "Your notes (optional)...",
         autoSaving: "Saving...",
         saved: "Saved",
@@ -207,6 +207,8 @@ const resources = {
           featureTour: "Feature Tour",
           features: "Features",
           app: "Open App",
+          hobbyNotice: "A private hobby project — no commercial interests, no tracking, no ads.",
+          contact: "Contact",
         },
       },
       news: {
@@ -231,6 +233,11 @@ const resources = {
         hoursAgo: "{{count}}h ago",
         daysAgo: "{{count}}d ago",
         unreadCount: "{{count}} unread",
+        categoryInvitation: "Invitations",
+        categoryJoin: "Join Updates",
+        categoryReveal: "Reveal Updates",
+        categoryPlatformUpdate: "Platform Updates",
+        categoryFeatureUpdate: "New Features",
       },
       featureTour: {
         backToHome: "Back",
@@ -245,6 +252,18 @@ const resources = {
         endTitle: "Ready to taste?",
         endSubtitle: "Start your first tasting, invite friends, and discover what your palate really tells you. Free to use — no account needed.",
         startNow: "Get Started",
+      },
+      guestAuth: {
+        pinLabel: "PIN",
+        pinPlaceholder: "Min. 4 digits",
+        pinReminder: "Remember your PIN — you'll need it to access your data later. You can upgrade to a full account with email anytime.",
+        hobbyNotice: "CaskSense is a private hobby project — born from pure passion for whisky and technology. No commercial interests, no tracking, no ads. If you like the project, I'd love your feedback or a donation to the hospice.",
+        consentNotice: "By registering, you agree that your ratings will be stored and used for aggregated evaluations. Individual ratings are never shared with other users.",
+        pinOnlyTitle: "Quick access (PIN only)",
+        pinOnlyDesc: "Fast & simple — just name + PIN. Rate whiskies right away.",
+        emailTitle: "Full account (with email)",
+        emailDesc: "Reset forgotten PIN, receive invitations & reminders, access all features.",
+        upgradeHint: "You can switch from PIN-only to a full account anytime — your ratings are preserved.",
       },
       login: {
         title: "Create Account",
@@ -1100,6 +1119,13 @@ const resources = {
         environment: "Environment",
         locale: "en-GB",
         backToApp: "Back to App",
+        contactTitle: "Contact & Feedback",
+        contactNotice: "CaskSense is a private hobby project — no commercial interests, no tracking, no ads. Just passion for whisky and technology.",
+        contactFeedback: "I'd love to hear from you! Questions, ideas, feedback — everything is welcome.",
+        contactEmail: "christoph.aldering@googlemail.com",
+        contactLinkedIn: "LinkedIn Profile",
+        contactLinkedInUrl: "https://www.linkedin.com/in/aldering",
+        donationHint: "If you'd like to support a good cause, donations to the hospice are always appreciated.",
         blocks: [
           { lines: ["I'm a psychologist, diagnostician, entrepreneur.", "But what truly blew me away recently was something entirely different."] },
           { heading: "Something big is happening.", accent: true, lines: [] },
@@ -1371,7 +1397,13 @@ const resources = {
         selectRegions: "Select regions...",
         selectPeat: "Select peat level...",
         selectCask: "Select cask type...",
-        selectRegionsPlaceholder: "Select regions..."
+        selectRegionsPlaceholder: "Select regions...",
+        deleteAccount: "Delete Account",
+        deleteAccountDesc: "Your name will be anonymized and your ratings will be preserved. You will lose access to your account permanently. This action cannot be undone.",
+        deleteAccountConfirm: "Yes, delete my account",
+        deleteAccountCancel: "Cancel",
+        deleteAccountSuccess: "Your account has been deleted and anonymized.",
+        dangerZone: "Danger Zone",
       },
       friends: {
         title: "My Whisky Friends",
@@ -1548,7 +1580,7 @@ const resources = {
       home: {
         createFromPhotos: "Or create from bottle photos",
         quickJoinTitle: "Join the Tasting",
-        quickJoinDesc: "Just tell us your name — no account needed. You can create one later if you'd like.",
+        quickJoinDesc: "Name + PIN — that's all you need. You can create a full account with email later.",
         yourName: "Your Name",
         namePlaceholder: "e.g. Alex",
         joinNow: "Join Now",
@@ -1697,7 +1729,10 @@ const resources = {
         noUpcoming: "No upcoming tastings scheduled.",
         stats: "Overview",
         totalTastings: "Total Tastings",
-        active: "Active"
+        active: "Active",
+        filterAll: "All",
+        filterMine: "My Tastings",
+        filterFriends: "From Friends"
       },
       exportNotes: {
         title: "Export Tasting Notes",
@@ -1885,6 +1920,7 @@ const resources = {
         communityActive: "active",
         communityBadge: "Contributor",
         contributorUpdated: "Contributor status updated.",
+        emailColumn: "Email",
       },
       distillery: {
         title: "Distillery Encyclopedia",
@@ -2098,10 +2134,10 @@ const resources = {
       },
       quickTasting: {
         welcome: "Willkommen beim Tasting",
-        namePrompt: "Sag uns einfach deinen Namen — kein Konto nötig.",
+        namePrompt: "Gib deinen Namen ein und wähle eine PIN.",
         namePlaceholder: "Dein Name",
         joinButton: "Am Tasting teilnehmen",
-        noAccountNeeded: "Kein Konto nötig. Einfach bewerten und genießen.",
+        noAccountNeeded: "Keine E-Mail nötig. Nur Name + PIN und los geht's.",
         notesPlaceholder: "Deine Notizen (optional)...",
         autoSaving: "Wird gespeichert...",
         saved: "Gespeichert",
@@ -2266,6 +2302,8 @@ const resources = {
           featureTour: "Feature-Tour",
           features: "Funktionen",
           app: "App öffnen",
+          hobbyNotice: "Ein privates Hobbyprojekt — keine kommerziellen Interessen, kein Tracking, keine Werbung.",
+          contact: "Kontakt",
         },
       },
       news: {
@@ -2290,6 +2328,11 @@ const resources = {
         hoursAgo: "vor {{count}} Std.",
         daysAgo: "vor {{count}} Tagen",
         unreadCount: "{{count}} ungelesen",
+        categoryInvitation: "Einladungen",
+        categoryJoin: "Beitritte",
+        categoryReveal: "Enthüllungen",
+        categoryPlatformUpdate: "Plattform-Updates",
+        categoryFeatureUpdate: "Neue Features",
       },
       featureTour: {
         backToHome: "Zurück",
@@ -2304,6 +2347,18 @@ const resources = {
         endTitle: "Bereit zum Verkosten?",
         endSubtitle: "Starte dein erstes Tasting, lade Freunde ein und entdecke, was dein Gaumen wirklich wahrnimmt. Kostenlos — ohne Konto.",
         startNow: "Jetzt starten",
+      },
+      guestAuth: {
+        pinLabel: "PIN",
+        pinPlaceholder: "Mind. 4 Ziffern",
+        pinReminder: "Merke dir deine PIN — du brauchst sie, um später auf deine Daten zuzugreifen. Du kannst jederzeit ein vollständiges Konto mit E-Mail erstellen.",
+        hobbyNotice: "CaskSense ist ein privates Hobbyprojekt — aus reiner Freude am Whisky und an der Technik entstanden. Keine kommerziellen Interessen, kein Tracking, keine Werbung. Wenn dir das Projekt gefällt, freue ich mich über Feedback oder eine Spende für das Hospiz.",
+        consentNotice: "Mit der Registrierung stimmst du zu, dass deine Bewertungen gespeichert und für aggregierte Auswertungen genutzt werden. Individuelle Bewertungen werden anderen Nutzern nicht zur Verfügung gestellt.",
+        pinOnlyTitle: "Schnellzugang (nur PIN)",
+        pinOnlyDesc: "Schnell & einfach — nur Name + PIN. Sofort Whiskys bewerten.",
+        emailTitle: "Vollständiges Konto (mit E-Mail)",
+        emailDesc: "Vergessene PIN zurücksetzen, Einladungen & Erinnerungen erhalten, alle Features nutzen.",
+        upgradeHint: "Du kannst jederzeit von PIN-only auf ein vollständiges Konto wechseln — deine Bewertungen bleiben erhalten.",
       },
       login: {
         title: "Konto erstellen",
@@ -3159,6 +3214,13 @@ const resources = {
         environment: "Umgebung",
         locale: "de-DE",
         backToApp: "Zurück zur App",
+        contactTitle: "Kontakt & Feedback",
+        contactNotice: "CaskSense ist ein privates Hobbyprojekt — keine kommerziellen Interessen, kein Tracking, keine Werbung. Nur Leidenschaft für Whisky und Technik.",
+        contactFeedback: "Ich freue mich über Nachrichten! Fragen, Ideen, Feedback — alles ist willkommen.",
+        contactEmail: "christoph.aldering@googlemail.com",
+        contactLinkedIn: "LinkedIn-Profil",
+        contactLinkedInUrl: "https://www.linkedin.com/in/aldering",
+        donationHint: "Wenn du etwas Gutes tun möchtest, freue ich mich über Spenden für das Hospiz.",
         blocks: [
           { lines: ["Ich bin Psychologe, Diagnostiker, Unternehmer.", "Aber was mich zuletzt wirklich \u201Evon den Socken gehauen\u201C hat, war etwas ganz anderes."] },
           { heading: "Something big is happening.", accent: true, lines: [] },
@@ -3430,7 +3492,13 @@ const resources = {
         selectRegions: "Regionen wählen...",
         selectPeat: "Torfgehalt wählen...",
         selectCask: "Fasstyp wählen...",
-        selectRegionsPlaceholder: "Regionen wählen..."
+        selectRegionsPlaceholder: "Regionen wählen...",
+        deleteAccount: "Konto löschen",
+        deleteAccountDesc: "Ihr Name wird anonymisiert und Ihre Bewertungen bleiben erhalten. Der Zugang zu Ihrem Konto geht dauerhaft verloren. Diese Aktion kann nicht rückgängig gemacht werden.",
+        deleteAccountConfirm: "Ja, Konto löschen",
+        deleteAccountCancel: "Abbrechen",
+        deleteAccountSuccess: "Ihr Konto wurde gelöscht und anonymisiert.",
+        dangerZone: "Gefahrenzone",
       },
       friends: {
         title: "Meine Whisky-Freunde",
@@ -3607,7 +3675,7 @@ const resources = {
       home: {
         createFromPhotos: "Oder aus Flaschenfotos erstellen",
         quickJoinTitle: "An der Verkostung teilnehmen",
-        quickJoinDesc: "Sag uns einfach deinen Namen — kein Konto nötig. Du kannst später eins erstellen.",
+        quickJoinDesc: "Name + PIN — mehr brauchst du nicht. Du kannst später ein vollständiges Konto mit E-Mail erstellen.",
         yourName: "Dein Name",
         namePlaceholder: "z.B. Alex",
         joinNow: "Jetzt beitreten",
@@ -3756,7 +3824,10 @@ const resources = {
         noUpcoming: "Keine anstehenden Tastings geplant.",
         stats: "Übersicht",
         totalTastings: "Tastings gesamt",
-        active: "Aktiv"
+        active: "Aktiv",
+        filterAll: "Alle",
+        filterMine: "Meine Tastings",
+        filterFriends: "Von Freunden"
       },
       exportNotes: {
         title: "Verkostungsnotizen exportieren",
@@ -3944,6 +4015,7 @@ const resources = {
         communityActive: "aktiv",
         communityBadge: "Contributor",
         contributorUpdated: "Contributor-Status aktualisiert.",
+        emailColumn: "E-Mail",
       },
       distillery: {
         title: "Destillerie-Enzyklopädie",

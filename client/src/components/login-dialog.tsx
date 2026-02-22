@@ -493,6 +493,10 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
             )}
           </div>
 
+          {!isReturning && (
+            <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
+          )}
+
           {error && <p className="text-sm text-destructive" data-testid="text-login-error">{error}</p>}
 
           <Button
@@ -503,6 +507,25 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           >
             {loading ? t('login.joining') : (isReturning ? t('login.enterReturning') : t('login.enter'))}
           </Button>
+
+          {!isReturning && (
+            <div className="space-y-3 pt-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-secondary/20 rounded-lg p-2.5 border border-border/30">
+                  <p className="text-[11px] font-serif font-semibold text-primary">{t('guestAuth.pinOnlyTitle')}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{t('guestAuth.pinOnlyDesc')}</p>
+                </div>
+                <div className="bg-primary/5 rounded-lg p-2.5 border border-primary/20">
+                  <p className="text-[11px] font-serif font-semibold text-primary">{t('guestAuth.emailTitle')}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{t('guestAuth.emailDesc')}</p>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground/70 text-center italic">{t('guestAuth.upgradeHint')}</p>
+              <div className="bg-secondary/30 rounded-lg p-3">
+                <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{t('guestAuth.hobbyNotice')}</p>
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

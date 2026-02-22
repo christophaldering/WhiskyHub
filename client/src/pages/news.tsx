@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
 import { notificationApi } from "@/lib/api";
-import { Bell, CheckCheck, Wine, Users, Sparkles, Megaphone, Gift, ChevronRight, Plus, Send } from "lucide-react";
+import { Bell, CheckCheck, Wine, Users, Sparkles, Megaphone, Gift, ChevronRight, ChevronDown, ChevronUp, Plus, Send, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,16 +17,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useToast } from "@/hooks/use-toast";
 import { GuestPreview } from "@/components/guest-preview";
 
-const typeConfig: Record<string, { icon: typeof Bell; color: string }> = {
-  invitation: { icon: Gift, color: "text-blue-600 bg-blue-600/10" },
-  join: { icon: Users, color: "text-green-600 bg-green-600/10" },
-  reveal: { icon: Wine, color: "text-amber-600 bg-amber-600/10" },
-  platform_update: { icon: Megaphone, color: "text-purple-600 bg-purple-600/10" },
-  feature_update: { icon: Sparkles, color: "text-rose-600 bg-rose-600/10" },
+const typeConfig: Record<string, { icon: typeof Bell; color: string; labelKey: string }> = {
+  invitation: { icon: Gift, color: "text-blue-600 bg-blue-600/10", labelKey: "news.categoryInvitation" },
+  join: { icon: Users, color: "text-green-600 bg-green-600/10", labelKey: "news.categoryJoin" },
+  reveal: { icon: Wine, color: "text-amber-600 bg-amber-600/10", labelKey: "news.categoryReveal" },
+  platform_update: { icon: Megaphone, color: "text-purple-600 bg-purple-600/10", labelKey: "news.categoryPlatformUpdate" },
+  feature_update: { icon: Sparkles, color: "text-rose-600 bg-rose-600/10", labelKey: "news.categoryFeatureUpdate" },
 };
 
 export default function News() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
   const { currentParticipant } = useAppStore();
   const { toast } = useToast();
@@ -35,6 +35,7 @@ export default function News() {
   const [postMessage, setPostMessage] = useState("");
   const [postType, setPostType] = useState("platform_update");
   const [postLinkUrl, setPostLinkUrl] = useState("");
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const isAdmin = currentParticipant?.role === "admin";
 
   const { data: notifications = [], isLoading } = useQuery({
@@ -94,7 +95,32 @@ export default function News() {
     });
   };
 
+  const toggleCategory = (category: string) => {
+    setCollapsedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category],
+    }));
+  };
+
   const unreadCount = notifications.filter((n: any) => !n.isRead).length;
+
+  const groupedNotifications = useMemo(() => {
+    const groups: Record<string, any[]> = {};
+    notifications.forEach((notif: any) => {
+      const category = notif.type || "platform_update";
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(notif);
+    });
+    const categoryOrder = ["invitation", "join", "reveal", "platform_update", "feature_update"];
+    const sortedEntries = Object.entries(groups).sort(([a], [b]) => {
+      const idxA = categoryOrder.indexOf(a);
+      const idxB = categoryOrder.indexOf(b);
+      return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+    });
+    return sortedEntries;
+  }, [notifications]);
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -108,6 +134,15 @@ export default function News() {
     if (hours < 24) return t("news.hoursAgo", { count: hours });
     if (days < 7) return t("news.daysAgo", { count: days });
     return date.toLocaleDateString();
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString(i18n.language === "de" ? "de-DE" : "en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   if (!currentParticipant) {
@@ -195,47 +230,105 @@ export default function News() {
           <p className="text-sm text-muted-foreground/70 mt-1">{t("news.emptyDesc")}</p>
         </motion.div>
       ) : (
-        <div className="space-y-2">
-          {notifications.map((notif: any, i: number) => {
-            const config = typeConfig[notif.type] || typeConfig.platform_update;
-            const Icon = config.icon;
+        <div className="space-y-4">
+          {groupedNotifications.map(([category, items]) => {
+            const config = typeConfig[category] || typeConfig.platform_update;
+            const CategoryIcon = config.icon;
+            const isCollapsed = collapsedCategories[category] ?? false;
+            const unreadInCategory = items.filter((n: any) => !n.isRead).length;
+
             return (
               <motion.div
-                key={notif.id}
+                key={category}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.03 }}
               >
-                <Card
-                  className={`cursor-pointer transition-all hover:shadow-md ${!notif.isRead ? "border-primary/30 bg-primary/[0.02]" : "opacity-75"}`}
-                  onClick={() => handleNotificationClick(notif)}
-                  data-testid={`card-notification-${notif.id}`}
+                <button
+                  onClick={() => toggleCategory(category)}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg bg-card border border-border/50 hover:bg-accent/50 transition-colors cursor-pointer"
+                  data-testid={`button-toggle-category-${category}`}
                 >
-                  <CardContent className="p-3 sm:p-4 flex items-start gap-3">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${config.color}`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className={`text-sm font-serif font-semibold truncate ${!notif.isRead ? "text-primary" : "text-muted-foreground"}`} data-testid={`text-notification-title-${notif.id}`}>
-                            {notif.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {!notif.isRead && (
-                            <div className="w-2 h-2 rounded-full bg-primary" />
-                          )}
-                          {notif.linkUrl && (
-                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                          )}
-                        </div>
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${config.color}`}>
+                    <CategoryIcon className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-sm font-serif font-semibold flex-1 text-left">
+                    {t(config.labelKey)}
+                  </span>
+                  {unreadInCategory > 0 && (
+                    <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4">
+                      {unreadInCategory}
+                    </Badge>
+                  )}
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                    {items.length}
+                  </Badge>
+                  {isCollapsed ? (
+                    <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                  ) : (
+                    <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+                  )}
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {!isCollapsed && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-2 mt-2 pl-2">
+                        {items.map((notif: any, i: number) => (
+                          <motion.div
+                            key={notif.id}
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.03 }}
+                          >
+                            <Card
+                              className={`cursor-pointer transition-all hover:shadow-md ${!notif.isRead ? "border-primary/30 bg-primary/[0.02]" : "opacity-75"}`}
+                              onClick={() => handleNotificationClick(notif)}
+                              data-testid={`card-notification-${notif.id}`}
+                            >
+                              <CardContent className="p-3 sm:p-4 flex items-start gap-3">
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${config.color}`}>
+                                  <CategoryIcon className="w-4 h-4" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <p className={`text-sm font-serif font-semibold truncate ${!notif.isRead ? "text-primary" : "text-muted-foreground"}`} data-testid={`text-notification-title-${notif.id}`}>
+                                        {notif.title}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      {!notif.isRead && (
+                                        <div className="w-2 h-2 rounded-full bg-primary" />
+                                      )}
+                                      {notif.linkUrl && (
+                                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                                      <Calendar className="w-3 h-3" />
+                                      <span data-testid={`text-notification-date-${notif.id}`}>{formatDate(notif.createdAt)}</span>
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground/40">·</span>
+                                    <span className="text-[10px] text-muted-foreground/60">{formatTime(notif.createdAt)}</span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        ))}
                       </div>
-                      <p className="text-[10px] text-muted-foreground/60 mt-1">{formatTime(notif.createdAt)}</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             );
           })}
