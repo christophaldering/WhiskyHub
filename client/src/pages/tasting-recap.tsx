@@ -9,10 +9,11 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, ChevronDown, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { ThankYouDialog } from "@/components/thank-you-dialog";
 import jsPDF from "jspdf";
 
 interface RecapData {
-  tasting: { id: string; title: string; date: string; location: string; status: string };
+  tasting: { id: string; title: string; date: string; location: string; status: string; hostId: string };
   hostName: string;
   participantCount: number;
   whiskyCount: number;
@@ -343,6 +344,9 @@ export default function TastingRecap() {
               <Button variant="ghost" size="sm" onClick={() => setSelectedTastingId(null)} data-testid="button-recap-back">
                 {t("recap.back")}
               </Button>
+            )}
+            {currentParticipant?.id === recap.tasting.hostId && (
+              <ThankYouDialog tastingId={recap.tasting.id} tastingTitle={recap.tasting.title} />
             )}
             <Button variant="outline" size="sm" onClick={handlePdfDownload} data-testid="button-pdf-recap">
               <FileDown className="w-4 h-4 mr-1" /> PDF

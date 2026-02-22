@@ -351,6 +351,12 @@ export const hostDashboardApi = {
 // ===== Tasting Recap =====
 export const recapApi = {
   get: (tastingId: string) => fetchJSON(`/tastings/${tastingId}/recap`),
+  sendThankYou: (tastingId: string, hostId: string, message: string, language: string) =>
+    fetchJSON(`/tastings/${tastingId}/thank-you`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hostId, message, language }),
+    }),
 };
 
 // ===== Pairing Suggestions =====

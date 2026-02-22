@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import { useAppStore } from "@/lib/store";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Tasting } from "@shared/schema";
+import { ThankYouDialog } from "@/components/thank-you-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -328,6 +329,7 @@ export function SessionControl({ tasting, totalWhiskies }: SessionControlProps) 
                 <Trophy className="w-3.5 h-3.5 mr-1" />
                 {t("session.viewResults")}
               </Button>
+              <ThankYouDialog tastingId={tasting.id} tastingTitle={tasting.title} />
               <Button
                 size="sm"
                 variant="outline"

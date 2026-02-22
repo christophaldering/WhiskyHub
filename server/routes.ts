@@ -13,7 +13,7 @@ import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertPart
 import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
-import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail } from "./email";
+import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail } from "./email";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES } from "./ai-settings";
 
@@ -3595,6 +3595,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           date: tasting.date,
           location: tasting.location,
           status: tasting.status,
+          hostId: tasting.hostId,
         },
         hostName: host?.name || "Unknown",
         participantCount: participants.length,
@@ -3604,6 +3605,90 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         overallAverages,
         participantHighlights,
       });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== THANK YOU EMAIL =====
+
+  app.post("/api/tastings/:id/thank-you", async (req, res) => {
+    try {
+      const tastingId = req.params.id;
+      const { hostId, message, language } = req.body;
+      if (!hostId) return res.status(400).json({ message: "hostId required" });
+
+      const tasting = await storage.getTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.hostId !== hostId) return res.status(403).json({ message: "Only the host can send thank-you emails" });
+
+      if (!isSmtpConfigured()) return res.status(503).json({ message: "Email not configured" });
+
+      const host = await storage.getParticipant(hostId);
+      if (!host) return res.status(404).json({ message: "Host not found" });
+
+      const [participants, whiskies, ratings] = await Promise.all([
+        storage.getTastingParticipants(tastingId),
+        storage.getWhiskiesForTasting(tastingId),
+        storage.getRatingsForTasting(tastingId),
+      ]);
+
+      const whiskyMap = new Map(whiskies.map(w => [w.id, w]));
+      const whiskyRatings = new Map<string, number[]>();
+      for (const r of ratings) {
+        if (r.overall != null) {
+          if (!whiskyRatings.has(r.whiskyId)) whiskyRatings.set(r.whiskyId, []);
+          whiskyRatings.get(r.whiskyId)!.push(r.overall);
+        }
+      }
+      const topRated = Array.from(whiskyRatings.entries())
+        .map(([wId, overalls]) => {
+          const w = whiskyMap.get(wId);
+          const avg = overalls.reduce((a, b) => a + b, 0) / overalls.length;
+          return { name: w?.name || "Unknown", distillery: w?.distillery || null, avgScore: Math.round(avg * 10) / 10 };
+        })
+        .sort((a, b) => b.avgScore - a.avgScore)
+        .slice(0, 3);
+
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const recapLink = `${baseUrl}/recap/${tastingId}`;
+
+      const recipientsWithEmail = participants.filter(p => p.email && p.id !== hostId);
+      let sentCount = 0;
+      let failCount = 0;
+
+      for (const p of recipientsWithEmail) {
+        const emailContent = buildThankYouEmail({
+          hostName: host.name,
+          recipientName: p.name,
+          tastingTitle: tasting.title,
+          tastingDate: tasting.date || "",
+          tastingLocation: tasting.location || "",
+          personalMessage: message || "",
+          topRated,
+          recapLink,
+          language: language || "de",
+        });
+        const sent = await sendEmail({ to: p.email!, ...emailContent });
+        if (sent) sentCount++; else failCount++;
+      }
+
+      if (host.email) {
+        const hostEmailContent = buildThankYouEmail({
+          hostName: host.name,
+          recipientName: host.name,
+          tastingTitle: tasting.title,
+          tastingDate: tasting.date || "",
+          tastingLocation: tasting.location || "",
+          personalMessage: message || "",
+          topRated,
+          recapLink,
+          language: language || "de",
+        });
+        await sendEmail({ to: host.email, ...hostEmailContent });
+      }
+
+      res.json({ sent: sentCount, failed: failCount, total: recipientsWithEmail.length });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

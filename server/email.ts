@@ -290,3 +290,94 @@ export function buildInviteEmail(params: {
 
   return { subject, html };
 }
+
+export function buildThankYouEmail(params: {
+  hostName: string;
+  recipientName: string;
+  tastingTitle: string;
+  tastingDate: string;
+  tastingLocation: string;
+  personalMessage: string;
+  topRated: { name: string; distillery: string | null; avgScore: number }[];
+  recapLink: string;
+  language: string;
+}): { subject: string; html: string } {
+  const { hostName, recipientName, tastingTitle, tastingDate, tastingLocation, personalMessage, topRated, recapLink, language } = params;
+  const isDE = language === "de";
+
+  const subject = isDE
+    ? `🥃 ${tastingTitle} — Danke & Ergebnisse`
+    : `🥃 ${tastingTitle} — Thank You & Results`;
+
+  const medalLabels = ["🥇", "🥈", "🥉"];
+  const medalColors = ["#FFD700", "#C0C0C0", "#CD7F32"];
+
+  const podiumRows = topRated.slice(0, 3).map((w, i) => {
+    const barWidth = Math.round((w.avgScore / 100) * 100);
+    return `
+      <tr>
+        <td style="padding:6px 8px;font-size:20px;text-align:center;width:36px;">${medalLabels[i]}</td>
+        <td style="padding:6px 8px;">
+          <div style="font-size:15px;font-weight:700;color:#2d2d30;">${w.name}</div>
+          ${w.distillery ? `<div style="font-size:11px;color:#888;">${w.distillery}</div>` : ""}
+        </td>
+        <td style="padding:6px 8px;width:120px;vertical-align:middle;">
+          <div style="background:#f0ece6;border-radius:12px;height:18px;overflow:hidden;">
+            <div style="background:linear-gradient(90deg, ${medalColors[i]}, #c8a864);height:100%;width:${barWidth}%;border-radius:12px;"></div>
+          </div>
+        </td>
+        <td style="padding:6px 8px;font-size:16px;font-weight:700;color:#c8a864;text-align:right;width:48px;">${w.avgScore.toFixed(1)}</td>
+      </tr>`;
+  }).join("");
+
+  const noteBlock = personalMessage.trim()
+    ? `<div style="margin:20px 0;padding:14px 18px;background:#f8f7f4;border-left:3px solid #c8a864;border-radius:2px;font-style:italic;color:#555;font-size:14px;line-height:1.6;">"${personalMessage}"<br/><span style="font-style:normal;font-size:12px;color:#888;">— ${hostName}</span></div>`
+    : "";
+
+  const greeting = isDE ? `Hallo <strong>${recipientName}</strong>,` : `Hello <strong>${recipientName}</strong>,`;
+  const thankText = isDE
+    ? `vielen Dank für deine Teilnahme an <strong>${tastingTitle}</strong>! Es war ein wunderbarer Abend, und hier sind die Highlights:`
+    : `thank you so much for joining <strong>${tastingTitle}</strong>! It was a wonderful evening, and here are the highlights:`;
+  const podiumTitle = isDE ? "🏆 Top 3 des Abends" : "🏆 Top 3 of the Evening";
+  const ctaText = isDE ? "Alle Ergebnisse ansehen" : "View All Results";
+  const ctaHint = isDE
+    ? "Auf der Ergebnisseite findest du das vollständige Ranking, Durchschnittswerte, Teilnehmer-Highlights und kannst alles als PDF herunterladen."
+    : "On the results page you'll find the full ranking, averages, participant highlights, and you can download everything as a PDF.";
+  const footer = isDE ? "Wo Verkostung zur Reflexion wird" : "Where Tasting Becomes Reflection";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;font-family:'Georgia',serif;background:#f5f3f0;color:#333;">
+  <div style="max-width:540px;margin:40px auto;background:#fff;border:1px solid #e5e5e0;border-radius:6px;overflow:hidden;">
+    <div style="background:linear-gradient(135deg, #2d2d30 0%, #3d3d42 100%);padding:28px 32px 20px;">
+      <h1 style="margin:0;font-size:26px;color:#c8a864;font-weight:700;letter-spacing:-0.5px;">CaskSense</h1>
+      <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a0956e;">${isDE ? "Danke & Ergebnisse" : "Thank You & Results"}</p>
+    </div>
+    <div style="padding:28px 32px;">
+      <p style="font-size:16px;line-height:1.6;margin:0 0 8px;">${greeting}</p>
+      <p style="font-size:15px;line-height:1.6;margin:0 0 20px;color:#555;">${thankText}</p>
+      ${noteBlock}
+      <div style="margin:24px 0;padding:20px;background:#fafaf8;border:1px solid #e5e5e0;border-radius:6px;">
+        <h3 style="margin:0 0 12px;font-size:16px;color:#2d2d30;">${podiumTitle}</h3>
+        <table style="width:100%;border-collapse:collapse;">
+          ${podiumRows}
+        </table>
+      </div>
+      <div style="text-align:center;margin:28px 0 16px;">
+        <a href="${recapLink}" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg, #c8a864 0%, #a8845c 100%);color:#fff;text-decoration:none;border-radius:6px;font-size:15px;font-weight:700;letter-spacing:0.5px;">
+          ${ctaText}
+        </a>
+      </div>
+      <p style="font-size:12px;color:#a0aec0;margin:12px 0 0;line-height:1.5;text-align:center;">${ctaHint}</p>
+    </div>
+    <div style="padding:14px 32px;border-top:1px solid #e5e5e0;background:#fafaf8;">
+      <p style="margin:0;font-size:11px;color:#a0aec0;text-align:center;">CaskSense — ${footer} · ${tastingDate}${tastingLocation ? ` · ${tastingLocation}` : ""}</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  return { subject, html };
+}
