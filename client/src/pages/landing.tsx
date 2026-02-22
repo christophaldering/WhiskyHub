@@ -14,8 +14,7 @@ import slideAnalytics from "@/assets/tour/slide-analytics.png";
 import slideFlightboard from "@/assets/tour/slide-flightboard.png";
 import { LanguageToggle } from "@/components/language-toggle";
 import {
-  Glasses, BookOpen, Users, BarChart3, Brain,
-  Globe, ArrowRight, Wine,
+  Brain, ArrowRight, Wine,
   ChevronDown, Heart,
   Presentation, Play, Star, Search, Beaker, CheckCircle2
 } from "lucide-react";
@@ -56,14 +55,6 @@ export default function Landing() {
     staleTime: 60_000,
   });
 
-  const features = [
-    { icon: Glasses, titleKey: "landing.features.blindTasting", descKey: "landing.features.blindTastingDesc", color: "text-amber-600 bg-amber-600/10" },
-    { icon: Brain, titleKey: "landing.features.aiImport", descKey: "landing.features.aiImportDesc", color: "text-orange-500 bg-orange-500/10" },
-    { icon: BookOpen, titleKey: "landing.features.journal", descKey: "landing.features.journalDesc", color: "text-amber-700 bg-amber-700/10" },
-    { icon: BarChart3, titleKey: "landing.features.analytics", descKey: "landing.features.analyticsDesc", color: "text-yellow-600 bg-yellow-600/10" },
-    { icon: Users, titleKey: "landing.features.community", descKey: "landing.features.communityDesc", color: "text-orange-600 bg-orange-600/10" },
-    { icon: Globe, titleKey: "landing.features.encyclopedia", descKey: "landing.features.encyclopediaDesc", color: "text-amber-500 bg-amber-500/10" },
-  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
@@ -80,7 +71,7 @@ export default function Landing() {
               <Presentation className="w-3.5 h-3.5" />
               {t("landing.nav.featureTour")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-sm hidden sm:inline-flex" data-testid="landing-nav-explore">
+            <Button variant="ghost" size="sm" onClick={() => document.getElementById("story")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-sm hidden sm:inline-flex" data-testid="landing-nav-explore">
               {t("landing.nav.explore")}
             </Button>
             <Button size="sm" onClick={() => navigate("/app")} className="font-serif text-sm gap-1.5" data-testid="landing-nav-login">
@@ -376,40 +367,6 @@ export default function Landing() {
         </section>
       )}
 
-      {/* Features */}
-      <section id="features" className="py-12 sm:py-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={0}
-            variants={fadeUp}
-            className="text-center mb-8"
-          >
-            <h2 className="text-2xl sm:text-3xl font-serif font-black text-primary">{t("landing.features.title")}</h2>
-          </motion.div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-            {features.map((f, i) => (
-              <motion.div
-                key={f.titleKey}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={i}
-                variants={fadeUp}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 bg-card/50 border border-border/30"
-                data-testid={`landing-feature-${i}`}
-              >
-                <div className={`w-8 h-8 rounded-md ${f.color} flex items-center justify-center shrink-0`}>
-                  <f.icon className="w-4 h-4" />
-                </div>
-                <span className="font-serif font-semibold text-primary text-sm">{t(f.titleKey)}</span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
 
       {/* Origin Story */}
