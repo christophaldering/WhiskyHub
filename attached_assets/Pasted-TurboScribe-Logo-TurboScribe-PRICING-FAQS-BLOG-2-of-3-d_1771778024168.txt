@@ -1,0 +1,46 @@
+TurboScribe Logo
+TurboScribe
+PRICING
+FAQS
+BLOG
+2 of 3 daily transcriptions used
+
+Shortcuts
+Folders
+Export
+More
+
+WhatsApp Audio 2026-02-22 at 13.48.59
+22. Feb. 2026, 17:31
+WhatsApp Audio 2026-02-22 at 13.48.59
+Play
+00:00
+05:43
+Mute
+
+Settings
+AirPlay
+(0:02) Lieber Michael, also herzlichen Dank für die, wie wir sagen, erwartungsgemäß sehr (0:09) differenzierte und maximal hilfreiche Rückmeldung. Zunächst mal, ich dachte, du (0:15) wärst schon in Schottland, dann hatte ich irgendwie ein Foto auf WhatsApp (0:18) offensichtlich falsch interpretiert und daher jetzt erst mal gute Besserung. (0:24) Hast mein maximales Mitgefühl, weil das kenne ich, das lähmt ja doch extrem, also (0:31) auf, dass du schnell wieder beweglich bist und dann in Schottland vor allen (0:36) Dingen da schmerzfrei unterwegs bist.
+Dann zu den Rückmeldungen, ja, haben mir (0:44) natürlich auch die Augen geöffnet, auch ein bisschen desillusionierend, weil also (0:47) so ITler sind ja dann doch relativ cool und du bist selber, also ich war da selber (0:52) so fasziniert und euphorisch und dann wirst du mit der harten Wirklichkeit (0:57) realisiert, dass das, was ich da jetzt sozusagen entdeckt habe, für (1:01) diejenigen, die drinstecken, natürlich irgendwie tägliche Praxis ist. Bin (1:04) danach dann auch jetzt tatsächlich noch ein bisschen tiefer eingestiegen, also (1:07) viele Dinge sind jetzt gar nicht so ungewöhnlich. Die Sicherheitsthematik, ja, (1:14) die muss angegangen werden, kann aber auch angegangen werden, indem man das (1:17) letztendlich auf deutsche, auf europäische Server irgendwann mal zieht, wo das Ganze (1:21) dann auch mit entsprechenden Datenschutzmechanismen, da sind wir ja (1:25) nicht die Ersten und das würde ich dann auch machen tatsächlich, abgesichert ist (1:29) und wo man dann über entsprechende Eingabeabfragen die Bereitschaft zur (1:34) Verarbeitung der Daten und so weiter dann abfragt, anonymisiert und Zusagen (1:38) macht und das dann auch tatsächlich einhält.
+Das ist das eine, die (1:41) Kostenseite. Tatsächlich sind die Kosten gar nicht über den Traffic, über meine (1:47) Chat-GPT-Schnittstelle produziert worden, sondern das ist meine leihenhaft (1:56) bröckchenweise Kompilierung, sage ich mal, leihenhaft. Ich habe immer wieder (2:00) Ideen und dann spreche ich die da rein und dann setzt er die um und das machen (2:02) professionelle Programmierer anders.
+Die definieren erst mal Packages und dann (2:07) werden die irgendwann hochgejagt und dann werden die kompiliert und dann kostet (2:10) alles deutlich weniger. Also das ist schon auch, habe ich auch gelernt, das (2:13) Geschäftsmodell von Repl.it offensichtlich. Leute wie mich auf (2:16) diese Art und Weise zwar immer nur im Pfennig- oder Cent-Bereich, aber dann (2:22) doch zu motivieren, da auch ordentlich Rechenleistung zu kaufen.
+(2:26) Aber ich speichere das Ganze bei mir unter Personalentwicklung ab. Also ich (2:31) lerne einfach extrem viel gerade und das macht mir auch Spaß und das ist (2:34) wirklich Spaß an der Freude. Also vor dem Hintergrund brauchst du dir (2:38) darüber keine Sorgen zu machen und die anderen auch nicht.
+Also Thema Datenschutz, (2:43) das Thema Kosten und das dritte Thema Komplexität, da hatte sich der Axel (2:48) auch schon gemeldet und für mich total nachvollziehbar. Ich sage mal in der (2:53) Hoffnung, dass das jetzt nicht, habe ich ihm auch so geschrieben, nicht der Stab (2:55) gebrochen ist, weil es muss natürlich, also das ist die ganz klare Konsequenz, (3:01) ein, ich sage es mal, so ein Rollenmodell geben. Von Basic, Zitat zu Single-Mass, ich (3:07) will nichts als an einem Tasting teilnehmen und auch nichts anderes (3:09) sehen.
+Interessiert, dann werden halt noch ein paar Zusatzfeatures aufgeklappt oder (3:19) ich habe dann sogar noch Enthusiast als Idee. Also ich habe wirklich ein tiefes (3:24) Interesse, dann ist das Menü noch mal weiter aufgeklappt bis hin zu, weiß ich (3:29) nicht, Scientific Background Interested, weil, ein kleiner Ausblick, die (3:35) Idee ist da schon natürlich, jetzt bin ich Diagnostiker und Psychologe, da so (3:41) kleine Auswertungsmöglichkeiten auch anzubieten. Wie sieht denn meine (3:46) Whisky-Sammlung aus und was sagt das über mich, gegebenenfalls auch im (3:49) Vergleich zu anderen? Und da kommt dann die ganze Testtheorie und Testpraxis, (3:55) wirklich mein methodisch-wissenschaftlicher Hintergrund, der (3:59) interessiert natürlich die breite Öffentlichkeit nicht, könnte (4:02) gegebenenfalls sogar abschrecken, aber das möchte ich auf der anderen Seite (4:06) schon auch transparent machen, dass das sehr möglich ist und das fände ich (4:09) natürlich total faszinierend, das wäre maximal faszinierend.
+Also ich glaube, gut, (4:14) da gibt es dann welche, die schalten ab und sagen, um Gottes Willen, vielleicht (4:17) kriegen auch manche Angst, das kann ich auch nicht ausschließen, aber würde ich (4:22) natürlich zu verhindern suchen. Also an diesem Prozess orientiert denke ich (4:26) gerade weiter. Also mich fasziniert das weiterhin, ich bin da noch nicht (4:29) abgeschreckt, jetzt ist es halt User Experience, an der man sich orientieren (4:34) muss.
+Da kann man dann sagen, die blöden Nutzer, warum sehen die denn nicht alles, (4:38) was so toll ist? Dann fühle ich mich fast wie der Bosch-Ingenieur, der also ein (4:41) super Auto baut, nur leider will der, oder Bosch nennt es gerade nicht irgendwie BMW (4:47) oder Audi, nur der blöde Kunde will es nicht haben, das ist ja doof. (4:51) Also ich will da nicht am Markt oder an den Interessen und Bedarfen vorbei (4:57) entwickeln, aus der reinen Selbstverliebtheit des deutschen Ingenieurs, der ich ja nicht bin, (5:03) aber in dem Sinne dann schon. Also ich hoffe und würde mich wirklich tierisch (5:07) freuen, wenn wir da weiterhin so ein bisschen in der Interaktion, in der (5:10) Iteration agieren könnten.
+Ich würde wahrscheinlich sogar heute noch einen (5:16) Relaunch hochschicken, weil am Samstag habe ich dann tatsächlich nicht mehr so (5:20) viel gemacht und dann kam aber wieder eine Idee nach der anderen und die lässt (5:23) sich ja relativ so leicht umsetzen. Ich muss das jetzt noch ein bisschen testen, (5:26) ich muss vor allen Dingen die Fehler da rausbauen mit diesem Blindtasting, das war (5:30) irgendwie auch hyperkomplex, das war doof, dass man da irgendwie zehn Minuten vorher (5:33) fertig wird. Naja, lange Rede, kurzer Sinn, jetzt habe ich die auch lange auf die Box (5:37) gequatscht.
+Gute Besserung, schönen Sonntag und ich sage mal bis die Tage. Tschüss!
+Ready to Go Unlimited?
+Get immediate access to...
+Unlimited Transcriptions
+Unlimited transcriptions for one person.
+🚀
+10 Hour Uploads
+Each file can be up to 10 hours long / 5 GB. Upload 50 files at a time.
+Whale
+All Features
+Translation to 134+ languages. Bulk exports. All transcription modes. Unlimited storage.
+⚡️
+Highest Priority
+We'll always transcribe your files ASAP with the highest priority.

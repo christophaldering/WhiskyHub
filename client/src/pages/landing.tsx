@@ -264,43 +264,6 @@ export default function Landing() {
         </section>
       )}
 
-      {/* Features */}
-      <section id="features" className="py-20 sm:py-28">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={0}
-            variants={fadeUp}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.features.title")}</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("landing.features.subtitle")}</p>
-          </motion.div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((f, i) => (
-              <motion.div
-                key={f.titleKey}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={i}
-                variants={fadeUp}
-                className="bg-card border border-border/50 rounded-xl p-6 hover:shadow-md hover:border-amber-700/30 transition-all group"
-                data-testid={`landing-feature-${i}`}
-              >
-                <div className={`w-12 h-12 rounded-lg ${f.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <f.icon className="w-6 h-6" />
-                </div>
-                <h3 className="font-serif font-bold text-primary text-lg mb-2">{t(f.titleKey)}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{t(f.descKey)}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Experience Levels */}
       <section className="py-20 sm:py-28 bg-gradient-to-b from-background via-amber-900/5 to-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -371,6 +334,43 @@ export default function Landing() {
             <CheckCircle2 className="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
             {t("landing.roles.guest.name")} {String.fromCharCode(8594)} {t("landing.roles.scientist.name")} — {t("landing.roles.subtitle").split("—")[1]?.trim() || ""}
           </motion.p>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section id="features" className="py-20 sm:py-28">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={0}
+            variants={fadeUp}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.features.title")}</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("landing.features.subtitle")}</p>
+          </motion.div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((f, i) => (
+              <motion.div
+                key={f.titleKey}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                custom={i}
+                variants={fadeUp}
+                className="bg-card border border-border/50 rounded-xl p-6 hover:shadow-md hover:border-amber-700/30 transition-all group"
+                data-testid={`landing-feature-${i}`}
+              >
+                <div className={`w-12 h-12 rounded-lg ${f.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <f.icon className="w-6 h-6" />
+                </div>
+                <h3 className="font-serif font-bold text-primary text-lg mb-2">{t(f.titleKey)}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{t(f.descKey)}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
