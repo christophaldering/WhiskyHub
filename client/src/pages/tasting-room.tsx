@@ -17,6 +17,7 @@ import { InvitePanel } from "@/components/invite-panel";
 import DiscussionPanel from "@/components/discussion-panel";
 import ReflectionPanel from "@/components/reflection-panel";
 import TastingPhotos from "@/components/tasting-photos";
+import { TastingAnalytics } from "@/components/tasting-analytics";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
@@ -1839,6 +1840,9 @@ export default function TastingRoom() {
 
       <FlightBoard tasting={tasting} whiskies={whiskyList} isHost={isHost} getBlindState={getBlindState} />
 
+      {(tasting.status === "reveal" || tasting.status === "archived") && (
+        <TastingAnalytics tastingId={tasting.id} />
+      )}
 
       {tasting.status === "open" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

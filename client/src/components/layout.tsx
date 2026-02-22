@@ -269,8 +269,20 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
       <div className="p-4 border-t border-border/40 space-y-3">
         {currentParticipant && (
           <div className="space-y-1.5">
-            <div className="text-xs text-muted-foreground px-1 mb-1">
-              Signed in as <span className="font-semibold text-foreground">{currentParticipant.name}</span>
+            <div className="flex items-center justify-between px-1 mb-1">
+              <div className="text-xs text-muted-foreground">
+                Signed in as <span className="font-semibold text-foreground">{currentParticipant.name}</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => { setParticipant(null); onNavigate(); }}
+                className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                title={t('nav.leave')}
+                data-testid="button-signout-sidebar"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </Button>
             </div>
             <div className="flex items-center gap-2 px-1">
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold whitespace-nowrap">{t('nav.levelSelector.label')}</span>
@@ -299,17 +311,6 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
           <ThemeToggle />
           <AmbientToggle />
         </div>
-        {currentParticipant && (
-          <Button
-            variant="outline"
-            onClick={() => { setParticipant(null); onNavigate(); }}
-            className="w-full flex items-center gap-2 text-muted-foreground hover:text-destructive hover:border-destructive/40 hover:bg-destructive/5 transition-colors"
-            data-testid="button-signout-sidebar"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>{t('nav.leave')}</span>
-          </Button>
-        )}
       </div>
     </div>
   );

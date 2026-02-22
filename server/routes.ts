@@ -1328,60 +1328,272 @@ export async function registerRoutes(
 
   app.get("/api/tastings/:id/analytics", async (req, res) => {
     const tastingId = req.params.id;
+    const requesterId = req.query.requesterId as string | undefined;
     const tasting = await storage.getTasting(tastingId);
     if (!tasting) return res.status(404).json({ message: "Tasting not found" });
 
-    // Only expose analytics when in reveal or archived
     if (tasting.status !== "reveal" && tasting.status !== "archived") {
       return res.status(403).json({ message: "Analytics not available in Ritual Mode" });
     }
 
     const allRatings = await storage.getRatingsForTasting(tastingId);
     const whiskyList = await storage.getWhiskiesForTasting(tastingId);
+    const scale = (tasting as any).ratingScale || 100;
+
+    const norm = (v: number) => Math.round((v / scale) * 1000) / 10;
+    const r1 = (v: number) => Math.round(v * 10) / 10;
+
+    const calcMedian = (arr: number[]) => {
+      const s = [...arr].sort((a, b) => a - b);
+      const n = s.length;
+      if (n === 0) return 0;
+      return n % 2 === 0 ? (s[n / 2 - 1] + s[n / 2]) / 2 : s[Math.floor(n / 2)];
+    };
+
+    const calcIQR = (arr: number[]) => {
+      const s = [...arr].sort((a, b) => a - b);
+      const n = s.length;
+      if (n < 4) return null;
+      const q1 = calcMedian(s.slice(0, Math.floor(n / 2)));
+      const q3 = calcMedian(s.slice(Math.ceil(n / 2)));
+      return r1(q3 - q1);
+    };
+
+    const participantIds = [...new Set(allRatings.map(r => r.participantId))];
+    const participantCount = participantIds.length;
 
     const whiskyAnalytics = whiskyList.map(w => {
       const wr = allRatings.filter(r => r.whiskyId === w.id);
       const count = wr.length;
-      if (count === 0) return { whisky: w, count: 0, avg: 0, median: 0, stdDev: 0, categories: {} };
+      if (count === 0) return { whisky: w, count: 0, avg: 0, median: 0, stdDev: 0, iqr: null, categories: {}, myRating: null };
 
-      const overallScores = wr.map(r => r.overall).sort((a, b) => a - b);
+      const overallScores = wr.map(r => norm(r.overall));
       const avg = overallScores.reduce((a, b) => a + b, 0) / count;
-      const median = count % 2 === 0 
-        ? (overallScores[count / 2 - 1] + overallScores[count / 2]) / 2 
-        : overallScores[Math.floor(count / 2)];
+      const median = calcMedian(overallScores);
       const variance = overallScores.reduce((acc, val) => acc + Math.pow(val - avg, 2), 0) / count;
       const stdDev = Math.sqrt(variance);
+      const iqr = calcIQR(overallScores);
 
-      const categoryAvg = (key: keyof typeof wr[0]) => {
-        const vals = wr.map(r => r[key] as number);
+      const categoryAvg = (key: string) => {
+        const vals = wr.map(r => norm((r as any)[key] as number));
         return vals.reduce((a, b) => a + b, 0) / count;
       };
+      const categoryMedian = (key: string) => {
+        const vals = wr.map(r => norm((r as any)[key] as number));
+        return calcMedian(vals);
+      };
+
+      let myRating = null;
+      if (requesterId) {
+        const mine = wr.find(r => r.participantId === requesterId);
+        if (mine) {
+          myRating = {
+            nose: norm(mine.nose),
+            taste: norm(mine.taste),
+            finish: norm(mine.finish),
+            balance: norm(mine.balance),
+            overall: norm(mine.overall),
+          };
+        }
+      }
 
       return {
         whisky: w,
         count,
-        avg: Math.round(avg * 10) / 10,
-        median: Math.round(median * 10) / 10,
-        stdDev: Math.round(stdDev * 10) / 10,
+        avg: r1(avg),
+        median: r1(median),
+        stdDev: r1(stdDev),
+        iqr,
         categories: {
-          nose: Math.round(categoryAvg("nose") * 10) / 10,
-          taste: Math.round(categoryAvg("taste") * 10) / 10,
-          finish: Math.round(categoryAvg("finish") * 10) / 10,
-          balance: Math.round(categoryAvg("balance") * 10) / 10,
+          nose: { avg: r1(categoryAvg("nose")), median: r1(categoryMedian("nose")) },
+          taste: { avg: r1(categoryAvg("taste")), median: r1(categoryMedian("taste")) },
+          finish: { avg: r1(categoryAvg("finish")), median: r1(categoryMedian("finish")) },
+          balance: { avg: r1(categoryAvg("balance")), median: r1(categoryMedian("balance")) },
         },
+        myRating,
       };
     });
 
-    // Sort by average for ranking
-    const ranking = [...whiskyAnalytics].sort((a, b) => b.avg - a.avg);
+    const ranking = [...whiskyAnalytics].sort((a, b) => b.median - a.median);
+
+    let kendallW: number | null = null;
+    if (participantCount >= 2 && whiskyList.length >= 2) {
+      const k = participantCount;
+      const n = whiskyList.length;
+      const whiskyIds = whiskyList.map(w => w.id);
+
+      const rankMatrix: number[][] = [];
+      for (const pid of participantIds) {
+        const pRatings = allRatings.filter(r => r.participantId === pid);
+        if (pRatings.length < n) continue;
+        const scores = whiskyIds.map(wid => {
+          const rat = pRatings.find(r => r.whiskyId === wid);
+          return rat ? norm(rat.overall) : 0;
+        });
+        const sorted = [...scores].map((v, i) => ({ v, i })).sort((a, b) => a.v - b.v);
+        const ranks = new Array(n);
+        let i = 0;
+        while (i < n) {
+          let j = i;
+          while (j < n - 1 && sorted[j].v === sorted[j + 1].v) j++;
+          const avgRank = (i + j) / 2 + 1;
+          for (let x = i; x <= j; x++) ranks[sorted[x].i] = avgRank;
+          i = j + 1;
+        }
+        rankMatrix.push(ranks);
+      }
+
+      if (rankMatrix.length >= 2) {
+        const kActual = rankMatrix.length;
+        const rankSums = whiskyIds.map((_, wi) => rankMatrix.reduce((sum, row) => sum + row[wi], 0));
+        const meanRankSum = rankSums.reduce((a, b) => a + b, 0) / n;
+        const S = rankSums.reduce((acc, rs) => acc + Math.pow(rs - meanRankSum, 2), 0);
+        kendallW = r1((12 * S) / (kActual * kActual * (n * n * n - n)));
+        if (kendallW > 1) kendallW = 1;
+        if (kendallW < 0) kendallW = 0;
+      }
+    }
+
+    const overallDistribution: { bin: string; count: number }[] = [];
+    const allOverall = allRatings.map(r => norm(r.overall));
+    const bins = [
+      { label: "0-20", min: 0, max: 20 },
+      { label: "21-40", min: 21, max: 40 },
+      { label: "41-60", min: 41, max: 60 },
+      { label: "61-80", min: 61, max: 80 },
+      { label: "81-100", min: 81, max: 100 },
+    ];
+    for (const bin of bins) {
+      overallDistribution.push({
+        bin: bin.label,
+        count: allOverall.filter(v => v >= bin.min && v <= bin.max).length,
+      });
+    }
 
     res.json({
-      tasting,
+      tasting: { ...tasting, ratingScale: scale },
       whiskyAnalytics,
       ranking,
       totalRatings: allRatings.length,
-      participantCount: new Set(allRatings.map(r => r.participantId)).size,
+      participantCount,
+      kendallW,
+      overallDistribution,
     });
+  });
+
+  app.get("/api/tastings/:id/analytics/download", async (req, res) => {
+    const tastingId = req.params.id;
+    const requesterId = req.query.requesterId as string | undefined;
+    const tasting = await storage.getTasting(tastingId);
+    if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+    if (tasting.status !== "reveal" && tasting.status !== "archived") {
+      return res.status(403).json({ message: "Analytics not available" });
+    }
+
+    const allRatings = await storage.getRatingsForTasting(tastingId);
+    const whiskyList = await storage.getWhiskiesForTasting(tastingId);
+    const scale = (tasting as any).ratingScale || 100;
+    const norm = (v: number) => Math.round((v / scale) * 1000) / 10;
+    const r1 = (v: number) => Math.round(v * 10) / 10;
+    const calcMedian = (arr: number[]) => {
+      const s = [...arr].sort((a, b) => a - b);
+      const n = s.length;
+      if (n === 0) return 0;
+      return n % 2 === 0 ? (s[n / 2 - 1] + s[n / 2]) / 2 : s[Math.floor(n / 2)];
+    };
+
+    const ExcelJS = (await import("exceljs")).default;
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "CaskSense";
+
+    const summarySheet = workbook.addWorksheet("Summary");
+    summarySheet.columns = [
+      { header: "#", key: "rank", width: 5 },
+      { header: "Whisky", key: "name", width: 30 },
+      { header: "Ratings", key: "count", width: 10 },
+      { header: "Median", key: "median", width: 10 },
+      { header: "Avg", key: "avg", width: 10 },
+      { header: "StdDev", key: "stdDev", width: 10 },
+      { header: "Nose (Avg)", key: "noseAvg", width: 12 },
+      { header: "Palate (Avg)", key: "tasteAvg", width: 12 },
+      { header: "Finish (Avg)", key: "finishAvg", width: 12 },
+      { header: "Balance (Avg)", key: "balanceAvg", width: 12 },
+    ];
+
+    const sortedWhiskies = whiskyList.map(w => {
+      const wr = allRatings.filter(r => r.whiskyId === w.id);
+      const count = wr.length;
+      if (count === 0) return { whisky: w, count: 0, avg: 0, median: 0, stdDev: 0, noseAvg: 0, tasteAvg: 0, finishAvg: 0, balanceAvg: 0 };
+      const overallScores = wr.map(r => norm(r.overall));
+      const avg = overallScores.reduce((a, b) => a + b, 0) / count;
+      const median = calcMedian(overallScores);
+      const variance = overallScores.reduce((acc, val) => acc + Math.pow(val - avg, 2), 0) / count;
+      const catAvg = (key: string) => {
+        const vals = wr.map(r => norm((r as any)[key] as number));
+        return vals.reduce((a, b) => a + b, 0) / count;
+      };
+      return { whisky: w, count, avg: r1(avg), median: r1(median), stdDev: r1(Math.sqrt(variance)), noseAvg: r1(catAvg("nose")), tasteAvg: r1(catAvg("taste")), finishAvg: r1(catAvg("finish")), balanceAvg: r1(catAvg("balance")) };
+    }).sort((a, b) => b.median - a.median);
+
+    sortedWhiskies.forEach((w, i) => {
+      summarySheet.addRow({
+        rank: i + 1,
+        name: w.whisky.name || `Whisky #${(w.whisky as any).sortOrder || i + 1}`,
+        count: w.count,
+        median: w.median,
+        avg: w.avg,
+        stdDev: w.stdDev,
+        noseAvg: w.noseAvg,
+        tasteAvg: w.tasteAvg,
+        finishAvg: w.finishAvg,
+        balanceAvg: w.balanceAvg,
+      });
+    });
+
+    summarySheet.getRow(1).font = { bold: true };
+
+    if (requesterId) {
+      const mySheet = workbook.addWorksheet("My Ratings");
+      mySheet.columns = [
+        { header: "Whisky", key: "name", width: 30 },
+        { header: "My Nose", key: "myNose", width: 10 },
+        { header: "My Palate", key: "myTaste", width: 10 },
+        { header: "My Finish", key: "myFinish", width: 10 },
+        { header: "My Balance", key: "myBalance", width: 10 },
+        { header: "My Overall", key: "myOverall", width: 12 },
+        { header: "Group Median", key: "groupMedian", width: 14 },
+        { header: "Diff", key: "diff", width: 8 },
+      ];
+
+      for (const w of whiskyList) {
+        const mine = allRatings.find(r => r.whiskyId === w.id && r.participantId === requesterId);
+        const wr = allRatings.filter(r => r.whiskyId === w.id);
+        const groupMedian = calcMedian(wr.map(r => norm(r.overall)));
+        if (mine) {
+          const myOverall = norm(mine.overall);
+          mySheet.addRow({
+            name: w.name || `Whisky #${(w as any).sortOrder || ''}`,
+            myNose: norm(mine.nose),
+            myTaste: norm(mine.taste),
+            myFinish: norm(mine.finish),
+            myBalance: norm(mine.balance),
+            myOverall,
+            groupMedian: r1(groupMedian),
+            diff: r1(myOverall - groupMedian),
+          });
+        }
+      }
+      mySheet.getRow(1).font = { bold: true };
+    }
+
+    const tastingName = (tasting as any).name || tasting.id;
+    const filename = `CaskSense_Analytics_${tastingName.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40)}.xlsx`;
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    await workbook.xlsx.write(res);
+    res.end();
   });
 
   // ===== PROFILES =====
