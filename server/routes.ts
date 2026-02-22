@@ -18,6 +18,10 @@ import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_inte
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES } from "./ai-settings";
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from "docx";
 
+const aiScanCache = new Map<string, { result: any; timestamp: number }>();
+const AI_CACHE_TTL = 24 * 60 * 60 * 1000;
+const AI_CACHE_MAX = 500;
+
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -2903,6 +2907,14 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
       const file = (req as any).file as Express.Multer.File;
       if (!file) return res.status(400).json({ message: "No photo uploaded" });
 
+      const imageHash = crypto.createHash("sha256").update(file.buffer).digest("hex");
+      const cached = aiScanCache.get(imageHash);
+      if (cached && Date.now() - cached.timestamp < AI_CACHE_TTL) {
+        console.log(`Journal scan: cache hit for hash ${imageHash.substring(0, 12)}...`);
+        cached.timestamp = Date.now();
+        return res.json(cached.result);
+      }
+
       const allWhiskies = await storage.getActiveWhiskies();
       const benchmarks = await storage.getBenchmarkEntries();
       const dbWhiskyNames = Array.from(new Set(allWhiskies.map(w => w.name))).slice(0, 200);
@@ -3030,7 +3042,15 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
         results.push(identified);
       }
 
-      res.json({ whiskies: results });
+      const responseData = { whiskies: results };
+      if (aiScanCache.size >= AI_CACHE_MAX) {
+        const oldest = [...aiScanCache.entries()].sort((a, b) => a[1].timestamp - b[1].timestamp)[0];
+        if (oldest) aiScanCache.delete(oldest[0]);
+      }
+      aiScanCache.set(imageHash, { result: responseData, timestamp: Date.now() });
+      console.log(`Journal scan: cached result for hash ${imageHash.substring(0, 12)}... (cache size: ${aiScanCache.size})`);
+
+      res.json(responseData);
     } catch (e: any) {
       console.error("Journal bottle identify error:", e);
       res.status(500).json({ message: e.message || "Identification failed" });
@@ -5921,13 +5941,22 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
           console.error(`Failed to store photo in Object Storage: ${uploadErr.message}`);
         }
 
-        const response = await openai.chat.completions.create({
-          model: "gpt-4o",
-          response_format: { type: "json_object" },
-          messages: [
-            {
-              role: "system",
-              content: `You are a whisky bottle identification expert. Analyze the photo and identify ALL whisky bottles visible in the image.
+        const photoHash = crypto.createHash("sha256").update(file.buffer).digest("hex");
+        const cachedPhoto = aiScanCache.get(photoHash);
+        let identifiedList: any[];
+
+        if (cachedPhoto && Date.now() - cachedPhoto.timestamp < AI_CACHE_TTL) {
+          console.log(`Photo tasting scan: cache hit for hash ${photoHash.substring(0, 12)}...`);
+          cachedPhoto.timestamp = Date.now();
+          identifiedList = JSON.parse(JSON.stringify(cachedPhoto.result.whiskies || []));
+        } else {
+          const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            response_format: { type: "json_object" },
+            messages: [
+              {
+                role: "system",
+                content: `You are a whisky bottle identification expert. Analyze the photo and identify ALL whisky bottles visible in the image.
 
 A single photo may show multiple bottles side by side, on a shelf, on a table, or in a collection. You MUST identify EVERY distinct whisky bottle you can see.
 
@@ -5954,39 +5983,45 @@ Known whiskies in the database (try to match if possible):
 ${knownWhiskies.slice(0, 100).join(", ")}
 
 IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If only one bottle is visible, return an array with one element. If you cannot identify any bottle, return {"whiskies": [{"name": "Unknown Whisky", "confidence": "low"}]}.`,
-            },
-            {
-              role: "user",
-              content: [
-                { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${base64}`, detail: "high" } },
-                { type: "text", text: "Identify ALL whisky bottles visible in this photo. Read every word on each label carefully and extract all details for each bottle." },
-              ],
-            },
-          ],
-          max_tokens: 4096,
-        });
+              },
+              {
+                role: "user",
+                content: [
+                  { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${base64}`, detail: "high" } },
+                  { type: "text", text: "Identify ALL whisky bottles visible in this photo. Read every word on each label carefully and extract all details for each bottle." },
+                ],
+              },
+            ],
+            max_tokens: 4096,
+          });
 
-        const content = response.choices[0]?.message?.content || "{}";
-        console.log("Photo tasting scan AI response:", content.substring(0, 500));
-        let parsed: any;
-        try {
-          parsed = JSON.parse(content);
-        } catch {
-          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          const content = response.choices[0]?.message?.content || "{}";
+          console.log("Photo tasting scan AI response:", content.substring(0, 500));
+          let parsed: any;
           try {
-            parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { whiskies: [{ name: "Unknown Whisky", confidence: "low" }] };
+            parsed = JSON.parse(content);
           } catch {
-            parsed = { whiskies: [{ name: "Unknown Whisky", confidence: "low" }] };
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            try {
+              parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { whiskies: [{ name: "Unknown Whisky", confidence: "low" }] };
+            } catch {
+              parsed = { whiskies: [{ name: "Unknown Whisky", confidence: "low" }] };
+            }
           }
-        }
 
-        let identifiedList: any[] = [];
-        if (Array.isArray(parsed.whiskies)) {
-          identifiedList = parsed.whiskies;
-        } else if (parsed.name) {
-          identifiedList = [parsed];
-        } else {
-          identifiedList = [{ name: "Unknown Whisky", confidence: "low" }];
+          if (Array.isArray(parsed.whiskies)) {
+            identifiedList = parsed.whiskies;
+          } else if (parsed.name) {
+            identifiedList = [parsed];
+          } else {
+            identifiedList = [{ name: "Unknown Whisky", confidence: "low" }];
+          }
+
+          if (aiScanCache.size >= AI_CACHE_MAX) {
+            const oldest = [...aiScanCache.entries()].sort((a, b) => a[1].timestamp - b[1].timestamp)[0];
+            if (oldest) aiScanCache.delete(oldest[0]);
+          }
+          aiScanCache.set(photoHash, { result: { whiskies: JSON.parse(JSON.stringify(identifiedList)) }, timestamp: Date.now() });
         }
 
         for (let identified of identifiedList) {

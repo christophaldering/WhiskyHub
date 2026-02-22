@@ -98,6 +98,10 @@ function WhiskySliderCard({
   const { t } = useTranslation();
   const scale = tasting.ratingScale || 100;
   const mid = scale / 2;
+  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
+  const { currentParticipant } = useAppStore();
+  const expLevel = currentParticipant?.experienceLevel;
+  const isSimplified = expLevel === "guest" || expLevel === "curious";
   const { data: existingRating } = useQuery({
     queryKey: ["rating", participantId, whisky.id],
     queryFn: () => ratingApi.getMyRating(participantId, whisky.id),
@@ -109,6 +113,7 @@ function WhiskySliderCard({
   });
   const [notes, setNotes] = useState("");
   const [isDirty, setIsDirty] = useState(false);
+  const [overallManual, setOverallManual] = useState(false);
   const autoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestRef = useRef({ scores, notes });
   latestRef.current = { scores, notes };
@@ -124,13 +129,18 @@ function WhiskySliderCard({
 
   useEffect(() => {
     if (existingRating) {
-      setScores({
+      const loaded = {
         nose: existingRating.nose, taste: existingRating.taste,
         finish: existingRating.finish, balance: existingRating.balance,
         overall: existingRating.overall,
-      });
+      };
+      setScores(loaded);
+      const avg = computeAvg(loaded);
+      setOverallManual(Math.abs(loaded.overall - avg) > 0.01);
       setNotes(existingRating.notes || "");
       setIsDirty(false);
+    } else {
+      setOverallManual(false);
     }
   }, [existingRating]);
 
@@ -152,20 +162,46 @@ function WhiskySliderCard({
     return () => { if (autoSaveRef.current) clearTimeout(autoSaveRef.current); };
   }, []);
 
+  const computeAvg = (s: typeof scores) => {
+    const factor = step < 1 ? (1 / step) : 1;
+    const avg = isSimplified
+      ? (s.nose + s.taste + s.finish) / 3
+      : (s.nose + s.taste + s.finish + s.balance) / 4;
+    return Math.round(avg * factor) / factor;
+  };
+
   const handleScore = (key: string, value: number) => {
-    const clamped = Math.max(0, Math.min(scale, Math.round(value * 10) / 10));
-    setScores(prev => ({ ...prev, [key]: clamped }));
+    const factor = step < 1 ? (1 / step) : 1;
+    const clamped = Math.max(0, Math.min(scale, Math.round(value * factor) / factor));
+    if (key === "overall") {
+      setOverallManual(true);
+      setScores(prev => ({ ...prev, overall: clamped }));
+    } else {
+      setScores(prev => {
+        const next = { ...prev, [key]: clamped };
+        if (!overallManual) {
+          next.overall = computeAvg(next);
+        }
+        return next;
+      });
+    }
     setIsDirty(true);
     triggerAutoSave();
   };
 
   const isLocked = tasting.status !== "open" && tasting.status !== "draft";
-  const categories = [
-    { id: "nose", label: t("evaluation.nose"), emoji: "👃" },
-    { id: "taste", label: t("evaluation.taste"), emoji: "👅" },
-    { id: "finish", label: t("evaluation.finish"), emoji: "✨" },
-    { id: "balance", label: t("evaluation.balance"), emoji: "⚖️" },
-  ];
+  const categories = isSimplified
+    ? [
+        { id: "nose", label: t("evaluation.nose"), emoji: "👃" },
+        { id: "taste", label: t("evaluation.taste"), emoji: "👅" },
+        { id: "finish", label: t("evaluation.finish"), emoji: "✨" },
+      ]
+    : [
+        { id: "nose", label: t("evaluation.nose"), emoji: "👃" },
+        { id: "taste", label: t("evaluation.taste"), emoji: "👅" },
+        { id: "finish", label: t("evaluation.finish"), emoji: "✨" },
+        { id: "balance", label: t("evaluation.balance"), emoji: "⚖️" },
+      ];
 
   const isBlind = tasting.blindMode && tasting.status === "open";
   const whiskyLabel = isBlind ? `${t("blind.expressionLabel", "Expression")}` : whisky.name;
@@ -203,7 +239,7 @@ function WhiskySliderCard({
                 </div>
                 <Slider
                   value={[scores[cat.id as keyof typeof scores]]}
-                  max={scale} step={0.1} min={0}
+                  max={scale} step={step} min={0}
                   onValueChange={(val) => handleScore(cat.id, val[0])}
                   disabled={isLocked}
                   data-testid={`quick-slider-${cat.id}`}
@@ -219,7 +255,7 @@ function WhiskySliderCard({
                 {scores.overall}
               </div>
               <Slider
-                value={[scores.overall]} max={scale} step={0.1} min={0}
+                value={[scores.overall]} max={scale} step={step} min={0}
                 onValueChange={(val) => handleScore("overall", val[0])}
                 className="w-full max-w-xs"
                 disabled={isLocked}

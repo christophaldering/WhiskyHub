@@ -8,6 +8,7 @@ import { SessionControl } from "@/components/session-control";
 import { LoginDialog } from "@/components/login-dialog";
 import { ImportFlightDialog } from "@/components/import-flight-dialog";
 import { CurationWizard } from "@/components/curation-wizard";
+import { CaskTypeSelect } from "@/components/cask-type-select";
 import { FlightBoard } from "@/components/flight-board";
 import { PdfExportDialog } from "@/components/pdf-export-dialog";
 import { PrintableTastingSheets } from "@/components/printable-tasting-sheets";
@@ -493,7 +494,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Cask Influence</Label>
-                <Input value={form.caskInfluence} onChange={(e) => setForm(p => ({ ...p, caskInfluence: e.target.value }))} placeholder="Sherry, Bourbon..." />
+                <CaskTypeSelect value={form.caskInfluence} onChange={(v) => setForm(p => ({ ...p, caskInfluence: v }))} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Peat Level</Label>
@@ -828,7 +829,7 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Cask Influence</Label>
-                <Input value={form.caskInfluence} onChange={(e) => setForm(p => ({ ...p, caskInfluence: e.target.value }))} />
+                <CaskTypeSelect value={form.caskInfluence} onChange={(v) => setForm(p => ({ ...p, caskInfluence: v }))} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Peat Level</Label>

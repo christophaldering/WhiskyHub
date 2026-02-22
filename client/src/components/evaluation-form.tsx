@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Lock, ExternalLink } from "lucide-react";
+import { Lock, ExternalLink, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
@@ -32,6 +32,9 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
   const participantId = currentParticipant?.id || "";
   const scale = tasting.ratingScale || 100;
   const mid = scale / 2;
+  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
+  const expLevel = currentParticipant?.experienceLevel;
+  const isSimplified = expLevel === "guest" || expLevel === "curious";
 
   const { data: existingRating } = useQuery({
     queryKey: ["rating", participantId, whisky.id],
@@ -42,6 +45,7 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
   const [scores, setScores] = useState({
     nose: mid, taste: mid, finish: mid, balance: mid, overall: mid,
   });
+  const [overallManual, setOverallManual] = useState(false);
   const [notes, setNotes] = useState("");
   const [guessAbv, setGuessAbv] = useState<number | null>(null);
   const [guessAge, setGuessAge] = useState("");
@@ -96,19 +100,23 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
       autoSaveTimerRef.current = null;
     }
     if (existingRating) {
-      setScores({
+      const loaded = {
         nose: existingRating.nose,
         taste: existingRating.taste,
         finish: existingRating.finish,
         balance: existingRating.balance,
         overall: existingRating.overall,
-      });
+      };
+      setScores(loaded);
+      const avg = computeAvg(loaded);
+      setOverallManual(Math.abs(loaded.overall - avg) > 0.01);
       setNotes(existingRating.notes || "");
       setGuessAbv(existingRating.guessAbv ?? null);
       setGuessAge(existingRating.guessAge || "");
       setIsDirty(false);
     } else if (prevWhiskyId !== whisky.id) {
       setScores({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
+      setOverallManual(false);
       setNotes("");
       setGuessAbv(null);
       setGuessAge("");
@@ -141,12 +149,32 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
     }, 800);
   }, [participantId, tasting.id, whisky.id, saveMutation]);
 
+  const computeAvg = useCallback((s: typeof scores) => {
+    const factor = step < 1 ? (1 / step) : 1;
+    const avg = isSimplified
+      ? (s.nose + s.taste + s.finish) / 3
+      : (s.nose + s.taste + s.finish + s.balance) / 4;
+    return Math.round(avg * factor) / factor;
+  }, [step, isSimplified]);
+
   const handleScoreChange = useCallback((key: string, value: number) => {
-    const clamped = Math.max(0, Math.min(scale, Math.round(value * 10) / 10));
-    setScores(prev => ({ ...prev, [key]: clamped }));
+    const factor = step < 1 ? (1 / step) : 1;
+    const clamped = Math.max(0, Math.min(scale, Math.round(value * factor) / factor));
+    if (key === "overall") {
+      setOverallManual(true);
+      setScores(prev => ({ ...prev, overall: clamped }));
+    } else {
+      setScores(prev => {
+        const next = { ...prev, [key]: clamped };
+        if (!overallManual) {
+          next.overall = computeAvg(next);
+        }
+        return next;
+      });
+    }
     setIsDirty(true);
     triggerAutoSave();
-  }, [triggerAutoSave, scale]);
+  }, [triggerAutoSave, scale, step, overallManual, computeAvg]);
 
 
   const isLocked = tasting.status !== "open" && tasting.status !== "draft";
@@ -157,12 +185,18 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
     }
   }, [isLocked, whisky.id, flushSave]);
 
-  const categories = [
-    { id: "nose", label: t('evaluation.nose') },
-    { id: "taste", label: t('evaluation.taste') },
-    { id: "finish", label: t('evaluation.finish') },
-    { id: "balance", label: t('evaluation.balance') },
-  ];
+  const categories = isSimplified
+    ? [
+        { id: "nose", label: t('evaluation.nose') },
+        { id: "taste", label: t('evaluation.taste') },
+        { id: "finish", label: t('evaluation.finish') },
+      ]
+    : [
+        { id: "nose", label: t('evaluation.nose') },
+        { id: "taste", label: t('evaluation.taste') },
+        { id: "finish", label: t('evaluation.finish') },
+        { id: "balance", label: t('evaluation.balance') },
+      ];
 
   return (
     <Card className="border-border/50 bg-card shadow-sm max-w-2xl mx-auto">
@@ -211,14 +245,14 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
                   value={scores[cat.id as keyof typeof scores]}
                   onChange={(e) => handleScoreChange(cat.id, parseFloat(e.target.value) || 0)}
                   className="w-20 text-right font-mono font-bold border-none bg-secondary/30 h-8 focus:ring-0"
-                  step={0.1} min={0} max={scale}
+                  step={step} min={0} max={scale}
                   disabled={isLocked}
                   data-testid={`input-${cat.id}`}
                 />
               </div>
               <Slider
                 value={[scores[cat.id as keyof typeof scores]]}
-                max={scale} step={0.1} min={0}
+                max={scale} step={step} min={0}
                 onValueChange={(val) => handleScoreChange(cat.id, val[0])}
                 className={cn("py-2 cursor-pointer", isLocked && "opacity-50 cursor-not-allowed")}
                 disabled={isLocked}
@@ -236,17 +270,41 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
               value={scores.overall}
               onChange={(e) => handleScoreChange("overall", parseFloat(e.target.value) || 0)}
               className="w-32 text-center text-4xl font-serif font-black border-none bg-transparent h-16 focus:ring-0 p-0 text-primary"
-              step={0.1} min={0} max={scale}
+              step={step} min={0} max={scale}
               disabled={isLocked}
               data-testid="input-overall"
             />
             <Slider
-              value={[scores.overall]} max={scale} step={0.1} min={0}
+              value={[scores.overall]} max={scale} step={step} min={0}
               onValueChange={(val) => handleScoreChange("overall", val[0])}
               className={cn("w-full max-w-md py-4 cursor-pointer", isLocked && "opacity-50 cursor-not-allowed")}
               disabled={isLocked}
               data-testid="slider-overall"
             />
+            <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
+              {overallManual ? (
+                <>
+                  <span>{t('evaluation.overallManual')}</span>
+                  {!isLocked && (
+                    <button
+                      onClick={() => {
+                        setOverallManual(false);
+                        setScores(prev => ({ ...prev, overall: computeAvg(prev) }));
+                        setIsDirty(true);
+                        triggerAutoSave();
+                      }}
+                      className="text-primary/60 hover:text-primary underline underline-offset-2 transition-colors inline-flex items-center gap-1"
+                      data-testid="button-reset-overall"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      {t('evaluation.overallReset')}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <span>{t('evaluation.overallAuto')}</span>
+              )}
+            </div>
           </div>
         </div>
 

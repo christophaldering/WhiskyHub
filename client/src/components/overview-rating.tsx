@@ -48,6 +48,10 @@ function WhiskyRow({
   const { t } = useTranslation();
   const scale = tasting.ratingScale || 100;
   const mid = scale / 2;
+  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
+  const { currentParticipant } = useAppStore();
+  const expLevel = currentParticipant?.experienceLevel;
+  const isSimplified = expLevel === "guest" || expLevel === "curious";
   const [imgErr, setImgErr] = useState(false);
 
   const inputFocused = useInputFocused();
@@ -59,16 +63,28 @@ function WhiskyRow({
 
   const [scores, setScores] = useState<Scores>({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
   const [isDirty, setIsDirty] = useState(false);
+  const [overallManual, setOverallManual] = useState(false);
+
+  const computeAvg = useCallback((s: typeof scores) => {
+    const factor = step < 1 ? (1 / step) : 1;
+    const avg = isSimplified
+      ? (s.nose + s.taste + s.finish) / 3
+      : (s.nose + s.taste + s.finish + s.balance) / 4;
+    return Math.round(avg * factor) / factor;
+  }, [step, isSimplified]);
 
   useEffect(() => {
     if (existingRating) {
-      setScores({
+      const loaded: Scores = {
         nose: existingRating.nose,
         taste: existingRating.taste,
         finish: existingRating.finish,
         balance: existingRating.balance,
         overall: existingRating.overall,
-      });
+      };
+      setScores(loaded);
+      const avg = computeAvg(loaded);
+      setOverallManual(Math.abs(loaded.overall - avg) > 0.01);
       setIsDirty(false);
     }
   }, [existingRating]);
@@ -132,22 +148,41 @@ function WhiskyRow({
   }, [isLocked]);
 
   const handleScoreChange = useCallback((key: ScoreKey, value: number) => {
-    const clamped = Math.max(0, Math.min(scale, Math.round(value * 10) / 10));
-    setScores(prev => ({ ...prev, [key]: clamped }));
+    const factor = step < 1 ? (1 / step) : 1;
+    const clamped = Math.max(0, Math.min(scale, Math.round(value * factor) / factor));
+    if (key === "overall") {
+      setOverallManual(true);
+      setScores(prev => ({ ...prev, overall: clamped }));
+    } else {
+      setScores(prev => {
+        const next = { ...prev, [key]: clamped };
+        if (!overallManual) {
+          next.overall = computeAvg(next);
+        }
+        return next;
+      });
+    }
     setIsDirty(true);
     triggerAutoSave();
-  }, [triggerAutoSave, scale]);
+  }, [triggerAutoSave, scale, step, overallManual, computeAvg]);
 
   const label = blind.showName ? whisky.name : `#${index + 1}`;
   const hasRating = !!existingRating;
 
-  const categories: { id: ScoreKey; short: string }[] = [
-    { id: "nose", short: t("evaluation.nose") },
-    { id: "taste", short: t("evaluation.taste") },
-    { id: "finish", short: t("evaluation.finish") },
-    { id: "balance", short: t("evaluation.balance") },
-    { id: "overall", short: t("evaluation.overall") },
-  ];
+  const categories: { id: ScoreKey; short: string }[] = isSimplified
+    ? [
+        { id: "nose", short: t("evaluation.nose") },
+        { id: "taste", short: t("evaluation.taste") },
+        { id: "finish", short: t("evaluation.finish") },
+        { id: "overall", short: t("evaluation.overall") },
+      ]
+    : [
+        { id: "nose", short: t("evaluation.nose") },
+        { id: "taste", short: t("evaluation.taste") },
+        { id: "finish", short: t("evaluation.finish") },
+        { id: "balance", short: t("evaluation.balance") },
+        { id: "overall", short: t("evaluation.overall") },
+      ];
 
   const overallCategory = categories.find(c => c.id === "overall")!;
   const detailCategories = categories.filter(c => c.id !== "overall");
@@ -219,14 +254,14 @@ function WhiskyRow({
                     value={scores[cat.id]}
                     onChange={(e) => handleScoreChange(cat.id, parseFloat(e.target.value) || 0)}
                     className="w-12 text-right font-mono text-xs font-bold border-none bg-transparent h-5 p-0 focus:ring-0"
-                    step={0.1} min={0} max={scale}
+                    step={step} min={0} max={scale}
                     disabled={isLocked}
                     data-testid={`overview-input-${cat.id}-${whisky.id}`}
                   />
                 </div>
                 <Slider
                   value={[scores[cat.id]]}
-                  max={scale} step={0.1} min={0}
+                  max={scale} step={step} min={0}
                   onValueChange={(val) => handleScoreChange(cat.id, val[0])}
                   className={cn("cursor-pointer", cat.id === "overall" ? "[&_[role=slider]]:bg-primary [&_[data-orientation=horizontal]>span:first-child>span]:bg-primary/30" : "")}
                   disabled={isLocked}
@@ -263,14 +298,14 @@ function WhiskyRow({
                       value={scores[cat.id]}
                       onChange={(e) => handleScoreChange(cat.id, parseFloat(e.target.value) || 0)}
                       className="w-12 text-right font-mono text-xs font-bold border-none bg-transparent h-5 p-0 focus:ring-0"
-                      step={0.1} min={0} max={scale}
+                      step={step} min={0} max={scale}
                       disabled={isLocked}
                       data-testid={`overview-input-mobile-${cat.id}-${whisky.id}`}
                     />
                   </div>
                   <Slider
                     value={[scores[cat.id]]}
-                    max={scale} step={0.1} min={0}
+                    max={scale} step={step} min={0}
                     onValueChange={(val) => handleScoreChange(cat.id, val[0])}
                     className={cn("cursor-pointer", cat.id === "overall" ? "[&_[role=slider]]:bg-primary [&_[data-orientation=horizontal]>span:first-child>span]:bg-primary/30" : "")}
                     disabled={isLocked}

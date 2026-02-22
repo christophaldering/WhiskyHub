@@ -192,6 +192,9 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
   const isHost = tasting.hostId === participantId;
   const scale = tasting.ratingScale || 100;
   const mid = scale / 2;
+  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
+  const expLevel = currentParticipant?.experienceLevel;
+  const isSimplified = expLevel === "guest" || expLevel === "curious";
 
   const guidedIdx = tasting.guidedWhiskyIndex ?? -1;
   const guidedStep = tasting.guidedRevealStep ?? 0;
@@ -216,21 +219,34 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
   const [guessAbv, setGuessAbv] = useState<number | null>(null);
   const [guessAge, setGuessAge] = useState("");
   const [isDirty, setIsDirty] = useState(false);
+  const [overallManual, setOverallManual] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [showNextConfirm, setShowNextConfirm] = useState(false);
+
+  const computeAvg = useCallback((s: typeof scores) => {
+    const factor = step < 1 ? (1 / step) : 1;
+    const avg = isSimplified
+      ? (s.nose + s.taste + s.finish) / 3
+      : (s.nose + s.taste + s.finish + s.balance) / 4;
+    return Math.round(avg * factor) / factor;
+  }, [step, isSimplified]);
 
   const prevWhiskyIdForResetRef = useRef(activeWhisky?.id);
   useEffect(() => {
     const whiskyChanged = prevWhiskyIdForResetRef.current !== activeWhisky?.id;
     if (whiskyChanged) prevWhiskyIdForResetRef.current = activeWhisky?.id;
     if (existingRating) {
-      setScores({ nose: existingRating.nose, taste: existingRating.taste, finish: existingRating.finish, balance: existingRating.balance, overall: existingRating.overall });
+      const loaded = { nose: existingRating.nose, taste: existingRating.taste, finish: existingRating.finish, balance: existingRating.balance, overall: existingRating.overall };
+      setScores(loaded);
+      const avg = computeAvg(loaded);
+      setOverallManual(Math.abs(loaded.overall - avg) > 0.01);
       setNotes(existingRating.notes || "");
       setGuessAbv(existingRating.guessAbv ?? null);
       setGuessAge(existingRating.guessAge || "");
       setIsDirty(false);
     } else if (whiskyChanged) {
       setScores({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
+      setOverallManual(false);
       setNotes("");
       setGuessAbv(null);
       setGuessAge("");
@@ -334,11 +350,23 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
   }, [isLocked, activeWhisky?.id, flushSave]);
 
   const handleScoreChange = useCallback((key: string, value: number) => {
-    const clamped = Math.max(0, Math.min(scale, Math.round(value * 10) / 10));
-    setScores(prev => ({ ...prev, [key]: clamped }));
+    const factor = step < 1 ? (1 / step) : 1;
+    const clamped = Math.max(0, Math.min(scale, Math.round(value * factor) / factor));
+    if (key === "overall") {
+      setOverallManual(true);
+      setScores(prev => ({ ...prev, overall: clamped }));
+    } else {
+      setScores(prev => {
+        const next = { ...prev, [key]: clamped };
+        if (!overallManual) {
+          next.overall = computeAvg(next);
+        }
+        return next;
+      });
+    }
     setIsDirty(true);
     triggerAutoSave();
-  }, [triggerAutoSave, scale]);
+  }, [triggerAutoSave, scale, step, overallManual, computeAvg]);
 
 
   const getGuidedBlindState = (forEval = false) => {
@@ -361,12 +389,18 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
     t("guided.stepFull"),
   ];
 
-  const categories = [
-    { id: "nose", label: t("evaluation.nose"), emoji: "👃" },
-    { id: "taste", label: t("evaluation.taste"), emoji: "👅" },
-    { id: "finish", label: t("evaluation.finish"), emoji: "✨" },
-    { id: "balance", label: t("evaluation.balance"), emoji: "⚖️" },
-  ];
+  const categories = isSimplified
+    ? [
+        { id: "nose", label: t("evaluation.nose"), emoji: "👃" },
+        { id: "taste", label: t("evaluation.taste"), emoji: "👅" },
+        { id: "finish", label: t("evaluation.finish"), emoji: "✨" },
+      ]
+    : [
+        { id: "nose", label: t("evaluation.nose"), emoji: "👃" },
+        { id: "taste", label: t("evaluation.taste"), emoji: "👅" },
+        { id: "finish", label: t("evaluation.finish"), emoji: "✨" },
+        { id: "balance", label: t("evaluation.balance"), emoji: "⚖️" },
+      ];
 
   if (isWaiting) {
     return (
@@ -705,14 +739,14 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                           value={scores[cat.id as keyof typeof scores]}
                           onChange={(e) => handleScoreChange(cat.id, parseFloat(e.target.value) || 0)}
                           className="w-16 text-right font-mono font-bold border-none bg-transparent h-7 text-sm focus:ring-0 p-0"
-                          step={0.1} min={0} max={scale}
+                          step={step} min={0} max={scale}
                           disabled={isLocked}
                           data-testid={`guided-input-${cat.id}`}
                         />
                       </div>
                       <Slider
                         value={[scores[cat.id as keyof typeof scores]]}
-                        max={scale} step={0.1} min={0}
+                        max={scale} step={step} min={0}
                         onValueChange={(val) => handleScoreChange(cat.id, val[0])}
                         className="py-1 cursor-pointer"
                         disabled={isLocked}
@@ -729,12 +763,12 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                     value={scores.overall}
                     onChange={(e) => handleScoreChange("overall", parseFloat(e.target.value) || 0)}
                     className="w-28 mx-auto text-center text-3xl font-serif font-black border-none bg-transparent h-12 focus:ring-0 p-0 text-primary"
-                    step={0.1} min={0} max={scale}
+                    step={step} min={0} max={scale}
                     disabled={isLocked}
                     data-testid="guided-input-overall"
                   />
                   <Slider
-                    value={[scores.overall]} max={scale} step={0.1} min={0}
+                    value={[scores.overall]} max={scale} step={step} min={0}
                     onValueChange={(val) => handleScoreChange("overall", val[0])}
                     className="w-full max-w-sm mx-auto py-2 cursor-pointer"
                     disabled={isLocked}

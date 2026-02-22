@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { CaskTypeSelect } from "@/components/cask-type-select";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -855,7 +856,7 @@ function EntryForm({
             </div>
             <div>
               <Label htmlFor="caskType" className="text-sm">{t("journal.caskType")}</Label>
-              <Input id="caskType" value={form.caskType} onChange={set("caskType")} placeholder={t("journal.caskTypePlaceholder")} className="mt-1 bg-background/50" data-testid="input-journal-cask-type" />
+              <CaskTypeSelect value={form.caskType} onChange={(v) => setForm(p => ({ ...p, caskType: v }))} />
             </div>
           </div>
         </div>

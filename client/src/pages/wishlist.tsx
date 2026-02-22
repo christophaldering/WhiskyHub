@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CaskTypeSelect } from "@/components/cask-type-select";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -729,12 +730,10 @@ function WishlistForm({
           </div>
           <div>
             <Label className="font-serif text-sm">{t("wishlist.caskType")}</Label>
-            <Input
+            <CaskTypeSelect
               value={caskType}
-              onChange={(e) => setCaskType(e.target.value)}
-              placeholder={t("wishlist.caskTypePlaceholder")}
-              className="mt-1 bg-secondary/30"
-              data-testid="input-wishlist-cask"
+              onChange={(v) => setCaskType(v)}
+              className="mt-1"
             />
           </div>
         </div>
