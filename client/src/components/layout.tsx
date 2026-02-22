@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { WelcomeOverlay } from "@/components/welcome-overlay";
 import { FeedbackButton } from "@/components/feedback-button";
+import { LevelOnboarding } from "@/components/level-onboarding";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
-import { profileApi, tastingApi, notificationApi } from "@/lib/api";
+import { profileApi, tastingApi, notificationApi, participantApi } from "@/lib/api";
 
 type NavItem = { href: string; icon: any; label: string; match?: (loc: string) => boolean };
 type NavGroup = { label: string; items: NavItem[]; defaultOpen?: boolean };
@@ -266,20 +267,31 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
       </nav>
 
       <div className="p-4 border-t border-border/40 space-y-3">
-        {currentParticipant && currentParticipant.experienceLevel && currentParticipant.experienceLevel !== "enthusiast" && (
-          <Link href="/profile">
-            <div className="bg-gradient-to-r from-amber-500/10 to-primary/5 border border-amber-500/20 rounded-lg p-3 cursor-pointer hover:border-amber-500/40 transition-colors" data-testid="nav-upgrade-banner">
-              <div className="flex items-center gap-2 mb-1">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-xs font-serif font-bold text-primary">{t('nav.upgradeTitle')}</span>
-              </div>
-              <p className="text-[10px] text-muted-foreground leading-tight">{t('nav.upgradeDesc')}</p>
-            </div>
-          </Link>
-        )}
         {currentParticipant && (
-          <div className="text-xs text-muted-foreground px-3 mb-1">
-            Signed in as <span className="font-semibold text-foreground">{currentParticipant.name}</span>
+          <div className="space-y-1.5">
+            <div className="text-xs text-muted-foreground px-1 mb-1">
+              Signed in as <span className="font-semibold text-foreground">{currentParticipant.name}</span>
+            </div>
+            <div className="flex items-center gap-2 px-1">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold whitespace-nowrap">{t('nav.levelSelector.label')}</span>
+              <select
+                value={currentParticipant.experienceLevel || "enthusiast"}
+                onChange={async (e) => {
+                  const newLevel = e.target.value;
+                  try {
+                    await participantApi.updateExperienceLevel(currentParticipant.id, newLevel);
+                    setParticipant({ ...currentParticipant, experienceLevel: newLevel });
+                  } catch {}
+                }}
+                className="flex-1 text-xs bg-secondary/50 border border-border/40 rounded-md px-2 py-1.5 text-foreground cursor-pointer hover:border-primary/40 transition-colors focus:outline-none focus:ring-1 focus:ring-primary/30"
+                data-testid="select-experience-level"
+              >
+                <option value="guest">{t('nav.levelSelector.guest')}</option>
+                <option value="curious">{t('nav.levelSelector.curious')}</option>
+                <option value="enthusiast">{t('nav.levelSelector.enthusiast')}</option>
+                <option value="scientist">{t('nav.levelSelector.scientist')}</option>
+              </select>
+            </div>
           </div>
         )}
         <div className="flex items-center gap-2 flex-wrap">
@@ -337,8 +349,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isHost = currentParticipant && allTastings.some((t: any) => t.hostId === currentParticipant.id);
   const isAdmin = currentParticipant?.role === "admin";
   const expLevel = currentParticipant?.experienceLevel || "enthusiast";
-  const isCurious = expLevel === "curious" || expLevel === "enthusiast";
-  const isEnthusiast = expLevel === "enthusiast";
+  const LEVELS = ["guest", "curious", "enthusiast", "scientist"] as const;
+  const levelIndex = LEVELS.indexOf(expLevel as any);
+  const atLeast = (min: typeof LEVELS[number]) => levelIndex >= LEVELS.indexOf(min);
 
   const navGroups: NavGroup[] = useMemo(() => [
     {
@@ -348,53 +361,55 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/app", icon: Home, label: t('nav.lobby') },
         { href: "/news", icon: Newspaper, label: t('nav.news') },
         { href: "/sessions", icon: Wine, label: t('nav.sessions') },
-        ...(isCurious ? [{ href: "/calendar", icon: Calendar, label: t('nav.calendar') }] : []),
+        ...(atLeast("curious") ? [{ href: "/calendar", icon: Calendar, label: t('nav.calendar') }] : []),
       ],
     },
-    ...(isCurious ? [{
+    ...(atLeast("curious") ? [{
       label: t('navGroup.myProfile'),
       items: [
         { href: "/profile", icon: User, label: t('profile.title') },
-        ...(isEnthusiast ? [
-          { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
-          { href: "/flavor-wheel", icon: CircleDot, label: t('nav.flavorWheel') },
+        { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
+        ...(atLeast("enthusiast") ? [
           { href: "/badges", icon: Trophy, label: t('nav.badges') },
-        ] : []),
-        ...(isEnthusiast ? [
           { href: "/reminders", icon: Bell, label: t('nav.reminders') },
+        ] : []),
+        ...(atLeast("scientist") ? [
+          { href: "/flavor-wheel", icon: CircleDot, label: t('nav.flavorWheel') },
         ] : []),
       ],
     }] : []),
-    ...(isCurious ? [{
+    ...(atLeast("curious") ? [{
       label: t('navGroup.myTastings'),
       items: [
         { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
         { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
       ],
     }] : []),
-    ...(isCurious ? [{
+    ...(atLeast("curious") ? [{
       label: t('navGroup.myWhiskys'),
       items: [
         { href: "/my-whiskies", icon: GlassWater, label: t('nav.myWhiskies') },
         { href: "/wishlist", icon: Star, label: t('nav.wishlist') },
-        ...(isEnthusiast ? [
+        ...(atLeast("enthusiast") ? [
           { href: "/collection", icon: Archive, label: t('nav.collection') },
         ] : []),
       ],
     }] : []),
-    ...(isEnthusiast ? [{
+    ...(atLeast("enthusiast") ? [{
       label: t('navGroup.tools'),
       items: [
         { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
         { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
-        { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
         { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
         { href: "/export-notes", icon: Download, label: t('nav.exportNotes') },
-        { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
         { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
+        ...(atLeast("scientist") ? [
+          { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
+          { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
+        ] : []),
       ],
     }] : []),
-    ...(isEnthusiast ? [{
+    ...(atLeast("enthusiast") ? [{
       label: t('navGroup.community'),
       items: [
         { href: "/community-rankings", icon: BarChart3, label: t('nav.communityRankings') },
@@ -404,7 +419,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
       ],
     }] : []),
-    ...(isEnthusiast ? [{
+    ...(atLeast("enthusiast") ? [{
       label: t('navGroup.whiskyKnowledge'),
       items: [
         { href: "/lexicon", icon: Library, label: t('nav.lexicon') },
@@ -417,7 +432,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: t('navGroup.aboutPlatform'),
       items: [
         { href: "/about", icon: Info, label: t('nav.about') },
-        ...(isEnthusiast ? [
+        ...(atLeast("enthusiast") ? [
           { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
           { href: "/features", icon: LayoutGrid, label: t('nav.features') },
           { href: "/donate", icon: Heart, label: t('nav.donate') },
@@ -434,7 +449,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           ...((isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
             { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
           ] : []),
-          { href: "/benchmark", icon: Brain, label: t('nav.benchmark') },
+          ...(atLeast("scientist") ? [
+            { href: "/benchmark", icon: Brain, label: t('nav.benchmark') },
+          ] : []),
         ],
       },
     ] : []),
@@ -446,7 +463,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ],
       },
     ] : []),
-  ], [t, isHost, isAdmin, isCurious, isEnthusiast, currentParticipant?.canAccessWhiskyDb, currentParticipant?.role]);
+  ], [t, isHost, isAdmin, expLevel, currentParticipant?.canAccessWhiskyDb, currentParticipant?.role]);
 
   const desktopNavRef = useRef<HTMLElement>(null);
   const mobileNavRef = useRef<HTMLElement>(null);
@@ -480,6 +497,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="fixed inset-0 z-0 bg-background" />
 
       <WelcomeOverlay />
+      <LevelOnboarding />
 
       <header className="md:hidden sticky top-0 z-50 flex items-center justify-between p-4 border-b border-border/40 bg-card/95 backdrop-blur-lg">
         <div className="flex items-center gap-2">

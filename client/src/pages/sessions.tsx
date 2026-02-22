@@ -158,7 +158,7 @@ export default function Sessions() {
     setGuestError("");
     try {
       const participant = await participantApi.loginOrCreate(guestName.trim(), guestPin || undefined);
-      setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
+      setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb, experienceLevel: participant.experienceLevel });
       setShowGuestDialog(false);
       setGuestName("");
       setGuestPin("");

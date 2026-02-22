@@ -15,11 +15,11 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
   Wine, ArrowRight, ArrowLeft, Check, ChevronDown,
-  Sparkles, User, Star, BookOpen, LogIn
+  Sparkles, User, Star, BookOpen, LogIn, Brain
 } from "lucide-react";
 import type { Whisky, Tasting } from "@shared/schema";
 
-type InterestLevel = "guest" | "curious" | "enthusiast";
+type InterestLevel = "guest" | "curious" | "enthusiast" | "scientist";
 
 function NameEntry({ onJoin, loading }: { onJoin: (name: string, pin: string) => void; loading: boolean }) {
   const { t } = useTranslation();
@@ -261,6 +261,7 @@ function InterestLevelPicker({ onSelect }: { onSelect: (level: InterestLevel) =>
     { id: "guest", icon: User, gradient: "from-slate-500/20 to-slate-600/10" },
     { id: "curious", icon: Star, gradient: "from-amber-500/20 to-amber-600/10" },
     { id: "enthusiast", icon: Sparkles, gradient: "from-primary/20 to-primary/10" },
+    { id: "scientist", icon: Brain, gradient: "from-violet-500/20 to-violet-600/10" },
   ];
 
   return (
@@ -397,7 +398,7 @@ export default function QuickTasting() {
   }, [currentParticipant, tasting, phase]);
 
   const handleFinishRating = () => {
-    if (currentParticipant?.experienceLevel === "enthusiast" || isPreviewMode) {
+    if (currentParticipant?.experienceLevel === "enthusiast" || currentParticipant?.experienceLevel === "scientist" || isPreviewMode) {
       setPhase("complete");
     } else {
       setPhase("interest");

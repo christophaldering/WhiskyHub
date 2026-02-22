@@ -57,8 +57,8 @@ const resources = {
         interestSubtitle: "Tell us how deep you want to dive — we'll tailor the experience for you.",
         level: {
           guest: {
-            title: "Just visiting",
-            desc: "I was invited to this tasting and just want to rate the whiskies.",
+            title: "Fun & Results",
+            desc: "I want to rate whiskies and see the ranking at the end. Keep it simple!",
           },
           curious: {
             title: "Getting curious",
@@ -66,7 +66,11 @@ const resources = {
           },
           enthusiast: {
             title: "Full experience",
-            desc: "Show me everything! Analytics, community, encyclopedia, hosting tools — the works.",
+            desc: "Community, encyclopedia, tools, hosting features — the complete package.",
+          },
+          scientist: {
+            title: "Whisky Science",
+            desc: "Analytics, statistical profiles, benchmarks, flavor wheels — the deep dive.",
           },
         },
         complete: "All done!",
@@ -355,6 +359,17 @@ const resources = {
         leave: "Sign Out",
         upgradeTitle: "Unlock More Features",
         upgradeDesc: "Upgrade your experience level to access profiles, analytics, community, and 50+ more features.",
+        levelSelector: {
+          label: "Experience",
+          guest: "Basic",
+          curious: "Curious",
+          enthusiast: "Enthusiast",
+          scientist: "Scientist",
+        },
+        levelOnboarding: {
+          title: "What do you expect from the app?",
+          subtitle: "You can change this anytime. We'll tailor the menu to your needs.",
+        },
         aboutMethod: "About the Method",
         friends: "My Whisky Friends",
         journal: "My Whisky Diary",
@@ -2200,8 +2215,8 @@ const resources = {
         interestSubtitle: "Sag uns, wie tief du eintauchen möchtest — wir passen das Erlebnis für dich an.",
         level: {
           guest: {
-            title: "Nur zu Besuch",
-            desc: "Ich wurde zu diesem Tasting eingeladen und möchte nur die Whiskys bewerten.",
+            title: "Spaß & Ergebnis",
+            desc: "Whiskys bewerten und am Ende das Ranking sehen. Einfach und unkompliziert!",
           },
           curious: {
             title: "Neugierig geworden",
@@ -2209,7 +2224,11 @@ const resources = {
           },
           enthusiast: {
             title: "Volle Erfahrung",
-            desc: "Zeig mir alles! Analysen, Community, Enzyklopädie, Hosting-Tools — das volle Programm.",
+            desc: "Community, Enzyklopädie, Tools, Hosting-Features — das volle Paket.",
+          },
+          scientist: {
+            title: "Whisky-Wissenschaft",
+            desc: "Analytics, statistische Profile, Benchmarks, Flavor Wheels — für die Tieftaucher.",
           },
         },
         complete: "Alles erledigt!",
@@ -2498,6 +2517,17 @@ const resources = {
         leave: "Abmelden",
         upgradeTitle: "Mehr Features entdecken",
         upgradeDesc: "Erweitere dein Erlebnis — Profile, Analysen, Community und über 50 weitere Funktionen warten.",
+        levelSelector: {
+          label: "Erfahrung",
+          guest: "Basic",
+          curious: "Neugierig",
+          enthusiast: "Enthusiast",
+          scientist: "Wissenschaftler",
+        },
+        levelOnboarding: {
+          title: "Was erwartest du von der App?",
+          subtitle: "Du kannst das jederzeit ändern. Wir passen das Menü an deine Bedürfnisse an.",
+        },
         aboutMethod: "\u00dcber die Methode",
         friends: "Meine Whisky-Freunde",
         journal: "Mein Whisky-Tagebuch",

@@ -436,8 +436,8 @@ export async function registerRoutes(
   app.patch("/api/participants/:id/experience-level", async (req, res) => {
     try {
       const { level } = req.body;
-      if (!level || !["guest", "curious", "enthusiast"].includes(level)) {
-        return res.status(400).json({ message: "Invalid level. Must be guest, curious, or enthusiast." });
+      if (!level || !["guest", "curious", "enthusiast", "scientist"].includes(level)) {
+        return res.status(400).json({ message: "Invalid level. Must be guest, curious, enthusiast, or scientist." });
       }
       const updated = await storage.updateParticipant(req.params.id, { experienceLevel: level });
       if (!updated) return res.status(404).json({ message: "Not found" });

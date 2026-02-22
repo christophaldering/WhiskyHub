@@ -64,7 +64,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
       setLoading(true);
       try {
         const participant = await participantApi.loginByEmail(email.trim(), pin);
-        setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
+        setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb, experienceLevel: participant.experienceLevel });
         onClose();
       } catch (e: any) {
         setError(e.message || "Login failed");
@@ -92,7 +92,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           setVerifyCode("");
           setVerifyError("");
         } else {
-          setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
+          setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb, experienceLevel: participant.experienceLevel });
           onClose();
         }
       } catch (e: any) {
@@ -113,7 +113,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     setVerifyError("");
     try {
       const verified = await participantApi.verify(pendingParticipant.id, verifyCode.trim());
-      setParticipant({ id: verified.id, name: verified.name, role: verified.role, canAccessWhiskyDb: verified.canAccessWhiskyDb });
+      setParticipant({ id: verified.id, name: verified.name, role: verified.role, canAccessWhiskyDb: verified.canAccessWhiskyDb, experienceLevel: verified.experienceLevel });
       setVerifyMode(false);
       setPendingParticipant(null);
       onClose();
