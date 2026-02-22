@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, GlassWater } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { UiThemeToggle } from "@/components/ui-theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -283,6 +284,9 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
           </div>
         )}
         <div className="flex items-center gap-2 flex-wrap">
+          <UiThemeToggle />
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
           <LanguageToggle />
           <ThemeToggle />
           <AmbientToggle />
@@ -486,6 +490,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
         <div className="flex items-center gap-2">
           <ProfileAvatar size={48} showName showSignOut />
+          <UiThemeToggle compact />
           <LanguageToggle />
           <ThemeToggle />
           <Sheet open={open} onOpenChange={setOpen}>

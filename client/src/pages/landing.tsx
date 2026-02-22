@@ -19,6 +19,7 @@ import {
   ChevronDown, Heart, FileSpreadsheet, ClipboardPaste,
   Sparkles, Presentation, Play
 } from "lucide-react";
+import { UiThemeToggle } from "@/components/ui-theme-toggle";
 
 const tourPreviewSlides = [slideBlind, slideFlightboard, slideAnalytics];
 
@@ -121,6 +122,7 @@ export default function Landing() {
             <span className="font-serif font-black text-xl text-primary tracking-tight">CaskSense</span>
           </button>
           <div className="flex items-center gap-2 sm:gap-3">
+            <UiThemeToggle compact />
             <Button variant="outline" size="sm" onClick={() => navigate("/tour")} className="font-serif text-xs sm:text-sm gap-1.5 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700" data-testid="landing-nav-tour">
               <Presentation className="w-3.5 h-3.5" />
               {t("landing.nav.featureTour")}

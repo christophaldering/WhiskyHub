@@ -438,6 +438,14 @@ const resources = {
         switchToDark: "Switch to dark mode",
         switchToLight: "Switch to light mode"
       },
+      uiTheme: {
+        label: "Design",
+        classic: "Classic",
+        lounge: "Lounge",
+        previewNote: "Preview: switch design anytime",
+        loungeWelcome: "Your Lounge",
+        loungeSubtitle: "Welcome back. Here's what's happening in your tasting world.",
+      },
       ambient: {
         title: "Ambient Sound",
         enable: "Ambient Sound",
@@ -2532,6 +2540,14 @@ const resources = {
         light: "Hell",
         switchToDark: "Zum dunklen Modus wechseln",
         switchToLight: "Zum hellen Modus wechseln"
+      },
+      uiTheme: {
+        label: "Design",
+        classic: "Klassisch",
+        lounge: "Lounge",
+        previewNote: "Vorschau: Design jederzeit wechselbar",
+        loungeWelcome: "Deine Lounge",
+        loungeSubtitle: "Willkommen zurück. Hier ist, was sich in deiner Tasting-Welt tut.",
       },
       ambient: {
         title: "Klangkulisse",

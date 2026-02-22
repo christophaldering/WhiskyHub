@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useLocation, Link } from "wouter";
 import { UserPlus, Plus, ArrowRight, Star, Wine, Glasses, BookOpen, Camera, User, ChevronDown, Eye, Sparkles, BarChart3, Users, MapPin, NotebookPen, ScanLine, Heart, Zap, Globe, Trophy, LogIn, FileUp, Navigation } from "lucide-react";
+import { cn } from "@/lib/utils";
 import heroImage from "@/assets/images/hero-whisky.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -209,7 +210,7 @@ function WorldMapDots({ regions }: { regions: string[] }) {
 
 export default function Home() {
   const { t } = useTranslation();
-  const { currentParticipant, setParticipant } = useAppStore();
+  const { currentParticipant, setParticipant, uiTheme } = useAppStore();
   const [, navigate] = useLocation();
 
   const [joinCode, setJoinCode] = useState("");
@@ -369,9 +370,29 @@ export default function Home() {
   const encyclopediaRegions = t("features.encyclopediaRegions", { returnObjects: true }) as string[];
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] w-full max-w-3xl mx-auto space-y-10 py-10">
+    <div className={cn(
+      "flex flex-col items-center justify-center min-h-[70vh] w-full max-w-3xl mx-auto space-y-10 py-10",
+      uiTheme === "lounge" && "lounge-spacing py-14 space-y-12"
+    )}>
       <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
       <AiTastingImportDialog open={showImportDialog} onOpenChange={setShowImportDialog} />
+
+      {uiTheme === "lounge" && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="w-full text-center space-y-3 px-6 py-8 rounded-2xl bg-gradient-to-b from-primary/5 via-primary/[0.02] to-transparent border border-primary/10"
+          data-testid="lounge-welcome-hero"
+        >
+          <h2 className="font-serif text-3xl md:text-4xl font-bold text-primary tracking-tight">
+            {t("uiTheme.loungeWelcome")}
+          </h2>
+          <p className="text-base text-muted-foreground font-serif italic max-w-md mx-auto leading-relaxed">
+            {t("uiTheme.loungeSubtitle")}
+          </p>
+        </motion.div>
+      )}
 
       <Dialog open={showQuickJoin} onOpenChange={(v) => { if (!v) { setShowQuickJoin(false); setQuickJoinError(""); } }}>
         <DialogContent className="sm:max-w-sm bg-card border-border">

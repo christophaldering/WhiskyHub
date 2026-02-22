@@ -6,8 +6,7 @@ import { motion } from "framer-motion";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { Activity } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
-
-const COLORS = ["#c8a864", "#a8845c", "#8b6f47", "#d4a853", "#b8934a", "#9e7d3f", "#c4956c", "#d9b87c"];
+import { useChartColors } from "@/lib/theme-colors";
 
 interface BreakdownEntry { count: number; avgScore: number }
 interface RatedWhisky {
@@ -28,6 +27,7 @@ interface FlavorProfileData {
 export default function FlavorProfile() {
   const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
+  const chartColors = useChartColors();
   const isDE = i18n.language === "de";
 
   const { data: profile, isLoading } = useQuery<FlavorProfileData>({
@@ -147,7 +147,7 @@ export default function FlavorProfile() {
                     <PolarAngleAxis dataKey="dimension" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12, fontFamily: "serif" }} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
                     <Radar name={isDE ? "Alle" : "Everyone"} dataKey="global" stroke="#9ca3af" fill="#9ca3af" fillOpacity={0.1} strokeDasharray="4 4" />
-                    <Radar name="Profile" dataKey="value" stroke="#c8a864" fill="#c8a864" fillOpacity={0.3} strokeWidth={2} />
+                    <Radar name="Profile" dataKey="value" stroke={chartColors.primary} fill={chartColors.primary} fillOpacity={0.3} strokeWidth={2} />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
@@ -202,7 +202,7 @@ export default function FlavorProfile() {
                         formatter={(value: number, name: string) => [value.toFixed(1), name === "avgScore" ? (isDE ? "Ø Bewertung" : "Avg Score") : (isDE ? "Anzahl" : "Count")]}
                       />
                       <Bar dataKey="avgScore" radius={[0, 4, 4, 0]}>
-                        {regionData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                        {regionData.map((_, i) => <Cell key={i} fill={chartColors.colors[i % chartColors.colors.length]} />)}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
