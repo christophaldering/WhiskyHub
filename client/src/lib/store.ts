@@ -23,11 +23,15 @@ interface WishlistTransfer {
   caskType?: string;
 }
 
+export const LANDING_VERSION = 3;
+
 interface AppState extends AmbientState {
   currentParticipant: { id: string; name: string; role?: string; canAccessWhiskyDb?: boolean; experienceLevel?: string } | null;
   setParticipant: (participant: { id: string; name: string; role?: string; canAccessWhiskyDb?: boolean; experienceLevel?: string } | null) => void;
   previewExperienceLevel: string;
   setPreviewExperienceLevel: (level: string) => void;
+  lastSeenLandingVersion: number;
+  setLastSeenLandingVersion: (version: number) => void;
   language: string;
   setLanguage: (lang: string) => void;
   theme: Theme;
@@ -56,6 +60,8 @@ export const useAppStore = create<AppState>()(
       setParticipant: (participant) => set({ currentParticipant: participant }),
       previewExperienceLevel: "guest",
       setPreviewExperienceLevel: (level) => set({ previewExperienceLevel: level }),
+      lastSeenLandingVersion: 0,
+      setLastSeenLandingVersion: (version) => set({ lastSeenLandingVersion: version }),
       language: "en",
       setLanguage: (lang) => set({ language: lang }),
       ambientPlaying: false,

@@ -92,6 +92,9 @@ const resources = {
         createButton: "Create Tasting Session",
         yourSessionsTitle: "Your Sessions",
       },
+      whatsNew: {
+        banner: "New at CaskSense — see what's changed!",
+      },
       landing: {
         nav: {
           explore: "Explore",
@@ -2407,6 +2410,9 @@ const resources = {
         locationPlaceholder: "Die Bibliothek",
         createButton: "Tasting-Session erstellen",
         yourSessionsTitle: "Deine Sessions",
+      },
+      whatsNew: {
+        banner: "Neu bei CaskSense — schau was sich getan hat!",
       },
       landing: {
         nav: {

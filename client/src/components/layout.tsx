@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, GlassWater, Microscope } from "lucide-react";
+import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, ArrowRight, GlassWater, Microscope, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
@@ -11,7 +11,7 @@ import { WelcomeOverlay } from "@/components/welcome-overlay";
 import { FeedbackButton } from "@/components/feedback-button";
 import { LevelOnboarding } from "@/components/level-onboarding";
 import { useTranslation } from "react-i18next";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, LANDING_VERSION } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
 import { profileApi, tastingApi, notificationApi, participantApi } from "@/lib/api";
 
@@ -343,7 +343,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [fullBleed, setFullBleed] = useState(false);
   const { t } = useTranslation();
-  const { currentParticipant, setParticipant } = useAppStore();
+  const { currentParticipant, setParticipant, lastSeenLandingVersion, setLastSeenLandingVersion } = useAppStore();
+  const showWhatsNewBanner = !!currentParticipant && lastSeenLandingVersion < LANDING_VERSION;
 
   const { data: allTastings = [] } = useQuery({
     queryKey: ["tastings", currentParticipant?.id],
@@ -555,6 +556,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <NavContent navInnerRef={desktopNavRef} location={location} navGroups={navGroups} onNavigate={handleNavigate} />
         </aside>
         <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-background" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+          {showWhatsNewBanner && (
+            <div className="bg-gradient-to-r from-amber-500/10 via-primary/10 to-amber-500/10 border-b border-amber-500/20">
+              <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-12 py-2.5 flex items-center justify-between gap-3">
+                <a href="/" className="flex items-center gap-2 text-sm text-foreground/80 hover:text-primary transition-colors group" data-testid="banner-whats-new">
+                  <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                  <span className="font-medium">{t('whatsNew.banner')}</span>
+                  <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </a>
+                <button
+                  onClick={() => setLastSeenLandingVersion(LANDING_VERSION)}
+                  className="text-muted-foreground/50 hover:text-foreground transition-colors p-0.5 rounded"
+                  data-testid="button-dismiss-whats-new"
+                  aria-label="Dismiss"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
           <div className={cn(
             "animate-in fade-in duration-700 min-w-0",
             fullBleed
