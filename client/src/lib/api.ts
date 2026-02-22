@@ -311,6 +311,12 @@ export const platformAnalyticsApi = {
 export const flavorProfileApi = {
   get: (participantId: string) => fetchJSON(`/participants/${participantId}/flavor-profile`),
   getGlobal: () => fetchJSON(`/flavor-profile/global`),
+  getWhiskyProfile: (participantId: string, source?: string, compare?: string) => {
+    const params = new URLSearchParams();
+    if (source) params.set("source", source);
+    if (compare) params.set("compare", compare);
+    return fetchJSON(`/participants/${participantId}/whisky-profile?${params.toString()}`);
+  },
 };
 
 // ===== Community Scores =====

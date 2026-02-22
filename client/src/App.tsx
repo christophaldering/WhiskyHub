@@ -46,6 +46,7 @@ import MyWhiskies from "@/pages/my-whiskies";
 import About from "@/pages/about";
 import DataExport from "@/pages/data-export";
 import Analytics from "@/pages/analytics";
+import Method from "@/pages/method";
 import Intro from "@/pages/intro";
 import Landing from "@/pages/landing";
 import FeatureTour from "@/pages/feature-tour";
@@ -108,6 +109,7 @@ function Router() {
               <Route path="/about-method" component={AboutMethod} />
               <Route path="/about" component={About} />
               <Route path="/analytics" component={Analytics} />
+              <Route path="/method" component={Method} />
               <Route path="/data-export" component={DataExport} />
               <Route path="/invite/:token" component={InviteAccept} />
               <Route component={NotFound} />

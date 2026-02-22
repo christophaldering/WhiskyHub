@@ -3339,13 +3339,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const tastingScaleMap = new Map(allTastingsArr.map(t => [t.id, t.ratingScale ?? 100]));
 
       const whiskyIds = Array.from(new Set(userRatingsRaw.map(r => r.whiskyId)));
-      const allWhiskiesArr: Array<{ id: string; name: string; distillery: string | null; region: string | null }> = [];
-      for (const tid of Array.from(new Set(allRatingsRaw.map(r => r.tastingId)))) {
-        const ws = await storage.getWhiskiesForTasting(tid);
-        for (const w of ws) {
-          if (!allWhiskiesArr.find(x => x.id === w.id)) allWhiskiesArr.push(w);
-        }
-      }
+      const allWhiskiesArr = await storage.getWhiskiesByIds(whiskyIds);
       const whiskyMap = new Map(allWhiskiesArr.map(w => [w.id, w]));
 
       interface NormedRating {

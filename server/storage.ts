@@ -71,6 +71,7 @@ export interface IStorage {
 
   // Whiskies
   getWhiskiesForTasting(tastingId: string): Promise<Whisky[]>;
+  getWhiskiesByIds(ids: string[]): Promise<Whisky[]>;
   getAllWhiskies(): Promise<Whisky[]>;
   getActiveWhiskies(): Promise<Whisky[]>;
   getWhisky(id: string): Promise<Whisky | undefined>;
@@ -475,6 +476,11 @@ export class DatabaseStorage implements IStorage {
   // --- Whiskies ---
   async getWhiskiesForTasting(tastingId: string): Promise<Whisky[]> {
     return db.select().from(whiskies).where(eq(whiskies.tastingId, tastingId)).orderBy(asc(whiskies.sortOrder));
+  }
+
+  async getWhiskiesByIds(ids: string[]): Promise<Whisky[]> {
+    if (ids.length === 0) return [];
+    return db.select().from(whiskies).where(inArray(whiskies.id, ids));
   }
 
   async getAllWhiskies(): Promise<Whisky[]> {
