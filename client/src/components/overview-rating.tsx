@@ -51,7 +51,7 @@ function WhiskyRow({
   const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
   const { currentParticipant } = useAppStore();
   const expLevel = currentParticipant?.experienceLevel;
-  const isSimplified = expLevel === "guest" || expLevel === "curious";
+  const isSimplified = expLevel === "guest" || expLevel === "explorer";
   const [imgErr, setImgErr] = useState(false);
 
   const inputFocused = useInputFocused();

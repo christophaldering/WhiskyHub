@@ -25,13 +25,13 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const [loading, setLoading] = useState(false);
   const [isReturning, setIsReturning] = useState(true);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
-  const [experienceLevel, setExperienceLevel] = useState("enthusiast");
+  const [experienceLevel, setExperienceLevel] = useState("connoisseur");
 
   const LEVEL_OPTIONS = [
     { id: "guest", icon: User, color: "text-slate-500", border: "border-slate-300", bg: "bg-slate-50" },
-    { id: "curious", icon: Star, color: "text-amber-500", border: "border-amber-300", bg: "bg-amber-50" },
-    { id: "enthusiast", icon: Sparkles, color: "text-primary", border: "border-primary/50", bg: "bg-primary/5" },
-    { id: "scientist", icon: Brain, color: "text-violet-500", border: "border-violet-300", bg: "bg-violet-50" },
+    { id: "explorer", icon: Star, color: "text-amber-500", border: "border-amber-300", bg: "bg-amber-50" },
+    { id: "connoisseur", icon: Sparkles, color: "text-primary", border: "border-primary/50", bg: "bg-primary/5" },
+    { id: "analyst", icon: Brain, color: "text-violet-500", border: "border-violet-300", bg: "bg-violet-50" },
   ] as const;
 
   const [verifyMode, setVerifyMode] = useState(false);
@@ -554,7 +554,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
               <div className="grid grid-cols-2 gap-2">
                 <div className={cn(
                   "rounded-lg p-2.5 border transition-all",
-                  experienceLevel === "guest" || experienceLevel === "curious"
+                  experienceLevel === "guest" || experienceLevel === "explorer"
                     ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
                     : "bg-secondary/20 border-border/30"
                 )}>
@@ -563,7 +563,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                 </div>
                 <div className={cn(
                   "rounded-lg p-2.5 border transition-all",
-                  experienceLevel === "enthusiast" || experienceLevel === "scientist"
+                  experienceLevel === "connoisseur" || experienceLevel === "analyst"
                     ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
                     : "bg-secondary/20 border-border/30"
                 )}>

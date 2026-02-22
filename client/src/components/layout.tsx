@@ -289,12 +289,12 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
               <div className="grid grid-cols-4 gap-1" data-testid="select-experience-level">
                 {([
                   { id: "guest", icon: User, color: "text-slate-500", activeBg: "bg-slate-100 border-slate-300" },
-                  { id: "curious", icon: Star, color: "text-amber-500", activeBg: "bg-amber-50 border-amber-300" },
-                  { id: "enthusiast", icon: Sparkles, color: "text-primary", activeBg: "bg-primary/10 border-primary/50" },
-                  { id: "scientist", icon: Brain, color: "text-violet-500", activeBg: "bg-violet-50 border-violet-300" },
+                  { id: "explorer", icon: Star, color: "text-amber-500", activeBg: "bg-amber-50 border-amber-300" },
+                  { id: "connoisseur", icon: Sparkles, color: "text-primary", activeBg: "bg-primary/10 border-primary/50" },
+                  { id: "analyst", icon: Brain, color: "text-violet-500", activeBg: "bg-violet-50 border-violet-300" },
                 ] as const).map((lvl) => {
                   const Icon = lvl.icon;
-                  const isActive = (currentParticipant.experienceLevel || "enthusiast") === lvl.id;
+                  const isActive = (currentParticipant.experienceLevel || "connoisseur") === lvl.id;
                   return (
                     <button
                       key={lvl.id}
@@ -377,8 +377,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { previewExperienceLevel } = useAppStore();
   const isHost = currentParticipant && allTastings.some((t: any) => t.hostId === currentParticipant.id);
   const isAdmin = currentParticipant?.role === "admin";
-  const expLevel = currentParticipant ? (currentParticipant.experienceLevel || "enthusiast") : previewExperienceLevel;
-  const LEVELS = ["guest", "curious", "enthusiast", "scientist"] as const;
+  const expLevel = currentParticipant ? (currentParticipant.experienceLevel || "connoisseur") : previewExperienceLevel;
+  const LEVELS = ["guest", "explorer", "connoisseur", "analyst"] as const;
   const levelIndex = LEVELS.indexOf(expLevel as any);
   const atLeast = (min: typeof LEVELS[number]) => levelIndex >= LEVELS.indexOf(min);
 
@@ -390,41 +390,41 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/app", icon: Home, label: t('nav.lobby') },
         { href: "/news", icon: Newspaper, label: t('nav.news') },
         { href: "/sessions", icon: Wine, label: t('nav.sessions') },
-        ...(atLeast("curious") ? [{ href: "/calendar", icon: Calendar, label: t('nav.calendar') }] : []),
+        ...(atLeast("explorer") ? [{ href: "/calendar", icon: Calendar, label: t('nav.calendar') }] : []),
       ],
     },
-    ...(atLeast("curious") ? [{
+    ...(atLeast("explorer") ? [{
       label: t('navGroup.myProfile'),
       items: [
         { href: "/profile", icon: User, label: t('profile.title') },
         { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
-        ...(atLeast("enthusiast") ? [
+        ...(atLeast("connoisseur") ? [
           { href: "/badges", icon: Trophy, label: t('nav.badges') },
           { href: "/reminders", icon: Bell, label: t('nav.reminders') },
         ] : []),
-        ...(atLeast("scientist") ? [
+        ...(atLeast("analyst") ? [
           { href: "/flavor-wheel", icon: CircleDot, label: t('nav.flavorWheel') },
         ] : []),
       ],
     }] : []),
-    ...(atLeast("curious") ? [{
+    ...(atLeast("explorer") ? [{
       label: t('navGroup.myTastings'),
       items: [
         { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
         { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
       ],
     }] : []),
-    ...(atLeast("curious") ? [{
+    ...(atLeast("explorer") ? [{
       label: t('navGroup.myWhiskys'),
       items: [
         { href: "/my-whiskies", icon: GlassWater, label: t('nav.myWhiskies') },
         { href: "/wishlist", icon: Star, label: t('nav.wishlist') },
-        ...(atLeast("enthusiast") ? [
+        ...(atLeast("connoisseur") ? [
           { href: "/collection", icon: Archive, label: t('nav.collection') },
         ] : []),
       ],
     }] : []),
-    ...(atLeast("enthusiast") ? [{
+    ...(atLeast("connoisseur") ? [{
       label: t('navGroup.tools'),
       items: [
         { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
@@ -432,13 +432,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
         { href: "/export-notes", icon: Download, label: t('nav.exportNotes') },
         { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
-        ...(atLeast("scientist") ? [
+        ...(atLeast("analyst") ? [
           { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
           { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
         ] : []),
       ],
     }] : []),
-    ...(atLeast("enthusiast") ? [{
+    ...(atLeast("connoisseur") ? [{
       label: t('navGroup.community'),
       items: [
         { href: "/community-rankings", icon: BarChart3, label: t('nav.communityRankings') },
@@ -448,7 +448,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
       ],
     }] : []),
-    ...(atLeast("enthusiast") ? [{
+    ...(atLeast("connoisseur") ? [{
       label: t('navGroup.whiskyKnowledge'),
       items: [
         { href: "/lexicon", icon: Library, label: t('nav.lexicon') },
@@ -462,7 +462,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: t('navGroup.aboutPlatform'),
       items: [
         { href: "/about", icon: Info, label: t('nav.about') },
-        ...(atLeast("enthusiast") ? [
+        ...(atLeast("connoisseur") ? [
           { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
           { href: "/features", icon: LayoutGrid, label: t('nav.features') },
           { href: "/donate", icon: Heart, label: t('nav.donate') },
@@ -479,7 +479,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           ...((isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
             { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
           ] : []),
-          ...(atLeast("scientist") ? [
+          ...(atLeast("analyst") ? [
             { href: "/benchmark", icon: Brain, label: t('nav.benchmark') },
           ] : []),
         ],

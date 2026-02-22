@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import type { Whisky, Tasting } from "@shared/schema";
 
-type InterestLevel = "guest" | "curious" | "enthusiast" | "scientist";
+type InterestLevel = "guest" | "explorer" | "connoisseur" | "analyst";
 
 function NameEntry({ onJoin, loading }: { onJoin: (name: string, pin: string) => void; loading: boolean }) {
   const { t } = useTranslation();
@@ -101,7 +101,7 @@ function WhiskySliderCard({
   const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
   const { currentParticipant } = useAppStore();
   const expLevel = currentParticipant?.experienceLevel;
-  const isSimplified = expLevel === "guest" || expLevel === "curious";
+  const isSimplified = expLevel === "guest" || expLevel === "explorer";
   const { data: existingRating } = useQuery({
     queryKey: ["rating", participantId, whisky.id],
     queryFn: () => ratingApi.getMyRating(participantId, whisky.id),
@@ -296,9 +296,9 @@ function InterestLevelPicker({ onSelect }: { onSelect: (level: InterestLevel) =>
   const { t } = useTranslation();
   const levels: { id: InterestLevel; icon: any; gradient: string }[] = [
     { id: "guest", icon: User, gradient: "from-slate-500/20 to-slate-600/10" },
-    { id: "curious", icon: Star, gradient: "from-amber-500/20 to-amber-600/10" },
-    { id: "enthusiast", icon: Sparkles, gradient: "from-primary/20 to-primary/10" },
-    { id: "scientist", icon: Brain, gradient: "from-violet-500/20 to-violet-600/10" },
+    { id: "explorer", icon: Star, gradient: "from-amber-500/20 to-amber-600/10" },
+    { id: "connoisseur", icon: Sparkles, gradient: "from-primary/20 to-primary/10" },
+    { id: "analyst", icon: Brain, gradient: "from-violet-500/20 to-violet-600/10" },
   ];
 
   return (
@@ -435,7 +435,7 @@ export default function QuickTasting() {
   }, [currentParticipant, tasting, phase]);
 
   const handleFinishRating = () => {
-    if (currentParticipant?.experienceLevel === "enthusiast" || currentParticipant?.experienceLevel === "scientist" || isPreviewMode) {
+    if (currentParticipant?.experienceLevel === "connoisseur" || currentParticipant?.experienceLevel === "analyst" || isPreviewMode) {
       setPhase("complete");
     } else {
       setPhase("interest");

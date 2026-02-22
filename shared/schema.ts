@@ -17,7 +17,7 @@ export const participants = pgTable("participants", {
   canAccessWhiskyDb: boolean("can_access_whisky_db").default(false),
   newsletterOptIn: boolean("newsletter_opt_in").default(false),
   communityContributor: boolean("community_contributor").default(false),
-  experienceLevel: text("experience_level").default("enthusiast"),
+  experienceLevel: text("experience_level").default("connoisseur"),
   lastSeenAt: timestamp("last_seen_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });

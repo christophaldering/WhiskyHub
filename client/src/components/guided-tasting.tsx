@@ -194,7 +194,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
   const mid = scale / 2;
   const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
   const expLevel = currentParticipant?.experienceLevel;
-  const isSimplified = expLevel === "guest" || expLevel === "curious";
+  const isSimplified = expLevel === "guest" || expLevel === "explorer";
 
   const guidedIdx = tasting.guidedWhiskyIndex ?? -1;
   const guidedStep = tasting.guidedRevealStep ?? 0;

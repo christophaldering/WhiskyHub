@@ -187,19 +187,75 @@ export default function Landing() {
             <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.roles.title")}</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("landing.roles.subtitle")}</p>
           </motion.div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Just Tasting — full-width hero card */}
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={0}
+            variants={fadeUp}
+            className="bg-card border-2 border-emerald-500/40 hover:border-emerald-500/60 rounded-xl p-6 sm:p-8 transition-all group relative overflow-hidden cursor-pointer mb-6"
+            data-testid="landing-role-guest"
+            onClick={() => { setPreviewExperienceLevel("guest"); navigate("/app"); }}
+          >
+            <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl -translate-y-12 translate-x-12 opacity-60" />
+            <div className="relative flex flex-col sm:flex-row sm:items-center gap-5">
+              <div className="flex-shrink-0">
+                <div className="w-14 h-14 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Wine className="w-7 h-7" />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-serif font-black text-primary text-xl sm:text-2xl mb-1">{t("landing.roles.guest.name")}</h3>
+                <p className="text-emerald-700/80 dark:text-emerald-400/80 font-medium text-sm mb-2">{t("landing.roles.guest.tagline")}</p>
+                <p className="text-muted-foreground text-sm leading-relaxed">{t("landing.roles.guest.desc")}</p>
+              </div>
+              <div className="flex-shrink-0 flex flex-col items-start sm:items-end gap-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {(t("landing.roles.guest.features") as string).split(", ").map((feat) => (
+                    <span key={feat} className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-foreground/70 font-medium">
+                      {feat}
+                    </span>
+                  ))}
+                </div>
+                <Button
+                  size="sm"
+                  className="text-xs gap-1 h-8 font-serif bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={(e) => { e.stopPropagation(); setPreviewExperienceLevel("guest"); navigate("/app"); }}
+                  data-testid="button-try-view-guest"
+                >
+                  {t("landing.roles.tryView")}
+                  <ArrowRight className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Separator — "Want more?" */}
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={1}
+            variants={fadeUp}
+            className="text-center text-sm text-muted-foreground/50 mb-6 font-medium"
+          >
+            {t("landing.roles.guest.name")} {String.fromCharCode(8594)} {t("landing.roles.analyst.name")} — {t("landing.roles.subtitle").split("—")[1]?.trim() || ""}
+          </motion.p>
+
+          {/* Explorer / Connoisseur / Analyst — three columns below */}
+          <div className="grid sm:grid-cols-3 gap-5">
             {([
-              { key: "guest", icon: Wine, color: "bg-emerald-500/15 text-emerald-600", borderColor: "border-emerald-500/30 hover:border-emerald-500/50", accent: "bg-emerald-500/10", anchor: "tasting" },
-              { key: "curious", icon: Search, color: "bg-blue-500/15 text-blue-600", borderColor: "border-blue-500/30 hover:border-blue-500/50", accent: "bg-blue-500/10", anchor: "profile" },
-              { key: "enthusiast", icon: Star, color: "bg-amber-500/15 text-amber-600", borderColor: "border-amber-500/30 hover:border-amber-500/50", accent: "bg-amber-500/10", anchor: "dimensions" },
-              { key: "scientist", icon: Beaker, color: "bg-purple-500/15 text-purple-600", borderColor: "border-purple-500/30 hover:border-purple-500/50", accent: "bg-purple-500/10", anchor: "science" },
+              { key: "explorer", icon: Search, color: "bg-blue-500/15 text-blue-600", borderColor: "border-blue-500/30 hover:border-blue-500/50", accent: "bg-blue-500/10", anchor: "profile" },
+              { key: "connoisseur", icon: Star, color: "bg-amber-500/15 text-amber-600", borderColor: "border-amber-500/30 hover:border-amber-500/50", accent: "bg-amber-500/10", anchor: "dimensions" },
+              { key: "analyst", icon: Beaker, color: "bg-purple-500/15 text-purple-600", borderColor: "border-purple-500/30 hover:border-purple-500/50", accent: "bg-purple-500/10", anchor: "science" },
             ] as const).map((role, i) => (
               <motion.div
                 key={role.key}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
-                custom={i}
+                custom={i + 2}
                 variants={fadeUp}
                 className={`bg-card border ${role.borderColor} rounded-xl p-5 transition-all group relative overflow-hidden cursor-pointer`}
                 data-testid={`landing-role-${role.key}`}
@@ -212,9 +268,7 @@ export default function Landing() {
                   </div>
                   <h3 className="font-serif font-bold text-primary text-base mb-2">{t(`landing.roles.${role.key}.name`)}</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed mb-4">{t(`landing.roles.${role.key}.desc`)}</p>
-                  {role.key !== "guest" && (
-                    <p className="text-[11px] text-muted-foreground/60 font-medium mb-1.5">{t(`landing.roles.${role.key}.plus`)}</p>
-                  )}
+                  <p className="text-[11px] text-muted-foreground/60 font-medium mb-1.5">{t(`landing.roles.${role.key}.plus`)}</p>
                   <div className="flex flex-wrap gap-1.5 mb-3">
                     {(t(`landing.roles.${role.key}.features`) as string).split(", ").map((feat) => (
                       <span key={feat} className={`text-[11px] px-2 py-0.5 rounded-full ${role.accent} text-foreground/70 font-medium`}>
@@ -245,17 +299,6 @@ export default function Landing() {
               </motion.div>
             ))}
           </div>
-          <motion.p
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={5}
-            variants={fadeUp}
-            className="text-center text-sm text-muted-foreground/60 mt-8"
-          >
-            <CheckCircle2 className="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
-            {t("landing.roles.guest.name")} {String.fromCharCode(8594)} {t("landing.roles.scientist.name")} — {t("landing.roles.subtitle").split("—")[1]?.trim() || ""}
-          </motion.p>
         </div>
       </section>
 

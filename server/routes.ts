@@ -410,7 +410,7 @@ export async function registerRoutes(
         if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
           await storage.updateParticipantRole(existing.id, "admin");
         }
-        if (experienceLevel && typeof experienceLevel === "string" && ["guest", "curious", "enthusiast", "scientist"].includes(experienceLevel)) {
+        if (experienceLevel && typeof experienceLevel === "string" && ["guest", "explorer", "connoisseur", "analyst"].includes(experienceLevel)) {
           await storage.updateParticipant(existing.id, { experienceLevel });
         }
         const updated = await storage.getParticipant(existing.id);
@@ -420,7 +420,7 @@ export async function registerRoutes(
       if (pin !== existing.pin) {
         return res.status(401).json({ message: "Invalid PIN" });
       }
-      if (experienceLevel && typeof experienceLevel === "string" && ["guest", "curious", "enthusiast", "scientist"].includes(experienceLevel)) {
+      if (experienceLevel && typeof experienceLevel === "string" && ["guest", "explorer", "connoisseur", "analyst"].includes(experienceLevel)) {
         await storage.updateParticipant(existing.id, { experienceLevel });
       }
       if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
@@ -474,8 +474,8 @@ export async function registerRoutes(
   app.patch("/api/participants/:id/experience-level", async (req, res) => {
     try {
       const { level } = req.body;
-      if (!level || !["guest", "curious", "enthusiast", "scientist"].includes(level)) {
-        return res.status(400).json({ message: "Invalid level. Must be guest, curious, enthusiast, or scientist." });
+      if (!level || !["guest", "explorer", "connoisseur", "analyst"].includes(level)) {
+        return res.status(400).json({ message: "Invalid level. Must be guest, explorer, connoisseur, or analyst." });
       }
       const updated = await storage.updateParticipant(req.params.id, { experienceLevel: level });
       if (!updated) return res.status(404).json({ message: "Not found" });

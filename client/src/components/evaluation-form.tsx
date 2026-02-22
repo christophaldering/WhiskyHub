@@ -34,7 +34,7 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
   const mid = scale / 2;
   const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
   const expLevel = currentParticipant?.experienceLevel;
-  const isSimplified = expLevel === "guest" || expLevel === "curious";
+  const isSimplified = expLevel === "guest" || expLevel === "explorer";
 
   const { data: existingRating } = useQuery({
     queryKey: ["rating", participantId, whisky.id],

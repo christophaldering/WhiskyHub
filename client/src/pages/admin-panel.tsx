@@ -2231,8 +2231,8 @@ function ChangelogAdminTab({ participantId }: { participantId: string }) {
 }
 
 function OnlineUsersTab() {
-  const LEVEL_ICONS: Record<string, typeof User> = { guest: User, curious: Star, enthusiast: Sparkles, scientist: Brain };
-  const LEVEL_COLORS: Record<string, string> = { guest: "text-slate-500", curious: "text-amber-500", enthusiast: "text-primary", scientist: "text-violet-500" };
+  const LEVEL_ICONS: Record<string, typeof User> = { guest: User, explorer: Star, connoisseur: Sparkles, analyst: Brain };
+  const LEVEL_COLORS: Record<string, string> = { guest: "text-slate-500", explorer: "text-amber-500", connoisseur: "text-primary", analyst: "text-violet-500" };
 
   const { data: onlineUsers = [], isLoading } = useQuery({
     queryKey: ["/api/admin/online-users"],

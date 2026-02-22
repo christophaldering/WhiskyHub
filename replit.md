@@ -12,7 +12,7 @@ Preferred communication style: Simple, everyday language.
 The application uses a monorepo structure with client, server, and shared code, all built with TypeScript and ESM modules. A shared `schema.ts` file defines Drizzle ORM and Zod validation schemas for data consistency.
 
 ### Frontend (`client/`)
-The frontend is a React application built with Vite, using Wouter for routing, TanStack React Query for server state management, and Zustand for client-side state. The UI is developed with shadcn/ui (new-york style) based on Radix UI and Tailwind CSS, featuring a custom muted slate blue theme and light mode. Framer Motion handles animations, Recharts provides data visualizations, and react-i18next is used for internationalization (English and German). Fonts are Playfair Display and Inter. PWA support is included for installability and offline access. UI elements adapt dynamically to chosen rating scales (5/10/20/100 points). Progressive onboarding for different experience levels (guest, curious, enthusiast) guides users through features.
+The frontend is a React application built with Vite, using Wouter for routing, TanStack React Query for server state management, and Zustand for client-side state. The UI is developed with shadcn/ui (new-york style) based on Radix UI and Tailwind CSS, featuring a custom muted slate blue theme and light mode. Framer Motion handles animations, Recharts provides data visualizations, and react-i18next is used for internationalization (English and German). Fonts are Playfair Display and Inter. PWA support is included for installability and offline access. UI elements adapt dynamically to chosen rating scales (5/10/20/100 points). Progressive onboarding for different experience levels (guest, explorer, connoisseur, analyst) guides users through features.
 
 ### Backend (`server/`)
 The backend is an Express 5 HTTP server that provides RESTful API endpoints. It serves frontend assets in production and integrates with the Vite development server. Participant identification is managed client-side.
@@ -33,7 +33,8 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Knowledge Base**: Includes a Whisky Lexicon, Distillery Encyclopedia, and Independent Bottlers Encyclopedia.
 -   **AI Integration**: AI-powered bottle identification for journal entries and AI-powered newsletter content generation. AI bottle scan results are cached for efficiency.
 -   **Guest Mode**: Offers a streamlined guest experience for quick participation, with progressive navigation menu visibility based on `experienceLevel`.
--   **Rating System**: Dynamic step sizing for rating sliders and auto-calculated overall scores with manual override. Simplified rating view for Guest/Curious levels.
+-   **Rating System**: Dynamic step sizing for rating sliders and auto-calculated overall scores with manual override. Simplified rating view for Guest/Explorer levels.
+-   **Experience Levels**: Four progressive levels — guest (Just Tasting), explorer (Entdecker), connoisseur (Kenner), analyst. Landing page features Just Tasting as a full-width hero card emphasizing minimal tech, with Explorer/Connoisseur/Analyst below.
 
 ## External Dependencies
 

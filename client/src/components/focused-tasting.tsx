@@ -212,7 +212,7 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
   const mid = scale / 2;
   const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
   const expLevel = currentParticipant?.experienceLevel;
-  const isSimplified = expLevel === "guest" || expLevel === "curious";
+  const isSimplified = expLevel === "guest" || expLevel === "explorer";
 
   const [activeIndex, setActiveIndex] = useState(() => {
     if (tasting.blindMode && tasting.revealIndex != null) return tasting.revealIndex;

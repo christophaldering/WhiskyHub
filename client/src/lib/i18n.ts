@@ -60,16 +60,16 @@ const resources = {
             title: "Fun & Results",
             desc: "I want to rate whiskies and see the ranking at the end. Keep it simple!",
           },
-          curious: {
-            title: "Getting curious",
+          explorer: {
+            title: "Ready to explore",
             desc: "I'd like to explore more — a journal, my own profile, and some recommendations.",
           },
-          enthusiast: {
-            title: "Full experience",
+          connoisseur: {
+            title: "The Connoisseur",
             desc: "Community, encyclopedia, tools, hosting features — the complete package.",
           },
-          scientist: {
-            title: "Whisky Science",
+          analyst: {
+            title: "The Analyst",
             desc: "Analytics, statistical profiles, benchmarks, flavor wheels — the deep dive.",
           },
         },
@@ -208,23 +208,24 @@ const resources = {
           tryView: "Explore this view",
           guest: {
             name: "Just Tasting",
-            desc: "Join a session, rate whiskies, see the results. That's it — simple and fun.",
+            tagline: "As little tech as possible. Just what makes a good tasting better.",
+            desc: "No apps, no AI, no distractions. Join a session, rate your whiskies, see the results together. That's it — the whisky stays in focus.",
             features: "Sessions, Rankings, Results, News",
           },
-          curious: {
-            name: "Curious",
+          explorer: {
+            name: "Explorer",
             desc: "Start your own whisky journal, track your favorites, and discover your personal taste profile.",
             plus: "Everything above, plus:",
             features: "Journal, Flavor Profile, Badges, Wishlist, Calendar",
           },
-          enthusiast: {
-            name: "Enthusiast",
+          connoisseur: {
+            name: "Connoisseur",
             desc: "Access the full toolbox — lexicon, community features, tasting templates, and food pairings.",
             plus: "Everything above, plus:",
             features: "Tools, Community, Lexicon, Templates, Pairings",
           },
-          scientist: {
-            name: "Data Explorer",
+          analyst: {
+            name: "Analyst",
             desc: "Deep analytics, inter-rater statistics, taste profiles, benchmark data, and export options.",
             plus: "Everything above, plus:",
             features: "Analytics, Whisky Profile, Benchmark DB, Flavor Wheel, Data Export",
@@ -447,9 +448,9 @@ const resources = {
         levelSelector: {
           label: "Experience",
           guest: "Basic",
-          curious: "Curious",
-          enthusiast: "Enthusiast",
-          scientist: "Scientist",
+          explorer: "Explorer",
+          connoisseur: "Connoisseur",
+          analyst: "Analyst",
         },
         levelOnboarding: {
           title: "What do you expect from the app?",
@@ -2375,16 +2376,16 @@ const resources = {
             title: "Spaß & Ergebnis",
             desc: "Whiskys bewerten und am Ende das Ranking sehen. Einfach und unkompliziert!",
           },
-          curious: {
-            title: "Neugierig geworden",
+          explorer: {
+            title: "Auf Entdeckungstour",
             desc: "Ich möchte mehr entdecken — ein Tagebuch, mein eigenes Profil und Empfehlungen.",
           },
-          enthusiast: {
-            title: "Volle Erfahrung",
+          connoisseur: {
+            title: "Der Kenner",
             desc: "Community, Enzyklopädie, Tools, Hosting-Features — das volle Paket.",
           },
-          scientist: {
-            title: "Whisky-Wissenschaft",
+          analyst: {
+            title: "Der Analyst",
             desc: "Analytics, statistische Profile, Benchmarks, Flavor Wheels — für die Tieftaucher.",
           },
         },
@@ -2522,24 +2523,25 @@ const resources = {
           subtitle: "CaskSense passt sich an, wie tief du eintauchen möchtest. Starte einfach — entdecke mehr, wann immer du bereit bist.",
           tryView: "Dieses Level entdecken",
           guest: {
-            name: "Einfach mitmachen",
-            desc: "An einer Session teilnehmen, Whiskys bewerten, Ergebnisse sehen. Mehr braucht's nicht — einfach und locker.",
+            name: "Einfach Tasting",
+            tagline: "So wenig Technik wie möglich. Nur das, was ein gutes Tasting wirklich besser macht.",
+            desc: "Keine App-Überflutung, keine KI, keine Ablenkung. Teilnehmen, bewerten, Ergebnis ansehen — fertig. Der Whisky bleibt im Fokus.",
             features: "Sessions, Rankings, Ergebnisse, News",
           },
-          curious: {
-            name: "Neugierig",
+          explorer: {
+            name: "Entdecker",
             desc: "Starte dein eigenes Whisky-Journal, verfolge deine Favoriten und entdecke dein persönliches Geschmacksprofil.",
             plus: "Alles von oben, plus:",
             features: "Journal, Geschmacksprofil, Badges, Wunschliste, Kalender",
           },
-          enthusiast: {
-            name: "Enthusiast",
+          connoisseur: {
+            name: "Kenner",
             desc: "Zugang zum vollen Werkzeugkasten — Lexikon, Community-Funktionen, Tasting-Vorlagen und Food Pairings.",
             plus: "Alles von oben, plus:",
             features: "Tools, Community, Lexikon, Vorlagen, Pairings",
           },
-          scientist: {
-            name: "Daten-Explorer",
+          analyst: {
+            name: "Analyst",
             desc: "Tiefe Analysen, Beurteiler-Statistiken, Geschmacksprofile, Benchmark-Daten und Export-Optionen.",
             plus: "Alles von oben, plus:",
             features: "Analytik, Whisky-Profil, Benchmark-DB, Flavor Wheel, Daten-Export",
@@ -2762,9 +2764,9 @@ const resources = {
         levelSelector: {
           label: "Erwartung",
           guest: "Basic",
-          curious: "Neugierig",
-          enthusiast: "Enthusiast",
-          scientist: "Wissenschaftler",
+          explorer: "Entdecker",
+          connoisseur: "Kenner",
+          analyst: "Analyst",
         },
         levelOnboarding: {
           title: "Was erwartest du von der App?",

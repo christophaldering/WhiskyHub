@@ -8,9 +8,9 @@ import { participantApi } from "@/lib/api";
 
 const LEVELS = [
   { id: "guest", icon: User, gradient: "from-slate-500/20 to-slate-600/10", color: "text-slate-500" },
-  { id: "curious", icon: Star, gradient: "from-amber-500/20 to-amber-600/10", color: "text-amber-500" },
-  { id: "enthusiast", icon: Sparkles, gradient: "from-primary/20 to-primary/10", color: "text-primary" },
-  { id: "scientist", icon: Brain, gradient: "from-violet-500/20 to-violet-600/10", color: "text-violet-500" },
+  { id: "explorer", icon: Star, gradient: "from-amber-500/20 to-amber-600/10", color: "text-amber-500" },
+  { id: "connoisseur", icon: Sparkles, gradient: "from-primary/20 to-primary/10", color: "text-primary" },
+  { id: "analyst", icon: Brain, gradient: "from-violet-500/20 to-violet-600/10", color: "text-violet-500" },
 ] as const;
 
 export function LevelOnboarding() {
