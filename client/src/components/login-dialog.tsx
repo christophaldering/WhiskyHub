@@ -72,7 +72,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     if (isReturning) {
       setLoading(true);
       try {
-        const participant = await participantApi.loginByEmail(email.trim(), pin);
+        const participant = await participantApi.loginByEmail(email.trim(), pin, experienceLevel);
         setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb, experienceLevel: participant.experienceLevel });
         onClose();
       } catch (e: any) {
@@ -429,6 +429,38 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
         </div>
 
         <div className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('quickTasting.interestTitle')}</Label>
+            <p className="text-[10px] text-muted-foreground/70">{t('quickTasting.interestSubtitle')}</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {LEVEL_OPTIONS.map((lvl) => {
+                const Icon = lvl.icon;
+                const isSelected = experienceLevel === lvl.id;
+                return (
+                  <button
+                    key={lvl.id}
+                    type="button"
+                    onClick={() => setExperienceLevel(lvl.id)}
+                    className={cn(
+                      "flex items-center gap-2 p-2 rounded-lg border text-left transition-all",
+                      isSelected
+                        ? `${lvl.border} ${lvl.bg} ring-1 ring-primary/20`
+                        : "border-border/40 hover:border-border"
+                    )}
+                    data-testid={`button-reg-level-${lvl.id}`}
+                  >
+                    <Icon className={cn("w-4 h-4 flex-shrink-0", isSelected ? lvl.color : "text-muted-foreground/50")} />
+                    <div className="min-w-0">
+                      <div className={cn("text-[11px] font-serif font-semibold leading-tight", isSelected ? "text-primary" : "text-muted-foreground")}>
+                        {t(`quickTasting.level.${lvl.id}.title`)}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {!isReturning && (
             <div className="space-y-2">
               <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.name')}</Label>
@@ -438,7 +470,6 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
                 placeholder={t('login.namePlaceholder')}
                 className="bg-secondary/20"
                 data-testid="input-name"
-                autoFocus
               />
             </div>
           )}
@@ -505,40 +536,6 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
             )}
           </div>
 
-          {!isReturning && (
-            <div className="space-y-2">
-              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('quickTasting.interestTitle')}</Label>
-              <p className="text-[10px] text-muted-foreground/70">{t('quickTasting.interestSubtitle')}</p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {LEVEL_OPTIONS.map((lvl) => {
-                  const Icon = lvl.icon;
-                  const isSelected = experienceLevel === lvl.id;
-                  return (
-                    <button
-                      key={lvl.id}
-                      type="button"
-                      onClick={() => setExperienceLevel(lvl.id)}
-                      className={cn(
-                        "flex items-center gap-2 p-2 rounded-lg border text-left transition-all",
-                        isSelected
-                          ? `${lvl.border} ${lvl.bg} ring-1 ring-primary/20`
-                          : "border-border/40 hover:border-border"
-                      )}
-                      data-testid={`button-reg-level-${lvl.id}`}
-                    >
-                      <Icon className={cn("w-4 h-4 flex-shrink-0", isSelected ? lvl.color : "text-muted-foreground/50")} />
-                      <div className="min-w-0">
-                        <div className={cn("text-[11px] font-serif font-semibold leading-tight", isSelected ? "text-primary" : "text-muted-foreground")}>
-                          {t(`quickTasting.level.${lvl.id}.title`)}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
 
           {error && <p className="text-sm text-destructive" data-testid="text-login-error">{error}</p>}
@@ -555,11 +552,21 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           {!isReturning && (
             <div className="space-y-3 pt-2">
               <div className="grid grid-cols-2 gap-2">
-                <div className="bg-secondary/20 rounded-lg p-2.5 border border-border/30">
+                <div className={cn(
+                  "rounded-lg p-2.5 border transition-all",
+                  experienceLevel === "guest" || experienceLevel === "curious"
+                    ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
+                    : "bg-secondary/20 border-border/30"
+                )}>
                   <p className="text-[11px] font-serif font-semibold text-primary">{t('guestAuth.pinOnlyTitle')}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{t('guestAuth.pinOnlyDesc')}</p>
                 </div>
-                <div className="bg-primary/5 rounded-lg p-2.5 border border-primary/20">
+                <div className={cn(
+                  "rounded-lg p-2.5 border transition-all",
+                  experienceLevel === "enthusiast" || experienceLevel === "scientist"
+                    ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
+                    : "bg-secondary/20 border-border/30"
+                )}>
                   <p className="text-[11px] font-serif font-semibold text-primary">{t('guestAuth.emailTitle')}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{t('guestAuth.emailDesc')}</p>
                 </div>

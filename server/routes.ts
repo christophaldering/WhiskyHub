@@ -389,7 +389,7 @@ export async function registerRoutes(
 
   app.post("/api/participants/login", async (req, res) => {
     try {
-      const { email, pin } = req.body;
+      const { email, pin, experienceLevel } = req.body;
       if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
         return res.status(400).json({ message: "A valid email is required" });
       }
@@ -406,6 +406,9 @@ export async function registerRoutes(
         if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
           await storage.updateParticipantRole(existing.id, "admin");
         }
+        if (experienceLevel && typeof experienceLevel === "string" && ["guest", "curious", "enthusiast", "scientist"].includes(experienceLevel)) {
+          await storage.updateParticipant(existing.id, { experienceLevel });
+        }
         const updated = await storage.getParticipant(existing.id);
         if (updated) { storage.updateLastSeen(updated.id).catch(() => {}); notifyAdminLogin(updated, false); }
         return res.json(updated);
@@ -413,15 +416,19 @@ export async function registerRoutes(
       if (pin !== existing.pin) {
         return res.status(401).json({ message: "Invalid PIN" });
       }
+      if (experienceLevel && typeof experienceLevel === "string" && ["guest", "curious", "enthusiast", "scientist"].includes(experienceLevel)) {
+        await storage.updateParticipant(existing.id, { experienceLevel });
+      }
       if (existing.email?.toLowerCase() === ADMIN_EMAIL && existing.role !== "admin") {
         await storage.updateParticipantRole(existing.id, "admin");
         const updated = await storage.getParticipant(existing.id);
         if (updated) { storage.updateLastSeen(updated.id).catch(() => {}); notifyAdminLogin(updated, false); }
         return res.json(updated);
       }
+      const freshParticipant = await storage.getParticipant(existing.id);
       storage.updateLastSeen(existing.id).catch(() => {});
-      notifyAdminLogin(existing, false);
-      return res.json(existing);
+      notifyAdminLogin(freshParticipant || existing, false);
+      return res.json(freshParticipant || existing);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
     }
