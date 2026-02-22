@@ -170,24 +170,17 @@ export default function Landing() {
               <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-lg">
                 {t("landing.hero.subtitle")}
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Button size="lg" onClick={() => navigate("/app")} className="font-serif text-base gap-2 px-8" data-testid="landing-hero-cta">
-                  {t("landing.hero.cta")}
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-                <Button size="lg" variant="outline" onClick={() => navigate("/tour")} className="font-serif text-base gap-2 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 hover:border-amber-500/60" data-testid="landing-hero-tour">
-                  <Play className="w-4 h-4" />
-                  {t("landing.hero.tourCta")}
-                </Button>
-              </div>
-              <div className="pt-4 border-t border-border/20">
-                <p className="text-sm font-serif font-semibold text-muted-foreground mb-2">{t("landing.quickJoin.label")}</p>
+              <div className="bg-card/60 backdrop-blur-sm rounded-xl border border-border/40 p-4 shadow-sm max-w-md">
+                <p className="text-sm font-serif font-semibold text-primary mb-2.5 flex items-center gap-2">
+                  <LogIn className="w-4 h-4" />
+                  {t("landing.quickJoin.label")}
+                </p>
                 <div className="flex gap-2">
                   <Input
                     value={tastingCode}
                     onChange={(e) => setTastingCode(e.target.value.toUpperCase())}
                     placeholder={t("landing.quickJoin.placeholder")}
-                    className="font-mono text-sm tracking-widest h-10 uppercase"
+                    className="font-mono text-sm tracking-widest h-10 uppercase bg-background/80"
                     onKeyDown={(e) => e.key === "Enter" && tastingCode.trim() && navigate(`/join/${tastingCode.trim()}`)}
                     data-testid="input-quick-join-code"
                   />
@@ -202,7 +195,17 @@ export default function Landing() {
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground/40 mt-1.5">{t("landing.quickJoin.hint")}</p>
+                <p className="text-xs text-muted-foreground/50 mt-1.5">{t("landing.quickJoin.hint")}</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Button size="lg" onClick={() => navigate("/app")} className="font-serif text-base gap-2 px-8" data-testid="landing-hero-cta">
+                  {t("landing.hero.cta")}
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => navigate("/tour")} className="font-serif text-base gap-2 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 hover:border-amber-500/60" data-testid="landing-hero-tour">
+                  <Play className="w-4 h-4" />
+                  {t("landing.hero.tourCta")}
+                </Button>
               </div>
               <p className="text-sm text-muted-foreground/50 flex items-center gap-1.5">
                 <ChevronDown className="w-3.5 h-3.5 animate-bounce" />
