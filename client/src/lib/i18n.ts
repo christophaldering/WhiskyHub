@@ -543,6 +543,8 @@ const resources = {
           makeScreenOnly: "Make screen only",
           delete: "Delete",
           anonymous: "Anonymous",
+          viewLandscape: "Landscape view",
+          viewPortrait: "Portrait view",
         },
         coverImage: {
           label: "Cover Image",
@@ -1745,7 +1747,8 @@ const resources = {
         copyText: "Copy as Text",
         print: "Print / Export PDF",
         copied: "Notes copied to clipboard",
-        empty: "You haven't rated any expressions in this tasting yet."
+        empty: "You haven't rated any expressions in this tasting yet.",
+        downloadWord: "Download Word"
       },
       recap: {
         title: "Tasting Recap",
@@ -2638,6 +2641,8 @@ const resources = {
           makeScreenOnly: "Nur am Bildschirm anzeigen",
           delete: "Löschen",
           anonymous: "Anonym",
+          viewLandscape: "Querformat",
+          viewPortrait: "Hochformat",
         },
         coverImage: {
           label: "Titelbild",
@@ -3840,7 +3845,8 @@ const resources = {
         copyText: "Als Text kopieren",
         print: "Drucken / PDF exportieren",
         copied: "Notizen in die Zwischenablage kopiert",
-        empty: "Sie haben in diesem Tasting noch keine Ausdrücke bewertet."
+        empty: "Sie haben in diesem Tasting noch keine Ausdrücke bewertet.",
+        downloadWord: "Word herunterladen"
       },
       recap: {
         title: "Tasting-Rückblick",

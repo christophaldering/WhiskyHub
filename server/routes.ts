@@ -16,6 +16,7 @@ import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail } from "./email";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES } from "./ai-settings";
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from "docx";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -3473,6 +3474,151 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         notes,
       });
     } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== EXPORT NOTES AS DOCX =====
+
+  app.post("/api/export/notes-docx", async (req, res) => {
+    try {
+      const { tastingId, participantId } = req.body;
+      if (!tastingId || !participantId) {
+        return res.status(400).json({ message: "tastingId and participantId are required" });
+      }
+
+      const [tasting, participant, whiskies, ratings] = await Promise.all([
+        storage.getTasting(tastingId),
+        storage.getParticipant(participantId),
+        storage.getWhiskiesForTasting(tastingId),
+        storage.getRatingsForTasting(tastingId),
+      ]);
+
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (!participant) return res.status(404).json({ message: "Participant not found" });
+
+      const participantRatings = ratings.filter(r => r.participantId === participantId);
+      const whiskyMap = new Map(whiskies.map(w => [w.id, w]));
+
+      const tableBorderStyle = {
+        style: BorderStyle.SINGLE,
+        size: 1,
+        color: "999999",
+      };
+      const tableBorders = {
+        top: tableBorderStyle,
+        bottom: tableBorderStyle,
+        left: tableBorderStyle,
+        right: tableBorderStyle,
+      };
+
+      const children: any[] = [
+        new Paragraph({
+          text: tasting.title || "Tasting",
+          heading: HeadingLevel.HEADING_1,
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 100 },
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 200 },
+          children: [
+            new TextRun({ text: `${tasting.date || ""}  ·  ${participant.name}`, italics: true, size: 22, color: "666666" }),
+          ],
+        }),
+        new Paragraph({ text: "", spacing: { after: 200 } }),
+      ];
+
+      for (const rating of participantRatings) {
+        const whisky = whiskyMap.get(rating.whiskyId);
+        if (!whisky) continue;
+
+        const metaParts = [
+          whisky.distillery,
+          whisky.age ? `${whisky.age}y` : null,
+          whisky.abv ? `${whisky.abv}% ABV` : null,
+        ].filter(Boolean);
+
+        children.push(
+          new Paragraph({
+            text: whisky.name,
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 300, after: 100 },
+          })
+        );
+
+        if (metaParts.length > 0) {
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({ text: metaParts.join("  ·  "), italics: true, size: 20, color: "888888" }),
+              ],
+              spacing: { after: 150 },
+            })
+          );
+        }
+
+        const headerCells = ["Nose", "Taste", "Finish", "Balance", "Overall"].map(
+          label => new TableCell({
+            children: [new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [new TextRun({ text: label, bold: true, size: 18 })],
+            })],
+            width: { size: 20, type: WidthType.PERCENTAGE },
+            borders: tableBorders,
+          })
+        );
+
+        const valueCells = [rating.nose, rating.taste, rating.finish, rating.balance, rating.overall].map(
+          val => new TableCell({
+            children: [new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [new TextRun({ text: val != null ? String(val) : "-", size: 20 })],
+            })],
+            width: { size: 20, type: WidthType.PERCENTAGE },
+            borders: tableBorders,
+          })
+        );
+
+        children.push(
+          new Table({
+            rows: [
+              new TableRow({ children: headerCells }),
+              new TableRow({ children: valueCells }),
+            ],
+            width: { size: 100, type: WidthType.PERCENTAGE },
+          })
+        );
+
+        if (rating.notes) {
+          children.push(
+            new Paragraph({
+              spacing: { before: 100, after: 200 },
+              children: [
+                new TextRun({ text: "Notes: ", bold: true, size: 20 }),
+                new TextRun({ text: rating.notes, size: 20 }),
+              ],
+            })
+          );
+        } else {
+          children.push(new Paragraph({ text: "", spacing: { after: 200 } }));
+        }
+      }
+
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children,
+        }],
+      });
+
+      const buffer = await Packer.toBuffer(doc);
+      const safeName = (tasting.title || "tasting").replace(/[^a-zA-Z0-9_-]/g, "_");
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+      res.setHeader("Content-Disposition", `attachment; filename="${safeName}_notes.docx"`);
+      res.send(buffer);
+    } catch (e: any) {
+      console.error("DOCX export error:", e);
       res.status(500).json({ message: e.message });
     }
   });

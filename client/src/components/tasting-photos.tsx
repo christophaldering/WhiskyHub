@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Camera, Upload, Trash2, X, Printer, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Camera, Upload, Trash2, X, Printer, Eye, ChevronLeft, ChevronRight, RectangleHorizontal, RectangleVertical } from "lucide-react";
 import { useInputFocused } from "@/hooks/use-input-focused";
 import { useToast } from "@/hooks/use-toast";
 import type { TastingPhoto, Whisky } from "@shared/schema";
@@ -27,6 +27,7 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
   const [lightboxPhoto, setLightboxPhoto] = useState<TastingPhoto | null>(null);
+  const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const inputFocused = useInputFocused();
@@ -145,13 +146,38 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
         <p className="text-sm text-muted-foreground italic">{t("session.photos.empty", "No photos yet. Be the first to capture a moment!")}</p>
       )}
 
+      {photos.length > 0 && (
+        <div className="flex items-center gap-1" data-testid="toggle-photo-orientation">
+          <Button
+            size="sm"
+            variant={orientation === "landscape" ? "default" : "ghost"}
+            onClick={() => setOrientation("landscape")}
+            className="gap-1 h-8 px-2"
+            title={t("session.photos.viewLandscape", "Landscape view")}
+            data-testid="button-orientation-landscape"
+          >
+            <RectangleHorizontal className="w-4 h-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant={orientation === "portrait" ? "default" : "ghost"}
+            onClick={() => setOrientation("portrait")}
+            className="gap-1 h-8 px-2"
+            title={t("session.photos.viewPortrait", "Portrait view")}
+            data-testid="button-orientation-portrait"
+          >
+            <RectangleVertical className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {photos.map((photo) => (
           <div key={photo.id} className="group relative rounded-lg overflow-hidden border bg-card shadow-sm" data-testid={`card-photo-${photo.id}`}>
             <img
               src={photo.photoUrl}
               alt={photo.caption || "Tasting photo"}
-              className="w-full aspect-square object-cover cursor-pointer hover:opacity-90 transition-opacity"
+              className={`w-full ${orientation === "portrait" ? "aspect-[3/4]" : "aspect-[4/3]"} object-cover cursor-pointer hover:opacity-90 transition-opacity`}
               onClick={() => setLightboxPhoto(photo)}
               loading="lazy"
             />

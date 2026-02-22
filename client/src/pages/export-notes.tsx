@@ -6,7 +6,7 @@ import { useAppStore } from "@/lib/store";
 import { exportApi, tastingApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Printer, Copy, FileText, Wine } from "lucide-react";
+import { Printer, Copy, FileText, Wine, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { GuestPreview } from "@/components/guest-preview";
 
@@ -60,6 +60,34 @@ export default function ExportNotes() {
   const handlePrint = useCallback(() => {
     window.print();
   }, []);
+
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadWord = useCallback(async () => {
+    if (!notesData || !selectedTastingId || !currentParticipant) return;
+    setDownloading(true);
+    try {
+      const res = await fetch("/api/export/notes-docx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tastingId: selectedTastingId, participantId: currentParticipant.id }),
+      });
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${notesData.tasting.name.replace(/[^a-zA-Z0-9_-]/g, "_")}_notes.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      toast({ description: e.message || "Download failed", variant: "destructive" });
+    } finally {
+      setDownloading(false);
+    }
+  }, [notesData, selectedTastingId, currentParticipant, toast]);
 
   const handleCopyText = useCallback(() => {
     if (!notesData?.notes?.length) return;
@@ -150,6 +178,10 @@ export default function ExportNotes() {
                 <Button variant="outline" size="sm" onClick={handleCopyText} data-testid="button-copy-text">
                   <Copy className="w-4 h-4 mr-2" />
                   {t("exportNotes.copyText")}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleDownloadWord} disabled={downloading} data-testid="button-download-word">
+                  <FileDown className="w-4 h-4 mr-2" />
+                  {t("exportNotes.downloadWord")}
                 </Button>
                 <Button variant="outline" size="sm" onClick={handlePrint} data-testid="button-print">
                   <Printer className="w-4 h-4 mr-2" />

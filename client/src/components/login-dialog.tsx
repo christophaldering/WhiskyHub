@@ -22,7 +22,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isReturning, setIsReturning] = useState(false);
+  const [isReturning, setIsReturning] = useState(true);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
 
   const [verifyMode, setVerifyMode] = useState(false);
@@ -400,19 +400,19 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
         <div className="flex rounded-lg bg-secondary/30 p-1 mt-2" data-testid="auth-tab-switcher">
           <button
             type="button"
-            onClick={() => { setIsReturning(false); setError(""); }}
-            className={`flex-1 py-2 px-3 rounded-md text-sm font-serif font-medium transition-all ${!isReturning ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-            data-testid="tab-register"
-          >
-            {t('login.tabRegister')}
-          </button>
-          <button
-            type="button"
             onClick={() => { setIsReturning(true); setError(""); }}
             className={`flex-1 py-2 px-3 rounded-md text-sm font-serif font-medium transition-all ${isReturning ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             data-testid="tab-login"
           >
             {t('login.tabLogin')}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setIsReturning(false); setError(""); }}
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-serif font-medium transition-all ${!isReturning ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            data-testid="tab-register"
+          >
+            {t('login.tabRegister')}
           </button>
         </div>
 
