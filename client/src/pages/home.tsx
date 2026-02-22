@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useLocation, Link } from "wouter";
-import { UserPlus, Plus, ArrowRight, Star, Wine, Glasses, BookOpen, Camera, User, ChevronDown, Eye, Sparkles, BarChart3, Users, MapPin, NotebookPen, ScanLine, Heart, Zap, Globe, Trophy, LogIn, FileUp, Navigation } from "lucide-react";
+import { UserPlus, Plus, ArrowRight, Star, Wine, Glasses, BookOpen, Camera, User, ChevronDown, Eye, Sparkles, BarChart3, Users, MapPin, NotebookPen, ScanLine, Heart, Zap, Globe, Trophy, LogIn, FileUp, Navigation, LayoutDashboard } from "lucide-react";
 import heroImage from "@/assets/images/hero-whisky.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -573,6 +573,46 @@ export default function Home() {
           </Link>
         </div>
       </motion.div>
+
+      {currentParticipant && tastings?.some((t: any) => t.hostId === currentParticipant.id) && (
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 0.8 }}
+          className="w-full"
+        >
+          <div className="bg-amber-50/60 dark:bg-amber-950/20 border border-amber-300/30 rounded-xl p-4">
+            <h3 className="font-serif text-sm font-bold text-amber-800 dark:text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <Glasses className="w-4 h-4" />
+              {t("hostShortcuts.title")}
+            </h3>
+            <div className="grid grid-cols-3 gap-3">
+              <Link href="/app">
+                <div
+                  className="bg-white/80 dark:bg-card border border-amber-200/50 rounded-lg p-3 text-center hover:shadow-md hover:border-amber-400/50 transition-all duration-300 cursor-pointer"
+                  onClick={(e) => { e.preventDefault(); setShowHostForm(true); }}
+                  data-testid="host-shortcut-create"
+                >
+                  <Plus className="w-5 h-5 text-amber-600 mx-auto mb-1.5" />
+                  <p className="text-xs font-medium text-foreground">{t("hostShortcuts.createTasting")}</p>
+                </div>
+              </Link>
+              <Link href="/sessions">
+                <div className="bg-white/80 dark:bg-card border border-amber-200/50 rounded-lg p-3 text-center hover:shadow-md hover:border-amber-400/50 transition-all duration-300 cursor-pointer" data-testid="host-shortcut-my-tastings">
+                  <Wine className="w-5 h-5 text-amber-600 mx-auto mb-1.5" />
+                  <p className="text-xs font-medium text-foreground">{t("hostShortcuts.myHostedTastings")}</p>
+                </div>
+              </Link>
+              <Link href="/host-dashboard">
+                <div className="bg-white/80 dark:bg-card border border-amber-200/50 rounded-lg p-3 text-center hover:shadow-md hover:border-amber-400/50 transition-all duration-300 cursor-pointer" data-testid="host-shortcut-dashboard">
+                  <LayoutDashboard className="w-5 h-5 text-amber-600 mx-auto mb-1.5" />
+                  <p className="text-xs font-medium text-foreground">{t("hostShortcuts.hostDashboard")}</p>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Join + Host cards - always visible side by side */}
       <div className="grid md:grid-cols-2 gap-8 w-full">

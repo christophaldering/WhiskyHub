@@ -515,6 +515,9 @@ export default function Landing() {
               &copy; {new Date().getFullYear()} CaskSense
             </p>
           </div>
+          <p className="text-[10px] text-muted-foreground/40 text-center mt-3" data-testid="text-ai-footnote">
+            {t("landing.footer.aiFootnote")}
+          </p>
         </div>
       </footer>
 
