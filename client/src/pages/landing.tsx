@@ -308,10 +308,10 @@ export default function Landing() {
           </motion.div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {([
-              { key: "guest", icon: Wine, color: "bg-emerald-500/15 text-emerald-600", borderColor: "border-emerald-500/30 hover:border-emerald-500/50", accent: "bg-emerald-500/10" },
-              { key: "curious", icon: Search, color: "bg-blue-500/15 text-blue-600", borderColor: "border-blue-500/30 hover:border-blue-500/50", accent: "bg-blue-500/10" },
-              { key: "enthusiast", icon: Star, color: "bg-amber-500/15 text-amber-600", borderColor: "border-amber-500/30 hover:border-amber-500/50", accent: "bg-amber-500/10" },
-              { key: "scientist", icon: Beaker, color: "bg-purple-500/15 text-purple-600", borderColor: "border-purple-500/30 hover:border-purple-500/50", accent: "bg-purple-500/10" },
+              { key: "guest", icon: Wine, color: "bg-emerald-500/15 text-emerald-600", borderColor: "border-emerald-500/30 hover:border-emerald-500/50", accent: "bg-emerald-500/10", anchor: "tasting" },
+              { key: "curious", icon: Search, color: "bg-blue-500/15 text-blue-600", borderColor: "border-blue-500/30 hover:border-blue-500/50", accent: "bg-blue-500/10", anchor: "profile" },
+              { key: "enthusiast", icon: Star, color: "bg-amber-500/15 text-amber-600", borderColor: "border-amber-500/30 hover:border-amber-500/50", accent: "bg-amber-500/10", anchor: "dimensions" },
+              { key: "scientist", icon: Beaker, color: "bg-purple-500/15 text-purple-600", borderColor: "border-purple-500/30 hover:border-purple-500/50", accent: "bg-purple-500/10", anchor: "science" },
             ] as const).map((role, i) => (
               <motion.div
                 key={role.key}
@@ -333,13 +333,20 @@ export default function Landing() {
                   {role.key !== "guest" && (
                     <p className="text-[11px] text-muted-foreground/60 font-medium mb-1.5">{t(`landing.roles.${role.key}.plus`)}</p>
                   )}
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 mb-3">
                     {(t(`landing.roles.${role.key}.features`) as string).split(", ").map((feat) => (
                       <span key={feat} className={`text-[11px] px-2 py-0.5 rounded-full ${role.accent} text-foreground/70 font-medium`}>
                         {feat}
                       </span>
                     ))}
                   </div>
+                  <button
+                    onClick={() => navigate(`/background#${role.anchor}`)}
+                    className="text-[11px] text-muted-foreground/60 hover:text-primary underline underline-offset-2 transition-colors"
+                    data-testid={`link-learn-more-${role.key}`}
+                  >
+                    {t("background.learnMore")} →
+                  </button>
                 </div>
               </motion.div>
             ))}
@@ -732,6 +739,7 @@ export default function Landing() {
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-sm text-muted-foreground">
               <button onClick={() => navigate("/about")} className="hover:text-primary transition-colors">{t("landing.footer.about")}</button>
               <button onClick={() => navigate("/tour")} className="hover:text-primary transition-colors">{t("landing.footer.featureTour")}</button>
+              <button onClick={() => navigate("/background")} className="hover:text-primary transition-colors">{t("background.title")}</button>
               <button onClick={() => navigate("/features")} className="hover:text-primary transition-colors">{t("landing.footer.features")}</button>
               <button onClick={() => navigate("/app")} className="hover:text-primary transition-colors">{t("landing.footer.app")}</button>
               <a href="mailto:christoph.aldering@googlemail.com" className="hover:text-primary transition-colors" data-testid="link-footer-contact">{t("landing.footer.contact")}</a>

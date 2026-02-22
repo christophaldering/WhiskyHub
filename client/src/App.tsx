@@ -51,6 +51,7 @@ import Intro from "@/pages/intro";
 import Landing from "@/pages/landing";
 import FeatureTour from "@/pages/feature-tour";
 import Tour from "@/pages/tour";
+import Background from "@/pages/background";
 import News from "@/pages/news";
 import QuickTasting from "@/pages/quick-tasting";
 import { BuildFooter } from "@/components/build-footer";
@@ -63,6 +64,7 @@ function Router() {
         <Route path="/" component={Landing} />
         <Route path="/feature-tour" component={FeatureTour} />
         <Route path="/tour" component={Tour} />
+        <Route path="/background" component={Background} />
         <Route path="/join/:code" component={QuickTasting} />
         <Route path="/intro" component={Intro} />
         <Route>
