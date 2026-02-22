@@ -73,11 +73,17 @@ function Router() {
         <Route path="/join/:code" component={QuickTasting} />
         <Route path="/intro" component={Intro} />
 
-        {/* Lounge variant routes */}
+        {/* Lounge variant - exact /lounge path */}
+        <Route path="/lounge">
+          <LoungeLayout>
+            <LoungeHome />
+          </LoungeLayout>
+        </Route>
+
+        {/* Lounge variant sub-routes */}
         <Route path="/lounge/:rest*">
           <LoungeLayout>
             <Switch>
-              <Route path="/lounge" component={LoungeHome} />
               <Route path="/lounge/news" component={News} />
 
               {/* Tastings room */}
