@@ -6709,8 +6709,8 @@ Important rules:
       pres.layout = "LAYOUT_WIDE";
       pres.author = "CaskSense";
       pres.company = "CaskSense";
-      pres.subject = "CaskSense Produkt-Tour";
-      pres.title = "CaskSense — Produkt-Tour";
+      pres.subject = "CaskSense Rundgang";
+      pres.title = "CaskSense — Rundgang";
 
       const NAVY = "0f172a";
       const AMBER = "c8943e";
@@ -6732,7 +6732,7 @@ Important rules:
         {
           title: "CaskSense",
           subtitle: "Whisky gemeinsam erleben — strukturiert, persönlich, ohne Vorwissen.",
-          badge: "Produkt-Tour",
+          badge: "Rundgang",
           features: [] as string[],
           image: "slide-cover.png",
         },
@@ -7019,7 +7019,7 @@ Important rules:
 
       const pptxBuffer = await pres.write({ outputType: "nodebuffer" });
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
-      res.setHeader("Content-Disposition", `attachment; filename="CaskSense-Produkt-Tour.pptx"`);
+      res.setHeader("Content-Disposition", `attachment; filename="CaskSense-Rundgang.pptx"`);
       res.send(Buffer.from(pptxBuffer));
     } catch (e: any) {
       console.error("PPTX generation error:", e);
@@ -7055,7 +7055,7 @@ Important rules:
         {
           title: "CaskSense",
           subtitle: "Whisky gemeinsam erleben — strukturiert, persönlich, ohne Vorwissen.",
-          badge: "Produkt-Tour",
+          badge: "Rundgang",
           features: [] as string[],
           image: "slide-cover.png",
         },
@@ -7291,7 +7291,7 @@ Important rules:
 
       const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="CaskSense-Produkt-Tour.pdf"`);
+      res.setHeader("Content-Disposition", `attachment; filename="CaskSense-Rundgang.pdf"`);
       res.send(pdfBuffer);
     } catch (e: any) {
       console.error("PDF generation error:", e);

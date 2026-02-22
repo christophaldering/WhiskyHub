@@ -17,7 +17,7 @@ import {
   Glasses, BookOpen, Users, BarChart3, Brain, Camera,
   FileUp, Globe, ArrowRight, Wine, LogIn,
   ChevronDown, Heart, FileSpreadsheet, ClipboardPaste,
-  Sparkles, Presentation, Play
+  Sparkles, Presentation, Play, Star, Search, Beaker, CheckCircle2
 } from "lucide-react";
 
 const tourPreviewSlides = [slideBlind, slideFlightboard, slideAnalytics];
@@ -292,7 +292,73 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Feature Tour Banner */}
+      {/* Experience Levels */}
+      <section className="py-20 sm:py-28 bg-gradient-to-b from-background via-amber-900/5 to-background">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={0}
+            variants={fadeUp}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.roles.title")}</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("landing.roles.subtitle")}</p>
+          </motion.div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {([
+              { key: "guest", icon: Wine, color: "bg-emerald-500/15 text-emerald-600", borderColor: "border-emerald-500/30 hover:border-emerald-500/50", accent: "bg-emerald-500/10" },
+              { key: "curious", icon: Search, color: "bg-blue-500/15 text-blue-600", borderColor: "border-blue-500/30 hover:border-blue-500/50", accent: "bg-blue-500/10" },
+              { key: "enthusiast", icon: Star, color: "bg-amber-500/15 text-amber-600", borderColor: "border-amber-500/30 hover:border-amber-500/50", accent: "bg-amber-500/10" },
+              { key: "scientist", icon: Beaker, color: "bg-purple-500/15 text-purple-600", borderColor: "border-purple-500/30 hover:border-purple-500/50", accent: "bg-purple-500/10" },
+            ] as const).map((role, i) => (
+              <motion.div
+                key={role.key}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                custom={i}
+                variants={fadeUp}
+                className={`bg-card border ${role.borderColor} rounded-xl p-5 transition-all group relative overflow-hidden`}
+                data-testid={`landing-role-${role.key}`}
+              >
+                <div className={`absolute top-0 right-0 w-24 h-24 ${role.accent} rounded-full blur-2xl -translate-y-8 translate-x-8 opacity-60`} />
+                <div className="relative">
+                  <div className={`w-11 h-11 rounded-lg ${role.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                    <role.icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-serif font-bold text-primary text-base mb-2">{t(`landing.roles.${role.key}.name`)}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-4">{t(`landing.roles.${role.key}.desc`)}</p>
+                  {role.key !== "guest" && (
+                    <p className="text-[11px] text-muted-foreground/60 font-medium mb-1.5">{t(`landing.roles.${role.key}.plus`)}</p>
+                  )}
+                  <div className="flex flex-wrap gap-1.5">
+                    {(t(`landing.roles.${role.key}.features`) as string).split(", ").map((feat) => (
+                      <span key={feat} className={`text-[11px] px-2 py-0.5 rounded-full ${role.accent} text-foreground/70 font-medium`}>
+                        {feat}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={5}
+            variants={fadeUp}
+            className="text-center text-sm text-muted-foreground/60 mt-8"
+          >
+            <CheckCircle2 className="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
+            {t("landing.roles.guest.name")} {String.fromCharCode(8594)} {t("landing.roles.scientist.name")} — {t("landing.roles.subtitle").split("—")[1]?.trim() || ""}
+          </motion.p>
+        </div>
+      </section>
+
+      {/* Tour Banner */}
       <section className="py-16 sm:py-24 bg-gradient-to-br from-amber-900/15 via-amber-800/8 to-orange-900/12 border-y border-amber-700/25 relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-amber-500/10 blur-3xl" />

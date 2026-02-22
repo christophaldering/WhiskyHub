@@ -95,7 +95,7 @@ const resources = {
       landing: {
         nav: {
           explore: "Explore",
-          featureTour: "Feature Tour",
+          featureTour: "Tour",
           getStarted: "Get Started",
           login: "Sign In",
         },
@@ -104,7 +104,7 @@ const resources = {
           title: "Between structure, wonder and palate.",
           subtitle: "A small experiment in perception, enjoyment and AI.",
           cta: "Start Your First Tasting",
-          tourCta: "Watch Product Tour",
+          tourCta: "Take a Tour",
           scrollHint: "Scroll down to explore features & tour",
           learnMore: "Learn More",
           avgRating: "Average Score",
@@ -195,11 +195,38 @@ const resources = {
           desc: "These wonderful people help shape CaskSense with their ideas, feedback, and passion for whisky.",
         },
         tourBanner: {
-          badge: "Interactive Product Tour",
+          badge: "Interactive Tour",
           title: "See CaskSense in action",
           desc: "12 illustrated slides — from blind tastings and AI import to personal analytics and community features. Takes about 3 minutes.",
-          cta: "Start Feature Tour",
+          cta: "Start Tour",
           hint: "12 slides · ~3 min · no sign-up needed",
+        },
+        roles: {
+          title: "Your Pace, Your Experience",
+          subtitle: "CaskSense adapts to how deep you want to go. Start simple — unlock more whenever you're ready.",
+          guest: {
+            name: "Just Tasting",
+            desc: "Join a session, rate whiskies, see the results. That's it — simple and fun.",
+            features: "Sessions, Rankings, Results, News",
+          },
+          curious: {
+            name: "Curious",
+            desc: "Start your own whisky journal, track your favorites, and discover your personal taste profile.",
+            plus: "Everything above, plus:",
+            features: "Journal, Flavor Profile, Badges, Wishlist, Calendar",
+          },
+          enthusiast: {
+            name: "Enthusiast",
+            desc: "Access the full toolbox — lexicon, community features, tasting templates, and food pairings.",
+            plus: "Everything above, plus:",
+            features: "Tools, Community, Lexicon, Templates, Pairings",
+          },
+          scientist: {
+            name: "Data Explorer",
+            desc: "Deep analytics, inter-rater statistics, taste profiles, benchmark data, and export options.",
+            plus: "Everything above, plus:",
+            features: "Analytics, Whisky Profile, Benchmark DB, Flavor Wheel, Data Export",
+          },
         },
         cta: {
           title: "Ready for the next tasting?",
@@ -208,7 +235,7 @@ const resources = {
         },
         footer: {
           about: "About CaskSense",
-          featureTour: "Feature Tour",
+          featureTour: "Tour",
           features: "Features",
           app: "Open App",
           hobbyNotice: "A private hobby project — no commercial interests, no tracking, no ads.",
@@ -2253,7 +2280,7 @@ const resources = {
       landing: {
         nav: {
           explore: "Entdecken",
-          featureTour: "Feature-Tour",
+          featureTour: "Rundgang",
           getStarted: "Loslegen",
           login: "Anmelden",
         },
@@ -2262,8 +2289,8 @@ const resources = {
           title: "Zwischen Struktur, Staunen und Gaumen.",
           subtitle: "Ein kleines Experiment in Wahrnehmung, Genuss und KI.",
           cta: "Erstes Tasting starten",
-          tourCta: "Produkt-Tour ansehen",
-          scrollHint: "Scrolle nach unten für Features & Tour",
+          tourCta: "Rundgang starten",
+          scrollHint: "Scrolle nach unten für Features & Rundgang",
           learnMore: "Mehr erfahren",
           avgRating: "Durchschnittsnote",
         },
@@ -2353,11 +2380,38 @@ const resources = {
           desc: "Diese wunderbaren Menschen gestalten CaskSense mit ihren Ideen, ihrem Feedback und ihrer Leidenschaft für Whisky.",
         },
         tourBanner: {
-          badge: "Interaktive Produkt-Tour",
+          badge: "Interaktiver Rundgang",
           title: "CaskSense im Überblick erleben",
           desc: "12 illustrierte Slides — von Blind-Tastings und KI-Import bis zu persönlichen Analysen und Community-Funktionen. Dauert ca. 3 Minuten.",
-          cta: "Feature-Tour starten",
+          cta: "Rundgang starten",
           hint: "12 Slides · ~3 Min. · ohne Anmeldung",
+        },
+        roles: {
+          title: "Dein Tempo, dein Erlebnis",
+          subtitle: "CaskSense passt sich an, wie tief du eintauchen möchtest. Starte einfach — entdecke mehr, wann immer du bereit bist.",
+          guest: {
+            name: "Einfach mitmachen",
+            desc: "An einer Session teilnehmen, Whiskys bewerten, Ergebnisse sehen. Mehr braucht's nicht — einfach und locker.",
+            features: "Sessions, Rankings, Ergebnisse, News",
+          },
+          curious: {
+            name: "Neugierig",
+            desc: "Starte dein eigenes Whisky-Journal, verfolge deine Favoriten und entdecke dein persönliches Geschmacksprofil.",
+            plus: "Alles von oben, plus:",
+            features: "Journal, Geschmacksprofil, Badges, Wunschliste, Kalender",
+          },
+          enthusiast: {
+            name: "Enthusiast",
+            desc: "Zugang zum vollen Werkzeugkasten — Lexikon, Community-Funktionen, Tasting-Vorlagen und Food Pairings.",
+            plus: "Alles von oben, plus:",
+            features: "Tools, Community, Lexikon, Vorlagen, Pairings",
+          },
+          scientist: {
+            name: "Daten-Explorer",
+            desc: "Tiefe Analysen, Beurteiler-Statistiken, Geschmacksprofile, Benchmark-Daten und Export-Optionen.",
+            plus: "Alles von oben, plus:",
+            features: "Analytik, Whisky-Profil, Benchmark-DB, Flavor Wheel, Daten-Export",
+          },
         },
         cta: {
           title: "Bereit für das nächste Tasting?",
@@ -2366,7 +2420,7 @@ const resources = {
         },
         footer: {
           about: "Über CaskSense",
-          featureTour: "Feature-Tour",
+          featureTour: "Rundgang",
           features: "Funktionen",
           app: "App öffnen",
           hobbyNotice: "Ein privates Hobbyprojekt — keine kommerziellen Interessen, kein Tracking, keine Werbung.",

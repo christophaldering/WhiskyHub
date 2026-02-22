@@ -47,7 +47,7 @@ const slides: SlideData[] = [
     title: "CaskSense",
     subtitle: "Whisky gemeinsam erleben — strukturiert, persönlich, ohne Vorwissen.",
     image: slideCover,
-    badge: "Produkt-Tour",
+    badge: "Rundgang",
     layout: "center",
   },
   {
@@ -454,7 +454,7 @@ export default function Tour() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "CaskSense-Produkt-Tour.pdf";
+      a.download = "CaskSense-Rundgang.pdf";
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -473,7 +473,7 @@ export default function Tour() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "CaskSense-Produkt-Tour.pptx";
+      a.download = "CaskSense-Rundgang.pptx";
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -487,7 +487,7 @@ export default function Tour() {
   const slide = slides[current];
 
   return (
-    <div className="fixed inset-0 bg-background z-50 flex flex-col" data-testid="product-tour">
+    <div className="fixed inset-0 bg-background z-50 flex flex-col" data-testid="tour-rundgang">
       <header className="flex items-center justify-between px-3 sm:px-5 py-2 border-b border-border/20 bg-card/80 backdrop-blur-md flex-shrink-0 z-20">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="font-serif text-xs gap-1 px-2" data-testid="button-tour-back">
