@@ -54,6 +54,7 @@ import Tour from "@/pages/tour";
 import Background from "@/pages/background";
 import News from "@/pages/news";
 import QuickTasting from "@/pages/quick-tasting";
+import NakedTasting from "@/pages/naked-tasting";
 import Research from "@/pages/research";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
@@ -71,6 +72,7 @@ function Router() {
         <Route path="/tour" component={Tour} />
         <Route path="/background" component={Background} />
         <Route path="/join/:code" component={QuickTasting} />
+        <Route path="/naked/:code" component={NakedTasting} />
         <Route path="/impressum" component={Impressum} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/intro" component={Intro} />
