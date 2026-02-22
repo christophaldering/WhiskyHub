@@ -63,6 +63,67 @@ function ThemeSync() {
   return null;
 }
 
+function LoungeRouter() {
+  return (
+    <LoungeLayout>
+      <Switch>
+        <Route path="/lounge" component={LoungeHome} />
+        <Route path="/lounge/news" component={News} />
+
+        {/* Tastings room */}
+        <Route path="/lounge/tastings" component={Sessions} />
+        <Route path="/lounge/tastings/history" component={TastingHistory} />
+        <Route path="/lounge/tastings/calendar" component={TastingCalendar} />
+        <Route path="/lounge/tastings/host-dashboard" component={HostDashboard} />
+        <Route path="/lounge/tastings/recap/:id" component={TastingRecap} />
+        <Route path="/lounge/tastings/recap" component={TastingRecap} />
+        <Route path="/lounge/tastings/templates" component={TastingTemplates} />
+        <Route path="/lounge/tastings/reminders" component={Reminders} />
+        <Route path="/lounge/tastings/photo-tasting" component={PhotoTasting} />
+        <Route path="/lounge/tastings/:id" component={TastingRoom} />
+
+        {/* Guests room */}
+        <Route path="/lounge/guests/friends" component={WhiskyFriends} />
+        <Route path="/lounge/guests/activity" component={ActivityFeed} />
+        <Route path="/lounge/guests/related-palates" component={TasteTwins} />
+        <Route path="/lounge/guests/insights" component={CommunityRankings} />
+        <Route path="/lounge/guests/leaderboard" component={Leaderboard} />
+
+        {/* My Salon room */}
+        <Route path="/lounge/my-salon/profile" component={Profile} />
+        <Route path="/lounge/my-salon/my-taste" component={MyTaste} />
+        <Route path="/lounge/my-salon/journal" component={Journal} />
+        <Route path="/lounge/my-salon/my-whiskies" component={MyWhiskies} />
+        <Route path="/lounge/my-salon/wishlist" component={Wishlist} />
+        <Route path="/lounge/my-salon/collection" component={WhiskybaseCollection} />
+        <Route path="/lounge/my-salon/badges" component={Badges} />
+        <Route path="/lounge/my-salon/export-notes" component={ExportNotes} />
+        <Route path="/lounge/my-salon/data-export" component={DataExport} />
+
+        {/* Library room */}
+        <Route path="/lounge/library/recommendations" component={Recommendations} />
+        <Route path="/lounge/library/comparison" component={Comparison} />
+        <Route path="/lounge/library/pairings" component={PairingSuggestions} />
+        <Route path="/lounge/library/benchmark" component={BenchmarkAnalyzer} />
+        <Route path="/lounge/library/lexicon" component={Lexicon} />
+        <Route path="/lounge/library/distilleries" component={DistilleryEncyclopedia} />
+        <Route path="/lounge/library/map" component={DistilleryMap} />
+        <Route path="/lounge/library/bottlers" component={Bottlers} />
+        <Route path="/lounge/library/whisky-database" component={WhiskyDatabase} />
+
+        {/* About / Admin */}
+        <Route path="/lounge/about" component={About} />
+        <Route path="/lounge/about-method" component={AboutMethod} />
+        <Route path="/lounge/features" component={Features} />
+        <Route path="/lounge/donate" component={Donate} />
+        <Route path="/lounge/admin" component={AdminPanel} />
+
+        <Route component={NotFound} />
+      </Switch>
+    </LoungeLayout>
+  );
+}
+
 function Router() {
   return (
     <>
@@ -73,71 +134,9 @@ function Router() {
         <Route path="/join/:code" component={QuickTasting} />
         <Route path="/intro" component={Intro} />
 
-        {/* Lounge variant - exact /lounge path */}
-        <Route path="/lounge">
-          <LoungeLayout>
-            <LoungeHome />
-          </LoungeLayout>
-        </Route>
-
-        {/* Lounge variant sub-routes */}
-        <Route path="/lounge/:rest*">
-          <LoungeLayout>
-            <Switch>
-              <Route path="/lounge/news" component={News} />
-
-              {/* Tastings room */}
-              <Route path="/lounge/tastings" component={Sessions} />
-              <Route path="/lounge/tastings/history" component={TastingHistory} />
-              <Route path="/lounge/tastings/calendar" component={TastingCalendar} />
-              <Route path="/lounge/tastings/host-dashboard" component={HostDashboard} />
-              <Route path="/lounge/tastings/recap/:id" component={TastingRecap} />
-              <Route path="/lounge/tastings/recap" component={TastingRecap} />
-              <Route path="/lounge/tastings/templates" component={TastingTemplates} />
-              <Route path="/lounge/tastings/reminders" component={Reminders} />
-              <Route path="/lounge/tastings/photo-tasting" component={PhotoTasting} />
-              <Route path="/lounge/tastings/:id" component={TastingRoom} />
-
-              {/* Guests room */}
-              <Route path="/lounge/guests/friends" component={WhiskyFriends} />
-              <Route path="/lounge/guests/activity" component={ActivityFeed} />
-              <Route path="/lounge/guests/related-palates" component={TasteTwins} />
-              <Route path="/lounge/guests/insights" component={CommunityRankings} />
-              <Route path="/lounge/guests/leaderboard" component={Leaderboard} />
-
-              {/* My Salon room */}
-              <Route path="/lounge/my-salon/profile" component={Profile} />
-              <Route path="/lounge/my-salon/my-taste" component={MyTaste} />
-              <Route path="/lounge/my-salon/journal" component={Journal} />
-              <Route path="/lounge/my-salon/my-whiskies" component={MyWhiskies} />
-              <Route path="/lounge/my-salon/wishlist" component={Wishlist} />
-              <Route path="/lounge/my-salon/collection" component={WhiskybaseCollection} />
-              <Route path="/lounge/my-salon/badges" component={Badges} />
-              <Route path="/lounge/my-salon/export-notes" component={ExportNotes} />
-              <Route path="/lounge/my-salon/data-export" component={DataExport} />
-
-              {/* Library room */}
-              <Route path="/lounge/library/recommendations" component={Recommendations} />
-              <Route path="/lounge/library/comparison" component={Comparison} />
-              <Route path="/lounge/library/pairings" component={PairingSuggestions} />
-              <Route path="/lounge/library/benchmark" component={BenchmarkAnalyzer} />
-              <Route path="/lounge/library/lexicon" component={Lexicon} />
-              <Route path="/lounge/library/distilleries" component={DistilleryEncyclopedia} />
-              <Route path="/lounge/library/map" component={DistilleryMap} />
-              <Route path="/lounge/library/bottlers" component={Bottlers} />
-              <Route path="/lounge/library/whisky-database" component={WhiskyDatabase} />
-
-              {/* About / Admin */}
-              <Route path="/lounge/about" component={About} />
-              <Route path="/lounge/about-method" component={AboutMethod} />
-              <Route path="/lounge/features" component={Features} />
-              <Route path="/lounge/donate" component={Donate} />
-              <Route path="/lounge/admin" component={AdminPanel} />
-
-              <Route component={NotFound} />
-            </Switch>
-          </LoungeLayout>
-        </Route>
+        {/* Lounge variant routes — exact match + wildcard */}
+        <Route path="/lounge" component={LoungeRouter} />
+        <Route path="/lounge/*" component={LoungeRouter} />
 
         {/* Classic variant routes */}
         <Route>
