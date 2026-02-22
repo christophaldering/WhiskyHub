@@ -5,7 +5,6 @@ export type SessionStatus = 'draft' | 'open' | 'closed' | 'reveal' | 'archived';
 export type RevealAct = 'act1' | 'act2' | 'act3' | 'act4';
 
 type Theme = 'dark' | 'light';
-type UiTheme = 'classic' | 'lounge';
 type Soundscape = 'fireplace' | 'rain' | 'night' | 'bagpipe';
 
 interface AmbientState {
@@ -32,8 +31,6 @@ interface AppState extends AmbientState {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
-  uiTheme: UiTheme;
-  setUiTheme: (uiTheme: UiTheme) => void;
   setAmbientPlaying: (playing: boolean) => void;
   setAmbientSoundscape: (soundscape: Soundscape) => void;
   setAmbientVolume: (volume: number) => void;
@@ -48,10 +45,6 @@ function applyTheme(theme: Theme) {
   } else {
     root.classList.remove('light');
   }
-}
-
-function applyUiTheme(uiTheme: UiTheme) {
-  document.documentElement.setAttribute('data-ui-theme', uiTheme);
 }
 
 export const useAppStore = create<AppState>()(
@@ -79,11 +72,6 @@ export const useAppStore = create<AppState>()(
         applyTheme(next);
         set({ theme: next });
       },
-      uiTheme: "classic" as UiTheme,
-      setUiTheme: (uiTheme) => {
-        applyUiTheme(uiTheme);
-        set({ uiTheme });
-      },
     }),
     {
       name: 'casksense-app',
@@ -94,7 +82,6 @@ export const useAppStore = create<AppState>()(
       },
       onRehydrateStorage: () => (state) => {
         if (state?.theme) applyTheme(state.theme);
-        if (state?.uiTheme) applyUiTheme(state.uiTheme);
       },
     }
   )

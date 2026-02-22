@@ -7,7 +7,6 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { CircleDot, X } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
 import { useState, useMemo } from "react";
-import { useFlavorWheelColors } from "@/lib/theme-colors";
 
 interface FlavorCategory {
   id: string;
@@ -162,7 +161,6 @@ export default function FlavorWheel() {
   const { currentParticipant } = useAppStore();
   const isDE = i18n.language === "de";
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const flavorWheelColors = useFlavorWheelColors();
 
   const { data: journalEntries, isLoading } = useQuery<JournalEntry[]>({
     queryKey: ["journal", currentParticipant?.id],
@@ -220,7 +218,7 @@ export default function FlavorWheel() {
       name: isDE ? cat.de : cat.en,
       value: Math.max(categoryFreqs[cat.id], 1),
       actualValue: categoryFreqs[cat.id],
-      color: flavorWheelColors[cat.id] || cat.color,
+      color: cat.color,
       id: cat.id,
     }));
 
@@ -231,7 +229,7 @@ export default function FlavorWheel() {
           name: isDE ? sub.de : sub.en,
           value: Math.max(subFreqs[cat.id][sub.id], 0.3),
           actualValue: subFreqs[cat.id][sub.id],
-          color: flavorWheelColors[cat.id] || cat.color,
+          color: cat.color,
           catId: cat.id,
           subId: sub.id,
         });
@@ -239,7 +237,7 @@ export default function FlavorWheel() {
     }
 
     return { categoryFreqs, subFreqs, totalMentions, topCategory, mostUniqueFlavor, innerData, outerData };
-  }, [journalEntries, ratingNotes, isDE, flavorWheelColors]);
+  }, [journalEntries, ratingNotes, isDE]);
 
   if (!currentParticipant) {
     return (
@@ -313,7 +311,7 @@ export default function FlavorWheel() {
                 transition={{ delay: 0.2 }}
                 data-testid="stat-top-category"
               >
-                <p className="text-2xl font-serif font-bold" style={{ color: topCategory ? (flavorWheelColors[topCategory.id] || topCategory.color) : undefined }}>
+                <p className="text-2xl font-serif font-bold" style={{ color: topCategory?.color }}>
                   {topCategory ? (isDE ? topCategory.de : topCategory.en) : "—"}
                 </p>
                 <p className="text-xs text-muted-foreground">{t("flavorWheel.topCategory")}</p>
@@ -433,7 +431,7 @@ export default function FlavorWheel() {
                     }`}
                     data-testid={`legend-${cat.id}`}
                   >
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: flavorWheelColors[cat.id] || cat.color }} />
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
                     <span className="text-foreground">{isDE ? cat.de : cat.en}</span>
                     <span className="text-muted-foreground">({categoryFreqs[cat.id] || 0})</span>
                   </button>
@@ -454,7 +452,7 @@ export default function FlavorWheel() {
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: flavorWheelColors[selectedCatData.id] || selectedCatData.color }} />
+                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedCatData.color }} />
                       <h2 className="text-lg font-serif font-semibold text-foreground">
                         {isDE ? selectedCatData.de : selectedCatData.en}
                       </h2>
@@ -488,13 +486,13 @@ export default function FlavorWheel() {
                           <div
                             className="absolute inset-0 opacity-15"
                             style={{
-                              backgroundColor: flavorWheelColors[selectedCatData.id] || selectedCatData.color,
+                              backgroundColor: selectedCatData.color,
                               width: `${(count / maxInCat) * 100}%`,
                             }}
                           />
                           <div className="relative flex items-center justify-between">
                             <span className="text-sm font-medium text-foreground">{isDE ? sub.de : sub.en}</span>
-                            <span className="text-sm font-serif font-bold" style={{ color: count > 0 ? (flavorWheelColors[selectedCatData.id] || selectedCatData.color) : "hsl(var(--muted-foreground))" }}>
+                            <span className="text-sm font-serif font-bold" style={{ color: count > 0 ? selectedCatData.color : "hsl(var(--muted-foreground))" }}>
                               {count}
                             </span>
                           </div>
