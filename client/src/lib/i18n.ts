@@ -2684,7 +2684,7 @@ const resources = {
         upgradeTitle: "Mehr Features entdecken",
         upgradeDesc: "Erweitere dein Erlebnis — Profile, Analysen, Community und über 50 weitere Funktionen warten.",
         levelSelector: {
-          label: "Erfahrung",
+          label: "Erwartung",
           guest: "Basic",
           curious: "Neugierig",
           enthusiast: "Enthusiast",

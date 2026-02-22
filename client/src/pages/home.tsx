@@ -598,17 +598,6 @@ export default function Home() {
               <Button onClick={handleJoin} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-serif tracking-wide" data-testid="button-join-session">
                 Enter Tasting Room <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
-              {!currentParticipant && (
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowLogin(true)}
-                  className="w-full text-xs gap-2 text-muted-foreground hover:text-primary"
-                  data-testid="button-login"
-                >
-                  <LogIn className="w-3.5 h-3.5" />
-                  {t("home.loginButton")}
-                </Button>
-              )}
             </CardFooter>
           </Card>
         </motion.div>
