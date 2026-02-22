@@ -3322,6 +3322,250 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  // ===== WHISKY PROFILE (dimensional taste profile) =====
+
+  app.get("/api/participants/:id/whisky-profile", async (req, res) => {
+    try {
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+
+      const source = (req.query.source as string) || "all";
+      const compareMode = (req.query.compare as string) || "none";
+
+      const allRatingsRaw = await storage.getAllRatings();
+      const userRatingsRaw = allRatingsRaw.filter(r => r.participantId === req.params.id);
+
+      const allTastingsArr = await storage.getAllTastings();
+      const tastingScaleMap = new Map(allTastingsArr.map(t => [t.id, t.ratingScale ?? 100]));
+
+      const whiskyIds = Array.from(new Set(userRatingsRaw.map(r => r.whiskyId)));
+      const allWhiskiesArr: Array<{ id: string; name: string; distillery: string | null; region: string | null }> = [];
+      for (const tid of Array.from(new Set(allRatingsRaw.map(r => r.tastingId)))) {
+        const ws = await storage.getWhiskiesForTasting(tid);
+        for (const w of ws) {
+          if (!allWhiskiesArr.find(x => x.id === w.id)) allWhiskiesArr.push(w);
+        }
+      }
+      const whiskyMap = new Map(allWhiskiesArr.map(w => [w.id, w]));
+
+      interface NormedRating {
+        whiskyId: string; nose: number; taste: number; finish: number; balance: number; overall: number;
+      }
+
+      let userRatings: NormedRating[] = userRatingsRaw.map(r => {
+        const scale = tastingScaleMap.get(r.tastingId) ?? 100;
+        const norm = 100 / scale;
+        return {
+          whiskyId: r.whiskyId,
+          nose: r.nose * norm, taste: r.taste * norm, finish: r.finish * norm,
+          balance: r.balance * norm, overall: r.overall * norm,
+        };
+      });
+
+      if (source === "journal") {
+        const journal = await storage.getJournalEntries(req.params.id);
+        const journalScores = journal.filter(j => j.personalScore != null && j.personalScore > 0)
+          .map(j => ({
+            whiskyId: j.id,
+            nose: 0, taste: 0, finish: 0, balance: 0,
+            overall: j.personalScore!,
+          }));
+        userRatings = journalScores;
+      }
+
+      if (userRatings.length === 0) {
+        return res.json({
+          ratingStyle: null, tasteStructure: null, whiskyComparison: [],
+          confidence: { overall: { level: "preliminary", percent: 0, n: 0 } },
+          comparisonData: null,
+        });
+      }
+
+      const dims = ["nose", "taste", "finish", "balance", "overall"] as const;
+      const calcMedian = (arr: number[]) => {
+        if (arr.length === 0) return 0;
+        const s = [...arr].sort((a, b) => a - b);
+        const mid = Math.floor(s.length / 2);
+        return s.length % 2 === 0 ? (s[mid - 1] + s[mid]) / 2 : s[mid];
+      };
+      const calcIQR = (arr: number[]) => {
+        if (arr.length < 4) return null;
+        const s = [...arr].sort((a, b) => a - b);
+        const q1Idx = Math.floor(s.length * 0.25);
+        const q3Idx = Math.floor(s.length * 0.75);
+        return { q1: s[q1Idx], q3: s[q3Idx], iqr: s[q3Idx] - s[q1Idx] };
+      };
+
+      const overalls = userRatings.map(r => r.overall);
+      const userMean = overalls.reduce((a, b) => a + b, 0) / overalls.length;
+      const userStdDev = Math.sqrt(overalls.reduce((acc, v) => acc + Math.pow(v - userMean, 2), 0) / overalls.length);
+      const userMin = Math.min(...overalls);
+      const userMax = Math.max(...overalls);
+
+      const platformByWhisky: Record<string, { overalls: number[]; nose: number[]; taste: number[]; finish: number[]; balance: number[] }> = {};
+      const platformAllOveralls: number[] = [];
+      const platformParticipantIds = new Set<string>();
+
+      for (const r of allRatingsRaw) {
+        const scale = tastingScaleMap.get(r.tastingId) ?? 100;
+        const norm = 100 / scale;
+        const normOverall = r.overall * norm;
+        platformAllOveralls.push(normOverall);
+        platformParticipantIds.add(r.participantId);
+
+        if (!platformByWhisky[r.whiskyId]) {
+          platformByWhisky[r.whiskyId] = { overalls: [], nose: [], taste: [], finish: [], balance: [] };
+        }
+        platformByWhisky[r.whiskyId].overalls.push(normOverall);
+        platformByWhisky[r.whiskyId].nose.push(r.nose * norm);
+        platformByWhisky[r.whiskyId].taste.push(r.taste * norm);
+        platformByWhisky[r.whiskyId].finish.push(r.finish * norm);
+        platformByWhisky[r.whiskyId].balance.push(r.balance * norm);
+      }
+
+      const platformMedianOverall = calcMedian(platformAllOveralls);
+
+      const deltas: number[] = [];
+      for (const r of userRatings) {
+        const pw = platformByWhisky[r.whiskyId];
+        if (pw && pw.overalls.length > 0) {
+          deltas.push(r.overall - calcMedian(pw.overalls));
+        }
+      }
+      const avgDelta = deltas.length > 0 ? deltas.reduce((a, b) => a + b, 0) / deltas.length : null;
+      const deltaStdDev = deltas.length > 1
+        ? Math.sqrt(deltas.reduce((acc, v) => acc + Math.pow(v - (avgDelta ?? 0), 2), 0) / deltas.length)
+        : null;
+
+      const ratingStyle = {
+        meanScore: Math.round(userMean * 10) / 10,
+        stdDev: Math.round(userStdDev * 10) / 10,
+        scaleRange: { min: Math.round(userMin * 10) / 10, max: Math.round(userMax * 10) / 10 },
+        systematicDeviation: avgDelta != null ? {
+          avgDelta: Math.round(avgDelta * 10) / 10,
+          deltaStdDev: deltaStdDev != null ? Math.round(deltaStdDev * 10) / 10 : null,
+          nWhiskiesCompared: deltas.length,
+          nPlatformRatings: platformAllOveralls.length,
+          nPlatformParticipants: platformParticipantIds.size,
+          platformMedian: Math.round(platformMedianOverall * 10) / 10,
+        } : null,
+        nRatings: userRatings.length,
+      };
+
+      const dimAvgs: Record<string, number> = {};
+      for (const dim of dims) {
+        const vals = source === "journal" && dim !== "overall" ? [] : userRatings.map(r => r[dim]);
+        dimAvgs[dim] = vals.length > 0 ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : 0;
+      }
+
+      const getStabilityLevel = (n: number): { level: string; percent: number } => {
+        if (n >= 15) return { level: "stable", percent: 100 };
+        if (n >= 5) return { level: "tendency", percent: Math.round(n * 6.67) };
+        return { level: "preliminary", percent: Math.round(n * 6.67) };
+      };
+
+      const confidence: Record<string, { level: string; percent: number; n: number }> = {};
+      for (const dim of dims) {
+        const n = source === "journal" && dim !== "overall" ? 0 : userRatings.length;
+        const stab = getStabilityLevel(n);
+        confidence[dim] = { ...stab, n };
+      }
+
+      const whiskyComparison = userRatings
+        .filter(r => platformByWhisky[r.whiskyId] && platformByWhisky[r.whiskyId].overalls.length > 0)
+        .map(r => {
+          const pw = platformByWhisky[r.whiskyId];
+          const pMedian = calcMedian(pw.overalls);
+          const pIqr = calcIQR(pw.overalls);
+          const w = whiskyMap.get(r.whiskyId);
+          return {
+            whiskyId: r.whiskyId,
+            whiskyName: w?.name ?? "Unknown",
+            distillery: w?.distillery ?? null,
+            region: w?.region ?? null,
+            userScore: Math.round(r.overall * 10) / 10,
+            platformMedian: Math.round(pMedian * 10) / 10,
+            delta: Math.round((r.overall - pMedian) * 10) / 10,
+            iqr: pIqr ? { q1: Math.round(pIqr.q1 * 10) / 10, q3: Math.round(pIqr.q3 * 10) / 10, iqr: Math.round(pIqr.iqr * 10) / 10 } : null,
+            platformN: pw.overalls.length,
+          };
+        });
+
+      let comparisonData: any = null;
+      if (compareMode === "friends") {
+        const friends = await storage.getWhiskyFriends(req.params.id);
+        const friendEmails = friends.map(f => f.email.toLowerCase());
+        if (friendEmails.length > 0) {
+          const allParticipants = await Promise.all(
+            friendEmails.map(email => storage.getParticipantByEmail(email))
+          );
+          const friendParticipants = allParticipants.filter(Boolean) as Participant[];
+          const friendIds = friendParticipants.map(p => p.id);
+          if (friendIds.length > 0) {
+            const friendRatings = allRatingsRaw.filter(r => friendIds.includes(r.participantId));
+            const friendDimScores: Record<string, number[]> = { nose: [], taste: [], finish: [], balance: [], overall: [] };
+            for (const r of friendRatings) {
+              const scale = tastingScaleMap.get(r.tastingId) ?? 100;
+              const norm = 100 / scale;
+              friendDimScores.nose.push(r.nose * norm);
+              friendDimScores.taste.push(r.taste * norm);
+              friendDimScores.finish.push(r.finish * norm);
+              friendDimScores.balance.push(r.balance * norm);
+              friendDimScores.overall.push(r.overall * norm);
+            }
+            const friendMedians: Record<string, number> = {};
+            for (const dim of dims) {
+              friendMedians[dim] = Math.round(calcMedian(friendDimScores[dim]) * 10) / 10;
+            }
+            comparisonData = {
+              mode: "friends",
+              medians: friendMedians,
+              nFriends: friendIds.length,
+              nRatings: friendRatings.length,
+            };
+          }
+        }
+      } else if (compareMode === "platform") {
+        const platformDimScores: Record<string, number[]> = { nose: [], taste: [], finish: [], balance: [], overall: [] };
+        for (const r of allRatingsRaw) {
+          const scale = tastingScaleMap.get(r.tastingId) ?? 100;
+          const norm = 100 / scale;
+          platformDimScores.nose.push(r.nose * norm);
+          platformDimScores.taste.push(r.taste * norm);
+          platformDimScores.finish.push(r.finish * norm);
+          platformDimScores.balance.push(r.balance * norm);
+          platformDimScores.overall.push(r.overall * norm);
+        }
+        const platformMedians: Record<string, number> = {};
+        for (const dim of dims) {
+          platformMedians[dim] = Math.round(calcMedian(platformDimScores[dim]) * 10) / 10;
+        }
+        const platformIqrs: Record<string, { q1: number; q3: number; iqr: number } | null> = {};
+        for (const dim of dims) {
+          const iqr = calcIQR(platformDimScores[dim]);
+          platformIqrs[dim] = iqr ? { q1: Math.round(iqr.q1 * 10) / 10, q3: Math.round(iqr.q3 * 10) / 10, iqr: Math.round(iqr.iqr * 10) / 10 } : null;
+        }
+        comparisonData = {
+          mode: "platform",
+          medians: platformMedians,
+          iqrs: platformIqrs,
+          nParticipants: platformParticipantIds.size,
+          nRatings: allRatingsRaw.length,
+        };
+      }
+
+      res.json({
+        ratingStyle,
+        tasteStructure: dimAvgs,
+        whiskyComparison,
+        confidence,
+        comparisonData,
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== PARTICIPANT STATS (for badges) =====
 
   app.get("/api/participants/:id/stats", async (req, res) => {
