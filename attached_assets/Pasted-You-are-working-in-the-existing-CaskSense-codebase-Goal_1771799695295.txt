@@ -1,0 +1,106 @@
+You are working in the existing CaskSense codebase. Goal: improve focus and navigation in the Classic UI (Lounge remains off). This is primarily an information architecture + copy update on landing and sidebar, with minimal functional change risk.
+
+========================
+0) FIT & EFFORT CHECK (MANDATORY FIRST STEP)
+========================
+Before changing anything:
+1) Inspect current landing page hero copy and the section where “Whisky Rating Hub” appears. Identify the exact component/file(s).
+2) Inspect current sidebar navigation structure and role-based visibility logic (guest/user/enthusiast/host/admin).
+3) Identify the smallest-change way to:
+   - sharpen the positioning copy
+   - de-emphasize “AI” in the hero
+   - make host navigation more prominent
+4) Summarize your plan (10 bullets max) before implementing.
+
+========================
+1) FOCUS / POSITIONING (LANDING PAGE COPY)
+========================
+Problem: current positioning is slightly unfocused (mix of perception experiment + ratings hub + AI).
+We want the primary identity to be: “Make perception visible.”
+
+A) HERO – Replace the current hero text with one of these options.
+Pick ONE and implement it. Choose the one that best matches existing layout length.
+
+Option A (recommended):
+Headline:
+“Wahrnehmung sichtbar machen.”
+Subline:
+“CaskSense strukturiert Tastings, vergleicht Bewertungen transparent und zeigt, wie unterschiedlich wir denselben Dram erleben.”
+(Do NOT mention AI in hero.)
+
+Option B (shorter):
+Headline:
+“Whisky. Wahrnehmung. Struktur.”
+Subline:
+“Ein digitales Tasting-Tool, das Unterschiede sichtbar macht – ohne Ranglogik, ohne Schubladen.”
+(No AI in hero.)
+
+B) AI MENTION – Move “AI” out of the hero.
+If we want to mention AI at all, place it lower on the landing page in a small “Built with modern tools” line:
+“Entwickelt mit modernen KI-Tools – als Mittel, nicht als Botschaft.”
+Keep this subtle and optional. Do not over-market it.
+
+C) REMOVE GENERIC LABELS – Replace/remove “Whisky Rating Hub”
+If that phrase exists anywhere prominent, replace it with “CaskSense” or “Whisky-Tasting Plattform” (prefer “CaskSense”).
+Avoid generic “Hub” terminology.
+
+========================
+2) HOST NAVIGATION IMPROVEMENT (SIDEBAR)
+========================
+Goal: Host actions should be easier to find. Hosts are key recurring users.
+
+A) Move Host section higher in the sidebar.
+Current issue: Host appears too deep (below community/knowledge).
+New order suggestion (Classic):
+- Dashboard
+- Mein Bereich
+- Tastings
+- Gastgeber (only visible for Hosts)
+- Entdecken
+- Community
+- Whisky-Wissen
+- Planung
+- Weiteres
+- Admin (only admins)
+
+Implementation:
+- Keep all existing routes and pages.
+- Only change the order and grouping labels.
+
+B) Add quick access for hosts without building a full mode-switch.
+Because “Participant vs Host mode switch” is likely costly, do a minimal alternative:
+- Add a small “Host Shortcuts” block at the top of the dashboard for users who are hosts:
+  - “Tasting erstellen”
+  - “Meine gehosteten Tastings”
+  - “Host Dashboard”
+This is much cheaper than a full mode system.
+
+C) Align with existing experience-level settings (“Basic/Enthusiast”)
+You already have “experience level” visibility logic. Use it to reduce complexity:
+- In BASIC level: show only essential items. If user is a host, still show the “Gastgeber” section but keep it compact.
+- In Enthusiast/Full: show full host menu and advanced features.
+
+Do NOT implement a full “mode switch” (Participant/Host) now.
+Just:
+- reorder nav
+- add host shortcuts
+- optionally refine visibility via existing BASIC setting
+
+========================
+3) ACCEPTANCE CRITERIA
+========================
+- Landing page hero is clearly focused on perception (no AI in hero).
+- “Whisky Rating Hub” is removed or replaced.
+- Host section is more prominent in sidebar for host users.
+- Host users see easy shortcuts on dashboard (without a new mode switch).
+- No routes break; no permission/visibility regressions.
+
+========================
+4) DELIVERABLES (REPORT BACK)
+========================
+After implementing, report:
+1) Which hero option was chosen (A or B) and show the exact final text.
+2) Which files changed for landing page.
+3) Show before/after sidebar order for host users.
+4) Which files changed for sidebar.
+5) Screenshot-equivalent description: where host shortcuts appear and what they link to.
