@@ -464,6 +464,8 @@ export function AiTastingImportDialog({ open, onOpenChange }: { open: boolean; o
                 </div>
               )}
 
+              <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
+
               {error && (
                 <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md text-sm text-destructive">
                   {error}

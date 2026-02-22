@@ -64,6 +64,7 @@ function NameEntry({ onJoin, loading }: { onJoin: (name: string, pin: string) =>
             />
             <p className="text-[11px] text-muted-foreground/70">{t("guestAuth.pinReminder")}</p>
           </div>
+          <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
           <Button
             size="lg"
             onClick={() => onJoin(name.trim(), pin)}

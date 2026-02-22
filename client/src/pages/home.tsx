@@ -411,6 +411,7 @@ export default function Home() {
               <p className="text-[11px] text-muted-foreground/70">{t("guestAuth.pinReminder")}</p>
             </div>
             {quickJoinError && <p className="text-sm text-destructive" data-testid="text-quick-join-error">{quickJoinError}</p>}
+            <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
             <Button
               onClick={handleQuickJoin}
               disabled={quickJoinLoading || !quickName.trim() || quickPin.length < 4}
@@ -475,6 +476,7 @@ export default function Home() {
               <p className="text-[11px] text-muted-foreground/70">{t("guestAuth.pinReminder")}</p>
             </div>
             {guestCreateError && <p className="text-sm text-destructive" data-testid="text-guest-create-error">{guestCreateError}</p>}
+            <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
             <Button
               onClick={handleGuestCreateSubmit}
               disabled={guestCreateLoading || !guestCreateName.trim() || guestCreatePin.length < 4}

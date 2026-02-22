@@ -478,6 +478,7 @@ export default function Sessions() {
                 data-testid="input-guest-pin-sessions"
               />
               {guestError && <p className="text-xs text-destructive">{guestError}</p>}
+              <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
               <Button onClick={handleGuestSubmit} disabled={!guestName.trim() || guestLoading} className="w-full" data-testid="button-guest-submit-sessions">
                 {guestLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("home.joinNow")}
               </Button>

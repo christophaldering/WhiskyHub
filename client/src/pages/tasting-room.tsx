@@ -1502,6 +1502,7 @@ export default function TastingRoom() {
               />
             </div>
             {guestError && <p className="text-sm text-destructive" data-testid="text-guest-error">{guestError}</p>}
+            <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
             <Button
               onClick={handleGuestJoin}
               disabled={guestLoading || !guestName.trim()}

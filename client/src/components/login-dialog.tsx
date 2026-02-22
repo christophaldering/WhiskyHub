@@ -493,9 +493,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
             )}
           </div>
 
-          {!isReturning && (
-            <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
-          )}
+          <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
 
           {error && <p className="text-sm text-destructive" data-testid="text-login-error">{error}</p>}
 
