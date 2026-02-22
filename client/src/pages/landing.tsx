@@ -81,9 +81,8 @@ export default function Landing() {
             <Button variant="ghost" size="sm" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-sm hidden sm:inline-flex" data-testid="landing-nav-explore">
               {t("landing.nav.explore")}
             </Button>
-            <Button size="sm" onClick={() => navigate("/app")} className="font-serif text-sm gap-1.5" data-testid="landing-nav-start">
-              {t("landing.nav.getStarted")}
-              <ArrowRight className="w-3.5 h-3.5" />
+            <Button size="sm" onClick={() => navigate("/app")} className="font-serif text-sm gap-1.5" data-testid="landing-nav-login">
+              {t("landing.nav.login")}
             </Button>
           </div>
         </div>
@@ -92,13 +91,13 @@ export default function Landing() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-900/10 via-transparent to-orange-900/5" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 lg:py-32 relative">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14 lg:py-16 relative">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, x: -40 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className="space-y-6"
+              className="space-y-4"
             >
               <div className="inline-flex items-center gap-2 bg-amber-500/15 text-amber-400 rounded-full px-4 py-1.5 text-sm font-medium">
                 <Wine className="w-4 h-4" />
@@ -143,20 +142,10 @@ export default function Landing() {
                 <span className="text-xs text-muted-foreground/50 font-serif uppercase tracking-widest">oder</span>
                 <div className="flex-1 h-px bg-border/40" />
               </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button size="lg" onClick={() => navigate("/app")} className="font-serif text-base gap-2 px-8" data-testid="landing-hero-cta">
-                  {t("landing.hero.cta")}
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-                <Button size="lg" variant="outline" onClick={() => navigate("/tour")} className="font-serif text-base gap-2 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 hover:border-amber-500/60" data-testid="landing-hero-tour">
-                  <Play className="w-4 h-4" />
-                  {t("landing.hero.tourCta")}
-                </Button>
-              </div>
-              <p className="text-sm text-muted-foreground/50 flex items-center gap-1.5">
-                <ChevronDown className="w-3.5 h-3.5 animate-bounce" />
-                {t("landing.hero.scrollHint")}
-              </p>
+              <Button size="lg" variant="outline" onClick={() => navigate("/tour")} className="font-serif text-base gap-2 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 hover:border-amber-500/60" data-testid="landing-hero-tour">
+                <Play className="w-4 h-4" />
+                {t("landing.hero.tourCta")}
+              </Button>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, x: 40 }}
@@ -174,7 +163,7 @@ export default function Landing() {
       </section>
 
       {/* Experience Levels */}
-      <section className="py-20 sm:py-28 bg-gradient-to-b from-background via-amber-900/5 to-background">
+      <section className="py-10 sm:py-14 bg-gradient-to-b from-background via-amber-900/5 to-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <motion.div
             initial="hidden"
@@ -182,7 +171,7 @@ export default function Landing() {
             viewport={{ once: true }}
             custom={0}
             variants={fadeUp}
-            className="text-center mb-16"
+            className="text-center mb-10"
           >
             <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.roles.title")}</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("landing.roles.subtitle")}</p>
