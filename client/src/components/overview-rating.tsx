@@ -26,8 +26,6 @@ const SCORE_KEYS = ["nose", "taste", "finish", "balance", "overall"] as const;
 type ScoreKey = typeof SCORE_KEYS[number];
 type Scores = Record<ScoreKey, number>;
 
-const DEFAULT_SCORES: Scores = { nose: 50, taste: 50, finish: 50, balance: 50, overall: 50 };
-
 function WhiskyRow({
   whisky,
   index,
@@ -48,6 +46,8 @@ function WhiskyRow({
   onToggle: () => void;
 }) {
   const { t } = useTranslation();
+  const scale = tasting.ratingScale || 100;
+  const mid = scale / 2;
   const [imgErr, setImgErr] = useState(false);
 
   const inputFocused = useInputFocused();
@@ -57,7 +57,7 @@ function WhiskyRow({
     enabled: !!participantId && !!whisky.id,
   });
 
-  const [scores, setScores] = useState<Scores>({ ...DEFAULT_SCORES });
+  const [scores, setScores] = useState<Scores>({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
   const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
@@ -132,11 +132,11 @@ function WhiskyRow({
   }, [isLocked]);
 
   const handleScoreChange = useCallback((key: ScoreKey, value: number) => {
-    const clamped = Math.max(0, Math.min(100, Math.round(value * 10) / 10));
+    const clamped = Math.max(0, Math.min(scale, Math.round(value * 10) / 10));
     setScores(prev => ({ ...prev, [key]: clamped }));
     setIsDirty(true);
     triggerAutoSave();
-  }, [triggerAutoSave]);
+  }, [triggerAutoSave, scale]);
 
   const label = blind.showName ? whisky.name : `#${index + 1}`;
   const hasRating = !!existingRating;
@@ -219,14 +219,14 @@ function WhiskyRow({
                     value={scores[cat.id]}
                     onChange={(e) => handleScoreChange(cat.id, parseFloat(e.target.value) || 0)}
                     className="w-12 text-right font-mono text-xs font-bold border-none bg-transparent h-5 p-0 focus:ring-0"
-                    step={0.1} min={0} max={100}
+                    step={0.1} min={0} max={scale}
                     disabled={isLocked}
                     data-testid={`overview-input-${cat.id}-${whisky.id}`}
                   />
                 </div>
                 <Slider
                   value={[scores[cat.id]]}
-                  max={100} step={0.1} min={0}
+                  max={scale} step={0.1} min={0}
                   onValueChange={(val) => handleScoreChange(cat.id, val[0])}
                   className={cn("cursor-pointer", cat.id === "overall" ? "[&_[role=slider]]:bg-primary [&_[data-orientation=horizontal]>span:first-child>span]:bg-primary/30" : "")}
                   disabled={isLocked}
@@ -263,14 +263,14 @@ function WhiskyRow({
                       value={scores[cat.id]}
                       onChange={(e) => handleScoreChange(cat.id, parseFloat(e.target.value) || 0)}
                       className="w-12 text-right font-mono text-xs font-bold border-none bg-transparent h-5 p-0 focus:ring-0"
-                      step={0.1} min={0} max={100}
+                      step={0.1} min={0} max={scale}
                       disabled={isLocked}
                       data-testid={`overview-input-mobile-${cat.id}-${whisky.id}`}
                     />
                   </div>
                   <Slider
                     value={[scores[cat.id]]}
-                    max={100} step={0.1} min={0}
+                    max={scale} step={0.1} min={0}
                     onValueChange={(val) => handleScoreChange(cat.id, val[0])}
                     className={cn("cursor-pointer", cat.id === "overall" ? "[&_[role=slider]]:bg-primary [&_[data-orientation=horizontal]>span:first-child>span]:bg-primary/30" : "")}
                     disabled={isLocked}

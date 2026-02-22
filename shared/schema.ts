@@ -52,6 +52,7 @@ export const tastings = pgTable("tastings", {
   dramStartedAt: timestamp("dram_started_at"),
   dramTimers: text("dram_timers"), // JSON: { [whiskyId]: accumulatedSeconds }
   ratingPrompt: text("rating_prompt"), // null | "rate" | "final" — host prompt to submit ratings
+  ratingScale: integer("rating_scale").notNull().default(100), // 5 | 10 | 20 | 100
   activeWhiskyId: varchar("active_whisky_id"), // tracks which whisky is currently being discussed
   aiHighlightsCache: text("ai_highlights_cache"), // Cached AI session highlights (JSON)
   aiHighlightsRatingCount: integer("ai_highlights_rating_count"), // Rating count when highlights were cached

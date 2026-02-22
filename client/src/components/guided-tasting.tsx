@@ -190,6 +190,8 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
   const { currentParticipant } = useAppStore();
   const participantId = currentParticipant?.id || "";
   const isHost = tasting.hostId === participantId;
+  const scale = tasting.ratingScale || 100;
+  const mid = scale / 2;
 
   const guidedIdx = tasting.guidedWhiskyIndex ?? -1;
   const guidedStep = tasting.guidedRevealStep ?? 0;
@@ -209,7 +211,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
     enabled: !!participantId && !!activeWhisky?.id,
   });
 
-  const [scores, setScores] = useState({ nose: 50.0, taste: 50.0, finish: 50.0, balance: 50.0, overall: 50.0 });
+  const [scores, setScores] = useState({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
   const [notes, setNotes] = useState("");
   const [guessAbv, setGuessAbv] = useState<number | null>(null);
   const [guessAge, setGuessAge] = useState("");
@@ -228,7 +230,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
       setGuessAge(existingRating.guessAge || "");
       setIsDirty(false);
     } else if (whiskyChanged) {
-      setScores({ nose: 50.0, taste: 50.0, finish: 50.0, balance: 50.0, overall: 50.0 });
+      setScores({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
       setNotes("");
       setGuessAbv(null);
       setGuessAge("");
@@ -332,11 +334,11 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
   }, [isLocked, activeWhisky?.id, flushSave]);
 
   const handleScoreChange = useCallback((key: string, value: number) => {
-    const clamped = Math.max(0, Math.min(100, Math.round(value * 10) / 10));
+    const clamped = Math.max(0, Math.min(scale, Math.round(value * 10) / 10));
     setScores(prev => ({ ...prev, [key]: clamped }));
     setIsDirty(true);
     triggerAutoSave();
-  }, [triggerAutoSave]);
+  }, [triggerAutoSave, scale]);
 
 
   const getGuidedBlindState = (forEval = false) => {
@@ -703,14 +705,14 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                           value={scores[cat.id as keyof typeof scores]}
                           onChange={(e) => handleScoreChange(cat.id, parseFloat(e.target.value) || 0)}
                           className="w-16 text-right font-mono font-bold border-none bg-transparent h-7 text-sm focus:ring-0 p-0"
-                          step={0.1} min={0} max={100}
+                          step={0.1} min={0} max={scale}
                           disabled={isLocked}
                           data-testid={`guided-input-${cat.id}`}
                         />
                       </div>
                       <Slider
                         value={[scores[cat.id as keyof typeof scores]]}
-                        max={100} step={0.1} min={0}
+                        max={scale} step={0.1} min={0}
                         onValueChange={(val) => handleScoreChange(cat.id, val[0])}
                         className="py-1 cursor-pointer"
                         disabled={isLocked}
@@ -727,12 +729,12 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                     value={scores.overall}
                     onChange={(e) => handleScoreChange("overall", parseFloat(e.target.value) || 0)}
                     className="w-28 mx-auto text-center text-3xl font-serif font-black border-none bg-transparent h-12 focus:ring-0 p-0 text-primary"
-                    step={0.1} min={0} max={100}
+                    step={0.1} min={0} max={scale}
                     disabled={isLocked}
                     data-testid="guided-input-overall"
                   />
                   <Slider
-                    value={[scores.overall]} max={100} step={0.1} min={0}
+                    value={[scores.overall]} max={scale} step={0.1} min={0}
                     onValueChange={(val) => handleScoreChange("overall", val[0])}
                     className="w-full max-w-sm mx-auto py-2 cursor-pointer"
                     disabled={isLocked}

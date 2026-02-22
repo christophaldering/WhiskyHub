@@ -95,6 +95,8 @@ function WhiskySliderCard({
   isActive: boolean;
 }) {
   const { t } = useTranslation();
+  const scale = tasting.ratingScale || 100;
+  const mid = scale / 2;
   const { data: existingRating } = useQuery({
     queryKey: ["rating", participantId, whisky.id],
     queryFn: () => ratingApi.getMyRating(participantId, whisky.id),
@@ -102,7 +104,7 @@ function WhiskySliderCard({
   });
 
   const [scores, setScores] = useState({
-    nose: 50, taste: 50, finish: 50, balance: 50, overall: 50,
+    nose: mid, taste: mid, finish: mid, balance: mid, overall: mid,
   });
   const [notes, setNotes] = useState("");
   const [isDirty, setIsDirty] = useState(false);
@@ -150,7 +152,7 @@ function WhiskySliderCard({
   }, []);
 
   const handleScore = (key: string, value: number) => {
-    const clamped = Math.max(0, Math.min(100, Math.round(value * 10) / 10));
+    const clamped = Math.max(0, Math.min(scale, Math.round(value * 10) / 10));
     setScores(prev => ({ ...prev, [key]: clamped }));
     setIsDirty(true);
     triggerAutoSave();
@@ -200,7 +202,7 @@ function WhiskySliderCard({
                 </div>
                 <Slider
                   value={[scores[cat.id as keyof typeof scores]]}
-                  max={100} step={0.5} min={0}
+                  max={scale} step={0.1} min={0}
                   onValueChange={(val) => handleScore(cat.id, val[0])}
                   disabled={isLocked}
                   data-testid={`quick-slider-${cat.id}`}
@@ -216,7 +218,7 @@ function WhiskySliderCard({
                 {scores.overall}
               </div>
               <Slider
-                value={[scores.overall]} max={100} step={0.5} min={0}
+                value={[scores.overall]} max={scale} step={0.1} min={0}
                 onValueChange={(val) => handleScore("overall", val[0])}
                 className="w-full max-w-xs"
                 disabled={isLocked}

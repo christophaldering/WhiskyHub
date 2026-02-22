@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { GuestPreview } from "@/components/guest-preview";
 import { AiTastingImportDialog } from "@/components/ai-tasting-import";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { cn } from "@/lib/utils";
 
 export default function Sessions() {
   const { t, i18n } = useTranslation();
@@ -35,6 +36,7 @@ export default function Sessions() {
   const [blindMode, setBlindMode] = useState(false);
   const [guidedMode, setGuidedMode] = useState(false);
   const [reflectionEnabled, setReflectionEnabled] = useState(true);
+  const [ratingScale, setRatingScale] = useState<number>(100);
   const [showImportDialog, setShowImportDialog] = useState(false);
 
   const [showGuestDialog, setShowGuestDialog] = useState(false);
@@ -95,6 +97,7 @@ export default function Sessions() {
       blindMode,
       guidedMode,
       reflectionEnabled,
+      ratingScale,
     });
   };
 
@@ -284,6 +287,33 @@ export default function Sessions() {
               <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("sessions.locationLabel")}</Label>
               <Input placeholder={t("sessions.locationPlaceholder")} value={newLocation} onChange={(e) => setNewLocation(e.target.value)} className="bg-secondary/20" data-testid="input-session-location" />
             </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("sessionSettings.ratingScale")}</Label>
+            <div className="grid grid-cols-4 gap-2">
+              {[5, 10, 20, 100].map((scale) => (
+                <button
+                  key={scale}
+                  type="button"
+                  onClick={() => setRatingScale(scale)}
+                  className={cn(
+                    "py-2 px-3 rounded-lg border text-sm font-mono font-bold transition-all",
+                    ratingScale === scale
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border/50 bg-secondary/20 text-muted-foreground hover:border-primary/50"
+                  )}
+                  data-testid={`button-scale-${scale}`}
+                >
+                  0–{scale}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground leading-tight mt-1">
+              {ratingScale === 5 && t("sessionSettings.scaleDesc5")}
+              {ratingScale === 10 && t("sessionSettings.scaleDesc10")}
+              {ratingScale === 20 && t("sessionSettings.scaleDesc20")}
+              {ratingScale === 100 && t("sessionSettings.scaleDesc100")}
+            </p>
           </div>
           <div className="border-t border-border/30 pt-3 space-y-3">
             <div className="flex items-center justify-between">

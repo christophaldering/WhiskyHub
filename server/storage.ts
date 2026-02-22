@@ -796,6 +796,12 @@ export class DatabaseStorage implements IStorage {
       : [];
     const whiskyMap = new Map(ratedWhiskyRows.map(w => [w.id, w]));
 
+    const tastingIds = Array.from(new Set(allRatings.map(r => r.tastingId)));
+    const tastingRows = tastingIds.length > 0
+      ? await db.select().from(tastings).where(inArray(tastings.id, tastingIds))
+      : [];
+    const tastingScaleMap = new Map(tastingRows.map(t => [t.id, t.ratingScale ?? 100]));
+
     let sumNose = 0, sumTaste = 0, sumFinish = 0, sumBalance = 0, sumOverall = 0;
     const regionAcc: Record<string, { total: number; count: number }> = {};
     const caskAcc: Record<string, { total: number; count: number }> = {};
@@ -803,25 +809,28 @@ export class DatabaseStorage implements IStorage {
     const categoryAcc: Record<string, { total: number; count: number }> = {};
 
     for (const r of allRatings) {
-      sumNose += r.nose; sumTaste += r.taste; sumFinish += r.finish;
-      sumBalance += r.balance; sumOverall += r.overall;
+      const scale = tastingScaleMap.get(r.tastingId) ?? 100;
+      const norm = 100 / scale;
+      sumNose += r.nose * norm; sumTaste += r.taste * norm; sumFinish += r.finish * norm;
+      sumBalance += r.balance * norm; sumOverall += r.overall * norm;
       const w = whiskyMap.get(r.whiskyId);
       if (w) {
+        const normOverall = r.overall * norm;
         if (w.region) {
           if (!regionAcc[w.region]) regionAcc[w.region] = { total: 0, count: 0 };
-          regionAcc[w.region].total += r.overall; regionAcc[w.region].count++;
+          regionAcc[w.region].total += normOverall; regionAcc[w.region].count++;
         }
         if (w.caskInfluence) {
           if (!caskAcc[w.caskInfluence]) caskAcc[w.caskInfluence] = { total: 0, count: 0 };
-          caskAcc[w.caskInfluence].total += r.overall; caskAcc[w.caskInfluence].count++;
+          caskAcc[w.caskInfluence].total += normOverall; caskAcc[w.caskInfluence].count++;
         }
         if (w.peatLevel) {
           if (!peatAcc[w.peatLevel]) peatAcc[w.peatLevel] = { total: 0, count: 0 };
-          peatAcc[w.peatLevel].total += r.overall; peatAcc[w.peatLevel].count++;
+          peatAcc[w.peatLevel].total += normOverall; peatAcc[w.peatLevel].count++;
         }
         if (w.category) {
           if (!categoryAcc[w.category]) categoryAcc[w.category] = { total: 0, count: 0 };
-          categoryAcc[w.category].total += r.overall; categoryAcc[w.category].count++;
+          categoryAcc[w.category].total += normOverall; categoryAcc[w.category].count++;
         }
       }
     }
@@ -899,11 +908,19 @@ export class DatabaseStorage implements IStorage {
     if (allRatings.length === 0) {
       return { nose: 0, taste: 0, finish: 0, balance: 0, overall: 0, totalRatings: 0, totalParticipants: 0 };
     }
+    const tastingIds = Array.from(new Set(allRatings.map(r => r.tastingId)));
+    const tastingRows = tastingIds.length > 0
+      ? await db.select().from(tastings).where(inArray(tastings.id, tastingIds))
+      : [];
+    const tastingScaleMap = new Map(tastingRows.map(t => [t.id, t.ratingScale ?? 100]));
+
     let sumNose = 0, sumTaste = 0, sumFinish = 0, sumBalance = 0, sumOverall = 0;
     const participantIds: string[] = [];
     for (const r of allRatings) {
-      sumNose += r.nose; sumTaste += r.taste; sumFinish += r.finish;
-      sumBalance += r.balance; sumOverall += r.overall;
+      const scale = tastingScaleMap.get(r.tastingId) ?? 100;
+      const norm = 100 / scale;
+      sumNose += r.nose * norm; sumTaste += r.taste * norm; sumFinish += r.finish * norm;
+      sumBalance += r.balance * norm; sumOverall += r.overall * norm;
       if (!participantIds.includes(r.participantId)) participantIds.push(r.participantId);
     }
     const n = allRatings.length;

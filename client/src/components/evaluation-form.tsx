@@ -30,6 +30,8 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const participantId = currentParticipant?.id || "";
+  const scale = tasting.ratingScale || 100;
+  const mid = scale / 2;
 
   const { data: existingRating } = useQuery({
     queryKey: ["rating", participantId, whisky.id],
@@ -38,7 +40,7 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
   });
 
   const [scores, setScores] = useState({
-    nose: 50.0, taste: 50.0, finish: 50.0, balance: 50.0, overall: 50.0,
+    nose: mid, taste: mid, finish: mid, balance: mid, overall: mid,
   });
   const [notes, setNotes] = useState("");
   const [guessAbv, setGuessAbv] = useState<number | null>(null);
@@ -106,13 +108,13 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
       setGuessAge(existingRating.guessAge || "");
       setIsDirty(false);
     } else if (prevWhiskyId !== whisky.id) {
-      setScores({ nose: 50.0, taste: 50.0, finish: 50.0, balance: 50.0, overall: 50.0 });
+      setScores({ nose: mid, taste: mid, finish: mid, balance: mid, overall: mid });
       setNotes("");
       setGuessAbv(null);
       setGuessAge("");
       setIsDirty(false);
     }
-  }, [existingRating, whisky.id, flushSave]);
+  }, [existingRating, whisky.id, flushSave, mid]);
 
   const saveMutation = useMutation({
     mutationFn: (data: any) => ratingApi.upsert(data),
@@ -140,11 +142,11 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
   }, [participantId, tasting.id, whisky.id, saveMutation]);
 
   const handleScoreChange = useCallback((key: string, value: number) => {
-    const clamped = Math.max(0, Math.min(100, Math.round(value * 10) / 10));
+    const clamped = Math.max(0, Math.min(scale, Math.round(value * 10) / 10));
     setScores(prev => ({ ...prev, [key]: clamped }));
     setIsDirty(true);
     triggerAutoSave();
-  }, [triggerAutoSave]);
+  }, [triggerAutoSave, scale]);
 
 
   const isLocked = tasting.status !== "open" && tasting.status !== "draft";
@@ -209,14 +211,14 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
                   value={scores[cat.id as keyof typeof scores]}
                   onChange={(e) => handleScoreChange(cat.id, parseFloat(e.target.value) || 0)}
                   className="w-20 text-right font-mono font-bold border-none bg-secondary/30 h-8 focus:ring-0"
-                  step={0.1} min={0} max={100}
+                  step={0.1} min={0} max={scale}
                   disabled={isLocked}
                   data-testid={`input-${cat.id}`}
                 />
               </div>
               <Slider
                 value={[scores[cat.id as keyof typeof scores]]}
-                max={100} step={0.1} min={0}
+                max={scale} step={0.1} min={0}
                 onValueChange={(val) => handleScoreChange(cat.id, val[0])}
                 className={cn("py-2 cursor-pointer", isLocked && "opacity-50 cursor-not-allowed")}
                 disabled={isLocked}
@@ -234,12 +236,12 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
               value={scores.overall}
               onChange={(e) => handleScoreChange("overall", parseFloat(e.target.value) || 0)}
               className="w-32 text-center text-4xl font-serif font-black border-none bg-transparent h-16 focus:ring-0 p-0 text-primary"
-              step={0.1} min={0} max={100}
+              step={0.1} min={0} max={scale}
               disabled={isLocked}
               data-testid="input-overall"
             />
             <Slider
-              value={[scores.overall]} max={100} step={0.1} min={0}
+              value={[scores.overall]} max={scale} step={0.1} min={0}
               onValueChange={(val) => handleScoreChange("overall", val[0])}
               className={cn("w-full max-w-md py-4 cursor-pointer", isLocked && "opacity-50 cursor-not-allowed")}
               disabled={isLocked}

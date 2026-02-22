@@ -63,11 +63,12 @@ export function RevealView({ whisky, tasting }: RevealViewProps) {
   const Act2 = () => {
     if (!whiskyData) return <p>No data available.</p>;
 
+    const scale = tasting?.ratingScale || 100;
     const radarData = [
-      { subject: t('evaluation.nose'), A: whiskyData.categories.nose, fullMark: 100 },
-      { subject: t('evaluation.taste'), A: whiskyData.categories.taste, fullMark: 100 },
-      { subject: t('evaluation.finish'), A: whiskyData.categories.finish, fullMark: 100 },
-      { subject: t('evaluation.balance'), A: whiskyData.categories.balance, fullMark: 100 },
+      { subject: t('evaluation.nose'), A: whiskyData.categories.nose, fullMark: scale },
+      { subject: t('evaluation.taste'), A: whiskyData.categories.taste, fullMark: scale },
+      { subject: t('evaluation.finish'), A: whiskyData.categories.finish, fullMark: scale },
+      { subject: t('evaluation.balance'), A: whiskyData.categories.balance, fullMark: scale },
     ];
 
     return (
@@ -106,7 +107,7 @@ export function RevealView({ whisky, tasting }: RevealViewProps) {
               <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
                 <PolarGrid stroke="hsl(var(--muted-foreground))" strokeOpacity={0.2} />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: "hsl(var(--foreground))", fontSize: 12, fontFamily: "var(--font-serif)" }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="transparent" />
+                <PolarRadiusAxis angle={30} domain={[0, scale]} stroke="transparent" />
                 <Radar name={whisky.name} dataKey="A" stroke="hsl(var(--primary))" strokeWidth={2} fill="hsl(var(--primary))" fillOpacity={0.3} />
                 <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", color: "hsl(var(--foreground))" }} />
               </RadarChart>

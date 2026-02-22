@@ -1627,7 +1627,12 @@ const resources = {
         guidedMode: "Guided Tasting",
         guidedModeDesc: "Host controls which whisky participants see. Step-by-step reveal with AI facts.",
         reflectionPhase: "Reflection Phase",
-        reflectionDesc: "After all reveals, participants can reflect on the experience."
+        reflectionDesc: "After all reveals, participants can reflect on the experience.",
+        ratingScale: "Rating Scale",
+        scaleDesc5: "Simple & quick — ideal for casual rounds",
+        scaleDesc10: "Classic 10-point scale — good balance of speed and differentiation",
+        scaleDesc20: "Professional scale (à la Serge Valentin) — fine-grained evaluation",
+        scaleDesc100: "Maximum differentiation — for experienced tasters",
       },
       pdfExport: {
         title: "Export PDF",
@@ -3725,7 +3730,12 @@ const resources = {
         guidedMode: "Geführtes Tasting",
         guidedModeDesc: "Host steuert, welchen Whisky die Teilnehmer sehen. Schrittweise Enthüllung mit KI-Fakten.",
         reflectionPhase: "Reflexionsphase",
-        reflectionDesc: "Nach allen Enthüllungen können Teilnehmer über das Erlebnis reflektieren."
+        reflectionDesc: "Nach allen Enthüllungen können Teilnehmer über das Erlebnis reflektieren.",
+        ratingScale: "Bewertungsskala",
+        scaleDesc5: "Einfach & schnell — ideal für lockere Runden",
+        scaleDesc10: "Klassische 10-Punkte-Skala — gute Balance aus Tempo und Differenzierung",
+        scaleDesc20: "Profi-Skala (à la Serge Valentin) — feingranulierte Bewertung",
+        scaleDesc100: "Maximale Differenzierung — für erfahrene Verkoster",
       },
       pdfExport: {
         title: "Als PDF exportieren",

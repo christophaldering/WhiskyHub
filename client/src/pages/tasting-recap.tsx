@@ -13,7 +13,7 @@ import { ThankYouDialog } from "@/components/thank-you-dialog";
 import jsPDF from "jspdf";
 
 interface RecapData {
-  tasting: { id: string; title: string; date: string; location: string; status: string; hostId: string };
+  tasting: { id: string; title: string; date: string; location: string; status: string; hostId: string; ratingScale?: number };
   hostName: string;
   participantCount: number;
   whiskyCount: number;
@@ -197,7 +197,7 @@ export default function TastingRecap() {
       doc.setFontSize(9);
       doc.setTextColor(...muted);
       doc.text(d.label, margin + 4, y);
-      const bw = (d.value / 100) * barMaxW;
+      const bw = (d.value / (recap.tasting.ratingScale || 100)) * barMaxW;
       doc.setFillColor(...gold);
       doc.roundedRect(margin + 36, y - 3.5, bw, 4.5, 1, 1, "F");
       doc.setFontSize(8);
@@ -460,7 +460,7 @@ export default function TastingRecap() {
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={avgData} layout="vertical" margin={{ left: 70 }}>
-                <XAxis type="number" domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                <XAxis type="number" domain={[0, recap.tasting.ratingScale || 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
                 <YAxis type="category" dataKey="dimension" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} width={65} />
                 <Tooltip
                   contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}

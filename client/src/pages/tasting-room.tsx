@@ -903,7 +903,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", date: "", location: "", videoLink: "", blindMode: false });
+  const [form, setForm] = useState({ title: "", date: "", location: "", videoLink: "", blindMode: false, ratingScale: 100 });
   const [coverUploading, setCoverUploading] = useState(false);
   const [saved, setSaved] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -911,7 +911,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
 
   useEffect(() => {
     if (open && tasting) {
-      setForm({ title: tasting.title, date: tasting.date, location: tasting.location, videoLink: tasting.videoLink || "", blindMode: tasting.blindMode ?? false });
+      setForm({ title: tasting.title, date: tasting.date, location: tasting.location, videoLink: tasting.videoLink || "", blindMode: tasting.blindMode ?? false, ratingScale: tasting.ratingScale ?? 100 });
       setSaved(false);
     }
     return () => {
@@ -947,7 +947,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   const handleDialogClose = (isOpen: boolean) => {
     if (!isOpen && form.title.trim() && currentParticipant) {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      const hasChanges = form.title !== tasting.title || form.date !== tasting.date || form.location !== tasting.location || form.videoLink !== (tasting.videoLink || "") || form.blindMode !== (tasting.blindMode ?? false);
+      const hasChanges = form.title !== tasting.title || form.date !== tasting.date || form.location !== tasting.location || form.videoLink !== (tasting.videoLink || "") || form.blindMode !== (tasting.blindMode ?? false) || form.ratingScale !== (tasting.ratingScale ?? 100);
       if (hasChanges && !saved) {
         updateMutation.mutate(form);
       }
@@ -1021,24 +1021,57 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
             <p className="text-xs text-muted-foreground mt-1">{t("session.videoLinkHint", "Zoom, Teams, Google Meet etc.")}</p>
           </div>
           {(tasting.status === "draft" || tasting.status === "open") && (
-            <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/20 border border-border/30">
-              <div className="flex items-center gap-2">
-                <Glasses className="w-4 h-4 text-muted-foreground" />
-                <div>
-                  <Label className="text-xs font-medium">{t("sessionSettings.blindMode")}</Label>
-                  <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.blindModeDesc")}</p>
+            <>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/20 border border-border/30">
+                <div className="flex items-center gap-2">
+                  <Glasses className="w-4 h-4 text-muted-foreground" />
+                  <div>
+                    <Label className="text-xs font-medium">{t("sessionSettings.blindMode")}</Label>
+                    <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.blindModeDesc")}</p>
+                  </div>
                 </div>
+                <Switch
+                  checked={form.blindMode}
+                  onCheckedChange={(v) => {
+                    const newForm = { ...form, blindMode: v };
+                    setForm(newForm);
+                    triggerAutoSave(newForm);
+                  }}
+                  data-testid="switch-edit-blind-mode"
+                />
               </div>
-              <Switch
-                checked={form.blindMode}
-                onCheckedChange={(v) => {
-                  const newForm = { ...form, blindMode: v };
-                  setForm(newForm);
-                  triggerAutoSave(newForm);
-                }}
-                data-testid="switch-edit-blind-mode"
-              />
-            </div>
+              <div>
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("sessionSettings.ratingScale")}</Label>
+                <div className="grid grid-cols-4 gap-2 mt-1">
+                  {[5, 10, 20, 100].map((scale) => (
+                    <button
+                      key={scale}
+                      type="button"
+                      onClick={() => {
+                        const newForm = { ...form, ratingScale: scale };
+                        setForm(newForm);
+                        triggerAutoSave(newForm);
+                      }}
+                      className={cn(
+                        "py-2 px-3 rounded-lg border text-sm font-mono font-bold transition-all",
+                        form.ratingScale === scale
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border/50 bg-secondary/20 text-muted-foreground hover:border-primary/50"
+                      )}
+                      data-testid={`button-edit-scale-${scale}`}
+                    >
+                      0–{scale}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-tight mt-1">
+                  {form.ratingScale === 5 && t("sessionSettings.scaleDesc5")}
+                  {form.ratingScale === 10 && t("sessionSettings.scaleDesc10")}
+                  {form.ratingScale === 20 && t("sessionSettings.scaleDesc20")}
+                  {form.ratingScale === 100 && t("sessionSettings.scaleDesc100")}
+                </p>
+              </div>
+            </>
           )}
           <div>
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.coverImage.label")}</Label>
