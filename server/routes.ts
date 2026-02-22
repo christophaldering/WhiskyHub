@@ -17,8 +17,11 @@ import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, 
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES } from "./ai-settings";
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from "docx";
+import sharp from "sharp";
 
 const aiScanCache = new Map<string, { result: any; timestamp: number }>();
+let tourCacheVersion = Date.now();
+const tourImageCache = new Map<string, string>();
 const AI_CACHE_TTL = 24 * 60 * 60 * 1000;
 const AI_CACHE_MAX = 500;
 
@@ -7012,9 +7015,222 @@ Important rules:
     }
   });
 
-  // --- Tour PPTX export ---
-  app.get("/api/tour-pptx", async (_req: Request, res: Response) => {
+  // --- Shared tour slide data and image compression ---
+  const tourCacheDir = "/tmp/tour-cache";
+  if (!fs.existsSync(tourCacheDir)) fs.mkdirSync(tourCacheDir, { recursive: true });
+
+  const tourSlideData = [
+    {
+      title: "CaskSense",
+      subtitle: "Whisky gemeinsam erleben. Ohne Technik-Stress — der Moment am Tisch zählt.",
+      badge: "Rundgang",
+      features: [] as string[],
+      image: "slide-cover.png",
+    },
+    {
+      title: "Erst mal verkosten",
+      subtitle: "CaskSense ist kein Tech-Spielzeug. Es geht ums Schmecken, Riechen, Diskutieren — um den Moment am Tisch.",
+      badge: "Das Wichtigste zuerst",
+      image: "slide-tasting.png",
+      features: [
+        "Verkosten steht im Fokus — Kein Feature-Overload, nur das, was ein gutes Tasting besser macht",
+        "Kein Konto nötig — QR-Code scannen, Name eingeben, mitmachen",
+        "Kein Vorwissen nötig — Ob Neuling oder Kenner, jeder ist willkommen",
+        "Whisky first — Die App soll helfen, nicht im Weg stehen",
+      ],
+    },
+    {
+      title: "Dein Tempo, dein Erlebnis",
+      subtitle: "CaskSense wächst mit deiner Neugier. Du entscheidest, wie tief du eintauchst.",
+      badge: "Von Einfach bis Analytisch",
+      image: "slide-community.png",
+      features: [
+        "Just Tasting — Kommen, trinken, bewerten, gehen. Null Technik-Stress.",
+        "Explorer — Journal starten, Aromen entdecken, Favoriten merken.",
+        "Connoisseur — Geschmacksprofil aufbauen, Whiskys vergleichen, Empfehlungen.",
+        "Analyst — Benchmarks, Statistiken, Muster — für alle, die Daten lieben.",
+      ],
+    },
+    {
+      title: "Tasting-Sessions",
+      subtitle: "Ein Gastgeber erstellt die Session, lädt per QR-Code ein — und alle bewerten gemeinsam.",
+      badge: "Kernfunktion",
+      image: "slide-tasting.png",
+      features: [
+        "Sessions erstellen — Name, Datum, Line-up — in Sekunden startklar",
+        "QR-Code Einladungen — Scannen und sofort dabei — kein Konto nötig",
+        "Strukturierte Bewertung — Nase, Geschmack, Abgang, Balance — auf deiner Wunschskala",
+        "Live-Diskussion — Austausch in Echtzeit während des Tastings",
+      ],
+    },
+    {
+      title: "Geführtes Tasting & Präsentation",
+      subtitle: "Geteilter Bildschirm für den Gastgeber, Vollbild-Ansicht für alle — perfekt mit Beamer oder Fernseher.",
+      badge: "Showtime",
+      image: "slide-guided.png",
+      features: [
+        "Geteilter Bildschirm — Steuerung links, Präsentation rechts — alles unter Kontrolle",
+        "Vollbild-Ansicht — Große, klare Darstellung — auch auf dem Fernseher",
+        "Schrittweise Enthüllung — Jede Flasche ein eigener Moment — mit Animationen",
+        "Startet automatisch — Präsentationsmodus aktiviert sich mit der Enthüllungsphase",
+      ],
+    },
+    {
+      title: "Verkostungsbrett & Präsentation",
+      subtitle: "Alle Whiskys auf einen Blick — nummeriert, mit Fotos und Notizen.",
+      badge: "Visuell",
+      image: "slide-flightboard.png",
+      features: [
+        "Verkostungsbrett — Überblick über alle Flaschen — klar nummeriert und sortiert",
+        "Flaschenfotos — Bilder hochladen — auch direkt vom Handy",
+        "PDF Tasting-Menü — Professionelles Menü zum Ausdrucken oder Teilen",
+        "Tasting-Notiz Generator — Aromen auswählen statt formulieren — interaktiv und schnell",
+      ],
+    },
+    {
+      title: "Blind Tasting & Enthüllung",
+      subtitle: "Ein beliebtes Extra: Whiskys ohne Vorurteile verkosten. Der Gastgeber enthüllt dramatisch.",
+      badge: "Beliebtes Extra",
+      image: "slide-blind.png",
+      features: [
+        "Blind-Modus — Etiketten weg, Namen verborgen — nur dein Gaumen zählt",
+        "Schrittweise Enthüllung — Der Gastgeber bestimmt den Moment — mit Diagrammen und Wow-Effekt",
+        "ABV & Alter raten — Zusätzlicher Spaß für alle, die sich trauen",
+        "Cover-Bild Enthüllung — Gruppenfoto oder Flaschenbild als krönender Abschluss",
+      ],
+    },
+    {
+      title: "Clevere Helfer im Hintergrund",
+      subtitle: "Die KI liest Etiketten, erkennt Flaschen und füllt Felder aus — damit du dich aufs Wesentliche konzentrieren kannst.",
+      badge: "Optional & hilfreich",
+      image: "slide-ai.png",
+      features: [
+        "Foto-Erkennung — Flasche fotografieren — KI erledigt die Dateneingabe",
+        "Excel/CSV Import — Tabellen hochladen, Spalten werden automatisch zugeordnet",
+        "Benchmark-Datenbank — Professionelle Bewertungen als Referenz — zum Vergleichen",
+        "Whiskybase-Import — Bestehende Sammlung importieren — inklusive Links und Preise",
+      ],
+    },
+    {
+      title: "Mehr als Bauchgefühl",
+      subtitle: "Methoden aus Psychometrie und Persönlichkeitsforschung — zugänglich gemacht. Werkzeuge, die über Hobby hinausgehen.",
+      badge: "Für Wissbegierige",
+      image: "slide-analytics.png",
+      features: [
+        "Psychometrische Skalen — Bewertungsskalen, die auf erprobten Methoden aufbauen",
+        "Benchmark-Datenbank — Eigene Bewertungen im Kontext professioneller Referenzen einordnen",
+        "Messqualität & Konsistenz — Wie zuverlässig bewertest du? CaskSense zeigt es.",
+        "KI-gestützte Mustererkennung — Zusammenhänge, die dir selbst nicht auffallen",
+        "Wissenschaftliche Vertiefung — Ansätze aus Datenanalyse und prädiktiver Validität",
+      ],
+    },
+    {
+      title: "Gemeinschaft & Austausch",
+      subtitle: "Whisky trinkt man nicht allein. Finde Gleichgesinnte und entdecke, was die anderen anders schmecken.",
+      badge: "Gemeinsam",
+      image: "slide-community.png",
+      features: [
+        "Freunde — Whisky-Freunde hinzufügen und deren Einträge sehen",
+        "Aktivitäts-Feed — Was trinken die anderen? Timeline deiner Tasting-Runde",
+        "Rangliste — Wer war am aktivsten? Wer hat die detailliertesten Notizen?",
+        "Tasting-Kalender — Alle Sessions im Überblick",
+        "Erinnerungen — Freundlicher Reminder per E-Mail",
+      ],
+    },
+    {
+      title: "Gastgeber-Werkzeuge",
+      subtitle: "Übersicht, Briefing, Zusammenfassung — und sogar dezente Hintergrundklänge.",
+      badge: "Für Gastgeber",
+      image: "slide-host.png",
+      features: [
+        "Dashboard — Teilnehmer, Bewertungen, Top-Whiskys — alles im Blick",
+        "Zusammenfassung — Rückblick nach dem Tasting: Top-Whisky, Überraschungen, Kontroversen",
+        "Gastgeber-Delegation — Rolle an jemand anderen übergeben",
+        "Ambiente — Kaminfeuer, Regen oder Jazz — dezente Klänge für die richtige Stimmung",
+      ],
+    },
+    {
+      title: "Wissensdatenbank",
+      subtitle: "Hintergrundwissen, wenn du es brauchst — nicht, wenn du es nicht brauchst.",
+      badge: "Zum Stöbern",
+      image: "slide-knowledge.png",
+      features: [
+        "Whisky-Lexikon — 53 Begriffe in 5 Kategorien — verständlich erklärt",
+        "Destillerien — ~100 Destillerien weltweit mit Geschichte und Charakter",
+        "Interaktive Karte — Weltkarte mit Destillerie-Pins — zoomen und entdecken",
+        "Abfüller-Lexikon — Unabhängige Abfüller und was sie besonders macht",
+      ],
+    },
+    {
+      title: "Überall dabei",
+      subtitle: "Auf dem Handy, am Tablet, am Laptop — installierbar wie eine App, nutzbar in Deutsch und Englisch.",
+      badge: "Flexibel",
+      image: "slide-mobile.png",
+      features: [
+        "Wie eine App — Auf dem Home-Screen installieren — kein App Store nötig",
+        "Auch offline nutzbar — Bewertungen gehen nicht verloren, auch wenn das WLAN streikt",
+        "Deutsch & Englisch — Komplett zweisprachig — jederzeit umschaltbar",
+        "Hell oder Dunkel — Warmes Whisky-Dunkel oder helles Creme-Amber — du wählst",
+      ],
+    },
+    {
+      title: "Deine Daten gehören dir",
+      subtitle: "DSGVO-konform, transparent bei KI-Nutzung und volle Kontrolle über deine Daten.",
+      badge: "Vertrauen",
+      image: "slide-mobile.png",
+      features: [
+        "DSGVO-konform — Datenschutz nach europäischem Standard — ohne Kompromisse",
+        "Transparente KI — Du siehst immer, wenn KI im Spiel ist — und kannst selbst entscheiden",
+        "Datenexport jederzeit — Alle deine Daten als JSON herunterladen — gehört alles dir",
+        "Speicher-Kontrolle — Du entscheidest, was gespeichert wird. Löschung auf Knopfdruck.",
+      ],
+    },
+    {
+      title: "Probier's beim nächsten Tasting",
+      subtitle: "Lade ein paar Freunde ein, öffne eine gute Flasche und lass CaskSense den Rest machen.\n\nKostenlos — ohne Konto, ohne Hürden.\ncasksense.replit.app",
+      badge: "",
+      features: [] as string[],
+      image: "slide-cta.png",
+    },
+  ];
+
+  const tourImagesDir = path.join(process.cwd(), "client", "src", "assets", "tour");
+
+  async function loadCompressedImage(name: string, maxWidth: number): Promise<string | null> {
+    const cacheKey = `${name}_${maxWidth}`;
+    const cached = tourImageCache.get(cacheKey);
+    if (cached) return cached;
     try {
+      const imgPath = path.join(tourImagesDir, name);
+      if (!fs.existsSync(imgPath)) return null;
+      const buffer = await sharp(imgPath)
+        .resize({ width: maxWidth, withoutEnlargement: true })
+        .jpeg({ quality: 70 })
+        .toBuffer();
+      const dataUri = "data:image/jpeg;base64," + buffer.toString("base64");
+      tourImageCache.set(cacheKey, dataUri);
+      return dataUri;
+    } catch {
+      return null;
+    }
+  }
+
+  // --- Tour PPTX export ---
+  app.get("/api/tour-pptx", async (req: Request, res: Response) => {
+    try {
+      const refresh = req.query.refresh === "1";
+      const cachedPath = path.join(tourCacheDir, "tour.pptx");
+      const versionPath = path.join(tourCacheDir, "tour.pptx.version");
+
+      if (!refresh && fs.existsSync(cachedPath) && fs.existsSync(versionPath)) {
+        const savedVersion = fs.readFileSync(versionPath, "utf-8").trim();
+        if (savedVersion === String(tourCacheVersion)) {
+          res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
+          res.setHeader("Content-Disposition", `attachment; filename="CaskSense-Rundgang.pptx"`);
+          return res.send(fs.readFileSync(cachedPath));
+        }
+      }
+
       // @ts-ignore
       const pptxgen = await import("pptxgenjs");
       const PptxGenJS = pptxgen.default || pptxgen;
@@ -7031,164 +7247,13 @@ Important rules:
       const CREAM = "f5f0e8";
       const MUTED = "8b8578";
 
-      const tourImagesDir = path.join(process.cwd(), "client", "src", "assets", "tour");
-      function loadImage(name: string): string | null {
-        try {
-          const imgPath = path.join(tourImagesDir, name);
-          if (fs.existsSync(imgPath)) {
-            return "data:image/png;base64," + fs.readFileSync(imgPath).toString("base64");
-          }
-        } catch {}
-        return null;
-      }
-
-      const slideData = [
-        {
-          title: "CaskSense",
-          subtitle: "Whisky gemeinsam erleben — strukturiert, persönlich, ohne Vorwissen.",
-          badge: "Rundgang",
-          features: [] as string[],
-          image: "slide-cover.png",
-        },
-        {
-          title: "Tasting-Sessions",
-          subtitle: "Erstelle strukturierte Tastings, lade Gäste per QR-Code ein und bewerte gemeinsam.",
-          badge: "Kernfunktion",
-          image: "slide-tasting.png",
-          features: [
-            "Sessions erstellen — Name, Datum, Line-up — in Sekunden startklar",
-            "QR-Code Einladungen — Scannen und sofort dabei",
-            "Strukturierte Bewertung — Nase, Geschmack, Abgang, Balance",
-            "Live-Diskussion — Chat in Echtzeit während des Tastings",
-          ],
-        },
-        {
-          title: "Blind Tasting & Enthüllung",
-          subtitle: "Whiskys ohne Vorurteile verkosten. Der Gastgeber steuert die Enthüllung.",
-          badge: "Highlight",
-          image: "slide-blind.png",
-          features: [
-            "Blind-Modus — Etiketten ausblenden, fair bewerten",
-            "Schrittweise Enthüllung — Gastgeber enthüllt nach und nach mit Diagrammen",
-            "ABV & Alter raten — Zusätzliche Herausforderung für erfahrene Gaumen",
-            "Cover-Bild Enthüllung — Überraschungsmoment mit Session-Foto",
-          ],
-        },
-        {
-          title: "KI-Import & Whisky-Verwaltung",
-          subtitle: "Flaschenfoto, Excel oder Text — die KI erkennt Whiskys und übernimmt die Dateneingabe.",
-          badge: "KI-gestützt",
-          image: "slide-ai.png",
-          features: [
-            "Foto-Erkennung — GPT-4o liest Etiketten und identifiziert Flaschen",
-            "Excel/CSV Import — Spalten werden automatisch zugeordnet",
-            "Benchmark-Analyse — Bewertungen hochladen, KI extrahiert Daten",
-            "Whiskybase-Import — Sammlung per CSV importieren",
-          ],
-        },
-        {
-          title: "Verkostungsbrett & Präsentation",
-          subtitle: "Das visuelle Herzstück: alle Whiskys im Überblick, mit Fotos und Nummern.",
-          badge: "Visuell",
-          image: "slide-flightboard.png",
-          features: [
-            "Verkostungsbrett — Alle Whiskys auf einen Blick, nummeriert und sortiert",
-            "Flaschenfotos — Bilder hochladen und verwalten",
-            "PDF Tasting-Menü — Professionelles Menü als PDF exportieren",
-            "Tasting-Notiz Generator — Interaktives Tool mit vordefinierten Aromen",
-          ],
-        },
-        {
-          title: "Persönliche Analysen",
-          subtitle: "Radar-Charts, Flavor Wheels und Geschmacksentwicklung — Muster im eigenen Gaumen entdecken.",
-          badge: "Deine Daten",
-          image: "slide-analytics.png",
-          features: [
-            "Geschmacksprofil — Radar-Diagramm: Region, Fass, Torfgehalt",
-            "Aromenrad — Sunburst-Diagramm mit 8 Aromen-Kategorien",
-            "Whisky-Tagebuch — Notizen, Fotos, Stimmung — persönliche Bibliothek",
-            "37 Abzeichen — Von der ersten Bewertung bis zum 1.000sten Tasting",
-            "Direktvergleich — 2–3 Whiskys nebeneinander vergleichen",
-            "Empfehlungen — Personalisierte Vorschläge nach Profil",
-          ],
-        },
-        {
-          title: "Gemeinschaft & Austausch",
-          subtitle: "Freunde finden, Aktivitäten verfolgen, Rankings vergleichen.",
-          badge: "Gemeinsam",
-          image: "slide-community.png",
-          features: [
-            "Freunde — Whisky-Freunde hinzufügen und deren Einträge sehen",
-            "Aktivitäts-Feed — Timeline der Journal-Einträge deiner Freunde",
-            "Rangliste — Wertungen: aktivster Bewerter, detaillierteste Notizen",
-            "Tasting-Kalender — Monatsansicht aller Sessions",
-            "Erinnerungen — E-Mail-Reminder vor dem Tasting",
-          ],
-        },
-        {
-          title: "Wissensdatenbank",
-          subtitle: "Lexikon, Destillerien-Enzyklopädie und interaktive Weltkarte.",
-          badge: "Referenz",
-          image: "slide-knowledge.png",
-          features: [
-            "Whisky-Lexikon — 53 Einträge in 5 Kategorien, zweisprachig",
-            "Destillerien — ~100 Destillerien weltweit mit Geschichte",
-            "Interaktive Karte — Weltkarte mit Destillerie-Pins",
-            "Abfüller-Lexikon — Unabhängige Abfüller mit Details",
-          ],
-        },
-        {
-          title: "Gastgeber-Werkzeuge & Übersicht",
-          subtitle: "Überblick für Gastgeber: Statistiken, Top-Whiskys, Briefing-Notizen.",
-          badge: "Für Gastgeber",
-          image: "slide-host.png",
-          features: [
-            "Gastgeber-Übersicht — Tastings, Teilnehmer, Bewertungen im Blick",
-            "Tasting-Zusammenfassung — Rückblick: Top-Whisky, Kontroversen",
-            "Gastgeber-Delegation — Rolle an anderen Teilnehmer übertragen",
-            "Ambiente — Kaminfeuer, Regen, Nacht — dezente Klänge",
-          ],
-        },
-        {
-          title: "Geführtes Tasting & Präsentationsmodus",
-          subtitle: "Live-Moderation: geteilter Bildschirm für den Gastgeber, Vollbild für Teilnehmer.",
-          badge: "Präsentation",
-          image: "slide-guided.png",
-          features: [
-            "Geteilter Bildschirm — Steuerung und Präsentation",
-            "Vollbild Teilnehmer — Große, klare Darstellung",
-            "Schrittweise Enthüllung — Nach und nach enthüllen mit Animationen",
-            "Automatische Aktivierung — Startet mit der Enthüllungsphase",
-          ],
-        },
-        {
-          title: "Mobile & Mehrsprachig",
-          subtitle: "Installierbar, offline nutzbar, komplett zweisprachig.",
-          badge: "Überall",
-          image: "slide-mobile.png",
-          features: [
-            "Progressive Web App — Auf dem Home-Screen installieren",
-            "Offline-Modus — Network-First Caching",
-            "Deutsch & Englisch — Vollständig zweisprachig, jederzeit umschaltbar",
-            "Dark & Light — Warmes Whisky-Dunkel oder helles Creme-Amber",
-          ],
-        },
-        {
-          title: "Bereit für das nächste Tasting?",
-          subtitle: "Starte eine Session, lade Freunde ein und entdecke, was dein Gaumen wirklich wahrnimmt.\n\nKostenlos — ohne Konto.\ncasksense.replit.app",
-          badge: "",
-          image: "slide-cta.png",
-          features: [] as string[],
-        },
-      ];
-
-      for (let i = 0; i < slideData.length; i++) {
-        const d = slideData[i];
+      for (let i = 0; i < tourSlideData.length; i++) {
+        const d = tourSlideData[i];
         const slide = pres.addSlide();
         const isCover = i === 0;
-        const isCta = i === slideData.length - 1;
+        const isCta = i === tourSlideData.length - 1;
 
-        const imgData = d.image ? loadImage(d.image) : null;
+        const imgData = d.image ? await loadCompressedImage(d.image, 800) : null;
 
         slide.background = { color: NAVY };
 
@@ -7310,7 +7375,7 @@ Important rules:
 
         // slide number
         if (!isCover) {
-          slide.addText(`${i} / ${slideData.length - 1}`, {
+          slide.addText(`${i} / ${tourSlideData.length - 1}`, {
             x: 11.3, y: 7.0, w: 1.5, h: 0.3,
             fontSize: 8, fontFace: "Arial", color: MUTED,
             align: "right",
@@ -7332,17 +7397,33 @@ Important rules:
       }
 
       const pptxBuffer = await pres.write({ outputType: "nodebuffer" });
+      const pptxBuf = Buffer.from(pptxBuffer);
+      fs.writeFileSync(cachedPath, pptxBuf);
+      fs.writeFileSync(versionPath, String(tourCacheVersion));
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
       res.setHeader("Content-Disposition", `attachment; filename="CaskSense-Rundgang.pptx"`);
-      res.send(Buffer.from(pptxBuffer));
+      res.send(pptxBuf);
     } catch (e: any) {
       console.error("PPTX generation error:", e);
       res.status(500).json({ message: e.message || "PPTX generation failed" });
     }
   });
 
-  app.get("/api/tour-pdf", async (_req: Request, res: Response) => {
+  app.get("/api/tour-pdf", async (req: Request, res: Response) => {
     try {
+      const refresh = req.query.refresh === "1";
+      const cachedPath = path.join(tourCacheDir, "tour.pdf");
+      const versionPath = path.join(tourCacheDir, "tour.pdf.version");
+
+      if (!refresh && fs.existsSync(cachedPath) && fs.existsSync(versionPath)) {
+        const savedVersion = fs.readFileSync(versionPath, "utf-8").trim();
+        if (savedVersion === String(tourCacheVersion)) {
+          res.setHeader("Content-Type", "application/pdf");
+          res.setHeader("Content-Disposition", `attachment; filename="CaskSense-Rundgang.pdf"`);
+          return res.send(fs.readFileSync(cachedPath));
+        }
+      }
+
       const { jsPDF } = await import("jspdf");
 
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
@@ -7354,177 +7435,26 @@ Important rules:
       const CREAM = "#f5f0e8";
       const MUTED = "#8b8578";
 
-      const tourImagesDir = path.join(process.cwd(), "client", "src", "assets", "tour");
-      function loadImage(name: string): string | null {
-        try {
-          const imgPath = path.join(tourImagesDir, name);
-          if (fs.existsSync(imgPath)) {
-            return "data:image/png;base64," + fs.readFileSync(imgPath).toString("base64");
-          }
-        } catch {}
-        return null;
-      }
-
-      const slideData = [
-        {
-          title: "CaskSense",
-          subtitle: "Whisky gemeinsam erleben — strukturiert, persönlich, ohne Vorwissen.",
-          badge: "Rundgang",
-          features: [] as string[],
-          image: "slide-cover.png",
-        },
-        {
-          title: "Tasting-Sessions",
-          subtitle: "Erstelle strukturierte Tastings, lade Gäste per QR-Code ein und bewerte gemeinsam.",
-          badge: "Kernfunktion",
-          image: "slide-tasting.png",
-          features: [
-            "Sessions erstellen — Name, Datum, Line-up — in Sekunden startklar",
-            "QR-Code Einladungen — Scannen und sofort dabei",
-            "Strukturierte Bewertung — Nase, Geschmack, Abgang, Balance",
-            "Live-Diskussion — Chat in Echtzeit während des Tastings",
-          ],
-        },
-        {
-          title: "Blind Tasting & Enthüllung",
-          subtitle: "Whiskys ohne Vorurteile verkosten. Der Gastgeber steuert die Enthüllung.",
-          badge: "Highlight",
-          image: "slide-blind.png",
-          features: [
-            "Blind-Modus — Etiketten ausblenden, fair bewerten",
-            "Schrittweise Enthüllung — Gastgeber enthüllt nach und nach mit Diagrammen",
-            "ABV & Alter raten — Zusätzliche Herausforderung für erfahrene Gaumen",
-            "Cover-Bild Enthüllung — Überraschungsmoment mit Session-Foto",
-          ],
-        },
-        {
-          title: "KI-Import & Whisky-Verwaltung",
-          subtitle: "Flaschenfoto, Excel oder Text — die KI erkennt Whiskys und übernimmt die Dateneingabe.",
-          badge: "KI-gestützt",
-          image: "slide-ai.png",
-          features: [
-            "Foto-Erkennung — GPT-4o liest Etiketten und identifiziert Flaschen",
-            "Excel/CSV Import — Spalten werden automatisch zugeordnet",
-            "Benchmark-Analyse — Bewertungen hochladen, KI extrahiert Daten",
-            "Whiskybase-Import — Sammlung per CSV importieren",
-          ],
-        },
-        {
-          title: "Verkostungsbrett & Präsentation",
-          subtitle: "Das visuelle Herzstück: alle Whiskys im Überblick, mit Fotos und Nummern.",
-          badge: "Visuell",
-          image: "slide-flightboard.png",
-          features: [
-            "Verkostungsbrett — Alle Whiskys auf einen Blick, nummeriert und sortiert",
-            "Flaschenfotos — Bilder hochladen und verwalten",
-            "PDF Tasting-Menü — Professionelles Menü als PDF exportieren",
-            "Tasting-Notiz Generator — Interaktives Tool mit vordefinierten Aromen",
-          ],
-        },
-        {
-          title: "Persönliche Analysen",
-          subtitle: "Radar-Charts, Flavor Wheels und Geschmacksentwicklung — Muster im eigenen Gaumen entdecken.",
-          badge: "Deine Daten",
-          image: "slide-analytics.png",
-          features: [
-            "Geschmacksprofil — Radar-Diagramm: Region, Fass, Torfgehalt",
-            "Aromenrad — Sunburst-Diagramm mit 8 Aromen-Kategorien",
-            "Whisky-Tagebuch — Notizen, Fotos, Stimmung — persönliche Bibliothek",
-            "37 Abzeichen — Von der ersten Bewertung bis zum 1.000sten Tasting",
-            "Direktvergleich — 2–3 Whiskys nebeneinander vergleichen",
-            "Empfehlungen — Personalisierte Vorschläge nach Profil",
-          ],
-        },
-        {
-          title: "Gemeinschaft & Austausch",
-          subtitle: "Freunde finden, Aktivitäten verfolgen, Rankings vergleichen.",
-          badge: "Gemeinsam",
-          image: "slide-community.png",
-          features: [
-            "Freunde — Whisky-Freunde hinzufügen und deren Einträge sehen",
-            "Aktivitäts-Feed — Timeline der Journal-Einträge deiner Freunde",
-            "Rangliste — Wertungen: aktivster Bewerter, detaillierteste Notizen",
-            "Tasting-Kalender — Monatsansicht aller Sessions",
-            "Erinnerungen — E-Mail-Reminder vor dem Tasting",
-          ],
-        },
-        {
-          title: "Wissensdatenbank",
-          subtitle: "Lexikon, Destillerien-Enzyklopädie und interaktive Weltkarte.",
-          badge: "Referenz",
-          image: "slide-knowledge.png",
-          features: [
-            "Whisky-Lexikon — 53 Einträge in 5 Kategorien, zweisprachig",
-            "Destillerien — ~100 Destillerien weltweit mit Geschichte",
-            "Interaktive Karte — Weltkarte mit Destillerie-Pins",
-            "Abfüller-Lexikon — Unabhängige Abfüller mit Details",
-          ],
-        },
-        {
-          title: "Gastgeber-Werkzeuge & Übersicht",
-          subtitle: "Überblick für Gastgeber: Statistiken, Top-Whiskys, Briefing-Notizen.",
-          badge: "Für Gastgeber",
-          image: "slide-host.png",
-          features: [
-            "Gastgeber-Übersicht — Tastings, Teilnehmer, Bewertungen im Blick",
-            "Tasting-Zusammenfassung — Rückblick: Top-Whisky, Kontroversen",
-            "Gastgeber-Delegation — Rolle an anderen Teilnehmer übertragen",
-            "Ambiente — Kaminfeuer, Regen, Nacht — dezente Klänge",
-          ],
-        },
-        {
-          title: "Geführtes Tasting & Präsentationsmodus",
-          subtitle: "Live-Moderation: geteilter Bildschirm für den Gastgeber, Vollbild für Teilnehmer.",
-          badge: "Präsentation",
-          image: "slide-guided.png",
-          features: [
-            "Geteilter Bildschirm — Steuerung und Präsentation",
-            "Vollbild Teilnehmer — Große, klare Darstellung",
-            "Schrittweise Enthüllung — Nach und nach enthüllen mit Animationen",
-            "Automatische Aktivierung — Startet mit der Enthüllungsphase",
-          ],
-        },
-        {
-          title: "Mobile & Mehrsprachig",
-          subtitle: "Installierbar, offline nutzbar, komplett zweisprachig.",
-          badge: "Überall",
-          image: "slide-mobile.png",
-          features: [
-            "Progressive Web App — Auf dem Home-Screen installieren",
-            "Offline-Modus — Network-First Caching",
-            "Deutsch & Englisch — Vollständig zweisprachig, jederzeit umschaltbar",
-            "Dark & Light — Warmes Whisky-Dunkel oder helles Creme-Amber",
-          ],
-        },
-        {
-          title: "Bereit für das nächste Tasting?",
-          subtitle: "Starte eine Session, lade Freunde ein und entdecke, was dein Gaumen wirklich wahrnimmt.\n\nKostenlos — ohne Konto.\ncasksense.replit.app",
-          badge: "",
-          image: "slide-cta.png",
-          features: [] as string[],
-        },
-      ];
-
-      for (let i = 0; i < slideData.length; i++) {
-        const d = slideData[i];
+      for (let i = 0; i < tourSlideData.length; i++) {
+        const d = tourSlideData[i];
         const isCover = i === 0;
-        const isCta = i === slideData.length - 1;
+        const isCta = i === tourSlideData.length - 1;
 
         if (i > 0) doc.addPage();
 
         doc.setFillColor(NAVY);
         doc.rect(0, 0, W, H, "F");
 
-        const imgData = d.image ? loadImage(d.image) : null;
+        const imgData = d.image ? await loadCompressedImage(d.image, 600) : null;
 
         if (imgData && (isCover || isCta)) {
-          try { doc.addImage(imgData, "PNG", 0, 0, W, H); } catch {}
+          try { doc.addImage(imgData, "JPEG", 0, 0, W, H); } catch {}
           doc.setFillColor(15, 23, 42);
           doc.setGState(new (doc as any).GState({ opacity: 0.65 }));
           doc.rect(0, 0, W, H, "F");
           doc.setGState(new (doc as any).GState({ opacity: 1 }));
         } else if (imgData && !isCover && !isCta) {
-          try { doc.addImage(imgData, "PNG", 160, 15, 125, 70); } catch {}
+          try { doc.addImage(imgData, "JPEG", 160, 15, 125, 70); } catch {}
         }
 
         doc.setFillColor(AMBER);
@@ -7599,11 +7529,13 @@ Important rules:
         doc.text("CaskSense", 10, H - 5);
 
         if (!isCover) {
-          doc.text(`${i} / ${slideData.length - 1}`, W - 10, H - 5, { align: "right" });
+          doc.text(`${i} / ${tourSlideData.length - 1}`, W - 10, H - 5, { align: "right" });
         }
       }
 
       const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
+      fs.writeFileSync(cachedPath, pdfBuffer);
+      fs.writeFileSync(versionPath, String(tourCacheVersion));
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="CaskSense-Rundgang.pdf"`);
       res.send(pdfBuffer);
