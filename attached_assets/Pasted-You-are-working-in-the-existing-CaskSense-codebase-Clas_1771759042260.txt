@@ -1,0 +1,232 @@
+You are working in the existing CaskSense codebase (Classic variant only). 
+Lounge is disabled. 
+We are implementing a “Whisky Profile / Personality” feature within the current structure.
+
+========================
+PART 0 – FIT CHECK FIRST (MANDATORY)
+========================
+
+Before implementing anything:
+
+1) Inspect current navigation and routes.
+2) Identify:
+   - /flavor-profile
+   - /benchmark
+   - /my-whiskies
+   - ratings storage
+   - platform comparison logic
+   - friends system
+3) Propose where the new feature integrates best (preferred: new tab inside /flavor-profile).
+4) Confirm which data fields exist:
+   - rating values
+   - whisky metadata (abv, cask, region, peat, etc.)
+   - platform aggregated ratings
+5) Summarize your integration plan in bullet points BEFORE coding.
+
+Do not proceed until the plan is summarized.
+
+========================
+PART 1 – METHODICAL SAFEGUARDS (NON-NEGOTIABLE)
+========================
+
+1) NO TYPOLOGIES  
+Do NOT create personality types or categories.  
+No labels like “Explorer” or “Connoisseur”.  
+Model must be dimensional only.
+
+2) DIMENSIONAL & DYNAMIC  
+Taste is a multidimensional, continuous preference structure.  
+Profiles evolve with new data.
+
+3) BEHAVIOR-BASED  
+All insights must derive from observed behavior (ratings, selections).  
+No psychological traits may be inferred.
+
+4) NO PSYCHOLOGICAL ATTRIBUTIONS  
+Never say “You are strict.”  
+Instead say:  
+“Your rating style shows a stable positive deviation from the platform median.”
+
+5) DESCRIPTIVE, NOT NORMATIVE  
+No better/worse.  
+No percentile ranks.  
+No leaderboard framing in profile context.
+
+6) IPSATIVE FIRST  
+Default view must show only self-based analysis.  
+Comparison must be activated manually.
+
+7) FULL TRANSPARENCY  
+All comparisons must show:
+- Sample size (N)
+- Median basis
+- Dispersion (IQR if possible)
+- Stability level
+Include “Details anzeigen” collapsible panels.
+
+8) ROBUST STATISTICS  
+Use median for platform baseline.  
+Use IQR if available.  
+Avoid mean where sensitive to outliers.
+
+9) CONFIDENCE / STABILITY REQUIRED  
+All dimensions must show stability based on:
+- number of observations
+- variance
+- data coverage
+
+10) PLATFORM BASIS = ALL USERS  
+Include all active profiles.  
+Display sample size clearly.
+
+11) NO OVERINTERPRETATION  
+Describe deviations structurally, never psychologically.
+
+12) DYNAMIC SYSTEM  
+Platform metrics and user profiles evolve over time.  
+Make this explicit in method page.
+
+If any feature risks violating these rules, pause and ask for clarification.
+
+========================
+PART 2 – FEATURE IMPLEMENTATION (CLASSIC)
+========================
+
+Placement:
+Extend /flavor-profile with a new tab:
+“Profil” (Whisky-Profil)
+
+Inside this tab:
+
+-------------------
+SECTION A – DATA BASIS SWITCH
+-------------------
+User can select:
+- All ratings
+- My Whiskies only
+
+(Implement at least these two.)
+
+-------------------
+SECTION B – ANALYTICAL VIEW
+-------------------
+
+1) Taste Structure
+   - existing radar
+   - dimensional weights
+
+2) Rating Style
+   - mean_user_score
+   - std_user_score
+   - scale_range_usage
+   - systematic deviation vs platform median
+
+Systematic deviation:
+avg_delta = mean(UserScore - PlatformMedian)
+Show:
+- avg_delta
+- N whiskies compared
+- N platform ratings
+- stability indicator
+
+Interpretation (method style only):
+“Your rating style shows a stable positive/negative deviation from the platform median.”
+
+3) Whisky-Level Comparison (optional toggle)
+Checkbox:
+[ ] Vergleich anzeigen
+
+If enabled:
+For each whisky with platform ratings:
+- user_score
+- platform_median
+- delta (absolute)
+- IQR (if available)
+- platform_rating_count
+
+No percentiles.
+No ranking.
+
+4) Confidence Indicators
+Per dimension + overall.
+Levels:
+- Vorläufig
+- Tendenz
+- Stabil
+Optionally numeric stability %.
+
+-------------------
+SECTION C – COMPARISON MODES
+-------------------
+When comparison enabled:
+User can choose:
+- Friends (based only on friend network)
+- Platform (all users)
+
+Friends comparison:
+Aggregate median of friends’ ratings.
+
+Platform comparison:
+All active profiles.
+Always show N.
+
+No exposure of individual data.
+
+-------------------
+SECTION D – DETAILS PANEL
+-------------------
+Under each interpretative statement:
+“Details anzeigen”
+
+Show:
+- formula
+- N
+- median explanation
+- dispersion metric
+- stability logic
+
+Keep concise.
+
+========================
+PART 3 – METHOD PAGE
+========================
+
+Create public page:
+“How your profile is built”
+
+Structure:
+
+Section 1 – For Enthusiasts (plain language)
+Explain:
+- no types
+- behavior-based
+- dynamic
+- descriptive comparison
+- transparency
+
+Section 2 – For Experts
+Explain:
+- dimensional modeling
+- revealed preferences
+- median vs mean
+- IQR
+- systematic deviation formula
+- stability logic
+- platform basis includes all users
+- no normative ranking
+
+Add link from landing page and from profile view.
+
+========================
+PART 4 – OUTPUT REQUIRED BEFORE CODING
+========================
+
+Answer these clearly:
+
+1) Where exactly will this feature live (route + UI structure)?
+2) Which existing data models will be reused?
+3) How will platform medians be calculated?
+4) How will stability be computed (MVP logic)?
+5) What is included now vs deferred?
+
+Only after answering, begin implementation.
