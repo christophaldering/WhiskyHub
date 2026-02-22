@@ -415,10 +415,24 @@ export async function registerRoutes(
         if (existing.pin) {
           return res.status(409).json({ message: "This name is already taken by a registered user. Please sign in or choose a different name." });
         }
-        return res.json({ id: existing.id, name: existing.name, role: existing.role, canAccessWhiskyDb: existing.canAccessWhiskyDb || false, guest: true });
+        return res.json({ id: existing.id, name: existing.name, role: existing.role, canAccessWhiskyDb: existing.canAccessWhiskyDb || false, experienceLevel: existing.experienceLevel || "guest", guest: true });
       }
-      const participant = await storage.createParticipant({ name: name.trim() });
-      res.status(201).json({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb || false, guest: true });
+      const participant = await storage.createParticipant({ name: name.trim(), experienceLevel: "guest" });
+      res.status(201).json({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb || false, experienceLevel: "guest", guest: true });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/participants/:id/experience-level", async (req, res) => {
+    try {
+      const { level } = req.body;
+      if (!level || !["guest", "curious", "enthusiast"].includes(level)) {
+        return res.status(400).json({ message: "Invalid level. Must be guest, curious, or enthusiast." });
+      }
+      const updated = await storage.updateParticipant(req.params.id, { experienceLevel: level });
+      if (!updated) return res.status(404).json({ message: "Not found" });
+      res.json(updated);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
     }

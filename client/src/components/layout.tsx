@@ -266,6 +266,17 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
       </nav>
 
       <div className="p-4 border-t border-border/40 space-y-3">
+        {currentParticipant && currentParticipant.experienceLevel && currentParticipant.experienceLevel !== "enthusiast" && (
+          <Link href="/profile">
+            <div className="bg-gradient-to-r from-amber-500/10 to-primary/5 border border-amber-500/20 rounded-lg p-3 cursor-pointer hover:border-amber-500/40 transition-colors" data-testid="nav-upgrade-banner">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span className="text-xs font-serif font-bold text-primary">{t('nav.upgradeTitle')}</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-tight">{t('nav.upgradeDesc')}</p>
+            </div>
+          </Link>
+        )}
         {currentParticipant && (
           <div className="text-xs text-muted-foreground px-3 mb-1">
             Signed in as <span className="font-semibold text-foreground">{currentParticipant.name}</span>
@@ -325,6 +336,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const isHost = currentParticipant && allTastings.some((t: any) => t.hostId === currentParticipant.id);
   const isAdmin = currentParticipant?.role === "admin";
+  const expLevel = currentParticipant?.experienceLevel || "enthusiast";
+  const isCurious = expLevel === "curious" || expLevel === "enthusiast";
+  const isEnthusiast = expLevel === "enthusiast";
 
   const navGroups: NavGroup[] = useMemo(() => [
     {
@@ -334,24 +348,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/app", icon: Home, label: t('nav.lobby') },
         { href: "/news", icon: Newspaper, label: t('nav.news') },
         { href: "/sessions", icon: Wine, label: t('nav.sessions') },
-        { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
+        ...(isCurious ? [{ href: "/calendar", icon: Calendar, label: t('nav.calendar') }] : []),
       ],
     },
-    {
+    ...(isCurious ? [{
       label: t('navGroup.myWhisky'),
       items: [
         { href: "/profile", icon: User, label: t('profile.title') },
         { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
         { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
-        { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
-        { href: "/flavor-wheel", icon: CircleDot, label: t('nav.flavorWheel') },
-        { href: "/badges", icon: Trophy, label: t('nav.badges') },
+        ...(isEnthusiast ? [
+          { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
+          { href: "/flavor-wheel", icon: CircleDot, label: t('nav.flavorWheel') },
+          { href: "/badges", icon: Trophy, label: t('nav.badges') },
+        ] : []),
         { href: "/wishlist", icon: Star, label: t('nav.wishlist') },
-        { href: "/collection", icon: Archive, label: t('nav.collection') },
-        { href: "/reminders", icon: Bell, label: t('nav.reminders') },
+        ...(isEnthusiast ? [
+          { href: "/collection", icon: Archive, label: t('nav.collection') },
+          { href: "/reminders", icon: Bell, label: t('nav.reminders') },
+        ] : []),
       ],
-    },
-    {
+    }] : []),
+    ...(isEnthusiast ? [{
       label: t('navGroup.tools'),
       items: [
         { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
@@ -361,8 +379,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
         { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
       ],
-    },
-    {
+    }] : []),
+    ...(isEnthusiast ? [{
       label: t('navGroup.community'),
       items: [
         { href: "/community-rankings", icon: BarChart3, label: t('nav.communityRankings') },
@@ -371,8 +389,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/activity", icon: Rss, label: t('nav.activity') },
         { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
       ],
-    },
-    {
+    }] : []),
+    ...(isEnthusiast ? [{
       label: t('navGroup.whiskyKnowledge'),
       items: [
         { href: "/lexicon", icon: Library, label: t('nav.lexicon') },
@@ -380,14 +398,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
         { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
       ],
-    },
+    }] : []),
     {
       label: t('navGroup.aboutPlatform'),
       items: [
         { href: "/about", icon: Info, label: t('nav.about') },
-        { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
-        { href: "/features", icon: LayoutGrid, label: t('nav.features') },
-        { href: "/donate", icon: Heart, label: t('nav.donate') },
+        ...(isEnthusiast ? [
+          { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
+          { href: "/features", icon: LayoutGrid, label: t('nav.features') },
+          { href: "/donate", icon: Heart, label: t('nav.donate') },
+        ] : []),
         { href: "/", icon: Globe, label: t('nav.landingPage') },
       ],
     },
@@ -412,7 +432,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ],
       },
     ] : []),
-  ], [t, isHost, isAdmin, currentParticipant?.canAccessWhiskyDb, currentParticipant?.role]);
+  ], [t, isHost, isAdmin, isCurious, isEnthusiast, currentParticipant?.canAccessWhiskyDb, currentParticipant?.role]);
 
   const desktopNavRef = useRef<HTMLElement>(null);
   const mobileNavRef = useRef<HTMLElement>(null);

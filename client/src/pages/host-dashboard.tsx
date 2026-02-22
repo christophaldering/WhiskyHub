@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { hostDashboardApi } from "@/lib/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { GlassWater, Users, Wine, Star, Calendar, Trophy, LayoutDashboard } from "lucide-react";
+import { GlassWater, Users, Wine, Star, Calendar, Trophy, LayoutDashboard, Eye } from "lucide-react";
+import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 
 interface HostSummary {
@@ -253,6 +254,16 @@ export default function HostDashboard() {
                         <Users className="w-3.5 h-3.5" />
                         <span data-testid={`recent-tasting-participants-${tasting.id}`}>{tasting.participantCount}</span>
                       </div>
+                      {(tasting.status === "open" || tasting.status === "closed") && (
+                        <Link
+                          href={`/join/${tasting.id}?preview=true`}
+                          className="flex items-center gap-1 text-[10px] text-amber-600 hover:text-amber-500 transition-colors shrink-0"
+                          data-testid={`preview-guest-${tasting.id}`}
+                        >
+                          <Eye className="w-3 h-3" />
+                          <span>{t("hostDashboard.previewGuest")}</span>
+                        </Link>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -24,8 +24,8 @@ interface WishlistTransfer {
 }
 
 interface AppState extends AmbientState {
-  currentParticipant: { id: string; name: string; role?: string; canAccessWhiskyDb?: boolean } | null;
-  setParticipant: (participant: { id: string; name: string; role?: string; canAccessWhiskyDb?: boolean } | null) => void;
+  currentParticipant: { id: string; name: string; role?: string; canAccessWhiskyDb?: boolean; experienceLevel?: string } | null;
+  setParticipant: (participant: { id: string; name: string; role?: string; canAccessWhiskyDb?: boolean; experienceLevel?: string } | null) => void;
   language: string;
   setLanguage: (lang: string) => void;
   theme: Theme;

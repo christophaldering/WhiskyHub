@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { platformStatsApi, communityApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { LoginDialog } from "@/components/login-dialog";
 import { useAppStore } from "@/lib/store";
 import heroImage from "@/assets/images/hero-whisky.png";
@@ -48,6 +49,7 @@ export default function Landing() {
   const [, navigate] = useLocation();
   const { currentParticipant } = useAppStore();
   const [loginOpen, setLoginOpen] = useState(false);
+  const [tastingCode, setTastingCode] = useState("");
 
   const { data: stats } = useQuery({
     queryKey: ["platform-stats"],
@@ -177,6 +179,30 @@ export default function Landing() {
                   <Play className="w-4 h-4" />
                   {t("landing.hero.tourCta")}
                 </Button>
+              </div>
+              <div className="pt-4 border-t border-border/20">
+                <p className="text-sm font-serif font-semibold text-muted-foreground mb-2">{t("landing.quickJoin.label")}</p>
+                <div className="flex gap-2">
+                  <Input
+                    value={tastingCode}
+                    onChange={(e) => setTastingCode(e.target.value.toUpperCase())}
+                    placeholder={t("landing.quickJoin.placeholder")}
+                    className="font-mono text-sm tracking-widest h-10 uppercase"
+                    onKeyDown={(e) => e.key === "Enter" && tastingCode.trim() && navigate(`/join/${tastingCode.trim()}`)}
+                    data-testid="input-quick-join-code"
+                  />
+                  <Button
+                    size="default"
+                    onClick={() => tastingCode.trim() && navigate(`/join/${tastingCode.trim()}`)}
+                    disabled={!tastingCode.trim()}
+                    className="font-serif gap-1.5 px-4 shrink-0"
+                    data-testid="button-quick-join-go"
+                  >
+                    {t("landing.quickJoin.go")}
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground/40 mt-1.5">{t("landing.quickJoin.hint")}</p>
               </div>
               <p className="text-sm text-muted-foreground/50 flex items-center gap-1.5">
                 <ChevronDown className="w-3.5 h-3.5 animate-bounce" />

@@ -215,6 +215,14 @@ export function InvitePanel({ tastingId }: InvitePanelProps) {
           )}
         </div>
 
+        <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3" data-testid="guest-mode-hint">
+          <Users className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-xs text-foreground font-medium">{t("invite.guestModeTitle")}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{t("invite.guestModeDesc")}</p>
+          </div>
+        </div>
+
         {!results ? (
           <div className="space-y-4 mt-2">
             {availableFriends.length > 0 && (
