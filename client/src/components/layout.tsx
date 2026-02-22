@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, ArrowRight, GlassWater, Microscope, X } from "lucide-react";
+import { Home, LogOut, LogIn, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, ArrowRight, GlassWater, Microscope, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
@@ -12,6 +12,7 @@ import { FeedbackButton } from "@/components/feedback-button";
 import { LevelOnboarding } from "@/components/level-onboarding";
 import { useTranslation } from "react-i18next";
 import { useAppStore, LANDING_VERSION } from "@/lib/store";
+import { LoginDialog } from "@/components/login-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { profileApi, tastingApi, notificationApi, participantApi } from "@/lib/api";
 
@@ -105,12 +106,18 @@ function ProfileAvatar({ size = 36, showName = false, showSignOut = false }: { s
   );
 }
 
-function NavItemRow({ item, location, onNavigate }: { item: NavItem; location: string; onNavigate: () => void }) {
+function NavItemRow({ item, location, onNavigate, isPreviewMode, onLoginRequest }: { item: NavItem; location: string; onNavigate: () => void; isPreviewMode?: boolean; onLoginRequest?: () => void }) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const isActive = item.match ? item.match(location) : location === item.href;
 
   const handleClick = (e: React.MouseEvent) => {
+    if (isPreviewMode) {
+      e.preventDefault();
+      e.stopPropagation();
+      onLoginRequest?.();
+      return;
+    }
     if (item.href === "/") {
       e.preventDefault();
       e.stopPropagation();
@@ -129,6 +136,7 @@ function NavItemRow({ item, location, onNavigate }: { item: NavItem; location: s
         data-nav-active={isActive ? "true" : undefined}
         className={cn(
           "flex items-center gap-3 px-3 py-1.5 rounded-sm transition-all duration-300 cursor-pointer group",
+          isPreviewMode && "opacity-60",
           isActive
             ? "bg-secondary text-primary border-l-2 border-primary"
             : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
@@ -147,11 +155,20 @@ function NavItemRow({ item, location, onNavigate }: { item: NavItem; location: s
         data-nav-active={isActive ? "true" : undefined}
         className={cn(
           "flex items-center gap-3 px-3 py-1.5 rounded-sm transition-all duration-300 cursor-pointer group",
+          isPreviewMode && "opacity-60",
           isActive
             ? "bg-secondary text-primary border-l-2 border-primary"
             : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
         )}
-        onClick={onNavigate}
+        onClick={(e) => {
+          if (isPreviewMode) {
+            e.preventDefault();
+            e.stopPropagation();
+            onLoginRequest?.();
+            return;
+          }
+          onNavigate();
+        }}
       >
         <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-primary")} />
         <span className={cn("text-sm font-medium truncate", isActive && "font-semibold")}>{item.label}</span>
@@ -168,7 +185,8 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
   onNavigate: () => void;
 }) {
   const { t } = useTranslation();
-  const { currentParticipant, setParticipant } = useAppStore();
+  const { currentParticipant, setParticipant, previewExperienceLevel, setPreviewExperienceLevel } = useAppStore();
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   const activeGroupIndex = useMemo(() => {
     for (let gi = 0; gi < navGroups.length; gi++) {
@@ -258,7 +276,7 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
                 expanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
               )}>
                 {group.items.map((item) => (
-                  <NavItemRow key={item.href} item={item} location={location} onNavigate={onNavigate} />
+                  <NavItemRow key={item.href} item={item} location={location} onNavigate={onNavigate} isPreviewMode={!currentParticipant} onLoginRequest={() => setShowLoginDialog(true)} />
                 ))}
               </div>
             </div>
@@ -323,6 +341,56 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
               </div>
             </div>
           </div>
+        )}
+        {!currentParticipant && (
+          <div className="space-y-1.5">
+            <div className="space-y-1 px-1">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t('nav.levelSelector.label')}</span>
+              <div className="grid grid-cols-4 gap-1" data-testid="select-preview-level">
+                {([
+                  { id: "guest", icon: User, color: "text-slate-500", activeBg: "bg-slate-100 border-slate-300" },
+                  { id: "explorer", icon: Star, color: "text-amber-500", activeBg: "bg-amber-50 border-amber-300" },
+                  { id: "connoisseur", icon: Sparkles, color: "text-primary", activeBg: "bg-primary/10 border-primary/50" },
+                  { id: "analyst", icon: Brain, color: "text-violet-500", activeBg: "bg-violet-50 border-violet-300" },
+                ] as const).map((lvl) => {
+                  const Icon = lvl.icon;
+                  const isActive = previewExperienceLevel === lvl.id;
+                  return (
+                    <button
+                      key={lvl.id}
+                      type="button"
+                      onClick={() => setPreviewExperienceLevel(lvl.id)}
+                      className={`flex flex-col items-center gap-0.5 p-1.5 rounded-md border text-center transition-all ${
+                        isActive
+                          ? `${lvl.activeBg} ring-1 ring-primary/10`
+                          : "border-transparent hover:border-border/40 hover:bg-secondary/30"
+                      }`}
+                      title={t(`nav.levelSelector.${lvl.id}`)}
+                      data-testid={`button-preview-level-${lvl.id}`}
+                    >
+                      <Icon className={`w-3.5 h-3.5 ${isActive ? lvl.color : "text-muted-foreground/50"}`} />
+                      <span className={`text-[9px] leading-tight ${isActive ? "font-semibold text-foreground" : "text-muted-foreground/60"}`}>
+                        {t(`nav.levelSelector.${lvl.id}`)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+        {!currentParticipant && (
+          <>
+            <LoginDialog open={showLoginDialog} onClose={() => setShowLoginDialog(false)} />
+            <Button
+              onClick={() => setShowLoginDialog(true)}
+              className="w-full gap-2"
+              data-testid="button-sidebar-login"
+            >
+              <LogIn className="w-4 h-4" />
+              {t('nav.login')}
+            </Button>
+          </>
         )}
         <div className="flex items-center gap-2 flex-wrap">
           <LanguageToggle />
