@@ -110,10 +110,11 @@ const resources = {
           avgRating: "Average Score",
         },
         quickJoin: {
-          label: "Got a tasting code?",
-          placeholder: "Enter code...",
+          label: "Invited to a tasting?",
+          sublabel: "Enter your session code and join directly — no account needed.",
+          placeholder: "CODE EINGEBEN...",
           go: "Join",
-          hint: "Enter the code from your host to join a tasting instantly.",
+          hint: "Your host will share the code with you.",
         },
         stats: {
           tastings: "Tastings",
@@ -2351,10 +2352,11 @@ const resources = {
           avgRating: "Durchschnittsnote",
         },
         quickJoin: {
-          label: "Tasting-Code erhalten?",
-          placeholder: "Code eingeben...",
+          label: "Zum Tasting eingeladen?",
+          sublabel: "Gib deinen Session-Code ein und nimm direkt teil — kein Konto nötig.",
+          placeholder: "CODE EINGEBEN...",
           go: "Beitreten",
-          hint: "Gib den Code deines Gastgebers ein, um sofort teilzunehmen.",
+          hint: "Den Code bekommst du von deinem Gastgeber.",
         },
         stats: {
           tastings: "Tastings",

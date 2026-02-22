@@ -170,34 +170,40 @@ export default function Landing() {
               <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-lg">
                 {t("landing.hero.subtitle")}
               </p>
-              <div className="bg-card/60 backdrop-blur-sm rounded-xl border border-border/40 p-4 shadow-sm max-w-md">
-                <p className="text-sm font-serif font-semibold text-primary mb-2.5 flex items-center gap-2">
-                  <LogIn className="w-4 h-4" />
+              <div className="bg-gradient-to-br from-amber-50/80 to-orange-50/60 dark:from-amber-950/20 dark:to-orange-950/10 rounded-xl border-2 border-amber-400/30 p-5 shadow-md max-w-md">
+                <p className="text-base font-serif font-bold text-primary mb-1 flex items-center gap-2">
+                  <Wine className="w-5 h-5 text-amber-600" />
                   {t("landing.quickJoin.label")}
                 </p>
+                <p className="text-sm text-muted-foreground mb-3">{t("landing.quickJoin.sublabel")}</p>
                 <div className="flex gap-2">
                   <Input
                     value={tastingCode}
                     onChange={(e) => setTastingCode(e.target.value.toUpperCase())}
                     placeholder={t("landing.quickJoin.placeholder")}
-                    className="font-mono text-sm tracking-widest h-10 uppercase bg-background/80"
+                    className="font-mono text-base tracking-widest h-11 uppercase bg-white/90 dark:bg-background/80 border-amber-300/50 focus:border-amber-500"
                     onKeyDown={(e) => e.key === "Enter" && tastingCode.trim() && navigate(`/join/${tastingCode.trim()}`)}
                     data-testid="input-quick-join-code"
                   />
                   <Button
-                    size="default"
+                    size="lg"
                     onClick={() => tastingCode.trim() && navigate(`/join/${tastingCode.trim()}`)}
                     disabled={!tastingCode.trim()}
-                    className="font-serif gap-1.5 px-4 shrink-0"
+                    className="font-serif gap-1.5 px-6 shrink-0 h-11"
                     data-testid="button-quick-join-go"
                   >
                     {t("landing.quickJoin.go")}
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-4 h-4" />
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground/50 mt-1.5">{t("landing.quickJoin.hint")}</p>
+                <p className="text-xs text-muted-foreground/60 mt-2">{t("landing.quickJoin.hint")}</p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <div className="flex items-center gap-3 max-w-md">
+                <div className="flex-1 h-px bg-border/40" />
+                <span className="text-xs text-muted-foreground/50 font-serif uppercase tracking-widest">oder</span>
+                <div className="flex-1 h-px bg-border/40" />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Button size="lg" onClick={() => navigate("/app")} className="font-serif text-base gap-2 px-8" data-testid="landing-hero-cta">
                   {t("landing.hero.cta")}
                   <ArrowRight className="w-4 h-4" />
