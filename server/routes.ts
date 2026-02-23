@@ -7950,5 +7950,51 @@ Important rules:
     }
   });
 
+  const supportQuestionTimestamps = new Map<string, number>();
+  app.post("/api/support-question", async (req, res) => {
+    try {
+      const { name, email, question } = req.body;
+      if (!question || typeof question !== "string" || !question.trim()) {
+        return res.status(400).json({ message: "Question is required" });
+      }
+      if (question.length > 5000) {
+        return res.status(400).json({ message: "Question too long (max 5000 characters)" });
+      }
+      if (name && typeof name === "string" && name.length > 200) {
+        return res.status(400).json({ message: "Name too long" });
+      }
+      if (email && typeof email === "string" && email.length > 200) {
+        return res.status(400).json({ message: "Email too long" });
+      }
+      const clientIp = req.ip || "unknown";
+      const lastSubmit = supportQuestionTimestamps.get(clientIp);
+      if (lastSubmit && Date.now() - lastSubmit < 60000) {
+        return res.status(429).json({ message: "Please wait before sending another question" });
+      }
+      supportQuestionTimestamps.set(clientIp, Date.now());
+      const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      const safeName = esc(String(name || "Nicht angegeben"));
+      const safeEmail = esc(String(email || "Nicht angegeben"));
+      const safeQuestion = esc(question.trim()).replace(/\n/g, "<br>");
+      const emailContent = {
+        subject: `[CaskSense Support] Frage von ${safeName}`,
+        html: `<h2>Support-Anfrage</h2>
+          <p><strong>Name:</strong> ${safeName}</p>
+          <p><strong>E-Mail:</strong> ${safeEmail}</p>
+          <p><strong>Frage:</strong></p>
+          <p>${safeQuestion}</p>
+          <hr>
+          <p style="color: #888; font-size: 12px;">Gesendet über CaskSense Hilfe &amp; FAQ</p>`,
+      };
+      sendEmail({ to: ADMIN_NOTIFICATION_EMAIL, ...emailContent }).catch((err) =>
+        console.error("Failed to send support email:", err)
+      );
+      res.json({ success: true });
+    } catch (e: any) {
+      console.error("Support question error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }

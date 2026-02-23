@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "wouter";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { FocusedTasting } from "@/components/focused-tasting";
 import { OverviewRating } from "@/components/overview-rating";
 import { GuidedTasting } from "@/components/guided-tasting";
@@ -1458,6 +1458,38 @@ export default function TastingRoom() {
   const [presenterActive, setPresenterActive] = useState(false);
   const [presenterExited, setPresenterExited] = useState(false);
 
+  const enterFocusMode = useCallback(() => {
+    setFocusMode(true);
+    window.history.pushState({ focusMode: true }, "", window.location.href);
+  }, []);
+
+  const exitFocusMode = useCallback(() => {
+    setFocusMode(false);
+  }, []);
+
+  const enterOverviewMode = useCallback(() => {
+    setOverviewMode(true);
+    window.history.pushState({ overviewMode: true }, "", window.location.href);
+  }, []);
+
+  const exitOverviewMode = useCallback(() => {
+    setOverviewMode(false);
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (focusMode) {
+        setFocusMode(false);
+        e.preventDefault();
+      } else if (overviewMode) {
+        setOverviewMode(false);
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [focusMode, overviewMode]);
+
   useEffect(() => {
     const handler = () => {
       setFocusMode(false);
@@ -1582,7 +1614,7 @@ export default function TastingRoom() {
       <OverviewRating
         tasting={tasting}
         whiskies={whiskyList}
-        onExit={() => setOverviewMode(false)}
+        onExit={exitOverviewMode}
         getBlindState={getBlindState}
       />
     );
@@ -1593,7 +1625,7 @@ export default function TastingRoom() {
       <FocusedTasting
         tasting={tasting}
         whiskies={whiskyList}
-        onExit={() => setFocusMode(false)}
+        onExit={exitFocusMode}
       />
     );
   }
@@ -1805,46 +1837,51 @@ export default function TastingRoom() {
                   {t("guided.enterGuided")}
                 </Button>
               )}
-              <div className="flex items-center bg-secondary/50 rounded-lg p-0.5 border border-border/30">
-                <div className="font-serif text-xs rounded-md h-7 px-3 flex items-center bg-primary text-primary-foreground shadow-sm">
-                  <LayoutList className="w-3.5 h-3.5 mr-1" />
+              <div className="flex items-center bg-secondary/50 rounded-lg p-0.5 border border-border/30 gap-0.5">
+                <div className="font-serif text-xs rounded-md h-7 px-3 flex items-center bg-primary text-primary-foreground shadow-sm whitespace-nowrap">
+                  <LayoutList className="w-3.5 h-3.5 mr-1.5" />
                   {t("flightBoard.title")}
                 </div>
                 {tasting.status === "open" && whiskyList.length > 0 && !tasting.guidedMode && (
                   <>
+                    <div className="w-px h-5 bg-border/50" />
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setOverviewMode(true)}
-                      className="font-serif text-xs rounded-md h-7 text-primary font-semibold hover:bg-primary/10"
+                      onClick={enterOverviewMode}
+                      className="font-serif text-xs rounded-md h-7 text-primary font-semibold hover:bg-primary/10 whitespace-nowrap"
                       data-testid="button-overview-mode"
                     >
-                      <Rows3 className="w-3.5 h-3.5 mr-1" />
+                      <Rows3 className="w-3.5 h-3.5 mr-1.5" />
                       {t("overview.enterOverview", "Alle bewerten")}
                     </Button>
+                    <div className="w-px h-5 bg-border/50" />
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setFocusMode(true)}
-                      className="font-serif text-xs rounded-md h-7 text-primary font-semibold hover:bg-primary/10"
+                      onClick={enterFocusMode}
+                      className="font-serif text-xs rounded-md h-7 text-primary font-semibold hover:bg-primary/10 whitespace-nowrap"
                       data-testid="button-focus-mode"
                     >
-                      <Eye className="w-3.5 h-3.5 mr-1" />
+                      <Eye className="w-3.5 h-3.5 mr-1.5" />
                       {t("focus.enterFocus")}
                     </Button>
                   </>
                 )}
                 {tasting.code && tasting.status === "open" && !tasting.guidedMode && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate(`/naked/${tasting.code}`)}
-                    className="font-serif text-xs rounded-md h-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                    data-testid="button-naked-mode"
-                  >
-                    <Minimize2 className="w-3.5 h-3.5 mr-1" />
-                    Just Tasting
-                  </Button>
+                  <>
+                    <div className="w-px h-5 bg-border/50" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate(`/naked/${tasting.code}`)}
+                      className="font-serif text-xs rounded-md h-7 text-muted-foreground hover:text-primary hover:bg-primary/10 whitespace-nowrap"
+                      data-testid="button-naked-mode"
+                    >
+                      <Minimize2 className="w-3.5 h-3.5 mr-1.5" />
+                      Just Tasting
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
@@ -1882,7 +1919,7 @@ export default function TastingRoom() {
         >
           <Button
             size="lg"
-            onClick={() => setFocusMode(true)}
+            onClick={enterFocusMode}
             className="rounded-full shadow-lg font-serif text-sm gap-2 px-6 h-12 bg-primary hover:bg-primary/90"
             data-testid="button-floating-am-glas"
           >

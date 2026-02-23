@@ -59,6 +59,7 @@ import Research from "@/pages/research";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
 import Account from "@/pages/account";
+import Help from "@/pages/help";
 import { BuildFooter } from "@/components/build-footer";
 import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
@@ -124,6 +125,7 @@ function Router() {
               <Route path="/research" component={Research} />
               <Route path="/account" component={Account} />
               <Route path="/data-export" component={DataExport} />
+              <Route path="/help" component={Help} />
               <Route path="/invite/:token" component={InviteAccept} />
               <Route component={NotFound} />
             </Switch>

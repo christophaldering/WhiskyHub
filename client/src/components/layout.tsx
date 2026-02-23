@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, LogIn, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, ArrowRight, GlassWater, Microscope, X, Settings } from "lucide-react";
+import { Home, LogOut, LogIn, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, ArrowRight, GlassWater, Microscope, X, Settings, HelpCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
@@ -555,6 +555,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     {
       label: t('navGroup.aboutPlatform'),
       items: [
+        { href: "/help", icon: HelpCircle, label: t('nav.help') },
         { href: "/about", icon: Info, label: t('nav.about') },
         ...(atLeast("connoisseur") ? [
           { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
