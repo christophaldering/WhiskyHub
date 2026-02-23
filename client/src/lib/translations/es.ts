@@ -1183,7 +1183,8 @@ const es = {
       radarTitle: "Superposición de Puntuaciones",
       dimension: "Dimensión",
       notesTitle: "Notas de Cata",
-      detailsTitle: "Detalles del Whisky"
+      detailsTitle: "Detalles del Whisky",
+      clickHint: "Haga clic en el + junto a un whisky para añadirlo a su comparación (máx. 3)"
     },
     templates: {
       title: "Plantillas de Notas de Cata",

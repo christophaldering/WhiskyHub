@@ -1183,7 +1183,8 @@ const nl = {
       radarTitle: "Score Overlay",
       dimension: "Dimensie",
       notesTitle: "Proefnotities",
-      detailsTitle: "Whiskydetails"
+      detailsTitle: "Whiskydetails",
+      clickHint: "Klik op het + naast een whisky om deze toe te voegen aan uw vergelijking (max 3)"
     },
     templates: {
       title: "Proefnotitie Sjablonen",

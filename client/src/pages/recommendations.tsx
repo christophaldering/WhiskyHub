@@ -1,9 +1,10 @@
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { flavorProfileApi, communityApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
-import { motion } from "framer-motion";
-import { Sparkles, ExternalLink, Users } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, ExternalLink, Users, Info, ChevronDown } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
 
 interface Whisky {
@@ -26,13 +27,21 @@ interface CommunityScore {
   totalRaters: number;
 }
 
+interface FactorWeights {
+  region: number;
+  cask: number;
+  peat: number;
+  community: number;
+}
+
 function computeRecommendations(
   ratedWhiskies: Array<{ whisky: Whisky; rating: { overall: number } }>,
   allWhiskies: Whisky[],
   regionBreakdown: Record<string, { count: number; avgScore: number }>,
   caskBreakdown: Record<string, { count: number; avgScore: number }>,
   peatBreakdown: Record<string, { count: number; avgScore: number }>,
-  communityScores?: CommunityScore[]
+  communityScores?: CommunityScore[],
+  weights: FactorWeights = { region: 0.35, cask: 0.25, peat: 0.25, community: 0.15 }
 ) {
   const ratedIds = new Set(ratedWhiskies.map(r => r.whisky.id));
   const unrated = allWhiskies.filter(w => !ratedIds.has(w.id));
@@ -61,19 +70,19 @@ function computeRecommendations(
   const scored = unrated.map(w => {
     let score = 0;
     let reasons: string[] = [];
-    if (w.region && topRegions.includes(w.region)) {
+    if (weights.region > 0 && w.region && topRegions.includes(w.region)) {
       const regionScore = regionBreakdown[w.region]?.avgScore || 0;
-      score += regionScore * 0.35;
+      score += regionScore * weights.region;
       reasons.push(w.region);
     }
-    if (w.caskInfluence && topCasks.includes(w.caskInfluence)) {
+    if (weights.cask > 0 && w.caskInfluence && topCasks.includes(w.caskInfluence)) {
       const caskScore = caskBreakdown[w.caskInfluence]?.avgScore || 0;
-      score += caskScore * 0.25;
+      score += caskScore * weights.cask;
       reasons.push(w.caskInfluence);
     }
-    if (w.peatLevel && topPeat.includes(w.peatLevel)) {
+    if (weights.peat > 0 && w.peatLevel && topPeat.includes(w.peatLevel)) {
       const peatScore = peatBreakdown[w.peatLevel]?.avgScore || 0;
-      score += peatScore * 0.25;
+      score += peatScore * weights.peat;
       reasons.push(w.peatLevel);
     }
 
@@ -81,8 +90,8 @@ function computeRecommendations(
       ? `wb:${w.whiskybaseId}`
       : `name:${(w.name || "").toLowerCase().trim()}|${(w.distillery || "").toLowerCase().trim()}`;
     const cs = communityMap.get(key);
-    if (cs && cs.totalRaters >= 2) {
-      score += cs.avgOverall * 0.15;
+    if (weights.community > 0 && cs && cs.totalRaters >= 2) {
+      score += cs.avgOverall * weights.community;
       reasons.push(`★ ${cs.avgOverall}`);
     }
 
@@ -92,10 +101,31 @@ function computeRecommendations(
   return scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score).slice(0, 10);
 }
 
+type FactorKey = "region" | "cask" | "peat" | "community";
+
 export default function Recommendations() {
   const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
   const isDE = i18n.language === "de";
+
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [activeFactors, setActiveFactors] = useState<Record<FactorKey, boolean>>({
+    region: true,
+    cask: true,
+    peat: true,
+    community: true,
+  });
+
+  const toggleFactor = (key: FactorKey) => {
+    setActiveFactors(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const weights: FactorWeights = useMemo(() => ({
+    region: activeFactors.region ? 0.35 : 0,
+    cask: activeFactors.cask ? 0.25 : 0,
+    peat: activeFactors.peat ? 0.25 : 0,
+    community: activeFactors.community ? 0.15 : 0,
+  }), [activeFactors]);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["flavor-profile", currentParticipant?.id],
@@ -134,11 +164,19 @@ export default function Recommendations() {
         profile.regionBreakdown || {},
         profile.caskBreakdown || {},
         profile.peatBreakdown || {},
-        communityScores
+        communityScores,
+        weights
       )
     : [];
 
   const hasRatings = (profile?.ratedWhiskies?.length || 0) > 0;
+
+  const filterButtons: { key: FactorKey; labelKey: string }[] = [
+    { key: "region", labelKey: "recommendations.filterRegion" },
+    { key: "cask", labelKey: "recommendations.filterCask" },
+    { key: "peat", labelKey: "recommendations.filterPeat" },
+    { key: "community", labelKey: "recommendations.filterCommunity" },
+  ];
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="recommendations-page">
@@ -149,7 +187,62 @@ export default function Recommendations() {
             {t("recommendations.title")}
           </h1>
         </div>
-        <p className="text-sm text-muted-foreground mb-8">{t("recommendations.subtitle")}</p>
+        <p className="text-sm text-muted-foreground mb-4">{t("recommendations.subtitle")}</p>
+
+        <div className="mb-6">
+          <button
+            onClick={() => setInfoOpen(!infoOpen)}
+            className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            data-testid="button-toggle-info"
+          >
+            <Info className="w-4 h-4" />
+            <span>{t("recommendations.howItWorks")}</span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${infoOpen ? "rotate-180" : ""}`} />
+          </button>
+          <AnimatePresence>
+            {infoOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="mt-3 p-4 rounded-lg bg-muted/50 border border-border/30 text-sm text-muted-foreground space-y-2" data-testid="info-how-it-works">
+                  <p className="font-medium text-foreground/80">{t("recommendations.howItWorksIntro")}</p>
+                  <ul className="space-y-1.5 ml-1">
+                    <li><span className="font-medium text-foreground/70">{t("recommendations.factorRegion")}</span> — {t("recommendations.factorRegionDesc")}</li>
+                    <li><span className="font-medium text-foreground/70">{t("recommendations.factorCask")}</span> — {t("recommendations.factorCaskDesc")}</li>
+                    <li><span className="font-medium text-foreground/70">{t("recommendations.factorPeat")}</span> — {t("recommendations.factorPeatDesc")}</li>
+                    <li><span className="font-medium text-foreground/70">{t("recommendations.factorCommunity")}</span> — {t("recommendations.factorCommunityDesc")}</li>
+                  </ul>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {hasRatings && (
+          <div className="mb-6" data-testid="filter-toggles">
+            <p className="text-xs text-muted-foreground mb-2">{t("recommendations.activeFilters")}</p>
+            <div className="flex flex-wrap gap-2">
+              {filterButtons.map(({ key, labelKey }) => (
+                <button
+                  key={key}
+                  onClick={() => toggleFactor(key)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors font-medium ${
+                    activeFactors[key]
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted/50 text-muted-foreground border-border/50 hover:border-border"
+                  }`}
+                  data-testid={`button-filter-${key}`}
+                >
+                  {t(labelKey)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="space-y-4">

@@ -176,6 +176,12 @@ export default function Comparison() {
                 data-testid="input-compare-search"
               />
 
+              {selectedIds.length === 0 && (
+                <p className="text-xs text-muted-foreground italic mb-3" data-testid="text-click-hint">
+                  {t("comparison.clickHint")}
+                </p>
+              )}
+
               <div className="max-h-48 overflow-y-auto space-y-1 scrollbar-thin">
                 {filteredWhiskies.map((item) => {
                   const isSelected = selectedIds.includes(item.whisky.id);
@@ -187,7 +193,7 @@ export default function Comparison() {
                       disabled={!isSelected && selectedIds.length >= 3}
                       className={cn(
                         "w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors text-sm",
-                        isSelected ? "bg-primary/10 border border-primary/30" : "hover:bg-secondary/50 disabled:opacity-40"
+                        isSelected ? "bg-primary/10 border border-primary/30" : "hover:bg-secondary/50 hover:border-l-2 hover:border-l-primary/50 disabled:opacity-40"
                       )}
                       data-testid={`button-select-whisky-${item.whisky.id}`}
                     >
@@ -307,8 +313,11 @@ export default function Comparison() {
               </motion.div>
             )}
 
-            {selected.length === 1 && (
-              <p className="text-center text-sm text-muted-foreground italic">{t("comparison.selectMore")}</p>
+            {selected.length >= 0 && selected.length < 2 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <GitCompareArrows className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                <p className="text-sm italic">{t("comparison.selectMore")}</p>
+              </div>
             )}
           </div>
         )}

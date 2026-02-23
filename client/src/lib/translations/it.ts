@@ -1183,7 +1183,8 @@ const it = {
       radarTitle: "Sovrapposizione Punteggi",
       dimension: "Dimensione",
       notesTitle: "Note di Degustazione",
-      detailsTitle: "Dettagli del Whisky"
+      detailsTitle: "Dettagli del Whisky",
+      clickHint: "Clicca sul + accanto a un whisky per aggiungerlo al confronto (max 3)"
     },
     templates: {
       title: "Modelli di Note di Degustazione",

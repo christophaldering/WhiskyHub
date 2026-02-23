@@ -495,7 +495,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: t('navGroup.myTastings'),
       items: [
         { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
-        { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
         { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.asHost') },
         { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
         ...(atLeast("connoisseur") ? [
@@ -507,13 +506,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: t('navGroup.myWhiskys'),
       items: [
         { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
-        { href: "/wishlist", icon: Star, label: t('nav.myWhiskyWishlist') },
+        { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
         ...(atLeast("connoisseur") ? [
           { href: "/collection", icon: Archive, label: t('nav.myWhiskyCollection') },
         ] : []),
-        ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
-          { href: "/whisky-database", icon: Database, label: t('nav.myWhiskyDatabase') },
-        ] : []),
+        { href: "/wishlist", icon: Star, label: t('nav.myWhiskyWishlist') },
       ],
     }] : []),
     ...(atLeast("connoisseur") ? [{
@@ -525,6 +522,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
         ...(atLeast("analyst") ? [
           { href: "/benchmark", icon: BookOpen, label: t('nav.benchmark') },
+          ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
+            { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
+          ] : []),
           { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
         ] : []),
       ],

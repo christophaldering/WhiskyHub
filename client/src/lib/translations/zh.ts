@@ -1183,7 +1183,8 @@ const zh = {
       radarTitle: "评分叠加",
       dimension: "维度",
       notesTitle: "品鉴笔记",
-      detailsTitle: "威士忌详情"
+      detailsTitle: "威士忌详情",
+      clickHint: "点击威士忌旁边的 + 将其添加到比较中（最多 3 个）"
     },
     templates: {
       title: "品鉴笔记模板",

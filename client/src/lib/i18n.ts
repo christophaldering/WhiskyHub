@@ -2031,7 +2031,22 @@ const resources = {
         loginRequired: "Please sign in to see recommendations.",
         empty: "Rate some whiskies first to receive personalized recommendations.",
         noMatches: "No matching recommendations found yet. Try more tastings to expand your profile.",
-        basedOn: "Recommendations are based on your preferred regions, cask types, and peat levels."
+        basedOn: "Recommendations are based on your preferred regions, cask types, and peat levels.",
+        howItWorks: "How recommendations work",
+        howItWorksIntro: "Your recommendations are calculated based on:",
+        factorRegion: "Region preference (35%)",
+        factorRegionDesc: "Whiskies from your highest-rated regions.",
+        factorCask: "Cask type affinity (25%)",
+        factorCaskDesc: "Whiskies aged in your preferred cask types.",
+        factorPeat: "Peat level preference (25%)",
+        factorPeatDesc: "Matching your peated vs. unpeated tendency.",
+        factorCommunity: "Community ratings (15%)",
+        factorCommunityDesc: "Highly rated by other CaskSense users.",
+        filterRegion: "Region",
+        filterCask: "Cask",
+        filterPeat: "Peat",
+        filterCommunity: "Community",
+        activeFilters: "Active factors"
       },
       comparison: {
         title: "Side-by-Side Comparison",
@@ -2044,11 +2059,12 @@ const resources = {
         radarTitle: "Score Overlay",
         dimension: "Dimension",
         notesTitle: "Tasting Notes",
-        detailsTitle: "Whisky Details"
+        detailsTitle: "Whisky Details",
+        clickHint: "Click the + next to a whisky to add it to your comparison (max 3)"
       },
       templates: {
         title: "Tasting Note Templates",
-        subtitle: "Pre-built vocabulary templates for different whisky styles to guide your tasting notes."
+        subtitle: "Structured vocabulary for different whisky styles — use as a reference during tastings. Click the copy button next to any section to copy the terms to your clipboard, then paste them into your tasting notes as a starting point."
       },
       activityFeed: {
         title: "Friend Activity",
@@ -2161,7 +2177,7 @@ const resources = {
       },
       pairings: {
         title: "Smart Pairing Suggestions",
-        subtitle: "Discover whiskies that complement your tasting lineup and fill gaps in your flight.",
+        subtitle: "This tool analyzes your tasting lineup — which regions, cask types, and peat levels are already covered — and suggests whiskies that would complement or fill gaps in your flight.",
         loginRequired: "Please sign in to view pairing suggestions.",
         selectTasting: "Select Tasting",
         selectPlaceholder: "Choose a tasting session...",
@@ -2173,7 +2189,7 @@ const resources = {
         peatLevels: "Peat Levels",
         suggestions: "Suggested Whiskies",
         reason: "Why",
-        empty: "No pairing suggestions available for this tasting.",
+        empty: "Your lineup is already well-balanced, or no matching whiskies were found in the database. Try adding whiskies with different characteristics to your tasting.",
         disclaimer: "Suggestions are based on the diversity of your current lineup."
       },
       leaderboard: {
@@ -4746,7 +4762,22 @@ const resources = {
         loginRequired: "Bitte melden Sie sich an, um Empfehlungen zu sehen.",
         empty: "Bewerten Sie zuerst einige Whiskys, um personalisierte Empfehlungen zu erhalten.",
         noMatches: "Noch keine passenden Empfehlungen gefunden. Probieren Sie mehr Tastings, um Ihr Profil zu erweitern.",
-        basedOn: "Empfehlungen basieren auf Ihren bevorzugten Regionen, Fasstypen und Torfstufen."
+        basedOn: "Empfehlungen basieren auf Ihren bevorzugten Regionen, Fasstypen und Torfstufen.",
+        howItWorks: "Wie Empfehlungen funktionieren",
+        howItWorksIntro: "Deine Empfehlungen werden berechnet auf Basis von:",
+        factorRegion: "Regionspräferenz (35%)",
+        factorRegionDesc: "Whiskys aus deinen am höchsten bewerteten Regionen.",
+        factorCask: "Fasstyp-Affinität (25%)",
+        factorCaskDesc: "Whiskys, die in deinen bevorzugten Fasstypen gereift sind.",
+        factorPeat: "Torfstufe (25%)",
+        factorPeatDesc: "Passend zu deiner Vorliebe für getorft vs. ungetorft.",
+        factorCommunity: "Community-Bewertungen (15%)",
+        factorCommunityDesc: "Hoch bewertet von anderen CaskSense-Nutzern.",
+        filterRegion: "Region",
+        filterCask: "Fass",
+        filterPeat: "Torf",
+        filterCommunity: "Community",
+        activeFilters: "Aktive Faktoren"
       },
       comparison: {
         title: "Seite-an-Seite-Vergleich",
@@ -4759,11 +4790,12 @@ const resources = {
         radarTitle: "Bewertungsüberlagerung",
         dimension: "Dimension",
         notesTitle: "Verkostungsnotizen",
-        detailsTitle: "Whisky-Details"
+        detailsTitle: "Whisky-Details",
+        clickHint: "Klicken Sie auf das + neben einem Whisky, um ihn zum Vergleich hinzuzufügen (max. 3)"
       },
       templates: {
         title: "Verkostungsnotiz-Vorlagen",
-        subtitle: "Vorgefertigte Vokabelvorlagen für verschiedene Whisky-Stile als Leitfaden für Ihre Verkostungsnotizen."
+        subtitle: "Strukturiertes Vokabular für verschiedene Whisky-Stile — nutzen Sie es als Referenz bei Verkostungen. Klicken Sie auf den Kopier-Button neben einem Abschnitt, um die Begriffe in die Zwischenablage zu kopieren und als Ausgangspunkt in Ihre Verkostungsnotizen einzufügen."
       },
       activityFeed: {
         title: "Freunde-Aktivität",
@@ -4876,7 +4908,7 @@ const resources = {
       },
       pairings: {
         title: "Smarte Pairing-Vorschläge",
-        subtitle: "Entdecken Sie Whiskys, die Ihr Tasting-Lineup ergänzen und Lücken im Flight füllen.",
+        subtitle: "Dieses Tool analysiert Ihr Tasting-Lineup — welche Regionen, Fasstypen und Torfstufen bereits abgedeckt sind — und schlägt Whiskys vor, die Ihren Flight ergänzen oder Lücken füllen.",
         loginRequired: "Bitte melden Sie sich an, um Pairing-Vorschläge zu sehen.",
         selectTasting: "Tasting auswählen",
         selectPlaceholder: "Wählen Sie eine Verkostung...",
@@ -4888,7 +4920,7 @@ const resources = {
         peatLevels: "Torfstufen",
         suggestions: "Vorgeschlagene Whiskys",
         reason: "Warum",
-        empty: "Keine Pairing-Vorschläge für dieses Tasting verfügbar.",
+        empty: "Ihr Lineup ist bereits ausgewogen, oder es wurden keine passenden Whiskys in der Datenbank gefunden. Versuchen Sie, Whiskys mit anderen Eigenschaften zu Ihrem Tasting hinzuzufügen.",
         disclaimer: "Vorschläge basieren auf der Vielfalt Ihres aktuellen Lineups."
       },
       leaderboard: {

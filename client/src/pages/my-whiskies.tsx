@@ -47,8 +47,27 @@ export default function MyWhiskies() {
   const { data: journalEntries } = useQuery({
     queryKey: ["journal", currentParticipant?.id],
     queryFn: () => journalApi.getAll(currentParticipant!.id),
-    enabled: !!currentParticipant && (showImported || showWhiskybase),
+    enabled: !!currentParticipant,
   });
+
+  const sourceCounts = useMemo(() => {
+    let casksense = 0;
+    let imported = 0;
+    let whiskybase = 0;
+    if (data?.tastings) {
+      for (const tasting of data.tastings) {
+        casksense += tasting.whiskies.length;
+      }
+    }
+    if (journalEntries) {
+      for (const je of journalEntries) {
+        const src = je.source || "casksense";
+        if (src === "imported") imported++;
+        if (src === "whiskybase") whiskybase++;
+      }
+    }
+    return { casksense, imported, whiskybase };
+  }, [data, journalEntries]);
 
   const allWhiskies: WhiskyEntry[] = useMemo(() => {
     const entries: WhiskyEntry[] = [];
@@ -264,24 +283,27 @@ export default function MyWhiskies() {
           <Filter className="w-3 h-3 text-muted-foreground" />
           <span className="text-muted-foreground">{t("myWhiskies.sourceFilter")}:</span>
           <button
-            className="px-2 py-0.5 rounded-full border bg-primary/10 border-primary/30 text-primary font-medium cursor-default text-[10px]"
+            className="px-2 py-0.5 rounded-full border bg-primary/10 border-primary/30 text-primary font-medium cursor-default text-[10px] inline-flex items-center gap-1"
             data-testid="filter-casksense"
           >
             {t("myWhiskies.sourceCaskSense")}
+            <span className="bg-primary/20 text-primary rounded-full px-1.5 min-w-[18px] text-center">{sourceCounts.casksense}</span>
           </button>
           <button
             onClick={() => setShowImported(!showImported)}
-            className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors ${showImported ? "bg-amber-500/10 border-amber-500/30 text-amber-600 font-medium" : "border-border/40 text-muted-foreground hover:border-amber-500/20"}`}
+            className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors inline-flex items-center gap-1 ${showImported ? "bg-amber-500/10 border-amber-500/30 text-amber-600 font-medium" : "border-border/40 text-muted-foreground hover:border-amber-500/20"}`}
             data-testid="filter-imported"
           >
             {t("myWhiskies.sourceImported")}
+            <span className={`rounded-full px-1.5 min-w-[18px] text-center ${showImported ? "bg-amber-500/20 text-amber-600" : "bg-muted text-muted-foreground"}`}>{sourceCounts.imported}</span>
           </button>
           <button
             onClick={() => setShowWhiskybase(!showWhiskybase)}
-            className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors ${showWhiskybase ? "bg-blue-500/10 border-blue-500/30 text-blue-600 font-medium" : "border-border/40 text-muted-foreground hover:border-blue-500/20"}`}
+            className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors inline-flex items-center gap-1 ${showWhiskybase ? "bg-blue-500/10 border-blue-500/30 text-blue-600 font-medium" : "border-border/40 text-muted-foreground hover:border-blue-500/20"}`}
             data-testid="filter-whiskybase"
           >
             {t("myWhiskies.sourceWhiskybase")}
+            <span className={`rounded-full px-1.5 min-w-[18px] text-center ${showWhiskybase ? "bg-blue-500/20 text-blue-600" : "bg-muted text-muted-foreground"}`}>{sourceCounts.whiskybase}</span>
           </button>
         </div>
       </div>
