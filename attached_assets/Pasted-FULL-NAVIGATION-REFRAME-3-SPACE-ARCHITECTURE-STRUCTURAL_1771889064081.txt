@@ -1,0 +1,97 @@
+FULL NAVIGATION REFRAME – 3 SPACE ARCHITECTURE
+(STRUCTURAL SIMPLIFICATION – NO FEATURE REMOVAL)
+
+GOAL:
+Reorganize sidebar navigation into a clean 3-space mental model:
+1) Tasting
+2) Meine Welt
+3) Entdecken
++ small System section at bottom
+
+CRITICAL RULES:
+- Do NOT remove any routes.
+- Do NOT change routing logic.
+- Do NOT change permission logic or experience gating.
+- Do NOT modify backend, database, or API.
+- Only reorganize navigation structure and labels.
+- Preserve all existing features.
+- Ensure no duplicates.
+- Ensure compile passes.
+- Ensure mobile layout remains stable.
+- Ensure bottom navigation remains unchanged.
+- Ensure experience-level gating still applies exactly as before.
+
+--------------------------------
+NEW SIDEBAR STRUCTURE
+--------------------------------
+
+1) TASTING
+Includes:
+- /app (Lobby/Home)
+- /sessions (Tastings hub)
+- host-dashboard (if applicable)
+- recap (if applicable)
+- tasting-calendar
+
+2) MEINE WELT
+Includes:
+- /journal (Label: Tagebuch)
+- /my-whiskies (Label: Verkostete)
+- /collection (Label: Sammlung)
+- /wishlist (Label: Wunschliste)
+- /profile (Label: Profil)
+- /flavor-profile (Label: Whisky-Profil)
+
+3) ENTDECKEN
+Includes:
+- /recommendations
+- /comparison
+- /community-rankings
+- /taste-twins
+- /benchmark (Library)
+- /whisky-database
+- /analytics
+- /research
+- /lexicon
+- /distilleries
+- /bottlers
+
+4) SYSTEM (minimal section at bottom)
+Includes:
+- /help
+- /about
+- /data-export (respect gating)
+- /admin (admin only)
+- Back to landing (if exists)
+
+--------------------------------
+UX REQUIREMENTS
+--------------------------------
+
+- Remove redundant entries (e.g. My Tastings duplicates).
+- Ensure Tastings page acts as the single hub (tabs: Aktiv | Meine | Rückblick).
+- Ensure no route appears twice in sidebar.
+- Ensure labels are short and consistent.
+- Remove all “Meine …” prefixes where redundant.
+- Maintain icons.
+- Maintain gating by experience level.
+
+--------------------------------
+VALIDATION CHECKLIST (MANDATORY BEFORE DONE)
+--------------------------------
+
+1) No duplicate sidebar routes
+2) No broken links
+3) No routing errors
+4) No permission leaks
+5) Mobile drawer renders correctly
+6) Bottom nav untouched
+7) Build compiles clean
+8) No backend files modified
+9) No API calls modified
+10) All previous features accessible via new grouping
+
+DELIVER:
+- Files modified
+- Confirmation of no functional changes
+- Screenshot of new sidebar structure
