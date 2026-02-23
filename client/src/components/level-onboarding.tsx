@@ -13,7 +13,12 @@ const LEVELS = [
   { id: "analyst", icon: Brain, gradient: "from-violet-500/20 to-violet-600/10", color: "text-violet-500" },
 ] as const;
 
-export function LevelOnboarding() {
+export function isLevelOnboardingActive(participantId?: string): boolean {
+  if (!participantId) return false;
+  return !localStorage.getItem(`casksense_level_chosen_${participantId}`);
+}
+
+export function LevelOnboarding({ onComplete }: { onComplete?: () => void } = {}) {
   const { t } = useTranslation();
   const { currentParticipant, setParticipant } = useAppStore();
   const [visible, setVisible] = useState(true);
@@ -32,7 +37,10 @@ export function LevelOnboarding() {
       setParticipant({ ...currentParticipant, experienceLevel: level });
       localStorage.setItem(hasChosenKey, "true");
     } catch {}
-    setTimeout(() => setVisible(false), 400);
+    setTimeout(() => {
+      setVisible(false);
+      onComplete?.();
+    }, 400);
   };
 
   return (

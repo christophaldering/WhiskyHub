@@ -307,7 +307,7 @@ function TourOverlay({
   );
 }
 
-export function TourProvider({ tours }: { tours: TourDefinition[] }) {
+export function TourProvider({ tours, paused = false }: { tours: TourDefinition[]; paused?: boolean }) {
   const { t } = useTranslation();
   const [tourState, setTourState] = useState<TourState>(getTourState);
   const [dontShowAgain, setDontShowAgain] = useState(false);
@@ -322,7 +322,7 @@ export function TourProvider({ tours }: { tours: TourDefinition[] }) {
     : null;
 
   useEffect(() => {
-    if (disabled || tourState.currentTourId || showLevelPrompt) return;
+    if (disabled || paused || tourState.currentTourId || showLevelPrompt) return;
 
     const nextTour = tours.find(t => !tourState.completedTours.includes(t.id));
     if (!nextTour) return;
@@ -354,7 +354,7 @@ export function TourProvider({ tours }: { tours: TourDefinition[] }) {
     }, 2000);
 
     return stopPolling;
-  }, [tours, tourState, disabled, showLevelPrompt]);
+  }, [tours, tourState, disabled, paused, showLevelPrompt]);
 
   const handleNext = useCallback(() => {
     if (!currentTour) return;
@@ -503,13 +503,14 @@ export function TourProvider({ tours }: { tours: TourDefinition[] }) {
   );
 }
 
-export function SpotlightProvider({ hints }: { hints: SpotlightHint[] }) {
+export function SpotlightProvider({ hints, paused = false }: { hints: SpotlightHint[]; paused?: boolean }) {
   const [activeHintId, setActiveHintId] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState<string[]>(() => getDismissedHints());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (paused) return;
     const pending = hints.filter(h => !dismissed.includes(h.id));
     if (pending.length === 0 || activeHintId) return;
 
@@ -540,7 +541,7 @@ export function SpotlightProvider({ hints }: { hints: SpotlightHint[] }) {
     }, 1500);
 
     return stopPolling;
-  }, [hints, dismissed, activeHintId]);
+  }, [hints, dismissed, activeHintId, paused]);
 
   const handleDismiss = useCallback(() => {
     if (activeHintId) {

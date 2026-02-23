@@ -674,9 +674,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="fixed inset-0 z-0 bg-background" />
 
       <WelcomeOverlay />
-      <LevelOnboarding onComplete={handleOnboardingComplete} />
-      <SpotlightProvider hints={spotlightHints} paused={!onboardingDone} />
-      <TourProvider tours={tourDefinitions} paused={!onboardingDone} />
+      <LevelOnboarding />
+      <SpotlightProvider hints={spotlightHints} />
+      <TourProvider tours={tourDefinitions} />
 
       <header className="md:hidden sticky top-0 z-50 flex items-center justify-between p-4 border-b border-border/40 bg-card/95 backdrop-blur-lg">
         <div className="flex items-center gap-2">
@@ -725,78 +725,4 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           )}
           <div className={cn(
             "animate-in fade-in duration-700 min-w-0",
-            fullBleed
-              ? "w-full px-0 py-0"
-              : "w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-12 py-6 md:py-12 mobile-bottom-spacing"
-          )}>
-            <MemoizedChildren>{children}</MemoizedChildren>
-          </div>
-        </main>
-        <FeedbackButton />
-      </div>
-
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/40 safe-area-bottom" style={{ paddingLeft: 'env(safe-area-inset-left, 0)', paddingRight: 'env(safe-area-inset-right, 0)' }}>
-        <div className="flex items-center justify-around px-1 py-1.5">
-          {(() => {
-            const tastingMatch = location.match(/^\/tasting\/([^/]+)/);
-            const inTasting = !!tastingMatch;
-            return [
-              inTasting
-                ? { href: `/tasting/${tastingMatch![1]}`, icon: ArrowLeft, label: t('nav.backToTasting'), isCockpit: true }
-                : { href: "/app", icon: Home, label: t('nav.lobby') },
-              { href: "/sessions", icon: Wine, label: t('nav.sessions') },
-              { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
-              { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
-              { href: "/more", icon: Menu, label: t('nav.more'), isMore: true },
-            ];
-          })().map((item) => {
-            const isActive = location === item.href;
-            if ((item as any).isCockpit) {
-              return (
-                <button
-                  key="cockpit"
-                  onClick={() => window.dispatchEvent(new CustomEvent("casksense:exitFocusMode"))}
-                  className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px] text-primary transition-colors"
-                  data-testid="bottom-nav-cockpit"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                  <span className="text-[10px] leading-tight font-semibold">{item.label}</span>
-                </button>
-              );
-            }
-            if ((item as any).isMore) {
-              return (
-                <button
-                  key="more"
-                  onClick={() => setOpen(true)}
-                  className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px] text-muted-foreground hover:text-foreground transition-colors"
-                  data-testid="bottom-nav-more"
-                >
-                  <Menu className="w-5 h-5" />
-                  <span className="text-[10px] leading-tight">{item.label}</span>
-                </button>
-              );
-            }
-            return (
-              <Link key={item.href} href={item.href}>
-                <div
-                  className={cn(
-                    "flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px] transition-colors",
-                    isActive
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                  data-testid={`bottom-nav-${item.href.replace("/", "") || "home"}`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className={cn("text-[10px] leading-tight", isActive && "font-semibold")}>{item.label}</span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
-    </div>
-    </FullBleedContext.Provider>
-  );
-}
+ 
