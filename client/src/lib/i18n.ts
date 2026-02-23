@@ -2084,7 +2084,8 @@ const resources = {
         empty: "You haven't rated any expressions in this tasting yet.",
         emptyHint: "Once you submit ratings during a tasting, your notes will appear here for export.",
         selectHint: "Use the dropdown above to pick a tasting session and view your personal notes.",
-        downloadWord: "Download Word"
+        downloadWord: "Download Word",
+        noTastings: "No tastings available."
       },
       recap: {
         title: "Tasting Recap",
@@ -4798,7 +4799,8 @@ const resources = {
         empty: "Sie haben in diesem Tasting noch keine Ausdrücke bewertet.",
         emptyHint: "Sobald Sie Bewertungen während eines Tastings abgeben, erscheinen Ihre Notizen hier zum Export.",
         selectHint: "Wählen Sie oben ein Tasting aus dem Dropdown, um Ihre persönlichen Notizen anzuzeigen.",
-        downloadWord: "Word herunterladen"
+        downloadWord: "Word herunterladen",
+        noTastings: "Keine Tastings verfügbar."
       },
       recap: {
         title: "Tasting-Rückblick",

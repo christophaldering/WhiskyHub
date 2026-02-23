@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { CaskTypeSelect } from "@/components/cask-type-select";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
@@ -524,7 +524,7 @@ function EntryForm({
   removeExistingImage: boolean;
   onRemoveExistingImage: (v: boolean) => void;
   participantId: string | undefined;
-  t: (key: string) => string;
+  t: (key: string, options?: any) => string;
   prefill?: {
     whiskyName?: string;
     distillery?: string;
@@ -1081,11 +1081,49 @@ function TastingHistoryList({ participantId }: { participantId?: string }) {
   const { t } = useTranslation();
   const [expandedWhisky, setExpandedWhisky] = useState<string | null>(null);
 
-  const { data: history = [], isLoading } = useQuery({
+  const { data: rawData, isLoading } = useQuery({
     queryKey: ["tasting-history", participantId],
     queryFn: () => tastingHistoryApi.get(participantId!),
     enabled: !!participantId,
   });
+
+  const history = useMemo(() => {
+    const tastings = rawData?.tastings || rawData || [];
+    if (!Array.isArray(tastings)) return [];
+    const whiskyMap = new Map<string, any>();
+    for (const tasting of tastings) {
+      const whiskies = tasting.whiskies || [];
+      for (const w of whiskies) {
+        const key = w.name || w.id;
+        if (!whiskyMap.has(key)) {
+          whiskyMap.set(key, {
+            whiskyName: w.name,
+            distillery: w.distillery,
+            age: w.age,
+            abv: w.abv,
+            region: w.region,
+            imageUrl: w.imageUrl,
+            count: 0,
+            tastings: [],
+          });
+        }
+        const entry = whiskyMap.get(key)!;
+        entry.count++;
+        entry.tastings.push({
+          tastingTitle: tasting.title,
+          tastingDate: tasting.date,
+          tastingLocation: tasting.location,
+          nose: w.myRating?.nose ?? null,
+          taste: w.myRating?.taste ?? null,
+          finish: w.myRating?.finish ?? null,
+          balance: w.myRating?.balance ?? null,
+          overall: w.myRating?.overall ?? null,
+          notes: w.myRating?.notes ?? null,
+        });
+      }
+    }
+    return Array.from(whiskyMap.values());
+  }, [rawData]);
 
   if (isLoading) {
     return (

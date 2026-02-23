@@ -43,7 +43,7 @@ export default function ExportNotes() {
   const params = new URLSearchParams(window.location.search);
   const urlTastingId = params.get("tastingId");
 
-  const [selectedTastingId, setSelectedTastingId] = useState<string>(urlTastingId || "");
+  const [selectedTastingId, setSelectedTastingId] = useState<string | undefined>(urlTastingId || undefined);
 
   const { data: tastings, isLoading: tastingsLoading } = useQuery<any[]>({
     queryKey: ["tastings", currentParticipant?.id],
@@ -53,7 +53,7 @@ export default function ExportNotes() {
 
   const { data: notesData, isLoading: notesLoading } = useQuery<NotesData>({
     queryKey: ["participant-notes", selectedTastingId, currentParticipant?.id],
-    queryFn: () => exportApi.getParticipantNotes(selectedTastingId, currentParticipant!.id),
+    queryFn: () => exportApi.getParticipantNotes(selectedTastingId!, currentParticipant!.id),
     enabled: !!selectedTastingId && !!currentParticipant,
   });
 
@@ -149,12 +149,16 @@ export default function ExportNotes() {
               <SelectTrigger className="w-full max-w-md" data-testid="select-tasting-trigger">
                 <SelectValue placeholder={t("exportNotes.selectPlaceholder")} />
               </SelectTrigger>
-              <SelectContent>
-                {tastings?.map((tasting: any) => (
-                  <SelectItem key={tasting.id} value={String(tasting.id)} data-testid={`select-tasting-item-${tasting.id}`}>
-                    {tasting.name}
-                  </SelectItem>
-                ))}
+              <SelectContent position="popper" className="z-[200]">
+                {(!tastings || tastings.length === 0) ? (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">{t("exportNotes.noTastings")}</div>
+                ) : (
+                  tastings.map((tasting: any) => (
+                    <SelectItem key={tasting.id} value={String(tasting.id)} data-testid={`select-tasting-item-${tasting.id}`}>
+                      {tasting.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           )}
