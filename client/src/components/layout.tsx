@@ -516,28 +516,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ...(atLeast("explorer") ? [
           { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
           { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
-          { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") || loc === "/export-notes" },
           { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
           { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
           ...(atLeast("connoisseur") ? [
             { href: "/collection", icon: Archive, label: t('nav.myWhiskyCollection') },
           ] : []),
           { href: "/wishlist", icon: Star, label: t('nav.myWhiskyWishlist') },
+          { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") || loc === "/export-notes" },
         ] : []),
       ],
     },
-    ...(atLeast("explorer") ? [{
-      label: t('navGroup.ich'),
-      items: [
-        { href: "/profile", icon: User, label: t('profile.title') },
-        { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
-        { href: "/account", icon: Settings, label: t('nav.account') },
-      ],
-    }] : []),
     ...(atLeast("connoisseur") ? [{
       label: t('navGroup.pro'),
       items: [
-        { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
         { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
         { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
         { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
@@ -549,11 +540,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
           { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
         ] : []),
-        { href: "/community-rankings", icon: BarChart3, label: t('nav.communityRankings') },
-        { href: "/taste-twins", icon: HeartHandshake, label: t('nav.tasteTwins') },
-        { href: "/friends", icon: Users, label: t('nav.friends') },
-        { href: "/activity", icon: Rss, label: t('nav.activity') },
-        { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
+      ],
+    }] : []),
+    ...(atLeast("explorer") ? [{
+      label: t('navGroup.profil'),
+      items: [
+        { href: "/profile", icon: User, label: t('profile.title') },
+        { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
+        ...(atLeast("connoisseur") ? [
+          { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
+          { href: "/taste-twins", icon: HeartHandshake, label: t('nav.tasteTwins') },
+          { href: "/friends", icon: Users, label: t('nav.friends') },
+          { href: "/community-rankings", icon: BarChart3, label: t('nav.communityRankings') },
+          { href: "/activity", icon: Rss, label: t('nav.activity') },
+          { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
+        ] : []),
+        { href: "/account", icon: Settings, label: t('nav.account') },
+      ],
+    }] : []),
+    ...(atLeast("connoisseur") ? [{
+      label: t('navGroup.wissen'),
+      items: [
         { href: "/lexicon", icon: Library, label: t('nav.lexicon') },
         { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
         { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
