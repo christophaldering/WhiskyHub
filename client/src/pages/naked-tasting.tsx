@@ -953,16 +953,28 @@ export default function NakedTasting() {
           >
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          {currentParticipant && tasting && (
-            <button
-              onClick={() => navigate(`/tasting/${tasting.id}`)}
-              className="text-[10px] text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-1 font-serif"
-              data-testid="button-naked-to-full"
-            >
-              <Maximize2 className="w-3 h-3" />
-              {t("naked.switchToFull", "Vollversion")}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {currentParticipant && tasting && sortedWhiskies.length > 0 && (
+              <button
+                onClick={() => setMoreDrawerOpen(true)}
+                className="w-8 h-8 rounded-full bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                data-testid="button-naked-more"
+                title={t("naked.moreButton")}
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+            )}
+            {currentParticipant && tasting && (
+              <button
+                onClick={() => navigate(`/tasting/${tasting.id}`)}
+                className="text-[10px] text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-1 font-serif"
+                data-testid="button-naked-to-full"
+              >
+                <Maximize2 className="w-3 h-3" />
+                {t("naked.switchToFull")}
+              </button>
+            )}
+          </div>
         </div>
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-2">
@@ -1054,21 +1066,7 @@ export default function NakedTasting() {
             </Card>
           </motion.div>
         ) : showResults || isRevealed ? (
-          <>
-            <NakedResults tasting={tasting} whiskies={sortedWhiskies} />
-            {currentParticipant && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setMoreDrawerOpen(true)}
-                className="w-full mt-3 font-serif gap-2 text-xs"
-                data-testid="button-naked-more-results"
-              >
-                <MoreHorizontal className="w-3.5 h-3.5" />
-                {t("naked.moreButton", "Mehr")}
-              </Button>
-            )}
-          </>
+          <NakedResults tasting={tasting} whiskies={sortedWhiskies} />
         ) : isOpen && sortedWhiskies.length > 0 ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
@@ -1085,18 +1083,8 @@ export default function NakedTasting() {
               />
             ))}
             <p className="text-[10px] text-center text-muted-foreground/50 pt-2 font-serif">
-              {t("naked.autoSave", "Bewertungen werden automatisch gespeichert")}
+              {t("naked.autoSave")}
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setMoreDrawerOpen(true)}
-              className="w-full mt-3 font-serif gap-2 text-xs"
-              data-testid="button-naked-more"
-            >
-              <MoreHorizontal className="w-3.5 h-3.5" />
-              {t("naked.moreButton", "Mehr")}
-            </Button>
           </div>
         ) : sortedWhiskies.length === 0 ? (
           <div className="text-center py-12">
