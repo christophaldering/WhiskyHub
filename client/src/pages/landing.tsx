@@ -227,16 +227,15 @@ export default function Landing() {
             <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.roles.title")}</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("landing.roles.subtitle")}</p>
           </motion.div>
-          {/* Just Tasting — full-width hero card */}
+          {/* Just Tasting — full-width hero card with code entry */}
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             custom={0}
             variants={fadeUp}
-            className="bg-card border-2 border-emerald-500/40 hover:border-emerald-500/60 rounded-xl p-6 sm:p-8 transition-all group relative overflow-hidden cursor-pointer mb-6"
+            className="bg-card border-2 border-emerald-500/40 hover:border-emerald-500/60 rounded-xl p-6 sm:p-8 transition-all group relative overflow-hidden mb-6"
             data-testid="landing-role-guest"
-            onClick={() => { setPreviewExperienceLevel("guest"); navigate("/app"); }}
           >
             <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl -translate-y-12 translate-x-12 opacity-60" />
             <div className="relative flex flex-col sm:flex-row sm:items-start gap-5">
@@ -247,17 +246,28 @@ export default function Landing() {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-serif font-black text-primary text-xl sm:text-2xl mb-1">{t("landing.roles.guest.name")}</h3>
-                <Button
-                  size="sm"
-                  className="text-xs gap-1.5 h-8 font-serif bg-emerald-600 hover:bg-emerald-700 text-white mb-3"
-                  onClick={(e) => { e.stopPropagation(); setPreviewExperienceLevel("guest"); navigate("/app"); }}
-                  data-testid="button-try-view-guest"
-                >
-                  {t("landing.roles.tryGuest")}
-                  <ArrowRight className="w-3 h-3" />
-                </Button>
                 <p className="text-emerald-700/80 dark:text-emerald-400/80 font-medium text-sm mb-2">{t("landing.roles.guest.tagline")}</p>
                 <p className="text-muted-foreground text-sm leading-relaxed mb-3">{t("landing.roles.guest.desc")}</p>
+                <div className="flex gap-2 mb-3 max-w-sm">
+                  <Input
+                    value={tastingCode}
+                    onChange={(e) => setTastingCode(e.target.value.toUpperCase())}
+                    placeholder={t("landing.quickJoin.placeholder")}
+                    className="font-mono text-sm tracking-widest h-9 uppercase bg-white/90 dark:bg-background/80 border-emerald-300/50 focus:border-emerald-500"
+                    onKeyDown={(e) => e.key === "Enter" && tastingCode.trim() && navigate(`/naked/${tastingCode.trim()}`)}
+                    data-testid="input-just-tasting-code"
+                  />
+                  <Button
+                    size="sm"
+                    className="text-xs gap-1.5 h-9 font-serif bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
+                    onClick={() => tastingCode.trim() && navigate(`/naked/${tastingCode.trim()}`)}
+                    disabled={!tastingCode.trim()}
+                    data-testid="button-just-tasting-go"
+                  >
+                    {t("landing.roles.tryGuest")}
+                    <ArrowRight className="w-3 h-3" />
+                  </Button>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {(t("landing.roles.guest.features") as string).split(", ").map((feat) => (
                     <span key={feat} className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-foreground/70 font-medium">
