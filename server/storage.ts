@@ -257,6 +257,7 @@ export interface IStorage {
   upsertWhiskybaseCollectionItem(data: InsertWhiskybaseCollection): Promise<WhiskybaseCollectionItem>;
   deleteWhiskybaseCollectionItem(id: string, participantId: string): Promise<void>;
   deleteWhiskybaseCollection(participantId: string): Promise<void>;
+  updateWhiskybaseCollectionItemPrice(id: string, participantId: string, price: number, currency: string, source: string): Promise<WhiskybaseCollectionItem | null>;
 
   // Encyclopedia Suggestions
   getEncyclopediaSuggestions(status?: string): Promise<EncyclopediaSuggestion[]>;
@@ -1133,6 +1134,14 @@ export class DatabaseStorage implements IStorage {
 
   async deleteWhiskybaseCollection(participantId: string): Promise<void> {
     await db.delete(whiskybaseCollection).where(eq(whiskybaseCollection.participantId, participantId));
+  }
+
+  async updateWhiskybaseCollectionItemPrice(id: string, participantId: string, price: number, currency: string, source: string): Promise<WhiskybaseCollectionItem | null> {
+    const [updated] = await db.update(whiskybaseCollection)
+      .set({ estimatedPrice: price, estimatedPriceCurrency: currency, estimatedPriceSource: source, estimatedPriceDate: new Date(), updatedAt: new Date() })
+      .where(and(eq(whiskybaseCollection.id, id), eq(whiskybaseCollection.participantId, participantId)))
+      .returning();
+    return updated || null;
   }
 
   // --- Tasting Reminders ---

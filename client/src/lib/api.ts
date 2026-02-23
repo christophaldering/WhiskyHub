@@ -522,10 +522,26 @@ export const collectionApi = {
     }
     return res.json();
   },
+  sync: async (participantId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`/api/collection/${participantId}/sync`, { method: "POST", body: formData });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: "Sync failed" }));
+      throw new Error(error.error || "Sync failed");
+    }
+    return res.json();
+  },
+  syncApply: (participantId: string, data: { addItems: any[]; removeItemIds: string[]; updateItems: { id: string; data: any }[] }) =>
+    fetchJSON(`/collection/${participantId}/sync/apply`, { method: "POST", body: JSON.stringify(data) }),
   delete: (participantId: string, id: string) =>
     fetchJSON(`/collection/${participantId}/${id}`, { method: "DELETE" }),
   toJournal: (participantId: string, id: string) =>
     fetchJSON(`/collection/${participantId}/${id}/to-journal`, { method: "POST" }),
+  estimatePrice: (participantId: string, itemIds: string[]) =>
+    fetchJSON(`/collection/${participantId}/price-estimate`, { method: "POST", body: JSON.stringify({ itemIds }) }),
+  manualPrice: (participantId: string, itemId: string, price: number, currency: string) =>
+    fetchJSON(`/collection/${participantId}/price-manual`, { method: "POST", body: JSON.stringify({ itemId, price, currency }) }),
 };
 
 // ===== Admin =====

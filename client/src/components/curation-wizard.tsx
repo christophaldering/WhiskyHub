@@ -7,13 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wand2, ExternalLink, ChevronRight, ChevronLeft, Copy, Check, Lightbulb, Star, Plus } from "lucide-react";
+import { Wand2, ExternalLink, ChevronRight, ChevronLeft, Copy, Check, Lightbulb, Star, Plus, Wine, Globe } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 
 const REGION_KEYS = ["islay", "speyside", "highland", "lowland", "campbeltown", "islands", "ireland", "japan", "usa", "world"] as const;
 const STYLE_KEYS = ["heavilyPeated", "lightlyPeated", "unpeated", "sherried", "bourbonCask", "wineCask", "exoticCask", "caskStrength", "singleCask"] as const;
 const AGE_KEYS = ["nas", "young", "classic", "mature", "oldRare", "mixed"] as const;
 const THEME_KEYS = ["region", "distillery", "style", "blind", "age", "cask", "custom"] as const;
+const COLLECTION_THEME_KEYS = ["horizontal", "vertical", "contrast", "mixed"] as const;
 
 const STYLE_API_MAP: Record<string, string> = {
   heavilyPeated: "peated",
@@ -35,6 +36,7 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [step, setStep] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [source, setSource] = useState<"world" | "collection">("world");
   const [config, setConfig] = useState({
     theme: "",
     regions: [] as string[],
@@ -43,6 +45,8 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
     flightSize: "6",
     budget: "",
     notes: "",
+    statusFilter: "all",
+    collectionTheme: "mixed",
   });
 
   const toggleArray = (arr: string[], val: string) =>
@@ -50,7 +54,8 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
 
   const reset = () => {
     setStep(0);
-    setConfig({ theme: "", regions: [], styles: [], ageRange: "", flightSize: "6", budget: "", notes: "" });
+    setSource("world");
+    setConfig({ theme: "", regions: [], styles: [], ageRange: "", flightSize: "6", budget: "", notes: "", statusFilter: "all", collectionTheme: "mixed" });
     setCopied(false);
     setAddedIds(new Set());
   };
@@ -74,9 +79,10 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
       return res.json();
     },
     onSuccess: (_data, whisky) => {
-      const key = whisky.id || `${whisky.name}-${whisky.distillery || ""}`;
+      const key = whisky.collectionItemId || whisky.id || `${whisky.name}-${whisky.distillery || ""}`;
       setAddedIds(prev => new Set(prev).add(key));
       queryClient.invalidateQueries({ queryKey: ["/api/tastings"] });
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
     },
   });
 
@@ -84,6 +90,7 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
   const styleLabel = (key: string) => t(`curation.styleOpts.${key}` as any);
   const ageLabel = (key: string) => t(`curation.ageOpts.${key}` as any);
   const themeLabel = (key: string) => t(`curation.themeOpts.${key}` as any);
+  const collectionThemeLabel = (key: string) => t(`curation.collectionThemeOpts.${key}` as any);
 
   const buildSearchQueries = () => {
     const queries: { label: string; url: string }[] = [];
@@ -123,7 +130,12 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
 
   const buildSummary = () => {
     const parts: string[] = [];
-    if (config.theme) parts.push(`${t("curation.theme")}: ${themeLabel(config.theme)}`);
+    if (source === "collection") {
+      parts.push(`${t("curation.sourceLabel")}: ${t("curation.sourceCollection")}`);
+      if (config.collectionTheme) parts.push(`${t("curation.theme")}: ${collectionThemeLabel(config.collectionTheme)}`);
+    } else {
+      if (config.theme) parts.push(`${t("curation.theme")}: ${themeLabel(config.theme)}`);
+    }
     if (config.regions.length) parts.push(`${t("curation.regions")}: ${config.regions.map(regionLabel).join(", ")}`);
     if (config.styles.length) parts.push(`${t("curation.styles")}: ${config.styles.map(styleLabel).join(", ")}`);
     if (config.ageRange) parts.push(`${t("curation.ageRange")}: ${ageLabel(config.ageRange)}`);
@@ -155,10 +167,170 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
       const data = await res.json();
       return data.suggestions || [];
     },
-    enabled: open && step >= 3 && !!currentParticipant?.id && (config.regions.length > 0 || config.styles.length > 0),
+    enabled: open && source === "world" && step >= 3 && !!currentParticipant?.id && (config.regions.length > 0 || config.styles.length > 0),
   });
 
-  const steps = [
+  const { data: collectionSuggestions, isLoading: collectionSuggestionsLoading } = useQuery<any>({
+    queryKey: ["collection-suggest-tasting", currentParticipant?.id, regionsParam, stylesParam, config.collectionTheme, config.flightSize, config.statusFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (regionsParam) params.set("regions", regionsParam);
+      if (stylesParam) params.set("styles", stylesParam);
+      params.set("theme", config.collectionTheme || "mixed");
+      params.set("count", config.flightSize);
+      if (config.statusFilter !== "all") params.set("statusFilter", config.statusFilter);
+      const res = await fetch(`/api/collection/${currentParticipant?.id}/suggest-tasting?${params.toString()}`);
+      if (!res.ok) return { suggestions: [] };
+      return res.json();
+    },
+    enabled: open && source === "collection" && step >= 3 && !!currentParticipant?.id,
+  });
+
+  const isCollectionMode = source === "collection";
+
+  const sourceStep = (
+    <div key="source" className="space-y-4">
+      <p className="text-sm text-muted-foreground">{t("curation.sourceDesc")}</p>
+      <div className="grid grid-cols-1 gap-3">
+        <Button
+          variant={source === "world" ? "default" : "outline"}
+          className="justify-start text-left h-auto py-3 px-4"
+          onClick={() => setSource("world")}
+          data-testid="btn-source-world"
+        >
+          <Globe className="w-5 h-5 mr-3 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold">{t("curation.sourceWorld")}</p>
+            <p className="text-xs text-muted-foreground font-normal mt-0.5">{t("curation.sourceWorldDesc")}</p>
+          </div>
+        </Button>
+        <Button
+          variant={source === "collection" ? "default" : "outline"}
+          className="justify-start text-left h-auto py-3 px-4"
+          onClick={() => setSource("collection")}
+          data-testid="btn-source-collection"
+        >
+          <Wine className="w-5 h-5 mr-3 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold">{t("curation.sourceCollection")}</p>
+            <p className="text-xs text-muted-foreground font-normal mt-0.5">{t("curation.sourceCollectionDesc")}</p>
+          </div>
+        </Button>
+      </div>
+    </div>
+  );
+
+  const collectionThemeStep = (
+    <div key="collection-theme" className="space-y-4">
+      <p className="text-sm text-muted-foreground">{t("curation.collectionThemeDesc")}</p>
+      <div className="grid grid-cols-2 gap-2">
+        {COLLECTION_THEME_KEYS.map(key => (
+          <Button
+            key={key}
+            variant={config.collectionTheme === key ? "default" : "outline"}
+            size="sm"
+            className="justify-start text-xs h-auto py-2"
+            onClick={() => setConfig(p => ({ ...p, collectionTheme: key }))}
+            data-testid={`btn-collection-theme-${key}`}
+          >
+            {collectionThemeLabel(key)}
+          </Button>
+        ))}
+      </div>
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">{t("curation.statusFilterLabel")}</Label>
+        <Select value={config.statusFilter} onValueChange={(v) => setConfig(p => ({ ...p, statusFilter: v }))}>
+          <SelectTrigger data-testid="select-status-filter"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("curation.statusAll")}</SelectItem>
+            <SelectItem value="open">{t("curation.statusOpen")}</SelectItem>
+            <SelectItem value="closed">{t("curation.statusClosed")}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+
+  const collectionSuggestionsStep = (
+    <div key="collection-suggestions" className="space-y-4">
+      <p className="text-sm text-muted-foreground">{t("curation.collectionSuggestionsDesc")}</p>
+      {collectionSuggestionsLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
+        </div>
+      ) : !collectionSuggestions?.suggestions || collectionSuggestions.suggestions.length === 0 ? (
+        <div className="bg-secondary/30 rounded-lg p-4 text-center">
+          <p className="text-sm text-muted-foreground">{collectionSuggestions?.message || t("curation.noCollectionSuggestions")}</p>
+        </div>
+      ) : (
+        <>
+          {collectionSuggestions.theme && (
+            <div className="bg-primary/5 rounded-lg p-3 border border-primary/10">
+              <p className="text-sm font-semibold text-primary">{collectionSuggestions.theme}</p>
+              {collectionSuggestions.description && (
+                <p className="text-xs text-muted-foreground mt-1">{collectionSuggestions.description}</p>
+              )}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs" data-testid="badge-collection-match-count">
+              {collectionSuggestions.suggestions.length} {t("curation.matchCount")}
+            </Badge>
+          </div>
+          <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
+            {collectionSuggestions.suggestions.map((s: any, i: number) => {
+              const key = s.collectionItemId || `${s.name}-${s.distillery || ""}`;
+              return (
+                <div
+                  key={key || i}
+                  className="bg-secondary/20 rounded-lg p-3 space-y-1 border border-border/20"
+                  data-testid={`card-collection-suggestion-${i}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold truncate">{s.name}</p>
+                      {s.distillery && (
+                        <p className="text-xs text-muted-foreground">{s.distillery}</p>
+                      )}
+                    </div>
+                  </div>
+                  {s.reason && (
+                    <p className="text-xs text-muted-foreground/80 italic">
+                      <Lightbulb className="w-3 h-3 inline mr-1" />
+                      {s.reason}
+                    </p>
+                  )}
+                  {tastingId && (
+                    <div className="mt-1.5 flex justify-end">
+                      {addedIds.has(key) ? (
+                        <span className="text-xs text-green-600 flex items-center gap-1">
+                          <Check className="w-3 h-3" /> {t("curation.added")}
+                        </span>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 text-xs text-primary"
+                          onClick={() => addWhiskyMutation.mutate({ ...s, collectionItemId: s.collectionItemId })}
+                          disabled={addWhiskyMutation.isPending}
+                          data-testid={`btn-add-collection-suggestion-${i}`}
+                        >
+                          <Plus className="w-3 h-3 mr-1" /> {t("curation.addToTasting")}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+
+  const worldSteps = [
+    sourceStep,
     <div key="theme" className="space-y-4">
       <p className="text-sm text-muted-foreground">{t("curation.step1Desc")}</p>
       <div className="grid grid-cols-2 gap-2">
@@ -403,13 +575,74 @@ export function CurationWizard({ tastingId }: { tastingId?: string }) {
     </div>,
   ];
 
-  const stepLabels = [
+  const collectionSteps = [
+    sourceStep,
+    collectionThemeStep,
+    <div key="collection-focus" className="space-y-4">
+      <p className="text-sm text-muted-foreground">{t("curation.step2Desc")}</p>
+      <div className="flex flex-wrap gap-2">
+        {REGION_KEYS.map(key => (
+          <Badge
+            key={key}
+            variant={config.regions.includes(key) ? "default" : "outline"}
+            className="cursor-pointer text-xs py-1 px-3"
+            onClick={() => setConfig(p => ({ ...p, regions: toggleArray(p.regions, key) }))}
+            data-testid={`badge-region-${key}`}
+          >
+            {regionLabel(key)}
+          </Badge>
+        ))}
+      </div>
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">{t("curation.styleLabel")}</Label>
+        <div className="flex flex-wrap gap-2">
+          {STYLE_KEYS.map(key => (
+            <Badge
+              key={key}
+              variant={config.styles.includes(key) ? "default" : "outline"}
+              className="cursor-pointer text-xs py-1 px-3"
+              onClick={() => setConfig(p => ({ ...p, styles: toggleArray(p.styles, key) }))}
+              data-testid={`badge-style-${key}`}
+            >
+              {styleLabel(key)}
+            </Badge>
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">{t("curation.flightSizeLabel")}</Label>
+          <Select value={config.flightSize} onValueChange={(v) => setConfig(p => ({ ...p, flightSize: v }))}>
+            <SelectTrigger data-testid="select-flight-size"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {["3", "4", "5", "6", "7", "8", "10", "12"].map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>,
+    collectionSuggestionsStep,
+  ];
+
+  const steps = isCollectionMode ? collectionSteps : worldSteps;
+
+  const worldStepLabels = [
+    t("curation.stepSource"),
     t("curation.stepTheme"),
     t("curation.stepFocus"),
     t("curation.stepDetails"),
     t("curation.stepSuggestions"),
     t("curation.stepResult"),
   ];
+
+  const collectionStepLabels = [
+    t("curation.stepSource"),
+    t("curation.stepTheme"),
+    t("curation.stepFocus"),
+    t("curation.stepCollectionSuggestions"),
+  ];
+
+  const stepLabels = isCollectionMode ? collectionStepLabels : worldStepLabels;
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>

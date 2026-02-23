@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "wouter";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { FocusedTasting } from "@/components/focused-tasting";
 import { OverviewRating } from "@/components/overview-rating";
 import { GuidedTasting } from "@/components/guided-tasting";
@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3, Clock, Check, Trophy, FileDown, Minimize2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3, Clock, Check, Trophy, FileDown, Minimize2, Wine, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1289,6 +1289,145 @@ function TransferHostDialog({ tasting }: { tasting: Tasting }) {
   );
 }
 
+function CollectionPickerDialog({ tastingId }: { tastingId: string }) {
+  const { t } = useTranslation();
+  const currentParticipant = useAppStore((s) => s.currentParticipant);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+
+  const { data: collection = [], isLoading } = useQuery<any[]>({
+    queryKey: ["collection", currentParticipant?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/collection/${currentParticipant?.id}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: open && !!currentParticipant?.id,
+  });
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return collection;
+    const q = search.toLowerCase();
+    return collection.filter((item: any) =>
+      (item.name || "").toLowerCase().includes(q) ||
+      (item.distillery || "").toLowerCase().includes(q) ||
+      (item.brand || "").toLowerCase().includes(q) ||
+      (item.caskType || "").toLowerCase().includes(q)
+    );
+  }, [collection, search]);
+
+  const addMutation = useMutation({
+    mutationFn: async (item: any) => {
+      const res = await fetch(`/api/tastings/${tastingId}/whiskies`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: item.name,
+          distillery: item.distillery || item.brand || "",
+          age: item.statedAge || "",
+          abv: item.abv ? parseFloat(item.abv) : "",
+          caskInfluence: item.caskType || "",
+          whiskybaseId: item.whiskybaseId || "",
+          wbScore: item.communityRating || "",
+          vintage: item.vintage || "",
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to add whisky");
+      return res.json();
+    },
+    onSuccess: (_data, item) => {
+      setAddedIds(prev => new Set(prev).add(item.id));
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSearch(""); setAddedIds(new Set()); } }}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="border-primary/30 text-primary font-serif" data-testid="button-collection-picker">
+          <Wine className="w-4 h-4 mr-1" /> {t("curation.fromCollection")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-xl">{t("curation.fromCollectionTitle")}</DialogTitle>
+          <DialogDescription>{t("curation.fromCollectionDesc")}</DialogDescription>
+        </DialogHeader>
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("curation.searchCollection")}
+            className="pl-9"
+            data-testid="input-collection-search"
+          />
+        </div>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-secondary/30 rounded-lg p-4 text-center">
+            <p className="text-sm text-muted-foreground">{t("curation.noCollectionItems")}</p>
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+            <p className="text-xs text-muted-foreground">{filtered.length} {t("curation.bottlesFound")}</p>
+            {filtered.map((item: any) => (
+              <div
+                key={item.id}
+                className="bg-secondary/20 rounded-lg p-3 space-y-1 border border-border/20"
+                data-testid={`card-collection-item-${item.id}`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{item.name}</p>
+                    {(item.distillery || item.brand) && (
+                      <p className="text-xs text-muted-foreground">{item.distillery || item.brand}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground/70">
+                      {item.statedAge && <span>{item.statedAge}</span>}
+                      {item.abv && <span>{item.abv}</span>}
+                      {item.caskType && <span>{item.caskType}</span>}
+                      {item.status && (
+                        <span className={`px-1.5 py-0 rounded text-[10px] ${item.status === "open" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : item.status === "closed" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}`}>
+                          {item.status}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0">
+                    {addedIds.has(item.id) ? (
+                      <span className="text-xs text-green-600 flex items-center gap-1">
+                        <Check className="w-3 h-3" /> {t("curation.added")}
+                      </span>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-primary"
+                        onClick={() => addMutation.mutate(item)}
+                        disabled={addMutation.isPending}
+                        data-testid={`btn-add-collection-item-${item.id}`}
+                      >
+                        <Plus className="w-3 h-3 mr-1" /> {t("curation.addToTasting")}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function MoreActionsMenu({ tasting, whiskyList, isHost }: { tasting: Tasting; whiskyList: Whisky[]; isHost: boolean }) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
@@ -1793,6 +1932,10 @@ export default function TastingRoom() {
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {isHost && (tasting.status === "draft" || tasting.status === "open") && <EditTastingDialog tasting={tasting} />}
               {isHost && (tasting.status === "draft" || tasting.status === "open") && <InvitePanel tastingId={tasting.id} />}
+              {isHost && (tasting.status === "draft" || tasting.status === "open") && <AddWhiskyDialog tastingId={tasting.id} />}
+              {isHost && (tasting.status === "draft" || tasting.status === "open") && <ImportFlightDialog tastingId={tasting.id} />}
+              {isHost && (tasting.status === "draft" || tasting.status === "open") && <CollectionPickerDialog tastingId={tasting.id} />}
+              {isHost && (tasting.status === "draft" || tasting.status === "open") && <CurationWizard tastingId={tasting.id} />}
               <PdfExportDialog tasting={tasting} whiskies={whiskyList} />
               <MoreActionsMenu tasting={tasting} whiskyList={whiskyList} isHost={isHost} />
               <span className="text-xs font-mono bg-secondary px-2 py-1 rounded text-muted-foreground">Code: {tasting.code}</span>

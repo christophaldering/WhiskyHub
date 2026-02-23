@@ -34,7 +34,9 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Host Tools**: Host briefing notes, a tasting curation wizard, calendar view, and a dashboard summary.
 -   **Communication**: Session invitations via email or QR codes, with a friend activity feed and configurable tasting reminders.
 -   **Knowledge Base**: Includes a Whisky Lexicon, Distillery Encyclopedia, and Independent Bottlers Encyclopedia.
--   **AI Integration**: AI-powered bottle identification for journal entries and AI-powered newsletter content generation. AI bottle scan results are cached for efficiency.
+-   **AI Integration**: AI-powered bottle identification for journal entries and AI-powered newsletter content generation. AI bottle scan results are cached for efficiency. AI-powered market price estimation for collection items (rate-limited to 1x/week for non-admins). AI-powered tasting suggestions from own collection.
+-   **Collection Sync**: Whiskybase collection supports smart sync/diff via CSV re-upload. Shows new, removed, and changed items with per-item decision making (add/keep/delete/update). Price estimation with "KI-geschätzt" badge, manual override available. Rate limit: 1x/week for regular users, unlimited for admin.
+-   **Tasting Creation**: Multiple whisky input methods — single entry, list import (Excel/CSV), from own Whiskybase collection, AI-curated suggestions from collection (horizontal/vertical/contrast/mixed themes). Curation wizard supports "From My Collection" source toggle.
 -   **Guest Mode**: Offers a streamlined guest experience for quick participation, with progressive navigation menu visibility based on `experienceLevel`.
 -   **Rating System**: Dynamic step sizing for rating sliders and auto-calculated overall scores with manual override. Simplified rating view for Guest/Explorer levels.
 -   **Experience Levels**: Four progressive levels — guest (Just Tasting), explorer (Entdecker), connoisseur (Kenner), analyst. Landing page features Just Tasting as a full-width hero card emphasizing minimal tech, with Explorer/Connoisseur/Analyst below.

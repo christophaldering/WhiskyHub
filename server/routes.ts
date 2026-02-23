@@ -3012,6 +3012,370 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
     }
   });
 
+  // ===== Collection Sync/Diff =====
+
+  async function parseCollectionCSV(file: Express.Multer.File): Promise<any[]> {
+    let rows: any[] = [];
+    const fileName = file.originalname.toLowerCase();
+    if (fileName.endsWith(".csv")) {
+      const text = file.buffer.toString("utf-8");
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) return [];
+      const headerLine = lines[0];
+      const delimiter = headerLine.includes("\t") ? "\t" : headerLine.includes(";") ? ";" : ",";
+      const parseCSVLine = (line: string, delim: string): string[] => {
+        const result: string[] = [];
+        let current = "";
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            if (inQuotes && i + 1 < line.length && line[i + 1] === '"') { current += '"'; i++; }
+            else inQuotes = !inQuotes;
+          } else if (char === delim && !inQuotes) { result.push(current.trim()); current = ""; }
+          else current += char;
+        }
+        result.push(current.trim());
+        return result;
+      };
+      const headers = parseCSVLine(headerLine, delimiter);
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const values = parseCSVLine(lines[i], delimiter);
+        const row: any = {};
+        headers.forEach((h, idx) => { row[h] = values[idx] || ""; });
+        rows.push(row);
+      }
+    } else {
+      const workbook = await readExcelBuffer(file.buffer);
+      const sheetName = (workbook as any).SheetNames[0];
+      rows = sheetToJson((workbook as any).Sheets[sheetName], { defval: "" });
+    }
+    return rows;
+  }
+
+  function mapCollectionRow(row: any, participantId: string): any {
+    const colMap = (r: any, ...keys: string[]): string => {
+      for (const key of keys) { if (r[key] !== undefined && r[key] !== "") return String(r[key]).trim(); }
+      return "";
+    };
+    const parseFloat2 = (val: string): number | null => {
+      if (!val) return null;
+      const num = parseFloat(val.replace(",", "."));
+      return isNaN(num) ? null : num;
+    };
+
+    const whiskybaseId = colMap(row, "ID", "id");
+    const name = colMap(row, "Name", "name");
+    if (!whiskybaseId || !name) return null;
+
+    return {
+      participantId,
+      whiskybaseId,
+      collectionId: colMap(row, "Sammlungs-ID", "Collection ID", "Collection-ID") || null,
+      brand: colMap(row, "Marke", "Brand") || null,
+      name,
+      bottlingSeries: colMap(row, "Abfüllserie", "Bottling serie", "Bottling series") || null,
+      status: colMap(row, "Status", "status") || null,
+      statedAge: colMap(row, "Deklariertes Alter", "Stated Age") || null,
+      size: colMap(row, "Größe", "Size") || null,
+      abv: colMap(row, "Stärke", "Strength") || null,
+      unit: colMap(row, "Einheit", "Unit") || null,
+      caskType: colMap(row, "Fasstyp", "Cask type") || null,
+      communityRating: parseFloat2(colMap(row, "Bewertung", "Rating")),
+      personalRating: parseFloat2(colMap(row, "Meine Bewertung", "My rating")),
+      pricePaid: parseFloat2(colMap(row, "Bezahlter Preis", "Price paid")),
+      currency: colMap(row, "Währung", "Currency") || null,
+      avgPrice: parseFloat2(colMap(row, "Mittlerer preis", "Mittlerer Preis", "Average price")),
+      avgPriceCurrency: (() => {
+        const keys = Object.keys(row);
+        const currencyKeys = keys.filter(k => k.toLowerCase().includes("währung") || k.toLowerCase().includes("currency"));
+        return currencyKeys.length > 1 ? String(row[currencyKeys[1]] || "").trim() : colMap(row, "Währung Whisky", "Currency Whisky") || null;
+      })(),
+      distillery: colMap(row, "Destillerien", "Distilleries") || null,
+      vintage: colMap(row, "Jahrgang", "Vintage") || null,
+      addedAt: colMap(row, "Hinzugefügt am", "Added on") || null,
+      imageUrl: colMap(row, "Bild", "Image") || null,
+      auctionPrice: parseFloat2(colMap(row, "Auktionspreis:", "Auction price:", "Auktionspreis", "Auction price")),
+      auctionCurrency: (() => {
+        const keys = Object.keys(row);
+        const currencyKeys = keys.filter(k => k.toLowerCase().includes("währung") || k.toLowerCase().includes("currency"));
+        return currencyKeys.length > 2 ? String(row[currencyKeys[2]] || "").trim() : null;
+      })(),
+      notes: colMap(row, "Notizen", "Notes") || null,
+      purchaseLocation: colMap(row, "Kaufort", "Purchase location") || null,
+    };
+  }
+
+  app.post("/api/collection/:participantId/sync", docUpload.single("file"), async (req: Request, res: Response) => {
+    try {
+      const file = req.file;
+      if (!file) return res.status(400).json({ error: "No file provided" });
+      const participantId = req.params.participantId as string;
+
+      const rows = await parseCollectionCSV(file);
+      const uploadedItems = rows.map(r => mapCollectionRow(r, participantId)).filter(Boolean);
+      const existingItems = await storage.getWhiskybaseCollection(participantId);
+
+      const existingMap = new Map(existingItems.map(item => [item.whiskybaseId, item]));
+      const uploadedMap = new Map(uploadedItems.map((item: any) => [item.whiskybaseId, item]));
+
+      const newItems: any[] = [];
+      const changedItems: any[] = [];
+      let unchangedCount = 0;
+
+      for (const uploaded of uploadedItems) {
+        const existing = existingMap.get(uploaded.whiskybaseId);
+        if (!existing) {
+          newItems.push(uploaded);
+        } else {
+          const changes: any[] = [];
+          if (uploaded.status && uploaded.status !== existing.status) changes.push({ field: "status", old: existing.status, new: uploaded.status });
+          if (uploaded.communityRating != null && uploaded.communityRating !== existing.communityRating) changes.push({ field: "communityRating", old: existing.communityRating, new: uploaded.communityRating });
+          if (uploaded.personalRating != null && uploaded.personalRating !== existing.personalRating) changes.push({ field: "personalRating", old: existing.personalRating, new: uploaded.personalRating });
+          if (uploaded.pricePaid != null && uploaded.pricePaid !== existing.pricePaid) changes.push({ field: "pricePaid", old: existing.pricePaid, new: uploaded.pricePaid });
+          if (uploaded.avgPrice != null && uploaded.avgPrice !== existing.avgPrice) changes.push({ field: "avgPrice", old: existing.avgPrice, new: uploaded.avgPrice });
+          if (uploaded.auctionPrice != null && uploaded.auctionPrice !== existing.auctionPrice) changes.push({ field: "auctionPrice", old: existing.auctionPrice, new: uploaded.auctionPrice });
+          if (changes.length > 0) {
+            changedItems.push({ existingId: existing.id, whiskybaseId: uploaded.whiskybaseId, name: existing.name, brand: existing.brand, changes, uploadedData: uploaded });
+          } else {
+            unchangedCount++;
+          }
+        }
+      }
+
+      const removedItems = existingItems
+        .filter(item => !uploadedMap.has(item.whiskybaseId))
+        .map(item => ({ id: item.id, whiskybaseId: item.whiskybaseId, name: item.name, brand: item.brand, status: item.status }));
+
+      res.json({ newItems, removedItems, changedItems, unchangedCount, totalUploaded: uploadedItems.length, totalExisting: existingItems.length });
+    } catch (error: any) {
+      console.error("Collection sync error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/collection/:participantId/sync/apply", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.params.participantId as string;
+      const { addItems, removeItemIds, updateItems } = req.body as {
+        addItems: any[];
+        removeItemIds: string[];
+        updateItems: { id: string; data: any }[];
+      };
+
+      let added = 0, removed = 0, updated = 0;
+
+      if (addItems?.length) {
+        for (const item of addItems) {
+          await storage.upsertWhiskybaseCollectionItem({ ...item, participantId });
+          added++;
+        }
+      }
+
+      if (removeItemIds?.length) {
+        for (const id of removeItemIds) {
+          await storage.deleteWhiskybaseCollectionItem(id, participantId);
+          removed++;
+        }
+      }
+
+      if (updateItems?.length) {
+        for (const { id, data } of updateItems) {
+          const existing = (await storage.getWhiskybaseCollection(participantId)).find(i => i.id === id);
+          if (existing) {
+            await storage.upsertWhiskybaseCollectionItem({ ...existing, ...data, participantId });
+            updated++;
+          }
+        }
+      }
+
+      res.json({ added, removed, updated });
+    } catch (error: any) {
+      console.error("Collection sync apply error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== AI Price Estimation =====
+
+  app.post("/api/collection/:participantId/price-estimate", async (req: Request, res: Response) => {
+    try {
+      if (await isAIDisabled("journal_identify")) return res.status(503).json({ message: "AI feature disabled by admin" });
+
+      const participantId = req.params.participantId as string;
+      const { itemIds } = req.body as { itemIds: string[] };
+      if (!itemIds?.length) return res.status(400).json({ error: "itemIds required" });
+
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(404).json({ error: "Participant not found" });
+
+      if (participant.role !== "admin") {
+        const lastCheckKey = `last_price_check_${participantId}`;
+        const lastCheck = await storage.getAppSetting(lastCheckKey);
+        if (lastCheck) {
+          const lastDate = new Date(lastCheck);
+          const nextAvailable = new Date(lastDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+          if (new Date() < nextAvailable) {
+            return res.status(429).json({
+              error: "rate_limited",
+              nextAvailable: nextAvailable.toISOString(),
+              message: `Price estimation limited to once per week. Next available: ${nextAvailable.toLocaleDateString("de-DE")}`,
+            });
+          }
+        }
+      }
+
+      const items = await storage.getWhiskybaseCollection(participantId);
+      const targetItems = items.filter(i => itemIds.includes(i.id));
+      if (!targetItems.length) return res.status(404).json({ error: "No matching items found" });
+
+      const batchSize = 10;
+      const estimates: any[] = [];
+
+      for (let i = 0; i < targetItems.length; i += batchSize) {
+        const batch = targetItems.slice(i, i + batchSize);
+        const whiskyList = batch.map((item, idx) => {
+          const parts = [`${idx + 1}. "${item.brand ? item.brand + ' ' : ''}${item.name}"`];
+          if (item.distillery) parts.push(`Distillery: ${item.distillery}`);
+          if (item.statedAge) parts.push(`Age: ${item.statedAge}`);
+          if (item.abv) parts.push(`ABV: ${item.abv}`);
+          if (item.caskType) parts.push(`Cask: ${item.caskType}`);
+          if (item.vintage) parts.push(`Vintage: ${item.vintage}`);
+          if (item.communityRating) parts.push(`WB Rating: ${item.communityRating}`);
+          if (item.whiskybaseId) parts.push(`Whiskybase ID: ${item.whiskybaseId}`);
+          return parts.join(", ");
+        }).join("\n");
+
+        const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY });
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: `You are a whisky market price estimator. For each whisky, estimate the current market value in EUR based on your knowledge of whisky auction results, retail prices, and collector market trends. Consider age, rarity, distillery reputation, cask type, and Whiskybase ratings. Return ONLY valid JSON array with objects: [{"index": 1, "estimatedPrice": 85, "currency": "EUR", "confidence": "medium"}]. Confidence levels: "high" (well-known bottle with clear market), "medium" (reasonable estimate), "low" (rare or unusual, high uncertainty). Be realistic — don't inflate prices.`
+            },
+            { role: "user", content: `Estimate current market prices for these whiskies:\n${whiskyList}` }
+          ],
+          temperature: 0.3,
+          max_tokens: 1000,
+        });
+
+        const content = response.choices[0]?.message?.content || "[]";
+        try {
+          const jsonMatch = content.match(/\[[\s\S]*\]/);
+          const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : "[]");
+          for (const est of parsed) {
+            const item = batch[(est.index || 1) - 1];
+            if (item) {
+              await storage.updateWhiskybaseCollectionItemPrice(item.id, participantId, est.estimatedPrice, est.currency || "EUR", "ai");
+              estimates.push({ id: item.id, whiskybaseId: item.whiskybaseId, name: item.name, estimatedPrice: est.estimatedPrice, currency: est.currency || "EUR", confidence: est.confidence || "medium", source: "ai" });
+            }
+          }
+        } catch (parseErr) {
+          console.error("Price estimate parse error:", parseErr, content);
+        }
+      }
+
+      if (participant.role !== "admin") {
+        await storage.setAppSetting(`last_price_check_${participantId}`, new Date().toISOString());
+      }
+
+      res.json({ estimates, count: estimates.length });
+    } catch (error: any) {
+      console.error("Price estimation error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/collection/:participantId/price-manual", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.params.participantId as string;
+      const { itemId, price, currency } = req.body as { itemId: string; price: number; currency: string };
+      if (!itemId || price == null) return res.status(400).json({ error: "itemId and price required" });
+      const updated = await storage.updateWhiskybaseCollectionItemPrice(itemId, participantId, price, currency || "EUR", "manual");
+      if (!updated) return res.status(404).json({ error: "Item not found" });
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== Tasting Suggestions from Own Collection =====
+
+  app.get("/api/collection/:participantId/suggest-tasting", async (req: Request, res: Response) => {
+    try {
+      if (await isAIDisabled("journal_identify")) return res.status(503).json({ message: "AI feature disabled by admin" });
+
+      const participantId = req.params.participantId as string;
+      const count = parseInt(req.query.count as string) || 6;
+      const regions = (req.query.regions as string || "").split(",").filter(Boolean);
+      const styles = (req.query.styles as string || "").split(",").filter(Boolean);
+      const statusFilter = (req.query.statusFilter as string) || "all";
+      const theme = (req.query.theme as string) || "mixed";
+
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(404).json({ error: "Participant not found" });
+      const lang = participant.language === "de" ? "de" : "en";
+
+      let items = await storage.getWhiskybaseCollection(participantId);
+      if (statusFilter !== "all") items = items.filter(i => i.status === statusFilter);
+
+      if (items.length === 0) return res.json({ suggestions: [], message: lang === "de" ? "Keine Flaschen in deiner Sammlung gefunden." : "No bottles found in your collection." });
+
+      const itemDescriptions = items.slice(0, 50).map((item, idx) => {
+        const parts = [`${idx + 1}. "${item.brand ? item.brand + ' ' : ''}${item.name}" (ID: ${item.id})`];
+        if (item.distillery) parts.push(`Distillery: ${item.distillery}`);
+        if (item.statedAge) parts.push(`Age: ${item.statedAge}`);
+        if (item.abv) parts.push(`ABV: ${item.abv}`);
+        if (item.caskType) parts.push(`Cask: ${item.caskType}`);
+        if (item.vintage) parts.push(`Vintage: ${item.vintage}`);
+        if (item.communityRating) parts.push(`Rating: ${item.communityRating}`);
+        if (item.status) parts.push(`Status: ${item.status}`);
+        return parts.join(", ");
+      }).join("\n");
+
+      const themeInstructions: Record<string, string> = {
+        horizontal: "Select whiskies from the SAME distillery for a horizontal tasting (comparing different expressions/ages from one producer).",
+        vertical: "Select whiskies spanning different vintages or ages for a vertical tasting.",
+        contrast: "Select whiskies that contrast each other — e.g. peated vs unpeated, young vs old, bourbon vs sherry cask.",
+        mixed: "Select a balanced and interesting flight of whiskies that would make for an engaging tasting.",
+      };
+
+      const filterNote = [
+        regions.length ? `Preferred regions: ${regions.join(", ")}` : "",
+        styles.length ? `Preferred styles: ${styles.join(", ")}` : "",
+      ].filter(Boolean).join(". ");
+
+      const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY });
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are a whisky tasting curator. ${themeInstructions[theme] || themeInstructions.mixed} Select exactly ${count} whiskies from the collection below and explain why each fits the tasting theme. ${filterNote ? `Filter preferences: ${filterNote}` : ""}. Respond in ${lang === "de" ? "German" : "English"}. Return ONLY valid JSON: {"theme": "short theme title", "description": "2 sentences describing the tasting concept", "suggestions": [{"collectionItemId": "the item ID from the list", "name": "full whisky name", "distillery": "distillery name", "reason": "1 sentence why this fits"}]}`
+          },
+          { role: "user", content: `My collection (${items.length} bottles):\n${itemDescriptions}` }
+        ],
+        temperature: 0.7,
+        max_tokens: 1500,
+      });
+
+      const content = response.choices[0]?.message?.content || "{}";
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : "{}");
+        res.json(parsed);
+      } catch (parseErr) {
+        console.error("Tasting suggestion parse error:", parseErr);
+        res.json({ suggestions: [], message: lang === "de" ? "Konnte keine Vorschläge generieren." : "Could not generate suggestions." });
+      }
+    } catch (error: any) {
+      console.error("Tasting suggestion error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ===== Journal Bottle Identification (must be before parameterized /api/journal/:participantId routes) =====
   app.post("/api/journal/identify-bottle", docUpload.single("photo"), async (req: Request, res: Response) => {
     try {

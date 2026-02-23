@@ -351,6 +351,10 @@ export const whiskybaseCollection = pgTable("whiskybase_collection", {
   auctionCurrency: text("auction_currency"),
   notes: text("notes"),
   purchaseLocation: text("purchase_location"),
+  estimatedPrice: real("estimated_price"),
+  estimatedPriceCurrency: text("estimated_price_currency"),
+  estimatedPriceDate: timestamp("estimated_price_date"),
+  estimatedPriceSource: text("estimated_price_source"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
