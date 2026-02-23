@@ -69,7 +69,7 @@ export const useAppStore = create<AppState>()(
       setLastSeenLandingVersion: (version) => set({ lastSeenLandingVersion: version }),
       storageConsentDismissed: false,
       setStorageConsentDismissed: (dismissed) => set({ storageConsentDismissed: dismissed }),
-      language: "en",
+      language: "de",
       setLanguage: (lang) => set({ language: lang }),
       ambientPlaying: false,
       ambientSoundscape: "fireplace" as Soundscape,
