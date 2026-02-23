@@ -1,0 +1,86 @@
+UI NAV CLEANUP ONLY (NO ROUTING / NO PERMISSION LOGIC CHANGES)
+
+GOAL
+Improve sidebar clarity by regrouping entries into:
+- Genuss
+- Ich
+- Pro
+- Über
+- Admin (role-based)
+
+Also shorten the label:
+- "Meine verkosteten Whiskys" → "Verkostete"
+
+STRICT RULES
+- Do NOT change routes.
+- Do NOT modify routing structure.
+- Do NOT change permission logic, feature gating, or experience levels.
+- Do NOT touch tasting-room logic (/tasting, /naked, join flow, session logic).
+- Do NOT modify backend, database, or API.
+- Icons must remain unchanged.
+- Only change visible labels and grouping structure (UI layer only).
+- Preserve existing i18n structure (DE/EN) if implemented.
+
+CHANGES
+
+1) Rename Menu Item Label
+Route: /my-whiskies
+- DE: "Meine verkosteten Whiskys" → "Verkostete"
+- EN: "My Tasted Whiskies" → "Tasted" 
+  (If too short in layout, use "Tasted Whiskies")
+
+2) Regroup Existing Sidebar Entries Into These Sections:
+
+SECTION: Genuss
+Include (existing routes only, no changes):
+- Home (/app)
+- Tastings / Sessions (/sessions or /my-tastings if used)
+- Journal (/journal)
+- Verkostete (/my-whiskies)
+- Collection (/collection)
+- Wishlist (/wishlist)
+
+SECTION: Ich
+- Profile (/profile)
+- Mein Whisky-Profil (/flavor-profile)
+
+SECTION: Pro
+- Tools & Analyses (existing tools group)
+- Benchmark / Library (/benchmark)
+- Whisky Database (/whisky-database)
+- Analytics (/analytics)
+- Data Export (/data-export)
+
+SECTION: Über
+- Help (/help)
+- About (/about)
+- Back to Homepage (if present)
+
+SECTION: Admin (admin role only)
+- Admin Panel (/admin)
+
+3) ORDERING
+Ensure sections appear in this order:
+Genuss
+Ich
+Pro
+Über
+Admin (only visible for admin users)
+
+4) GATING
+- Keep all existing experience-level visibility rules intact.
+- Do not alter connoisseur/analyst/admin access logic.
+- Only move items visually between sections.
+
+DELIVERABLE
+After implementation provide:
+- List of files changed
+- Confirmation that:
+   - No routes were modified
+   - No permission logic was altered
+   - No tasting/session logic was touched
+   - No backend changes occurred
+- Confirmation that app compiles without errors
+
+This is a UI restructuring task only.
+No architectural or behavioral changes.

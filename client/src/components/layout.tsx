@@ -489,41 +489,34 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navGroups: NavGroup[] = useMemo(() => [
     {
-      label: t('navGroup.dashboard'),
+      label: t('navGroup.genuss'),
       defaultOpen: true,
       items: [
         { href: "/app", icon: Home, label: t('nav.lobby') },
         { href: "/sessions", icon: Wine, label: t('nav.sessions') },
+        ...(atLeast("explorer") ? [
+          { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
+          { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
+          { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") || loc === "/export-notes" },
+          { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
+          { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
+          ...(atLeast("connoisseur") ? [
+            { href: "/collection", icon: Archive, label: t('nav.myWhiskyCollection') },
+          ] : []),
+          { href: "/wishlist", icon: Star, label: t('nav.myWhiskyWishlist') },
+        ] : []),
       ],
     },
     ...(atLeast("explorer") ? [{
-      label: t('navGroup.myProfile'),
+      label: t('navGroup.ich'),
       items: [
         { href: "/profile", icon: User, label: t('profile.title') },
         { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
-      ],
-    }] : []),
-    ...(atLeast("explorer") ? [{
-      label: t('navGroup.myTastings'),
-      items: [
-        { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
-        { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
-        { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") || loc === "/export-notes" },
-      ],
-    }] : []),
-    ...(atLeast("explorer") ? [{
-      label: t('navGroup.myWhiskys'),
-      items: [
-        { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
-        { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
-        ...(atLeast("connoisseur") ? [
-          { href: "/collection", icon: Archive, label: t('nav.myWhiskyCollection') },
-        ] : []),
-        { href: "/wishlist", icon: Star, label: t('nav.myWhiskyWishlist') },
+        { href: "/account", icon: Settings, label: t('nav.account') },
       ],
     }] : []),
     ...(atLeast("connoisseur") ? [{
-      label: t('navGroup.toolsAndAnalytics'),
+      label: t('navGroup.pro'),
       items: [
         { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
         { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
@@ -535,22 +528,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
           ] : []),
           { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
+          { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
         ] : []),
-      ],
-    }] : []),
-    ...(atLeast("connoisseur") ? [{
-      label: t('navGroup.community'),
-      items: [
         { href: "/community-rankings", icon: BarChart3, label: t('nav.communityRankings') },
         { href: "/taste-twins", icon: HeartHandshake, label: t('nav.tasteTwins') },
         { href: "/friends", icon: Users, label: t('nav.friends') },
         { href: "/activity", icon: Rss, label: t('nav.activity') },
         { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
-      ],
-    }] : []),
-    ...(atLeast("connoisseur") ? [{
-      label: t('navGroup.whiskyKnowledge'),
-      items: [
         { href: "/lexicon", icon: Library, label: t('nav.lexicon') },
         { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
         { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
@@ -559,7 +543,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       ],
     }] : []),
     {
-      label: t('navGroup.aboutPlatform'),
+      label: t('navGroup.ueber'),
       items: [
         { href: "/help", icon: HelpCircle, label: t('nav.help') },
         { href: "/about", icon: Info, label: t('nav.about') },
@@ -570,16 +554,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/", icon: Globe, label: t('nav.landingPage') },
       ],
     },
-    ...(currentParticipant ? [{
-      label: t('navGroup.admin'),
+    ...(currentParticipant?.role === "admin" ? [{
+      label: t('navGroup.adminSection'),
       items: [
-        { href: "/account", icon: Settings, label: t('nav.account') },
-        ...(atLeast("analyst") ? [
-          { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
-        ] : []),
-        ...(currentParticipant.role === "admin" ? [
-          { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
-        ] : []),
+        { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
       ],
     }] : []),
   ], [t, isHost, isAdmin, expLevel, currentParticipant?.canAccessWhiskyDb, currentParticipant?.role, previewExperienceLevel]);
