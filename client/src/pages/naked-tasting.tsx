@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Wine, ArrowRight, Check, Download, Trophy, LogIn, ExternalLink, Shield, Sparkles, BookOpen, User, BarChart3 } from "lucide-react";
+import { Wine, ArrowRight, Check, Download, Trophy, LogIn, ExternalLink, Shield, Sparkles, BookOpen, User, BarChart3, Sun, Moon, X, ArrowUpDown, Maximize2 } from "lucide-react";
+import jsPDF from "jspdf";
 import type { Whisky, Tasting } from "@shared/schema";
 
 function NakedWhiskyCard({
@@ -37,9 +38,11 @@ function NakedWhiskyCard({
     enabled: !!participantId && !!whisky.id,
   });
 
-  const [scores, setScores] = useState({
+  type ScoreVal = number | null;
+  const [scores, setScores] = useState<Record<string, ScoreVal>>({
     nose: mid, taste: mid, finish: mid, balance: mid, overall: mid,
   });
+  const [overallManual, setOverallManual] = useState(false);
   const [notes, setNotes] = useState("");
   const [isDirty, setIsDirty] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -59,19 +62,26 @@ function NakedWhiskyCard({
 
   useEffect(() => {
     if (existingRating) {
-      setScores({
+      const loaded = {
         nose: existingRating.nose, taste: existingRating.taste,
         finish: existingRating.finish, balance: existingRating.balance,
         overall: existingRating.overall,
-      });
+      };
+      setScores(loaded);
       setNotes(existingRating.notes || "");
+      const avg = computeAvgFromScores(loaded);
+      if (avg !== null && loaded.overall !== null) {
+        setOverallManual(Math.abs(loaded.overall - avg) > 0.01);
+      }
       setIsDirty(false);
     }
   }, [existingRating]);
 
-  const computeAvg = (s: typeof scores) => {
+  const computeAvgFromScores = (s: Record<string, ScoreVal>) => {
     const factor = step < 1 ? (1 / step) : 1;
-    const avg = (s.nose + s.taste + s.finish + s.balance) / 4;
+    const vals = [s.nose, s.taste, s.finish, s.balance].filter((v): v is number => v !== null);
+    if (vals.length === 0) return null;
+    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
     return Math.round(avg * factor) / factor;
   };
 
@@ -96,15 +106,39 @@ function NakedWhiskyCard({
   const handleScore = (key: string, value: number) => {
     const factor = step < 1 ? (1 / step) : 1;
     const clamped = Math.max(0, Math.min(scale, Math.round(value * factor) / factor));
+    if (key === "overall") {
+      setOverallManual(true);
+      setScores(prev => ({ ...prev, overall: clamped }));
+    } else {
+      setScores(prev => {
+        const next = { ...prev, [key]: clamped };
+        if (!overallManual) {
+          next.overall = computeAvgFromScores(next);
+        }
+        return next;
+      });
+    }
+    setIsDirty(true);
+    triggerAutoSave();
+  };
+
+  const clearScore = (key: string) => {
     setScores(prev => {
-      const next = { ...prev, [key]: clamped };
-      if (key !== "overall") {
-        next.overall = computeAvg(next);
+      const next = { ...prev, [key]: null };
+      if (key === "overall") {
+        setOverallManual(false);
+        next.overall = computeAvgFromScores(next);
+      } else if (!overallManual) {
+        next.overall = computeAvgFromScores(next);
       }
       return next;
     });
     setIsDirty(true);
     triggerAutoSave();
+  };
+
+  const resetScore = (key: string) => {
+    handleScore(key, mid);
   };
 
   const isLocked = tasting.status !== "open" && tasting.status !== "draft";
@@ -116,6 +150,7 @@ function NakedWhiskyCard({
     { id: "nose" as const, label: t("evaluation.nose"), emoji: "👃" },
     { id: "taste" as const, label: t("evaluation.taste"), emoji: "👅" },
     { id: "finish" as const, label: t("evaluation.finish"), emoji: "✨" },
+    { id: "balance" as const, label: t("evaluation.balance"), emoji: "⚖️" },
   ];
 
   return (
@@ -162,22 +197,79 @@ function NakedWhiskyCard({
 
         {!isLocked ? (
           <div className="space-y-3">
-            {categories.map(cat => (
-              <div key={cat.id} className="flex items-center gap-3">
-                <span className="text-[10px] font-serif font-bold text-muted-foreground uppercase w-12 flex-shrink-0">{cat.emoji} {cat.label}</span>
+            {categories.map(cat => {
+              const val = scores[cat.id];
+              const isNull = val === null;
+              return (
+                <div key={cat.id} className="flex items-center gap-2">
+                  <span className="text-[10px] font-serif font-bold text-muted-foreground uppercase w-12 flex-shrink-0">{cat.emoji} {cat.label}</span>
+                  {isNull ? (
+                    <button
+                      onClick={() => resetScore(cat.id)}
+                      className="flex-1 text-center text-[10px] text-muted-foreground/50 border border-dashed border-border/30 rounded py-1 hover:bg-secondary/30 transition-colors"
+                      data-testid={`naked-restore-${cat.id}-${whisky.id}`}
+                    >
+                      {t("evaluation.tapToRate", "Tippen zum Bewerten")}
+                    </button>
+                  ) : (
+                    <Slider
+                      value={[val]}
+                      max={scale} step={step} min={0}
+                      onValueChange={(v) => handleScore(cat.id, v[0])}
+                      className="flex-1"
+                      data-testid={`naked-slider-${cat.id}-${whisky.id}`}
+                    />
+                  )}
+                  <span className="text-xs font-mono font-bold w-8 text-right">{isNull ? "–" : val}</span>
+                  <button
+                    onClick={() => isNull ? resetScore(cat.id) : clearScore(cat.id)}
+                    className={cn(
+                      "w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors",
+                      isNull ? "text-muted-foreground/30 hover:text-primary" : "text-muted-foreground/40 hover:text-destructive"
+                    )}
+                    data-testid={`naked-clear-${cat.id}-${whisky.id}`}
+                    title={isNull ? t("evaluation.tapToRate", "Bewerten") : t("evaluation.clearRating", "Bewertung entfernen")}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              );
+            })}
+            <div className="flex items-center gap-2 pt-1 border-t border-border/20">
+              <span className="text-[10px] font-serif font-bold text-primary uppercase flex-shrink-0">{t("evaluation.overall")}</span>
+              {scores.overall !== null ? (
                 <Slider
-                  value={[scores[cat.id]]}
+                  value={[scores.overall]}
                   max={scale} step={step} min={0}
-                  onValueChange={(val) => handleScore(cat.id, val[0])}
-                  className="flex-1"
-                  data-testid={`naked-slider-${cat.id}-${whisky.id}`}
+                  onValueChange={(v) => handleScore("overall", v[0])}
+                  className="flex-1 [&_[role=slider]]:bg-primary [&_[data-orientation=horizontal]>span:first-child>span]:bg-primary/30"
+                  data-testid={`naked-slider-overall-${whisky.id}`}
                 />
-                <span className="text-xs font-mono font-bold w-8 text-right">{scores[cat.id]}</span>
-              </div>
-            ))}
-            <div className="flex items-center justify-between pt-1 border-t border-border/20">
-              <span className="text-[10px] font-serif font-bold text-primary uppercase">Gesamt</span>
-              <span className="text-sm font-mono font-black text-primary">{scores.overall}</span>
+              ) : (
+                <button
+                  onClick={() => resetScore("overall")}
+                  className="flex-1 text-center text-[10px] text-muted-foreground/50 border border-dashed border-border/30 rounded py-1 hover:bg-secondary/30"
+                >
+                  {t("evaluation.tapToRate", "Tippen zum Bewerten")}
+                </button>
+              )}
+              <span className="text-sm font-mono font-black text-primary w-8 text-right">{scores.overall !== null ? scores.overall : "–"}</span>
+              {overallManual && (
+                <button
+                  onClick={() => { setOverallManual(false); setScores(prev => ({ ...prev, overall: computeAvgFromScores(prev) })); setIsDirty(true); triggerAutoSave(); }}
+                  className="text-[8px] text-primary/60 hover:text-primary font-mono flex-shrink-0"
+                  title={t("evaluation.resetToAvg", "Auf Durchschnitt zurücksetzen")}
+                >
+                  ↺
+                </button>
+              )}
+              <button
+                onClick={() => scores.overall !== null ? clearScore("overall") : resetScore("overall")}
+                className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-muted-foreground/40 hover:text-destructive transition-colors"
+                data-testid={`naked-clear-overall-${whisky.id}`}
+              >
+                <X className="w-3 h-3" />
+              </button>
             </div>
           </div>
         ) : (
@@ -248,6 +340,7 @@ function NakedResults({ tasting, whiskies }: { tasting: Tasting; whiskies: Whisk
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const { currentParticipant } = useAppStore();
+  const [sortByScore, setSortByScore] = useState(true);
 
   const { data: allRatings = [] } = useQuery({
     queryKey: ["ratings", tasting.id],
@@ -257,41 +350,141 @@ function NakedResults({ tasting, whiskies }: { tasting: Tasting; whiskies: Whisk
 
   const whiskyResults = whiskies.map(w => {
     const ratings = allRatings.filter((r: any) => r.whiskyId === w.id);
-    const avgOverall = ratings.length > 0
-      ? Math.round((ratings.reduce((sum: number, r: any) => sum + r.overall, 0) / ratings.length) * 10) / 10
+    const validOveralls = ratings.filter((r: any) => r.overall != null);
+    const avgOverall = validOveralls.length > 0
+      ? Math.round((validOveralls.reduce((sum: number, r: any) => sum + r.overall, 0) / validOveralls.length) * 10) / 10
       : 0;
     const myRating = currentParticipant
       ? ratings.find((r: any) => r.participantId === currentParticipant.id)
       : null;
     return { whisky: w, avgOverall, count: ratings.length, myScore: myRating?.overall ?? null };
-  }).sort((a, b) => b.avgOverall - a.avgOverall);
+  });
 
-  const handleDownload = () => {
-    const lines = [
-      `CaskSense - ${tasting.title}`,
-      `${tasting.date || ""} · ${tasting.location || ""}`,
-      `${"=".repeat(50)}`,
-      "",
-      `${t("naked.ranking", "Ranking")}:`,
-      "",
-    ];
-    whiskyResults.forEach((r, i) => {
-      lines.push(`${i + 1}. ${r.whisky.name}`);
-      if (r.whisky.distillery) lines.push(`   ${r.whisky.distillery}`);
-      lines.push(`   Ø ${r.avgOverall} (${r.count} ${t("naked.ratings", "Bewertungen")})`);
-      if (r.myScore !== null) lines.push(`   ${t("naked.myScore", "Mein Wert")}: ${r.myScore}`);
-      lines.push("");
+  const sorted = sortByScore
+    ? [...whiskyResults].sort((a, b) => b.avgOverall - a.avgOverall)
+    : whiskyResults;
+
+  const generatePdf = () => {
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageW = 210;
+    const pageH = 297;
+    const marginX = 18;
+    const contentW = pageW - marginX * 2;
+
+    doc.setFillColor(248, 250, 252);
+    doc.rect(0, 0, pageW, pageH, "F");
+
+    doc.setDrawColor(71, 85, 105);
+    doc.setLineWidth(0.5);
+    doc.rect(12, 12, pageW - 24, pageH - 24);
+    doc.setLineWidth(0.2);
+    doc.rect(14, 14, pageW - 28, pageH - 28);
+
+    doc.setDrawColor(148, 163, 184);
+    doc.setLineWidth(0.15);
+    const ornW = 50;
+    const ornY = 40;
+    doc.line(pageW / 2 - ornW, ornY, pageW / 2 + ornW, ornY);
+    doc.setFillColor(148, 163, 184);
+    doc.circle(pageW / 2, ornY, 1.5, "F");
+
+    let y = 52;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(148, 163, 184);
+    doc.text("C A S K S E N S E", pageW / 2, y, { align: "center" });
+    y += 14;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59);
+    doc.text(tasting.title, pageW / 2, y, { align: "center" });
+    y += 8;
+
+    if (tasting.date || tasting.location) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text([tasting.date, tasting.location].filter(Boolean).join(" \u00B7 "), pageW / 2, y, { align: "center" });
+      y += 6;
+    }
+
+    doc.setDrawColor(148, 163, 184);
+    doc.setLineWidth(0.2);
+    doc.line(marginX + 40, y + 2, pageW - marginX - 40, y + 2);
+    y += 12;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(71, 85, 105);
+    doc.text(t("naked.ranking", "Ranking"), marginX, y);
+    y += 3;
+
+    doc.setDrawColor(200, 180, 120);
+    doc.setLineWidth(0.8);
+    doc.line(marginX, y, marginX + 30, y);
+    y += 8;
+
+    sorted.forEach((r, i) => {
+      if (y > pageH - 40) {
+        doc.addPage();
+        doc.setFillColor(248, 250, 252);
+        doc.rect(0, 0, pageW, pageH, "F");
+        y = 25;
+      }
+
+      doc.setFillColor(i === 0 ? 255 : 250, i === 0 ? 251 : 250, i === 0 ? 235 : 252);
+      doc.roundedRect(marginX, y - 4, contentW, 18, 2, 2, "F");
+      doc.setDrawColor(220, 210, 190);
+      doc.setLineWidth(0.15);
+      doc.roundedRect(marginX, y - 4, contentW, 18, 2, 2, "S");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(i === 0 ? 180 : i === 1 ? 120 : i === 2 ? 160 : 100, i === 0 ? 140 : i === 1 ? 120 : i === 2 ? 100 : 100, i === 0 ? 30 : i === 1 ? 130 : i === 2 ? 50 : 110);
+      doc.text(`${i + 1}`, marginX + 5, y + 5);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(30, 41, 59);
+      doc.text(r.whisky.name, marginX + 15, y + 2);
+
+      if (r.whisky.distillery) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        const meta = [r.whisky.distillery, r.whisky.age ? `${r.whisky.age}y` : null, r.whisky.abv ? `${r.whisky.abv}%` : null].filter(Boolean).join(" \u00B7 ");
+        doc.text(meta, marginX + 15, y + 8);
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.setTextColor(71, 85, 105);
+      doc.text(`\u00D8 ${r.avgOverall}`, pageW - marginX - 5, y + 4, { align: "right" });
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`${r.count} ${t("naked.ratings", "Bewertungen")}`, pageW - marginX - 5, y + 10, { align: "right" });
+
+      y += 22;
     });
-    lines.push(`${"=".repeat(50)}`);
-    lines.push(`CaskSense · casksense.replit.app`);
 
-    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß ]/g, "_")}_results.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    y += 6;
+    if (y > pageH - 30) {
+      doc.addPage();
+      y = 25;
+    }
+    doc.setDrawColor(148, 163, 184);
+    doc.setLineWidth(0.15);
+    doc.line(marginX + 40, y, pageW - marginX - 40, y);
+    y += 8;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text("CaskSense \u00B7 casksense.com", pageW / 2, y, { align: "center" });
+
+    doc.save(`${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß ]/g, "_")}_results.pdf`);
   };
 
   return (
@@ -302,20 +495,31 @@ function NakedResults({ tasting, whiskies }: { tasting: Tasting; whiskies: Whisk
         <p className="text-xs text-muted-foreground">{allRatings.length} {t("naked.totalRatings", "Bewertungen gesamt")}</p>
       </div>
 
+      <div className="flex justify-end">
+        <button
+          onClick={() => setSortByScore(!sortByScore)}
+          className="text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-serif"
+          data-testid="button-toggle-sort"
+        >
+          <ArrowUpDown className="w-3 h-3" />
+          {sortByScore ? t("naked.sortOriginal", "Originalreihenfolge") : t("naked.sortByScore", "Nach Score sortieren")}
+        </button>
+      </div>
+
       <div className="space-y-2">
-        {whiskyResults.map((r, i) => (
+        {sorted.map((r, i) => (
           <NakedResultCard key={r.whisky.id} whisky={r.whisky} rank={i} avgOverall={r.avgOverall} count={r.count} myScore={r.myScore} t={t} />
         ))}
       </div>
 
       <Button
-        onClick={handleDownload}
+        onClick={generatePdf}
         variant="outline"
         className="w-full font-serif gap-2"
         data-testid="button-download-results"
       >
         <Download className="w-4 h-4" />
-        {t("naked.download", "Ergebnis herunterladen")}
+        {t("naked.download", "Ergebnis herunterladen")} (PDF)
       </Button>
 
       <motion.div
@@ -450,9 +654,31 @@ export default function NakedTasting() {
   const isOpen = tasting.status === "open" || tasting.status === "draft";
   const isRevealed = tasting.status === "reveal" || tasting.status === "archived" || tasting.status === "closed";
 
+  const { theme, toggleTheme } = useAppStore();
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-md mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={toggleTheme}
+            className="w-8 h-8 rounded-full bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+            data-testid="button-naked-theme"
+            title={theme === "dark" ? "Light mode" : "Dark mode"}
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          {currentParticipant && tasting && (
+            <button
+              onClick={() => navigate(`/tasting/${tasting.id}`)}
+              className="text-[10px] text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-1 font-serif"
+              data-testid="button-naked-to-full"
+            >
+              <Maximize2 className="w-3 h-3" />
+              {t("naked.switchToFull", "Vollversion")}
+            </button>
+          )}
+        </div>
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Wine className="w-5 h-5 text-primary" />

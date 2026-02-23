@@ -305,6 +305,20 @@ export default function News() {
                                     </div>
                                     <div className="flex items-center gap-1.5 shrink-0">
                                       {!notif.isRead && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="w-6 h-6 rounded-full hover:bg-primary/10"
+                                          data-testid={`button-mark-read-${notif.id}`}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            markReadMutation.mutate(notif.id);
+                                          }}
+                                        >
+                                          <CheckCheck className="w-3.5 h-3.5 text-primary" />
+                                        </Button>
+                                      )}
+                                      {!notif.isRead && (
                                         <div className="w-2 h-2 rounded-full bg-primary" />
                                       )}
                                       {notif.linkUrl && (

@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3, Clock, Check, Trophy, FileDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3, Clock, Check, Trophy, FileDown, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1833,6 +1833,18 @@ export default function TastingRoom() {
                       {t("focus.enterFocus")}
                     </Button>
                   </>
+                )}
+                {tasting.code && tasting.status === "open" && !tasting.guidedMode && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate(`/naked/${tasting.code}`)}
+                    className="font-serif text-xs rounded-md h-7 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                    data-testid="button-naked-mode"
+                  >
+                    <Minimize2 className="w-3.5 h-3.5 mr-1" />
+                    Naked Mode
+                  </Button>
                 )}
               </div>
             </div>
