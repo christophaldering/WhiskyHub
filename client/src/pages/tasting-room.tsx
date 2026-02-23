@@ -1766,6 +1766,18 @@ export default function TastingRoom() {
     return { showName: false, showMeta: false, showImage: photoRevealed };
   };
 
+  useEffect(() => {
+    if (tasting && prevStatusRef.current && prevStatusRef.current !== "archived" && tasting.status === "archived") {
+      const key = `donation_prompt_shown_${tasting.id}`;
+      if (!localStorage.getItem(key)) {
+        setShowDonationPrompt(true);
+      }
+    }
+    if (tasting) {
+      prevStatusRef.current = tasting.status;
+    }
+  }, [tasting?.status, tasting?.id]);
+
   const isGuidedMode = tasting?.guidedMode && (tasting.status === "open" || tasting.status === "draft");
 
   if ((guidedActive || (isGuidedMode && !guidedExited)) && tasting && whiskyList.length > 0 && tasting.status === "open") {
@@ -1799,18 +1811,6 @@ export default function TastingRoom() {
       />
     );
   }
-
-  useEffect(() => {
-    if (tasting && prevStatusRef.current && prevStatusRef.current !== "archived" && tasting.status === "archived") {
-      const key = `donation_prompt_shown_${tasting.id}`;
-      if (!localStorage.getItem(key)) {
-        setShowDonationPrompt(true);
-      }
-    }
-    if (tasting) {
-      prevStatusRef.current = tasting.status;
-    }
-  }, [tasting?.status, tasting?.id]);
 
   const isRevealPhase = tasting.status === "reveal";
   const shouldAutoPresenter = isRevealPhase && isHost && !presenterExited;
