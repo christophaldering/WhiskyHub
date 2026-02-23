@@ -1,0 +1,175 @@
+PHASE A — NAV CLEANUP + TASTINGS HUB (UI ONLY)
+(NO ROUTING CHANGES, NO PERMISSION/GATING CHANGES, NO BACKEND/DB CHANGES)
+
+CONTEXT
+The sidebar is currently too cluttered and redundant. Several menu items represent sub-views of the same domain (“Tastings”): My Tastings, Host Dashboard, Recap, etc.
+Goal is to make the navigation feel calm and obvious, while preserving ALL existing features and ALL existing routes.
+
+STRICT RULES (MUST FOLLOW)
+1) Do NOT change any route paths.
+2) Do NOT change permission logic / experience-level gating logic.
+3) Do NOT modify backend, database, or API logic.
+4) Do NOT refactor the tasting room (/tasting/:id) logic.
+5) UI re-organization only: labels, grouping, ordering, and a new tabbed layout INSIDE the existing Tastings page.
+6) Preserve i18n (DE + EN) for all changed labels and new tab labels.
+7) Do not remove any features — only move where they are accessible.
+8) After changes, run thorough QA (see QA section). Do not suggest publishing unless QA passes.
+
+========================================================
+PART 1 — SIDEBAR: CLEAN TOP-LEVEL GROUPS + ORDER
+========================================================
+
+Target sidebar groups (top-level), in this order:
+
+1) GENUSS
+2) ICH
+3) PRO
+4) WISSEN
+5) ÜBER
+6) ADMIN (only if admin)
+
+Rules for sidebar:
+- Keep icons as-is (do not change icons).
+- Keep existing gating exactly as-is.
+- Keep existing routes exactly as-is.
+- Remove redundancy: do NOT show multiple “Tastings sub-pages” as separate sidebar items if they will be reachable from the Tastings hub.
+
+GENUSS should contain (in this exact order):
+- Home (/app)
+- Tastings (the existing tastings/sessions main route)
+- Journal (/journal) — label should be “Mein privates Verkostungstagebuch” in DE if already used, otherwise “Tagebuch”
+- Verkostete (/my-whiskies) — rename label (see PART 2)
+- Sammlung (/collection)
+- Wunschliste (/wishlist)
+
+ICH should contain:
+- Mein Profil (/profile)
+- Mein Whisky-Profil (/flavor-profile)
+
+PRO should contain (keep items that already exist & gating preserved):
+- Vergleich (/comparison)
+- Vorlagen (/tasting-templates)
+- Pairings (/pairings)
+- Benchmark / Library (/benchmark) (analyst+)
+- Whisky-Datenbank (/whisky-database) (analyst+ or existing access flag)
+- Analytik (/analytics) (analyst+)
+- Datenexport (/data-export) (analyst+)
+
+WISSEN: keep existing whisky knowledge items (lexicon, distilleries, map, bottlers, research) with current gating.
+
+ÜBER: keep
+- Hilfe & FAQ (/help)
+- Über (/about)
+- Zurück zur Homepage (landing route) if it exists
+
+ADMIN: keep admin panel (/admin) with admin-only visibility.
+
+IMPORTANT:
+If there are currently items like:
+- Meine Tastings (/tasting-history or /my-tastings)
+- Gastgeber-Dashboard (/host-dashboard)
+- Tasting-Rückblick (/recap or /tasting-recap)
+They should be REMOVED from the sidebar list (not deleted), because they will be reachable via the Tastings hub page.
+
+========================================================
+PART 2 — LABEL CHANGES (i18n DE/EN)
+========================================================
+
+1) Menu item label:
+- DE: “Meine verkosteten Whiskys” -> “Verkostete”
+- EN: “My Tasted Whiskies” -> “Tasted” OR “Tasted Whiskies” (choose the cleaner one that fits UI best)
+
+2) Ensure bottom navigation labels (mobile) remain short and do not wrap badly:
+- Home
+- Tastings
+- Tagebuch (or Journal)
+- Kalender
+- Mehr
+
+If wrapping occurs, implement truncation-safe styling (no visual overlap).
+
+========================================================
+PART 3 — TASTINGS PAGE BECOMES A HUB (TABS INSIDE PAGE)
+========================================================
+
+Goal:
+Transform the existing Tastings main page into a “hub” with tabs.
+NO NEW ROUTES.
+Use existing routes/components inside the page.
+
+On the Tastings page, add tabs at the top (DE + EN):
+Tab 1: “Aktiv” / “Active”
+Tab 2: “Meine” / “Mine”
+Tab 3: “Host” / “Host”
+Tab 4: “Rückblick” / “Recap”
+Optional Tab 5: “Kalender” / “Calendar” if calendar content exists and fits well.
+
+TAB CONTENT REQUIREMENTS (use existing screens/components)
+- Aktiv:
+  - Join session UI (code entry)
+  - Active sessions list (if exists)
+  - Create session entry point (if exists on that page already)
+
+- Meine:
+  - My tastings history list (existing component/page content)
+  - Participated sessions view if available
+  - If only one list exists, show it here (not in sidebar)
+
+- Host:
+  - Embed/route-to existing Host Dashboard content
+  - Must respect host-only gating exactly:
+    - If user is not host, either hide the tab OR show the tab disabled with a short hint. Prefer: hide tab if current gating hides it.
+
+- Rückblick:
+  - Embed/route-to existing Recap / Tasting Recap content
+  - Provide access to export notes if that exists
+
+- Kalender (optional):
+  - Embed/route-to existing tasting calendar view
+
+Implementation constraint:
+- Prefer composing with existing components rather than iframing routes.
+- If easiest: conditionally render the component used by those pages.
+- If composition is difficult: provide buttons/links inside each tab that navigate to the existing route (still removing it from sidebar).
+- But still keep the “hub” value: user should feel everything is located here.
+
+UX REQUIREMENTS
+- Tabs must be mobile-friendly: horizontal scroll if needed
+- No layout overflow, no broken spacing
+- Clear active tab indicator
+- No duplicated nav within the hub (avoid nested sidebars)
+
+========================================================
+PART 4 — QUALITY & TESTING (MANDATORY BEFORE SUGGESTING PUBLISH)
+========================================================
+
+Run and document QA:
+1) App builds and runs without errors.
+2) Sidebar shows the new groups and ordering.
+3) Verify NO route paths changed (grep or confirm in routing config).
+4) Verify gating unchanged:
+   - guest sees only allowed items
+   - explorer sees profile/whiskies etc.
+   - connoisseur/analyst see pro items as before
+   - admin sees admin panel as before
+5) Tastings Hub:
+   - Each tab renders and works
+   - Links/buttons navigate correctly where applicable
+   - Host tab visibility respects host role
+6) Mobile:
+   - Bottom nav labels do not overlap or wrap badly
+   - Hamburger menu layout looks clean
+7) Regression smoke test:
+   - Home, Journal, Verkostete, Wishlist open without “Not found”
+   - Joining a session via code still works
+   - Creating a session still works
+8) Confirm: No backend/DB/API files modified.
+
+DELIVERABLES
+- List files changed
+- Short summary of what changed
+- QA checklist results (pass/fail)
+- Explicit confirmation: “No routes changed. No permission logic changed. No backend changed.”
+
+DO NOT ASK ME TO PUBLISH UNTIL QA IS PASSED.
+If QA fails, fix issues first, then re-run QA summary.

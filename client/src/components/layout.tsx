@@ -523,6 +523,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ] : []),
       ],
     },
+    ...(atLeast("explorer") ? [{
+      label: t('navGroup.ich'),
+      items: [
+        { href: "/profile", icon: User, label: t('profile.title') },
+        { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
+        ...(atLeast("connoisseur") ? [
+          { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
+          { href: "/taste-twins", icon: HeartHandshake, label: t('nav.tasteTwins') },
+        ] : []),
+        { href: "/account", icon: Settings, label: t('nav.account') },
+      ],
+    }] : []),
     ...(atLeast("connoisseur") ? [{
       label: t('navGroup.pro'),
       items: [
@@ -537,24 +549,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
           { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
         ] : []),
-      ],
-    }] : []),
-    ...(atLeast("explorer") ? [{
-      label: t('navGroup.profil'),
-      items: [
-        { href: "/profile", icon: User, label: t('profile.title') },
-        { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
-        ...(atLeast("connoisseur") ? [
-          { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
-          { href: "/taste-twins", icon: HeartHandshake, label: t('nav.tasteTwins') },
-        ] : []),
-        { href: "/account", icon: Settings, label: t('nav.account') },
-        ...(atLeast("connoisseur") ? [
-          { href: "/friends", icon: Users, label: t('nav.friends') },
-          { href: "/community-rankings", icon: BarChart3, label: t('nav.communityRankings') },
-          { href: "/activity", icon: Rss, label: t('nav.activity') },
-          { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
-        ] : []),
+        { href: "/friends", icon: Users, label: t('nav.friends') },
+        { href: "/community-rankings", icon: BarChart3, label: t('nav.communityRankings') },
+        { href: "/activity", icon: Rss, label: t('nav.activity') },
+        { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
       ],
     }] : []),
     ...(atLeast("connoisseur") ? [{

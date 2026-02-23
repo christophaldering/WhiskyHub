@@ -3538,7 +3538,7 @@ const resources = {
         more: "Mehr",
         lobbyShort: "Home",
         sessionsShort: "Tastings",
-        journalShort: "Journal",
+        journalShort: "Tagebuch",
         calendarShort: "Kalender",
         moreShort: "Mehr",
         flavorWheel: "Aromarad",
