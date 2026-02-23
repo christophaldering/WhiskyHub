@@ -16,7 +16,8 @@ import { LanguageToggle } from "@/components/language-toggle";
 import {
   Brain, ArrowRight, Wine,
   ChevronDown, Heart,
-  Presentation, Play, Star, Search, Beaker, CheckCircle2
+  Presentation, Play, Star, Search, Beaker, CheckCircle2,
+  Zap, Layers, ClipboardList, Users, BarChart3, FlaskConical, Sparkles
 } from "lucide-react";
 
 const tourPreviewSlides = [slideBlind, slideFlightboard, slideAnalytics];
@@ -71,7 +72,7 @@ export default function Landing() {
               <Presentation className="w-3.5 h-3.5" />
               {t("landing.nav.featureTour")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => document.getElementById("story")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-sm hidden sm:inline-flex" data-testid="landing-nav-explore">
+            <Button variant="ghost" size="sm" onClick={() => document.getElementById("overview")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-sm hidden sm:inline-flex" data-testid="landing-nav-explore">
               {t("landing.nav.explore")}
             </Button>
             <Button size="sm" onClick={() => navigate("/app")} className="font-serif text-sm gap-1.5" data-testid="landing-nav-login">
@@ -379,6 +380,54 @@ export default function Landing() {
       )}
 
 
+
+      {/* CaskSense Overview */}
+      <section className="py-20 sm:py-28 bg-gradient-to-b from-amber-50/30 to-background" id="overview">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={0}
+            variants={fadeUp}
+            className="text-center mb-14"
+          >
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <Sparkles className="w-5 h-5 text-amber-500" />
+              <span className="text-sm font-medium text-amber-500 uppercase tracking-widest">{t("landing.overview.label")}</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-black text-primary">{t("landing.overview.title")}</h2>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {([
+              { key: "justTasting", icon: Zap, color: "text-emerald-600 bg-emerald-500/12", border: "border-emerald-500/25" },
+              { key: "levels", icon: Layers, color: "text-blue-600 bg-blue-500/12", border: "border-blue-500/25" },
+              { key: "hosting", icon: ClipboardList, color: "text-amber-600 bg-amber-500/12", border: "border-amber-500/25" },
+              { key: "tasting", icon: Users, color: "text-orange-600 bg-orange-500/12", border: "border-orange-500/25" },
+              { key: "reveal", icon: BarChart3, color: "text-purple-600 bg-purple-500/12", border: "border-purple-500/25" },
+              { key: "science", icon: FlaskConical, color: "text-rose-600 bg-rose-500/12", border: "border-rose-500/25" },
+            ] as const).map((tile, i) => (
+              <motion.div
+                key={tile.key}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                custom={i}
+                variants={fadeUp}
+                className={`bg-card border ${tile.border} rounded-xl p-5 transition-all hover:shadow-md group`}
+                data-testid={`overview-tile-${tile.key}`}
+              >
+                <div className={`w-11 h-11 rounded-lg ${tile.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                  <tile.icon className="w-5 h-5" />
+                </div>
+                <h3 className="font-serif font-bold text-primary text-base mb-1.5">{t(`landing.overview.${tile.key}`)}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{t(`landing.overview.${tile.key}Desc`)}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Origin Story */}
       <section className="py-20 sm:py-28" id="story">

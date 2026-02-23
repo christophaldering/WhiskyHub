@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft, Info, Rocket, BarChart3, Wrench, Bug, Shield, Palette, Filter, Users, Wine, BookOpen, Code2, Glasses, Brain, Globe, Camera, FileSpreadsheet, ClipboardPaste, FileUp, LayoutGrid, Calendar, Eye, Sliders, MessageCircle, TrendingUp } from "lucide-react";
+import { ArrowLeft, Info, Rocket, BarChart3, Wrench, Bug, Shield, Palette, Filter, Users, Wine, BookOpen, Code2, Glasses, Brain, Globe, Camera, FileSpreadsheet, ClipboardPaste, FileUp, LayoutGrid, Calendar, Eye, Sliders, MessageCircle, TrendingUp, Zap, Layers, ClipboardList, FlaskConical } from "lucide-react";
 import aboutNose from "@/assets/images/about-nose.png";
 import aboutTaste from "@/assets/images/about-taste.png";
 import aboutReflect from "@/assets/images/about-reflect.png";
@@ -137,6 +137,15 @@ function OverviewSection() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
 
+  const overviewTiles = [
+    { key: "justTasting", icon: Zap, color: "text-emerald-600 bg-emerald-500/10", border: "border-emerald-500/25" },
+    { key: "levels", icon: Layers, color: "text-blue-600 bg-blue-500/10", border: "border-blue-500/25" },
+    { key: "hosting", icon: ClipboardList, color: "text-amber-600 bg-amber-500/10", border: "border-amber-500/25" },
+    { key: "tasting", icon: Users, color: "text-orange-600 bg-orange-500/10", border: "border-orange-500/25" },
+    { key: "reveal", icon: BarChart3, color: "text-purple-600 bg-purple-500/10", border: "border-purple-500/25" },
+    { key: "science", icon: FlaskConical, color: "text-rose-600 bg-rose-500/10", border: "border-rose-500/25" },
+  ];
+
   const features = [
     { icon: Glasses, titleKey: "landing.features.blindTasting", descKey: "landing.features.blindTastingDesc", color: "text-amber-600 bg-amber-600/10" },
     { icon: Brain, titleKey: "landing.features.aiImport", descKey: "landing.features.aiImportDesc", color: "text-orange-500 bg-orange-500/10" },
@@ -160,6 +169,32 @@ function OverviewSection() {
 
   return (
     <div className="space-y-10">
+      <div>
+        <h3 className="text-lg font-serif font-bold text-primary mb-2">{t("landing.overview.title")}</h3>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
+          {overviewTiles.map((tile, i) => (
+            <motion.div
+              key={tile.key}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <Card className={`h-full border ${tile.border}`} data-testid={`about-overview-${tile.key}`}>
+                <CardContent className="p-4 flex gap-3">
+                  <div className={`w-10 h-10 rounded-lg ${tile.color} flex items-center justify-center shrink-0`}>
+                    <tile.icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-serif font-semibold text-sm text-primary">{t(`landing.overview.${tile.key}`)}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{t(`landing.overview.${tile.key}Desc`)}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
       <div>
         <h3 className="text-lg font-serif font-bold text-primary mb-2">{t("landing.features.title")}</h3>
         <p className="text-sm text-muted-foreground mb-5">{t("landing.features.subtitle")}</p>
