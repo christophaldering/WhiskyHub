@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Camera, X, User, KeyRound, Mail, Trash2 } from "lucide-react";
+import { Camera, X, User, KeyRound, Mail, Trash2, AlertTriangle } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
 
 const REGIONS = [
@@ -150,12 +150,23 @@ export default function Profile() {
     },
   });
 
+  const [deleteStep, setDeleteStep] = useState(0);
+  const [deletePin, setDeletePin] = useState("");
+  const [deletePinError, setDeletePinError] = useState("");
+
   const deleteMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (pin: string) => {
       if (!currentParticipant) return;
-      const res = await fetch(`/api/participants/${currentParticipant.id}/anonymize`, { method: "DELETE" });
+      const res = await fetch(`/api/participants/${currentParticipant.id}/anonymize`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin }),
+      });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: "Request failed" }));
+        if (res.status === 403) {
+          throw new Error("INVALID_PIN");
+        }
         throw new Error(err.message);
       }
       return res.json();
@@ -166,7 +177,11 @@ export default function Profile() {
       navigate("/");
     },
     onError: (error: Error) => {
-      toast({ title: error.message, variant: "destructive" });
+      if (error.message === "INVALID_PIN") {
+        setDeletePinError(t("account.closeAccountPinWrong"));
+      } else {
+        toast({ title: error.message, variant: "destructive" });
+      }
     },
   });
 
@@ -540,11 +555,12 @@ export default function Profile() {
           <p className="text-sm text-muted-foreground mb-4">
             {t("profile.deleteAccountDesc")}
           </p>
-          <AlertDialog>
+          <AlertDialog open={deleteStep === 1} onOpenChange={(open) => { if (!open) setDeleteStep(0); }}>
             <AlertDialogTrigger asChild>
               <Button
                 variant="destructive"
                 className="font-serif"
+                onClick={() => setDeleteStep(1)}
                 data-testid="button-delete-account"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
@@ -553,22 +569,56 @@ export default function Profile() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>{t("profile.deleteAccount")}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t("profile.deleteAccountDesc")}
-                </AlertDialogDescription>
+                <AlertDialogTitle>{t("account.closeAccountConfirm")}</AlertDialogTitle>
+                <AlertDialogDescription>{t("account.closeAccountWarning")}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel data-testid="button-delete-account-cancel">
+                <AlertDialogCancel onClick={() => setDeleteStep(0)} data-testid="button-delete-account-cancel">
                   {t("profile.deleteAccountCancel")}
                 </AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={() => deleteMutation.mutate()}
+                  onClick={() => { setDeleteStep(2); setDeletePin(""); setDeletePinError(""); }}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  data-testid="button-delete-account-step1"
+                >
+                  {t("account.closeAccountContinue")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <AlertDialog open={deleteStep === 2} onOpenChange={(open) => { if (!open) { setDeleteStep(0); setDeletePin(""); setDeletePinError(""); } }}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t("account.closeAccountPinTitle")}</AlertDialogTitle>
+                <AlertDialogDescription>{t("account.closeAccountPinDesc")}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="py-2">
+                <Input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  placeholder={t("account.closeAccountPinPlaceholder")}
+                  value={deletePin}
+                  onChange={(e) => { setDeletePin(e.target.value.replace(/\D/g, "").slice(0, 4)); setDeletePinError(""); }}
+                  className={deletePinError ? "border-destructive" : ""}
+                  data-testid="input-delete-pin"
+                />
+                {deletePinError && (
+                  <p className="text-xs text-destructive mt-1.5" data-testid="text-delete-pin-error">{deletePinError}</p>
+                )}
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => { setDeleteStep(0); setDeletePin(""); setDeletePinError(""); }} data-testid="button-delete-account-cancel-step2">
+                  {t("account.cancel")}
+                </AlertDialogCancel>
+                <Button
+                  variant="destructive"
+                  onClick={() => deleteMutation.mutate(deletePin)}
+                  disabled={deleteMutation.isPending || deletePin.length !== 4}
                   data-testid="button-delete-account-confirm"
                 >
-                  {t("profile.deleteAccountConfirm")}
-                </AlertDialogAction>
+                  {deleteMutation.isPending ? "..." : t("account.closeAccountButton")}
+                </Button>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

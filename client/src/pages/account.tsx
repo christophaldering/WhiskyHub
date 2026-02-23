@@ -34,6 +34,9 @@ export default function Account() {
   const [pinLoading, setPinLoading] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteStep, setDeleteStep] = useState(0);
+  const [deletePin, setDeletePin] = useState("");
+  const [deletePinError, setDeletePinError] = useState("");
 
   if (!currentParticipant) {
     return (
@@ -116,12 +119,26 @@ export default function Account() {
   };
 
   const handleCloseAccount = async () => {
+    if (!deletePin || deletePin.length !== 4) {
+      setDeletePinError(t("account.closeAccountPinRequired"));
+      return;
+    }
     setDeleteLoading(true);
+    setDeletePinError("");
     try {
       const res = await fetch(`/api/participants/${currentParticipant.id}/anonymize`, {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: deletePin }),
       });
-      if (!res.ok) throw new Error("Failed to close account");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: "Failed" }));
+        if (res.status === 403) {
+          setDeletePinError(t("account.closeAccountPinWrong"));
+          return;
+        }
+        throw new Error(err.message);
+      }
       setParticipant(null);
     } catch (e: any) {
       toast({ title: e.message, variant: "destructive" });
@@ -257,11 +274,12 @@ export default function Account() {
             <h3 className="font-serif font-semibold text-destructive">{t("account.closeAccount")}</h3>
           </div>
           <p className="text-sm text-muted-foreground">{t("account.closeAccountDesc")}</p>
-          <AlertDialog>
+          <AlertDialog open={deleteStep === 1} onOpenChange={(open) => { if (!open) setDeleteStep(0); }}>
             <AlertDialogTrigger asChild>
               <Button
                 variant="destructive"
                 size="sm"
+                onClick={() => setDeleteStep(1)}
                 data-testid="button-close-account"
               >
                 <AlertTriangle className="w-3.5 h-3.5 mr-1" />
@@ -274,15 +292,48 @@ export default function Account() {
                 <AlertDialogDescription>{t("account.closeAccountWarning")}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel data-testid="button-cancel-close">{t("account.cancel")}</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => setDeleteStep(0)} data-testid="button-cancel-close">{t("account.cancel")}</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={handleCloseAccount}
+                  onClick={() => { setDeleteStep(2); setDeletePin(""); setDeletePinError(""); }}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  disabled={deleteLoading}
+                  data-testid="button-confirm-step1"
+                >
+                  {t("account.closeAccountContinue")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <AlertDialog open={deleteStep === 2} onOpenChange={(open) => { if (!open) { setDeleteStep(0); setDeletePin(""); setDeletePinError(""); } }}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t("account.closeAccountPinTitle")}</AlertDialogTitle>
+                <AlertDialogDescription>{t("account.closeAccountPinDesc")}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="py-2">
+                <Input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  placeholder={t("account.closeAccountPinPlaceholder")}
+                  value={deletePin}
+                  onChange={(e) => { setDeletePin(e.target.value.replace(/\D/g, "").slice(0, 4)); setDeletePinError(""); }}
+                  className={deletePinError ? "border-destructive" : ""}
+                  data-testid="input-delete-pin"
+                />
+                {deletePinError && (
+                  <p className="text-xs text-destructive mt-1.5" data-testid="text-delete-pin-error">{deletePinError}</p>
+                )}
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => { setDeleteStep(0); setDeletePin(""); setDeletePinError(""); }} data-testid="button-cancel-close-step2">{t("account.cancel")}</AlertDialogCancel>
+                <Button
+                  variant="destructive"
+                  onClick={handleCloseAccount}
+                  disabled={deleteLoading || deletePin.length !== 4}
                   data-testid="button-confirm-close"
                 >
-                  {t("account.closeAccountButton")}
-                </AlertDialogAction>
+                  {deleteLoading ? "..." : t("account.closeAccountButton")}
+                </Button>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

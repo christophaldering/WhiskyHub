@@ -674,6 +674,10 @@ export async function registerRoutes(
     try {
       const participant = await storage.getParticipant(req.params.id);
       if (!participant) return res.status(404).json({ message: "Not found" });
+      const { pin } = req.body || {};
+      if (!pin || pin !== participant.pin) {
+        return res.status(403).json({ message: "Invalid PIN" });
+      }
       const hash = crypto.randomBytes(4).toString("hex");
       const anonymizedName = `Anonym-${hash}`;
       await storage.updateParticipant(participant.id, {
