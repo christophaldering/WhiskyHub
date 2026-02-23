@@ -8,6 +8,7 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 import { Activity, ChevronDown, ChevronUp, Users, Globe, User, BookOpen, Info } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
 import { Link } from "wouter";
+import { FlavorWheelContent } from "./flavor-wheel";
 
 const COLORS = ["#c8a864", "#a8845c", "#8b6f47", "#d4a853", "#b8934a", "#9e7d3f", "#c4956c", "#d9b87c"];
 
@@ -359,7 +360,7 @@ export default function FlavorProfile() {
   const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
   const isDE = i18n.language === "de";
-  const [activeTab, setActiveTab] = useState<"taste" | "profile">("taste");
+  const [activeTab, setActiveTab] = useState<"taste" | "profile" | "wheel">("taste");
 
   const { data: profile, isLoading } = useQuery<FlavorProfileData>({
     queryKey: ["flavor-profile", currentParticipant?.id],
@@ -463,6 +464,13 @@ export default function FlavorProfile() {
             data-testid="tab-profile"
           >
             {t("flavorProfile.tabProfile")}
+          </button>
+          <button
+            onClick={() => setActiveTab("wheel")}
+            className={`px-4 py-2.5 text-sm font-serif font-medium transition-colors border-b-2 -mb-px ${activeTab === "wheel" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+            data-testid="tab-wheel"
+          >
+            {t("flavorProfile.tabWheel")}
           </button>
         </div>
 
@@ -625,6 +633,10 @@ export default function FlavorProfile() {
 
         {activeTab === "profile" && currentParticipant && (
           <WhiskyProfileTab participantId={currentParticipant.id} t={t} isDE={isDE} />
+        )}
+
+        {activeTab === "wheel" && currentParticipant && (
+          <FlavorWheelContent />
         )}
       </motion.div>
     </div>

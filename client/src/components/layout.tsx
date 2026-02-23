@@ -475,7 +475,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navGroups: NavGroup[] = useMemo(() => [
     {
-      label: t('navGroup.main'),
+      label: t('navGroup.dashboard'),
       defaultOpen: true,
       items: [
         { href: "/app", icon: Home, label: t('nav.lobby') },
@@ -490,11 +490,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/profile", icon: User, label: t('profile.title') },
         { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
         ...(atLeast("connoisseur") ? [
-          { href: "/badges", icon: Trophy, label: t('nav.badges') },
           { href: "/reminders", icon: Bell, label: t('nav.reminders') },
-        ] : []),
-        ...(atLeast("analyst") ? [
-          { href: "/flavor-wheel", icon: CircleDot, label: t('nav.flavorWheel') },
         ] : []),
       ],
     }] : []),
@@ -503,42 +499,36 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       items: [
         { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
         { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
+        { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.asHost') },
+        { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
+        ...(atLeast("connoisseur") ? [
+          { href: "/export-notes", icon: Download, label: t('nav.exportNotes') },
+        ] : []),
       ],
     }] : []),
-    {
-      label: t('navGroup.host'),
-      items: [
-        { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
-        { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
-        ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
-          { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
-        ] : []),
-        ...(atLeast("analyst") ? [
-          { href: "/benchmark", icon: Brain, label: t('nav.benchmark') },
-        ] : []),
-      ],
-    },
     ...(atLeast("explorer") ? [{
       label: t('navGroup.myWhiskys'),
       items: [
-        { href: "/my-whiskies", icon: GlassWater, label: t('nav.myWhiskies') },
-        { href: "/wishlist", icon: Star, label: t('nav.wishlist') },
+        { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
+        { href: "/wishlist", icon: Star, label: t('nav.myWhiskyWishlist') },
         ...(atLeast("connoisseur") ? [
-          { href: "/collection", icon: Archive, label: t('nav.collection') },
+          { href: "/collection", icon: Archive, label: t('nav.myWhiskyCollection') },
+        ] : []),
+        ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
+          { href: "/whisky-database", icon: Database, label: t('nav.myWhiskyDatabase') },
         ] : []),
       ],
     }] : []),
     ...(atLeast("connoisseur") ? [{
-      label: t('navGroup.tools'),
+      label: t('navGroup.toolsAndAnalytics'),
       items: [
         { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
         { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
         { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
-        { href: "/export-notes", icon: Download, label: t('nav.exportNotes') },
         { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
         ...(atLeast("analyst") ? [
+          { href: "/benchmark", icon: Brain, label: t('nav.benchmark') },
           { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
-          { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
         ] : []),
       ],
     }] : []),
@@ -578,6 +568,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: t('navGroup.admin'),
       items: [
         { href: "/account", icon: Settings, label: t('nav.account') },
+        ...(atLeast("analyst") ? [
+          { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
+        ] : []),
         ...(currentParticipant.role === "admin" ? [
           { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
         ] : []),

@@ -6,7 +6,7 @@ import { useAppStore } from "@/lib/store";
 import { exportApi, tastingApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Printer, Copy, FileText, Wine, FileDown } from "lucide-react";
+import { Printer, Copy, FileText, Wine, FileDown, ClipboardList, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { GuestPreview } from "@/components/guest-preview";
 
@@ -197,9 +197,14 @@ export default function ExportNotes() {
             </div>
 
             {notesData.notes?.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <Wine className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                <p className="font-serif">{t("exportNotes.empty")}</p>
+              <div className="flex flex-col items-center py-12" data-testid="empty-state-no-notes">
+                <div className="bg-card border border-border/40 rounded-xl p-8 max-w-md w-full text-center shadow-sm">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/10 flex items-center justify-center">
+                    <Wine className="w-8 h-8 text-amber-500/60" />
+                  </div>
+                  <h3 className="text-lg font-serif font-semibold text-foreground mb-2">{t("exportNotes.empty")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("exportNotes.emptyHint")}</p>
+                </div>
               </div>
             ) : (
               <div className="space-y-4 print:space-y-6">
@@ -209,17 +214,19 @@ export default function ExportNotes() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="bg-card rounded-lg border border-border/40 p-5 print:break-inside-avoid print:border print:border-gray-300"
+                    className="bg-card rounded-xl border border-border/40 p-5 shadow-sm hover:shadow-md transition-shadow print:break-inside-avoid print:border print:border-gray-300 print:shadow-none"
                     data-testid={`card-whisky-note-${item.whisky.id}`}
                   >
                     <div className="flex gap-4">
                       {item.whisky.imageUrl && (
-                        <img
-                          src={item.whisky.imageUrl}
-                          alt={item.whisky.name}
-                          className="w-16 h-20 rounded object-cover flex-shrink-0"
-                          data-testid={`img-whisky-${item.whisky.id}`}
-                        />
+                        <div className="w-16 h-24 rounded-lg bg-secondary/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          <img
+                            src={item.whisky.imageUrl}
+                            alt={item.whisky.name}
+                            className="w-full h-full object-contain p-1"
+                            data-testid={`img-whisky-${item.whisky.id}`}
+                          />
+                        </div>
                       )}
                       <div className="flex-1 min-w-0">
                         <h3 className="text-lg font-serif font-semibold text-foreground" data-testid={`text-whisky-name-${item.whisky.id}`}>
@@ -260,9 +267,17 @@ export default function ExportNotes() {
         )}
 
         {!selectedTastingId && !tastingsLoading && (
-          <div className="text-center py-16 text-muted-foreground">
-            <Wine className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <p className="font-serif">{t("exportNotes.selectPrompt")}</p>
+          <div className="flex flex-col items-center py-12" data-testid="empty-state-select">
+            <div className="bg-card border border-border/40 rounded-xl p-8 max-w-md w-full text-center shadow-sm">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                <ClipboardList className="w-8 h-8 text-primary/60" />
+              </div>
+              <h3 className="text-lg font-serif font-semibold text-foreground mb-2">{t("exportNotes.selectPrompt")}</h3>
+              <p className="text-sm text-muted-foreground mb-4">{t("exportNotes.selectHint")}</p>
+              <div className="flex justify-center">
+                <ChevronUp className="w-5 h-5 text-muted-foreground/50 animate-bounce" />
+              </div>
+            </div>
           </div>
         )}
       </motion.div>

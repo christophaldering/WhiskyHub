@@ -104,25 +104,45 @@ export default function News() {
     }));
   };
 
-  const unreadCount = notifications.filter((n: any) => !n.isRead).length;
+  const filteredNotifications = useMemo(() => 
+    notifications.filter((n: any) => n.type !== "join"),
+    [notifications]
+  );
+
+  const joinAggregation = useMemo(() => {
+    const joinNotifs = notifications.filter((n: any) => n.type === "join");
+    if (joinNotifs.length === 0) return null;
+    const tastingNames = new Set<string>();
+    joinNotifs.forEach((n: any) => {
+      if (n.linkUrl) {
+        tastingNames.add(n.linkUrl);
+      }
+    });
+    return {
+      participants: joinNotifs.length,
+      tastings: Math.max(tastingNames.size, 1),
+    };
+  }, [notifications]);
+
+  const unreadCount = filteredNotifications.filter((n: any) => !n.isRead).length;
 
   const groupedNotifications = useMemo(() => {
     const groups: Record<string, any[]> = {};
-    notifications.forEach((notif: any) => {
+    filteredNotifications.forEach((notif: any) => {
       const category = notif.type || "platform_update";
       if (!groups[category]) {
         groups[category] = [];
       }
       groups[category].push(notif);
     });
-    const categoryOrder = ["invitation", "join", "reveal", "platform_update", "feature_update"];
+    const categoryOrder = ["invitation", "reveal", "platform_update", "feature_update"];
     const sortedEntries = Object.entries(groups).sort(([a], [b]) => {
       const idxA = categoryOrder.indexOf(a);
       const idxB = categoryOrder.indexOf(b);
       return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
     });
     return sortedEntries;
-  }, [notifications]);
+  }, [filteredNotifications]);
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -212,6 +232,15 @@ export default function News() {
         </motion.div>
       )}
 
+      {joinAggregation && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600/5 border border-green-600/15 text-sm text-green-700 dark:text-green-400" data-testid="text-aggregated-activity">
+            <Users className="w-4 h-4 shrink-0" />
+            <span>{t("news.aggregatedActivity", { participants: joinAggregation.participants, tastings: joinAggregation.tastings })}</span>
+          </div>
+        </motion.div>
+      )}
+
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
@@ -221,7 +250,7 @@ export default function News() {
             </div>
           ))}
         </div>
-      ) : notifications.length === 0 ? (
+      ) : filteredNotifications.length === 0 && !joinAggregation ? (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -231,7 +260,7 @@ export default function News() {
           <p className="text-muted-foreground font-serif">{t("news.empty")}</p>
           <p className="text-sm text-muted-foreground/70 mt-1">{t("news.emptyDesc")}</p>
         </motion.div>
-      ) : (
+      ) : groupedNotifications.length > 0 && (
         <div className="space-y-4">
           {groupedNotifications.map(([category, items]) => {
             const config = typeConfig[category] || typeConfig.platform_update;
