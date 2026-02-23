@@ -162,7 +162,7 @@ const slides: SlideData[] = [
       { icon: BarChart3, title: "Benchmark-Datenbank", desc: "Eigene Bewertungen im Kontext professioneller Referenzen einordnen" },
       { icon: TrendingUp, title: "Messqualität & Konsistenz", desc: "Wie zuverlässig bewertest du? CaskSense zeigt es — und hilft, präziser zu werden" },
       { icon: Brain, title: "KI-gestützte Mustererkennung", desc: "Zusammenhänge in deinen Bewertungen, die dir selbst nicht auffallen" },
-      { icon: GraduationCap, title: "Wissenschaftliche Vertiefung", desc: "Ansätze aus Datenanalyse und prädiktiver Validität — bis hin zu wissenschaftlichen Publikationen" },
+      { icon: GraduationCap, title: "Forschung & Sensorik", desc: "Ansätze aus Datenanalyse und prädiktiver Validität — bis hin zu wissenschaftlichen Publikationen" },
     ],
   },
   {

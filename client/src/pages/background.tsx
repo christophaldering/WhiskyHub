@@ -155,7 +155,7 @@ export default function Background() {
             </div>
           </motion.section>
 
-          {/* Section 4: Scientific Basis */}
+          {/* Section 4: Research & Sensory Science */}
           <motion.section id="science" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="scroll-mt-20">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 rounded-xl bg-purple-500/15 text-purple-600 flex items-center justify-center">

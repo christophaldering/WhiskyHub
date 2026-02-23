@@ -187,7 +187,7 @@ const resources = {
           tastingDesc: "Blind mode, flight board, discussion panel. Rate whiskies together — structured yet relaxed, without bias.",
           reveal: "Reveal & analytics",
           revealDesc: "Multi-act reveal with radar charts, group statistics, and personal flavor profiles. See how your palate compares.",
-          science: "Scientific foundation",
+          science: "Research & Sensory Science",
           scienceDesc: "Built on perception psychology principles. Structured evaluation across nose, taste, finish, and balance — transparent and fair.",
         },
         howItWorks: {
@@ -451,7 +451,7 @@ const resources = {
           scalesTitle: "Rating Scales",
         },
         science: {
-          title: "Scientific Basis",
+          title: "Research & Sensory Science",
           tagline: "Transparent methods, honest data",
           intro: "For those who want to understand the numbers: here's how CaskSense processes and analyzes tasting data.",
           normTitle: "Normalization",
@@ -639,7 +639,7 @@ const resources = {
         communityRankings: "Community Rankings",
         tasteTwins: "Taste Twins",
         news: "News",
-        research: "Research & Science",
+        research: "Research & Sensory Science",
         account: "My Account",
         help: "Help & FAQ",
         landingPage: "Back to Homepage",
@@ -2469,7 +2469,7 @@ const resources = {
         added: "Added"
       },
       research: {
-        title: "Research & Science",
+        title: "Research & Sensory Science",
         subtitle: "Where curiosity about whisky meets curiosity about how we perceive.",
         intro: "I'm a psychologist — and a whisky enthusiast. CaskSense is my hobby project where I explore what happens when psychometric methods meet sensory experience. The following studies have inspired or informed the thinking behind CaskSense. They're not the foundation — they're the fuel for curiosity.",
         tabPersonality: "Personality & Taste",
@@ -2927,7 +2927,7 @@ const resources = {
           tastingDesc: "Blind Mode, Flight Board, Diskussionsrunde. Gemeinsam bewerten – strukturiert und entspannt, ohne Vorurteile.",
           reveal: "Auswertung & Reveal",
           revealDesc: "Multi-Act Reveal mit Radar-Charts, Gruppenstatistiken und persönlichen Geschmacksprofilen. Sieh, wie dein Gaumen im Vergleich steht.",
-          science: "Wissenschaftliche Basis",
+          science: "Forschung & Sensorik",
           scienceDesc: "Basierend auf Prinzipien der Wahrnehmungspsychologie. Strukturierte Bewertung über Nase, Geschmack, Finish und Balance – transparent und fair.",
         },
         howItWorks: {
@@ -3191,7 +3191,7 @@ const resources = {
           scalesTitle: "Bewertungsskalen",
         },
         science: {
-          title: "Wissenschaftliche Basis",
+          title: "Forschung & Sensorik",
           tagline: "Transparente Methoden, ehrliche Daten",
           intro: "Für alle, die die Zahlen verstehen wollen: So verarbeitet und analysiert CaskSense Tasting-Daten.",
           normTitle: "Normalisierung",
@@ -3379,7 +3379,7 @@ const resources = {
         communityRankings: "Community Rankings",
         tasteTwins: "Geschmackszwillinge",
         news: "Neuigkeiten",
-        research: "Forschung & Wissenschaft",
+        research: "Forschung & Sensorik",
         account: "Mein Konto",
         help: "Hilfe & FAQ",
         landingPage: "Zurück zur Homepage",
@@ -5209,7 +5209,7 @@ const resources = {
         added: "Hinzugefügt"
       },
       research: {
-        title: "Forschung & Wissenschaft",
+        title: "Forschung & Sensorik",
         subtitle: "Wo die Neugier auf Whisky der Neugier auf unsere Wahrnehmung begegnet.",
         intro: "Ich bin Psychologe — und Whisky-Enthusiast. CaskSense ist mein Hobbyprojekt, in dem ich erkunde, was passiert, wenn psychometrische Methoden auf sensorisches Erleben treffen. Die folgenden Studien haben das Denken hinter CaskSense inspiriert oder geprägt. Sie sind nicht das Fundament — sie sind der Treibstoff für Neugier.",
         tabPersonality: "Persönlichkeit & Geschmack",
