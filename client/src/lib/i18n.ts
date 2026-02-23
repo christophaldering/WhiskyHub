@@ -1881,7 +1881,12 @@ const resources = {
         themeHighland: "Highland / Bold",
         themeSherry: "Sherry Cask / Rich",
         themeBourbon: "Bourbon Cask / Golden",
-        themeMixed: "Mixed / Classic"
+        themeMixed: "Mixed / Classic",
+        layoutMode: "Layout",
+        layoutCompact: "Compact (fewer pages)",
+        layoutSpacious: "Spacious (multi-page)",
+        layoutCompactDesc: "Dense layout with smaller fonts — fits everything on fewer pages.",
+        layoutSpaciousDesc: "Generous spacing with larger fonts and images — spread beautifully across multiple pages.",
       },
       briefing: {
         title: "Host Briefing Notes",
@@ -4503,7 +4508,12 @@ const resources = {
         themeHighland: "Highland / Kräftig",
         themeSherry: "Sherryfass / Reichhaltig",
         themeBourbon: "Bourbonfass / Golden",
-        themeMixed: "Gemischt / Klassisch"
+        themeMixed: "Gemischt / Klassisch",
+        layoutMode: "Layout",
+        layoutCompact: "Kompakt (weniger Seiten)",
+        layoutSpacious: "Großzügig (mehrseitig)",
+        layoutCompactDesc: "Dichtes Layout mit kleinerer Schrift — alles auf wenigen Seiten.",
+        layoutSpaciousDesc: "Großzügige Abstände mit größerer Schrift und Bildern — schön über mehrere Seiten verteilt.",
       },
       briefing: {
         title: "Gastgeber-Notizen",

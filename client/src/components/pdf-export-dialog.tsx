@@ -175,6 +175,66 @@ async function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+function getImageDimensions(dataUrl: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
+function coverCrop(imgW: number, imgH: number, targetW: number, targetH: number) {
+  const imgRatio = imgW / imgH;
+  const targetRatio = targetW / targetH;
+
+  let sx = 0, sy = 0, sw = imgW, sh = imgH;
+
+  if (imgRatio > targetRatio) {
+    sw = imgH * targetRatio;
+    sx = (imgW - sw) / 2;
+  } else {
+    sh = imgW / targetRatio;
+    sy = (imgH - sh) / 2;
+  }
+
+  return { sx, sy, sw, sh };
+}
+
+async function drawCoverImage(
+  doc: jsPDF,
+  dataUrl: string,
+  x: number,
+  y: number,
+  targetW: number,
+  targetH: number
+) {
+  try {
+    const dims = await getImageDimensions(dataUrl);
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d")!;
+    const dpr = 2;
+    canvas.width = targetW * dpr;
+    canvas.height = targetH * dpr;
+
+    const img = new Image();
+    img.src = dataUrl;
+    await new Promise<void>((resolve) => { img.onload = () => resolve(); if (img.complete) resolve(); });
+
+    const crop = coverCrop(dims.width, dims.height, targetW, targetH);
+    ctx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, canvas.width, canvas.height);
+
+    const croppedDataUrl = canvas.toDataURL("image/jpeg", 0.92);
+    doc.addImage(croppedDataUrl, "JPEG", x, y, targetW, targetH, undefined, "FAST");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+type LayoutMode = "compact" | "spacious";
+
 interface PdfExportDialogProps {
   tasting: Tasting;
   whiskies: Whisky[];
@@ -191,6 +251,7 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
   const [includeParticipants, setIncludeParticipants] = useState(true);
   const [includePhotos, setIncludePhotos] = useState(true);
   const [themeOverride, setThemeOverride] = useState("auto");
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>("compact");
   const bgRef = useRef<HTMLInputElement>(null);
 
   const activeTheme = useMemo(() => {
@@ -222,6 +283,21 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
       const marginX = 18;
       const contentW = pageW - marginX * 2;
 
+      const isSpacious = layoutMode === "spacious";
+
+      const addNewPage = () => {
+        doc.addPage();
+        doc.setFillColor(...BG_COLOR);
+        doc.rect(0, 0, pageW, pageH, "F");
+      };
+
+      const addFooter = () => {
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...MUTED_COLOR);
+        doc.text("CaskSense", pageW / 2, pageH - 8, { align: "center" });
+      };
+
       doc.setFillColor(...BG_COLOR);
       doc.rect(0, 0, pageW, pageH, "F");
 
@@ -229,15 +305,17 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
       if (bgFile) {
         bgDataUrl = await fileToDataUrl(bgFile);
       }
+
+      const imgAreaH = isSpacious ? pageH * 0.5 : pageH * 0.4;
+
       if (bgDataUrl) {
         try {
-          doc.addImage(bgDataUrl, "JPEG", 0, 0, pageW, pageH * 0.45, undefined, "FAST");
+          await drawCoverImage(doc, bgDataUrl, 0, 0, pageW, imgAreaH);
           doc.setFillColor(248, 250, 252);
           doc.setGState(new (doc as any).GState({ opacity: 0.85 }));
-          doc.rect(0, pageH * 0.35, pageW, pageH * 0.1, "F");
+          doc.rect(0, imgAreaH - imgAreaH * 0.08, pageW, imgAreaH * 0.08, "F");
           doc.setGState(new (doc as any).GState({ opacity: 1 }));
         } catch {
-          // background image failed, continue without it
         }
       }
 
@@ -262,7 +340,7 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
         doc.circle(pageW / 2 + ornW, ornY + 0.4, 0.6, "F");
       }
 
-      let coverY = bgDataUrl ? pageH * 0.48 : 56;
+      let coverY = bgDataUrl ? (imgAreaH + 10) : 56;
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
@@ -272,34 +350,34 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
       doc.setFont("helvetica", "italic");
       doc.setFontSize(7);
       doc.text("Where Tasting Becomes Reflection", pageW / 2, coverY, { align: "center" });
-      coverY += bgDataUrl ? 16 : 24;
+      coverY += bgDataUrl ? 12 : (isSpacious ? 28 : 24);
 
       doc.setDrawColor(...themeColors.secondary);
       doc.setLineWidth(0.2);
       doc.line(marginX + 50, coverY, pageW - marginX - 50, coverY);
-      coverY += bgDataUrl ? 14 : 20;
+      coverY += bgDataUrl ? 10 : (isSpacious ? 22 : 20);
 
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(30);
+      doc.setFontSize(isSpacious ? 34 : 30);
       doc.setTextColor(...themeColors.primary);
       const titleLines = doc.splitTextToSize(title, contentW - 20);
       doc.text(titleLines, pageW / 2, coverY, { align: "center" });
-      coverY += titleLines.length * 12 + 6;
+      coverY += titleLines.length * (isSpacious ? 14 : 12) + 6;
 
       doc.setFont("helvetica", "italic");
-      doc.setFontSize(11);
+      doc.setFontSize(isSpacious ? 13 : 11);
       doc.setTextColor(...themeColors.secondary);
       doc.text(activeTheme.tagline, pageW / 2, coverY, { align: "center" });
-      coverY += 8;
+      coverY += isSpacious ? 10 : 8;
 
       doc.setFont("helvetica", "italic");
-      doc.setFontSize(8);
+      doc.setFontSize(isSpacious ? 9 : 8);
       doc.setTextColor(...themeColors.accent);
       doc.text(activeTheme.moodText, pageW / 2, coverY, { align: "center" });
-      coverY += 10;
+      coverY += isSpacious ? 14 : 10;
 
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(12);
+      doc.setFontSize(isSpacious ? 14 : 12);
       doc.setTextColor(...themeColors.secondary);
       const displayDate = (() => {
         try {
@@ -312,33 +390,33 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
         doc.text(tasting.location, pageW / 2, coverY, { align: "center" });
         coverY += 8;
       }
-      coverY += 6;
+      coverY += isSpacious ? 10 : 6;
 
       doc.setDrawColor(...themeColors.secondary);
       doc.setLineWidth(0.2);
       doc.line(marginX + 50, coverY, pageW - marginX - 50, coverY);
-      coverY += 12;
+      coverY += isSpacious ? 16 : 12;
 
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
+      doc.setFontSize(isSpacious ? 12 : 10);
       doc.setTextColor(...themeColors.primary);
       const statsLine = `${whiskies.length} ${whiskies.length === 1 ? "Expression" : "Expressions"}`;
       doc.text(statsLine, pageW / 2, coverY, { align: "center" });
-      coverY += 8;
+      coverY += isSpacious ? 10 : 8;
 
       const regionSet = new Set<string>();
       whiskies.forEach(w => { if (w.region) regionSet.add(w.region); });
       if (regionSet.size > 0) {
-        doc.setFontSize(8);
+        doc.setFontSize(isSpacious ? 9 : 8);
         doc.setTextColor(...themeColors.secondary);
         doc.text(Array.from(regionSet).join("  \u2022  "), pageW / 2, coverY, { align: "center" });
-        coverY += 10;
+        coverY += isSpacious ? 12 : 10;
       }
 
       if (quote) {
         coverY += 6;
         doc.setFont("helvetica", "italic");
-        doc.setFontSize(11);
+        doc.setFontSize(isSpacious ? 13 : 11);
         doc.setTextColor(...themeColors.secondary);
         const quoteLines = doc.splitTextToSize(`\u201c${quote}\u201d`, contentW - 30);
         doc.text(quoteLines, pageW / 2, coverY, { align: "center" });
@@ -353,13 +431,13 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
         coverY += 10;
 
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(8);
+        doc.setFontSize(isSpacious ? 9 : 8);
         doc.setTextColor(...themeColors.primary);
         doc.text(t("pdfExport.participants").toUpperCase(), pageW / 2, coverY, { align: "center" });
         coverY += 7;
 
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
+        doc.setFontSize(isSpacious ? 10 : 9);
         doc.setTextColor(...themeColors.secondary);
         const names = participants.map((p: any) => p.participant?.name || p.name || "").filter(Boolean);
         const namesStr = names.join("  \u2022  ");
@@ -379,30 +457,6 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
         doc.circle(pageW / 2 + ornW, bottomOrnY + 0.4, 0.6, "F");
       }
 
-      doc.addPage();
-      doc.setFillColor(...BG_COLOR);
-      doc.rect(0, 0, pageW, pageH, "F");
-
-      let lineupY = 20;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
-      doc.setTextColor(...PRIMARY_COLOR);
-      doc.text(t("pdfExport.lineup").toUpperCase(), pageW / 2, lineupY, { align: "center" });
-      lineupY += 3;
-      doc.setDrawColor(...MUTED_COLOR);
-      doc.setLineWidth(0.3);
-      doc.line(marginX + 40, lineupY, pageW - marginX - 40, lineupY);
-      lineupY += 10;
-
-      const colW = (contentW - 10) / 2;
-      const startY = lineupY;
-      const hasAnyImages = whiskies.some(w => w.imageUrl);
-      const effectiveIncludePhotos = includePhotos && hasAnyImages;
-      const itemH = effectiveIncludePhotos ? 20 : 16;
-      const maxItems = Math.floor((pageH - startY - 15) / itemH);
-      const itemsPerCol = Math.ceil(whiskies.length / 2);
-      const effectivePerCol = Math.min(itemsPerCol, maxItems);
-
       const imageCache: Record<string, string | null> = {};
       if (includePhotos) {
         const urls = whiskies.filter(w => w.imageUrl).map(w => w.imageUrl!);
@@ -413,76 +467,207 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
         });
       }
 
-      const renderColumn = (items: Whisky[], offsetX: number, startIdx: number) => {
-        let y = startY;
-        items.forEach((w, i) => {
-          const idx = startIdx + i;
-          const thumbSize = effectiveIncludePhotos ? 10 : 0;
-          const textX = offsetX + (effectiveIncludePhotos ? thumbSize + 4 : 0);
+      const hasAnyImages = whiskies.some(w => w.imageUrl);
+      const effectiveIncludePhotos = includePhotos && hasAnyImages;
 
-          if (effectiveIncludePhotos && w.imageUrl && imageCache[w.imageUrl]) {
-            try {
-              doc.addImage(imageCache[w.imageUrl]!, "JPEG", offsetX, y - 3, thumbSize, thumbSize, undefined, "FAST");
-            } catch {
+      if (isSpacious) {
+        const itemsPerPage = 4;
+        const totalPages = Math.ceil(whiskies.length / itemsPerPage);
+
+        for (let page = 0; page < totalPages; page++) {
+          addNewPage();
+
+          if (page === 0) {
+            let lineupY = 22;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.setTextColor(...PRIMARY_COLOR);
+            doc.text(t("pdfExport.lineup").toUpperCase(), pageW / 2, lineupY, { align: "center" });
+            lineupY += 4;
+            doc.setDrawColor(...MUTED_COLOR);
+            doc.setLineWidth(0.3);
+            doc.line(marginX + 40, lineupY, pageW - marginX - 40, lineupY);
+          }
+
+          const pageItems = whiskies.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
+          const startY = page === 0 ? 40 : 25;
+          const itemH = (pageH - startY - 20) / itemsPerPage;
+
+          pageItems.forEach((w, i) => {
+            const idx = page * itemsPerPage + i;
+            const y = startY + i * itemH;
+            const thumbSize = effectiveIncludePhotos ? 22 : 0;
+            const textX = marginX + (effectiveIncludePhotos ? thumbSize + 6 : 0);
+
+            doc.setDrawColor(...MUTED_COLOR);
+            doc.setLineWidth(0.1);
+            if (i > 0) {
+              doc.line(marginX + 5, y - 3, pageW - marginX - 5, y - 3);
             }
+
+            if (effectiveIncludePhotos && w.imageUrl && imageCache[w.imageUrl]) {
+              try {
+                doc.addImage(imageCache[w.imageUrl]!, "JPEG", marginX, y, thumbSize, thumbSize, undefined, "FAST");
+              } catch {
+              }
+            }
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(...PRIMARY_COLOR);
+            doc.text(`${idx + 1}.`, textX, y + 5);
+
+            const numW = doc.getTextWidth(`${idx + 1}. `);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(13);
+            doc.setTextColor(...DARK_COLOR);
+            const dispName = w.name.length > 40 ? w.name.slice(0, 38) + "\u2026" : w.name;
+            doc.text(dispName, textX + numW, y + 5);
+
+            let subY = y + 11;
+            if (w.distillery) {
+              doc.setFont("helvetica", "italic");
+              doc.setFontSize(9);
+              doc.setTextColor(...MUTED_COLOR);
+              doc.text(w.distillery, textX + numW, subY);
+              subY += 5;
+            }
+
+            const agePart = w.age ? (w.age === "NAS" || w.age === "n.a.s." ? "NAS" : `${w.age}y`) : "";
+            const abvPart = w.abv != null ? `${w.abv}%` : "";
+            const primaryMeta = [agePart, abvPart, w.type].filter(Boolean).join(" \u2022 ");
+            if (primaryMeta) {
+              doc.setFont("helvetica", "normal");
+              doc.setFontSize(9);
+              doc.setTextColor(...MUTED_COLOR);
+              doc.text(primaryMeta, textX + numW, subY);
+              subY += 5;
+            }
+
+            const meta2 = buildMetaLine(w);
+            if (meta2) {
+              doc.setFont("helvetica", "normal");
+              doc.setFontSize(8);
+              doc.setTextColor(170, 180, 195);
+              const metaTrunc = meta2.length > 70 ? meta2.slice(0, 68) + "\u2026" : meta2;
+              doc.text(metaTrunc, textX + numW, subY);
+            }
+          });
+
+          addFooter();
+        }
+      } else {
+        addNewPage();
+
+        let lineupY = 20;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(...PRIMARY_COLOR);
+        doc.text(t("pdfExport.lineup").toUpperCase(), pageW / 2, lineupY, { align: "center" });
+        lineupY += 3;
+        doc.setDrawColor(...MUTED_COLOR);
+        doc.setLineWidth(0.3);
+        doc.line(marginX + 40, lineupY, pageW - marginX - 40, lineupY);
+        lineupY += 10;
+
+        const colW = (contentW - 10) / 2;
+        const startY = lineupY;
+        const thumbSize = effectiveIncludePhotos ? 10 : 0;
+        const itemH = effectiveIncludePhotos ? 20 : 16;
+        const maxItemsPerCol = Math.floor((pageH - startY - 15) / itemH);
+        const itemsPerCol = Math.ceil(whiskies.length / 2);
+
+        const renderColumn = (items: Whisky[], offsetX: number, startIdx: number) => {
+          let y = startY;
+          items.forEach((w, i) => {
+            const idx = startIdx + i;
+            const textX = offsetX + (effectiveIncludePhotos ? thumbSize + 4 : 0);
+
+            if (effectiveIncludePhotos && w.imageUrl && imageCache[w.imageUrl]) {
+              try {
+                doc.addImage(imageCache[w.imageUrl]!, "JPEG", offsetX, y - 3, thumbSize, thumbSize, undefined, "FAST");
+              } catch {
+              }
+            }
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(8);
+            doc.setTextColor(...PRIMARY_COLOR);
+            doc.text(`${idx + 1}.`, textX, y + 1);
+
+            const numW = doc.getTextWidth(`${idx + 1}. `);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9);
+            doc.setTextColor(...DARK_COLOR);
+            const dispName = w.name.length > 30 ? w.name.slice(0, 28) + "\u2026" : w.name;
+            doc.text(dispName, textX + numW, y + 1);
+
+            let subY = y + 5;
+            if (w.distillery) {
+              doc.setFont("helvetica", "italic");
+              doc.setFontSize(7);
+              doc.setTextColor(...MUTED_COLOR);
+              doc.text(w.distillery, textX + numW, subY);
+              subY += 3.5;
+            }
+
+            const agePart = w.age ? (w.age === "NAS" || w.age === "n.a.s." ? "NAS" : `${w.age}y`) : "";
+            const abvPart = w.abv != null ? `${w.abv}%` : "";
+            const primaryMeta = [agePart, abvPart, w.type].filter(Boolean).join(" \u2022 ");
+            if (primaryMeta) {
+              doc.setFont("helvetica", "normal");
+              doc.setFontSize(7);
+              doc.setTextColor(...MUTED_COLOR);
+              doc.text(primaryMeta, textX + numW, subY);
+              subY += 3.5;
+            }
+
+            const meta2 = buildMetaLine(w);
+            if (meta2) {
+              doc.setFont("helvetica", "normal");
+              doc.setFontSize(6);
+              doc.setTextColor(170, 180, 195);
+              const metaTrunc = meta2.length > 50 ? meta2.slice(0, 48) + "\u2026" : meta2;
+              doc.text(metaTrunc, textX + numW, subY);
+            }
+
+            y += itemH;
+          });
+        };
+
+        if (whiskies.length <= maxItemsPerCol * 2) {
+          const leftItems = whiskies.slice(0, itemsPerCol);
+          const rightItems = whiskies.slice(itemsPerCol);
+          renderColumn(leftItems, marginX, 0);
+          renderColumn(rightItems, marginX + colW + 10, itemsPerCol);
+        } else {
+          let remaining = [...whiskies];
+          let globalIdx = 0;
+          let isFirstLineupPage = true;
+
+          while (remaining.length > 0) {
+            if (!isFirstLineupPage) {
+              addNewPage();
+              lineupY = 20;
+            }
+            isFirstLineupPage = false;
+
+            const pageCapacity = maxItemsPerCol * 2;
+            const pageItems = remaining.slice(0, pageCapacity);
+            remaining = remaining.slice(pageCapacity);
+
+            const pageCols = Math.ceil(pageItems.length / 2);
+            const leftItems = pageItems.slice(0, pageCols);
+            const rightItems = pageItems.slice(pageCols);
+
+            renderColumn(leftItems, marginX, globalIdx);
+            renderColumn(rightItems, marginX + colW + 10, globalIdx + pageCols);
+            globalIdx += pageItems.length;
           }
+        }
 
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(8);
-          doc.setTextColor(...PRIMARY_COLOR);
-          doc.text(`${idx + 1}.`, textX, y + 1);
-
-          const numW = doc.getTextWidth(`${idx + 1}. `);
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(9);
-          doc.setTextColor(...DARK_COLOR);
-          const nameMaxW = colW - (effectiveIncludePhotos ? thumbSize + 4 : 0) - numW - 2;
-          const dispName = w.name.length > 30 ? w.name.slice(0, 28) + "\u2026" : w.name;
-          doc.text(dispName, textX + numW, y + 1);
-
-          let subY = y + 5;
-          if (w.distillery) {
-            doc.setFont("helvetica", "italic");
-            doc.setFontSize(7);
-            doc.setTextColor(...MUTED_COLOR);
-            doc.text(w.distillery, textX + numW, subY);
-            subY += 3.5;
-          }
-
-          const agePart = w.age ? (w.age === "NAS" || w.age === "n.a.s." ? "NAS" : `${w.age}y`) : "";
-          const abvPart = w.abv != null ? `${w.abv}%` : "";
-          const primaryMeta = [agePart, abvPart, w.type].filter(Boolean).join(" \u2022 ");
-          if (primaryMeta) {
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(7);
-            doc.setTextColor(...MUTED_COLOR);
-            doc.text(primaryMeta, textX + numW, subY);
-            subY += 3.5;
-          }
-
-          const meta2 = buildMetaLine(w);
-          if (meta2) {
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(6);
-            doc.setTextColor(170, 180, 195);
-            const metaTrunc = meta2.length > 50 ? meta2.slice(0, 48) + "\u2026" : meta2;
-            doc.text(metaTrunc, textX + numW, subY);
-          }
-
-          y += itemH;
-        });
-      };
-
-      const leftItems = whiskies.slice(0, itemsPerCol);
-      const rightItems = whiskies.slice(itemsPerCol);
-
-      renderColumn(leftItems, marginX, 0);
-      renderColumn(rightItems, marginX + colW + 10, itemsPerCol);
-
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...MUTED_COLOR);
-      doc.text("CaskSense", pageW / 2, pageH - 8, { align: "center" });
+        addFooter();
+      }
 
       doc.save(`${title.replace(/[^a-zA-Z0-9]/g, "_")}_menu.pdf`);
     } finally {
@@ -533,6 +718,22 @@ export function PdfExportDialog({ tasting, whiskies }: PdfExportDialogProps) {
               className="font-serif italic"
               data-testid="input-pdf-quote"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground font-bold">{t("pdfExport.layoutMode")}</Label>
+            <Select value={layoutMode} onValueChange={(v) => setLayoutMode(v as LayoutMode)} data-testid="select-layout-mode">
+              <SelectTrigger data-testid="select-trigger-layout-mode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="compact" data-testid="select-layout-compact">{t("pdfExport.layoutCompact")}</SelectItem>
+                <SelectItem value="spacious" data-testid="select-layout-spacious">{t("pdfExport.layoutSpacious")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {layoutMode === "compact" ? t("pdfExport.layoutCompactDesc") : t("pdfExport.layoutSpaciousDesc")}
+            </p>
           </div>
 
           <div className="space-y-2">
