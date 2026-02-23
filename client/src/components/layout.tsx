@@ -140,7 +140,7 @@ function NavItemRow({ item, location, onNavigate, isPreviewMode, onLoginRequest 
       <div
         data-nav-active={isActive ? "true" : undefined}
         className={cn(
-          "flex items-center gap-3 px-3 py-1.5 rounded-sm transition-all duration-300 cursor-pointer group",
+          "flex items-center gap-2.5 px-3 py-1 rounded-sm transition-all duration-300 cursor-pointer group",
           isPreviewMode && !isPublicRoute && "opacity-60",
           isActive
             ? "bg-secondary text-primary border-l-2 border-primary"
@@ -148,8 +148,8 @@ function NavItemRow({ item, location, onNavigate, isPreviewMode, onLoginRequest 
         )}
         onClick={handleClick}
       >
-        <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-primary")} />
-        <span className={cn("text-sm font-medium truncate", isActive && "font-semibold")}>{item.label}</span>
+        <item.icon className={cn("w-3.5 h-3.5 flex-shrink-0", isActive && "text-primary")} />
+        <span className={cn("text-xs font-medium truncate", isActive && "font-semibold")}>{item.label}</span>
       </div>
     );
   }
@@ -159,7 +159,7 @@ function NavItemRow({ item, location, onNavigate, isPreviewMode, onLoginRequest 
       <div
         data-nav-active={isActive ? "true" : undefined}
         className={cn(
-          "flex items-center gap-3 px-3 py-1.5 rounded-sm transition-all duration-300 cursor-pointer group",
+          "flex items-center gap-2.5 px-3 py-1 rounded-sm transition-all duration-300 cursor-pointer group",
           isPreviewMode && !isPublicRoute && "opacity-60",
           isActive
             ? "bg-secondary text-primary border-l-2 border-primary"
@@ -175,8 +175,8 @@ function NavItemRow({ item, location, onNavigate, isPreviewMode, onLoginRequest 
           onNavigate();
         }}
       >
-        <item.icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-primary")} />
-        <span className={cn("text-sm font-medium truncate", isActive && "font-semibold")}>{item.label}</span>
+        <item.icon className={cn("w-3.5 h-3.5 flex-shrink-0", isActive && "text-primary")} />
+        <span className={cn("text-xs font-medium truncate", isActive && "font-semibold")}>{item.label}</span>
         {item.href === "/news" && <NotifBadge />}
       </div>
     </Link>
@@ -254,7 +254,7 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
               <button
                 onClick={() => toggleGroup(gi)}
                 className={cn(
-                  "w-full flex items-center justify-between px-3 py-1.5 rounded-sm transition-all duration-200 cursor-pointer group/header",
+                  "w-full flex items-center justify-between px-3 py-1 rounded-sm transition-all duration-200 cursor-pointer group/header",
                   groupHasActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
