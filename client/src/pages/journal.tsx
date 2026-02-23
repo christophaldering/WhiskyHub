@@ -179,20 +179,21 @@ export default function Journal() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-journal-title">
+            <div className="flex items-start sm:items-center justify-between gap-3 mb-6">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-journal-title">
                   {t("journal.title")}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">{t("journal.subtitle")}</p>
               </div>
               <Button
                 onClick={handleNew}
-                className="bg-primary text-primary-foreground font-serif"
+                size="sm"
+                className="bg-primary text-primary-foreground font-serif shrink-0"
                 data-testid="button-new-journal-entry"
               >
-                <Plus className="w-4 h-4 mr-2" />
-                {t("journal.newEntry")}
+                <Plus className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">{t("journal.newEntry")}</span>
               </Button>
             </div>
 

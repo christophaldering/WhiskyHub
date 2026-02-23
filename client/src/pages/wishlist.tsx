@@ -150,9 +150,9 @@ export default function Wishlist() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-wishlist-title">
+            <div className="flex items-start sm:items-center justify-between gap-3 mb-8">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-wishlist-title">
                   {t("wishlist.title")}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -163,11 +163,12 @@ export default function Wishlist() {
               </div>
               <Button
                 onClick={handleNew}
-                className="bg-primary text-primary-foreground font-serif"
+                size="sm"
+                className="bg-primary text-primary-foreground font-serif shrink-0"
                 data-testid="button-add-wishlist"
               >
-                <Plus className="w-4 h-4 mr-2" />
-                {t("wishlist.addWhisky")}
+                <Plus className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">{t("wishlist.addWhisky")}</span>
               </Button>
             </div>
 
