@@ -25,6 +25,17 @@ import {
   Puzzle,
   Camera,
   Download,
+  Construction,
+  MessageSquare,
+  DatabaseZap,
+  Lightbulb,
+  Layers,
+  BookMarked,
+  Heart,
+  EyeOff,
+  FileSpreadsheet,
+  Bot,
+  Handshake,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -120,8 +131,11 @@ export default function Help() {
 
   const faqItems: FaqItem[] = [
     { questionKey: "help.faq.q1", answerKey: "help.faq.a1", icon: Wine, category: "basics" },
+    { questionKey: "help.faq.q13", answerKey: "help.faq.a13", icon: Construction, category: "basics" },
     { questionKey: "help.faq.q2", answerKey: "help.faq.a2", icon: Users, category: "basics" },
     { questionKey: "help.faq.q3", answerKey: "help.faq.a3", icon: Shield, category: "basics" },
+    { questionKey: "help.faq.q14", answerKey: "help.faq.a14", icon: MessageSquare, category: "basics" },
+    { questionKey: "help.faq.q15", answerKey: "help.faq.a15", icon: DatabaseZap, category: "basics" },
     { questionKey: "help.faq.q4", answerKey: "help.faq.a4", icon: Eye, category: "tasting" },
     { questionKey: "help.faq.q5", answerKey: "help.faq.a5", icon: Rows3, category: "tasting" },
     { questionKey: "help.faq.q6", answerKey: "help.faq.a6", icon: Minimize2, category: "tasting" },
@@ -131,15 +145,23 @@ export default function Help() {
     { questionKey: "help.faq.q10", answerKey: "help.faq.a10", icon: Camera, category: "features" },
     { questionKey: "help.faq.q11", answerKey: "help.faq.a11", icon: Gift, category: "features" },
     { questionKey: "help.faq.q12", answerKey: "help.faq.a12", icon: Download, category: "features" },
+    { questionKey: "help.faq.q16", answerKey: "help.faq.a16", icon: Lightbulb, category: "features" },
   ];
 
   const manualSections = [
     { icon: Wine, titleKey: "help.manual.gettingStartedTitle", contentKey: "help.manual.gettingStarted" },
+    { icon: Layers, titleKey: "help.manual.experienceLevelsTitle", contentKey: "help.manual.experienceLevels" },
     { icon: Users, titleKey: "help.manual.hostingTitle", contentKey: "help.manual.hosting" },
     { icon: Eye, titleKey: "help.manual.ratingModesTitle", contentKey: "help.manual.ratingModes" },
+    { icon: EyeOff, titleKey: "help.manual.blindModeTitle", contentKey: "help.manual.blindMode" },
     { icon: BarChart3, titleKey: "help.manual.analyticsTitle", contentKey: "help.manual.analytics" },
     { icon: Settings, titleKey: "help.manual.profileTitle", contentKey: "help.manual.profile" },
+    { icon: BookMarked, titleKey: "help.manual.journalTitle", contentKey: "help.manual.journal" },
+    { icon: Heart, titleKey: "help.manual.wishlistTitle", contentKey: "help.manual.wishlist" },
+    { icon: FileSpreadsheet, titleKey: "help.manual.dataTitle", contentKey: "help.manual.data" },
+    { icon: Bot, titleKey: "help.manual.aiTitle", contentKey: "help.manual.ai" },
     { icon: Puzzle, titleKey: "help.manual.tipsTitle", contentKey: "help.manual.tips" },
+    { icon: Handshake, titleKey: "help.manual.feedbackTitle", contentKey: "help.manual.feedback" },
   ];
 
   return (
