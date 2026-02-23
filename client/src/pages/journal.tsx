@@ -6,6 +6,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { journalApi, journalBottleApi, textExtractApi, wishlistApi, tastingHistoryApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
+import { useAIStatus } from "@/hooks/use-ai-status";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -551,6 +552,8 @@ function EntryForm({
     occasion: entry?.occasion || "",
     body: entry?.body || "",
   });
+  const { isFeatureDisabled } = useAIStatus();
+  const aiScanDisabled = isFeatureDisabled("journal_identify");
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
   const [scanError, setScanError] = useState("");
@@ -618,12 +621,15 @@ function EntryForm({
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-muted-foreground/50 hidden sm:inline" data-testid="text-ai-notice-scan">{t("legal.aiNotice")}</span>
               <label
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all ${
-                  scanning
-                    ? "bg-primary/20 text-primary"
-                    : "bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  aiScanDisabled
+                    ? "opacity-50 cursor-not-allowed bg-secondary/40 text-muted-foreground"
+                    : scanning
+                    ? "bg-primary/20 text-primary cursor-pointer"
+                    : "bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground cursor-pointer"
                 }`}
                 data-testid="button-scan-bottle"
+                title={aiScanDisabled ? t("admin.aiDisabledHint") : undefined}
               >
               {scanning ? (
                 <>
@@ -640,7 +646,7 @@ function EntryForm({
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 className="hidden"
-                disabled={scanning}
+                disabled={scanning || aiScanDisabled}
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   e.target.value = "";
@@ -796,7 +802,7 @@ function EntryForm({
               />
               <button
                 type="button"
-                disabled={extracting || extractText.trim().length < 3}
+                disabled={extracting || extractText.trim().length < 3 || aiScanDisabled}
                 onClick={async () => {
                   if (!participantId || extractText.trim().length < 3) return;
                   setExtracting(true);

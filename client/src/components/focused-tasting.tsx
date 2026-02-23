@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
+import { useAIStatus } from "@/hooks/use-ai-status";
 import { ratingApi, tastingApi, whiskyApi, blindModeApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -124,6 +125,8 @@ function PersonalProgress({ tastingId, participantId, totalWhiskies }: { tasting
 function AiInsightsPanel({ whisky, tasting }: { whisky: Whisky; tasting: Tasting }) {
   const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
+  const { isFeatureDisabled } = useAIStatus();
+  const aiDisabled = isFeatureDisabled("ai_insights");
   const [insights, setInsights] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -169,9 +172,10 @@ function AiInsightsPanel({ whisky, tasting }: { whisky: Whisky; tasting: Tasting
         variant="ghost"
         size="sm"
         onClick={fetchInsights}
-        disabled={loading}
-        className="w-full justify-between font-serif text-xs text-muted-foreground hover:text-primary border border-dashed border-border/50 hover:border-primary/30"
+        disabled={loading || aiDisabled}
+        className={`w-full justify-between font-serif text-xs text-muted-foreground hover:text-primary border border-dashed border-border/50 hover:border-primary/30 ${aiDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
         data-testid="button-ai-insights"
+        title={aiDisabled ? t("admin.aiDisabledHint") : undefined}
       >
         <span className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5" />

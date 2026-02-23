@@ -44,6 +44,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Admin AI Profiles**: Admin panel includes PIN-protected AI participant profiles. Admin must re-enter their PIN to unlock GPT-4o-generated 2-3 sentence profiles for all participants, covering taste preferences, rating behavior, and sensory science insights. Anonymized participants shown with alias names only.
 -   **Admin Settings**: Centralized platform settings in admin panel: What's New banner toggle with custom text, registration open/closed, guest mode, maintenance mode, email notifications. Settings stored in `app_settings` key-value table. Banner controlled by server settings instead of hardcoded version.
 -   **Test Data Management**: Tastings can be flagged as "test data" (isTestData field). Test-flagged tastings are excluded from platform analytics and global averages. Admin can toggle per-tasting or use bulk cleanup filters (title pattern, date, participant count). Bulk cleanup supports preview, mark-as-test, and permanent delete actions.
+-   **AI Kill Switch**: Admin can disable AI features globally or per-feature via settings. Frontend uses `useAIStatus` hook (`client/src/hooks/use-ai-status.ts`) to poll `/api/ai-status` and disable AI buttons with tooltip messages and warning banners when AI is off. Affected areas: journal scan, wishlist scan, focused tasting insights, photo tasting analyze, library upload, newsletter generation, AI participant profiles.
 
 ## External Dependencies
 

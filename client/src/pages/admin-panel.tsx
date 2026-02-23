@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { adminApi, feedbackApi } from "@/lib/api";
 import { apiRequest } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
+import { useAIStatus } from "@/hooks/use-ai-status";
 import type { EncyclopediaSuggestion } from "@shared/schema";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock, Settings, FlaskConical, Filter, AlertTriangle, Globe, UserPlus, BellRing, Megaphone } from "lucide-react";
@@ -182,6 +183,7 @@ function NewsletterManagement({ participants, currentParticipantId, t }: {
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { masterDisabled: aiDisabled } = useAIStatus();
   const subscribers = participants.filter(p => p.newsletterOptIn && p.email);
   const allWithEmail = participants.filter(p => p.email);
 
@@ -304,8 +306,9 @@ function NewsletterManagement({ participants, currentParticipantId, t }: {
               variant="outline"
               size="sm"
               onClick={() => handleGenerate("welcome")}
-              disabled={generating}
+              disabled={generating || aiDisabled}
               data-testid="button-generate-welcome"
+              title={aiDisabled ? t("admin.aiDisabledHint") : undefined}
             >
               {generating ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />}
               {t("admin.newsletterGenerateWelcome")}
@@ -314,8 +317,9 @@ function NewsletterManagement({ participants, currentParticipantId, t }: {
               variant="outline"
               size="sm"
               onClick={() => handleGenerate("update")}
-              disabled={generating}
+              disabled={generating || aiDisabled}
               data-testid="button-generate-update"
+              title={aiDisabled ? t("admin.aiDisabledHint") : undefined}
             >
               {generating ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1" />}
               {t("admin.newsletterGenerateUpdate")}
@@ -606,6 +610,7 @@ export default function AdminPanel() {
   const { currentParticipant } = useAppStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { masterDisabled: aiDisabled } = useAIStatus();
   const [adminTab, setAdminTab] = useState("participants");
   const [searchParticipants, setSearchParticipants] = useState("");
   const [searchTastings, setSearchTastings] = useState("");
@@ -1021,9 +1026,10 @@ export default function AdminPanel() {
                   <AlertDialogCancel disabled={aiProfilesLoading}>{t("admin.cancel")}</AlertDialogCancel>
                   <Button
                     onClick={handleUnlockAiProfiles}
-                    disabled={aiProfilesLoading || aiPinInput.length < 4}
+                    disabled={aiProfilesLoading || aiPinInput.length < 4 || aiDisabled}
                     className="gap-1.5"
                     data-testid="button-confirm-ai-pin"
+                    title={aiDisabled ? t("admin.aiDisabledHint") : undefined}
                   >
                     {aiProfilesLoading ? (
                       <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("admin.aiProfilesGenerating")}</>

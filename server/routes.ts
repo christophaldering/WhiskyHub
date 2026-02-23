@@ -5327,6 +5327,24 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
   // --- App Settings ---
 
+  app.get("/api/ai-status", async (_req, res) => {
+    try {
+      const settings = await getAISettings();
+      const disabledFeatures: string[] = [];
+      if (settings.ai_master_disabled) {
+        disabledFeatures.push(...AI_FEATURES.map(f => f.id));
+      } else {
+        disabledFeatures.push(...settings.ai_features_disabled);
+      }
+      res.json({
+        masterDisabled: settings.ai_master_disabled,
+        disabledFeatures,
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.get("/api/app-settings/public", async (_req, res) => {
     try {
       const settings = await storage.getAppSettings();

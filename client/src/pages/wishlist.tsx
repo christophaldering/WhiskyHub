@@ -6,6 +6,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { wishlistApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
+import { useAIStatus } from "@/hooks/use-ai-status";
 import { GuestPreview } from "@/components/guest-preview";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -349,6 +350,8 @@ function WishlistForm({
   t: any;
 }) {
   const { toast } = useToast();
+  const { isFeatureDisabled } = useAIStatus();
+  const aiScanDisabled = isFeatureDisabled("wishlist_identify");
   const [whiskyName, setWhiskyName] = useState(entry?.whiskyName || "");
   const [distillery, setDistillery] = useState(entry?.distillery || "");
   const [region, setRegion] = useState(entry?.region || "");
@@ -426,12 +429,15 @@ function WishlistForm({
           <p className="text-xs text-muted-foreground">{t("wishlist.scanHint")}</p>
         </div>
         <label
-          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-all ${
-            scanning
-              ? "bg-primary/20 text-primary"
-              : "bg-primary text-primary-foreground hover:bg-primary/90"
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            aiScanDisabled
+              ? "opacity-50 cursor-not-allowed bg-secondary text-muted-foreground"
+              : scanning
+              ? "bg-primary/20 text-primary cursor-pointer"
+              : "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
           }`}
           data-testid="button-scan-wishlist"
+          title={aiScanDisabled ? t("admin.aiDisabledHint") : undefined}
         >
           {scanning ? (
             <>
@@ -448,7 +454,7 @@ function WishlistForm({
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif"
             className="hidden"
-            disabled={scanning}
+            disabled={scanning || aiScanDisabled}
             onChange={async (e) => {
               const file = e.target.files?.[0];
               e.target.value = "";

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
+import { useAIStatus } from "@/hooks/use-ai-status";
 import { benchmarkApi, tastingApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +62,7 @@ export default function BenchmarkAnalyzer() {
   const [activeTab, setActiveTab] = useState<LibraryTab>("import");
   const [extractedEntries, setExtractedEntries] = useState<ExtractedEntry[]>([]);
   const [fileName, setFileName] = useState<string>("");
+  const { masterDisabled: aiDisabled } = useAIStatus();
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string>("");
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
@@ -263,6 +265,12 @@ export default function BenchmarkAnalyzer() {
           {t("benchmark.title")}
         </h1>
         <p className="text-muted-foreground font-serif italic mt-1 text-sm">{t("benchmark.subtitle")}</p>
+        {aiDisabled && (
+          <div className="mt-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-lg p-3 text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {t("admin.aiDisabledHint")}
+          </div>
+        )}
         <div className="w-12 h-1 bg-primary/50 mt-3" />
       </motion.div>
 
@@ -315,10 +323,11 @@ export default function BenchmarkAnalyzer() {
               />
               <Button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={analyzing}
+                disabled={analyzing || aiDisabled}
                 size="lg"
                 className="gap-2"
                 data-testid="button-upload"
+                title={aiDisabled ? t("admin.aiDisabledHint") : undefined}
               >
                 {analyzing ? (
                   <>

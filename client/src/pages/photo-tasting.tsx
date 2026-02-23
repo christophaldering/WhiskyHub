@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppStore } from "@/lib/store";
+import { useAIStatus } from "@/hooks/use-ai-status";
 import { useQuery } from "@tanstack/react-query";
 import { tastingApi, photoTastingApi } from "@/lib/api";
 import { useLocation } from "wouter";
@@ -51,6 +52,8 @@ export default function PhotoTasting() {
   const isHost = currentParticipant && allTastings.some((t: any) => t.hostId === currentParticipant.id);
   const isAdmin = currentParticipant?.role === "admin";
   const hasAccess = isHost || isAdmin;
+
+  const { masterDisabled: aiDisabled } = useAIStatus();
 
   const [step, setStep] = useState<"upload" | "review" | "details" | "done">("upload");
   const [photos, setPhotos] = useState<File[]>([]);
@@ -234,6 +237,13 @@ export default function PhotoTasting() {
         ))}
       </div>
 
+      {aiDisabled && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-lg p-3 text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          {t("admin.aiDisabledHint")}
+        </div>
+      )}
+
       {error && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 text-destructive text-sm">
           {error}
@@ -296,9 +306,10 @@ export default function PhotoTasting() {
                   </span>
                   <Button
                     onClick={handleAnalyze}
-                    disabled={analyzing}
+                    disabled={analyzing || aiDisabled}
                     className="gap-2"
                     data-testid="button-analyze"
+                    title={aiDisabled ? t("admin.aiDisabledHint") : undefined}
                   >
                     {analyzing ? (
                       <>
