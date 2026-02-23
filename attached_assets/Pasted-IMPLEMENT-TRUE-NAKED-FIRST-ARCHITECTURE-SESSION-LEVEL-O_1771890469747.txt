@@ -1,0 +1,114 @@
+IMPLEMENT TRUE NAKED-FIRST ARCHITECTURE (SESSION LEVEL ONLY)
+
+Goal:
+Make Naked Mode the default state of every tasting session.
+No feature removal. Only controlled visibility via a session-level contextLevel state.
+
+Architectural Principle:
+contextLevel = 0 (Naked) | 1 (Self Context) | 2 (Full Context)
+
+CRITICAL CLARIFICATION:
+contextLevel does NOT control sidebar depth. Sidebar/navigation remain unchanged.
+contextLevel only controls conditional rendering INSIDE the tasting session UI (e.g., /tasting/:id).
+
+Rules (must hold):
+- No route changes
+- No DB changes
+- No backend changes
+- No permission/gating logic changes
+- No feature removal
+- No analytics removal
+- No score calculation changes
+- Only conditional rendering (UI-level)
+
+-------------------------------------------------
+1) DEFAULT STATE
+-------------------------------------------------
+On session load:
+contextLevel must default to 0.
+
+Persist behavior (choose simplest that fits existing architecture):
+- Prefer: local UI state with optional URL/query param or localStorage
+- Do NOT introduce DB persistence unless already present (rule: no DB changes)
+
+-------------------------------------------------
+2) CONTEXT LEVEL 0 (NAKED)
+-------------------------------------------------
+Hide (not blurred, not overlayed — simply not rendered):
+- Community averages
+- Rankings / leaderboards
+- Percentiles
+- Community distribution charts
+- Analytics panels
+- Taste twins
+- Comparison panels
+- Historical overlays (community-based)
+
+Show only:
+- Rating inputs
+- Own notes
+- Structure guidance
+- Minimal session header
+
+-------------------------------------------------
+3) CONTEXT LEVEL 1 (SELF)
+-------------------------------------------------
+Show:
+- Own historical comparison
+- Own pattern evolution
+- Personal averages (self-only)
+
+Still hide:
+- Community averages
+- Rankings / leaderboards
+- Taste twins (if community-derived)
+
+-------------------------------------------------
+4) CONTEXT LEVEL 2 (FULL CONTEXT)
+-------------------------------------------------
+Show all existing features:
+- Community comparison
+- Rankings / leaderboards
+- Distribution charts
+- Analytics
+- Taste twins
+- Research blocks
+
+-------------------------------------------------
+5) UI CONTROL
+-------------------------------------------------
+Add a 3-state control in the session header (top right):
+
+Labels (DE):
+- "Naked"
+- "Meine Sicht"
+- "Kontext"
+
+Labels (EN):
+- "Naked"
+- "My View"
+- "Context"
+
+Implementation requirements:
+- Switching updates contextLevel state only
+- No page reload
+- No route change
+- Keep existing session header layout stable on mobile
+
+-------------------------------------------------
+6) VALIDATION REQUIRED (must be executed before commit)
+-------------------------------------------------
+1) All features still reachable in level 2.
+2) No broken links.
+3) No permission leaks (guest/explorer/pro/analyst gating remains exactly as-is).
+4) Mobile tested (iPhone viewport + small Android).
+5) Compile clean.
+6) No duplicated UI blocks (no “double panels”).
+7) No backend calls removed (even if UI hidden, fetching may remain).
+8) Performance unchanged (no heavy re-renders; memoize if needed).
+
+Deliver:
+- List files modified
+- Confirm: conditional rendering only
+- Provide screenshots of level 0, 1, 2 (desktop + one mobile)
+- Confirm compile success

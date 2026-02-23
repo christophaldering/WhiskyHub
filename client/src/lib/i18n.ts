@@ -153,8 +153,8 @@ const resources = {
       },
       contextLevel: {
         naked: "Naked",
-        self: "Self",
-        full: "Full",
+        self: "My View",
+        full: "Context",
       },
       whatsNew: {
         banner: "New at CaskSense — see what's changed!",
@@ -3079,8 +3079,8 @@ const resources = {
       },
       contextLevel: {
         naked: "Naked",
-        self: "Self",
-        full: "Full",
+        self: "Meine Sicht",
+        full: "Kontext",
       },
       whatsNew: {
         banner: "Neu bei CaskSense — schau was sich getan hat!",

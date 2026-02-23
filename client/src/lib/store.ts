@@ -79,7 +79,7 @@ export const useAppStore = create<AppState>()(
       setAmbientVolume: (volume) => set({ ambientVolume: volume }),
       wishlistTransfer: null,
       setWishlistTransfer: (data) => set({ wishlistTransfer: data }),
-      contextLevel: 2 as ContextLevel,
+      contextLevel: 0 as ContextLevel,
       setContextLevel: (level) => set({ contextLevel: level }),
       theme: "dark" as Theme,
       setTheme: (theme) => {
