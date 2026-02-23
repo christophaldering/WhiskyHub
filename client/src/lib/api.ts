@@ -483,6 +483,12 @@ export const wishlistApi = {
     fetchJSON(`/wishlist/${participantId}/${id}`, { method: "DELETE" }),
 };
 
+// ===== Barcode Lookup =====
+export const barcodeApi = {
+  lookup: (code: string) =>
+    fetchJSON("/barcode/lookup", { method: "POST", body: JSON.stringify({ code }) }),
+};
+
 // ===== Wishlist Photo Identification =====
 export const wishlistScanApi = {
   identify: async (photo: File, participantId: string) => {

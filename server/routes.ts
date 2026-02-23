@@ -3404,6 +3404,114 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
     }
   });
 
+  // ===== Barcode Lookup =====
+  app.post("/api/barcode/lookup", async (req: Request, res: Response) => {
+    try {
+      const { code } = req.body;
+      if (!code || typeof code !== "string" || code.trim().length < 4) {
+        return res.status(400).json({ message: "Valid barcode required" });
+      }
+
+      const barcode = code.trim();
+      console.log(`[Barcode] Looking up: ${barcode}`);
+
+      try {
+        const offRes = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json`, {
+          headers: { "User-Agent": "CaskSense/2.0 (whisky-tasting-app)" },
+          signal: AbortSignal.timeout(8000),
+        });
+
+        if (offRes.ok) {
+          const data = await offRes.json();
+          if (data.status === 1 && data.product) {
+            const p = data.product;
+            const productName = p.product_name || p.product_name_en || p.product_name_de || "";
+            const brand = p.brands || "";
+            const categories = p.categories || "";
+            const alcoholContent = p.nutriments?.alcohol_100g ? `${p.nutriments.alcohol_100g}%` : null;
+
+            const isSpirit = categories.toLowerCase().includes("whisk") ||
+              categories.toLowerCase().includes("spirit") ||
+              categories.toLowerCase().includes("scotch") ||
+              categories.toLowerCase().includes("bourbon") ||
+              productName.toLowerCase().includes("whisk") ||
+              brand.toLowerCase().includes("whisk");
+
+            if (productName) {
+              const whiskyName = brand && !productName.toLowerCase().includes(brand.toLowerCase())
+                ? `${brand} ${productName}`
+                : productName;
+
+              console.log(`[Barcode] Open Food Facts hit: ${whiskyName} (spirit: ${isSpirit})`);
+              return res.json({
+                whiskyName,
+                distillery: brand || null,
+                region: p.origins || null,
+                age: null,
+                abv: alcoholContent,
+                caskType: null,
+                country: p.countries || null,
+                source: "barcode",
+                barcode,
+                confidence: isSpirit ? "high" : "low",
+              });
+            }
+          }
+        }
+      } catch (offErr: any) {
+        console.warn(`[Barcode] Open Food Facts lookup failed: ${offErr.message}`);
+      }
+
+      try {
+        const openai = new OpenAI({
+          apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+          baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+        });
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: `You are a whisky and spirits expert. The user provides a barcode number (EAN/UPC). Try to identify the product. If you recognize it, return a JSON object with: whiskyName, distillery, region, country, age, abv, caskType. If you don't recognize the barcode, return {"notFound": true}. Return ONLY valid JSON, no other text.`,
+            },
+            {
+              role: "user",
+              content: `Identify this barcode: ${barcode}`,
+            },
+          ],
+          max_tokens: 500,
+          temperature: 0.3,
+        });
+
+        const raw = completion.choices[0]?.message?.content || '{"notFound": true}';
+        const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+        const parsed = JSON.parse(cleaned);
+
+        if (parsed.notFound) {
+          console.log(`[Barcode] AI could not identify: ${barcode}`);
+          return res.json({ notFound: true, barcode });
+        }
+
+        console.log(`[Barcode] AI identified: ${parsed.whiskyName}`);
+        return res.json({
+          ...parsed,
+          source: "barcode-ai",
+          barcode,
+        });
+      } catch (aiErr: any) {
+        if (isOpenAITokenLimitError(aiErr)) {
+          return res.json({ notFound: true, barcode });
+        }
+        console.warn(`[Barcode] AI fallback failed: ${aiErr.message}`);
+        return res.json({ notFound: true, barcode });
+      }
+    } catch (e: any) {
+      console.error("[Barcode] Lookup error:", e);
+      res.status(500).json({ message: e.message || "Barcode lookup failed" });
+    }
+  });
+
   // ===== Journal Bottle Identification (must be before parameterized /api/journal/:participantId routes) =====
   app.post("/api/journal/identify-bottle", docUpload.single("photo"), async (req: Request, res: Response) => {
     try {
