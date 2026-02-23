@@ -61,3 +61,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Replit Object Storage**: For storing uploaded images.
 -   **GPT-4o**: For AI-powered features like bottle identification and content generation.
 -   **Capacitor**: For wrapping the PWA as native iOS and Android applications.
+
+## Ideas / Future Features
+
+-   **Live Status Dashboard**: Show online participants count, active/planned/completed tastings summary, and friends' online status on the Home page. Includes heartbeat-based presence tracking, friend online indicators, and direct contact options (email, profile link, tasting invite). Requires new server-side session tracking system.
