@@ -1,0 +1,123 @@
+PHASE 2 — IMPLEMENTATION (Naked-first + Progressive Reveal in /tasting/:id)
+
+CONTEXT (from Phase 1):
+- /tasting/:id currently renders INSIDE the global layout wrapper (Sidebar + Bottom Nav visible).
+- /naked/:code and /join/:code are OUTSIDE the layout (standalone, no navigation).
+- Best approach: also render /tasting/:id outside the layout and wrap it with a minimal TastingShell.
+- Biggest risk: API returns whisky details unfiltered; blind mode is enforced client-side only. getBlindState() logic is duplicated and must be extracted into a shared hook before adding new UI layers.
+
+STRICT RULES:
+- Minimal architectural change: do NOT rebuild routing from scratch. Change only what is necessary to:
+  1) render /tasting/:id outside global layout
+  2) add TastingShell + progressive reveal UI
+  3) consolidate blind-state logic into one shared hook/util
+- Do NOT change DB schema or migrations.
+- Do NOT remove existing routes (/naked/:code stays).
+- Keep visual style consistent with current UI / components.
+
+GOAL:
+Every time a user enters a tasting room (/tasting/:id), it starts in “Naked/Focus Mode” by default (no sidebar/bottom nav). Users can progressively add layers via an in-room “More” control:
+- Context (details; subject to blind rules)
+- Comparison (only after user rated, or host unlocks)
+- Pro Tools (only for analyst+/host/admin, per existing permissions)
+
+DELIVERABLES:
+A) A working /tasting/:id with Naked-first default, no global nav visible.
+B) A Progressive Reveal Drawer/Sheet inside the tasting room (Context / Comparison / Tools).
+C) Shared blind-state hook extracted and used everywhere relevant.
+D) i18n labels (DE/EN) for new UI text.
+E) QA checklist executed; no console errors; mobile close buttons reachable.
+
+IMPLEMENTATION PLAN (execute in this order):
+
+1) Extract blind-state logic (MANDATORY FIRST)
+- Identify all getBlindState() (or equivalent) logic and any duplicated blind/reveal checks.
+- Create a shared hook in a suitable place (e.g., src/hooks/useBlindState.ts or src/lib/blindState.ts).
+- Hook should expose:
+  - isBlind: boolean
+  - revealPhase / revealStep (if present)
+  - canShowDetails(expressionId): boolean
+  - canShowGroupComparison(expressionId, hasUserRated, hostUnlocked): boolean
+- Replace duplicates with this shared hook/util.
+- Add lightweight runtime guards so blind mode does not leak details via UI. (We accept API still returns details; we just ensure UI never renders them pre-reveal.)
+
+2) Introduce a minimal TastingShell component
+- Create src/components/tasting/TastingShell.tsx (or similar).
+- Responsibilities:
+  - Provide a clean “room” layout (no sidebar/bottom nav)
+  - Render header (session title + subtle status badges)
+  - Render the tasting content area
+  - Mount the “More” control and Drawer/Sheet
+- IMPORTANT: TastingShell must be used for /tasting/:id.
+- Keep /naked/:code untouched.
+
+3) Make /tasting/:id render outside the global Layout Wrapper
+- In App routing (src/App.tsx), locate the layout wrapper that renders Sidebar and Bottom Nav.
+- Create a routing split:
+  - Public/standalone routes (already include /naked/:code, /join/:code) should also include /tasting/:id.
+  - These routes render without the global layout.
+  - All other routes remain inside the layout as before.
+- This is the key change: /tasting/:id must not show sidebar/bottom nav.
+
+4) Implement “Naked-first” default view inside /tasting/:id
+- On enter /tasting/:id, default to Focus/Naked state.
+- Focus state means:
+  - show only Flight Board + rating form + notes
+  - do NOT show whisky details unless allowed by canShowDetails()
+  - do NOT show group rankings/comparisons unless allowed by canShowGroupComparison()
+- Add a subtle “Focus Mode” indicator in header.
+
+5) Implement Progressive Reveal Drawer/Sheet (inside tasting room)
+- Add a “More” button (top-right) that opens:
+  - Bottom Sheet on mobile
+  - Drawer/Modal on desktop
+- Inside the sheet: 3 tabs/sections (always same order):
+  1) Context
+     - whisky details only if canShowDetails() is true
+     - optional “My previous notes” section if available
+     - link to journal entry (prefer inline panel or modal; avoid navigation away)
+  2) Comparison
+     - only show if canShowGroupComparison() true
+     - show “You vs Group” and ranking summaries
+  3) Tools (conditional)
+     - only for analyst+/host/admin (use existing permission checks)
+     - export-notes entrypoint if already exists
+     - host controls if relevant (do not invent new business logic)
+- IMPORTANT: do not add general navigation; all reveal happens within the room.
+
+6) i18n (DE/EN)
+Add translation keys for:
+- “Focus Mode” / “Fokusmodus”
+- “More” / “Mehr”
+- “Context” / “Kontext”
+- “Comparison” / “Vergleich”
+- “Tools” / “Tools” (or “Pro Tools” / “Pro-Tools”)
+- “Details hidden until reveal” / “Details erst nach Reveal sichtbar”
+Ensure no hardcoded text strings remain.
+
+7) QA (MANDATORY, document results)
+Run through:
+- Entry flows:
+  - from /sessions clicking a session
+  - /join/:code
+  - host dashboard -> active session
+- Mobile:
+  - sheet opens/closes; no overlap; close icon reachable
+- Blind tasting:
+  - details not visible before reveal
+  - comparison not visible before rating (unless host unlock)
+- Permissions:
+  - tools hidden for non-authorized users
+- No console errors; no route loops.
+Provide a short QA report.
+
+FINAL QUESTION (only after completing the implementation + QA):
+Ask whether to proceed with publishing to production.
+
+OUTPUT:
+Implement the changes, then summarize:
+- Files changed
+- What was tested
+- Any known limitations (e.g., API still returns details, UI prevents leaks)
+
+START NOW.
