@@ -514,8 +514,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/app", icon: Home, label: t('nav.lobby') },
         { href: "/sessions", icon: Wine, label: t('nav.sessions') },
         ...(atLeast("explorer") ? [
-          { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
-          { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
           { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
           { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
           ...(atLeast("connoisseur") ? [
@@ -523,6 +521,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           ] : []),
           { href: "/wishlist", icon: Star, label: t('nav.myWhiskyWishlist') },
           { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") || loc === "/export-notes" },
+          { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
+          { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
         ] : []),
       ],
     },
@@ -550,12 +550,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ...(atLeast("connoisseur") ? [
           { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
           { href: "/taste-twins", icon: HeartHandshake, label: t('nav.tasteTwins') },
+        ] : []),
+        { href: "/account", icon: Settings, label: t('nav.account') },
+        ...(atLeast("connoisseur") ? [
           { href: "/friends", icon: Users, label: t('nav.friends') },
           { href: "/community-rankings", icon: BarChart3, label: t('nav.communityRankings') },
           { href: "/activity", icon: Rss, label: t('nav.activity') },
           { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
         ] : []),
-        { href: "/account", icon: Settings, label: t('nav.account') },
       ],
     }] : []),
     ...(atLeast("connoisseur") ? [{
@@ -745,11 +747,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             return [
               inTasting
                 ? { href: `/tasting/${tastingMatch![1]}`, icon: ArrowLeft, label: t('nav.backToTasting'), isCockpit: true }
-                : { href: "/app", icon: Home, label: t('nav.lobby') },
-              { href: "/sessions", icon: Wine, label: t('nav.sessions') },
-              { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
-              { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
-              { href: "/more", icon: Menu, label: t('nav.more'), isMore: true },
+                : { href: "/app", icon: Home, label: t('nav.lobbyShort') },
+              { href: "/sessions", icon: Wine, label: t('nav.sessionsShort') },
+              { href: "/journal", icon: NotebookPen, label: t('nav.journalShort') },
+              { href: "/calendar", icon: Calendar, label: t('nav.calendarShort') },
+              { href: "/more", icon: Menu, label: t('nav.moreShort'), isMore: true },
             ];
           })().map((item) => {
             const isActive = location === item.href;
@@ -762,7 +764,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   data-testid="bottom-nav-cockpit"
                 >
                   <ArrowLeft className="w-5 h-5" />
-                  <span className="text-[10px] leading-tight font-semibold">{item.label}</span>
+                  <span className="text-[10px] leading-tight font-semibold truncate max-w-[64px]">{item.label}</span>
                 </button>
               );
             }
@@ -775,7 +777,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   data-testid="bottom-nav-more"
                 >
                   <Menu className="w-5 h-5" />
-                  <span className="text-[10px] leading-tight">{item.label}</span>
+                  <span className="text-[10px] leading-tight truncate max-w-[64px]">{item.label}</span>
                 </button>
               );
             }
@@ -791,7 +793,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   data-testid={`bottom-nav-${item.href.replace("/", "") || "home"}`}
                 >
                   <item.icon className="w-5 h-5" />
-                  <span className={cn("text-[10px] leading-tight", isActive && "font-semibold")}>{item.label}</span>
+                  <span className={cn("text-[10px] leading-tight truncate max-w-[64px]", isActive && "font-semibold")}>{item.label}</span>
                 </div>
               </Link>
             );
