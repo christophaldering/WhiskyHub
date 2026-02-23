@@ -6,7 +6,7 @@ import { tastingApi, participantApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
-import { ArrowRight, Trash2, KeyRound, Loader2, Crown, Users, Plus, Camera, FileUp, Glasses, BookOpen, ChevronDown, Navigation, PenLine } from "lucide-react";
+import { ArrowRight, Trash2, KeyRound, Loader2, Crown, Users, Plus, Camera, FileUp, Glasses, BookOpen, ChevronDown, Navigation, PenLine, History, LayoutDashboard, ClipboardList } from "lucide-react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -511,6 +511,35 @@ export default function Sessions() {
         <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("nav.sessions")}</h1>
         <div className="w-12 h-1 bg-primary/50 mt-3" />
       </motion.div>
+
+      {currentParticipant && (
+        <div className="flex flex-wrap gap-2" data-testid="sessions-hub-links">
+          <button
+            onClick={() => navigate("/my-tastings")}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+            data-testid="hub-link-my-tastings"
+          >
+            <History className="w-3.5 h-3.5" />
+            {t("nav.myTastings")}
+          </button>
+          <button
+            onClick={() => navigate("/host-dashboard")}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+            data-testid="hub-link-host-dashboard"
+          >
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            {t("nav.hostDashboard")}
+          </button>
+          <button
+            onClick={() => navigate("/recap")}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+            data-testid="hub-link-recap"
+          >
+            <ClipboardList className="w-3.5 h-3.5" />
+            {t("nav.recap")}
+          </button>
+        </div>
+      )}
 
       {joinSectionJsx}
       {createSectionJsx}
