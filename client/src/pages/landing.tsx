@@ -483,10 +483,10 @@ export default function Landing() {
                 <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
                   {t("landing.story.quote1")}
                 </p>
-                <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
+                <p className="text-primary font-serif text-xl lg:text-2xl font-bold italic leading-relaxed">
                   {t("landing.story.quote1b")}
                 </p>
-                <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
+                <p className="text-primary font-serif text-xl lg:text-2xl font-bold italic leading-relaxed">
                   {t("landing.story.quote1c")}
                 </p>
               </blockquote>
