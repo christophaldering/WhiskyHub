@@ -5532,7 +5532,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         : `You are a whisky tasting analyst and sensory science expert. Create a short profile (2-3 sentences) for each participant based on the available data. Describe: taste preferences, rating style (generous/strict, consistent/variable), and what's interesting from a sensory science perspective (e.g., strong region preferences, unusual patterns, high/low variance). For anonymized participants (name starts with "Anon-"), use only the alias name. Respond as a JSON array with objects: {"id": "...", "profile": "..."}. Only the JSON, no other text.`;
 
       const openai = new OpenAI({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       });
 
       const completion = await openai.chat.completions.create({
