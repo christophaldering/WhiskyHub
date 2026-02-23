@@ -614,6 +614,12 @@ export default function AdminPanel() {
   const [searchJournals, setSearchJournals] = useState("");
   const [expandedJournalId, setExpandedJournalId] = useState<string | null>(null);
   const [suggestionFilter, setSuggestionFilter] = useState<string>("all");
+  const [aiProfiles, setAiProfiles] = useState<Record<string, string>>({});
+  const [aiProfilesUnlocked, setAiProfilesUnlocked] = useState(false);
+  const [aiPinInput, setAiPinInput] = useState("");
+  const [showAiPinDialog, setShowAiPinDialog] = useState(false);
+  const [aiProfilesLoading, setAiProfilesLoading] = useState(false);
+  const [aiPinError, setAiPinError] = useState(false);
 
   const { data, isLoading, error } = useQuery<AdminOverview>({
     queryKey: ["admin-overview", currentParticipant?.id],
@@ -736,6 +742,33 @@ export default function AdminPanel() {
     },
     onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
   });
+
+  const handleUnlockAiProfiles = async () => {
+    if (!currentParticipant || !aiPinInput) return;
+    setAiProfilesLoading(true);
+    setAiPinError(false);
+    try {
+      const result = await adminApi.getParticipantAiProfiles(currentParticipant.id, aiPinInput);
+      const profileMap: Record<string, string> = {};
+      for (const p of result.profiles || []) {
+        profileMap[p.id] = p.profile;
+      }
+      setAiProfiles(profileMap);
+      setAiProfilesUnlocked(true);
+      setShowAiPinDialog(false);
+      setAiPinInput("");
+      toast({ title: t("admin.aiProfilesUnlocked") });
+    } catch (e: any) {
+      if (e.message?.includes("Invalid PIN")) {
+        setAiPinError(true);
+      } else {
+        toast({ title: t("admin.error"), description: e.message, variant: "destructive" });
+        setShowAiPinDialog(false);
+      }
+    } finally {
+      setAiProfilesLoading(false);
+    }
+  };
 
   if (!currentParticipant) {
     return (
@@ -924,6 +957,61 @@ export default function AdminPanel() {
                 data-testid="input-search-participants"
               />
             </div>
+            <AlertDialog open={showAiPinDialog} onOpenChange={setShowAiPinDialog}>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant={aiProfilesUnlocked ? "outline" : "default"}
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={() => { setShowAiPinDialog(true); setAiPinError(false); setAiPinInput(""); }}
+                  data-testid="button-unlock-ai-profiles"
+                >
+                  <Brain className="w-3.5 h-3.5" />
+                  {aiProfilesUnlocked ? t("admin.aiProfilesRefresh") : t("admin.aiProfilesUnlock")}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-primary" />
+                    {t("admin.aiProfilesPinTitle")}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t("admin.aiProfilesPinDesc")}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-3">
+                  <Input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={4}
+                    placeholder={t("admin.aiProfilesPinPlaceholder")}
+                    value={aiPinInput}
+                    onChange={(e) => { setAiPinInput(e.target.value); setAiPinError(false); }}
+                    className={aiPinError ? "border-destructive" : ""}
+                    data-testid="input-ai-pin"
+                  />
+                  {aiPinError && (
+                    <p className="text-xs text-destructive">{t("admin.aiProfilesPinError")}</p>
+                  )}
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={aiProfilesLoading}>{t("admin.cancel")}</AlertDialogCancel>
+                  <Button
+                    onClick={handleUnlockAiProfiles}
+                    disabled={aiProfilesLoading || aiPinInput.length < 4}
+                    className="gap-1.5"
+                    data-testid="button-confirm-ai-pin"
+                  >
+                    {aiProfilesLoading ? (
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("admin.aiProfilesGenerating")}</>
+                    ) : (
+                      <><Brain className="w-3.5 h-3.5" /> {t("admin.aiProfilesGenerate")}</>
+                    )}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Select
               value=""
               onValueChange={(level) => {
@@ -1081,6 +1169,12 @@ export default function AdminPanel() {
                           )}
                         </div>
                       </div>
+                      {aiProfilesUnlocked && aiProfiles[p.id] && (
+                        <div className="mt-3 pt-3 border-t border-border/30 flex items-start gap-2" data-testid={`ai-profile-${p.id}`}>
+                          <Brain className="w-3.5 h-3.5 text-primary/60 mt-0.5 shrink-0" />
+                          <p className="text-xs text-muted-foreground italic leading-relaxed">{aiProfiles[p.id]}</p>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </motion.div>

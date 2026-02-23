@@ -5035,6 +5035,116 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  app.post("/api/admin/participant-ai-profiles", async (req, res) => {
+    try {
+      const { requesterId, pin } = req.body;
+      if (!requesterId || !pin) return res.status(400).json({ message: "requesterId and pin required" });
+
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      if (!requester.pin || pin !== requester.pin) {
+        return res.status(401).json({ message: "Invalid PIN" });
+      }
+
+      if (await isAIDisabled("newsletter_generate")) {
+        return res.status(503).json({ message: "AI features are disabled" });
+      }
+
+      const allParticipants = await storage.getAllParticipants();
+      const allTastings = await storage.getAllTastings();
+
+      const participantData = await Promise.all(
+        allParticipants.map(async (p) => {
+          const stats = await storage.getParticipantStats(p.id);
+          const hostedCount = allTastings.filter(t => t.hostId === p.id).length;
+          const isAnonymized = p.name.startsWith("Anon-");
+
+          let avgScore = 0;
+          let stdDev = 0;
+          try {
+            const fp = await storage.getFlavorProfile(p.id);
+            if (fp.ratedWhiskies.length > 0) {
+              const scores = fp.ratedWhiskies.filter(rw => rw.rating.overall > 0).map(rw => rw.rating.overall);
+              if (scores.length > 0) {
+                avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length * 10) / 10;
+                const mean = avgScore;
+                stdDev = Math.round(Math.sqrt(scores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / scores.length) * 10) / 10;
+              }
+            }
+          } catch {}
+
+          const topRegions = Object.entries(stats.ratedRegions)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([r, c]) => `${r} (${c})`);
+
+          const topCasks = Object.entries(stats.ratedCaskTypes)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([c, n]) => `${c} (${n})`);
+
+          const topPeat = Object.entries(stats.ratedPeatLevels)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 2)
+            .map(([p, n]) => `${p} (${n})`);
+
+          return {
+            id: p.id,
+            name: isAnonymized ? p.name : p.name,
+            isAnonymized,
+            ratings: stats.totalRatings,
+            tastings: stats.totalTastings,
+            journalEntries: stats.totalJournalEntries,
+            hostedTastings: hostedCount,
+            avgScore,
+            stdDev,
+            highestScore: stats.highestOverall,
+            topRegions,
+            topCasks,
+            topPeat,
+            experienceLevel: p.experienceLevel || "connoisseur",
+            role: p.role || "user",
+          };
+        })
+      );
+
+      const lang = requester.language === "de" ? "de" : "en";
+      const systemPrompt = lang === "de"
+        ? `Du bist ein Whisky-Tasting-Analyst und Sensorik-Experte. Erstelle für jeden Teilnehmer ein kurzes Profil (2-3 Sätze) basierend auf den vorhandenen Daten. Beschreibe: Geschmackspräferenzen, Bewertungsstil (generös/streng, konsistent/variabel), und was aus sensorisch-wissenschaftlicher Sicht interessant ist (z.B. ausgeprägte Regionspräferenzen, ungewöhnliche Muster, hohe/niedrige Varianz). Bei anonymisierten Teilnehmern (Name beginnt mit "Anon-") nutze nur den Alias-Namen. Antworte als JSON-Array mit Objekten: {"id": "...", "profile": "..."}. Nur das JSON, kein anderer Text.`
+        : `You are a whisky tasting analyst and sensory science expert. Create a short profile (2-3 sentences) for each participant based on the available data. Describe: taste preferences, rating style (generous/strict, consistent/variable), and what's interesting from a sensory science perspective (e.g., strong region preferences, unusual patterns, high/low variance). For anonymized participants (name starts with "Anon-"), use only the alias name. Respond as a JSON array with objects: {"id": "...", "profile": "..."}. Only the JSON, no other text.`;
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+      });
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: JSON.stringify(participantData) },
+        ],
+        max_tokens: 4000,
+        temperature: 0.7,
+      });
+
+      const raw = completion.choices[0]?.message?.content || "[]";
+      let profiles: { id: string; profile: string }[];
+      try {
+        const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+        profiles = JSON.parse(cleaned);
+      } catch {
+        profiles = [];
+      }
+
+      res.json({ profiles });
+    } catch (e: any) {
+      console.error("AI participant profiles error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.get("/api/community-contributors", async (_req, res) => {
     try {
       const contributors = await storage.getCommunityContributors();

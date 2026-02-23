@@ -559,6 +559,8 @@ export const adminApi = {
     fetchJSON(`/admin/participants/${participantId}/experience-level`, { method: "PATCH", body: JSON.stringify({ level, requesterId }) }),
   batchExperienceLevel: (participantIds: string[], level: string, requesterId: string) =>
     fetchJSON(`/admin/participants/batch-experience-level`, { method: "PATCH", body: JSON.stringify({ participantIds, level, requesterId }) }),
+  getParticipantAiProfiles: (requesterId: string, pin: string) =>
+    fetchJSON("/admin/participant-ai-profiles", { method: "POST", body: JSON.stringify({ requesterId, pin }) }),
 };
 
 export const tastingPhotoApi = {

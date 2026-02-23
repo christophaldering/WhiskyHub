@@ -41,6 +41,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Whisky Profile Page**: Renamed from "Geschmacksprofil" to "Mein Whisky-Profil" with 3 distinct tabs: "Geschmacksanalyse" (radar chart, region/peat/cask breakdowns, top list), "Whisky-Profil" (statistical analysis, rating behavior), "Aromarad" (flavor wheel). Each analytics section has explanatory descriptions in DE/EN.
 -   **Participant Deduplication**: Backend calculations (global averages, platform analytics, host dashboard, admin stats) deduplicate participants by (name, pin) combination to avoid double-counting the same person across multiple tastings.
 -   **About the Method**: Tasting methodology content integrated into the About page's Overview tab as compact cards, replacing the standalone `/about-method` page.
+-   **Admin AI Profiles**: Admin panel includes PIN-protected AI participant profiles. Admin must re-enter their PIN to unlock GPT-4o-generated 2-3 sentence profiles for all participants, covering taste preferences, rating behavior, and sensory science insights. Anonymized participants shown with alias names only.
 
 ## External Dependencies
 
