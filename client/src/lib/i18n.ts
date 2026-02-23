@@ -137,6 +137,12 @@ const resources = {
         createButton: "Create Tasting Session",
         yourSessionsTitle: "Your Sessions",
       },
+      sessionsHub: {
+        active: "Active",
+        mine: "My Tastings",
+        host: "Host",
+        recap: "Recap",
+      },
       whatsNew: {
         banner: "New at CaskSense — see what's changed!",
       },
@@ -3035,6 +3041,12 @@ const resources = {
         locationPlaceholder: "Die Bibliothek",
         createButton: "Tasting-Session erstellen",
         yourSessionsTitle: "Deine Sessions",
+      },
+      sessionsHub: {
+        active: "Aktiv",
+        mine: "Meine",
+        host: "Gastgeber",
+        recap: "Rückblick",
       },
       whatsNew: {
         banner: "Neu bei CaskSense — schau was sich getan hat!",
