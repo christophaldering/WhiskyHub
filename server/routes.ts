@@ -8075,6 +8075,10 @@ Important rules:
     try {
       const requesterId = req.query.requesterId as string;
       if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
 
       const allTastings = await storage.getAllTastings();
       const completedTastings = allTastings.filter(t => (t.status === "reveal" || t.status === "archived") && !t.isTestData);
@@ -8300,6 +8304,10 @@ Important rules:
     try {
       const { requesterId, analyticsData } = req.body;
       if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requesterAi = await storage.getParticipant(requesterId);
+      if (!requesterAi || requesterAi.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
 
       if (isAIDisabled("newsletter")) {
         return res.status(403).json({ message: "AI features are disabled" });

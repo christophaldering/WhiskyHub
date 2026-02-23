@@ -79,6 +79,14 @@ export default function Analytics() {
     );
   }
 
+  if (currentParticipant.role !== "admin") {
+    return (
+      <div className="max-w-4xl mx-auto p-6 text-center">
+        <p className="text-muted-foreground">{isDE ? "Diese Seite ist nur für Administratoren verfügbar." : "This page is only available to administrators."}</p>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto p-6 flex items-center justify-center min-h-[400px]">

@@ -8,11 +8,6 @@ import { Globe } from "lucide-react";
 const languages = [
   { code: "en", label: "English", flag: "EN" },
   { code: "de", label: "Deutsch", flag: "DE" },
-  { code: "nl", label: "Nederlands", flag: "NL" },
-  { code: "fr", label: "Français", flag: "FR" },
-  { code: "es", label: "Español", flag: "ES" },
-  { code: "it", label: "Italiano", flag: "IT" },
-  { code: "zh", label: "中文", flag: "ZH" },
 ];
 
 export function LanguageToggle() {

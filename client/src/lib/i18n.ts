@@ -487,7 +487,7 @@ const resources = {
         pinPlaceholder: "Min. 4 digits",
         pinReminder: "Remember your PIN — you'll need it to access your data later. You can upgrade to a full account with email anytime.",
         hobbyNotice: "CaskSense is a private hobby project — born from pure passion for whisky and technology. No commercial interests, no tracking, no ads. If you like the project, I'd love your feedback or a donation to the hospice.",
-        consentNotice: "By signing in, you agree that your ratings will be stored and used for aggregated evaluations. Individual ratings are never shared with other users.",
+        consentNotice: "By signing in, you agree that your ratings will be stored. Your ratings contribute to anonymized group analytics shown to all tasting participants. The host can view individual ratings from all participants in their tasting.",
         pinOnlyTitle: "Quick access (PIN only)",
         pinOnlyDesc: "Fast & simple — just name + PIN. Rate whiskies right away.",
         emailTitle: "Full account (with email)",
@@ -3280,7 +3280,7 @@ const resources = {
         pinPlaceholder: "Mind. 4 Ziffern",
         pinReminder: "Merke dir deine PIN — du brauchst sie, um später auf deine Daten zuzugreifen. Du kannst jederzeit ein vollständiges Konto mit E-Mail erstellen.",
         hobbyNotice: "CaskSense ist ein privates Hobbyprojekt — aus reiner Freude am Whisky und an der Technik entstanden. Keine kommerziellen Interessen, kein Tracking, keine Werbung. Wenn dir das Projekt gefällt, freue ich mich über Feedback oder eine Spende für das Hospiz.",
-        consentNotice: "Mit der Anmeldung stimmst du zu, dass deine Bewertungen gespeichert und für aggregierte Auswertungen genutzt werden. Individuelle Bewertungen werden anderen Nutzern nicht zur Verfügung gestellt.",
+        consentNotice: "Mit der Anmeldung stimmst du zu, dass deine Bewertungen gespeichert werden. Deine Bewertungen fließen in anonymisierte Gruppenauswertungen ein, die allen Tasting-Teilnehmern gezeigt werden. Der Gastgeber kann die Einzelbewertungen aller Teilnehmer eines Tastings einsehen.",
         pinOnlyTitle: "Schnellzugang (nur PIN)",
         pinOnlyDesc: "Schnell & einfach — nur Name + PIN. Sofort Whiskys bewerten.",
         emailTitle: "Vollständiges Konto (mit E-Mail)",
@@ -5607,7 +5607,7 @@ i18n
   .init({
     resources,
     fallbackLng: "en",
-    supportedLngs: ["en", "de", "nl", "fr", "es", "it", "zh"],
+    supportedLngs: ["en", "de"],
     detection: {
       order: ["localStorage", "navigator"],
       caches: ["localStorage"],
