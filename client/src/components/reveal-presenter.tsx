@@ -2,7 +2,6 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
-import { useBlindState } from "@/hooks/use-blind-state";
 import { tastingApi, blindModeApi } from "@/lib/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -88,9 +87,8 @@ export function RevealPresenter({ tasting, whiskies, onExit }: RevealPresenterPr
   const currentActIdx = acts.findIndex(a => a.id === currentAct);
   const isLastAct = currentAct === "act4";
 
-  const { revealIndex, revealStep, getBlindState: getBlindStateForWhisky } = useBlindState(
-    tasting, isHost, { ignoreStatus: true, ignoreHost: true }
-  );
+  const revealIndex = tasting.revealIndex ?? 0;
+  const revealStep = tasting.revealStep ?? 0;
   const allRevealed = revealIndex >= whiskies.length;
   const showBlindControls = tasting.blindMode;
 
@@ -99,6 +97,18 @@ export function RevealPresenter({ tasting, whiskies, onExit }: RevealPresenterPr
     if (revealStep === 2) return t("blind.stepMeta");
     if (revealStep === 3) return t("blind.stepImage");
     return t("presenter.allHidden");
+  };
+
+  const getBlindStateForWhisky = (idx: number, w?: Whisky) => {
+    if (!tasting.blindMode) return { showName: true, showMeta: true, showImage: true };
+    if (idx < revealIndex) return { showName: true, showMeta: true, showImage: true };
+    const photoRevealed = w?.photoRevealed ?? false;
+    if (idx === revealIndex) return {
+      showName: revealStep >= 1,
+      showMeta: revealStep >= 2,
+      showImage: revealStep >= 3 || photoRevealed,
+    };
+    return { showName: false, showMeta: false, showImage: photoRevealed };
   };
 
   if (!isHost) {

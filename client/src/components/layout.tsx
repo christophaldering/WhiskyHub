@@ -743,8 +743,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 ? { href: `/tasting/${tastingMatch![1]}`, icon: ArrowLeft, label: t('nav.backToTasting'), isCockpit: true }
                 : { href: "/app", icon: Home, label: t('nav.lobby') },
               { href: "/sessions", icon: Wine, label: t('nav.sessions') },
-              { href: "/journal", icon: NotebookPen, label: t('nav.journalShort') },
-              { href: "/calendar", icon: Calendar, label: t('nav.calendarShort') },
+              { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
+              { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
               { href: "/more", icon: Menu, label: t('nav.more'), isMore: true },
             ];
           })().map((item) => {

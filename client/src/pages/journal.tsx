@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { journalApi, journalBottleApi, textExtractApi, wishlistApi, tastingHistoryApi, barcodeApi } from "@/lib/api";
+import { journalApi, journalBottleApi, textExtractApi, wishlistApi, tastingHistoryApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,8 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, ArrowLeft, Pencil, Trash2, BookOpen, Wine, Calendar, Camera, X, Loader2, ScanLine, ScanBarcode, ExternalLink, Type, Send, History, ChevronDown, ChevronUp, MapPin, Star } from "lucide-react";
-import { BarcodeScanner } from "@/components/barcode-scanner";
+import { Plus, ArrowLeft, Pencil, Trash2, BookOpen, Wine, Calendar, Camera, X, Loader2, ScanLine, ExternalLink, Type, Send, History, ChevronDown, ChevronUp, MapPin, Star } from "lucide-react";
 import { TastingNoteGenerator } from "@/components/tasting-note-generator";
 import type { JournalEntry } from "@shared/schema";
 import { GuestPreview } from "@/components/guest-preview";
@@ -180,21 +179,20 @@ export default function Journal() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex items-start sm:items-center justify-between gap-3 mb-6">
-              <div className="min-w-0">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-journal-title">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-journal-title">
                   {t("journal.title")}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">{t("journal.subtitle")}</p>
               </div>
               <Button
                 onClick={handleNew}
-                size="sm"
-                className="bg-primary text-primary-foreground font-serif shrink-0"
+                className="bg-primary text-primary-foreground font-serif"
                 data-testid="button-new-journal-entry"
               >
-                <Plus className="w-4 h-4 sm:mr-1" />
-                <span className="hidden sm:inline">{t("journal.newEntry")}</span>
+                <Plus className="w-4 h-4 mr-2" />
+                {t("journal.newEntry")}
               </Button>
             </div>
 
@@ -559,44 +557,12 @@ function EntryForm({
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
   const [scanError, setScanError] = useState("");
-  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
-  const [barcodeLoading, setBarcodeLoading] = useState(false);
   const [showTextExtract, setShowTextExtract] = useState(false);
   const [extractText, setExtractText] = useState("");
   const [extracting, setExtracting] = useState(false);
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
-
-  const handleBarcodeScan = async (code: string) => {
-    setShowBarcodeScanner(false);
-    setBarcodeLoading(true);
-    setScanError("");
-    setScanResult(null);
-    try {
-      const result = await barcodeApi.lookup(code);
-      if (result.notFound) {
-        setScanError(t("barcode.notFound"));
-      } else {
-        setScanResult(result);
-        setForm(prev => ({
-          ...prev,
-          whiskyName: result.whiskyName || prev.whiskyName,
-          distillery: result.distillery || prev.distillery,
-          region: result.region || prev.region,
-          age: result.age || prev.age,
-          abv: result.abv || prev.abv,
-          caskType: result.caskType || prev.caskType,
-          title: prev.title || result.whiskyName || prev.title,
-        }));
-        toast({ title: t("barcode.found", { name: result.whiskyName }) });
-      }
-    } catch (err: any) {
-      setScanError(err.message || t("barcode.notFound"));
-    } finally {
-      setBarcodeLoading(false);
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -718,37 +684,8 @@ function EntryForm({
                 }}
               />
             </label>
-              <button
-                type="button"
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  barcodeLoading
-                    ? "bg-primary/20 text-primary"
-                    : "bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground cursor-pointer"
-                }`}
-                onClick={() => setShowBarcodeScanner(true)}
-                disabled={barcodeLoading}
-                data-testid="button-scan-barcode-journal"
-              >
-                {barcodeLoading ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    {t("barcode.lookingUp")}
-                  </>
-                ) : (
-                  <>
-                    <ScanBarcode className="w-3.5 h-3.5" />
-                    {t("journal.scanBarcode")}
-                  </>
-                )}
-              </button>
             </div>
           </div>
-
-          <BarcodeScanner
-            open={showBarcodeScanner}
-            onClose={() => setShowBarcodeScanner(false)}
-            onScan={handleBarcodeScan}
-          />
 
           {scanError && (
             <div className="mb-3 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">

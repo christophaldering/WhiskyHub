@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { useAIStatus } from "@/hooks/use-ai-status";
-import { useBlindState } from "@/hooks/use-blind-state";
 import { ratingApi, tastingApi, whiskyApi, blindModeApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -224,7 +223,9 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
     return 0;
   });
 
-  const { isBlind, revealIndex, revealStep, getBlindState } = useBlindState(tasting, isHost);
+  const isBlind = tasting.blindMode && (tasting.status === "draft" || tasting.status === "open" || tasting.status === "closed");
+  const revealIndex = tasting.revealIndex ?? 0;
+  const revealStep = tasting.revealStep ?? 0;
 
   useEffect(() => {
     if (isBlind && !isHost) {
@@ -234,6 +235,19 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
 
   const activeWhisky = whiskies[activeIndex] || whiskies[0];
   if (!activeWhisky) return null;
+
+  const getBlindState = (idx: number, w?: Whisky, forEval = false) => {
+    if (!isBlind) return { showName: true, showMeta: true, showImage: true };
+    if (isHost && !forEval) return { showName: true, showMeta: true, showImage: true };
+    if (idx < revealIndex) return { showName: true, showMeta: true, showImage: true };
+    const photoRevealed = w?.photoRevealed ?? false;
+    if (idx === revealIndex) return {
+      showName: revealStep >= 1,
+      showMeta: revealStep >= 2,
+      showImage: revealStep >= 3 || photoRevealed,
+    };
+    return { showName: false, showMeta: false, showImage: photoRevealed };
+  };
 
   const blind = getBlindState(activeIndex, activeWhisky);
   const evalBlind = getBlindState(activeIndex, activeWhisky, true);

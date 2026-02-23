@@ -17,8 +17,7 @@ import {
   Brain, ArrowRight, Wine,
   ChevronDown, Heart,
   Presentation, Play, Star, Search, Beaker, CheckCircle2,
-  Zap, Layers, ClipboardList, Users, BarChart3, FlaskConical, Sparkles,
-  FileText
+  Zap, Layers, ClipboardList, Users, BarChart3, FlaskConical, Sparkles
 } from "lucide-react";
 
 const tourPreviewSlides = [slideBlind, slideFlightboard, slideAnalytics];
@@ -50,7 +49,6 @@ export default function Landing() {
   const [, navigate] = useLocation();
   const { setPreviewExperienceLevel } = useAppStore();
   const [tastingCode, setTastingCode] = useState("");
-  const [downloading, setDownloading] = useState(false);
 
   const { data: stats } = useQuery({
     queryKey: ["platform-stats"],
@@ -186,33 +184,6 @@ export default function Landing() {
                 >
                   <Play className="w-4 h-4" />
                   {t("landing.tourBanner.cta")}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={downloading}
-                  onClick={async () => {
-                    setDownloading(true);
-                    try {
-                      const res = await fetch("/api/tour-pdf");
-                      const blob = await res.blob();
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = "CaskSense-Rundgang.pdf";
-                      document.body.appendChild(a);
-                      a.click();
-                      a.remove();
-                      URL.revokeObjectURL(url);
-                    } finally {
-                      setDownloading(false);
-                    }
-                  }}
-                  className="font-serif text-xs gap-1.5 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700"
-                  data-testid="landing-tour-pdf"
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  {t("landing.tourBanner.downloadPdf")}
                 </Button>
                 <span className="text-xs text-muted-foreground/50">{t("landing.tourBanner.hint")}</span>
               </div>
@@ -512,10 +483,10 @@ export default function Landing() {
                 <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
                   {t("landing.story.quote1")}
                 </p>
-                <p className="text-primary font-serif font-semibold text-lg lg:text-xl italic leading-relaxed">
+                <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
                   {t("landing.story.quote1b")}
                 </p>
-                <p className="text-primary font-serif font-semibold text-lg lg:text-xl italic leading-relaxed">
+                <p className="text-primary font-serif text-lg lg:text-xl italic leading-relaxed">
                   {t("landing.story.quote1c")}
                 </p>
               </blockquote>

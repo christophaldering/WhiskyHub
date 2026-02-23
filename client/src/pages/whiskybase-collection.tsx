@@ -425,14 +425,14 @@ export default function WhiskybaseCollection() {
 
   return (
     <div className="space-y-6 pb-20">
-      <div className="space-y-3">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold font-display" data-testid="text-collection-title">
+          <h1 className="text-2xl font-bold font-display" data-testid="text-collection-title">
             {t("collection.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{t("collection.subtitle")}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           {items.length > 0 && (
             <Button
               variant="outline"
@@ -440,8 +440,8 @@ export default function WhiskybaseCollection() {
               onClick={() => setShowStats(!showStats)}
               data-testid="button-toggle-stats"
             >
-              <BarChart3 className="w-4 h-4 sm:mr-1" />
-              <span className="hidden sm:inline">{t("collection.statistics")}</span>
+              <BarChart3 className="w-4 h-4 mr-1" />
+              {t("collection.statistics")}
             </Button>
           )}
           {items.length > 0 && !priceSelectMode && (
@@ -454,38 +454,36 @@ export default function WhiskybaseCollection() {
               }}
               data-testid="button-start-price-estimate"
             >
-              <Sparkles className="w-4 h-4 sm:mr-1" />
-              <span className="hidden sm:inline">{t("collection.estimatePrices")}</span>
+              <Sparkles className="w-4 h-4 mr-1" />
+              {t("collection.estimatePrices")}
             </Button>
           )}
           {items.length > 0 && (
             <Button
               variant="outline"
-              size="sm"
               onClick={() => syncFileInputRef.current?.click()}
               disabled={syncMutation.isPending}
               data-testid="button-sync-collection"
             >
               {syncMutation.isPending ? (
-                <Loader2 className="w-4 h-4 sm:mr-1 animate-spin" />
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
-                <RefreshCw className="w-4 h-4 sm:mr-1" />
+                <RefreshCw className="w-4 h-4 mr-2" />
               )}
-              <span className="hidden sm:inline">{syncMutation.isPending ? t("collection.syncing") : t("collection.syncButton")}</span>
+              {syncMutation.isPending ? t("collection.syncing") : t("collection.syncButton")}
             </Button>
           )}
           <Button
-            size="sm"
             onClick={() => fileInputRef.current?.click()}
             disabled={importMutation.isPending}
             data-testid="button-import-collection"
           >
             {importMutation.isPending ? (
-              <Loader2 className="w-4 h-4 sm:mr-1 animate-spin" />
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
-              <Upload className="w-4 h-4 sm:mr-1" />
+              <Upload className="w-4 h-4 mr-2" />
             )}
-            <span className="hidden sm:inline">{importMutation.isPending ? t("collection.importing") : t("collection.importButton")}</span>
+            {importMutation.isPending ? t("collection.importing") : t("collection.importButton")}
           </Button>
           <input
             ref={fileInputRef}
@@ -511,20 +509,18 @@ export default function WhiskybaseCollection() {
       )}
 
       {priceSelectMode && (
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
-          <div className="flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium">{t("collection.selectForEstimate")}</p>
-              {selectedForPrice.size > 0 && (
-                <p className="text-xs text-muted-foreground">{t("collection.selectedCount", { count: selectedForPrice.size })}</p>
-              )}
-              {rateLimitDate && !isAdmin && (
-                <p className="text-xs text-amber-500 mt-1">{t("collection.rateLimited", { date: rateLimitDate })}</p>
-              )}
-            </div>
+        <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg p-3">
+          <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">{t("collection.selectForEstimate")}</p>
+            {selectedForPrice.size > 0 && (
+              <p className="text-xs text-muted-foreground">{t("collection.selectedCount", { count: selectedForPrice.size })}</p>
+            )}
+            {rateLimitDate && !isAdmin && (
+              <p className="text-xs text-amber-500 mt-1">{t("collection.rateLimited", { date: rateLimitDate })}</p>
+            )}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
             <Button
               size="sm"
               variant="ghost"

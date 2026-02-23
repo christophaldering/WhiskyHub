@@ -20,38 +20,10 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Headi
 import sharp from "sharp";
 
 const aiScanCache = new Map<string, { result: any; timestamp: number }>();
-let tourCacheVersion = Date.now() + 1;
+let tourCacheVersion = Date.now();
 const tourImageCache = new Map<string, string>();
 const AI_CACHE_TTL = 24 * 60 * 60 * 1000;
 const AI_CACHE_MAX = 500;
-const AI_MAX_TEXT_CHARS = 25000;
-const AI_MAX_IMAGES = 5;
-const AI_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-
-function truncateForAI(text: string, maxChars = AI_MAX_TEXT_CHARS): string {
-  if (text.length <= maxChars) return text;
-  console.warn(`[AI] Truncating text input from ${text.length} to ${maxChars} chars`);
-  return text.slice(0, maxChars) + "\n\n[... content truncated for AI analysis ...]";
-}
-
-function isOpenAITokenLimitError(e: any): boolean {
-  return e?.status === 400 && (
-    (typeof e?.message === "string" && e.message.includes("maximum context length")) ||
-    (typeof e?.error?.message === "string" && e.error.message.includes("maximum context length"))
-  );
-}
-
-function handleOpenAIError(e: any, res: any, context: string): void {
-  if (isOpenAITokenLimitError(e)) {
-    console.error(`[AI] Token limit exceeded in ${context}:`, e.message || e.error?.message);
-    res.status(413).json({
-      message: "Der hochgeladene Inhalt ist zu groß für die KI-Analyse. Bitte verwende eine kleinere Datei oder kürzeren Text. / The uploaded content is too large for AI analysis. Please use a smaller file or shorter text."
-    });
-  } else {
-    console.error(`[AI] Error in ${context}:`, e);
-    res.status(500).json({ message: e.message || "Analysis failed" });
-  }
-}
 
 function getDefaultSetting(key: string): string {
   const defaults: Record<string, string> = {
@@ -3404,114 +3376,6 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
     }
   });
 
-  // ===== Barcode Lookup =====
-  app.post("/api/barcode/lookup", async (req: Request, res: Response) => {
-    try {
-      const { code } = req.body;
-      if (!code || typeof code !== "string" || code.trim().length < 4) {
-        return res.status(400).json({ message: "Valid barcode required" });
-      }
-
-      const barcode = code.trim();
-      console.log(`[Barcode] Looking up: ${barcode}`);
-
-      try {
-        const offRes = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json`, {
-          headers: { "User-Agent": "CaskSense/2.0 (whisky-tasting-app)" },
-          signal: AbortSignal.timeout(8000),
-        });
-
-        if (offRes.ok) {
-          const data = await offRes.json();
-          if (data.status === 1 && data.product) {
-            const p = data.product;
-            const productName = p.product_name || p.product_name_en || p.product_name_de || "";
-            const brand = p.brands || "";
-            const categories = p.categories || "";
-            const alcoholContent = p.nutriments?.alcohol_100g ? `${p.nutriments.alcohol_100g}%` : null;
-
-            const isSpirit = categories.toLowerCase().includes("whisk") ||
-              categories.toLowerCase().includes("spirit") ||
-              categories.toLowerCase().includes("scotch") ||
-              categories.toLowerCase().includes("bourbon") ||
-              productName.toLowerCase().includes("whisk") ||
-              brand.toLowerCase().includes("whisk");
-
-            if (productName) {
-              const whiskyName = brand && !productName.toLowerCase().includes(brand.toLowerCase())
-                ? `${brand} ${productName}`
-                : productName;
-
-              console.log(`[Barcode] Open Food Facts hit: ${whiskyName} (spirit: ${isSpirit})`);
-              return res.json({
-                whiskyName,
-                distillery: brand || null,
-                region: p.origins || null,
-                age: null,
-                abv: alcoholContent,
-                caskType: null,
-                country: p.countries || null,
-                source: "barcode",
-                barcode,
-                confidence: isSpirit ? "high" : "low",
-              });
-            }
-          }
-        }
-      } catch (offErr: any) {
-        console.warn(`[Barcode] Open Food Facts lookup failed: ${offErr.message}`);
-      }
-
-      try {
-        const openai = new OpenAI({
-          apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-          baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-        });
-
-        const completion = await openai.chat.completions.create({
-          model: "gpt-4o",
-          messages: [
-            {
-              role: "system",
-              content: `You are a whisky and spirits expert. The user provides a barcode number (EAN/UPC). Try to identify the product. If you recognize it, return a JSON object with: whiskyName, distillery, region, country, age, abv, caskType. If you don't recognize the barcode, return {"notFound": true}. Return ONLY valid JSON, no other text.`,
-            },
-            {
-              role: "user",
-              content: `Identify this barcode: ${barcode}`,
-            },
-          ],
-          max_tokens: 500,
-          temperature: 0.3,
-        });
-
-        const raw = completion.choices[0]?.message?.content || '{"notFound": true}';
-        const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-        const parsed = JSON.parse(cleaned);
-
-        if (parsed.notFound) {
-          console.log(`[Barcode] AI could not identify: ${barcode}`);
-          return res.json({ notFound: true, barcode });
-        }
-
-        console.log(`[Barcode] AI identified: ${parsed.whiskyName}`);
-        return res.json({
-          ...parsed,
-          source: "barcode-ai",
-          barcode,
-        });
-      } catch (aiErr: any) {
-        if (isOpenAITokenLimitError(aiErr)) {
-          return res.json({ notFound: true, barcode });
-        }
-        console.warn(`[Barcode] AI fallback failed: ${aiErr.message}`);
-        return res.json({ notFound: true, barcode });
-      }
-    } catch (e: any) {
-      console.error("[Barcode] Lookup error:", e);
-      res.status(500).json({ message: e.message || "Barcode lookup failed" });
-    }
-  });
-
   // ===== Journal Bottle Identification (must be before parameterized /api/journal/:participantId routes) =====
   app.post("/api/journal/identify-bottle", docUpload.single("photo"), async (req: Request, res: Response) => {
     try {
@@ -3523,10 +3387,6 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
 
       const file = (req as any).file as Express.Multer.File;
       if (!file) return res.status(400).json({ message: "No photo uploaded" });
-
-      if (file.size > AI_MAX_IMAGE_BYTES) {
-        return res.status(413).json({ message: "Image too large for AI analysis (max 10 MB)" });
-      }
 
       const imageHash = crypto.createHash("sha256").update(file.buffer).digest("hex");
       const cached = aiScanCache.get(imageHash);
@@ -3673,7 +3533,8 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
       res.json(responseData);
     } catch (e: any) {
-      handleOpenAIError(e, res, "journal/identify-bottle");
+      console.error("Journal bottle identify error:", e);
+      res.status(500).json({ message: e.message || "Identification failed" });
     }
   });
 
@@ -3817,10 +3678,6 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
       const file = (req as any).file as Express.Multer.File;
       if (!file) return res.status(400).json({ message: "No photo uploaded" });
 
-      if (file.size > AI_MAX_IMAGE_BYTES) {
-        return res.status(413).json({ message: "Image too large for AI analysis (max 10 MB)" });
-      }
-
       const allWhiskies = await storage.getActiveWhiskies();
       const benchmarks = await storage.getBenchmarkEntries();
       const dbWhiskyNames = Array.from(new Set(allWhiskies.map(w => w.name))).slice(0, 200);
@@ -3952,7 +3809,8 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
       res.json({ whiskies: results });
     } catch (e: any) {
-      handleOpenAIError(e, res, "wishlist/identify");
+      console.error("Wishlist identify error:", e);
+      res.status(500).json({ message: e.message || "Identification failed" });
     }
   });
 
@@ -5668,14 +5526,6 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         })
       );
 
-      const AI_MAX_PROFILES_PER_BATCH = 50;
-      const limitedParticipantData = participantData.slice(0, AI_MAX_PROFILES_PER_BATCH);
-      if (participantData.length > AI_MAX_PROFILES_PER_BATCH) {
-        console.warn(`[AI] Limiting AI profiles from ${participantData.length} to ${AI_MAX_PROFILES_PER_BATCH} participants`);
-      }
-
-      const participantPayload = truncateForAI(JSON.stringify(limitedParticipantData));
-
       const lang = requester.language === "de" ? "de" : "en";
       const systemPrompt = lang === "de"
         ? `Du bist ein Whisky-Tasting-Analyst und Sensorik-Experte. Erstelle für jeden Teilnehmer ein kurzes Profil (2-3 Sätze) basierend auf den vorhandenen Daten. Beschreibe: Geschmackspräferenzen, Bewertungsstil (generös/streng, konsistent/variabel), und was aus sensorisch-wissenschaftlicher Sicht interessant ist (z.B. ausgeprägte Regionspräferenzen, ungewöhnliche Muster, hohe/niedrige Varianz). Bei anonymisierten Teilnehmern (Name beginnt mit "Anon-") nutze nur den Alias-Namen. Antworte als JSON-Array mit Objekten: {"id": "...", "profile": "..."}. Nur das JSON, kein anderer Text.`
@@ -5690,7 +5540,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         model: "gpt-4o",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: participantPayload },
+          { role: "user", content: JSON.stringify(participantData) },
         ],
         max_tokens: 4000,
         temperature: 0.7,
@@ -5707,7 +5557,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
       res.json({ profiles });
     } catch (e: any) {
-      handleOpenAIError(e, res, "admin/ai-profiles");
+      console.error("AI participant profiles error:", e);
+      res.status(500).json({ message: e.message });
     }
   });
 
@@ -6659,9 +6510,7 @@ Key CaskSense Features:
       const isImage = file.mimetype.startsWith("image/");
 
       if (isImage) {
-        if (file.size > AI_MAX_IMAGE_BYTES) {
-          return res.status(413).json({ message: "Image too large for AI analysis (max 10 MB)" });
-        }
+        // For images, send directly to GPT vision
         const base64 = file.buffer.toString("base64");
         const openai = new OpenAI({
           apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -6753,7 +6602,7 @@ Return ONLY valid JSON array. If no whisky data found, return [].`,
               },
               {
                 role: "user",
-                content: `This is a PDF document (base64 encoded, first 30000 chars): ${base64.slice(0, 30000)}\n\nExtract all whisky tasting data.`,
+                content: `This is a PDF document (base64 encoded, first 50000 chars): ${base64.slice(0, 50000)}\n\nExtract all whisky tasting data.`,
               },
             ],
             max_tokens: 4096,
@@ -6785,7 +6634,7 @@ Return ONLY valid JSON array. If no whisky data found, return [].`,
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       });
 
-      const truncatedText = truncateForAI(textContent);
+      const truncatedText = textContent.slice(0, 60000);
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -6825,7 +6674,8 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
       const entries = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
       res.json({ entries: enrichEntries(entries), fileName: file.originalname });
     } catch (e: any) {
-      handleOpenAIError(e, res, "benchmark/analyze");
+      console.error("Benchmark analyze error:", e);
+      res.status(500).json({ message: e.message || "Analysis failed" });
     }
   });
 
@@ -6858,20 +6708,8 @@ Return ONLY a valid JSON array. If no whisky data is found, return [].`,
       const benchmarkNames = [...new Set(benchmarks.map(b => b.whiskyName))].slice(0, 200);
       const knownWhiskies = [...new Set([...dbWhiskyNames, ...benchmarkNames])];
 
-      const validFiles = files.filter(f => {
-        if (f.size > AI_MAX_IMAGE_BYTES) {
-          console.warn(`[AI] Skipping oversized photo: ${f.originalname} (${(f.size / 1024 / 1024).toFixed(1)}MB)`);
-          return false;
-        }
-        return true;
-      }).slice(0, AI_MAX_IMAGES);
-
-      if (validFiles.length === 0) {
-        return res.status(413).json({ message: "All photos exceed the 10 MB size limit" });
-      }
-
       const results = [];
-      for (const file of validFiles) {
+      for (const file of files) {
         const base64 = file.buffer.toString("base64");
         console.log(`Photo tasting scan: file=${file.originalname}, size=${(file.size / 1024).toFixed(0)}KB`);
 
@@ -7043,7 +6881,8 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
 
       res.json({ whiskies: results });
     } catch (e: any) {
-      handleOpenAIError(e, res, "photo-tasting/identify");
+      console.error("Photo tasting identify error:", e);
+      res.status(500).json({ message: e.message || "Identification failed" });
     }
   });
 
@@ -7545,14 +7384,6 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
             }
           }
         } else if (file.mimetype.startsWith("image/")) {
-          if (file.size > AI_MAX_IMAGE_BYTES) {
-            console.warn(`[AI] Skipping oversized image: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
-            continue;
-          }
-          if (imageContents.length >= AI_MAX_IMAGES) {
-            console.warn(`[AI] Max image limit (${AI_MAX_IMAGES}) reached, skipping: ${file.originalname}`);
-            continue;
-          }
           const base64 = file.buffer.toString("base64");
           imageContents.push({
             type: "image_url",
@@ -7629,19 +7460,17 @@ Important rules:
 
       const userContent: any[] = [];
 
-      const truncatedTextContent = truncateForAI(textContent);
-
-      if (truncatedTextContent) {
+      if (textContent) {
         userContent.push({
           type: "text",
-          text: `Extract all whisky tasting information from this content:\n\n${truncatedTextContent}`,
+          text: `Extract all whisky tasting information from this content:\n\n${textContent}`,
         });
       }
 
       if (imageContents.length > 0) {
         userContent.push({
           type: "text",
-          text: truncatedTextContent
+          text: textContent
             ? "Also analyze these images for additional tasting information:"
             : "Extract all whisky tasting information from these images:",
         });
@@ -7671,7 +7500,8 @@ Important rules:
         source: "ai",
       });
     } catch (e: any) {
-      handleOpenAIError(e, res, "tasting-import/analyze");
+      console.error("AI import error:", e);
+      res.status(500).json({ message: e.message || "Import analysis failed" });
     }
   });
 
@@ -8008,7 +7838,7 @@ Important rules:
   const tourSlideData = [
     {
       title: "CaskSense",
-      subtitle: "Whisky gemeinsam erleben. Wahrnehmung sichtbar machen — der Moment am Tisch zählt.",
+      subtitle: "Whisky gemeinsam erleben. Ohne Technik-Stress — der Moment am Tisch zählt.",
       badge: "Rundgang",
       features: [] as string[],
       image: "slide-cover.png",
@@ -8021,7 +7851,7 @@ Important rules:
       features: [
         "Verkosten steht im Fokus — Kein Feature-Overload, nur das, was ein gutes Tasting besser macht",
         "Kein Konto nötig — QR-Code scannen, Name eingeben, mitmachen",
-        "Kein Vorwissen nötig — Ob Neuling oder Erfahrener, jeder ist willkommen",
+        "Kein Vorwissen nötig — Ob Neuling oder Kenner, jeder ist willkommen",
         "Whisky first — Die App soll helfen, nicht im Weg stehen",
       ],
     },
@@ -8032,21 +7862,9 @@ Important rules:
       image: "slide-community.png",
       features: [
         "Just Tasting — Kommen, trinken, bewerten, gehen. Null Technik-Stress.",
-        "Entdecker — Journal starten, Aromen entdecken, Favoriten merken.",
-        "Vertiefer — Geschmacksprofil aufbauen, Whiskys vergleichen, Empfehlungen.",
-        "Analysieren — Benchmarks, Statistiken, Muster — für alle, die Daten lieben.",
-      ],
-    },
-    {
-      title: "Dein persönlicher Bereich",
-      subtitle: "Dein Whisky-Universum wächst mit jedem Tasting. Journal, Wunschliste, Sammlung und dein persönliches Geschmacksprofil — alles an einem Ort.",
-      badge: "Für dich",
-      image: "slide-community.png",
-      features: [
-        "Verkostungstagebuch — Deine privaten Notizen, Fotos und Eindrücke — aus Tastings und eigenen Verkostungen",
-        "Wunschliste — Flaschen merken, die du probieren willst — per Foto-Scan oder manuell",
-        "Whisky-Sammlung — Deine Flaschen verwalten, Whiskybase synchronisieren, Preise schätzen",
-        "Mein Whisky-Profil — Geschmacksanalyse, Bewertungsverhalten und Aromarad in drei Tabs",
+        "Explorer — Journal starten, Aromen entdecken, Favoriten merken.",
+        "Connoisseur — Geschmacksprofil aufbauen, Whiskys vergleichen, Empfehlungen.",
+        "Analyst — Benchmarks, Statistiken, Muster — für alle, die Daten lieben.",
       ],
     },
     {
@@ -8105,13 +7923,13 @@ Important rules:
       features: [
         "Foto-Erkennung — Flasche fotografieren — KI erledigt die Dateneingabe",
         "Excel/CSV Import — Tabellen hochladen, Spalten werden automatisch zugeordnet",
-        "Whiskybase Smart-Sync — Sammlung importieren, Änderungen erkennen, einzeln entscheiden",
-        "KI-Preisschätzung — Marktpreise für deine Sammlung schätzen lassen — automatisch",
+        "Benchmark-Datenbank — Professionelle Bewertungen als Referenz — zum Vergleichen",
+        "Whiskybase-Import — Bestehende Sammlung importieren — inklusive Links und Preise",
       ],
     },
     {
       title: "Mehr als Bauchgefühl",
-      subtitle: "Methoden aus Psychometrie und Wahrnehmungsforschung — zugänglich gemacht. Werkzeuge, die über Hobby hinausgehen.",
+      subtitle: "Methoden aus Psychometrie und Persönlichkeitsforschung — zugänglich gemacht. Werkzeuge, die über Hobby hinausgehen.",
       badge: "Für Wissbegierige",
       image: "slide-analytics.png",
       features: [
@@ -8130,7 +7948,7 @@ Important rules:
       features: [
         "Freunde — Whisky-Freunde hinzufügen und deren Einträge sehen",
         "Aktivitäts-Feed — Was trinken die anderen? Timeline deiner Tasting-Runde",
-        "Aktivitäts-Übersicht — Wer hat die meisten Tastings? Wer die detailliertesten Notizen?",
+        "Rangliste — Wer war am aktivsten? Wer hat die detailliertesten Notizen?",
         "Tasting-Kalender — Alle Sessions im Überblick",
         "Erinnerungen — Freundlicher Reminder per E-Mail",
       ],
@@ -8145,7 +7963,6 @@ Important rules:
         "Zusammenfassung — Rückblick nach dem Tasting: Top-Whisky, Überraschungen, Kontroversen",
         "Gastgeber-Delegation — Rolle an jemand anderen übergeben",
         "Ambiente — Kaminfeuer, Regen oder Jazz — dezente Klänge für die richtige Stimmung",
-        "Curation Wizard — Tasting aus eigener Sammlung zusammenstellen — per Thema, Region oder KI-Vorschlag",
       ],
     },
     {

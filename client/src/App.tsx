@@ -72,7 +72,6 @@ function Router() {
         <Route path="/background" component={Background} />
         <Route path="/join/:code" component={QuickTasting} />
         <Route path="/naked/:code" component={NakedTasting} />
-        <Route path="/tasting/:id" component={TastingRoom} />
         <Route path="/impressum" component={Impressum} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/intro" component={Intro} />
@@ -82,6 +81,7 @@ function Router() {
               <Route path="/app" component={Home} />
               <Route path="/news" component={News} />
               <Route path="/sessions" component={Sessions} />
+              <Route path="/tasting/:id" component={TastingRoom} />
               <Route path="/profile" component={Profile} />
               <Route path="/friends" component={WhiskyFriends} />
               <Route path="/journal" component={Journal} />

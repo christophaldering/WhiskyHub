@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { wishlistApi, barcodeApi } from "@/lib/api";
+import { wishlistApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { GuestPreview } from "@/components/guest-preview";
@@ -30,8 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ArrowLeft, Pencil, Trash2, Star, Wine, Calendar, Flame, Sparkles, Clock, Camera, Loader2, ScanLine, ScanBarcode, Type, Send, GlassWater, ExternalLink, Check } from "lucide-react";
-import { BarcodeScanner } from "@/components/barcode-scanner";
+import { Plus, ArrowLeft, Pencil, Trash2, Star, Wine, Calendar, Flame, Sparkles, Clock, Camera, Loader2, ScanLine, Type, Send, GlassWater, ExternalLink, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { wishlistScanApi, textExtractApi } from "@/lib/api";
 import { useLocation } from "wouter";
@@ -151,9 +150,9 @@ export default function Wishlist() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex items-start sm:items-center justify-between gap-3 mb-8">
-              <div className="min-w-0">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-wishlist-title">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-wishlist-title">
                   {t("wishlist.title")}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -164,12 +163,11 @@ export default function Wishlist() {
               </div>
               <Button
                 onClick={handleNew}
-                size="sm"
-                className="bg-primary text-primary-foreground font-serif shrink-0"
+                className="bg-primary text-primary-foreground font-serif"
                 data-testid="button-add-wishlist"
               >
-                <Plus className="w-4 h-4 sm:mr-1" />
-                <span className="hidden sm:inline">{t("wishlist.addWhisky")}</span>
+                <Plus className="w-4 h-4 mr-2" />
+                {t("wishlist.addWhisky")}
               </Button>
             </div>
 
@@ -365,8 +363,6 @@ function WishlistForm({
   const [source, setSource] = useState(entry?.source || "");
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
-  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
-  const [barcodeLoading, setBarcodeLoading] = useState(false);
   const [showTextExtract, setShowTextExtract] = useState(false);
   const [extractText, setExtractText] = useState("");
   const [extracting, setExtracting] = useState(false);
@@ -391,42 +387,6 @@ function WishlistForm({
       console.error("AI summary error:", err);
     } finally {
       setGeneratingSummary(false);
-    }
-  };
-
-  const handleBarcodeScan = async (code: string) => {
-    setShowBarcodeScanner(false);
-    setBarcodeLoading(true);
-    setScanError("");
-    setScanResult(null);
-    try {
-      const result = await barcodeApi.lookup(code);
-      if (result.notFound) {
-        setScanError(t("barcode.notFound"));
-      } else {
-        setScanResult(result);
-        if (result.whiskyName && result.whiskyName !== "Unknown Whisky") {
-          setWhiskyName(result.whiskyName);
-          if (result.distillery) setDistillery(result.distillery);
-          if (result.region) setRegion(result.region);
-          if (result.age) setAge(result.age);
-          if (result.abv) setAbv(result.abv);
-          if (result.caskType) setCaskType(result.caskType);
-          generateSummary({
-            whiskyName: result.whiskyName,
-            distillery: result.distillery,
-            region: result.region,
-            age: result.age,
-            abv: result.abv,
-            caskType: result.caskType,
-          });
-        }
-        toast({ title: t("barcode.found", { name: result.whiskyName }) });
-      }
-    } catch (err: any) {
-      setScanError(err.message || t("barcode.notFound"));
-    } finally {
-      setBarcodeLoading(false);
     }
   };
 
@@ -495,7 +455,7 @@ function WishlistForm({
             accept="image/jpeg,image/png,image/webp,image/gif"
             className="hidden"
             disabled={scanning || aiScanDisabled}
-            onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+            onChange={async (e) => {
               const file = e.target.files?.[0];
               e.target.value = "";
               if (!file || !participantId) return;
@@ -554,36 +514,6 @@ function WishlistForm({
             }}
           />
         </label>
-        <button
-          type="button"
-          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-            barcodeLoading
-              ? "bg-primary/20 text-primary"
-              : "bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground cursor-pointer"
-          }`}
-          onClick={() => setShowBarcodeScanner(true)}
-          disabled={barcodeLoading}
-          data-testid="button-scan-barcode-wishlist"
-        >
-          {barcodeLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              {t("barcode.lookingUp")}
-            </>
-          ) : (
-            <>
-              <ScanBarcode className="w-4 h-4" />
-              {t("wishlist.scanBarcode")}
-            </>
-          )}
-        </button>
-
-        <BarcodeScanner
-          open={showBarcodeScanner}
-          onClose={() => setShowBarcodeScanner(false)}
-          onScan={handleBarcodeScan}
-        />
-
         {scanError && (
           <div className="mt-3 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
             {scanError}

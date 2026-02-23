@@ -20,9 +20,6 @@ import DiscussionPanel from "@/components/discussion-panel";
 import ReflectionPanel from "@/components/reflection-panel";
 import TastingPhotos from "@/components/tasting-photos";
 import { TastingAnalytics } from "@/components/tasting-analytics";
-import { NakedFirstView } from "@/components/naked-first-view";
-import { TastingShell } from "@/components/tasting-shell";
-import { useBlindState } from "@/hooks/use-blind-state";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
@@ -1601,7 +1598,6 @@ export default function TastingRoom() {
   const [presenterActive, setPresenterActive] = useState(false);
   const [presenterExited, setPresenterExited] = useState(false);
   const [showDonationPrompt, setShowDonationPrompt] = useState(false);
-  const [nakedFirstMode, setNakedFirstMode] = useState(true);
   const prevStatusRef = useRef<string | null>(null);
 
   const enterFocusMode = useCallback(() => {
@@ -1726,12 +1722,24 @@ export default function TastingRoom() {
 
   const isHost = tasting.hostId === currentParticipant.id;
 
-  const { isBlind, revealIndex, revealStep, getBlindState } = useBlindState(tasting, isHost);
+  const isBlind = tasting.blindMode && (tasting.status === "draft" || tasting.status === "open" || tasting.status === "closed");
+  const revealIndex = tasting.revealIndex ?? 0;
+  const revealStep = tasting.revealStep ?? 0;
+
+  const getBlindState = (whiskyIdx: number, whisky?: Whisky) => {
+    if (!isBlind) return { showName: true, showMeta: true, showImage: true };
+    if (isHost) return { showName: true, showMeta: true, showImage: true };
+    if (whiskyIdx < revealIndex) return { showName: true, showMeta: true, showImage: true };
+    const photoRevealed = whisky?.photoRevealed ?? false;
+    if (whiskyIdx === revealIndex) return {
+      showName: revealStep >= 1,
+      showMeta: revealStep >= 2,
+      showImage: revealStep >= 3 || photoRevealed,
+    };
+    return { showName: false, showMeta: false, showImage: photoRevealed };
+  };
 
   const isGuidedMode = tasting?.guidedMode && (tasting.status === "open" || tasting.status === "draft");
-
-  const expLevel = currentParticipant?.experienceLevel || "guest";
-  const shouldShowNakedFirst = nakedFirstMode && !isHost && tasting.status === "open" && whiskyList.length > 0 && !isGuidedMode;
 
   if ((guidedActive || (isGuidedMode && !guidedExited)) && tasting && whiskyList.length > 0 && tasting.status === "open") {
     return (
@@ -1798,22 +1806,7 @@ export default function TastingRoom() {
     );
   }
 
-  if (shouldShowNakedFirst) {
-    return (
-      <TastingShell title={tasting.title} status={tasting.status}>
-        <NakedFirstView
-          tasting={tasting}
-          whiskies={whiskyList}
-          getBlindState={getBlindState}
-          isHost={isHost}
-          onExpand={() => setNakedFirstMode(false)}
-        />
-      </TastingShell>
-    );
-  }
-
   return (
-    <TastingShell title={tasting.title} status={tasting.status}>
     <div className="space-y-8 max-w-7xl mx-auto overflow-x-hidden">
       <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
       {tasting && <DonationPromptDialog tastingId={tasting.id} open={showDonationPrompt} onClose={() => setShowDonationPrompt(false)} />}
@@ -2104,6 +2097,5 @@ export default function TastingRoom() {
         </motion.div>
       )}
     </div>
-    </TastingShell>
   );
 }
