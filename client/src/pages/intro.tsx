@@ -222,7 +222,7 @@ export default function Intro() {
 
   const handleEnter = () => {
     markIntroSeen();
-    navigate("/about-method");
+    navigate("/about");
   };
 
   const handleSkip = () => {

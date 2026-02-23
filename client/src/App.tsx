@@ -11,7 +11,6 @@ import Profile from "@/pages/profile";
 import WhiskyFriends from "@/pages/whisky-friends";
 import Sessions from "@/pages/sessions";
 import InviteAccept from "@/pages/invite-accept";
-import AboutMethod from "@/pages/about-method";
 import Journal from "@/pages/journal";
 import Wishlist from "@/pages/wishlist";
 import WhiskybaseCollection from "@/pages/whiskybase-collection";
@@ -118,7 +117,6 @@ function Router() {
               <Route path="/reminders" component={Reminders} />
               <Route path="/my-tastings" component={TastingHistory} />
               <Route path="/my-whiskies" component={MyWhiskies} />
-              <Route path="/about-method" component={AboutMethod} />
               <Route path="/about" component={About} />
               <Route path="/analytics" component={Analytics} />
               <Route path="/method" component={Method} />

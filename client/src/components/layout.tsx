@@ -107,7 +107,7 @@ function ProfileAvatar({ size = 36, showName = false, showSignOut = false }: { s
   );
 }
 
-const PUBLIC_NAV_ROUTES = ["/", "/about", "/news", "/about-method", "/features", "/research", "/donate"];
+const PUBLIC_NAV_ROUTES = ["/", "/about", "/news", "/features", "/research", "/donate"];
 
 function NavItemRow({ item, location, onNavigate, isPreviewMode, onLoginRequest }: { item: NavItem; location: string; onNavigate: () => void; isPreviewMode?: boolean; onLoginRequest?: () => void }) {
   const { t } = useTranslation();
@@ -568,7 +568,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/help", icon: HelpCircle, label: t('nav.help') },
         { href: "/about", icon: Info, label: t('nav.about') },
         ...(atLeast("connoisseur") ? [
-          { href: "/about-method", icon: BookOpen, label: t('nav.aboutMethod') },
           { href: "/features", icon: LayoutGrid, label: t('nav.features') },
           { href: "/donate", icon: Heart, label: t('nav.donate') },
         ] : []),

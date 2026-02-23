@@ -1326,6 +1326,8 @@ const resources = {
       },
       about: {
         title: "About CaskSense",
+        methodTitle: "Our Approach",
+        methodSubtitle: "The philosophy behind CaskSense — how structured tasting deepens understanding.",
         tabOverview: "Overview",
         tabOverviewShort: "Overview",
         tabStory: "Our Story",
@@ -3975,6 +3977,8 @@ const resources = {
       },
       about: {
         title: "Über CaskSense",
+        methodTitle: "Unser Ansatz",
+        methodSubtitle: "Die Philosophie hinter CaskSense — wie strukturierte Verkostung das Verständnis vertieft.",
         tabOverview: "Überblick",
         tabOverviewShort: "Überblick",
         tabStory: "Die Geschichte",

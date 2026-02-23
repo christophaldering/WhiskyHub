@@ -3,7 +3,11 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft, Info, Rocket, BarChart3, Wrench, Bug, Shield, Palette, Filter, Users, Wine, BookOpen, Code2, Glasses, Brain, Globe, Camera, FileSpreadsheet, ClipboardPaste, FileUp, LayoutGrid, Calendar } from "lucide-react";
+import { ArrowLeft, Info, Rocket, BarChart3, Wrench, Bug, Shield, Palette, Filter, Users, Wine, BookOpen, Code2, Glasses, Brain, Globe, Camera, FileSpreadsheet, ClipboardPaste, FileUp, LayoutGrid, Calendar, Eye, Sliders, MessageCircle, TrendingUp } from "lucide-react";
+import aboutNose from "@/assets/images/about-nose.png";
+import aboutTaste from "@/assets/images/about-taste.png";
+import aboutReflect from "@/assets/images/about-reflect.png";
+import aboutJournal from "@/assets/images/about-journal.png";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -230,6 +234,49 @@ function OverviewSection() {
               </Card>
             </motion.div>
           ))}
+        </div>
+      </div>
+
+      <div className="border-t border-border/20 pt-8">
+        <h3 className="text-lg font-serif font-bold text-primary mb-2">{t("about.methodTitle")}</h3>
+        <p className="text-sm text-muted-foreground mb-5">{t("about.methodSubtitle")}</p>
+        <div className="space-y-3">
+          {([
+            { image: aboutNose, key: "section1", icon: Eye, color: "text-amber-600 bg-amber-600/10" },
+            { image: aboutTaste, key: "section2", icon: Sliders, color: "text-orange-500 bg-orange-500/10" },
+            { image: aboutReflect, key: "section3", icon: MessageCircle, color: "text-yellow-600 bg-yellow-600/10" },
+            { image: aboutJournal, key: "section4", icon: TrendingUp, color: "text-amber-700 bg-amber-700/10" },
+          ] as const).map((item, i) => {
+            const paragraphs = t(`aboutMethod.${item.key}Paragraphs`, { returnObjects: true }) as string[];
+            return (
+              <motion.div
+                key={item.key}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08 }}
+              >
+                <Card data-testid={`about-method-${i}`}>
+                  <CardContent className="p-4 flex gap-4 items-start">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0">
+                      <img src={item.image} alt={t(`aboutMethod.${item.key}Title`)} className="w-full h-full object-cover" loading="lazy" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className={`w-6 h-6 rounded ${item.color} flex items-center justify-center shrink-0`}>
+                          <item.icon className="w-3.5 h-3.5" />
+                        </div>
+                        <p className="font-serif font-semibold text-sm text-primary">{t(`aboutMethod.${item.key}Title`)}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{paragraphs[0]}</p>
+                      {paragraphs[1] && (
+                        <p className="text-xs text-muted-foreground/70 leading-relaxed mt-1">{paragraphs[1]}</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
