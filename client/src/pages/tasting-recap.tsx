@@ -6,8 +6,9 @@ import { recapApi, tastingApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, ChevronDown, FileDown } from "lucide-react";
+import { Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, ChevronDown, FileDown, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { ThankYouDialog } from "@/components/thank-you-dialog";
 import jsPDF from "jspdf";
@@ -357,6 +358,11 @@ export default function TastingRecap() {
             <Button variant="outline" size="sm" onClick={handlePrint} data-testid="button-print-recap">
               <Printer className="w-4 h-4 mr-1" /> {t("recap.printRecap")}
             </Button>
+            <Link href={`/export-notes${tastingId ? `?tastingId=${tastingId}` : ""}`}>
+              <Button variant="outline" size="sm" data-testid="button-export-notes">
+                <Download className="w-4 h-4 mr-1" /> {t("nav.exportNotes")}
+              </Button>
+            </Link>
           </div>
         </div>
 

@@ -113,7 +113,7 @@ function Router() {
               <Route path="/benchmark" component={BenchmarkAnalyzer} />
               <Route path="/features" component={Features} />
               <Route path="/photo-tasting" component={PhotoTasting} />
-              <Route path="/reminders">{() => { window.location.replace("/calendar"); return null; }}</Route>
+              <Route path="/reminders">{() => { window.location.replace("/sessions"); return null; }}</Route>
               <Route path="/my-tastings" component={TastingHistory} />
               <Route path="/my-whiskies" component={MyWhiskies} />
               <Route path="/about" component={About} />

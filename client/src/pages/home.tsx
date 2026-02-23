@@ -6,12 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useLocation, Link } from "wouter";
-import { UserPlus, Plus, ArrowRight, Star, Wine, Glasses, BookOpen, Camera, User, ChevronDown, Eye, Sparkles, BarChart3, Users, MapPin, NotebookPen, ScanLine, Heart, Zap, Globe, Trophy, LogIn, FileUp, Navigation, LayoutDashboard } from "lucide-react";
+import { UserPlus, Plus, ArrowRight, Star, Wine, Glasses, BookOpen, Camera, User, ChevronDown, Eye, Sparkles, BarChart3, Users, MapPin, NotebookPen, ScanLine, Heart, Zap, Globe, LogIn, FileUp, Navigation, LayoutDashboard, Bell } from "lucide-react";
 import heroImage from "@/assets/images/hero-whisky.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, participantApi, wotdApi } from "@/lib/api";
+import { tastingApi, participantApi, wotdApi, notificationApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { LoginDialog } from "@/components/login-dialog";
 import { AiTastingImportDialog } from "@/components/ai-tasting-import";
@@ -251,6 +251,15 @@ export default function Home() {
     queryFn: wotdApi.get,
     staleTime: 1000 * 60 * 60,
   });
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications", currentParticipant?.id],
+    queryFn: () => notificationApi.getAll(currentParticipant!.id),
+    enabled: !!currentParticipant,
+    refetchInterval: 30000,
+  });
+
+  const unreadNotifications = notifications.filter((n: any) => !n.isRead);
 
   const createTasting = useMutation({
     mutationFn: (data: any) => tastingApi.create(data),
@@ -545,7 +554,7 @@ export default function Home() {
             {t("home.welcomeBack", { name: currentParticipant.name })}
           </h2>
         )}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <Link href="/sessions">
             <div className="bg-card border border-border/50 rounded-xl p-4 text-center hover:shadow-md transition-all duration-300 cursor-pointer" data-testid="card-stat-sessions">
               <Wine className="w-6 h-6 text-primary mx-auto mb-2" />
@@ -564,15 +573,37 @@ export default function Home() {
               <p className="text-xs text-muted-foreground mt-1">{t("home.myJournal")}</p>
             </div>
           </Link>
-          <Link href="/badges">
-            <div className="bg-card border border-border/50 rounded-xl p-4 text-center hover:shadow-md transition-all duration-300 cursor-pointer" data-testid="card-stat-badges">
-              <Trophy className="w-6 h-6 text-primary mx-auto mb-2" />
-              <ArrowRight className="w-4 h-4 text-muted-foreground mx-auto" />
-              <p className="text-xs text-muted-foreground mt-1">{t("home.myBadges")}</p>
-            </div>
-          </Link>
         </div>
       </motion.div>
+
+      {currentParticipant && unreadNotifications.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.8 }}
+          className="w-full"
+        >
+          <Link href="/news">
+            <div className="bg-blue-50/60 dark:bg-blue-950/20 border border-blue-300/30 rounded-xl p-4 cursor-pointer hover:shadow-md transition-all duration-300" data-testid="card-unread-news">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm font-serif font-bold text-blue-800 dark:text-blue-400">
+                    {t("home.unreadNews", { count: unreadNotifications.length })}
+                  </span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-blue-500/60" />
+              </div>
+              {unreadNotifications.slice(0, 3).map((n: any) => (
+                <div key={n.id} className="mt-2 flex items-start gap-2 text-xs text-blue-700/80 dark:text-blue-300/80">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
+                  <span className="line-clamp-1">{n.title}</span>
+                </div>
+              ))}
+            </div>
+          </Link>
+        </motion.div>
+      )}
 
       {currentParticipant && tastings?.some((t: any) => t.hostId === currentParticipant.id) && (
         <motion.div

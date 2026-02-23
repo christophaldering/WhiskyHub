@@ -146,7 +146,7 @@ export default function ExportNotes() {
             <div className="h-10 w-64 bg-card/50 rounded animate-pulse" />
           ) : (
             <Select value={selectedTastingId} onValueChange={setSelectedTastingId} data-testid="select-tasting">
-              <SelectTrigger className="w-full max-w-md" data-testid="select-tasting-trigger">
+              <SelectTrigger className="w-full max-w-md bg-card border-2 border-primary/30 hover:border-primary/60 focus:border-primary transition-colors shadow-sm" data-testid="select-tasting-trigger">
                 <SelectValue placeholder={t("exportNotes.selectPlaceholder")} />
               </SelectTrigger>
               <SelectContent position="popper" className="z-[200]">

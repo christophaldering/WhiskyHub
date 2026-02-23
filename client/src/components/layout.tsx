@@ -107,7 +107,7 @@ function ProfileAvatar({ size = 36, showName = false, showSignOut = false }: { s
   );
 }
 
-const PUBLIC_NAV_ROUTES = ["/", "/about", "/news", "/features", "/research", "/donate"];
+const PUBLIC_NAV_ROUTES = ["/", "/about", "/features", "/research", "/donate"];
 
 function NavItemRow({ item, location, onNavigate, isPreviewMode, onLoginRequest }: { item: NavItem; location: string; onNavigate: () => void; isPreviewMode?: boolean; onLoginRequest?: () => void }) {
   const { t } = useTranslation();
@@ -177,7 +177,7 @@ function NavItemRow({ item, location, onNavigate, isPreviewMode, onLoginRequest 
       >
         <item.icon className={cn("w-3.5 h-3.5 flex-shrink-0", isActive && "text-primary")} />
         <span className={cn("text-xs font-medium truncate", isActive && "font-semibold")}>{item.label}</span>
-        {item.href === "/news" && <NotifBadge />}
+        {item.href === "/app" && <NotifBadge />}
       </div>
     </Link>
   );
@@ -493,9 +493,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       defaultOpen: true,
       items: [
         { href: "/app", icon: Home, label: t('nav.lobby') },
-        { href: "/news", icon: Newspaper, label: t('nav.news') },
         { href: "/sessions", icon: Wine, label: t('nav.sessions') },
-        ...(atLeast("explorer") ? [{ href: "/calendar", icon: Calendar, label: t('nav.calendar') }] : []),
       ],
     },
     ...(atLeast("explorer") ? [{
@@ -509,11 +507,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: t('navGroup.myTastings'),
       items: [
         { href: "/my-tastings", icon: History, label: t('nav.myTastings') },
-        { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.asHost') },
-        { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
-        ...(atLeast("connoisseur") ? [
-          { href: "/export-notes", icon: Download, label: t('nav.exportNotes') },
-        ] : []),
+        { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
+        { href: "/recap", icon: ClipboardList, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") || loc === "/export-notes" },
       ],
     }] : []),
     ...(atLeast("explorer") ? [{
@@ -637,7 +632,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         steps: [
           { id: "guest-1", targetSelector: '[href="/app"]', message: t("tour.guest.step1"), position: p },
           { id: "guest-2", targetSelector: '[href="/sessions"]', message: t("tour.guest.step2"), position: p },
-          { id: "guest-3", targetSelector: '[href="/news"]', message: t("tour.guest.step3"), position: p },
+          { id: "guest-3", targetSelector: '[href="/sessions"]', message: t("tour.guest.step3"), position: p },
           { id: "guest-4", targetSelector: '[data-testid="select-experience-level"]', message: t("tour.guest.step4"), position: p },
         ],
       },
@@ -647,7 +642,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         steps: [
           { id: "explorer-1", targetSelector: '[href="/journal"]', message: t("tour.explorer.step1"), position: p },
           { id: "explorer-2", targetSelector: '[href="/flavor-profile"]', message: t("tour.explorer.step2"), position: p },
-          { id: "explorer-3", targetSelector: '[href="/badges"]', message: t("tour.explorer.step3"), position: p },
+          { id: "explorer-3", targetSelector: '[href="/wishlist"]', message: t("tour.explorer.step3"), position: p },
         ],
       }] : []),
       ...(atLeast("connoisseur") ? [{
