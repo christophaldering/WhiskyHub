@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, LogIn, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, ArrowRight, GlassWater, Microscope, X, Settings, HelpCircle } from "lucide-react";
+import { Home, LogOut, LogIn, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, ArrowRight, GlassWater, Microscope, X, Settings, HelpCircle, Compass } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
@@ -512,7 +512,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       defaultOpen: true,
       items: [
         { href: "/app", icon: Home, label: t('nav.lobby') },
-        { href: "/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/sessions" || loc === "/my-tastings" || loc === "/recap" || loc.startsWith("/recap/") || loc === "/export-notes" },
+        { href: "/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/sessions" || loc === "/my-tastings" || loc === "/host-dashboard" || loc === "/recap" || loc.startsWith("/recap/") || loc === "/export-notes" },
         ...(atLeast("explorer") ? [
           { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
           { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
@@ -520,7 +520,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       ],
     },
     ...(atLeast("explorer") ? [{
-      label: t('navGroup.meineWelt'),
+      label: t('navGroup.meinRaum'),
       defaultOpen: true,
       items: [
         { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
@@ -538,27 +538,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: t('navGroup.entdecken'),
       defaultOpen: true,
       items: [
-        { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
-        { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
-        { href: "/community-rankings", icon: BarChart3, label: t('nav.communityRankings') },
-        { href: "/taste-twins", icon: HeartHandshake, label: t('nav.tasteTwins') },
-        { href: "/benchmark", icon: BookOpen, label: t('nav.benchmark') },
-        ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
-          { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
-        ] : []),
-        ...(atLeast("analyst") ? [
-          { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
-        ] : []),
-        { href: "/research", icon: Microscope, label: t('nav.research') },
-        { href: "/lexicon", icon: Library, label: t('nav.lexicon') },
-        { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
-        { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
-        { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
-        { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
-        { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
-        { href: "/friends", icon: Users, label: t('nav.friends') },
-        { href: "/activity", icon: Rss, label: t('nav.activity') },
-        { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
+        { href: "/discover", icon: Compass, label: t('nav.discoverHub'), match: (loc: string) => loc === "/discover" || loc === "/community-rankings" || loc === "/taste-twins" || loc === "/friends" || loc === "/activity" || loc === "/leaderboard" || loc === "/benchmark" || loc === "/distilleries" || loc === "/distillery-map" || loc === "/bottlers" || loc === "/lexicon" || loc === "/research" || loc === "/tasting-templates" || loc === "/pairings" || loc === "/comparison" || loc === "/analytics" || loc === "/recommendations" || loc === "/whisky-database" },
       ],
     }] : []),
     {
@@ -571,12 +551,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ] : []),
         ...(atLeast("connoisseur") ? [
           { href: "/features", icon: LayoutGrid, label: t('nav.features') },
-          { href: "/donate", icon: Heart, label: t('nav.donate') },
         ] : []),
         ...(currentParticipant?.role === "admin" ? [
           { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
         ] : []),
-        { href: "/", icon: Globe, label: t('nav.landingPage') },
       ],
     },
   ], [t, isHost, isAdmin, expLevel, currentParticipant?.canAccessWhiskyDb, currentParticipant?.role, previewExperienceLevel]);
@@ -741,7 +719,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 : { href: "/app", icon: Home, label: t('nav.lobbyShort') },
               { href: "/sessions", icon: Wine, label: t('nav.sessionsShort') },
               { href: "/journal", icon: NotebookPen, label: t('nav.journalShort') },
-              { href: "/calendar", icon: Calendar, label: t('nav.calendarShort') },
+              { href: "/discover", icon: Compass, label: t('nav.entdeckenShort') },
               { href: "/more", icon: Menu, label: t('nav.moreShort'), isMore: true },
             ];
           })().map((item) => {

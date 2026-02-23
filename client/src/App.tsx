@@ -58,6 +58,7 @@ import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
 import Account from "@/pages/account";
 import Help from "@/pages/help";
+import Discover from "@/pages/discover";
 import { BuildFooter } from "@/components/build-footer";
 import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
@@ -123,6 +124,7 @@ function Router() {
               <Route path="/account" component={Account} />
               <Route path="/data-export" component={DataExport} />
               <Route path="/help" component={Help} />
+              <Route path="/discover" component={Discover} />
               <Route path="/invite/:token" component={InviteAccept} />
               <Route component={NotFound} />
             </Switch>
