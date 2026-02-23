@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Wine, ArrowRight, Check, Download, Trophy, LogIn, ExternalLink, Shield, Sparkles, BookOpen, User, BarChart3, Sun, Moon, X, ArrowUpDown, Maximize2, Clock } from "lucide-react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
+import { Wine, ArrowRight, Check, Download, Trophy, LogIn, ExternalLink, Shield, Sparkles, BookOpen, User, BarChart3, Sun, Moon, X, ArrowUpDown, Maximize2, Clock, MoreHorizontal, Info, GitCompare, Wrench, EyeOff, Lock } from "lucide-react";
 import jsPDF from "jspdf";
 import type { Whisky, Tasting } from "@shared/schema";
 
@@ -336,6 +337,282 @@ function NakedResultCard({ whisky, rank, avgOverall, count, myScore, t }: { whis
   );
 }
 
+function NakedContextTab({ whiskies, tasting }: { whiskies: Whisky[]; tasting: Tasting }) {
+  const { t } = useTranslation();
+  const isBlind = tasting.blindMode && tasting.status === "open";
+  const revealIndex = tasting.revealIndex ?? 0;
+  const revealStep = tasting.revealStep ?? 0;
+
+  const getBlindState = (idx: number) => {
+    if (!isBlind) return { showName: true, showMeta: true };
+    if (idx < revealIndex) return { showName: true, showMeta: true };
+    if (idx === revealIndex) return { showName: revealStep >= 1, showMeta: revealStep >= 2 };
+    return { showName: false, showMeta: false };
+  };
+
+  if (isBlind && revealIndex === 0 && revealStep === 0) {
+    return (
+      <div className="flex flex-col items-center py-6 text-center gap-3">
+        <EyeOff className="w-8 h-8 text-muted-foreground/40" />
+        <p className="text-sm text-muted-foreground font-serif">{t("naked.blindActive", "Blind-Modus aktiv — Details werden vom Gastgeber schrittweise enthüllt.")}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {whiskies.map((w, i) => {
+        const blind = getBlindState(i);
+        const label = blind.showName ? w.name : `Whisky ${i + 1}`;
+        return (
+          <Card key={w.id} className="p-3 border-border/20 bg-card/50" data-testid={`naked-context-${w.id}`}>
+            <div className="flex items-start gap-2">
+              <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center font-serif flex-shrink-0">{i + 1}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-serif font-bold text-sm text-primary truncate">{label}</p>
+                {blind.showMeta ? (
+                  <div className="mt-1 space-y-0.5 text-[10px] text-muted-foreground font-mono">
+                    {w.distillery && <span className="block">{w.distillery}</span>}
+                    {[
+                      w.category,
+                      w.region,
+                      w.age ? `${w.age}y` : null,
+                      w.abv ? `${w.abv}%` : null,
+                      w.caskInfluence,
+                      w.peatLevel && w.peatLevel !== "None" ? w.peatLevel : null,
+                      w.bottler,
+                      w.vintage,
+                    ].filter(Boolean).length > 0 && (
+                      <span className="block uppercase">
+                        {[
+                          w.category,
+                          w.region,
+                          w.age ? `${w.age}y` : null,
+                          w.abv ? `${w.abv}%` : null,
+                          w.caskInfluence,
+                          w.peatLevel && w.peatLevel !== "None" ? w.peatLevel : null,
+                          w.bottler,
+                          w.vintage,
+                        ].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
+                    {w.hostNotes && <p className="text-muted-foreground/70 mt-1 italic normal-case">{w.hostNotes}</p>}
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground/50 italic mt-0.5">{t("naked.hiddenDetails", "Details verborgen")}</p>
+                )}
+              </div>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function NakedComparisonTab({ tasting, whiskies, participantId }: { tasting: Tasting; whiskies: Whisky[]; participantId: string }) {
+  const { t } = useTranslation();
+
+  const { data: allRatings = [] } = useQuery({
+    queryKey: ["ratings", tasting.id],
+    queryFn: () => ratingApi.getForTasting(tasting.id),
+    enabled: !!tasting.id,
+  });
+
+  const myRatedIds = useMemo(() => {
+    return new Set(allRatings.filter((r: any) => r.participantId === participantId && r.overall != null).map((r: any) => r.whiskyId));
+  }, [allRatings, participantId]);
+
+  const hasAnyRating = myRatedIds.size > 0;
+  const isRevealed = tasting.status === "reveal" || tasting.status === "archived" || tasting.status === "closed";
+
+  if (!hasAnyRating && !isRevealed) {
+    return (
+      <div className="flex flex-col items-center py-6 text-center gap-3">
+        <Lock className="w-8 h-8 text-muted-foreground/40" />
+        <p className="text-sm text-muted-foreground font-serif">{t("naked.rateFirst", "Bewerte mindestens einen Whisky, um den Gruppenvergleich zu sehen.")}</p>
+      </div>
+    );
+  }
+
+  const whiskyResults = whiskies.map(w => {
+    const ratings = allRatings.filter((r: any) => r.whiskyId === w.id);
+    const validOveralls = ratings.filter((r: any) => r.overall != null);
+    const avgOverall = validOveralls.length > 0
+      ? Math.round((validOveralls.reduce((sum: number, r: any) => sum + r.overall, 0) / validOveralls.length) * 10) / 10
+      : null;
+    const myRating = ratings.find((r: any) => r.participantId === participantId);
+    return { whisky: w, avgOverall, count: ratings.length, myScore: myRating?.overall ?? null };
+  }).sort((a, b) => (b.avgOverall ?? 0) - (a.avgOverall ?? 0));
+
+  const isBlind = tasting.blindMode && tasting.status === "open";
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[10px] text-muted-foreground/60 font-mono text-center mb-2">
+        {allRatings.length} {t("naked.totalRatings", "Bewertungen gesamt")}
+      </p>
+      {whiskyResults.map((r, i) => {
+        const label = isBlind ? `Whisky ${whiskies.indexOf(r.whisky) + 1}` : r.whisky.name;
+        const canSee = isRevealed || myRatedIds.has(r.whisky.id);
+        return (
+          <Card key={r.whisky.id} className="p-2.5 border-border/20 bg-card/50" data-testid={`naked-compare-${r.whisky.id}`}>
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold font-serif flex-shrink-0",
+                i === 0 ? "bg-amber-500/20 text-amber-600" :
+                i === 1 ? "bg-gray-300/30 text-gray-600" :
+                i === 2 ? "bg-orange-400/20 text-orange-600" :
+                "bg-muted/30 text-muted-foreground"
+              )}>{i + 1}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-serif font-bold text-xs text-primary truncate">{label}</p>
+                <p className="text-[9px] text-muted-foreground font-mono">{r.count} {t("naked.ratings", "Bewertungen")}</p>
+              </div>
+              <div className="text-right flex-shrink-0">
+                {canSee && r.avgOverall !== null ? (
+                  <span className="text-sm font-mono font-black text-primary">Ø {r.avgOverall}</span>
+                ) : (
+                  <span className="text-[10px] text-muted-foreground/40 italic">—</span>
+                )}
+                {canSee && r.myScore !== null && (
+                  <p className="text-[9px] text-primary/60 font-mono">{t("naked.you", "Du")}: {r.myScore}</p>
+                )}
+              </div>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function NakedToolsTab({ tasting, navigate }: { tasting: Tasting; navigate: (path: string) => void }) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-3">
+      <Card className="p-3 border-border/20 bg-card/50">
+        <button
+          onClick={() => navigate(`/tasting/${tasting.id}`)}
+          className="w-full flex items-center gap-3 text-left"
+          data-testid="button-naked-tools-fullversion"
+        >
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Maximize2 className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-serif font-bold text-sm text-primary">{t("naked.switchToFull", "Vollversion")}</p>
+            <p className="text-[10px] text-muted-foreground">{t("naked.toolsFullDesc", "Flight Board, Diskussion, Fotos, Analytics und alle Host-Tools")}</p>
+          </div>
+          <ExternalLink className="w-4 h-4 text-muted-foreground/40 flex-shrink-0" />
+        </button>
+      </Card>
+      <Card className="p-3 border-border/20 bg-card/50">
+        <button
+          onClick={() => navigate(`/tasting/${tasting.id}`)}
+          className="w-full flex items-center gap-3 text-left"
+          data-testid="button-naked-tools-discussion"
+        >
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <BookOpen className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-serif font-bold text-sm text-primary">{t("naked.toolsDiscussion", "Diskussion & Reflexion")}</p>
+            <p className="text-[10px] text-muted-foreground">{t("naked.toolsDiscussionDesc", "Notizen teilen und Gruppenreflexion einsehen")}</p>
+          </div>
+          <ExternalLink className="w-4 h-4 text-muted-foreground/40 flex-shrink-0" />
+        </button>
+      </Card>
+      {(tasting.status === "reveal" || tasting.status === "archived") && (
+        <Card className="p-3 border-border/20 bg-card/50">
+          <button
+            onClick={() => navigate(`/tasting/${tasting.id}`)}
+            className="w-full flex items-center gap-3 text-left"
+            data-testid="button-naked-tools-analytics"
+          >
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <BarChart3 className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-serif font-bold text-sm text-primary">{t("naked.toolsAnalytics", "Tasting Analytics")}</p>
+              <p className="text-[10px] text-muted-foreground">{t("naked.toolsAnalyticsDesc", "Detaillierte Auswertung mit Charts und Statistiken")}</p>
+            </div>
+            <ExternalLink className="w-4 h-4 text-muted-foreground/40 flex-shrink-0" />
+          </button>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function NakedMoreDrawer({
+  open,
+  onClose,
+  tasting,
+  whiskies,
+  participantId,
+  isAdvancedUser,
+}: {
+  open: boolean;
+  onClose: () => void;
+  tasting: Tasting;
+  whiskies: Whisky[];
+  participantId: string;
+  isAdvancedUser: boolean;
+}) {
+  const { t } = useTranslation();
+  const [, navigate] = useLocation();
+  const [activeTab, setActiveTab] = useState<"context" | "comparison" | "tools">("context");
+
+  const tabs = useMemo(() => {
+    const list: { id: "context" | "comparison" | "tools"; label: string; icon: React.ReactNode }[] = [
+      { id: "context", label: t("naked.tabContext", "Details"), icon: <Info className="w-3.5 h-3.5" /> },
+      { id: "comparison", label: t("naked.tabComparison", "Vergleich"), icon: <GitCompare className="w-3.5 h-3.5" /> },
+    ];
+    if (isAdvancedUser) {
+      list.push({ id: "tools", label: t("naked.tabTools", "Tools"), icon: <Wrench className="w-3.5 h-3.5" /> });
+    }
+    return list;
+  }, [t, isAdvancedUser]);
+
+  return (
+    <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
+      <DrawerContent className="max-h-[85vh]">
+        <DrawerHeader className="pb-2">
+          <DrawerTitle className="font-serif text-primary">{t("naked.moreTitle", "Mehr")}</DrawerTitle>
+          <DrawerDescription className="text-xs">{tasting.title}</DrawerDescription>
+        </DrawerHeader>
+        <div className="px-4 pb-2">
+          <div className="flex gap-1 bg-muted/30 rounded-lg p-0.5">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs font-serif transition-colors",
+                  activeTab === tab.id
+                    ? "bg-background text-primary shadow-sm font-bold"
+                    : "text-muted-foreground hover:text-primary"
+                )}
+                data-testid={`naked-tab-${tab.id}`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="px-4 pb-6 overflow-y-auto max-h-[60vh]">
+          {activeTab === "context" && <NakedContextTab whiskies={whiskies} tasting={tasting} />}
+          {activeTab === "comparison" && <NakedComparisonTab tasting={tasting} whiskies={whiskies} participantId={participantId} />}
+          {activeTab === "tools" && <NakedToolsTab tasting={tasting} navigate={navigate} />}
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
 function NakedResults({ tasting, whiskies }: { tasting: Tasting; whiskies: Whisky[] }) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
@@ -579,6 +856,7 @@ export default function NakedTasting() {
   const [joinError, setJoinError] = useState("");
   const [joining, setJoining] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [moreDrawerOpen, setMoreDrawerOpen] = useState(false);
 
   const { data: tasting, isLoading: tastingLoading, error: tastingError } = useQuery<Tasting>({
     queryKey: ["tasting-by-code", params.code],
@@ -654,6 +932,14 @@ export default function NakedTasting() {
   const isDraft = tasting.status === "draft";
   const isOpen = tasting.status === "open";
   const isRevealed = tasting.status === "reveal" || tasting.status === "archived" || tasting.status === "closed";
+
+  const isAdvancedUser = currentParticipant ? (
+    currentParticipant.role === "admin" ||
+    currentParticipant.role === "host" ||
+    currentParticipant.experienceLevel === "analyst" ||
+    currentParticipant.experienceLevel === "connoisseur" ||
+    tasting.hostId === currentParticipant.id
+  ) : false;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -768,7 +1054,21 @@ export default function NakedTasting() {
             </Card>
           </motion.div>
         ) : showResults || isRevealed ? (
-          <NakedResults tasting={tasting} whiskies={sortedWhiskies} />
+          <>
+            <NakedResults tasting={tasting} whiskies={sortedWhiskies} />
+            {currentParticipant && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setMoreDrawerOpen(true)}
+                className="w-full mt-3 font-serif gap-2 text-xs"
+                data-testid="button-naked-more-results"
+              >
+                <MoreHorizontal className="w-3.5 h-3.5" />
+                {t("naked.moreButton", "Mehr")}
+              </Button>
+            )}
+          </>
         ) : isOpen && sortedWhiskies.length > 0 ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
@@ -787,6 +1087,16 @@ export default function NakedTasting() {
             <p className="text-[10px] text-center text-muted-foreground/50 pt-2 font-serif">
               {t("naked.autoSave", "Bewertungen werden automatisch gespeichert")}
             </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMoreDrawerOpen(true)}
+              className="w-full mt-3 font-serif gap-2 text-xs"
+              data-testid="button-naked-more"
+            >
+              <MoreHorizontal className="w-3.5 h-3.5" />
+              {t("naked.moreButton", "Mehr")}
+            </Button>
           </div>
         ) : sortedWhiskies.length === 0 ? (
           <div className="text-center py-12">
@@ -812,6 +1122,17 @@ export default function NakedTasting() {
           </button>
         </div>
       </div>
+
+      {currentParticipant && tasting && sortedWhiskies.length > 0 && (
+        <NakedMoreDrawer
+          open={moreDrawerOpen}
+          onClose={() => setMoreDrawerOpen(false)}
+          tasting={tasting}
+          whiskies={sortedWhiskies}
+          participantId={currentParticipant.id}
+          isAdvancedUser={isAdvancedUser}
+        />
+      )}
     </div>
   );
 }
