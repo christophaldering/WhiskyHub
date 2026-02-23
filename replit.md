@@ -42,6 +42,8 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Participant Deduplication**: Backend calculations (global averages, platform analytics, host dashboard, admin stats) deduplicate participants by (name, pin) combination to avoid double-counting the same person across multiple tastings.
 -   **About the Method**: Tasting methodology content integrated into the About page's Overview tab as compact cards, replacing the standalone `/about-method` page.
 -   **Admin AI Profiles**: Admin panel includes PIN-protected AI participant profiles. Admin must re-enter their PIN to unlock GPT-4o-generated 2-3 sentence profiles for all participants, covering taste preferences, rating behavior, and sensory science insights. Anonymized participants shown with alias names only.
+-   **Admin Settings**: Centralized platform settings in admin panel: What's New banner toggle with custom text, registration open/closed, guest mode, maintenance mode, email notifications. Settings stored in `app_settings` key-value table. Banner controlled by server settings instead of hardcoded version.
+-   **Test Data Management**: Tastings can be flagged as "test data" (isTestData field). Test-flagged tastings are excluded from platform analytics and global averages. Admin can toggle per-tasting or use bulk cleanup filters (title pattern, date, participant count). Bulk cleanup supports preview, mark-as-test, and permanent delete actions.
 
 ## External Dependencies
 

@@ -424,7 +424,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [fullBleed, setFullBleed] = useState(false);
   const { t } = useTranslation();
   const { currentParticipant, setParticipant, lastSeenLandingVersion, setLastSeenLandingVersion } = useAppStore();
-  const showWhatsNewBanner = !!currentParticipant && lastSeenLandingVersion < LANDING_VERSION;
+
+  const { data: publicSettings } = useQuery({
+    queryKey: ["public-app-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/app-settings/public");
+      if (!res.ok) return null;
+      return res.json() as Promise<Record<string, string>>;
+    },
+    staleTime: 60000,
+  });
+
+  const serverBannerEnabled = publicSettings?.whats_new_enabled === "true";
+  const serverBannerVersion = parseInt(publicSettings?.whats_new_version || "0") || 0;
+  const serverBannerText = publicSettings?.whats_new_text || t('whatsNew.banner');
+  const showWhatsNewBanner = !!currentParticipant && serverBannerEnabled && lastSeenLandingVersion < (serverBannerVersion || LANDING_VERSION);
 
   const [onboardingDone, setOnboardingDone] = useState(() =>
     !isLevelOnboardingActive(currentParticipant?.id)
@@ -698,11 +712,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-12 py-2.5 flex items-center justify-between gap-3">
                 <a href="/" className="flex items-center gap-2 text-sm text-foreground/80 hover:text-primary transition-colors group" data-testid="banner-whats-new">
                   <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                  <span className="font-medium">{t('whatsNew.banner')}</span>
+                  <span className="font-medium">{serverBannerText}</span>
                   <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </a>
                 <button
-                  onClick={() => setLastSeenLandingVersion(LANDING_VERSION)}
+                  onClick={() => setLastSeenLandingVersion(serverBannerVersion || LANDING_VERSION)}
                   className="text-muted-foreground/50 hover:text-foreground transition-colors p-0.5 rounded"
                   data-testid="button-dismiss-whats-new"
                   aria-label="Dismiss"

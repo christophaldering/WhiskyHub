@@ -25,6 +25,19 @@ const tourImageCache = new Map<string, string>();
 const AI_CACHE_TTL = 24 * 60 * 60 * 1000;
 const AI_CACHE_MAX = 500;
 
+function getDefaultSetting(key: string): string {
+  const defaults: Record<string, string> = {
+    whats_new_enabled: "false",
+    whats_new_text: "",
+    whats_new_version: "0",
+    registration_open: "true",
+    guest_mode_enabled: "true",
+    maintenance_mode: "false",
+    email_notifications_enabled: "true",
+  };
+  return defaults[key] ?? "";
+}
+
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -4890,6 +4903,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             participantCount: participants.length,
             whiskyCount: whiskies.length,
             blindMode: t.blindMode,
+            isTestData: t.isTestData,
           };
         })
       );
@@ -5306,6 +5320,108 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       }
       await storage.hardDeleteTasting(req.params.id);
       res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // --- App Settings ---
+
+  app.get("/api/app-settings/public", async (_req, res) => {
+    try {
+      const settings = await storage.getAppSettings();
+      const publicKeys = ["whats_new_enabled", "whats_new_text", "whats_new_version", "guest_mode_enabled", "maintenance_mode", "registration_open"];
+      const result: Record<string, string> = {};
+      for (const key of publicKeys) {
+        result[key] = settings[key] ?? getDefaultSetting(key);
+      }
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/app-settings", async (req, res) => {
+    try {
+      const requesterId = req.query.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const settings = await storage.getAppSettings();
+      const defaults: Record<string, string> = {
+        whats_new_enabled: "false",
+        whats_new_text: "",
+        whats_new_version: "0",
+        registration_open: "true",
+        guest_mode_enabled: "true",
+        maintenance_mode: "false",
+        email_notifications_enabled: "true",
+      };
+      const merged = { ...defaults, ...settings };
+      res.json(merged);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/admin/app-settings", async (req, res) => {
+    try {
+      const { requesterId, settings } = req.body;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const allowedKeys = ["whats_new_enabled", "whats_new_text", "whats_new_version", "registration_open", "guest_mode_enabled", "maintenance_mode", "email_notifications_enabled"];
+      const filtered: Record<string, string> = {};
+      for (const [key, value] of Object.entries(settings)) {
+        if (allowedKeys.includes(key)) {
+          filtered[key] = String(value);
+        }
+      }
+      await storage.setAppSettings(filtered);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // --- Test Data Flag ---
+
+  app.post("/api/admin/tastings/:id/test-flag", async (req, res) => {
+    try {
+      const requesterId = req.body.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const { isTestData } = req.body;
+      const tasting = await storage.setTastingTestFlag(req.params.id, !!isTestData);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      res.json(tasting);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // --- Bulk Cleanup ---
+
+  app.post("/api/admin/bulk-cleanup", async (req, res) => {
+    try {
+      const { requesterId, filter, action } = req.body;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      if (!["preview", "markAsTest", "delete"].includes(action)) {
+        return res.status(400).json({ message: "Invalid action. Use: preview, markAsTest, delete" });
+      }
+      const result = await storage.bulkCleanupTastings(filter || {}, action);
+      res.json(result);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -7866,7 +7982,7 @@ Important rules:
       if (!requesterId) return res.status(400).json({ message: "requesterId required" });
 
       const allTastings = await storage.getAllTastings();
-      const completedTastings = allTastings.filter(t => t.status === "reveal" || t.status === "archived");
+      const completedTastings = allTastings.filter(t => (t.status === "reveal" || t.status === "archived") && !t.isTestData);
 
       if (completedTastings.length === 0) {
         return res.json({

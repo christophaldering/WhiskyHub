@@ -29,6 +29,8 @@ import {
   type InsertChangelogEntry, type ChangelogEntry,
   sessionPresence,
   type SessionPresence,
+  appSettings,
+  type AppSetting,
 } from "@shared/schema";
 
 export async function getUniquePersonCount(participantIds: string[]): Promise<number> {
@@ -293,6 +295,16 @@ export interface IStorage {
     totalJournalEntries: number;
     countriesRepresented: number;
   }>;
+
+  // App Settings
+  getAppSettings(): Promise<Record<string, string>>;
+  getAppSetting(key: string): Promise<string | null>;
+  setAppSetting(key: string, value: string): Promise<void>;
+  setAppSettings(settings: Record<string, string>): Promise<void>;
+
+  // Test Data Flag
+  setTastingTestFlag(id: string, isTest: boolean): Promise<Tasting | undefined>;
+  bulkCleanupTastings(filter: { titlePattern?: string; beforeDate?: string; maxParticipants?: number; onlyTestData?: boolean }, action: "preview" | "markAsTest" | "delete"): Promise<{ count: number; tastings: Array<{ id: string; title: string; date: string; participantCount: number; isTestData: boolean }> }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -949,18 +961,23 @@ export class DatabaseStorage implements IStorage {
     const tastingRows = tastingIds.length > 0
       ? await db.select().from(tastings).where(inArray(tastings.id, tastingIds))
       : [];
+    const testTastingIds = new Set(tastingRows.filter(t => t.isTestData).map(t => t.id));
+    const filteredRatings = allRatings.filter(r => !testTastingIds.has(r.tastingId));
+    if (filteredRatings.length === 0) {
+      return { nose: 0, taste: 0, finish: 0, balance: 0, overall: 0, totalRatings: 0, totalParticipants: 0 };
+    }
     const tastingScaleMap = new Map(tastingRows.map(t => [t.id, t.ratingScale ?? 100]));
 
     let sumNose = 0, sumTaste = 0, sumFinish = 0, sumBalance = 0, sumOverall = 0;
     const participantIds: string[] = [];
-    for (const r of allRatings) {
+    for (const r of filteredRatings) {
       const scale = tastingScaleMap.get(r.tastingId) ?? 100;
       const norm = 100 / scale;
       sumNose += r.nose * norm; sumTaste += r.taste * norm; sumFinish += r.finish * norm;
       sumBalance += r.balance * norm; sumOverall += r.overall * norm;
       if (!participantIds.includes(r.participantId)) participantIds.push(r.participantId);
     }
-    const n = allRatings.length;
+    const n = filteredRatings.length;
     const uniquePersons = await getUniquePersonCount(participantIds);
     return {
       nose: Math.round((sumNose / n) * 10) / 10,
@@ -1567,6 +1584,89 @@ export class DatabaseStorage implements IStorage {
   async cleanupStalePresence(thresholdSeconds: number = 300): Promise<void> {
     const cutoff = new Date(Date.now() - thresholdSeconds * 1000);
     await db.delete(sessionPresence).where(sql`${sessionPresence.lastSeenAt} < ${cutoff}`);
+  }
+
+  async getAppSettings(): Promise<Record<string, string>> {
+    const rows = await db.select().from(appSettings);
+    const result: Record<string, string> = {};
+    for (const row of rows) {
+      result[row.key] = row.value;
+    }
+    return result;
+  }
+
+  async getAppSetting(key: string): Promise<string | null> {
+    const [row] = await db.select().from(appSettings).where(eq(appSettings.key, key));
+    return row ? row.value : null;
+  }
+
+  async setAppSetting(key: string, value: string): Promise<void> {
+    await db.insert(appSettings)
+      .values({ key, value, updatedAt: new Date() })
+      .onConflictDoUpdate({ target: appSettings.key, set: { value, updatedAt: new Date() } });
+  }
+
+  async setAppSettings(settings: Record<string, string>): Promise<void> {
+    for (const [key, value] of Object.entries(settings)) {
+      await this.setAppSetting(key, value);
+    }
+  }
+
+  async setTastingTestFlag(id: string, isTest: boolean): Promise<Tasting | undefined> {
+    const [result] = await db.update(tastings).set({ isTestData: isTest }).where(eq(tastings.id, id)).returning();
+    return result;
+  }
+
+  async bulkCleanupTastings(
+    filter: { titlePattern?: string; beforeDate?: string; maxParticipants?: number; onlyTestData?: boolean },
+    action: "preview" | "markAsTest" | "delete"
+  ): Promise<{ count: number; tastings: Array<{ id: string; title: string; date: string; participantCount: number; isTestData: boolean }> }> {
+    const allTastings = await db.select().from(tastings).where(ne(tastings.status, "deleted"));
+
+    const participantCounts = await db.select({
+      tastingId: tastingParticipants.tastingId,
+      count: sql<number>`count(*)::int`,
+    }).from(tastingParticipants).groupBy(tastingParticipants.tastingId);
+    const countMap = new Map(participantCounts.map(p => [p.tastingId, p.count]));
+
+    let filtered = allTastings.filter(t => {
+      if (filter.titlePattern) {
+        const pattern = filter.titlePattern.toLowerCase();
+        if (!t.title.toLowerCase().includes(pattern)) return false;
+      }
+      if (filter.beforeDate) {
+        if (t.date >= filter.beforeDate) return false;
+      }
+      if (filter.maxParticipants !== undefined && filter.maxParticipants !== null) {
+        const pc = countMap.get(t.id) || 0;
+        if (pc > filter.maxParticipants) return false;
+      }
+      if (filter.onlyTestData) {
+        if (!t.isTestData) return false;
+      }
+      return true;
+    });
+
+    const result = filtered.map(t => ({
+      id: t.id,
+      title: t.title,
+      date: t.date,
+      participantCount: countMap.get(t.id) || 0,
+      isTestData: t.isTestData ?? false,
+    }));
+
+    if (action === "markAsTest") {
+      const ids = filtered.map(t => t.id);
+      if (ids.length > 0) {
+        await db.update(tastings).set({ isTestData: true }).where(inArray(tastings.id, ids));
+      }
+    } else if (action === "delete") {
+      for (const t of filtered) {
+        await this.hardDeleteTasting(t.id);
+      }
+    }
+
+    return { count: result.length, tastings: result };
   }
 }
 

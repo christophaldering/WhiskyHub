@@ -57,6 +57,7 @@ export const tastings = pgTable("tastings", {
   activeWhiskyId: varchar("active_whisky_id"), // tracks which whisky is currently being discussed
   aiHighlightsCache: text("ai_highlights_cache"), // Cached AI session highlights (JSON)
   aiHighlightsRatingCount: integer("ai_highlights_rating_count"), // Rating count when highlights were cached
+  isTestData: boolean("is_test_data").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   openedAt: timestamp("opened_at"),
   closedAt: timestamp("closed_at"),
@@ -502,3 +503,12 @@ export const sessionPresence = pgTable("session_presence", {
 });
 
 export type SessionPresence = typeof sessionPresence.$inferSelect;
+
+// --- App Settings (key-value store for admin-controlled platform settings) ---
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type AppSetting = typeof appSettings.$inferSelect;

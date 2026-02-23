@@ -7,7 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
 import type { EncyclopediaSuggestion } from "@shared/schema";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock } from "lucide-react";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock, Settings, FlaskConical, Filter, AlertTriangle, Globe, UserPlus, BellRing, Megaphone } from "lucide-react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,7 @@ interface AdminTasting {
   participantCount: number;
   whiskyCount: number;
   blindMode: boolean | null;
+  isTestData: boolean | null;
 }
 
 interface AdminOverview {
@@ -743,6 +744,21 @@ export default function AdminPanel() {
     onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
   });
 
+  const toggleTestFlagMutation = useMutation({
+    mutationFn: async ({ id, isTestData }: { id: string; isTestData: boolean }) => {
+      const res = await apiRequest("POST", `/api/admin/tastings/${id}/test-flag`, {
+        requesterId: currentParticipant!.id,
+        isTestData,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      toast({ title: t("admin.testFlagUpdated") });
+    },
+    onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
+  });
+
   const handleUnlockAiProfiles = async () => {
     if (!currentParticipant || !aiPinInput) return;
     setAiProfilesLoading(true);
@@ -932,6 +948,12 @@ export default function AdminPanel() {
             </SelectItem>
             <SelectItem value="community">
               <span className="flex items-center gap-2"><Heart className="w-4 h-4" /> {t("admin.tabCommunity")}</span>
+            </SelectItem>
+            <SelectItem value="settings">
+              <span className="flex items-center gap-2"><Settings className="w-4 h-4" /> {t("admin.tabSettings")}</span>
+            </SelectItem>
+            <SelectItem value="cleanup">
+              <span className="flex items-center gap-2"><FlaskConical className="w-4 h-4" /> {t("admin.tabCleanup")}</span>
             </SelectItem>
             <SelectItem value="ai-controls">
               <span className="flex items-center gap-2"><Sparkles className="w-4 h-4" /> AI Controls</span>
@@ -1266,6 +1288,7 @@ export default function AdminPanel() {
                             {tasting.title}
                             {statusBadge(tasting.status)}
                             {tasting.blindMode && <span title="Blind"><Eye className="w-3 h-3 text-muted-foreground" /></span>}
+                            {tasting.isTestData && <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-400 text-amber-600 bg-amber-50" data-testid={`badge-test-${tasting.id}`}><FlaskConical className="w-2.5 h-2.5 mr-0.5" />{t("admin.testData")}</Badge>}
                           </div>
                           <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 mt-1">
                             <span className="flex items-center gap-1"><Crown className="w-3 h-3" /> {tasting.hostName}</span>
@@ -1276,7 +1299,21 @@ export default function AdminPanel() {
                             <span className="flex items-center gap-1"><Hash className="w-3 h-3" /> {tasting.code}</span>
                           </div>
                         </div>
-                        <div className="flex-shrink-0">
+                        <div className="flex-shrink-0 flex items-center gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={`h-8 w-8 ${tasting.isTestData ? "text-amber-600 bg-amber-50" : "text-muted-foreground hover:text-amber-600"}`}
+                                data-testid={`btn-toggle-test-${tasting.id}`}
+                                onClick={() => toggleTestFlagMutation.mutate({ id: tasting.id, isTestData: !tasting.isTestData })}
+                              >
+                                <FlaskConical className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{tasting.isTestData ? t("admin.unmarkTestData") : t("admin.markTestData")}</TooltipContent>
+                          </Tooltip>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" data-testid={`btn-delete-tasting-${tasting.id}`}>
@@ -1967,6 +2004,14 @@ export default function AdminPanel() {
           </div>
         </TabsContent>
 
+        <TabsContent value="settings">
+          <AdminSettingsTab participantId={currentParticipant!.id} />
+        </TabsContent>
+
+        <TabsContent value="cleanup">
+          <CleanupTab participantId={currentParticipant!.id} />
+        </TabsContent>
+
         <TabsContent value="ai-controls">
           <AIControlsTab participantId={currentParticipant!.id} />
         </TabsContent>
@@ -2459,6 +2504,338 @@ function OnlineUsersTab() {
             );
           })}
         </div>
+      )}
+    </div>
+  );
+}
+
+function AdminSettingsTab({ participantId }: { participantId: string }) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ["admin-app-settings", participantId],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/app-settings?requesterId=${participantId}`);
+      if (!res.ok) throw new Error("Failed to load settings");
+      return res.json() as Promise<Record<string, string>>;
+    },
+  });
+
+  const updateSetting = useMutation({
+    mutationFn: async (updates: Record<string, string>) => {
+      const res = await apiRequest("POST", "/api/admin/app-settings", {
+        requesterId: participantId,
+        settings: updates,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-app-settings"] });
+      toast({ title: t("admin.settingsSaved") });
+    },
+    onError: (e: Error) => toast({ title: t("admin.error"), description: e.message, variant: "destructive" }),
+  });
+
+  const [bannerText, setBannerText] = useState(settings?.whats_new_text || "");
+
+  useEffect(() => {
+    if (settings) setBannerText(settings.whats_new_text || "");
+  }, [settings]);
+
+  if (isLoading || !settings) {
+    return <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  const toggleSetting = (key: string) => {
+    const current = settings[key] === "true";
+    updateSetting.mutate({ [key]: String(!current) });
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
+            <Megaphone className="w-5 h-5 text-amber-500" />
+            {t("admin.settingsWhatsNew")}
+          </h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30" data-testid="setting-whats-new-toggle">
+              <div>
+                <p className="font-medium text-sm">{t("admin.settingsWhatsNewEnabled")}</p>
+                <p className="text-xs text-muted-foreground">{t("admin.settingsWhatsNewEnabledDesc")}</p>
+              </div>
+              <Switch
+                checked={settings.whats_new_enabled === "true"}
+                onCheckedChange={() => toggleSetting("whats_new_enabled")}
+                data-testid="switch-whats-new"
+              />
+            </div>
+            {settings.whats_new_enabled === "true" && (
+              <div className="px-3">
+                <label className="text-sm font-medium mb-1.5 block">{t("admin.settingsWhatsNewText")}</label>
+                <div className="flex gap-2">
+                  <Input
+                    value={bannerText}
+                    onChange={(e) => setBannerText(e.target.value)}
+                    onBlur={() => updateSetting.mutate({ whats_new_text: bannerText })}
+                    placeholder={t("admin.settingsWhatsNewPlaceholder")}
+                    data-testid="input-whats-new-text"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
+            <Globe className="w-5 h-5 text-blue-500" />
+            {t("admin.settingsPlatform")}
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30" data-testid="setting-registration">
+              <div>
+                <p className="font-medium text-sm">{t("admin.settingsRegistrationOpen")}</p>
+                <p className="text-xs text-muted-foreground">{t("admin.settingsRegistrationOpenDesc")}</p>
+              </div>
+              <Switch
+                checked={settings.registration_open === "true"}
+                onCheckedChange={() => toggleSetting("registration_open")}
+                data-testid="switch-registration"
+              />
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30" data-testid="setting-guest-mode">
+              <div>
+                <p className="font-medium text-sm">{t("admin.settingsGuestMode")}</p>
+                <p className="text-xs text-muted-foreground">{t("admin.settingsGuestModeDesc")}</p>
+              </div>
+              <Switch
+                checked={settings.guest_mode_enabled === "true"}
+                onCheckedChange={() => toggleSetting("guest_mode_enabled")}
+                data-testid="switch-guest-mode"
+              />
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-amber-50 border-amber-200" data-testid="setting-maintenance">
+              <div>
+                <p className="font-medium text-sm flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+                  {t("admin.settingsMaintenance")}
+                </p>
+                <p className="text-xs text-muted-foreground">{t("admin.settingsMaintenanceDesc")}</p>
+              </div>
+              <Switch
+                checked={settings.maintenance_mode === "true"}
+                onCheckedChange={() => toggleSetting("maintenance_mode")}
+                data-testid="switch-maintenance"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
+            <BellRing className="w-5 h-5 text-green-500" />
+            {t("admin.settingsCommunication")}
+          </h3>
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30" data-testid="setting-email">
+            <div>
+              <p className="font-medium text-sm">{t("admin.settingsEmailNotifications")}</p>
+              <p className="text-xs text-muted-foreground">{t("admin.settingsEmailNotificationsDesc")}</p>
+            </div>
+            <Switch
+              checked={settings.email_notifications_enabled === "true"}
+              onCheckedChange={() => toggleSetting("email_notifications_enabled")}
+              data-testid="switch-email-notifications"
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function CleanupTab({ participantId }: { participantId: string }) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [titlePattern, setTitlePattern] = useState("");
+  const [beforeDate, setBeforeDate] = useState("");
+  const [maxParticipants, setMaxParticipants] = useState("");
+  const [onlyTestData, setOnlyTestData] = useState(false);
+  const [previewResults, setPreviewResults] = useState<{ count: number; tastings: Array<{ id: string; title: string; date: string; participantCount: number; isTestData: boolean }> } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const executeCleanup = async (action: "preview" | "markAsTest" | "delete") => {
+    setIsLoading(true);
+    try {
+      const filter: Record<string, any> = {};
+      if (titlePattern.trim()) filter.titlePattern = titlePattern.trim();
+      if (beforeDate) filter.beforeDate = beforeDate;
+      if (maxParticipants !== "") filter.maxParticipants = parseInt(maxParticipants);
+      if (onlyTestData) filter.onlyTestData = true;
+
+      const res = await apiRequest("POST", "/api/admin/bulk-cleanup", {
+        requesterId: participantId,
+        filter,
+        action,
+      });
+      const data = await res.json();
+
+      if (action === "preview") {
+        setPreviewResults(data);
+      } else {
+        toast({
+          title: action === "markAsTest" ? t("admin.cleanupMarkedAsTest", { count: data.count }) : t("admin.cleanupDeleted", { count: data.count }),
+        });
+        setPreviewResults(null);
+        queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      }
+    } catch (e: any) {
+      toast({ title: t("admin.error"), description: e.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+            <Filter className="w-5 h-5 text-blue-500" />
+            {t("admin.cleanupFilters")}
+          </h3>
+          <p className="text-sm text-muted-foreground mb-4">{t("admin.cleanupFiltersDesc")}</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">{t("admin.cleanupTitleContains")}</label>
+              <Input
+                value={titlePattern}
+                onChange={(e) => setTitlePattern(e.target.value)}
+                placeholder={t("admin.cleanupTitlePlaceholder")}
+                data-testid="input-cleanup-title"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">{t("admin.cleanupBeforeDate")}</label>
+              <Input
+                type="date"
+                value={beforeDate}
+                onChange={(e) => setBeforeDate(e.target.value)}
+                data-testid="input-cleanup-date"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">{t("admin.cleanupMaxParticipants")}</label>
+              <Input
+                type="number"
+                min="0"
+                value={maxParticipants}
+                onChange={(e) => setMaxParticipants(e.target.value)}
+                placeholder="z.B. 2"
+                data-testid="input-cleanup-participants"
+              />
+            </div>
+            <div className="flex items-center gap-3 pt-6">
+              <Switch
+                checked={onlyTestData}
+                onCheckedChange={setOnlyTestData}
+                data-testid="switch-cleanup-test-only"
+              />
+              <label className="text-sm font-medium">{t("admin.cleanupOnlyTestData")}</label>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => executeCleanup("preview")}
+            disabled={isLoading}
+            data-testid="btn-cleanup-preview"
+          >
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Search className="w-4 h-4 mr-2" />}
+            {t("admin.cleanupPreview")}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {previewResults && (
+        <Card>
+          <CardContent className="pt-6">
+            <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
+              <Eye className="w-5 h-5 text-amber-500" />
+              {t("admin.cleanupResults", { count: previewResults.count })}
+            </h3>
+
+            {previewResults.count === 0 ? (
+              <p className="text-sm text-muted-foreground py-4">{t("admin.cleanupNoResults")}</p>
+            ) : (
+              <>
+                <div className="space-y-1.5 max-h-64 overflow-y-auto mb-4">
+                  {previewResults.tastings.map((t_item) => (
+                    <div
+                      key={t_item.id}
+                      className="flex items-center justify-between p-2 rounded border text-sm"
+                      data-testid={`cleanup-item-${t_item.id}`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-medium truncate">{t_item.title}</span>
+                        {t_item.isTestData && <Badge variant="outline" className="text-[10px] px-1 py-0 border-amber-400 text-amber-600"><FlaskConical className="w-2.5 h-2.5" /></Badge>}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0">
+                        <span>{t_item.date}</span>
+                        <span className="flex items-center gap-1"><Users className="w-3 h-3" />{t_item.participantCount}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-3 pt-2 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => executeCleanup("markAsTest")}
+                    disabled={isLoading}
+                    data-testid="btn-cleanup-mark-test"
+                  >
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FlaskConical className="w-4 h-4 mr-2" />}
+                    {t("admin.cleanupMarkAsTest")}
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" disabled={isLoading} data-testid="btn-cleanup-delete">
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        {t("admin.cleanupDelete")}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{t("admin.cleanupConfirmDelete")}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {t("admin.cleanupConfirmDeleteDesc", { count: previewResults.count })}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{t("admin.cancel")}</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => executeCleanup("delete")}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {t("admin.cleanupDeleteConfirm")}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );
