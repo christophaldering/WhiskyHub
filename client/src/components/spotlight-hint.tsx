@@ -159,7 +159,8 @@ function TourOverlay({
   }, [hint]);
 
   useEffect(() => {
-    const timer = setTimeout(updatePosition, 300);
+    window.dispatchEvent(new CustomEvent("tour-expand-for-selector", { detail: hint.targetSelector }));
+    const timer = setTimeout(updatePosition, 400);
     window.addEventListener("resize", updatePosition);
     window.addEventListener("scroll", updatePosition, true);
     return () => {
@@ -167,7 +168,7 @@ function TourOverlay({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [updatePosition]);
+  }, [updatePosition, hint.targetSelector]);
 
   useEffect(() => {
     const applyGlow = () => {

@@ -219,6 +219,25 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
     setExpandedGroups(prev => ({ ...prev, [gi]: !prev[gi] }));
   };
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const selector = (e as CustomEvent).detail as string;
+      if (!selector) return;
+      for (let gi = 0; gi < navGroups.length; gi++) {
+        const hasTarget = navGroups[gi].items.some(item => {
+          const hrefMatch = selector === `[href="${item.href}"]`;
+          return hrefMatch;
+        });
+        if (hasTarget) {
+          setExpandedGroups(prev => ({ ...prev, [gi]: true }));
+          break;
+        }
+      }
+    };
+    window.addEventListener("tour-expand-for-selector", handler);
+    return () => window.removeEventListener("tour-expand-for-selector", handler);
+  }, [navGroups]);
+
   const isGroupExpanded = (gi: number) => {
     if (expandedGroups[gi] !== undefined) return expandedGroups[gi];
     if (gi === activeGroupIndex) return true;
