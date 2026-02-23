@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Wine, ArrowRight, Check, Download, Trophy, LogIn, ExternalLink, Shield, Sparkles, BookOpen, User, BarChart3, Sun, Moon, X, ArrowUpDown, Maximize2 } from "lucide-react";
+import { Wine, ArrowRight, Check, Download, Trophy, LogIn, ExternalLink, Shield, Sparkles, BookOpen, User, BarChart3, Sun, Moon, X, ArrowUpDown, Maximize2, Clock } from "lucide-react";
 import jsPDF from "jspdf";
 import type { Whisky, Tasting } from "@shared/schema";
 
@@ -651,7 +651,8 @@ export default function NakedTasting() {
     );
   }
 
-  const isOpen = tasting.status === "open" || tasting.status === "draft";
+  const isDraft = tasting.status === "draft";
+  const isOpen = tasting.status === "open";
   const isRevealed = tasting.status === "reveal" || tasting.status === "archived" || tasting.status === "closed";
 
   const { theme, toggleTheme } = useAppStore();
@@ -692,7 +693,37 @@ export default function NakedTasting() {
           )}
         </div>
 
-        {!currentParticipant ? (
+        {isDraft ? (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className="p-6 border-amber-500/30 bg-amber-500/5 text-center">
+              <div className="space-y-3">
+                <div className="w-14 h-14 rounded-full bg-amber-500/15 flex items-center justify-center mx-auto">
+                  <Clock className="w-7 h-7 text-amber-600" />
+                </div>
+                <h2 className="font-serif font-bold text-lg text-primary">{t("naked.draftTitle", "Tasting wird vorbereitet")}</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {t("naked.draftDesc", "Das Tasting wurde noch nicht gestartet. Sobald der Gastgeber die Session öffnet, kannst du dich anmelden und mit der Bewertung beginnen.")}
+                </p>
+                <p className="text-xs text-muted-foreground/60 font-mono">
+                  {t("naked.draftHint", "Diese Seite aktualisiert sich automatisch.")}
+                </p>
+              </div>
+            </Card>
+            {sortedWhiskies.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="text-[10px] text-muted-foreground/50 font-serif text-center mb-2">
+                  {sortedWhiskies.length} {t("naked.whiskiesPlanned", "Whiskys geplant")}
+                </p>
+                {sortedWhiskies.map((w, i) => (
+                  <div key={w.id} className="flex items-center gap-2 p-2 rounded-lg bg-card/50 border border-border/20">
+                    <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center font-serif flex-shrink-0">{i + 1}</span>
+                    <span className="text-sm font-serif text-muted-foreground truncate">{tasting.blindMode ? `#${i + 1}` : w.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        ) : !currentParticipant ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="p-5 border-border/30 bg-card/70">
               <div className="space-y-4">
