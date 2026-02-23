@@ -174,8 +174,14 @@ export default function Profile() {
     const file = e.target.files?.[0];
     if (!file) return;
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowed.includes(file.type)) return;
-    if (file.size > 2 * 1024 * 1024) return;
+    if (!allowed.includes(file.type)) {
+      toast({ title: t("common.uploadInvalidType"), variant: "destructive" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: t("common.uploadTooLarge"), variant: "destructive" });
+      return;
+    }
     setPhotoFile(file);
     setRemovePhoto(false);
     const reader = new FileReader();
@@ -260,7 +266,7 @@ export default function Profile() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 onChange={handlePhotoSelect}
                 className="hidden"
                 data-testid="input-profile-photo"
@@ -277,6 +283,7 @@ export default function Profile() {
                   <Camera className="w-3 h-3 mr-1" />
                   {currentPhotoUrl ? t("profile.changePhoto") : t("profile.uploadPhoto")}
                 </Button>
+                <p className="text-[10px] text-muted-foreground/60 mt-0.5">{t("common.uploadHint")}</p>
                 {currentPhotoUrl && (
                   <Button
                     type="button"

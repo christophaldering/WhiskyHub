@@ -77,8 +77,13 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type)) {
+      toast({ title: t("common.uploadInvalidType"), variant: "destructive" });
+      return;
+    }
     if (file.size > 2 * 1024 * 1024) {
-      toast({ title: t("session.photos.tooLarge", "Image must be under 2 MB"), variant: "destructive" });
+      toast({ title: t("common.uploadTooLarge"), variant: "destructive" });
       return;
     }
     setUploading(true);
@@ -117,7 +122,7 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,image/gif"
             className="hidden"
             onChange={handleFileSelect}
             data-testid="input-photo-upload"
@@ -139,6 +144,7 @@ export default function TastingPhotos({ tastingId, isHost, whiskies = [] }: Tast
             <Upload className="w-4 h-4" />
             {uploading ? t("session.photos.uploading", "Uploading...") : t("session.photos.upload", "Upload Photo")}
           </Button>
+          <span className="text-[10px] text-muted-foreground/60">{t("common.uploadHint")}</span>
         </div>
       )}
 

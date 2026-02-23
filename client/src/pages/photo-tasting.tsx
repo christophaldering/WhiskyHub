@@ -70,10 +70,23 @@ export default function PhotoTasting() {
   const handlePhotosSelected = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-    setPhotos(prev => [...prev, ...files]);
-    const newPreviews = files.map(f => URL.createObjectURL(f));
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    const validFiles = files.filter(f => {
+      if (!allowed.includes(f.type)) {
+        toast({ title: t("common.uploadInvalidType"), variant: "destructive" });
+        return false;
+      }
+      if (f.size > 2 * 1024 * 1024) {
+        toast({ title: t("common.uploadTooLarge"), variant: "destructive" });
+        return false;
+      }
+      return true;
+    });
+    if (validFiles.length === 0) return;
+    setPhotos(prev => [...prev, ...validFiles]);
+    const newPreviews = validFiles.map(f => URL.createObjectURL(f));
     setPreviews(prev => [...prev, ...newPreviews]);
-  }, []);
+  }, [toast, t]);
 
   const removePhoto = useCallback((index: number) => {
     setPhotos(prev => prev.filter((_, i) => i !== index));
@@ -264,9 +277,10 @@ export default function PhotoTasting() {
                 >
                   <Plus className="w-8 h-8 text-primary/50" />
                   <span className="text-xs text-primary/60 font-medium">{t("photoTasting.addPhotos")}</span>
+                  <span className="text-[9px] text-muted-foreground/50 mt-0.5">{t("common.uploadHint")}</span>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
                     multiple
                     className="hidden"
                     onChange={handlePhotosSelected}

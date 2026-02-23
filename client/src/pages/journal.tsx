@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { CaskTypeSelect } from "@/components/cask-type-select";
 import { useTranslation } from "react-i18next";
+import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { journalApi, journalBottleApi, textExtractApi, wishlistApi, tastingHistoryApi } from "@/lib/api";
@@ -533,6 +534,7 @@ function EntryForm({
     caskType?: string;
   };
 }) {
+  const { toast } = useToast();
   const [form, setForm] = useState({
     title: entry?.title || prefill?.whiskyName || "",
     whiskyName: entry?.whiskyName || prefill?.whiskyName || "",
@@ -636,7 +638,7 @@ function EntryForm({
               )}
               <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 className="hidden"
                 disabled={scanning}
                 onChange={async (e) => {
@@ -902,6 +904,7 @@ function EntryForm({
               <span className="text-[10px] text-muted-foreground text-center leading-tight">
                 {t("journal.addPhoto")}
               </span>
+              <span className="text-[8px] text-muted-foreground/50 text-center leading-tight mt-0.5">{t("common.uploadHint")}</span>
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
@@ -910,6 +913,15 @@ function EntryForm({
                   const file = e.target.files?.[0];
                   e.target.value = "";
                   if (!file) return;
+                  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+                  if (!allowedTypes.includes(file.type)) {
+                    toast({ title: t("common.uploadInvalidType"), variant: "destructive" });
+                    return;
+                  }
+                  if (file.size > 2 * 1024 * 1024) {
+                    toast({ title: t("common.uploadTooLarge"), variant: "destructive" });
+                    return;
+                  }
                   onImageChange(file);
                   if (participantId && !form.whiskyName) {
                     setScanning(true);

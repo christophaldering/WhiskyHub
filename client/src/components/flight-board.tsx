@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { whiskyApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -261,6 +262,7 @@ export function FlightBoard({ tasting, whiskies, isHost, getBlindState }: Flight
 
 function DetailDialogContent({ whisky, canEdit, tastingId, blindState }: { whisky: Whisky; canEdit: boolean; tastingId: string; blindState: BlindState }) {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadImageMutation = useMutation({
@@ -281,8 +283,14 @@ function DetailDialogContent({ whisky, canEdit, tastingId, blindState }: { whisk
     const file = e.target.files?.[0];
     if (!file) return;
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowed.includes(file.type)) return;
-    if (file.size > 2 * 1024 * 1024) return;
+    if (!allowed.includes(file.type)) {
+      toast({ title: t("common.uploadInvalidType"), variant: "destructive" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: t("common.uploadTooLarge"), variant: "destructive" });
+      return;
+    }
     uploadImageMutation.mutate(file);
   };
 
@@ -319,7 +327,7 @@ function DetailDialogContent({ whisky, canEdit, tastingId, blindState }: { whisk
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,image/gif"
             onChange={handleImageSelect}
             className="hidden"
             data-testid="input-detail-image"
@@ -339,6 +347,7 @@ function DetailDialogContent({ whisky, canEdit, tastingId, blindState }: { whisk
             )}
             {whisky.imageUrl ? t("whisky.replacePhoto") : t("whisky.uploadPhoto")}
           </Button>
+          <p className="text-[10px] text-muted-foreground/60 mt-1">{t("common.uploadHint")}</p>
         </div>
       )}
       {blindState.showMeta ? (

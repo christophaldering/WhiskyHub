@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CaskTypeSelect } from "@/components/cask-type-select";
 import { useTranslation } from "react-i18next";
+import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { wishlistApi } from "@/lib/api";
@@ -347,6 +348,7 @@ function WishlistForm({
   participantId?: string;
   t: any;
 }) {
+  const { toast } = useToast();
   const [whiskyName, setWhiskyName] = useState(entry?.whiskyName || "");
   const [distillery, setDistillery] = useState(entry?.distillery || "");
   const [region, setRegion] = useState(entry?.region || "");
@@ -451,6 +453,15 @@ function WishlistForm({
               const file = e.target.files?.[0];
               e.target.value = "";
               if (!file || !participantId) return;
+              const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+              if (!allowedTypes.includes(file.type)) {
+                toast({ title: t("common.uploadInvalidType"), variant: "destructive" });
+                return;
+              }
+              if (file.size > 2 * 1024 * 1024) {
+                toast({ title: t("common.uploadTooLarge"), variant: "destructive" });
+                return;
+              }
               setScanning(true);
               setScanError("");
               setScanResult(null);

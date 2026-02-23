@@ -203,7 +203,7 @@ function QuickImageUpload({ whisky, tastingId, size = "lg" }: { whisky: Whisky; 
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         onChange={handleUpload}
         className="hidden"
         data-testid={`input-quick-upload-${whisky.id}`}
@@ -371,7 +371,7 @@ function AddWhiskyDialog({ tastingId }: { tastingId: string }) {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
                   onChange={handleImageSelect}
                   className="hidden"
                   data-testid="input-whisky-image"
@@ -706,7 +706,7 @@ function EditWhiskyDialog({ whisky, tastingId, isHost, tastingStatus }: { whisky
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
                   onChange={handleImageSelect}
                   className="hidden"
                   data-testid="input-edit-whisky-image"
@@ -1080,7 +1080,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
             <input
               ref={coverInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/gif"
               className="hidden"
               onChange={handleCoverUpload}
               data-testid="input-cover-image"
@@ -1128,6 +1128,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
                 </div>
               </Button>
             )}
+            <p className="text-[10px] text-muted-foreground/60 mt-1">{t("common.uploadHint")}</p>
           </div>
           <Button
             onClick={() => {

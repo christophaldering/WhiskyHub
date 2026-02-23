@@ -18,6 +18,9 @@ const resources = {
       common: {
         signInToAccess: "Sign in to get started",
         unsavedChangesWarning: "You have unsaved changes. Are you sure you want to leave this page?",
+        uploadHint: "JPG, PNG, WebP or GIF · max. 2 MB",
+        uploadTooLarge: "File is too large. Maximum size: 2 MB.",
+        uploadInvalidType: "Format not supported. Please use JPG, PNG, WebP, or GIF.",
       },
       guestPreview: {
         profile: "Build your tasting identity with a personal profile, flavor preferences, and tasting statistics.",
@@ -2561,6 +2564,9 @@ const resources = {
       common: {
         signInToAccess: "Anmelden und loslegen",
         unsavedChangesWarning: "Du hast ungespeicherte Änderungen. Möchtest du die Seite wirklich verlassen?",
+        uploadHint: "JPG, PNG, WebP oder GIF · max. 2 MB",
+        uploadTooLarge: "Datei ist zu groß. Maximale Größe: 2 MB.",
+        uploadInvalidType: "Format nicht unterstützt. Bitte JPG, PNG, WebP oder GIF verwenden.",
       },
       guestPreview: {
         profile: "Erstelle dein Tasting-Profil mit persönlichen Vorlieben, Geschmackspräferenzen und Statistiken.",
