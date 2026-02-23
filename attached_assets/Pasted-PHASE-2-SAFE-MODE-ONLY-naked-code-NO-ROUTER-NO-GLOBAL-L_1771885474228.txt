@@ -1,0 +1,60 @@
+PHASE 2 (SAFE MODE) — ONLY /naked/:code. NO ROUTER / NO GLOBAL LAYOUT CHANGES.
+
+Context:
+The app is stable right now. We must keep /tasting/:id and join flow unchanged.
+
+Goal:
+Implement “Naked-first Progressive Reveal” ONLY in the existing /naked/:code route.
+This is an additive, isolated improvement.
+
+Scope (ONLY):
+1) /naked/:code becomes the default “Focus” (Naked) tasting experience:
+   - Flight board (expressions list)
+   - rating input
+   - personal notes
+   - NO global sidebar, NO bottom nav (already standalone — keep it)
+2) Add an in-room “More/Mehr” button (top right) that opens:
+   - mobile: bottom sheet
+   - desktop: drawer/modal
+3) The “More/Mehr” drawer has three sections/tabs in this exact order:
+   A) Context / Kontext
+      - Show whisky details ONLY if allowed by existing blind/reveal logic
+      - Otherwise show a friendly message: “Details hidden until reveal / Details erst nach Reveal sichtbar”
+   B) Comparison / Vergleich
+      - Show group comparison ONLY after the user has rated OR if host has unlocked comparison (use existing logic)
+      - If not allowed, show: “Rate first to unlock / Erst bewerten zum Freischalten”
+   C) Tools / Tools (or “Pro Tools / Pro-Tools”)
+      - Visible ONLY for analyst+ OR host/admin using existing permission checks
+      - Reuse existing components/links if available (export notes, host controls, etc.)
+4) Blind/reveal logic:
+   - Reuse current implementation.
+   - If logic is duplicated in multiple places, extract into a shared hook/util (minimal change),
+     but do NOT change APIs and do NOT change DB schema.
+
+Strict Rules:
+- DO NOT modify /tasting/:id.
+- DO NOT change the join flow.
+- DO NOT move routes in App.tsx.
+- DO NOT change global layout wrapper.
+- NO DB migrations.
+- Minimal changes only.
+
+i18n:
+Add DE/EN keys for:
+- Focus Mode / Fokusmodus
+- More / Mehr
+- Context / Kontext
+- Comparison / Vergleich
+- Tools / Tools (or Pro Tools / Pro-Tools)
+- Details hidden until reveal / Details erst nach Reveal sichtbar
+- Rate first to unlock / Erst bewerten zum Freischalten
+
+QA (mandatory):
+- Test /naked/:code end-to-end: open, rate, notes, open/close sheet (mobile + desktop).
+- Confirm /tasting/:id still works unchanged.
+- Confirm no console errors.
+
+Deliverables:
+- List of files changed
+- What you tested
+- Any limitations
