@@ -37,7 +37,6 @@ import Donate from "@/pages/donate";
 import BenchmarkAnalyzer from "@/pages/benchmark-analyzer";
 import Features from "@/pages/features";
 import PhotoTasting from "@/pages/photo-tasting";
-import Reminders from "@/pages/reminders";
 import CommunityRankings from "@/pages/community-rankings";
 import TasteTwins from "@/pages/taste-twins";
 import TastingHistory from "@/pages/tasting-history";
@@ -114,7 +113,7 @@ function Router() {
               <Route path="/benchmark" component={BenchmarkAnalyzer} />
               <Route path="/features" component={Features} />
               <Route path="/photo-tasting" component={PhotoTasting} />
-              <Route path="/reminders" component={Reminders} />
+              <Route path="/reminders">{() => { window.location.replace("/calendar"); return null; }}</Route>
               <Route path="/my-tastings" component={TastingHistory} />
               <Route path="/my-whiskies" component={MyWhiskies} />
               <Route path="/about" component={About} />

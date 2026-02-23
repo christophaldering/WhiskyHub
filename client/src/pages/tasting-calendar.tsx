@@ -1,13 +1,17 @@
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { calendarApi, friendsApi } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
 import { motion } from "framer-motion";
 import { useState, useMemo } from "react";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, MapPin, Users, Wine } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, MapPin, Users, Wine, Bell, BellOff, Plus, Trash2, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
+import { useToast } from "@/hooks/use-toast";
 
 type CalendarFilter = "all" | "mine" | "friends";
 
@@ -55,6 +59,13 @@ const STATUS_COLORS: Record<string, string> = {
   archived: "bg-secondary/40 text-muted-foreground/60",
 };
 
+const OFFSET_OPTIONS = [
+  { value: 1440, key: "offset1440" },
+  { value: 360, key: "offset360" },
+  { value: 60, key: "offset60" },
+  { value: 30, key: "offset30" },
+];
+
 export default function TastingCalendar() {
   const { t, i18n } = useTranslation();
   const isDE = i18n.language === "de";
@@ -63,12 +74,63 @@ export default function TastingCalendar() {
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [filter, setFilter] = useState<CalendarFilter>("all");
+  const [selectedOffset, setSelectedOffset] = useState<number>(1440);
   const currentParticipant = useAppStore((s) => s.currentParticipant);
   const participantId = currentParticipant?.id;
+  const { toast } = useToast();
+  const qc = useQueryClient();
 
   const { data: events = [], isLoading } = useQuery<CalendarEvent[]>({
     queryKey: ["calendar"],
     queryFn: calendarApi.getAll,
+  });
+
+  const { data: reminders = [] } = useQuery<any[]>({
+    queryKey: ["/api/reminders", participantId],
+    queryFn: () => fetch(`/api/reminders/${participantId}`).then(r => r.json()),
+    enabled: !!participantId,
+  });
+
+  const { data: participant } = useQuery<any>({
+    queryKey: [`/api/participants/${participantId}`],
+    enabled: !!participantId,
+  });
+
+  const hasVerifiedEmail = participant?.email && participant?.emailVerified;
+
+  const addReminderMutation = useMutation({
+    mutationFn: async (data: { tastingId?: string; enabled: boolean; offsetMinutes: number }) => {
+      const res = await apiRequest("POST", `/api/reminders/${participantId}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/reminders"] });
+      toast({ title: t("reminders.saved") });
+    },
+  });
+
+  const deleteReminderMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/reminders/${participantId}/${id}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/reminders"] });
+      toast({ title: t("reminders.deleted") });
+    },
+  });
+
+  const toggleReminderMutation = useMutation({
+    mutationFn: async (reminder: any) => {
+      const res = await apiRequest("POST", `/api/reminders/${participantId}`, {
+        tastingId: reminder.tastingId,
+        enabled: !reminder.enabled,
+        offsetMinutes: reminder.offsetMinutes,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/reminders"] });
+    },
   });
 
   const { data: friends = [] } = useQuery<{ id: string; friendParticipantId?: string }[]>({
@@ -303,6 +365,95 @@ export default function TastingCalendar() {
                   </div>
                 </div>
               </div>
+
+              {participantId && (
+                <div className="bg-card rounded-lg border border-border/40 p-5 space-y-3" data-testid="calendar-reminders-section">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-primary" />
+                    <h3 className="text-sm font-serif font-semibold">{t("reminders.title")}</h3>
+                  </div>
+
+                  {!hasVerifiedEmail && (
+                    <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-amber-700 dark:text-amber-300">{t("reminders.emailRequired")}</p>
+                    </div>
+                  )}
+
+                  {reminders.filter((r: any) => !r.tastingId).map((r: any) => (
+                    <div key={r.id} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2" data-testid={`reminder-global-${r.id}`}>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={r.enabled}
+                          onCheckedChange={() => toggleReminderMutation.mutate(r)}
+                          disabled={!hasVerifiedEmail}
+                          className="scale-75"
+                        />
+                        <span className={cn("text-xs", !r.enabled && "text-muted-foreground line-through")}>
+                          {t(`reminders.${OFFSET_OPTIONS.find(o => o.value === r.offsetMinutes)?.key || "offset60"}`)}
+                        </span>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => deleteReminderMutation.mutate(r.id)} className="text-muted-foreground hover:text-destructive h-7 w-7 p-0">
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+
+                  <div className="flex items-center gap-1.5">
+                    <Select value={String(selectedOffset)} onValueChange={(v) => setSelectedOffset(Number(v))}>
+                      <SelectTrigger className="h-8 text-xs flex-1" data-testid="select-reminder-offset">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {OFFSET_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={String(opt.value)}>
+                            {t(`reminders.${opt.key}`)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs"
+                      onClick={() => addReminderMutation.mutate({ enabled: true, offsetMinutes: selectedOffset })}
+                      disabled={!hasVerifiedEmail || addReminderMutation.isPending}
+                      data-testid="button-add-calendar-reminder"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      {isDE ? "Hinzufügen" : "Add"}
+                    </Button>
+                  </div>
+
+                  {upcomingEvents.length > 0 && reminders.filter((r: any) => r.tastingId).length > 0 && (
+                    <div className="border-t border-border/30 pt-2 space-y-2">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t("reminders.perTasting")}</p>
+                      {upcomingEvents.slice(0, 3).map(ev => {
+                        const evReminders = reminders.filter((r: any) => r.tastingId === ev.id);
+                        if (evReminders.length === 0) return null;
+                        return (
+                          <div key={ev.id} className="space-y-1">
+                            <p className="text-xs font-semibold truncate">{ev.title}</p>
+                            {evReminders.map((r: any) => (
+                              <div key={r.id} className="flex items-center justify-between bg-muted/20 rounded px-2 py-1">
+                                <div className="flex items-center gap-1.5">
+                                  <Switch checked={r.enabled} onCheckedChange={() => toggleReminderMutation.mutate(r)} disabled={!hasVerifiedEmail} className="scale-[0.6]" />
+                                  <span className={cn("text-[10px]", !r.enabled && "text-muted-foreground line-through")}>
+                                    {t(`reminders.${OFFSET_OPTIONS.find(o => o.value === r.offsetMinutes)?.key || "offset60"}`)}
+                                  </span>
+                                </div>
+                                <Button variant="ghost" size="sm" onClick={() => deleteReminderMutation.mutate(r.id)} className="text-muted-foreground hover:text-destructive h-6 w-6 p-0">
+                                  <Trash2 className="w-2.5 h-2.5" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -499,7 +499,8 @@ export default function FlavorProfile() {
               <div className="space-y-8">
                 <div className="bg-card rounded-lg border border-border/40 p-6">
                   <h2 className="text-lg font-serif font-semibold mb-1 text-foreground">{t("flavorProfile.radarTitle")}</h2>
-                  <p className="text-xs text-muted-foreground mb-4">{t("flavorProfile.radarSubtitle", { count: totalRatings })}</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t("flavorProfile.radarSubtitle", { count: totalRatings })}</p>
+                  <p className="text-xs text-muted-foreground/70 mb-4" data-testid="text-radar-desc">{t("flavorProfile.radarDesc")}</p>
                   <div className="h-[320px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
@@ -513,7 +514,8 @@ export default function FlavorProfile() {
                   </div>
                   {profile?.avgScores && globalAvg && globalAvg.totalRatings > 0 && (
                     <div className="mt-6 pt-4 border-t border-border/20">
-                      <h3 className="text-sm font-serif font-bold text-muted-foreground uppercase tracking-widest mb-3">{t("flavorProfile.personalVsGlobal")}</h3>
+                      <h3 className="text-sm font-serif font-bold text-muted-foreground uppercase tracking-widest mb-1">{t("flavorProfile.personalVsGlobal")}</h3>
+                      <p className="text-xs text-muted-foreground/70 mb-2" data-testid="text-personal-vs-global-desc">{t("flavorProfile.personalVsGlobalDesc")}</p>
                       <div className="text-xs text-muted-foreground mb-3">{t("flavorProfile.globalBasedOn", { ratings: globalAvg.totalRatings, participants: globalAvg.totalParticipants })}</div>
                       <div className="space-y-2">
                         {[
@@ -546,7 +548,8 @@ export default function FlavorProfile() {
                 {regionData.length > 0 && (
                   <div className="bg-card rounded-lg border border-border/40 p-6">
                     <h2 className="text-lg font-serif font-semibold mb-1">{t("flavorProfile.regionTitle")}</h2>
-                    <p className="text-xs text-muted-foreground mb-4">{t("flavorProfile.regionSubtitle")}</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t("flavorProfile.regionSubtitle")}</p>
+                    <p className="text-xs text-muted-foreground/70 mb-4" data-testid="text-region-desc">{t("flavorProfile.regionDesc")}</p>
                     <div className="h-[200px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={regionData} layout="vertical" margin={{ left: 80 }}>
@@ -569,7 +572,8 @@ export default function FlavorProfile() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {peatData.length > 0 && (
                     <div className="bg-card rounded-lg border border-border/40 p-6">
-                      <h2 className="text-base font-serif font-semibold mb-3">{t("flavorProfile.peatTitle")}</h2>
+                      <h2 className="text-base font-serif font-semibold mb-1">{t("flavorProfile.peatTitle")}</h2>
+                      <p className="text-xs text-muted-foreground/70 mb-3" data-testid="text-peat-desc">{t("flavorProfile.peatDesc")}</p>
                       <div className="space-y-3">
                         {peatData.map((d) => (
                           <div key={d.name} className="flex items-center justify-between">
@@ -589,7 +593,8 @@ export default function FlavorProfile() {
 
                   {caskData.length > 0 && (
                     <div className="bg-card rounded-lg border border-border/40 p-6">
-                      <h2 className="text-base font-serif font-semibold mb-3">{t("flavorProfile.caskTitle")}</h2>
+                      <h2 className="text-base font-serif font-semibold mb-1">{t("flavorProfile.caskTitle")}</h2>
+                      <p className="text-xs text-muted-foreground/70 mb-3" data-testid="text-cask-desc">{t("flavorProfile.caskDesc")}</p>
                       <div className="space-y-3">
                         {caskData.map((d) => (
                           <div key={d.name} className="flex items-center justify-between">
@@ -610,7 +615,8 @@ export default function FlavorProfile() {
 
                 {topWhiskies.length > 0 && (
                   <div className="bg-card rounded-lg border border-border/40 p-6">
-                    <h2 className="text-lg font-serif font-semibold mb-4">{t("flavorProfile.topTitle")}</h2>
+                    <h2 className="text-lg font-serif font-semibold mb-1">{t("flavorProfile.topTitle")}</h2>
+                    <p className="text-xs text-muted-foreground/70 mb-4" data-testid="text-top-desc">{t("flavorProfile.topDesc")}</p>
                     <div className="space-y-3">
                       {topWhiskies.map((item, i) => (
                         <div key={item.whisky.id} className="flex items-center gap-4 py-2 border-b border-border/20 last:border-0">

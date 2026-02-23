@@ -286,7 +286,8 @@ export function FlavorWheelContent() {
 
           <div className="bg-card rounded-lg border border-border/40 p-6">
             <h2 className="text-lg font-serif font-semibold mb-1 text-foreground">{t("flavorWheel.wheelTitle")}</h2>
-            <p className="text-xs text-muted-foreground mb-4">{t("flavorWheel.wheelSubtitle")}</p>
+            <p className="text-xs text-muted-foreground mb-1">{t("flavorWheel.wheelSubtitle")}</p>
+            <p className="text-xs text-muted-foreground/70 mb-4" data-testid="text-wheel-desc">{t("flavorWheel.wheelDesc")}</p>
             <div className="h-[420px] md:h-[500px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -543,7 +544,8 @@ export default function FlavorWheel() {
               transition={{ delay: 0.3 }}
             >
               <h2 className="text-lg font-serif font-semibold mb-1 text-foreground">{t("flavorWheel.wheelTitle")}</h2>
-              <p className="text-xs text-muted-foreground mb-4">{t("flavorWheel.wheelSubtitle")}</p>
+              <p className="text-xs text-muted-foreground mb-1">{t("flavorWheel.wheelSubtitle")}</p>
+              <p className="text-xs text-muted-foreground/70 mb-4" data-testid="text-wheel-desc">{t("flavorWheel.wheelDesc")}</p>
               <div className="h-[420px] md:h-[500px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>

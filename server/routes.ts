@@ -8,7 +8,7 @@ import crypto from "crypto";
 import { readExcelBuffer, sheetToArrayOfArrays, sheetToJson, sheetToCsv, jsonToSheet, jsonToCsv, buildExcelBuffer, type SimpleWorkbook } from "./excel-utils";
 // @ts-ignore
 import AdmZip from "adm-zip";
-import { storage } from "./storage";
+import { storage, getUniquePersonCount, deduplicateParticipantList } from "./storage";
 import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertParticipantSchema, insertJournalEntrySchema, insertBenchmarkEntrySchema, type Participant } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
@@ -4216,6 +4216,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         })
       );
 
+      const deduplicatedParticipantCount = await getUniquePersonCount(Array.from(uniqueParticipantIds));
+
       const scoreFields = ["nose", "taste", "finish", "balance", "overall"] as const;
       const averageScores: Record<string, number> = {};
       for (const field of scoreFields) {
@@ -4256,7 +4258,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
       res.json({
         totalTastings: hostTastings.length,
-        totalParticipants: uniqueParticipantIds.size,
+        totalParticipants: deduplicatedParticipantCount,
         totalWhiskies,
         averageScores,
         topWhiskies,
@@ -4892,11 +4894,13 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         })
       );
 
+      const uniqueAdminParticipants = await deduplicateParticipantList(allParticipants);
+
       res.json({
         participants: participantsWithStats,
         tastings: tastingsWithDetails,
         stats: {
-          totalParticipants: allParticipants.length,
+          totalParticipants: uniqueAdminParticipants,
           totalHosts: hostIds.size,
           totalTastings: allTastings.length,
           totalAdmins: allParticipants.filter(p => p.role === "admin").length,
@@ -5381,11 +5385,13 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         }
       }
 
+      const uniqueResearchParticipants = await deduplicateParticipantList(allParticipants);
+
       res.json({
         totalRatings: allRatings.length,
         totalWhiskies: allWhiskies.length,
         totalTastings: allTastings.length,
-        totalParticipants: allParticipants.length,
+        totalParticipants: uniqueResearchParticipants,
         scoreDistribution: scoreDistribution.map((count, i) => ({
           range: `${i * 10}-${i * 10 + 9}`,
           count,
@@ -7941,10 +7947,11 @@ Important rules:
       });
 
       // --- SUMMARY ---
+      const uniqueAnalyticsParticipants = await getUniquePersonCount(participantIds);
       const summary = {
         totalTastings: completedTastings.length,
         totalRatings: allRatings.length,
-        totalParticipants: participantIds.length,
+        totalParticipants: uniqueAnalyticsParticipants,
         totalWhiskies: new Set(allRatings.map(r => r.whiskyId)).size,
       };
 

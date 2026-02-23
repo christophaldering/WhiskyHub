@@ -489,9 +489,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       items: [
         { href: "/profile", icon: User, label: t('profile.title') },
         { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
-        ...(atLeast("connoisseur") ? [
-          { href: "/reminders", icon: Bell, label: t('nav.reminders') },
-        ] : []),
       ],
     }] : []),
     ...(atLeast("explorer") ? [{

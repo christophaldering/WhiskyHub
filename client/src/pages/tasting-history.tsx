@@ -25,6 +25,12 @@ export default function TastingHistory() {
     enabled: !!currentParticipant,
   });
 
+  const tastings = data?.tastings || [];
+  const stats = data?.stats;
+
+  const hostedTastings = useMemo(() => tastings.filter((t: any) => t.isHost), [tastings]);
+  const participatedTastings = useMemo(() => tastings.filter((t: any) => !t.isHost), [tastings]);
+
   if (!currentParticipant) {
     return (
       <GuestPreview featureTitle={t("tastingHistory.title")} featureDescription={t("guestPreview.tastingHistory")}>
@@ -63,12 +69,6 @@ export default function TastingHistory() {
       </div>
     );
   }
-
-  const stats = data?.stats;
-  const tastings = data?.tastings || [];
-
-  const hostedTastings = useMemo(() => tastings.filter((t: any) => t.isHost), [tastings]);
-  const participatedTastings = useMemo(() => tastings.filter((t: any) => !t.isHost), [tastings]);
 
   const formatScore = (score: number | null) => {
     if (score == null) return "–";

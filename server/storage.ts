@@ -31,6 +31,26 @@ import {
   type SessionPresence,
 } from "@shared/schema";
 
+export async function getUniquePersonCount(participantIds: string[]): Promise<number> {
+  if (participantIds.length === 0) return 0;
+  const records = await db.select({ id: participants.id, name: participants.name, pin: participants.pin }).from(participants).where(inArray(participants.id, participantIds));
+  const seen = new Set<string>();
+  for (const r of records) {
+    const key = `${(r.name || '').toLowerCase().trim()}::${(r.pin || '').trim()}`;
+    seen.add(key);
+  }
+  return seen.size;
+}
+
+export async function deduplicateParticipantList(allParticipantRecords: { id: string; name: string; pin: string | null }[]): Promise<number> {
+  const seen = new Set<string>();
+  for (const r of allParticipantRecords) {
+    const key = `${(r.name || '').toLowerCase().trim()}::${(r.pin || '').trim()}`;
+    seen.add(key);
+  }
+  return seen.size;
+}
+
 export interface WhiskyOfTheDay {
   whisky: Whisky;
   avgRating: number;
@@ -941,6 +961,7 @@ export class DatabaseStorage implements IStorage {
       if (!participantIds.includes(r.participantId)) participantIds.push(r.participantId);
     }
     const n = allRatings.length;
+    const uniquePersons = await getUniquePersonCount(participantIds);
     return {
       nose: Math.round((sumNose / n) * 10) / 10,
       taste: Math.round((sumTaste / n) * 10) / 10,
@@ -948,7 +969,7 @@ export class DatabaseStorage implements IStorage {
       balance: Math.round((sumBalance / n) * 10) / 10,
       overall: Math.round((sumOverall / n) * 10) / 10,
       totalRatings: n,
-      totalParticipants: participantIds.length,
+      totalParticipants: uniquePersons,
     };
   }
 
@@ -1226,14 +1247,15 @@ export class DatabaseStorage implements IStorage {
 
   async getPlatformStats() {
     const [tastingCount] = await db.select({ count: sql<number>`count(*)::int` }).from(tastings).where(ne(tastings.status, "deleted"));
-    const [participantCount] = await db.select({ count: sql<number>`count(*)::int` }).from(participants);
+    const allParticipantRecords = await db.select({ id: participants.id, name: participants.name, pin: participants.pin }).from(participants);
+    const uniquePersonCount = await deduplicateParticipantList(allParticipantRecords);
     const [whiskyCount] = await db.select({ count: sql<number>`count(*)::int` }).from(whiskies);
     const [ratingCount] = await db.select({ count: sql<number>`count(*)::int` }).from(ratings);
     const [journalCount] = await db.select({ count: sql<number>`count(*)::int` }).from(journalEntries);
     const countryResult = await db.select({ country: whiskies.country }).from(whiskies).where(sql`${whiskies.country} IS NOT NULL AND ${whiskies.country} != ''`).groupBy(whiskies.country);
     return {
       totalTastings: tastingCount?.count ?? 0,
-      totalParticipants: participantCount?.count ?? 0,
+      totalParticipants: uniquePersonCount,
       totalWhiskies: whiskyCount?.count ?? 0,
       totalRatings: ratingCount?.count ?? 0,
       totalJournalEntries: journalCount?.count ?? 0,
