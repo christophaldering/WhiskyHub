@@ -7221,11 +7221,33 @@ Important rules:
     return res.send(buf);
   };
 
+  const verifyExportAccess = async (participantId: string, pin: string | undefined, level: "own" | "extended" | "admin") => {
+    if (!participantId) return { ok: false, status: 400, message: "participantId required" };
+    const participant = await storage.getParticipant(participantId);
+    if (!participant) return { ok: false, status: 404, message: "Participant not found" };
+    if (!pin || pin !== participant.pin) return { ok: false, status: 401, message: "PIN verification required" };
+    if (level === "extended") {
+      const tastings = await storage.getTastingsForParticipant(participantId);
+      const isHost = tastings.some((t: any) => t.hostId === participantId);
+      if (participant.role !== "admin" && !isHost) {
+        return { ok: false, status: 403, message: "Host or admin access required" };
+      }
+    }
+    if (level === "admin") {
+      if (participant.role !== "admin") {
+        return { ok: false, status: 403, message: "Admin access required" };
+      }
+    }
+    return { ok: true, participant };
+  };
+
   app.get("/api/export/tastings", async (req, res) => {
     try {
       const participantId = req.query.participantId as string;
       const format = (req.query.format as string) || "csv";
-      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const pin = req.query.pin as string;
+      const access = await verifyExportAccess(participantId, pin, "extended");
+      if (!access.ok) return res.status(access.status!).json({ message: access.message });
       const tastings = await storage.getTastingsForParticipant(participantId);
       const rows: any[] = [];
       for (const t of tastings) {
@@ -7260,7 +7282,9 @@ Important rules:
     try {
       const participantId = req.query.participantId as string;
       const format = (req.query.format as string) || "csv";
-      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const pin = req.query.pin as string;
+      const access = await verifyExportAccess(participantId, pin, "own");
+      if (!access.ok) return res.status(access.status!).json({ message: access.message });
       const entries = await storage.getJournalEntries(participantId);
       const rows = entries.map((e: any) => ({
         Date: e.createdAt, Name: e.name, Distillery: e.distillery || "",
@@ -7278,7 +7302,9 @@ Important rules:
     try {
       const participantId = req.query.participantId as string;
       const format = (req.query.format as string) || "csv";
-      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const pin = req.query.pin as string;
+      const access = await verifyExportAccess(participantId, pin, "own");
+      if (!access.ok) return res.status(access.status!).json({ message: access.message });
       const profile = await storage.getProfile(participantId);
       const participant = await storage.getParticipant(participantId);
       const rows = [{
@@ -7299,7 +7325,9 @@ Important rules:
     try {
       const participantId = req.query.participantId as string;
       const format = (req.query.format as string) || "csv";
-      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const pin = req.query.pin as string;
+      const access = await verifyExportAccess(participantId, pin, "extended");
+      if (!access.ok) return res.status(access.status!).json({ message: access.message });
       const friends = await storage.getWhiskyFriends(participantId);
       const rows = await Promise.all(friends.map(async (f: any) => {
         const p = f.friendId ? await storage.getParticipant(f.friendId) : null;
@@ -7319,7 +7347,9 @@ Important rules:
     try {
       const participantId = req.query.participantId as string;
       const format = (req.query.format as string) || "csv";
-      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const pin = req.query.pin as string;
+      const access = await verifyExportAccess(participantId, pin, "own");
+      if (!access.ok) return res.status(access.status!).json({ message: access.message });
       const entries = await storage.getWishlistEntries(participantId);
       const rows = entries.map((e: any) => ({
         Name: e.name || "", Distillery: e.distillery || "",
@@ -7336,7 +7366,9 @@ Important rules:
     try {
       const participantId = req.query.participantId as string;
       const format = (req.query.format as string) || "csv";
-      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const pin = req.query.pin as string;
+      const access = await verifyExportAccess(participantId, pin, "own");
+      if (!access.ok) return res.status(access.status!).json({ message: access.message });
       const entries = await storage.getWhiskybaseCollection(participantId);
       const rows = entries.map((e: any) => ({
         Brand: e.brand || "", Name: e.name || "", WhiskybaseId: e.whiskybaseId || "",
@@ -7353,7 +7385,9 @@ Important rules:
     try {
       const participantId = req.query.participantId as string;
       const format = (req.query.format as string) || "xlsx";
-      if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const pin = req.query.pin as string;
+      const access = await verifyExportAccess(participantId, pin, "admin");
+      if (!access.ok) return res.status(access.status!).json({ message: access.message });
 
       const sheets: { name: string; data: any[] }[] = [];
 
