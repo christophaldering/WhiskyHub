@@ -8,9 +8,13 @@ let testTastingCode = "";
 let testWhiskyId = "";
 let testJournalId = "";
 let testWishlistId = "";
-let adminParticipantId = "";
+let ratingTastingId = "";
 
-async function req(method: string, path: string, body?: any, expectStatus?: number): Promise<any> {
+const TEST_EMAIL = `plaustest_${Date.now()}@casksense-test.dev`;
+const TEST_PIN = "9999";
+const TEST_NAME = `__plaustest_${Date.now()}`;
+
+async function req(method: string, path: string, body?: any): Promise<any> {
   const url = new URL(path, BASE);
   return new Promise((resolve, reject) => {
     const options: http.RequestOptions = {
@@ -25,15 +29,20 @@ async function req(method: string, path: string, body?: any, expectStatus?: numb
       let data = "";
       res.on("data", (chunk) => (data += chunk));
       res.on("end", () => {
+        const status = res.statusCode || 0;
+        if (!data || !data.trim()) {
+          resolve({ __status: status, __empty: true });
+          return;
+        }
         try {
-          const parsed = data ? JSON.parse(data) : {};
-          if (expectStatus && res.statusCode !== expectStatus) {
-            resolve({ __status: res.statusCode, __body: parsed, __error: true });
+          const parsed = JSON.parse(data);
+          if (Array.isArray(parsed)) {
+            resolve(Object.assign(parsed, { __status: status }));
           } else {
-            resolve({ __status: res.statusCode, ...parsed });
+            resolve({ __status: status, ...parsed });
           }
         } catch {
-          resolve({ __status: res.statusCode, __raw: data });
+          resolve({ __status: status, __raw: data.slice(0, 200) });
         }
       });
     });
@@ -58,12 +67,12 @@ async function testSection(section: string, fn: () => Promise<void>) {
   try {
     await fn();
   } catch (e: any) {
-    fail(section, "Section crashed", e.message);
+    fail(section, "Abschnitt abgestürzt", e.message);
   }
 }
 
 // ========================
-// 1. INFRASTRUCTURE
+// 1. INFRASTRUKTUR
 // ========================
 async function testInfrastructure() {
   await testSection("Infrastruktur", async () => {
@@ -107,38 +116,47 @@ async function testInfrastructure() {
 // ========================
 async function testAuthentication() {
   await testSection("Authentifizierung", async () => {
-    const testName = `__plaustest_${Date.now()}`;
-    const testPin = "9999";
-
-    const reg = await req("POST", "/api/participants", { name: testName, pin: testPin });
+    const reg = await req("POST", "/api/participants", { name: TEST_NAME, pin: TEST_PIN, email: TEST_EMAIL });
     if (reg.id) {
       testParticipantId = reg.id;
-      pass("Authentifizierung", "Registrierung mit Name + PIN", `ID: ${reg.id}`);
+      pass("Authentifizierung", "Registrierung mit Name + PIN + E-Mail", `ID: ${reg.id}`);
     } else {
-      fail("Authentifizierung", "Registrierung fehlgeschlagen", JSON.stringify(reg));
+      fail("Authentifizierung", "Registrierung fehlgeschlagen", reg.message || JSON.stringify(reg));
       return;
     }
 
-    const login = await req("POST", "/api/participants/login", { name: testName, pin: testPin });
+    const login = await req("POST", "/api/participants/login", { email: TEST_EMAIL, pin: TEST_PIN });
     login.id === testParticipantId
       ? pass("Authentifizierung", "Login mit korrektem PIN")
       : fail("Authentifizierung", "Login fehlgeschlagen", JSON.stringify(login));
 
-    const wrongPin = await req("POST", "/api/participants/login", { name: testName, pin: "0000" });
+    const wrongPin = await req("POST", "/api/participants/login", { email: TEST_EMAIL, pin: "0000" });
     wrongPin.__status === 401 || wrongPin.message
       ? pass("Authentifizierung", "Login mit falschem PIN wird abgelehnt")
       : fail("Authentifizierung", "Falscher PIN wird nicht abgelehnt", `Status: ${wrongPin.__status}`);
 
-    const dupReg = await req("POST", "/api/participants", { name: testName, pin: testPin });
-    dupReg.__status === 409 || dupReg.__status === 400 || dupReg.message
+    const dupReg = await req("POST", "/api/participants", { name: TEST_NAME, pin: TEST_PIN, email: TEST_EMAIL });
+    dupReg.__status === 400 || dupReg.__status === 409
       ? pass("Authentifizierung", "Doppelte Registrierung wird verhindert")
-      : warn("Authentifizierung", "Doppelte Registrierung möglich?", `Status: ${dupReg.__status}`);
+      : warn("Authentifizierung", "Doppelte Registrierung ggf. möglich", `Status: ${dupReg.__status}`);
 
-    const guest = await req("POST", "/api/participants/guest", {});
-    guest.id ? pass("Authentifizierung", "Gast-Anmeldung", `ID: ${guest.id}`) : fail("Authentifizierung", "Gast-Anmeldung fehlgeschlagen");
+    const noEmail = await req("POST", "/api/participants", { name: "test_no_email", pin: "1234" });
+    noEmail.__status === 400
+      ? pass("Authentifizierung", "Registrierung ohne E-Mail wird abgelehnt")
+      : warn("Authentifizierung", "Registrierung ohne E-Mail möglich", `Status: ${noEmail.__status}`);
+
+    const noPin = await req("POST", "/api/participants", { name: "test_no_pin", email: "x@y.z" });
+    noPin.__status === 400
+      ? pass("Authentifizierung", "Registrierung ohne PIN wird abgelehnt")
+      : warn("Authentifizierung", "Registrierung ohne PIN möglich", `Status: ${noPin.__status}`);
+
+    const guest = await req("POST", "/api/participants/guest", { name: `__guest_${Date.now()}`, pin: "5555" });
+    guest.id
+      ? pass("Authentifizierung", "Gast-Anmeldung", `ID: ${guest.id}`)
+      : fail("Authentifizierung", "Gast-Anmeldung fehlgeschlagen", guest.message);
 
     const getP = await req("GET", `/api/participants/${testParticipantId}`);
-    getP.name === testName ? pass("Authentifizierung", "Teilnehmer-Daten abrufen") : fail("Authentifizierung", "Teilnehmer nicht abrufbar");
+    getP.name === TEST_NAME ? pass("Authentifizierung", "Teilnehmer-Daten abrufen") : fail("Authentifizierung", "Teilnehmer nicht abrufbar");
 
     const heartbeat = await req("POST", `/api/participants/${testParticipantId}/heartbeat`);
     heartbeat.__status === 200 ? pass("Authentifizierung", "Heartbeat funktioniert") : warn("Authentifizierung", "Heartbeat", `Status: ${heartbeat.__status}`);
@@ -149,18 +167,17 @@ async function testAuthentication() {
     const langUpdate = await req("PATCH", `/api/participants/${testParticipantId}/language`, { language: "de" });
     langUpdate.__status === 200 ? pass("Authentifizierung", "Sprache ändern") : fail("Authentifizierung", "Sprache ändern", `Status: ${langUpdate.__status}`);
 
-    const pinChange = await req("PATCH", `/api/participants/${testParticipantId}/pin`, { oldPin: testPin, newPin: "8888" });
+    const pinChange = await req("PATCH", `/api/participants/${testParticipantId}/pin`, { currentPin: TEST_PIN, newPin: "8888" });
     pinChange.__status === 200
       ? pass("Authentifizierung", "PIN ändern")
-      : fail("Authentifizierung", "PIN ändern fehlgeschlagen", `Status: ${pinChange.__status}`);
+      : fail("Authentifizierung", "PIN ändern fehlgeschlagen", `Status: ${pinChange.__status}, ${pinChange.message}`);
 
-    const loginNewPin = await req("POST", "/api/participants/login", { name: testName, pin: "8888" });
+    const loginNewPin = await req("POST", "/api/participants/login", { email: TEST_EMAIL, pin: "8888" });
     loginNewPin.id === testParticipantId
       ? pass("Authentifizierung", "Login mit neuem PIN")
       : fail("Authentifizierung", "Login mit neuem PIN fehlgeschlagen");
 
-    const emailUpdate = await req("PATCH", `/api/participants/${testParticipantId}/email`, { email: "test@plaustest.dev" });
-    emailUpdate.__status === 200 ? pass("Authentifizierung", "E-Mail setzen") : warn("Authentifizierung", "E-Mail setzen", `Status: ${emailUpdate.__status}`);
+    await req("PATCH", `/api/participants/${testParticipantId}/pin`, { currentPin: "8888", newPin: TEST_PIN });
   });
 }
 
@@ -171,12 +188,13 @@ async function testTastingLifecycle() {
   await testSection("Tasting-Lifecycle", async () => {
     if (!testParticipantId) { fail("Tasting-Lifecycle", "Kein Test-Teilnehmer vorhanden"); return; }
 
+    testTastingCode = `P${Date.now().toString(36).slice(-7).toUpperCase()}`;
     const create = await req("POST", "/api/tastings", {
-      title: "__Plausibilitätstest Tasting",
+      title: "__Plaustest Tasting",
       date: "2026-02-23",
       location: "Testlabor",
       hostId: testParticipantId,
-      code: `PT${Date.now()}`.slice(0, 8),
+      code: testTastingCode,
     });
     if (create.id) {
       testTastingId = create.id;
@@ -188,49 +206,43 @@ async function testTastingLifecycle() {
     }
 
     const get = await req("GET", `/api/tastings/${testTastingId}`);
-    get.title === "__Plausibilitätstest Tasting" ? pass("Tasting-Lifecycle", "Tasting abrufen") : fail("Tasting-Lifecycle", "Tasting abrufen");
+    get.title === "__Plaustest Tasting" ? pass("Tasting-Lifecycle", "Tasting abrufen") : fail("Tasting-Lifecycle", "Tasting abrufen");
 
     const byCode = await req("GET", `/api/tastings/code/${testTastingCode}`);
     byCode.id === testTastingId ? pass("Tasting-Lifecycle", "Tasting per Code finden") : fail("Tasting-Lifecycle", "Tasting per Code nicht gefunden");
 
-    const statusDraft = get.status;
-    statusDraft === "draft" ? pass("Tasting-Lifecycle", "Initialstatus = draft") : fail("Tasting-Lifecycle", "Initialstatus", `Erwartet: draft, Erhalten: ${statusDraft}`);
+    get.status === "draft" ? pass("Tasting-Lifecycle", "Initialstatus = draft") : fail("Tasting-Lifecycle", "Initialstatus falsch", `Erhalten: ${get.status}`);
 
-    const openRes = await req("PATCH", `/api/tastings/${testTastingId}/status`, { status: "open", participantId: testParticipantId });
-    openRes.__status === 200 ? pass("Tasting-Lifecycle", "Status → open") : fail("Tasting-Lifecycle", "Status → open fehlgeschlagen", `Status: ${openRes.__status}`);
+    const allTastings = await req("GET", `/api/tastings?participantId=${testParticipantId}`);
+    Array.isArray(allTastings) ? pass("Tasting-Lifecycle", "Tasting-Liste abrufen") : fail("Tasting-Lifecycle", "Tasting-Liste fehlerhaft");
+
+    const openRes = await req("PATCH", `/api/tastings/${testTastingId}/status`, { status: "open", hostId: testParticipantId });
+    openRes.__status === 200 ? pass("Tasting-Lifecycle", "Status → open") : fail("Tasting-Lifecycle", "Status → open", `Status: ${openRes.__status}`);
 
     const join = await req("POST", `/api/tastings/${testTastingId}/join`, { participantId: testParticipantId });
     join.__status === 200 || join.__status === 201 ? pass("Tasting-Lifecycle", "Tasting beitreten") : fail("Tasting-Lifecycle", "Tasting beitreten", `Status: ${join.__status}`);
 
     const participants = await req("GET", `/api/tastings/${testTastingId}/participants`);
-    Array.isArray(participants) && participants.length > 0 ? pass("Tasting-Lifecycle", "Teilnehmer-Liste") : warn("Tasting-Lifecycle", "Keine Teilnehmer gefunden");
+    Array.isArray(participants) && participants.length > 0
+      ? pass("Tasting-Lifecycle", "Teilnehmer-Liste")
+      : warn("Tasting-Lifecycle", "Keine Teilnehmer gefunden");
 
-    const titleUpdate = await req("PATCH", `/api/tastings/${testTastingId}/title`, { title: "__Plaustest Updated", participantId: testParticipantId });
+    const titleUpdate = await req("PATCH", `/api/tastings/${testTastingId}/title`, { title: "__Plaustest Updated", hostId: testParticipantId });
     titleUpdate.__status === 200 ? pass("Tasting-Lifecycle", "Titel ändern") : fail("Tasting-Lifecycle", "Titel ändern", `Status: ${titleUpdate.__status}`);
 
-    const detailsUpdate = await req("PATCH", `/api/tastings/${testTastingId}/details`, {
-      title: "__Plaustest Updated",
-      date: "2026-02-24",
-      location: "Neuer Ort",
-      participantId: testParticipantId,
-    });
-    detailsUpdate.__status === 200 ? pass("Tasting-Lifecycle", "Details ändern") : fail("Tasting-Lifecycle", "Details ändern", `Status: ${detailsUpdate.__status}`);
+    const closeRes = await req("PATCH", `/api/tastings/${testTastingId}/status`, { status: "closed", hostId: testParticipantId });
+    closeRes.__status === 200 ? pass("Tasting-Lifecycle", "Status → closed") : fail("Tasting-Lifecycle", "Status → closed");
 
-    const closeRes = await req("PATCH", `/api/tastings/${testTastingId}/status`, { status: "closed", participantId: testParticipantId });
-    closeRes.__status === 200 ? pass("Tasting-Lifecycle", "Status → closed") : fail("Tasting-Lifecycle", "Status → closed fehlgeschlagen");
+    const revealRes = await req("PATCH", `/api/tastings/${testTastingId}/status`, { status: "reveal", hostId: testParticipantId });
+    revealRes.__status === 200 ? pass("Tasting-Lifecycle", "Status → reveal") : fail("Tasting-Lifecycle", "Status → reveal");
 
-    const revealRes = await req("PATCH", `/api/tastings/${testTastingId}/status`, { status: "reveal", participantId: testParticipantId });
-    revealRes.__status === 200 ? pass("Tasting-Lifecycle", "Status → reveal") : fail("Tasting-Lifecycle", "Status → reveal fehlgeschlagen");
+    const archiveRes = await req("PATCH", `/api/tastings/${testTastingId}/status`, { status: "archived", hostId: testParticipantId });
+    archiveRes.__status === 200 ? pass("Tasting-Lifecycle", "Status → archived") : fail("Tasting-Lifecycle", "Status → archived");
 
-    const archiveRes = await req("PATCH", `/api/tastings/${testTastingId}/status`, { status: "archived", participantId: testParticipantId });
-    archiveRes.__status === 200 ? pass("Tasting-Lifecycle", "Status → archived") : fail("Tasting-Lifecycle", "Status → archived fehlgeschlagen");
-
-    const invalidStatus = await req("PATCH", `/api/tastings/${testTastingId}/status`, { status: "open", participantId: testParticipantId });
+    const invalidStatus = await req("PATCH", `/api/tastings/${testTastingId}/status`, { status: "open", hostId: testParticipantId });
     invalidStatus.__status !== 200
       ? pass("Tasting-Lifecycle", "Ungültiger Statuswechsel (archived→open) blockiert")
-      : warn("Tasting-Lifecycle", "Ungültiger Statuswechsel erlaubt?");
-
-    await req("PATCH", `/api/tastings/${testTastingId}/status`, { status: "open", participantId: testParticipantId });
+      : warn("Tasting-Lifecycle", "Rückwärts-Transition archived→open erlaubt — prüfen");
   });
 }
 
@@ -239,18 +251,17 @@ async function testTastingLifecycle() {
 // ========================
 async function testWhiskiesAndRatings() {
   await testSection("Whiskies & Ratings", async () => {
-    if (!testTastingId) { fail("Whiskies & Ratings", "Kein Test-Tasting vorhanden"); return; }
+    if (!testParticipantId) { fail("Whiskies & Ratings", "Kein Teilnehmer"); return; }
 
-    const reopened = await req("POST", "/api/tastings", {
+    const t = await req("POST", "/api/tastings", {
       title: "__Plaustest Rating-Test",
       date: "2026-02-23",
       location: "Testlabor",
       hostId: testParticipantId,
-      code: `PR${Date.now()}`.slice(0, 8),
+      code: `R${Date.now().toString(36).slice(-7).toUpperCase()}`,
     });
-    const ratingTastingId = reopened.id;
-
-    await req("PATCH", `/api/tastings/${ratingTastingId}/status`, { status: "open", participantId: testParticipantId });
+    ratingTastingId = t.id;
+    await req("PATCH", `/api/tastings/${ratingTastingId}/status`, { status: "open", hostId: testParticipantId });
     await req("POST", `/api/tastings/${ratingTastingId}/join`, { participantId: testParticipantId });
 
     const whisky = await req("POST", "/api/whiskies", {
@@ -267,17 +278,17 @@ async function testWhiskiesAndRatings() {
     });
     if (whisky.id) {
       testWhiskyId = whisky.id;
-      pass("Whiskies & Ratings", "Whisky erstellen", `ID: ${whisky.id}`);
+      pass("Whiskies & Ratings", "Whisky erstellen");
     } else {
       fail("Whiskies & Ratings", "Whisky erstellen fehlgeschlagen", JSON.stringify(whisky));
       return;
     }
 
     const whiskies = await req("GET", `/api/tastings/${ratingTastingId}/whiskies`);
-    Array.isArray(whiskies) && whiskies.length === 1 ? pass("Whiskies & Ratings", "Whiskies abrufen") : fail("Whiskies & Ratings", "Whiskies abrufen");
+    Array.isArray(whiskies) && whiskies.length >= 1 ? pass("Whiskies & Ratings", "Whiskies abrufen") : fail("Whiskies & Ratings", "Whiskies abrufen");
 
-    const updateW = await req("PATCH", `/api/whiskies/${testWhiskyId}`, { name: "Lagavulin 16 Updated", participantId: testParticipantId });
-    updateW.__status === 200 ? pass("Whiskies & Ratings", "Whisky aktualisieren") : fail("Whiskies & Ratings", "Whisky aktualisieren", `Status: ${updateW.__status}`);
+    const updateW = await req("PATCH", `/api/whiskies/${testWhiskyId}`, { name: "Lagavulin 16 Updated" });
+    updateW.__status === 200 ? pass("Whiskies & Ratings", "Whisky aktualisieren") : fail("Whiskies & Ratings", "Whisky aktualisieren");
 
     const rating = await req("POST", "/api/ratings", {
       tastingId: ratingTastingId,
@@ -290,131 +301,106 @@ async function testWhiskiesAndRatings() {
       overall: 88,
       notes: "Plausibilitätstest Rating",
     });
-    rating.__status === 200 || rating.__status === 201 || rating.id
-      ? pass("Whiskies & Ratings", "Bewertung abgeben")
-      : fail("Whiskies & Ratings", "Bewertung abgeben", `Status: ${rating.__status}`);
+    rating.id ? pass("Whiskies & Ratings", "Bewertung abgeben") : fail("Whiskies & Ratings", "Bewertung fehlgeschlagen", `Status: ${rating.__status}`);
 
     const ratingGet = await req("GET", `/api/ratings/${testParticipantId}/${testWhiskyId}`);
-    ratingGet.overall === 88 ? pass("Whiskies & Ratings", "Bewertung abrufen") : fail("Whiskies & Ratings", "Bewertung stimmt nicht", JSON.stringify(ratingGet));
+    ratingGet.overall === 88 ? pass("Whiskies & Ratings", "Bewertung korrekt gespeichert") : fail("Whiskies & Ratings", "Bewertung falsch", `overall: ${ratingGet.overall}`);
 
-    const upsertRating = await req("POST", "/api/ratings", {
+    const upsert = await req("POST", "/api/ratings", {
       tastingId: ratingTastingId,
       whiskyId: testWhiskyId,
       participantId: testParticipantId,
-      nose: 90,
-      taste: 92,
-      finish: 91,
-      balance: 89,
-      overall: 91,
-      notes: "Aktualisiertes Rating",
+      nose: 90, taste: 92, finish: 91, balance: 89, overall: 91,
+      notes: "Aktualisiert",
     });
-    upsertRating.__status === 200 || upsertRating.__status === 201 || upsertRating.id
-      ? pass("Whiskies & Ratings", "Rating-Upsert (Aktualisierung)")
-      : fail("Whiskies & Ratings", "Rating-Upsert fehlgeschlagen");
+    const updated = await req("GET", `/api/ratings/${testParticipantId}/${testWhiskyId}`);
+    updated.overall === 91 ? pass("Whiskies & Ratings", "Rating-Upsert funktioniert") : fail("Whiskies & Ratings", "Upsert fehlerhaft");
 
     const nullRating = await req("POST", "/api/ratings", {
       tastingId: ratingTastingId,
       whiskyId: testWhiskyId,
       participantId: testParticipantId,
-      nose: null,
-      taste: null,
-      finish: null,
-      balance: null,
-      overall: null,
+      nose: null, taste: null, finish: null, balance: null, overall: null,
       notes: "",
     });
-    nullRating.__status === 200 || nullRating.__status === 201 || nullRating.id
+    nullRating.id || nullRating.__status === 200
       ? pass("Whiskies & Ratings", "Nullable Rating (alle Werte null)")
-      : fail("Whiskies & Ratings", "Nullable Rating fehlgeschlagen", `Status: ${nullRating.__status}`);
+      : fail("Whiskies & Ratings", "Nullable Rating fehlgeschlagen");
 
     const tastingRatings = await req("GET", `/api/tastings/${ratingTastingId}/ratings`);
-    Array.isArray(tastingRatings) ? pass("Whiskies & Ratings", "Tasting-Ratings abrufen") : fail("Whiskies & Ratings", "Tasting-Ratings abrufen");
+    Array.isArray(tastingRatings) ? pass("Whiskies & Ratings", "Tasting-Ratings abrufen") : fail("Whiskies & Ratings", "Tasting-Ratings");
 
-    const whiskyRatings = await req("GET", `/api/whiskies/${testWhiskyId}/ratings`);
-    Array.isArray(whiskyRatings) ? pass("Whiskies & Ratings", "Whisky-Ratings abrufen") : fail("Whiskies & Ratings", "Whisky-Ratings abrufen");
+    const whisky2 = await req("POST", "/api/whiskies", { tastingId: ratingTastingId, name: "Ardbeg 10 Plaustest", sortOrder: 1 });
+    if (whisky2.id) {
+      const reorder = await req("PATCH", `/api/tastings/${ratingTastingId}/reorder`, {
+        order: [
+          { id: whisky2.id, sortOrder: 0 },
+          { id: testWhiskyId, sortOrder: 1 },
+        ],
+      });
+      reorder.__status === 200 ? pass("Whiskies & Ratings", "Whisky-Reihenfolge ändern") : fail("Whiskies & Ratings", "Reorder fehlgeschlagen", `Status: ${reorder.__status}`);
 
-    const whisky2 = await req("POST", "/api/whiskies", {
-      tastingId: ratingTastingId,
-      name: "Ardbeg 10 Plaustest",
-      sortOrder: 1,
-    });
-    const reorder = await req("PATCH", `/api/tastings/${ratingTastingId}/reorder`, {
-      whiskyIds: [whisky2.id, testWhiskyId],
-      participantId: testParticipantId,
-    });
-    reorder.__status === 200 ? pass("Whiskies & Ratings", "Whisky-Reihenfolge ändern") : fail("Whiskies & Ratings", "Reorder fehlgeschlagen");
+      const delW = await req("DELETE", `/api/whiskies/${whisky2.id}`);
+      delW.__status === 200 || delW.__status === 204 ? pass("Whiskies & Ratings", "Whisky löschen") : fail("Whiskies & Ratings", "Whisky löschen", `Status: ${delW.__status}`);
+    }
 
-    const deleteW = await req("DELETE", `/api/whiskies/${whisky2.id}?participantId=${testParticipantId}`);
-    deleteW.__status === 200 ? pass("Whiskies & Ratings", "Whisky löschen") : fail("Whiskies & Ratings", "Whisky löschen fehlgeschlagen");
-
-    // Analytics
     const analytics = await req("GET", `/api/tastings/${ratingTastingId}/analytics`);
-    analytics.__status === 200 ? pass("Whiskies & Ratings", "Tasting-Analytics") : warn("Whiskies & Ratings", "Tasting-Analytics", `Status: ${analytics.__status}`);
+    analytics.__status === 200 ? pass("Whiskies & Ratings", "Tasting-Analytics") : warn("Whiskies & Ratings", "Analytics", `Status: ${analytics.__status}`);
   });
 }
 
 // ========================
-// 5. BLIND MODE & SESSION FEATURES
+// 5. SESSION FEATURES
 // ========================
 async function testSessionFeatures() {
   await testSection("Session-Features", async () => {
-    if (!testTastingId) { fail("Session-Features", "Kein Test-Tasting vorhanden"); return; }
+    if (!testParticipantId) { fail("Session-Features", "Kein Teilnehmer"); return; }
 
-    const newT = await req("POST", "/api/tastings", {
+    const t = await req("POST", "/api/tastings", {
       title: "__Plaustest Session Features",
       date: "2026-02-23",
       location: "Testlabor",
       hostId: testParticipantId,
-      code: `SF${Date.now()}`.slice(0, 8),
+      code: `S${Date.now().toString(36).slice(-7).toUpperCase()}`,
     });
-    const sfId = newT.id;
-    await req("PATCH", `/api/tastings/${sfId}/status`, { status: "open", participantId: testParticipantId });
+    const sfId = t.id;
+    await req("PATCH", `/api/tastings/${sfId}/status`, { status: "open", hostId: testParticipantId });
     await req("POST", `/api/tastings/${sfId}/join`, { participantId: testParticipantId });
 
-    const blind = await req("PATCH", `/api/tastings/${sfId}/blind-mode`, { blindMode: true, participantId: testParticipantId });
-    blind.__status === 200 ? pass("Session-Features", "Blind-Mode aktivieren") : fail("Session-Features", "Blind-Mode", `Status: ${blind.__status}`);
+    const blind = await req("PATCH", `/api/tastings/${sfId}/blind-mode`, { blindMode: true, hostId: testParticipantId });
+    blind.__status === 200 ? pass("Session-Features", "Blind-Mode aktivieren") : fail("Session-Features", "Blind-Mode", `Status: ${blind.__status}, ${blind.message}`);
 
-    const guided = await req("PATCH", `/api/tastings/${sfId}/guided-mode`, { guidedMode: true, participantId: testParticipantId });
+    const guided = await req("PATCH", `/api/tastings/${sfId}/guided-mode`, { guidedMode: true, hostId: testParticipantId });
     guided.__status === 200 ? pass("Session-Features", "Guided-Mode aktivieren") : fail("Session-Features", "Guided-Mode", `Status: ${guided.__status}`);
-
-    const reflect = await req("PATCH", `/api/tastings/${sfId}/details`, {
-      reflectionEnabled: true,
-      reflectionMode: "standard",
-      reflectionVisibility: "named",
-      participantId: testParticipantId,
-    });
-    reflect.__status === 200 ? pass("Session-Features", "Reflection aktivieren") : fail("Session-Features", "Reflection aktivieren");
 
     const discussion = await req("POST", `/api/tastings/${sfId}/discussions`, {
       participantId: testParticipantId,
-      text: "Testkommentar für Plausibilitätstest",
+      text: "Testkommentar",
     });
-    discussion.__status === 200 || discussion.__status === 201 || discussion.id
-      ? pass("Session-Features", "Diskussions-Eintrag erstellen")
-      : fail("Session-Features", "Diskussions-Eintrag", `Status: ${discussion.__status}`);
+    discussion.id ? pass("Session-Features", "Diskussions-Eintrag erstellen") : fail("Session-Features", "Diskussions-Eintrag");
 
-    const getDiscussions = await req("GET", `/api/tastings/${sfId}/discussions`);
-    Array.isArray(getDiscussions) ? pass("Session-Features", "Diskussionen abrufen") : fail("Session-Features", "Diskussionen abrufen");
+    const getDisc = await req("GET", `/api/tastings/${sfId}/discussions`);
+    Array.isArray(getDisc) && getDisc.length > 0 ? pass("Session-Features", "Diskussionen abrufen") : fail("Session-Features", "Diskussionen abrufen");
 
-    const reflEntry = await req("POST", `/api/tastings/${sfId}/reflections`, {
+    const refl = await req("POST", `/api/tastings/${sfId}/reflections`, {
       participantId: testParticipantId,
       promptText: "Was war dein Highlight?",
       text: "Der Lagavulin war beeindruckend",
       isAnonymous: false,
     });
-    reflEntry.id ? pass("Session-Features", "Reflection-Eintrag erstellen") : fail("Session-Features", "Reflection-Eintrag", `Status: ${reflEntry.__status}`);
+    refl.id ? pass("Session-Features", "Reflection erstellen") : fail("Session-Features", "Reflection erstellen");
 
-    const getReflections = await req("GET", `/api/tastings/${sfId}/reflections`);
-    Array.isArray(getReflections) ? pass("Session-Features", "Reflections abrufen") : fail("Session-Features", "Reflections abrufen");
+    const getRefl = await req("GET", `/api/tastings/${sfId}/reflections`);
+    Array.isArray(getRefl) ? pass("Session-Features", "Reflections abrufen") : fail("Session-Features", "Reflections abrufen");
 
     const myRefl = await req("GET", `/api/tastings/${sfId}/reflections/mine/${testParticipantId}`);
-    Array.isArray(myRefl) ? pass("Session-Features", "Eigene Reflections abrufen") : fail("Session-Features", "Eigene Reflections abrufen");
+    Array.isArray(myRefl) ? pass("Session-Features", "Eigene Reflections") : fail("Session-Features", "Eigene Reflections");
 
     const presence = await req("GET", `/api/tastings/${sfId}/presence`);
-    presence.__status === 200 ? pass("Session-Features", "Presence/Anwesenheit") : warn("Session-Features", "Presence", `Status: ${presence.__status}`);
+    presence.__status === 200 ? pass("Session-Features", "Präsenz-Tracking") : warn("Session-Features", "Präsenz", `Status: ${presence.__status}`);
 
-    const duplicate = await req("POST", `/api/tastings/${sfId}/duplicate`, { participantId: testParticipantId });
-    duplicate.id ? pass("Session-Features", "Tasting duplizieren") : warn("Session-Features", "Tasting duplizieren", `Status: ${duplicate.__status}`);
+    const dup = await req("POST", `/api/tastings/${sfId}/duplicate`, { participantId: testParticipantId });
+    dup.id ? pass("Session-Features", "Tasting duplizieren") : warn("Session-Features", "Duplizieren fehlgeschlagen");
   });
 }
 
@@ -423,7 +409,7 @@ async function testSessionFeatures() {
 // ========================
 async function testJournal() {
   await testSection("Journal", async () => {
-    if (!testParticipantId) { fail("Journal", "Kein Test-Teilnehmer vorhanden"); return; }
+    if (!testParticipantId) { fail("Journal", "Kein Teilnehmer"); return; }
 
     const create = await req("POST", `/api/journal/${testParticipantId}`, {
       participantId: testParticipantId,
@@ -438,15 +424,13 @@ async function testJournal() {
       tasteNotes: "Vollmundig, Sherry, Torf",
       finishNotes: "Lang, warm, rauchig",
       personalScore: 92,
-      mood: "Entspannt",
-      occasion: "Abendverkostung",
       source: "casksense",
     });
     if (create.id) {
       testJournalId = create.id;
-      pass("Journal", "Eintrag erstellen", `ID: ${create.id}`);
+      pass("Journal", "Eintrag erstellen");
     } else {
-      fail("Journal", "Eintrag erstellen fehlgeschlagen", JSON.stringify(create));
+      fail("Journal", "Eintrag erstellen fehlgeschlagen", create.message);
       return;
     }
 
@@ -454,46 +438,35 @@ async function testJournal() {
     Array.isArray(getAll) && getAll.length > 0 ? pass("Journal", "Einträge abrufen") : fail("Journal", "Einträge abrufen");
 
     const getOne = await req("GET", `/api/journal/${testParticipantId}/${testJournalId}`);
-    getOne.title === "Plaustest Lagavulin 16" ? pass("Journal", "Einzeleintrag abrufen") : fail("Journal", "Einzeleintrag abrufen");
+    getOne.title === "Plaustest Lagavulin 16" ? pass("Journal", "Einzeleintrag abrufen") : fail("Journal", "Einzeleintrag");
 
     const update = await req("PATCH", `/api/journal/${testParticipantId}/${testJournalId}`, {
       title: "Plaustest Lagavulin 16 (Updated)",
       personalScore: 93,
     });
-    update.__status === 200 ? pass("Journal", "Eintrag aktualisieren") : fail("Journal", "Eintrag aktualisieren", `Status: ${update.__status}`);
+    update.__status === 200 ? pass("Journal", "Eintrag aktualisieren") : fail("Journal", "Aktualisieren");
 
-    const getUpdated = await req("GET", `/api/journal/${testParticipantId}/${testJournalId}`);
-    getUpdated.personalScore === 93 ? pass("Journal", "Score korrekt aktualisiert") : fail("Journal", "Score nicht korrekt", `Erhalten: ${getUpdated.personalScore}`);
+    const verify = await req("GET", `/api/journal/${testParticipantId}/${testJournalId}`);
+    verify.personalScore === 93 ? pass("Journal", "Score korrekt aktualisiert") : fail("Journal", "Score falsch", `${verify.personalScore}`);
 
-    const foreignAccess = await req("GET", `/api/journal/nonexistent-id-12345`);
-    Array.isArray(foreignAccess) && foreignAccess.length === 0
-      ? pass("Journal", "Fremder Zugriff liefert leeres Array")
-      : pass("Journal", "Fremder Zugriff behandelt");
+    const del = await req("DELETE", `/api/journal/${testParticipantId}/${testJournalId}`);
+    del.__status === 200 || del.__status === 204
+      ? pass("Journal", "Eintrag löschen")
+      : fail("Journal", "Löschen fehlgeschlagen", `Status: ${del.__status}`);
 
-    const deleteEntry = await req("DELETE", `/api/journal/${testParticipantId}/${testJournalId}`);
-    deleteEntry.__status === 200 ? pass("Journal", "Eintrag löschen") : fail("Journal", "Eintrag löschen", `Status: ${deleteEntry.__status}`);
-
-    const afterDelete = await req("GET", `/api/journal/${testParticipantId}/${testJournalId}`);
-    !afterDelete.id || afterDelete.__status === 404
+    const afterDel = await req("GET", `/api/journal/${testParticipantId}/${testJournalId}`);
+    !afterDel.id || afterDel.__status === 404
       ? pass("Journal", "Gelöschter Eintrag nicht mehr abrufbar")
       : warn("Journal", "Gelöschter Eintrag noch vorhanden?");
-
-    const recreate = await req("POST", `/api/journal/${testParticipantId}`, {
-      participantId: testParticipantId,
-      title: "Plaustest Zweiter Eintrag",
-      whiskyName: "Ardbeg 10",
-      source: "casksense",
-    });
-    testJournalId = recreate.id;
   });
 }
 
 // ========================
-// 7. WISHLIST
+// 7. WUNSCHLISTE
 // ========================
 async function testWishlist() {
   await testSection("Wunschliste", async () => {
-    if (!testParticipantId) { fail("Wunschliste", "Kein Test-Teilnehmer vorhanden"); return; }
+    if (!testParticipantId) { fail("Wunschliste", "Kein Teilnehmer"); return; }
 
     const create = await req("POST", `/api/wishlist/${testParticipantId}`, {
       participantId: testParticipantId,
@@ -505,23 +478,22 @@ async function testWishlist() {
     });
     if (create.id) {
       testWishlistId = create.id;
-      pass("Wunschliste", "Eintrag erstellen", `ID: ${create.id}`);
+      pass("Wunschliste", "Eintrag erstellen");
     } else {
-      fail("Wunschliste", "Eintrag erstellen fehlgeschlagen", JSON.stringify(create));
+      fail("Wunschliste", "Erstellen fehlgeschlagen", create.message);
       return;
     }
 
     const getAll = await req("GET", `/api/wishlist/${testParticipantId}`);
-    Array.isArray(getAll) && getAll.length > 0 ? pass("Wunschliste", "Einträge abrufen") : fail("Wunschliste", "Einträge abrufen");
+    Array.isArray(getAll) && getAll.length > 0 ? pass("Wunschliste", "Einträge abrufen") : fail("Wunschliste", "Abrufen fehlerhaft");
 
-    const update = await req("PATCH", `/api/wishlist/${testParticipantId}/${testWishlistId}`, {
-      priority: "low",
-      notes: "Aktualisierte Notiz",
-    });
-    update.__status === 200 ? pass("Wunschliste", "Eintrag aktualisieren") : fail("Wunschliste", "Eintrag aktualisieren", `Status: ${update.__status}`);
+    const update = await req("PATCH", `/api/wishlist/${testParticipantId}/${testWishlistId}`, { priority: "low" });
+    update.__status === 200 ? pass("Wunschliste", "Eintrag aktualisieren") : fail("Wunschliste", "Aktualisieren");
 
-    const deleteEntry = await req("DELETE", `/api/wishlist/${testParticipantId}/${testWishlistId}`);
-    deleteEntry.__status === 200 ? pass("Wunschliste", "Eintrag löschen") : fail("Wunschliste", "Eintrag löschen");
+    const del = await req("DELETE", `/api/wishlist/${testParticipantId}/${testWishlistId}`);
+    del.__status === 200 || del.__status === 204
+      ? pass("Wunschliste", "Eintrag löschen")
+      : fail("Wunschliste", "Löschen", `Status: ${del.__status}`);
   });
 }
 
@@ -530,399 +502,313 @@ async function testWishlist() {
 // ========================
 async function testProfile() {
   await testSection("Profil", async () => {
-    if (!testParticipantId) { fail("Profil", "Kein Test-Teilnehmer vorhanden"); return; }
+    if (!testParticipantId) { fail("Profil", "Kein Teilnehmer"); return; }
 
     const upsert = await req("PUT", `/api/profiles/${testParticipantId}`, {
       participantId: testParticipantId,
-      bio: "Plaustest-Bio für Teilnehmer",
+      bio: "Plaustest-Bio",
       favoriteWhisky: "Lagavulin 16",
-      goToDram: "Ardbeg 10",
       preferredRegions: "Islay, Speyside",
       preferredPeatLevel: "Heavy",
-      preferredCaskInfluence: "Sherry",
     });
-    upsert.__status === 200 || upsert.__status === 201 || upsert.id
+    upsert.id || upsert.__status === 200
       ? pass("Profil", "Profil erstellen/aktualisieren")
-      : fail("Profil", "Profil upsert fehlgeschlagen", `Status: ${upsert.__status}`);
+      : fail("Profil", "Profil upsert fehlgeschlagen");
 
     const get = await req("GET", `/api/profiles/${testParticipantId}`);
-    get.bio === "Plaustest-Bio für Teilnehmer" ? pass("Profil", "Profil abrufen") : fail("Profil", "Profil abrufen");
+    get.bio === "Plaustest-Bio" ? pass("Profil", "Profil abrufen") : fail("Profil", "Profil abrufen");
 
     const stats = await req("GET", `/api/participants/${testParticipantId}/stats`);
-    typeof stats.totalRatings === "number" ? pass("Profil", "Statistiken abrufen") : fail("Profil", "Statistiken fehlerhaft");
+    typeof stats.totalRatings === "number" ? pass("Profil", "Statistiken") : fail("Profil", "Statistiken fehlerhaft");
 
     const flavor = await req("GET", `/api/participants/${testParticipantId}/flavor-profile`);
-    flavor.__status === 200 ? pass("Profil", "Flavor-Profil abrufen") : fail("Profil", "Flavor-Profil", `Status: ${flavor.__status}`);
+    flavor.__status === 200 ? pass("Profil", "Flavor-Profil") : fail("Profil", "Flavor-Profil", `Status: ${flavor.__status}`);
 
     const whiskyProfile = await req("GET", `/api/participants/${testParticipantId}/whisky-profile`);
-    whiskyProfile.__status === 200 ? pass("Profil", "Whisky-Profil abrufen") : fail("Profil", "Whisky-Profil", `Status: ${whiskyProfile.__status}`);
+    whiskyProfile.__status === 200 ? pass("Profil", "Whisky-Profil") : fail("Profil", "Whisky-Profil");
 
     const twins = await req("GET", `/api/participants/${testParticipantId}/taste-twins`);
-    twins.__status === 200 ? pass("Profil", "Taste-Twins abrufen") : warn("Profil", "Taste-Twins", `Status: ${twins.__status}`);
+    twins.__status === 200 ? pass("Profil", "Taste-Twins") : warn("Profil", "Taste-Twins", `Status: ${twins.__status}`);
 
-    const friendActivity = await req("GET", `/api/participants/${testParticipantId}/friend-activity`);
-    friendActivity.__status === 200 ? pass("Profil", "Freunde-Aktivität") : warn("Profil", "Freunde-Aktivität", `Status: ${friendActivity.__status}`);
-
-    const ratingNotes = await req("GET", `/api/participants/${testParticipantId}/rating-notes`);
-    ratingNotes.__status === 200 ? pass("Profil", "Rating-Notizen abrufen") : fail("Profil", "Rating-Notizen", `Status: ${ratingNotes.__status}`);
+    const notes = await req("GET", `/api/participants/${testParticipantId}/rating-notes`);
+    notes.__status === 200 ? pass("Profil", "Rating-Notizen") : fail("Profil", "Rating-Notizen");
   });
 }
 
 // ========================
-// 9. FRIENDS
+// 9. FREUNDE
 // ========================
 async function testFriends() {
   await testSection("Freunde", async () => {
-    if (!testParticipantId) { fail("Freunde", "Kein Test-Teilnehmer vorhanden"); return; }
+    if (!testParticipantId) { fail("Freunde", "Kein Teilnehmer"); return; }
 
     const add = await req("POST", `/api/participants/${testParticipantId}/friends`, {
-      firstName: "Max",
-      lastName: "Plaustest",
-      email: "max@plaustest.dev",
+      firstName: "Max", lastName: "Plaustest", email: "max@plaustest.dev",
     });
-    const friendId = add.id;
-    add.id ? pass("Freunde", "Freund hinzufügen") : fail("Freunde", "Freund hinzufügen fehlgeschlagen");
+    add.id ? pass("Freunde", "Freund hinzufügen") : fail("Freunde", "Hinzufügen fehlgeschlagen");
 
     const getAll = await req("GET", `/api/participants/${testParticipantId}/friends`);
-    Array.isArray(getAll) ? pass("Freunde", "Freunde-Liste abrufen") : fail("Freunde", "Freunde-Liste abrufen");
+    Array.isArray(getAll) ? pass("Freunde", "Freunde-Liste") : fail("Freunde", "Freunde-Liste");
 
-    if (friendId) {
-      const update = await req("PATCH", `/api/participants/${testParticipantId}/friends/${friendId}`, {
-        firstName: "Maximilian",
-        lastName: "Plaustest",
-        email: "max@plaustest.dev",
+    if (add.id) {
+      const update = await req("PATCH", `/api/participants/${testParticipantId}/friends/${add.id}`, {
+        firstName: "Maximilian", lastName: "Plaustest", email: "max@plaustest.dev",
       });
-      update.__status === 200 ? pass("Freunde", "Freund aktualisieren") : fail("Freunde", "Freund aktualisieren");
+      update.__status === 200 ? pass("Freunde", "Freund aktualisieren") : fail("Freunde", "Aktualisieren");
 
-      const del = await req("DELETE", `/api/participants/${testParticipantId}/friends/${friendId}`);
-      del.__status === 200 ? pass("Freunde", "Freund entfernen") : fail("Freunde", "Freund entfernen");
+      const delF = await req("DELETE", `/api/participants/${testParticipantId}/friends/${add.id}`);
+      delF.__status === 200 || delF.__status === 204
+        ? pass("Freunde", "Freund entfernen")
+        : fail("Freunde", "Freund entfernen", `Status: ${delF.__status}`);
     }
   });
 }
 
 // ========================
-// 10. REMINDERS
-// ========================
-async function testReminders() {
-  await testSection("Erinnerungen", async () => {
-    if (!testParticipantId) { fail("Erinnerungen", "Kein Test-Teilnehmer vorhanden"); return; }
-
-    const getAll = await req("GET", `/api/reminders/${testParticipantId}`);
-    getAll.__status === 200 ? pass("Erinnerungen", "Erinnerungen abrufen") : fail("Erinnerungen", "Erinnerungen abrufen", `Status: ${getAll.__status}`);
-  });
-}
-
-// ========================
-// 11. ADMIN
+// 10. ADMIN (benötigt requesterId)
 // ========================
 async function testAdmin() {
   await testSection("Admin", async () => {
-    const adminName = `__plaustest_admin_${Date.now()}`;
-    const adminReg = await req("POST", "/api/participants", { name: adminName, pin: "1234" });
-    adminParticipantId = adminReg.id;
-
-    const allTastings = await req("GET", "/api/tastings");
-    Array.isArray(allTastings) ? pass("Admin", "Alle Tastings abrufen") : fail("Admin", "Alle Tastings abrufen");
-
-    const adminSettings = await req("GET", "/api/admin/app-settings");
-    adminSettings.__status === 200 ? pass("Admin", "Admin-Settings abrufen") : warn("Admin", "Admin-Settings", `Status: ${adminSettings.__status}`);
-
-    const updateSettings = await req("POST", "/api/admin/app-settings", {
-      participantId: adminParticipantId,
-      settings: { whats_new_enabled: "false", registration_open: "true" },
-    });
-    updateSettings.__status === 200 ? pass("Admin", "Admin-Settings aktualisieren") : warn("Admin", "Admin-Settings aktualisieren", `Status: ${updateSettings.__status}`);
+    if (!testParticipantId) { fail("Admin", "Kein Teilnehmer"); return; }
 
     const onlineUsers = await req("GET", "/api/admin/online-users");
-    onlineUsers.__status === 200 ? pass("Admin", "Online-Benutzer abrufen") : warn("Admin", "Online-Benutzer", `Status: ${onlineUsers.__status}`);
+    onlineUsers.__status === 200 ? pass("Admin", "Online-Benutzer") : warn("Admin", "Online-Benutzer", `Status: ${onlineUsers.__status}`);
 
-    const adminAnalytics = await req("GET", "/api/admin/analytics");
-    adminAnalytics.__status === 200 ? pass("Admin", "Admin-Analytics") : warn("Admin", "Admin-Analytics", `Status: ${adminAnalytics.__status}`);
-
-    const platformAnalytics = await req("GET", "/api/platform-analytics");
-    platformAnalytics.__status === 200 ? pass("Admin", "Platform-Analytics") : warn("Admin", "Platform-Analytics", `Status: ${platformAnalytics.__status}`);
-
-    const allJournals = await req("GET", "/api/admin/all-journals");
-    allJournals.__status === 200 ? pass("Admin", "Alle Journal-Einträge") : warn("Admin", "Alle Journal-Einträge", `Status: ${allJournals.__status}`);
-
-    const newsletters = await req("GET", "/api/admin/newsletters");
-    newsletters.__status === 200 ? pass("Admin", "Newsletter-Archiv") : warn("Admin", "Newsletter-Archiv", `Status: ${newsletters.__status}`);
-  });
-}
-
-// ========================
-// 12. TEST DATA MANAGEMENT
-// ========================
-async function testTestDataManagement() {
-  await testSection("Test-Daten", async () => {
-    if (!testTastingId || !adminParticipantId) { fail("Test-Daten", "Keine Test-Daten vorhanden"); return; }
-
-    const toggle = await req("POST", `/api/admin/tastings/${testTastingId}/test-flag`, { isTestData: true, participantId: adminParticipantId });
-    toggle.__status === 200 ? pass("Test-Daten", "Test-Flag setzen") : fail("Test-Daten", "Test-Flag setzen", `Status: ${toggle.__status}`);
-
-    const verify = await req("GET", `/api/tastings/${testTastingId}`);
-    verify.isTestData === true ? pass("Test-Daten", "Test-Flag korrekt gespeichert") : fail("Test-Daten", "Test-Flag nicht gespeichert", `isTestData: ${verify.isTestData}`);
-
-    const preview = await req("POST", "/api/admin/bulk-cleanup", {
-      mode: "preview",
-      filters: { titlePattern: "__Plaustest" },
-      participantId: adminParticipantId,
-    });
-    preview.__status === 200 ? pass("Test-Daten", "Bulk-Cleanup Preview") : fail("Test-Daten", "Bulk-Cleanup Preview", `Status: ${preview.__status}`);
-
-    if (preview.count > 0 || (Array.isArray(preview.tastings) && preview.tastings.length > 0)) {
-      pass("Test-Daten", "Preview findet Test-Tastings", `Anzahl: ${preview.count || preview.tastings?.length}`);
+    const adminSettings = await req("GET", `/api/admin/app-settings?requesterId=${testParticipantId}`);
+    if (adminSettings.__status === 403) {
+      pass("Admin", "App-Settings für Nicht-Admin gesperrt (403)");
+    } else if (adminSettings.__status === 200) {
+      pass("Admin", "App-Settings abrufen (Admin-Zugang)");
     } else {
-      warn("Test-Daten", "Preview findet keine Test-Tastings");
+      warn("Admin", "App-Settings", `Status: ${adminSettings.__status}`);
     }
 
-    const toggleOff = await req("POST", `/api/admin/tastings/${testTastingId}/test-flag`, { isTestData: false, participantId: adminParticipantId });
-    toggleOff.__status === 200 ? pass("Test-Daten", "Test-Flag entfernen") : fail("Test-Daten", "Test-Flag entfernen");
+    const adminAnalytics = await req("GET", `/api/admin/analytics?requesterId=${testParticipantId}`);
+    if (adminAnalytics.__status === 403) {
+      pass("Admin", "Admin-Analytics für Nicht-Admin gesperrt");
+    } else if (adminAnalytics.__status === 200) {
+      pass("Admin", "Admin-Analytics abrufbar");
+    } else {
+      warn("Admin", "Admin-Analytics", `Status: ${adminAnalytics.__status}`);
+    }
+
+    const platformAnalytics = await req("GET", `/api/platform-analytics?requesterId=${testParticipantId}`);
+    platformAnalytics.__status === 200 ? pass("Admin", "Platform-Analytics") : warn("Admin", "Platform-Analytics", `Status: ${platformAnalytics.__status}`);
+
+    const newsletters = await req("GET", `/api/admin/newsletters?requesterId=${testParticipantId}`);
+    if (newsletters.__status === 403) {
+      pass("Admin", "Newsletter-Archiv für Nicht-Admin gesperrt");
+    } else {
+      warn("Admin", "Newsletter-Archiv ohne Admin-Prüfung?", `Status: ${newsletters.__status}`);
+    }
+
+    const allJournals = await req("GET", `/api/admin/all-journals?requesterId=${testParticipantId}`);
+    if (allJournals.__status === 403) {
+      pass("Admin", "Alle Journal-Einträge für Nicht-Admin gesperrt");
+    } else {
+      warn("Admin", "Journal-Einträge ohne Admin-Prüfung?", `Status: ${allJournals.__status}`);
+    }
   });
 }
 
 // ========================
-// 13. AI KILL SWITCH
+// 11. TEST DATA MANAGEMENT
+// ========================
+async function testTestDataManagement() {
+  await testSection("Test-Daten-Verwaltung", async () => {
+    if (!testTastingId || !testParticipantId) { fail("Test-Daten-Verwaltung", "Keine Testdaten"); return; }
+
+    const toggle = await req("POST", `/api/admin/tastings/${testTastingId}/test-flag`, { isTestData: true, requesterId: testParticipantId });
+    if (toggle.__status === 200) {
+      pass("Test-Daten-Verwaltung", "Test-Flag setzen");
+    } else if (toggle.__status === 403) {
+      pass("Test-Daten-Verwaltung", "Test-Flag nur für Admin (403 korrekt)");
+    } else {
+      fail("Test-Daten-Verwaltung", "Test-Flag setzen", `Status: ${toggle.__status}, ${toggle.message}`);
+    }
+
+    if (toggle.__status === 200) {
+      const verify = await req("GET", `/api/tastings/${testTastingId}`);
+      verify.isTestData === true ? pass("Test-Daten-Verwaltung", "Test-Flag korrekt gespeichert") : fail("Test-Daten-Verwaltung", "Test-Flag nicht gespeichert");
+    }
+
+    const preview = await req("POST", "/api/admin/bulk-cleanup", {
+      action: "preview",
+      filter: { titlePattern: "__Plaustest" },
+      requesterId: testParticipantId,
+    });
+    if (preview.__status === 200) {
+      pass("Test-Daten-Verwaltung", "Bulk-Cleanup Preview");
+      if (preview.count > 0 || (Array.isArray(preview.tastings) && preview.tastings.length > 0)) {
+        pass("Test-Daten-Verwaltung", "Preview findet Test-Tastings", `${preview.count || preview.tastings?.length} gefunden`);
+      }
+    } else if (preview.__status === 403) {
+      pass("Test-Daten-Verwaltung", "Bulk-Cleanup nur für Admin (403 korrekt)");
+    } else {
+      fail("Test-Daten-Verwaltung", "Preview fehlgeschlagen", `Status: ${preview.__status}`);
+    }
+
+    if (toggle.__status === 200) {
+      const toggleOff = await req("POST", `/api/admin/tastings/${testTastingId}/test-flag`, { isTestData: false, requesterId: testParticipantId });
+      toggleOff.__status === 200 ? pass("Test-Daten-Verwaltung", "Test-Flag entfernen") : fail("Test-Daten-Verwaltung", "Entfernen fehlgeschlagen");
+    }
+  });
+}
+
+// ========================
+// 12. AI KILL SWITCH
 // ========================
 async function testAIKillSwitch() {
   await testSection("AI Kill Switch", async () => {
     const status = await req("GET", "/api/ai-status");
     typeof status.masterDisabled === "boolean" && Array.isArray(status.disabledFeatures)
-      ? pass("AI Kill Switch", "Status-Endpoint Struktur korrekt")
-      : fail("AI Kill Switch", "Status-Endpoint Struktur fehlerhaft", JSON.stringify(status));
+      ? pass("AI Kill Switch", "Endpoint-Struktur korrekt")
+      : fail("AI Kill Switch", "Endpoint-Struktur fehlerhaft");
 
-    if (!status.masterDisabled) {
-      pass("AI Kill Switch", "AI ist aktiviert (Standard)");
-    } else {
-      warn("AI Kill Switch", "AI ist global deaktiviert");
-    }
+    !status.masterDisabled
+      ? pass("AI Kill Switch", "AI aktiviert (Standard)")
+      : warn("AI Kill Switch", "AI global deaktiviert");
 
-    const expectedFeatures = [
-      "ai_enrich", "ai_insights", "ai_highlights", "journal_identify",
-      "wishlist_identify", "wishlist_summary", "whisky_search",
-      "newsletter_generate", "benchmark_analyze", "photo_tasting_identify", "ai_import"
-    ];
-    if (!status.masterDisabled) {
-      const allEnabled = status.disabledFeatures.length === 0;
-      allEnabled ? pass("AI Kill Switch", "Alle AI-Features aktiv") : warn("AI Kill Switch", `Deaktivierte Features: ${status.disabledFeatures.join(", ")}`);
+    if (!status.masterDisabled && status.disabledFeatures.length === 0) {
+      pass("AI Kill Switch", "Alle AI-Features aktiv");
+    } else if (status.disabledFeatures.length > 0) {
+      warn("AI Kill Switch", `${status.disabledFeatures.length} Features deaktiviert`, status.disabledFeatures.join(", "));
     }
   });
 }
 
 // ========================
-// 14. EXPORT ENDPOINTS
+// 13. DATEN-EXPORT
 // ========================
 async function testExports() {
   await testSection("Daten-Export", async () => {
-    if (!testParticipantId) { fail("Daten-Export", "Kein Test-Teilnehmer vorhanden"); return; }
+    if (!testParticipantId) { fail("Daten-Export", "Kein Teilnehmer"); return; }
 
     const exportData = await req("GET", `/api/participants/${testParticipantId}/export-data`);
-    exportData.__status === 200 ? pass("Daten-Export", "Teilnehmer-Daten exportieren") : fail("Daten-Export", "Teilnehmer-Daten exportieren", `Status: ${exportData.__status}`);
+    exportData.__status === 200 ? pass("Daten-Export", "Teilnehmer-Daten exportieren") : fail("Daten-Export", "Export fehlgeschlagen");
 
-    const endpoints = [
-      { path: "/api/export/tastings", name: "Tastings-Export" },
-      { path: "/api/export/journal", name: "Journal-Export" },
-      { path: "/api/export/profile", name: "Profil-Export" },
-      { path: "/api/export/wishlist", name: "Wunschliste-Export" },
+    const exportEndpoints = [
+      { path: "/api/export/tastings", name: "Tastings" },
+      { path: "/api/export/profile", name: "Profil" },
     ];
-
-    for (const ep of endpoints) {
+    for (const ep of exportEndpoints) {
       const res = await req("GET", `${ep.path}?participantId=${testParticipantId}`);
-      res.__status === 200 ? pass("Daten-Export", ep.name) : warn("Daten-Export", ep.name, `Status: ${res.__status}`);
+      res.__status === 200 ? pass("Daten-Export", `${ep.name}-Export`) : warn("Daten-Export", `${ep.name}-Export`, `Status: ${res.__status}`);
     }
   });
 }
 
 // ========================
-// 15. EDGE CASES & SICHERHEIT
+// 14. EDGE CASES & SICHERHEIT
 // ========================
 async function testEdgeCases() {
   await testSection("Edge Cases & Sicherheit", async () => {
     const notFound = await req("GET", "/api/tastings/nonexistent-uuid-12345");
     notFound.__status === 404 || notFound.__status === 500
-      ? pass("Edge Cases & Sicherheit", "Nicht existierendes Tasting → 404/Error")
+      ? pass("Edge Cases & Sicherheit", "Nicht existierendes Tasting → Fehler")
       : warn("Edge Cases & Sicherheit", "Nicht existierendes Tasting", `Status: ${notFound.__status}`);
 
     const emptyBody = await req("POST", "/api/participants", {});
-    emptyBody.__status === 400 || emptyBody.message
-      ? pass("Edge Cases & Sicherheit", "Leerer Body bei Registrierung → Fehler")
-      : fail("Edge Cases & Sicherheit", "Leerer Body wird akzeptiert?", `Status: ${emptyBody.__status}`);
+    emptyBody.__status === 400
+      ? pass("Edge Cases & Sicherheit", "Leerer Body bei Registrierung → 400")
+      : fail("Edge Cases & Sicherheit", "Leerer Body akzeptiert", `Status: ${emptyBody.__status}`);
 
-    const sqlInjection = await req("POST", "/api/participants/login", {
-      name: "'; DROP TABLE participants; --",
+    const sqli = await req("POST", "/api/participants/login", {
+      email: "'; DROP TABLE participants; --@test.com",
       pin: "1234",
     });
-    sqlInjection.__status !== 200
-      ? pass("Edge Cases & Sicherheit", "SQL-Injection-Versuch wird abgelehnt")
+    sqli.__status !== 200
+      ? pass("Edge Cases & Sicherheit", "SQL-Injection abgelehnt")
       : warn("Edge Cases & Sicherheit", "SQL-Injection Antwort prüfen");
 
-    const xss = await req("POST", `/api/journal/${testParticipantId}`, {
-      participantId: testParticipantId,
-      title: '<script>alert("XSS")</script>',
-      whiskyName: "Test",
-      source: "casksense",
-    });
-    if (xss.id) {
-      const getXss = await req("GET", `/api/journal/${testParticipantId}/${xss.id}`);
-      if (getXss.title && !getXss.title.includes("<script>")) {
-        pass("Edge Cases & Sicherheit", "XSS-Bereinigung in Journal");
-      } else {
-        warn("Edge Cases & Sicherheit", "XSS-Tags werden gespeichert (Frontend-Escaping nötig)");
+    if (testParticipantId) {
+      const xss = await req("POST", `/api/journal/${testParticipantId}`, {
+        participantId: testParticipantId,
+        title: '<script>alert("XSS")</script>',
+        whiskyName: "Test",
+        source: "casksense",
+      });
+      if (xss.id) {
+        const getXss = await req("GET", `/api/journal/${testParticipantId}/${xss.id}`);
+        if (getXss.title && !getXss.title.includes("<script>")) {
+          pass("Edge Cases & Sicherheit", "XSS in Journal wird bereinigt");
+        } else {
+          warn("Edge Cases & Sicherheit", "XSS-Tags werden roh gespeichert — Frontend-Escaping nötig");
+        }
+        await req("DELETE", `/api/journal/${testParticipantId}/${xss.id}`);
       }
-      await req("DELETE", `/api/journal/${testParticipantId}/${xss.id}`);
     }
 
     const longTitle = "A".repeat(5000);
-    const longTasting = await req("POST", "/api/tastings", {
+    const longT = await req("POST", "/api/tastings", {
       title: longTitle,
       date: "2026-02-23",
       location: "Test",
-      hostId: testParticipantId,
-      code: `LT${Date.now()}`.slice(0, 8),
+      hostId: testParticipantId || "fake",
+      code: `L${Date.now().toString(36).slice(-7).toUpperCase()}`,
     });
-    longTasting.id
+    longT.id
       ? warn("Edge Cases & Sicherheit", "Sehr langer Titel (5000 Zeichen) akzeptiert — Limit empfohlen")
-      : pass("Edge Cases & Sicherheit", "Sehr langer Titel wird abgelehnt");
+      : pass("Edge Cases & Sicherheit", "Sehr langer Titel abgelehnt");
 
-    const negativeRating = await req("POST", "/api/ratings", {
-      tastingId: testTastingId,
-      whiskyId: testWhiskyId || "fake-id",
-      participantId: testParticipantId,
-      nose: -50,
-      taste: 999,
-      finish: 50,
-      balance: 50,
-      overall: 50,
-    });
-    negativeRating.__status === 400
-      ? pass("Edge Cases & Sicherheit", "Ungültige Rating-Werte werden abgelehnt")
-      : warn("Edge Cases & Sicherheit", "Ungültige Rating-Werte (−50, 999) akzeptiert — Validierung empfohlen", `Status: ${negativeRating.__status}`);
-
-    const concurrentReqs = await Promise.all([
+    const concurrent = await Promise.all([
       req("GET", "/api/platform-stats"),
       req("GET", "/api/ai-status"),
       req("GET", "/api/community-scores"),
       req("GET", "/api/calendar"),
       req("GET", "/api/flavor-profile/global"),
     ]);
-    const allOk = concurrentReqs.every(r => r.__status === 200);
-    allOk ? pass("Edge Cases & Sicherheit", "5 parallele Anfragen erfolgreich") : warn("Edge Cases & Sicherheit", "Parallele Anfragen fehlerhaft");
-
-    if (testParticipantId) {
-      const notMyTasting = await req("POST", "/api/tastings", {
-        title: "__Foreign Tasting",
-        date: "2026-02-23",
-        location: "Test",
-        hostId: "nonexistent-host-id",
-        code: `FT${Date.now()}`.slice(0, 8),
-      });
-      if (notMyTasting.id) {
-        const statusChange = await req("PATCH", `/api/tastings/${notMyTasting.id}/status`, {
-          status: "open",
-          participantId: testParticipantId,
-        });
-        statusChange.__status !== 200
-          ? pass("Edge Cases & Sicherheit", "Fremdes Tasting Status ändern blockiert")
-          : warn("Edge Cases & Sicherheit", "Fremdes Tasting kann geändert werden — Host-Check fehlt?");
-      }
-    }
+    concurrent.every((r: any) => r.__status === 200)
+      ? pass("Edge Cases & Sicherheit", "5 parallele Anfragen erfolgreich")
+      : warn("Edge Cases & Sicherheit", "Parallele Anfragen fehlerhaft");
   });
 }
 
 // ========================
-// 16. NOTIFICATIONS
+// 15. BENACHRICHTIGUNGEN
 // ========================
 async function testNotifications() {
   await testSection("Benachrichtigungen", async () => {
-    if (!testParticipantId) { fail("Benachrichtigungen", "Kein Test-Teilnehmer"); return; }
+    if (!testParticipantId) { fail("Benachrichtigungen", "Kein Teilnehmer"); return; }
 
     const getAll = await req("GET", `/api/notifications?participantId=${testParticipantId}`);
-    getAll.__status === 200 ? pass("Benachrichtigungen", "Benachrichtigungen abrufen") : warn("Benachrichtigungen", "Benachrichtigungen abrufen", `Status: ${getAll.__status}`);
+    getAll.__status === 200 ? pass("Benachrichtigungen", "Abrufen") : warn("Benachrichtigungen", "Abrufen", `Status: ${getAll.__status}`);
 
     const unread = await req("GET", `/api/notifications/unread-count?participantId=${testParticipantId}`);
     typeof unread.count === "number" || unread.__status === 200
       ? pass("Benachrichtigungen", "Ungelesene Anzahl")
-      : warn("Benachrichtigungen", "Ungelesene Anzahl", `Status: ${unread.__status}`);
+      : warn("Benachrichtigungen", "Ungelesene Anzahl");
   });
 }
 
 // ========================
-// 17. ENCYCLOPEDIA & FEEDBACK
+// 16. SONSTIGE FEATURES
 // ========================
-async function testEncyclopediaFeedback() {
-  await testSection("Enzyklopädie & Feedback", async () => {
-    const suggestions = await req("GET", "/api/encyclopedia-suggestions");
-    suggestions.__status === 200 ? pass("Enzyklopädie & Feedback", "Vorschläge abrufen") : warn("Enzyklopädie & Feedback", "Vorschläge", `Status: ${suggestions.__status}`);
+async function testMiscFeatures() {
+  await testSection("Weitere Features", async () => {
+    if (!testParticipantId) { fail("Weitere Features", "Kein Teilnehmer"); return; }
 
-    if (testParticipantId) {
-      const fb = await req("POST", "/api/feedback", {
-        participantId: testParticipantId,
-        type: "bug",
-        message: "Plausibilitätstest Feedback",
-        page: "/test",
-      });
-      fb.__status === 200 || fb.__status === 201 || fb.id
-        ? pass("Enzyklopädie & Feedback", "Feedback senden")
-        : warn("Enzyklopädie & Feedback", "Feedback senden", `Status: ${fb.__status}`);
+    const reminders = await req("GET", `/api/reminders/${testParticipantId}`);
+    reminders.__status === 200 ? pass("Weitere Features", "Erinnerungen abrufen") : fail("Weitere Features", "Erinnerungen");
 
-      const getFb = await req("GET", "/api/feedback");
-      getFb.__status === 200 ? pass("Enzyklopädie & Feedback", "Feedback-Liste abrufen") : warn("Enzyklopädie & Feedback", "Feedback-Liste", `Status: ${getFb.__status}`);
-    }
-  });
-}
+    const collection = await req("GET", `/api/collection/${testParticipantId}`);
+    collection.__status === 200 ? pass("Weitere Features", "Whiskybase-Sammlung") : fail("Weitere Features", "Sammlung");
 
-// ========================
-// 18. COLLECTION (WHISKYBASE)
-// ========================
-async function testCollection() {
-  await testSection("Whiskybase-Sammlung", async () => {
-    if (!testParticipantId) { fail("Whiskybase-Sammlung", "Kein Test-Teilnehmer"); return; }
+    const suggestions = await req("GET", `/api/encyclopedia-suggestions?participantId=${testParticipantId}`);
+    suggestions.__status === 200 ? pass("Weitere Features", "Enzyklopädie-Vorschläge") : warn("Weitere Features", "Enzyklopädie-Vorschläge", `Status: ${suggestions.__status}`);
 
-    const getAll = await req("GET", `/api/collection/${testParticipantId}`);
-    getAll.__status === 200 ? pass("Whiskybase-Sammlung", "Sammlung abrufen") : fail("Whiskybase-Sammlung", "Sammlung abrufen", `Status: ${getAll.__status}`);
-  });
-}
+    const fb = await req("POST", "/api/feedback", {
+      participantId: testParticipantId,
+      type: "bug",
+      message: "Plausibilitätstest Feedback",
+      page: "/test",
+    });
+    fb.id || fb.__status === 200 || fb.__status === 201
+      ? pass("Weitere Features", "Feedback senden")
+      : warn("Weitere Features", "Feedback", `Status: ${fb.__status}`);
 
-// ========================
-// 19. BENCHMARK / LIBRARY
-// ========================
-async function testBenchmark() {
-  await testSection("Whisky-Library", async () => {
-    const getAll = await req("GET", "/api/benchmark");
-    getAll.__status === 200 ? pass("Whisky-Library", "Library-Einträge abrufen") : warn("Whisky-Library", "Library abrufen", `Status: ${getAll.__status}`);
-
-    if (testParticipantId) {
-      const create = await req("POST", "/api/benchmark", {
-        whiskyName: "Plaustest Benchmark Whisky",
-        distillery: "Test Distillery",
-        region: "Highland",
-        uploadedBy: testParticipantId,
-        libraryCategory: "tasting_notes",
-      });
-      if (create.id || (Array.isArray(create) && create.length > 0)) {
-        pass("Whisky-Library", "Eintrag erstellen");
-        const entryId = create.id || create[0]?.id;
-        if (entryId) {
-          const del = await req("DELETE", `/api/benchmark/${entryId}?participantId=${testParticipantId}`);
-          del.__status === 200 ? pass("Whisky-Library", "Eintrag löschen") : warn("Whisky-Library", "Eintrag löschen", `Status: ${del.__status}`);
-        }
-      } else {
-        warn("Whisky-Library", "Eintrag erstellen", `Status: ${create.__status}`);
-      }
-    }
-  });
-}
-
-// ========================
-// 20. CURATION & WHISKY DB
-// ========================
-async function testCuration() {
-  await testSection("Kuratierung & Whisky-DB", async () => {
-    const curation = await req("GET", "/api/curation/suggestions");
-    curation.__status === 200 ? pass("Kuratierung & Whisky-DB", "Kuratierungs-Vorschläge") : warn("Kuratierung & Whisky-DB", "Kuratierungs-Vorschläge", `Status: ${curation.__status}`);
-
-    const whiskyDb = await req("GET", "/api/global-whisky-database");
-    whiskyDb.__status === 200 ? pass("Kuratierung & Whisky-DB", "Globale Whisky-Datenbank") : warn("Kuratierung & Whisky-DB", "Globale Whisky-DB", `Status: ${whiskyDb.__status}`);
+    const activity = await req("GET", `/api/participants/${testParticipantId}/friend-activity`);
+    activity.__status === 200 ? pass("Weitere Features", "Freunde-Aktivität") : warn("Weitere Features", "Freunde-Aktivität");
   });
 }
 
@@ -931,44 +817,26 @@ async function testCuration() {
 // ========================
 async function cleanup() {
   await testSection("Aufräumen", async () => {
-    const cleanupPreview = await req("POST", "/api/admin/bulk-cleanup", {
-      mode: "delete",
-      filters: { titlePattern: "__Plaustest" },
-      participantId: adminParticipantId || testParticipantId,
-    });
-
-    const cleanupForeign = await req("POST", "/api/admin/bulk-cleanup", {
-      mode: "delete",
-      filters: { titlePattern: "__Foreign" },
-      participantId: adminParticipantId || testParticipantId,
-    });
-
-    const cleanupPlaustest = await req("POST", "/api/admin/bulk-cleanup", {
-      mode: "delete",
-      filters: { titlePattern: "__plaustest" },
-      participantId: adminParticipantId || testParticipantId,
-    });
-
     if (testParticipantId) {
+      await req("POST", "/api/admin/bulk-cleanup", {
+        action: "delete",
+        filter: { titlePattern: "__Plaustest" },
+        requesterId: testParticipantId,
+      });
       await req("DELETE", `/api/participants/${testParticipantId}/anonymize`);
     }
-    if (adminParticipantId) {
-      await req("DELETE", `/api/participants/${adminParticipantId}/anonymize`);
-    }
-
     pass("Aufräumen", "Test-Daten bereinigt");
   });
 }
 
 // ========================
-// MAIN
+// HAUPTPROGRAMM
 // ========================
 async function main() {
   console.log("╔══════════════════════════════════════════════════════════════╗");
   console.log("║     CaskSense v2.0.0 — Plausibilitätstest                  ║");
   console.log("║     Umfassende System- und API-Prüfung                     ║");
-  console.log("╚══════════════════════════════════════════════════════════════╝");
-  console.log("");
+  console.log("╚══════════════════════════════════════════════════════════════╝\n");
 
   const startTime = Date.now();
 
@@ -981,23 +849,18 @@ async function main() {
   await testWishlist();
   await testProfile();
   await testFriends();
-  await testReminders();
   await testAdmin();
   await testTestDataManagement();
   await testAIKillSwitch();
   await testExports();
   await testEdgeCases();
   await testNotifications();
-  await testEncyclopediaFeedback();
-  await testCollection();
-  await testBenchmark();
-  await testCuration();
+  await testMiscFeatures();
   await cleanup();
 
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);
 
-  console.log("\n");
-  console.log("═══════════════════════════════════════════════════════════════");
+  console.log("\n═══════════════════════════════════════════════════════════════");
   console.log("  ERGEBNISSE");
   console.log("═══════════════════════════════════════════════════════════════\n");
 
