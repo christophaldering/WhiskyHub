@@ -131,7 +131,7 @@ const resources = {
         hero: {
           badge: "Whisky. Perception. Structure.",
           title: "Make perception visible.",
-          subtitle: "CaskSense structures tastings, compares ratings transparently and shows how differently we experience the same dram.",
+          subtitle: "CaskSense supports tasting preparation, execution and analysis, compares ratings transparently and reveals how differently we experience the same dram — from personal flavour profiles through tasting analysis to deeper pattern insights.",
           cta: "Get Started",
           tourCta: "CaskSense in Action",
           scrollHint: "Scroll down to explore features & tour",
@@ -144,6 +144,7 @@ const resources = {
           placeholder: "CODE EINGEBEN...",
           go: "Join",
           hint: "Your host will share the code with you.",
+          fullAccess: "Full CaskSense access with all features?",
           noCode: "No code?",
           noCodeLink: "Choose your pace below",
         },
@@ -2688,7 +2689,7 @@ const resources = {
         hero: {
           badge: "Whisky. Wahrnehmung. Struktur.",
           title: "Wahrnehmung sichtbar machen.",
-          subtitle: "CaskSense strukturiert Tastings, vergleicht Bewertungen transparent und zeigt, wie unterschiedlich wir denselben Dram erleben.",
+          subtitle: "CaskSense unterstützt die Tasting-Vorbereitung, -Durchführung und -Auswertung, vergleicht Bewertungen transparent und macht sichtbar, wie unterschiedlich wir denselben Dram erleben — von persönlichen Geschmacksprofilen über Tasting-Auswertungen zu vertiefenden Musteranalysen.",
           cta: "Loslegen",
           tourCta: "CaskSense in Action",
           scrollHint: "Scrolle nach unten für Features & Rundgang",
@@ -2701,6 +2702,7 @@ const resources = {
           placeholder: "CODE EINGEBEN...",
           go: "Beitreten",
           hint: "Den Code bekommst du von deinem Gastgeber.",
+          fullAccess: "Voller CaskSense-Zugang mit allen Features?",
           noCode: "Kein Code?",
           noCodeLink: "Wähle dein Level weiter unten",
         },

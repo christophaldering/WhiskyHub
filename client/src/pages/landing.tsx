@@ -114,12 +114,12 @@ export default function Landing() {
                     onChange={(e) => setTastingCode(e.target.value.toUpperCase())}
                     placeholder={t("landing.quickJoin.placeholder")}
                     className="font-mono text-base tracking-widest h-11 uppercase bg-white/90 dark:bg-background/80 border-amber-300/50 focus:border-amber-500"
-                    onKeyDown={(e) => e.key === "Enter" && tastingCode.trim() && navigate(`/join/${tastingCode.trim()}`)}
+                    onKeyDown={(e) => e.key === "Enter" && tastingCode.trim() && navigate(`/naked/${tastingCode.trim()}`)}
                     data-testid="input-quick-join-code"
                   />
                   <Button
                     size="lg"
-                    onClick={() => tastingCode.trim() && navigate(`/join/${tastingCode.trim()}`)}
+                    onClick={() => tastingCode.trim() && navigate(`/naked/${tastingCode.trim()}`)}
                     disabled={!tastingCode.trim()}
                     className="font-serif gap-1.5 px-6 shrink-0 h-11"
                     data-testid="button-quick-join-go"
@@ -129,8 +129,8 @@ export default function Landing() {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground/60 mt-2">{t("landing.quickJoin.hint")}</p>
-                <p className="text-xs text-muted-foreground/70 mt-2">
-                  {t("landing.quickJoin.noCode")}{" "}
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  {t("landing.quickJoin.fullAccess")}{" "}
                   <button onClick={() => document.getElementById("your-pace")?.scrollIntoView({ behavior: "smooth" })} className="text-primary font-semibold hover:underline underline-offset-2 transition-colors" data-testid="link-no-code-signin">
                     {t("landing.quickJoin.noCodeLink")} ↓
                   </button>
@@ -141,7 +141,7 @@ export default function Landing() {
               initial={{ opacity: 0, x: 40 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-              className="relative hidden lg:block"
+              className="relative hidden md:block"
             >
               <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-amber-900/20 border border-amber-800/20">
                 <img src={heroImage} alt="CaskSense" className="w-full h-auto object-cover" />
