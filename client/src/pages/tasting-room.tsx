@@ -1497,6 +1497,33 @@ export default function TastingRoom() {
   const [, navigate] = useLocation();
   const { t } = useTranslation();
   const { currentParticipant, setParticipant, contextLevel, setContextLevel } = useAppStore();
+
+  const sessionContextKey = useMemo(() => {
+    if (!id) return null;
+    const viewerScope = currentParticipant?.id || `guest-${id}`;
+    return `casksense:contextLevel:${id}:${viewerScope}`;
+  }, [id, currentParticipant?.id]);
+
+  useEffect(() => {
+    if (!sessionContextKey) return;
+    const stored = localStorage.getItem(sessionContextKey);
+    if (stored !== null) {
+      const parsed = Number(stored);
+      if (parsed === 0 || parsed === 1 || parsed === 2) {
+        setContextLevel(parsed as 0 | 1 | 2);
+      }
+    } else {
+      setContextLevel(0);
+    }
+  }, [sessionContextKey]);
+
+  const handleSetContextLevel = useCallback((level: 0 | 1 | 2) => {
+    setContextLevel(level);
+    if (sessionContextKey) {
+      localStorage.setItem(sessionContextKey, String(level));
+    }
+  }, [sessionContextKey, setContextLevel]);
+
   const [showLogin, setShowLogin] = useState(false);
   const [guestName, setGuestName] = useState("");
   const [guestLoading, setGuestLoading] = useState(false);
@@ -2060,7 +2087,7 @@ export default function TastingRoom() {
                   return (
                     <button
                       key={level}
-                      onClick={() => setContextLevel(level)}
+                      onClick={() => handleSetContextLevel(level)}
                       className={cn(
                         "font-serif text-[11px] rounded-md h-7 px-2 flex items-center gap-1 whitespace-nowrap transition-all",
                         contextLevel === level
