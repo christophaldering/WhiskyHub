@@ -7326,16 +7326,21 @@ Important rules:
       const participantId = req.query.participantId as string;
       const format = (req.query.format as string) || "csv";
       const pin = req.query.pin as string;
-      const access = await verifyExportAccess(participantId, pin, "extended");
+      const access = await verifyExportAccess(participantId, pin, "own");
       if (!access.ok) return res.status(access.status!).json({ message: access.message });
+      const participant = access.participant!;
       const friends = await storage.getWhiskyFriends(participantId);
       const rows = await Promise.all(friends.map(async (f: any) => {
         const p = f.friendId ? await storage.getParticipant(f.friendId) : null;
-        return {
+        const row: any = {
           Name: `${f.firstName || ""} ${f.lastName || ""}`.trim(),
-          Email: f.email || "", Status: f.status || "",
+          Status: f.status || "",
           LinkedProfile: p?.name || "", AddedAt: f.createdAt || ""
         };
+        if ((participant as any).role === "admin") {
+          row.Email = f.email || "";
+        }
+        return row;
       }));
       await sendExport(res, rows, `casksense_friends_${new Date().toISOString().split("T")[0]}`, format, "Friends");
     } catch (e: any) {
