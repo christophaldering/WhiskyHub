@@ -572,7 +572,7 @@ export default function NakedTasting() {
   const { t } = useTranslation();
   const params = useParams<{ code: string }>();
   const [, navigate] = useLocation();
-  const { currentParticipant, setParticipant } = useAppStore();
+  const { currentParticipant, setParticipant, theme, toggleTheme } = useAppStore();
 
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
@@ -654,8 +654,6 @@ export default function NakedTasting() {
   const isDraft = tasting.status === "draft";
   const isOpen = tasting.status === "open";
   const isRevealed = tasting.status === "reveal" || tasting.status === "archived" || tasting.status === "closed";
-
-  const { theme, toggleTheme } = useAppStore();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
