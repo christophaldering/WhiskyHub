@@ -236,7 +236,7 @@ function NakedWhiskyCard({
               );
             })}
             <div className="flex items-center gap-2 pt-1 border-t border-border/20">
-              <span className="text-[10px] font-serif font-bold text-primary uppercase flex-shrink-0">{t("evaluation.overall")}</span>
+              <span className="text-[10px] font-serif font-bold text-primary uppercase w-12 flex-shrink-0">⭐ {t("evaluation.overall")}</span>
               {scores.overall !== null ? (
                 <Slider
                   value={[scores.overall]}

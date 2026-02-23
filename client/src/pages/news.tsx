@@ -51,6 +51,7 @@ export default function News() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["notification-count"] });
+      toast({ title: t("news.markedRead", "Als gelesen markiert") });
     },
   });
 
@@ -59,6 +60,7 @@ export default function News() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["notification-count"] });
+      toast({ title: t("news.allMarkedRead", "Alle als gelesen markiert") });
     },
   });
 
@@ -306,14 +308,15 @@ export default function News() {
                                     <div className="flex items-center gap-1.5 shrink-0">
                                       {!notif.isRead && (
                                         <Button
-                                          variant="ghost"
+                                          variant="outline"
                                           size="icon"
-                                          className="w-6 h-6 rounded-full hover:bg-primary/10"
+                                          className="w-7 h-7 rounded-full border-primary/30 hover:bg-primary/10"
                                           data-testid={`button-mark-read-${notif.id}`}
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             markReadMutation.mutate(notif.id);
                                           }}
+                                          title={t("news.markRead", "Als gelesen markieren")}
                                         >
                                           <CheckCheck className="w-3.5 h-3.5 text-primary" />
                                         </Button>
