@@ -47,7 +47,7 @@ const slides: SlideData[] = [
   {
     type: "cover",
     title: "CaskSense",
-    subtitle: "Whisky gemeinsam erleben. Ohne Technik-Stress — der Moment am Tisch zählt.",
+    subtitle: "Whisky gemeinsam erleben. Wahrnehmung sichtbar machen — der Moment am Tisch zählt.",
     image: slideCover,
     badge: "Rundgang",
     layout: "center",
@@ -62,7 +62,7 @@ const slides: SlideData[] = [
     features: [
       { icon: Wine, title: "Verkosten steht im Fokus", desc: "Kein Feature-Overload — nur das, was ein gutes Tasting besser macht" },
       { icon: QrCode, title: "Kein Konto nötig", desc: "QR-Code scannen, Name eingeben, mitmachen. Das war's." },
-      { icon: HandHeart, title: "Kein Vorwissen nötig", desc: "Ob Neuling oder Kenner — jeder ist willkommen am Tisch" },
+      { icon: HandHeart, title: "Kein Vorwissen nötig", desc: "Ob Neuling oder Erfahrener — jeder ist willkommen am Tisch" },
       { icon: GlassWater, title: "Whisky first", desc: "Die App soll helfen, nicht im Weg stehen. Versprochen." },
     ],
   },
@@ -76,8 +76,22 @@ const slides: SlideData[] = [
     features: [
       { icon: Wine, title: "Just Tasting", desc: "Kommen, trinken, bewerten, gehen. Null Technik-Stress." },
       { icon: Compass, title: "Explorer", desc: "Dein Journal starten, Aromen entdecken, Favoriten merken." },
-      { icon: Star, title: "Connoisseur", desc: "Geschmacksprofil aufbauen, Whiskys vergleichen, Empfehlungen bekommen." },
-      { icon: BarChart3, title: "Analyst", desc: "Benchmarks, Statistiken, Muster — für alle, die Daten lieben." },
+      { icon: Star, title: "Vertiefer", desc: "Geschmacksprofil aufbauen, Whiskys vergleichen, Empfehlungen bekommen." },
+      { icon: BarChart3, title: "Analysieren", desc: "Benchmarks, Statistiken, Muster — für alle, die Daten lieben." },
+    ],
+  },
+  {
+    type: "content",
+    title: "Dein persönlicher Bereich",
+    subtitle: "Dein Whisky-Universum wächst mit jedem Tasting. Journal, Wunschliste, Sammlung und dein persönliches Geschmacksprofil — alles an einem Ort.",
+    image: slideCommunity,
+    badge: "Für dich",
+    layout: "right",
+    features: [
+      { icon: BookOpen, title: "Verkostungstagebuch", desc: "Deine privaten Notizen, Fotos und Eindrücke — aus Tastings und eigenen Verkostungen" },
+      { icon: Heart, title: "Wunschliste", desc: "Flaschen merken, die du probieren willst — per Foto-Scan oder manuell" },
+      { icon: Wine, title: "Whisky-Sammlung", desc: "Deine Flaschen verwalten, Whiskybase synchronisieren, Preise schätzen" },
+      { icon: BarChart3, title: "Mein Whisky-Profil", desc: "Geschmacksanalyse, Bewertungsverhalten und Aromarad in drei Tabs" },
     ],
   },
   {
@@ -146,14 +160,14 @@ const slides: SlideData[] = [
     features: [
       { icon: Camera, title: "Foto-Erkennung", desc: "Flasche fotografieren — KI erledigt die Dateneingabe" },
       { icon: FileSpreadsheet, title: "Excel/CSV Import", desc: "Tabellen hochladen, Spalten werden automatisch zugeordnet" },
-      { icon: Brain, title: "Benchmark-Datenbank", desc: "Professionelle Bewertungen als Referenz — zum Vergleichen" },
-      { icon: Download, title: "Whiskybase-Import", desc: "Bestehende Sammlung importieren — inklusive Links und Preise" },
+      { icon: Search, title: "Whiskybase Smart-Sync", desc: "Sammlung importieren, Änderungen erkennen, einzeln entscheiden" },
+      { icon: TrendingUp, title: "KI-Preisschätzung", desc: "Marktpreise für deine Sammlung schätzen lassen — automatisch" },
     ],
   },
   {
     type: "content",
     title: "Mehr als Bauchgefühl",
-    subtitle: "CaskSense kennt Methoden aus Psychometrie und Persönlichkeitsforschung — und macht sie zugänglich. Wer tiefer eintauchen will, findet hier Werkzeuge, die über Hobby hinausgehen.",
+    subtitle: "CaskSense kennt Methoden aus Psychometrie und Wahrnehmungsforschung — und macht sie zugänglich. Wer tiefer eintauchen will, findet hier Werkzeuge, die über Hobby hinausgehen.",
     image: slideAnalytics,
     badge: "Für Wissbegierige",
     layout: "left",
@@ -175,7 +189,7 @@ const slides: SlideData[] = [
     features: [
       { icon: Users, title: "Freunde", desc: "Whisky-Freunde hinzufügen und deren Einträge sehen" },
       { icon: Rss, title: "Aktivitäts-Feed", desc: "Was trinken die anderen? Timeline deiner Tasting-Runde" },
-      { icon: Trophy, title: "Rangliste", desc: "Wer war am aktivsten? Wer hat die detailliertesten Notizen?" },
+      { icon: Trophy, title: "Aktivitäts-Übersicht", desc: "Wer hat die meisten Tastings? Wer die detailliertesten Notizen?" },
       { icon: Calendar, title: "Tasting-Kalender", desc: "Alle Sessions im Überblick — nie wieder ein Tasting verpassen" },
       { icon: Bell, title: "Erinnerungen", desc: "Freundlicher Reminder per E-Mail — flexibel einstellbar" },
     ],
@@ -192,6 +206,7 @@ const slides: SlideData[] = [
       { icon: FileDown, title: "Zusammenfassung", desc: "Rückblick nach dem Tasting: Top-Whisky, Überraschungen, Kontroversen" },
       { icon: Users, title: "Gastgeber-Delegation", desc: "Rolle an jemand anderen übergeben — flexibel und unkompliziert" },
       { icon: Volume2, title: "Ambiente", desc: "Kaminfeuer, Regen oder Jazz — dezente Klänge für die richtige Stimmung" },
+      { icon: Sparkles, title: "Curation Wizard", desc: "Tasting aus eigener Sammlung zusammenstellen — per Thema, Region oder KI-Vorschlag" },
     ],
   },
   {

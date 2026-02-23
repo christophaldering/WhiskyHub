@@ -20,7 +20,7 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Headi
 import sharp from "sharp";
 
 const aiScanCache = new Map<string, { result: any; timestamp: number }>();
-let tourCacheVersion = Date.now();
+let tourCacheVersion = Date.now() + 1;
 const tourImageCache = new Map<string, string>();
 const AI_CACHE_TTL = 24 * 60 * 60 * 1000;
 const AI_CACHE_MAX = 500;
@@ -7838,7 +7838,7 @@ Important rules:
   const tourSlideData = [
     {
       title: "CaskSense",
-      subtitle: "Whisky gemeinsam erleben. Ohne Technik-Stress — der Moment am Tisch zählt.",
+      subtitle: "Whisky gemeinsam erleben. Wahrnehmung sichtbar machen — der Moment am Tisch zählt.",
       badge: "Rundgang",
       features: [] as string[],
       image: "slide-cover.png",
@@ -7851,7 +7851,7 @@ Important rules:
       features: [
         "Verkosten steht im Fokus — Kein Feature-Overload, nur das, was ein gutes Tasting besser macht",
         "Kein Konto nötig — QR-Code scannen, Name eingeben, mitmachen",
-        "Kein Vorwissen nötig — Ob Neuling oder Kenner, jeder ist willkommen",
+        "Kein Vorwissen nötig — Ob Neuling oder Erfahrener, jeder ist willkommen",
         "Whisky first — Die App soll helfen, nicht im Weg stehen",
       ],
     },
@@ -7862,9 +7862,21 @@ Important rules:
       image: "slide-community.png",
       features: [
         "Just Tasting — Kommen, trinken, bewerten, gehen. Null Technik-Stress.",
-        "Explorer — Journal starten, Aromen entdecken, Favoriten merken.",
-        "Connoisseur — Geschmacksprofil aufbauen, Whiskys vergleichen, Empfehlungen.",
-        "Analyst — Benchmarks, Statistiken, Muster — für alle, die Daten lieben.",
+        "Entdecker — Journal starten, Aromen entdecken, Favoriten merken.",
+        "Vertiefer — Geschmacksprofil aufbauen, Whiskys vergleichen, Empfehlungen.",
+        "Analysieren — Benchmarks, Statistiken, Muster — für alle, die Daten lieben.",
+      ],
+    },
+    {
+      title: "Dein persönlicher Bereich",
+      subtitle: "Dein Whisky-Universum wächst mit jedem Tasting. Journal, Wunschliste, Sammlung und dein persönliches Geschmacksprofil — alles an einem Ort.",
+      badge: "Für dich",
+      image: "slide-community.png",
+      features: [
+        "Verkostungstagebuch — Deine privaten Notizen, Fotos und Eindrücke — aus Tastings und eigenen Verkostungen",
+        "Wunschliste — Flaschen merken, die du probieren willst — per Foto-Scan oder manuell",
+        "Whisky-Sammlung — Deine Flaschen verwalten, Whiskybase synchronisieren, Preise schätzen",
+        "Mein Whisky-Profil — Geschmacksanalyse, Bewertungsverhalten und Aromarad in drei Tabs",
       ],
     },
     {
@@ -7923,13 +7935,13 @@ Important rules:
       features: [
         "Foto-Erkennung — Flasche fotografieren — KI erledigt die Dateneingabe",
         "Excel/CSV Import — Tabellen hochladen, Spalten werden automatisch zugeordnet",
-        "Benchmark-Datenbank — Professionelle Bewertungen als Referenz — zum Vergleichen",
-        "Whiskybase-Import — Bestehende Sammlung importieren — inklusive Links und Preise",
+        "Whiskybase Smart-Sync — Sammlung importieren, Änderungen erkennen, einzeln entscheiden",
+        "KI-Preisschätzung — Marktpreise für deine Sammlung schätzen lassen — automatisch",
       ],
     },
     {
       title: "Mehr als Bauchgefühl",
-      subtitle: "Methoden aus Psychometrie und Persönlichkeitsforschung — zugänglich gemacht. Werkzeuge, die über Hobby hinausgehen.",
+      subtitle: "Methoden aus Psychometrie und Wahrnehmungsforschung — zugänglich gemacht. Werkzeuge, die über Hobby hinausgehen.",
       badge: "Für Wissbegierige",
       image: "slide-analytics.png",
       features: [
@@ -7948,7 +7960,7 @@ Important rules:
       features: [
         "Freunde — Whisky-Freunde hinzufügen und deren Einträge sehen",
         "Aktivitäts-Feed — Was trinken die anderen? Timeline deiner Tasting-Runde",
-        "Rangliste — Wer war am aktivsten? Wer hat die detailliertesten Notizen?",
+        "Aktivitäts-Übersicht — Wer hat die meisten Tastings? Wer die detailliertesten Notizen?",
         "Tasting-Kalender — Alle Sessions im Überblick",
         "Erinnerungen — Freundlicher Reminder per E-Mail",
       ],
@@ -7963,6 +7975,7 @@ Important rules:
         "Zusammenfassung — Rückblick nach dem Tasting: Top-Whisky, Überraschungen, Kontroversen",
         "Gastgeber-Delegation — Rolle an jemand anderen übergeben",
         "Ambiente — Kaminfeuer, Regen oder Jazz — dezente Klänge für die richtige Stimmung",
+        "Curation Wizard — Tasting aus eigener Sammlung zusammenstellen — per Thema, Region oder KI-Vorschlag",
       ],
     },
     {
