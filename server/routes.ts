@@ -287,6 +287,20 @@ async function downloadImageFromUrl(url: string, objectStorage: ObjectStorageSer
   }
 }
 
+function stripHtmlTags(str: string): string {
+  return str.replace(/<[^>]*>/g, "");
+}
+
+function sanitizeObject(obj: Record<string, any>, keys: string[]): Record<string, any> {
+  const result = { ...obj };
+  for (const key of keys) {
+    if (typeof result[key] === "string") {
+      result[key] = stripHtmlTags(result[key]);
+    }
+  }
+  return result;
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -327,6 +341,9 @@ export async function registerRoutes(
       if (existing) {
         if (!data.pin) {
           return res.status(400).json({ message: "PIN is required" });
+        }
+        if (data.email && existing.email && data.email.toLowerCase() === existing.email.toLowerCase() && data.pin === existing.pin) {
+          return res.status(409).json({ message: "An account with this name and email already exists. Please use the login." });
         }
         if (!existing.pin) {
           await storage.updateParticipantPin(existing.id, data.pin);
@@ -801,7 +818,11 @@ export async function registerRoutes(
 
   app.post("/api/tastings", async (req, res) => {
     try {
-      const data = insertTastingSchema.parse(req.body);
+      const sanitizedBody = sanitizeObject(req.body, ["title", "location"]);
+      const data = insertTastingSchema.parse(sanitizedBody);
+      if (data.title && data.title.length > 200) {
+        return res.status(400).json({ message: "Title must not exceed 200 characters" });
+      }
       const tasting = await storage.createTasting(data);
       res.status(201).json(tasting);
     } catch (e: any) {
@@ -815,16 +836,28 @@ export async function registerRoutes(
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
+
+    const tasting = await storage.getTasting(req.params.id);
+    if (!tasting) return res.status(404).json({ message: "Not found" });
+
+    const allowedTransitions: Record<string, string[]> = {
+      draft: ["open", "deleted"],
+      open: ["closed", "draft"],
+      closed: ["reveal", "open"],
+      reveal: ["archived", "closed"],
+      archived: ["deleted"],
+      deleted: [],
+    };
+    const allowed = allowedTransitions[tasting.status] || [];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ message: `Cannot transition from '${tasting.status}' to '${status}'` });
+    }
+
     if (status === "deleted" || status === "archived") {
       if (!hostId) return res.status(400).json({ message: "hostId required for this action" });
-      const tasting = await storage.getTasting(req.params.id);
-      if (!tasting) return res.status(404).json({ message: "Not found" });
       const requester = await storage.getParticipant(hostId);
       if (tasting.hostId !== hostId && (!requester || requester.role !== "admin")) {
         return res.status(403).json({ message: "Only the host or an admin can perform this action" });
-      }
-      if (status === "deleted" && tasting.status === "open") {
-        return res.status(400).json({ message: "Cannot delete an active session. Close it first." });
       }
     }
     const updated = await storage.updateTastingStatus(req.params.id, status, currentAct);
@@ -858,6 +891,7 @@ export async function registerRoutes(
       if (!hostId) return res.status(400).json({ message: "hostId required" });
       const trimmedTitle = (title || "").trim();
       if (!trimmedTitle) return res.status(400).json({ message: "Title must not be empty" });
+      if (trimmedTitle.length > 200) return res.status(400).json({ message: "Title must not exceed 200 characters" });
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Not found" });
       const requester = await storage.getParticipant(hostId);
@@ -2671,7 +2705,7 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
       if (tasting.status !== "open") return res.status(400).json({ message: "Discussion is only available during active sessions" });
       const { participantId, text } = req.body;
       if (!participantId || !text?.trim()) return res.status(400).json({ message: "participantId and text required" });
-      const entry = await storage.createDiscussionEntry({ tastingId: req.params.id, participantId, text: text.trim() });
+      const entry = await storage.createDiscussionEntry({ tastingId: req.params.id, participantId, text: stripHtmlTags(text.trim()) });
       const participant = await storage.getParticipant(participantId);
       res.json({ ...entry, participantName: participant?.name || "Unknown" });
     } catch (e: any) {
@@ -3162,7 +3196,8 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.post("/api/journal/:participantId", async (req, res) => {
     try {
-      const parsed = insertJournalEntrySchema.parse({ ...req.body, participantId: req.params.participantId });
+      const sanitizedBody = sanitizeObject(req.body, ["title", "whiskyName", "distillery", "noseNotes", "tasteNotes", "finishNotes", "notes", "body", "mood", "occasion"]);
+      const parsed = insertJournalEntrySchema.parse({ ...sanitizedBody, participantId: req.params.participantId });
       const entry = await storage.createJournalEntry(parsed);
       res.status(201).json(entry);
     } catch (e: any) {
@@ -3174,9 +3209,12 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
   app.patch("/api/journal/:participantId/:id", async (req, res) => {
     try {
       const allowed = ["title", "whiskyName", "distillery", "region", "age", "abv", "caskType", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "mood", "occasion", "body", "imageUrl"];
+      const textKeys = ["title", "whiskyName", "distillery", "noseNotes", "tasteNotes", "finishNotes", "body", "mood", "occasion"];
       const filtered: any = {};
       for (const key of allowed) {
-        if (req.body[key] !== undefined) filtered[key] = req.body[key];
+        if (req.body[key] !== undefined) {
+          filtered[key] = textKeys.includes(key) && typeof req.body[key] === "string" ? stripHtmlTags(req.body[key]) : req.body[key];
+        }
       }
       const entry = await storage.updateJournalEntry(req.params.id, req.params.participantId, filtered);
       if (!entry) return res.status(404).json({ message: "Journal entry not found" });

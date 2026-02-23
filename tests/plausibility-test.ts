@@ -136,9 +136,9 @@ async function testAuthentication() {
       : fail("Authentifizierung", "Falscher PIN wird nicht abgelehnt", `Status: ${wrongPin.__status}`);
 
     const dupReg = await req("POST", "/api/participants", { name: TEST_NAME, pin: TEST_PIN, email: TEST_EMAIL });
-    dupReg.__status === 400 || dupReg.__status === 409
-      ? pass("Authentifizierung", "Doppelte Registrierung wird verhindert")
-      : warn("Authentifizierung", "Doppelte Registrierung ggf. möglich", `Status: ${dupReg.__status}`);
+    dupReg.__status === 409
+      ? pass("Authentifizierung", "Doppelte Registrierung wird verhindert (409)")
+      : fail("Authentifizierung", "Doppelte Registrierung nicht erkannt", `Status: ${dupReg.__status}`);
 
     const noEmail = await req("POST", "/api/participants", { name: "test_no_email", pin: "1234" });
     noEmail.__status === 400
@@ -240,9 +240,9 @@ async function testTastingLifecycle() {
     archiveRes.__status === 200 ? pass("Tasting-Lifecycle", "Status → archived") : fail("Tasting-Lifecycle", "Status → archived");
 
     const invalidStatus = await req("PATCH", `/api/tastings/${testTastingId}/status`, { status: "open", hostId: testParticipantId });
-    invalidStatus.__status !== 200
-      ? pass("Tasting-Lifecycle", "Ungültiger Statuswechsel (archived→open) blockiert")
-      : warn("Tasting-Lifecycle", "Rückwärts-Transition archived→open erlaubt — prüfen");
+    invalidStatus.__status === 400
+      ? pass("Tasting-Lifecycle", "Ungültiger Statuswechsel (archived→open) blockiert (400)")
+      : fail("Tasting-Lifecycle", "Rückwärts-Transition archived→open nicht blockiert", `Status: ${invalidStatus.__status}`);
   });
 }
 
@@ -344,8 +344,11 @@ async function testWhiskiesAndRatings() {
       delW.__status === 200 || delW.__status === 204 ? pass("Whiskies & Ratings", "Whisky löschen") : fail("Whiskies & Ratings", "Whisky löschen", `Status: ${delW.__status}`);
     }
 
+    await req("PATCH", `/api/tastings/${ratingTastingId}/status`, { status: "closed", hostId: testParticipantId });
+    await req("PATCH", `/api/tastings/${ratingTastingId}/status`, { status: "reveal", hostId: testParticipantId });
+
     const analytics = await req("GET", `/api/tastings/${ratingTastingId}/analytics`);
-    analytics.__status === 200 ? pass("Whiskies & Ratings", "Tasting-Analytics") : warn("Whiskies & Ratings", "Analytics", `Status: ${analytics.__status}`);
+    analytics.__status === 200 ? pass("Whiskies & Ratings", "Tasting-Analytics (im Reveal-Status)") : fail("Whiskies & Ratings", "Analytics", `Status: ${analytics.__status}`);
   });
 }
 
@@ -399,8 +402,8 @@ async function testSessionFeatures() {
     const presence = await req("GET", `/api/tastings/${sfId}/presence`);
     presence.__status === 200 ? pass("Session-Features", "Präsenz-Tracking") : warn("Session-Features", "Präsenz", `Status: ${presence.__status}`);
 
-    const dup = await req("POST", `/api/tastings/${sfId}/duplicate`, { participantId: testParticipantId });
-    dup.id ? pass("Session-Features", "Tasting duplizieren") : warn("Session-Features", "Duplizieren fehlgeschlagen");
+    const dup = await req("POST", `/api/tastings/${sfId}/duplicate`, { hostId: testParticipantId });
+    dup.id ? pass("Session-Features", "Tasting duplizieren") : fail("Session-Features", "Duplizieren fehlgeschlagen", dup.message);
   });
 }
 
@@ -731,9 +734,9 @@ async function testEdgeCases() {
       if (xss.id) {
         const getXss = await req("GET", `/api/journal/${testParticipantId}/${xss.id}`);
         if (getXss.title && !getXss.title.includes("<script>")) {
-          pass("Edge Cases & Sicherheit", "XSS in Journal wird bereinigt");
+          pass("Edge Cases & Sicherheit", "XSS in Journal wird serverseitig bereinigt");
         } else {
-          warn("Edge Cases & Sicherheit", "XSS-Tags werden roh gespeichert — Frontend-Escaping nötig");
+          fail("Edge Cases & Sicherheit", "XSS-Tags werden roh gespeichert", `title: ${getXss.title}`);
         }
         await req("DELETE", `/api/journal/${testParticipantId}/${xss.id}`);
       }
@@ -747,9 +750,9 @@ async function testEdgeCases() {
       hostId: testParticipantId || "fake",
       code: `L${Date.now().toString(36).slice(-7).toUpperCase()}`,
     });
-    longT.id
-      ? warn("Edge Cases & Sicherheit", "Sehr langer Titel (5000 Zeichen) akzeptiert — Limit empfohlen")
-      : pass("Edge Cases & Sicherheit", "Sehr langer Titel abgelehnt");
+    longT.__status === 400
+      ? pass("Edge Cases & Sicherheit", "Sehr langer Titel abgelehnt (400)")
+      : fail("Edge Cases & Sicherheit", "Sehr langer Titel (5000 Zeichen) akzeptiert", `Status: ${longT.__status}`);
 
     const concurrent = await Promise.all([
       req("GET", "/api/platform-stats"),
