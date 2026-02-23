@@ -2,10 +2,11 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
-import { tastingHistoryApi } from "@/lib/api";
+import { tastingHistoryApi, journalApi } from "@/lib/api";
 import { motion } from "framer-motion";
-import { GlassWater, Wine, Star, Search, Loader2, Calendar, ArrowUpDown } from "lucide-react";
+import { GlassWater, Wine, Star, Search, Loader2, Calendar, ArrowUpDown, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { GuestPreview } from "@/components/guest-preview";
 
 interface WhiskyEntry {
@@ -23,6 +24,7 @@ interface WhiskyEntry {
   tastingTitle: string;
   tastingDate: string;
   tastingId: string;
+  source?: "casksense" | "imported" | "whiskybase" | "journal";
 }
 
 type SortKey = "name" | "score" | "date" | "distillery";
@@ -33,6 +35,8 @@ export default function MyWhiskies() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("date");
   const [sortAsc, setSortAsc] = useState(false);
+  const [showImported, setShowImported] = useState(false);
+  const [showWhiskybase, setShowWhiskybase] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["tasting-history", currentParticipant?.id],
@@ -40,31 +44,83 @@ export default function MyWhiskies() {
     enabled: !!currentParticipant,
   });
 
+  const { data: journalEntries } = useQuery({
+    queryKey: ["journal", currentParticipant?.id],
+    queryFn: () => journalApi.getAll(currentParticipant!.id),
+    enabled: !!currentParticipant && (showImported || showWhiskybase),
+  });
+
   const allWhiskies: WhiskyEntry[] = useMemo(() => {
-    if (!data?.tastings) return [];
     const entries: WhiskyEntry[] = [];
-    for (const tasting of data.tastings) {
-      for (const w of tasting.whiskies) {
-        entries.push({
-          id: w.id,
-          name: w.name,
-          distillery: w.distillery,
-          age: w.age,
-          abv: w.abv,
-          country: w.country,
-          region: w.region,
-          category: w.category,
-          caskInfluence: w.caskInfluence,
-          imageUrl: w.imageUrl,
-          overall: w.myRating?.overall ?? null,
-          tastingTitle: tasting.title,
-          tastingDate: tasting.date,
-          tastingId: tasting.id,
-        });
+    if (data?.tastings) {
+      for (const tasting of data.tastings) {
+        for (const w of tasting.whiskies) {
+          entries.push({
+            id: w.id,
+            name: w.name,
+            distillery: w.distillery,
+            age: w.age,
+            abv: w.abv,
+            country: w.country,
+            region: w.region,
+            category: w.category,
+            caskInfluence: w.caskInfluence,
+            imageUrl: w.imageUrl,
+            overall: w.myRating?.overall ?? null,
+            tastingTitle: tasting.title,
+            tastingDate: tasting.date,
+            tastingId: tasting.id,
+            source: "casksense",
+          });
+        }
+      }
+    }
+
+    if (journalEntries && (showImported || showWhiskybase)) {
+      for (const je of journalEntries) {
+        const src = je.source || "casksense";
+        if (src === "imported" && showImported) {
+          entries.push({
+            id: je.id,
+            name: je.whiskyName || je.title,
+            distillery: je.distillery || null,
+            age: je.age ? parseInt(je.age) : null,
+            abv: je.abv ? parseFloat(je.abv) : null,
+            country: null,
+            region: je.region || null,
+            category: null,
+            caskInfluence: je.caskType || null,
+            imageUrl: je.imageUrl || null,
+            overall: je.personalScore ?? null,
+            tastingTitle: t("myWhiskies.badgeImported"),
+            tastingDate: je.createdAt || new Date().toISOString(),
+            tastingId: "",
+            source: "imported",
+          });
+        }
+        if (src === "whiskybase" && showWhiskybase) {
+          entries.push({
+            id: je.id,
+            name: je.whiskyName || je.title,
+            distillery: je.distillery || null,
+            age: je.age ? parseInt(je.age) : null,
+            abv: je.abv ? parseFloat(je.abv) : null,
+            country: null,
+            region: je.region || null,
+            category: null,
+            caskInfluence: je.caskType || null,
+            imageUrl: je.imageUrl || null,
+            overall: je.personalScore ?? null,
+            tastingTitle: t("myWhiskies.badgeWhiskybase"),
+            tastingDate: je.createdAt || new Date().toISOString(),
+            tastingId: "",
+            source: "whiskybase",
+          });
+        }
       }
     }
     return entries;
-  }, [data]);
+  }, [data, journalEntries, showImported, showWhiskybase, t]);
 
   const filtered = useMemo(() => {
     let items = allWhiskies;
@@ -177,29 +233,56 @@ export default function MyWhiskies() {
         </motion.div>
       )}
 
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder={t("myWhiskies.searchPlaceholder")}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9"
-            data-testid="input-search-whiskies"
-          />
+      <div className="space-y-2">
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder={t("myWhiskies.searchPlaceholder")}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9"
+              data-testid="input-search-whiskies"
+            />
+          </div>
+          <div className="flex gap-1">
+            {(["date", "score", "name", "distillery"] as SortKey[]).map(key => (
+              <button
+                key={key}
+                onClick={() => toggleSort(key)}
+                className={`text-[10px] px-2 py-1.5 rounded-md border transition-colors ${sortBy === key ? "bg-primary/10 border-primary/30 text-primary font-medium" : "border-border/40 text-muted-foreground hover:border-primary/20"}`}
+                data-testid={`sort-${key}`}
+              >
+                {t(`myWhiskies.sort.${key}`)}
+                {sortBy === key && <ArrowUpDown className="w-2.5 h-2.5 inline ml-0.5" />}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-1">
-          {(["date", "score", "name", "distillery"] as SortKey[]).map(key => (
-            <button
-              key={key}
-              onClick={() => toggleSort(key)}
-              className={`text-[10px] px-2 py-1.5 rounded-md border transition-colors ${sortBy === key ? "bg-primary/10 border-primary/30 text-primary font-medium" : "border-border/40 text-muted-foreground hover:border-primary/20"}`}
-              data-testid={`sort-${key}`}
-            >
-              {t(`myWhiskies.sort.${key}`)}
-              {sortBy === key && <ArrowUpDown className="w-2.5 h-2.5 inline ml-0.5" />}
-            </button>
-          ))}
+
+        <div className="flex items-center gap-2 text-xs" data-testid="source-filter">
+          <Filter className="w-3 h-3 text-muted-foreground" />
+          <span className="text-muted-foreground">{t("myWhiskies.sourceFilter")}:</span>
+          <button
+            className="px-2 py-0.5 rounded-full border bg-primary/10 border-primary/30 text-primary font-medium cursor-default text-[10px]"
+            data-testid="filter-casksense"
+          >
+            {t("myWhiskies.sourceCaskSense")}
+          </button>
+          <button
+            onClick={() => setShowImported(!showImported)}
+            className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors ${showImported ? "bg-amber-500/10 border-amber-500/30 text-amber-600 font-medium" : "border-border/40 text-muted-foreground hover:border-amber-500/20"}`}
+            data-testid="filter-imported"
+          >
+            {t("myWhiskies.sourceImported")}
+          </button>
+          <button
+            onClick={() => setShowWhiskybase(!showWhiskybase)}
+            className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors ${showWhiskybase ? "bg-blue-500/10 border-blue-500/30 text-blue-600 font-medium" : "border-border/40 text-muted-foreground hover:border-blue-500/20"}`}
+            data-testid="filter-whiskybase"
+          >
+            {t("myWhiskies.sourceWhiskybase")}
+          </button>
         </div>
       </div>
 
@@ -240,6 +323,12 @@ export default function MyWhiskies() {
                 <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground/70">
                   <Calendar className="w-2.5 h-2.5" />
                   <span>{whisky.tastingTitle} · {new Date(whisky.tastingDate).toLocaleDateString()}</span>
+                  {whisky.source === "imported" && (
+                    <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 bg-amber-500/10 border-amber-500/30 text-amber-600">{t("myWhiskies.badgeImported")}</Badge>
+                  )}
+                  {whisky.source === "whiskybase" && (
+                    <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 bg-blue-500/10 border-blue-500/30 text-blue-600">{t("myWhiskies.badgeWhiskybase")}</Badge>
+                  )}
                 </div>
               </div>
               <div className="flex-shrink-0 text-right">

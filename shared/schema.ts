@@ -238,6 +238,7 @@ export const journalEntries = pgTable("journal_entries", {
   occasion: text("occasion"),
   imageUrl: text("image_url"),
   body: text("body"),
+  source: text("source").default("casksense"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -266,6 +267,7 @@ export const benchmarkEntries = pgTable("benchmark_entries", {
   sourceDocument: text("source_document"),
   sourceAuthor: text("source_author"),
   uploadedBy: varchar("uploaded_by").notNull(),
+  libraryCategory: text("library_category").default("other"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

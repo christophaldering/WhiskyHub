@@ -90,7 +90,7 @@ function DetailsPanel({ children, label, t }: { children: React.ReactNode; label
 }
 
 function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t: any; isDE: boolean }) {
-  const [source, setSource] = useState<"all" | "journal">("all");
+  const [source, setSource] = useState<"all" | "journal" | "imported" | "all_incl_imported">("all");
   const [compareMode, setCompareMode] = useState<"none" | "friends" | "platform">("none");
   const [showWhiskyComparison, setShowWhiskyComparison] = useState(false);
 
@@ -144,6 +144,12 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
           </button>
           <button onClick={() => setSource("journal")} className={`px-3 py-1.5 transition-colors ${source === "journal" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`} data-testid="button-source-journal">
             {t("flavorProfile.sourceJournal")}
+          </button>
+          <button onClick={() => setSource("imported")} className={`px-3 py-1.5 transition-colors ${source === "imported" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`} data-testid="button-source-imported">
+            {t("flavorProfile.sourceImported")}
+          </button>
+          <button onClick={() => setSource("all_incl_imported")} className={`px-3 py-1.5 transition-colors ${source === "all_incl_imported" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`} data-testid="button-source-all-incl-imported">
+            {t("flavorProfile.sourceAllInclImported")}
           </button>
         </div>
         <div className="flex rounded-lg border border-border/40 overflow-hidden text-xs ml-auto">

@@ -410,6 +410,10 @@ export const benchmarkApi = {
     fetchJSON("/benchmark", { method: "POST", body: JSON.stringify({ entries, participantId }) }),
   deleteEntry: (id: string, participantId: string) =>
     fetchJSON(`/benchmark/${id}?participantId=${participantId}`, { method: "DELETE" }),
+  toWishlist: (entries: any[], participantId: string) =>
+    fetchJSON("/benchmark/to-wishlist", { method: "POST", body: JSON.stringify({ entries, participantId }) }),
+  toJournal: (entries: any[], participantId: string) =>
+    fetchJSON("/benchmark/to-journal", { method: "POST", body: JSON.stringify({ entries, participantId }) }),
 };
 
 // ===== Journal Bottle Identification =====

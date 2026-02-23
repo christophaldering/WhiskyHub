@@ -3663,15 +3663,24 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         };
       });
 
-      if (source === "journal") {
+      if (source === "journal" || source === "imported" || source === "all_incl_imported") {
         const journal = await storage.getJournalEntries(req.params.id);
-        const journalScores = journal.filter(j => j.personalScore != null && j.personalScore > 0)
+        const filterFn = (j: any) => {
+          if (source === "journal") return j.personalScore != null && j.personalScore > 0;
+          if (source === "imported") return j.source === "imported" && j.personalScore != null && j.personalScore > 0;
+          return j.personalScore != null && j.personalScore > 0;
+        };
+        const journalScores = journal.filter(filterFn)
           .map(j => ({
             whiskyId: j.id,
-            nose: 0, taste: 0, finish: 0, balance: 0,
+            nose: j.noseNotes ? 50 : 0, taste: j.tasteNotes ? 50 : 0, finish: j.finishNotes ? 50 : 0, balance: 0,
             overall: j.personalScore!,
           }));
-        userRatings = journalScores;
+        if (source === "all_incl_imported") {
+          userRatings = [...userRatings, ...journalScores];
+        } else {
+          userRatings = journalScores;
+        }
       }
 
       if (userRatings.length === 0) {
@@ -5651,7 +5660,9 @@ Key CaskSense Features:
       const auth = await verifyHostOrAdmin(participantId);
       if (!auth) return res.status(403).json({ message: "Only hosts and admins can access benchmark data" });
 
-      const entries = await storage.getBenchmarkEntries();
+      const allEntries = await storage.getBenchmarkEntries();
+      const categoryFilter = req.query.category as string | undefined;
+      const entries = categoryFilter ? allEntries.filter(e => e.libraryCategory === categoryFilter) : allEntries;
       const enriched = await Promise.all(entries.map(async (entry) => {
         let uploaderName = null;
         if (entry.uploadedBy) {
@@ -5693,6 +5704,7 @@ Key CaskSense Features:
         scoreScale: z.string().nullable().optional(),
         sourceDocument: z.string().nullable().optional(),
         sourceAuthor: z.string().nullable().optional(),
+        libraryCategory: z.enum(["tasting_notes", "analysis", "article", "other"]).optional().default("other"),
       });
 
       const validated = [];
@@ -5725,6 +5737,66 @@ Key CaskSense Features:
 
       await storage.deleteBenchmarkEntry(req.params.id);
       res.status(204).send();
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/benchmark/to-wishlist", async (req: Request, res: Response) => {
+    try {
+      const { entries, participantId } = req.body;
+      if (!entries || !Array.isArray(entries) || !participantId) {
+        return res.status(400).json({ message: "entries array and participantId required" });
+      }
+      const saved = [];
+      for (const e of entries) {
+        const entry = await storage.createWishlistEntry({
+          participantId,
+          whiskyName: e.whiskyName || "Unknown",
+          distillery: e.distillery || null,
+          region: e.region || null,
+          age: e.age || null,
+          abv: e.abv || null,
+          caskType: e.caskType || null,
+          notes: [e.noseNotes, e.tasteNotes, e.finishNotes].filter(Boolean).join("; ") || null,
+          priority: "medium",
+          source: e.sourceDocument || null,
+        });
+        saved.push(entry);
+      }
+      res.json(saved);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/benchmark/to-journal", async (req: Request, res: Response) => {
+    try {
+      const { entries, participantId } = req.body;
+      if (!entries || !Array.isArray(entries) || !participantId) {
+        return res.status(400).json({ message: "entries array and participantId required" });
+      }
+      const saved = [];
+      for (const e of entries) {
+        const entry = await storage.createJournalEntry({
+          participantId,
+          title: e.whiskyName || "Imported Whisky",
+          whiskyName: e.whiskyName || null,
+          distillery: e.distillery || null,
+          region: e.region || null,
+          age: e.age || null,
+          abv: e.abv || null,
+          caskType: e.caskType || null,
+          noseNotes: e.noseNotes || null,
+          tasteNotes: e.tasteNotes || null,
+          finishNotes: e.finishNotes || null,
+          personalScore: e.score || null,
+          body: e.overallNotes || null,
+          source: "imported",
+        });
+        saved.push(entry);
+      }
+      res.json(saved);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

@@ -527,7 +527,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
         { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
         ...(atLeast("analyst") ? [
-          { href: "/benchmark", icon: Brain, label: t('nav.benchmark') },
+          { href: "/benchmark", icon: BookOpen, label: t('nav.benchmark') },
           { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
         ] : []),
       ],
