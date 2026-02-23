@@ -62,7 +62,7 @@ const slides: SlideData[] = [
     features: [
       { icon: Wine, title: "Verkosten steht im Fokus", desc: "Kein Feature-Overload — nur das, was ein gutes Tasting besser macht" },
       { icon: QrCode, title: "Kein Konto nötig", desc: "QR-Code scannen, Name eingeben, mitmachen. Das war's." },
-      { icon: HandHeart, title: "Kein Vorwissen nötig", desc: "Ob Neuling oder Fortgeschrittener — jeder ist willkommen am Tisch" },
+      { icon: HandHeart, title: "Kein Vorwissen nötig", desc: "Ob Neuling oder Kenner — jeder ist willkommen am Tisch" },
       { icon: GlassWater, title: "Whisky first", desc: "Die App soll helfen, nicht im Weg stehen. Versprochen." },
     ],
   },
@@ -76,8 +76,8 @@ const slides: SlideData[] = [
     features: [
       { icon: Wine, title: "Just Tasting", desc: "Kommen, trinken, bewerten, gehen. Null Technik-Stress." },
       { icon: Compass, title: "Explorer", desc: "Dein Journal starten, Aromen entdecken, Favoriten merken." },
-      { icon: Star, title: "Vertiefer", desc: "Geschmacksprofil aufbauen, Whiskys vergleichen, Empfehlungen bekommen." },
-      { icon: BarChart3, title: "Analysieren", desc: "Benchmarks, Statistiken, Muster — für alle, die Daten lieben." },
+      { icon: Star, title: "Connoisseur", desc: "Geschmacksprofil aufbauen, Whiskys vergleichen, Empfehlungen bekommen." },
+      { icon: BarChart3, title: "Analyst", desc: "Benchmarks, Statistiken, Muster — für alle, die Daten lieben." },
     ],
   },
   {
