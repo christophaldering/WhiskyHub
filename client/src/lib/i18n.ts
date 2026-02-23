@@ -151,6 +151,11 @@ const resources = {
         analyse: "Analysis",
         flavorAnalysis: "Flavor Analysis",
       },
+      contextLevel: {
+        naked: "Naked",
+        self: "Self",
+        full: "Full",
+      },
       whatsNew: {
         banner: "New at CaskSense — see what's changed!",
       },
@@ -3071,6 +3076,11 @@ const resources = {
         wissen: "Wissen",
         analyse: "Analyse",
         flavorAnalysis: "Geschmacksauswertung",
+      },
+      contextLevel: {
+        naked: "Naked",
+        self: "Self",
+        full: "Full",
       },
       whatsNew: {
         banner: "Neu bei CaskSense — schau was sich getan hat!",

@@ -35,6 +35,7 @@ interface FocusedTastingProps {
   tasting: Tasting;
   whiskies: Whisky[];
   onExit: () => void;
+  contextLevel?: 0 | 1 | 2;
 }
 
 function DramTimer({ startedAt, accumulated = 0 }: { startedAt: Date | string | null; accumulated?: number }) {
@@ -207,7 +208,7 @@ function AiInsightsPanel({ whisky, tasting }: { whisky: Whisky; tasting: Tasting
   );
 }
 
-export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProps) {
+export function FocusedTasting({ tasting, whiskies, onExit, contextLevel = 2 }: FocusedTastingProps) {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const participantId = currentParticipant?.id || "";
@@ -466,11 +467,13 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
           </div>
           <div className="flex items-center gap-2">
             <DramTimer startedAt={isCurrentlyTimed ? tasting.dramStartedAt : null} accumulated={currentAccumulated} />
-            <PersonalProgress
-              tastingId={tasting.id}
-              participantId={participantId}
-              totalWhiskies={whiskies.length}
-            />
+            {contextLevel >= 1 && (
+              <PersonalProgress
+                tastingId={tasting.id}
+                participantId={participantId}
+                totalWhiskies={whiskies.length}
+              />
+            )}
             {isHost && (
               <RatingProgress
                 tastingId={tasting.id}
@@ -759,7 +762,7 @@ export function FocusedTasting({ tasting, whiskies, onExit }: FocusedTastingProp
               </div>
             )}
 
-            {(evalBlind.showName || !isBlind) && (
+            {contextLevel >= 1 && (evalBlind.showName || !isBlind) && (
               <AiInsightsPanel whisky={activeWhisky} tasting={tasting} />
             )}
           </motion.div>

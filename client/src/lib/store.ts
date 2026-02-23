@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type SessionStatus = 'draft' | 'open' | 'closed' | 'reveal' | 'archived';
 export type RevealAct = 'act1' | 'act2' | 'act3' | 'act4';
+export type ContextLevel = 0 | 1 | 2;
 
 type Theme = 'dark' | 'light';
 type Soundscape = 'fireplace' | 'rain' | 'night' | 'bagpipe';
@@ -44,6 +45,8 @@ interface AppState extends AmbientState {
   setAmbientVolume: (volume: number) => void;
   wishlistTransfer: WishlistTransfer | null;
   setWishlistTransfer: (data: WishlistTransfer | null) => void;
+  contextLevel: ContextLevel;
+  setContextLevel: (level: ContextLevel) => void;
 }
 
 function applyTheme(theme: Theme) {
@@ -76,6 +79,8 @@ export const useAppStore = create<AppState>()(
       setAmbientVolume: (volume) => set({ ambientVolume: volume }),
       wishlistTransfer: null,
       setWishlistTransfer: (data) => set({ wishlistTransfer: data }),
+      contextLevel: 2 as ContextLevel,
+      setContextLevel: (level) => set({ contextLevel: level }),
       theme: "dark" as Theme,
       setTheme: (theme) => {
         applyTheme(theme);

@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3, Clock, Check, Trophy, FileDown, Minimize2, Wine, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Users, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3, Clock, Check, Trophy, FileDown, Minimize2, Wine, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1496,7 +1496,7 @@ export default function TastingRoom() {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { t } = useTranslation();
-  const { currentParticipant, setParticipant } = useAppStore();
+  const { currentParticipant, setParticipant, contextLevel, setContextLevel } = useAppStore();
   const [showLogin, setShowLogin] = useState(false);
   const [guestName, setGuestName] = useState("");
   const [guestLoading, setGuestLoading] = useState(false);
@@ -1768,6 +1768,7 @@ export default function TastingRoom() {
         tasting={tasting}
         whiskies={whiskyList}
         onExit={exitFocusMode}
+        contextLevel={contextLevel}
       />
     );
   }
@@ -2052,6 +2053,28 @@ export default function TastingRoom() {
                   </>
                 )}
               </div>
+              <div className="flex items-center bg-secondary/50 rounded-lg p-0.5 border border-border/30 gap-0.5" data-testid="context-level-switcher">
+                {([0, 1, 2] as const).map((level) => {
+                  const labels = { 0: t("contextLevel.naked"), 1: t("contextLevel.self"), 2: t("contextLevel.full") };
+                  const icons = { 0: <EyeOff className="w-3 h-3" />, 1: <User className="w-3 h-3" />, 2: <Users className="w-3 h-3" /> };
+                  return (
+                    <button
+                      key={level}
+                      onClick={() => setContextLevel(level)}
+                      className={cn(
+                        "font-serif text-[11px] rounded-md h-7 px-2 flex items-center gap-1 whitespace-nowrap transition-all",
+                        contextLevel === level
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      )}
+                      data-testid={`context-level-${level}`}
+                    >
+                      {icons[level]}
+                      {labels[level]}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -2059,11 +2082,11 @@ export default function TastingRoom() {
 
       <FlightBoard tasting={tasting} whiskies={whiskyList} isHost={isHost} getBlindState={getBlindState} />
 
-      {(tasting.status === "reveal" || tasting.status === "archived") && (
+      {contextLevel >= 2 && (tasting.status === "reveal" || tasting.status === "archived") && (
         <TastingAnalytics tastingId={tasting.id} />
       )}
 
-      {tasting.status === "open" && (
+      {contextLevel >= 2 && tasting.status === "open" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <DiscussionPanel tasting={tasting} />
           <ReflectionPanel tasting={tasting} />
@@ -2074,7 +2097,7 @@ export default function TastingRoom() {
         <TastingPhotos tastingId={tasting.id} isHost={isHost} whiskies={whiskyList} />
       )}
 
-      <AttendeeRoster tastingId={tasting.id} hostId={tasting.hostId} />
+      {contextLevel >= 2 && <AttendeeRoster tastingId={tasting.id} hostId={tasting.hostId} />}
 
       {isHost && <SessionControl tasting={tasting} totalWhiskies={whiskyList.length} />}
 
