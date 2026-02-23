@@ -1394,6 +1394,13 @@ const resources = {
         donateButton: "Donate via PayPal",
         disclaimer: "CaskSense does not retain any portion of the donations. All contributions are forwarded to the charitable organization mentioned above.",
       },
+      donationPrompt: {
+        title: "Did you enjoy the tasting?",
+        message: "CaskSense is completely free — no ads, no premium, no hidden costs. All running costs are currently covered by the developer. If you enjoyed the session, a small donation to a good cause would mean a lot to us.",
+        charityInfo: "100% of every donation goes directly to {{name}} — a foundation building a residential hospice in Emmerich, Germany, providing comfort and dignity to the terminally ill.",
+        yesButton: "Sure, I enjoyed it!",
+        noButton: "Not right now",
+      },
       aboutMethod: {
         heroTitle: "About the Method",
         section1Title: "The Discipline of Perception",
@@ -4258,6 +4265,13 @@ const resources = {
         transparencyText: "Wir veröffentlichen den Gesamtbetrag der Spenden auf dieser Seite. Spendernamen werden nie weitergegeben — Ihre Privatsphäre wird respektiert. Nur die Gesamtsumme wird sichtbar gemacht, damit Sie die gemeinsame Wirkung sehen können.",
         donateButton: "Über PayPal spenden",
         disclaimer: "CaskSense behält keinen Teil der Spenden ein. Alle Beiträge werden an die oben genannte gemeinnützige Organisation weitergeleitet.",
+      },
+      donationPrompt: {
+        title: "Hat es dir gefallen?",
+        message: "CaskSense ist komplett kostenlos — keine Werbung, kein Premium, keine versteckten Kosten. Alle laufenden Kosten werden derzeit vom Entwickler getragen. Wenn dir die Session gefallen hat, würden wir uns über eine kleine Spende für einen guten Zweck freuen.",
+        charityInfo: "100% jeder Spende gehen direkt an die {{name}} — eine Stiftung, die in Emmerich ein stationäres Hospiz baut und schwerstkranken Menschen Geborgenheit und würdevolle Begleitung bietet.",
+        yesButton: "Gerne, hat mir gefallen!",
+        noButton: "Im Moment möchte ich nicht spenden",
       },
       aboutMethod: {
         heroTitle: "Über die Methode",

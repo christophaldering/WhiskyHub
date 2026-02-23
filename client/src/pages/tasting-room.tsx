@@ -8,6 +8,7 @@ import { SessionControl } from "@/components/session-control";
 import { LoginDialog } from "@/components/login-dialog";
 import { ImportFlightDialog } from "@/components/import-flight-dialog";
 import { CurationWizard } from "@/components/curation-wizard";
+import { DonationPromptDialog } from "@/components/donation-prompt";
 import { CaskTypeSelect } from "@/components/cask-type-select";
 import { FlightBoard } from "@/components/flight-board";
 import { PdfExportDialog } from "@/components/pdf-export-dialog";
@@ -1596,6 +1597,8 @@ export default function TastingRoom() {
   const [guidedExited, setGuidedExited] = useState(false);
   const [presenterActive, setPresenterActive] = useState(false);
   const [presenterExited, setPresenterExited] = useState(false);
+  const [showDonationPrompt, setShowDonationPrompt] = useState(false);
+  const prevStatusRef = useRef<string | null>(null);
 
   const enterFocusMode = useCallback(() => {
     setFocusMode(true);
@@ -1769,6 +1772,18 @@ export default function TastingRoom() {
     );
   }
 
+  useEffect(() => {
+    if (tasting && prevStatusRef.current && prevStatusRef.current !== "archived" && tasting.status === "archived") {
+      const key = `donation_prompt_shown_${tasting.id}`;
+      if (!localStorage.getItem(key)) {
+        setShowDonationPrompt(true);
+      }
+    }
+    if (tasting) {
+      prevStatusRef.current = tasting.status;
+    }
+  }, [tasting?.status, tasting?.id]);
+
   const isRevealPhase = tasting.status === "reveal";
   const shouldAutoPresenter = isRevealPhase && isHost && !presenterExited;
 
@@ -1777,7 +1792,16 @@ export default function TastingRoom() {
       <RevealPresenter
         tasting={tasting}
         whiskies={whiskyList}
-        onExit={() => { setPresenterActive(false); setPresenterExited(true); }}
+        onExit={() => {
+          setPresenterActive(false);
+          setPresenterExited(true);
+          if (tasting.status === "archived") {
+            const key = `donation_prompt_shown_${tasting.id}`;
+            if (!localStorage.getItem(key)) {
+              setShowDonationPrompt(true);
+            }
+          }
+        }}
       />
     );
   }
@@ -1785,6 +1809,7 @@ export default function TastingRoom() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto overflow-x-hidden">
       <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
+      {tasting && <DonationPromptDialog tastingId={tasting.id} open={showDonationPrompt} onClose={() => setShowDonationPrompt(false)} />}
 
       <Dialog open={showSecureAccount} onOpenChange={(v) => { if (!v) { setShowSecureAccount(false); setSecureDismissed(true); } }}>
         <DialogContent className="sm:max-w-sm bg-card border-border">
