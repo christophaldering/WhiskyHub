@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Wine, ArrowRight, Check, Download, Trophy, LogIn } from "lucide-react";
+import { Wine, ArrowRight, Check, Download, Trophy, LogIn, ExternalLink, Shield, Sparkles, BookOpen, User, BarChart3 } from "lucide-react";
 import type { Whisky, Tasting } from "@shared/schema";
 
 function NakedWhiskyCard({
@@ -29,6 +29,7 @@ function NakedWhiskyCard({
   const scale = tasting.ratingScale || 100;
   const mid = scale / 2;
   const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
+  const [imgErr, setImgErr] = useState(false);
 
   const { data: existingRating } = useQuery({
     queryKey: ["rating", participantId, whisky.id],
@@ -109,6 +110,7 @@ function NakedWhiskyCard({
   const isLocked = tasting.status !== "open" && tasting.status !== "draft";
   const isBlind = tasting.blindMode && tasting.status === "open";
   const whiskyLabel = isBlind ? `Whisky ${index + 1}` : whisky.name;
+  const showImage = !isBlind && whisky.imageUrl && !imgErr;
 
   const categories = [
     { id: "nose" as const, label: t("evaluation.nose"), emoji: "👃" },
@@ -123,28 +125,40 @@ function NakedWhiskyCard({
       transition={{ delay: index * 0.08 }}
     >
       <Card className="p-4 border-border/30 bg-card/70" data-testid={`naked-whisky-${whisky.id}`}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center font-serif">{index + 1}</span>
-            <h3 className="font-serif font-bold text-primary text-sm truncate">{whiskyLabel}</h3>
+        <div className="flex gap-3 mb-3">
+          {showImage && (
+            <img
+              src={whisky.imageUrl!}
+              alt={whiskyLabel}
+              className="w-14 h-14 object-cover rounded-lg border border-border/50 flex-shrink-0"
+              onError={() => setImgErr(true)}
+              data-testid={`img-naked-whisky-${whisky.id}`}
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center font-serif flex-shrink-0">{index + 1}</span>
+                <h3 className="font-serif font-bold text-primary text-sm truncate">{whiskyLabel}</h3>
+              </div>
+              {saved && (
+                <span className="text-[10px] text-green-600 flex items-center gap-1 font-mono flex-shrink-0">
+                  <Check className="w-3 h-3" /> saved
+                </span>
+              )}
+              {existingRating && !saved && (
+                <span className="text-[10px] text-muted-foreground font-mono flex-shrink-0">
+                  ✓ {t("evaluation.rated", "bewertet")}
+                </span>
+              )}
+            </div>
+            {!isBlind && (whisky.distillery || whisky.age || whisky.abv) && (
+              <p className="text-[10px] text-muted-foreground mt-0.5 font-mono uppercase">
+                {[whisky.distillery, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null].filter(Boolean).join(" · ")}
+              </p>
+            )}
           </div>
-          {saved && (
-            <span className="text-[10px] text-green-600 flex items-center gap-1 font-mono">
-              <Check className="w-3 h-3" /> saved
-            </span>
-          )}
-          {existingRating && !saved && (
-            <span className="text-[10px] text-muted-foreground font-mono">
-              ✓ {t("evaluation.rated", "bewertet")}
-            </span>
-          )}
         </div>
-
-        {!isBlind && (whisky.distillery || whisky.age || whisky.abv) && (
-          <p className="text-[10px] text-muted-foreground mb-3 font-mono uppercase">
-            {[whisky.distillery, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null].filter(Boolean).join(" · ")}
-          </p>
-        )}
 
         {!isLocked ? (
           <div className="space-y-3">
@@ -179,8 +193,60 @@ function NakedWhiskyCard({
   );
 }
 
+function NakedResultCard({ whisky, rank, avgOverall, count, myScore, t }: { whisky: Whisky; rank: number; avgOverall: number; count: number; myScore: number | null; t: any }) {
+  const [imgErr, setImgErr] = useState(false);
+  return (
+    <Card className="p-3 border-border/30 bg-card/70" data-testid={`naked-result-${whisky.id}`}>
+      <div className="flex items-center gap-3">
+        {whisky.imageUrl && !imgErr ? (
+          <img
+            src={whisky.imageUrl}
+            alt={whisky.name}
+            className="w-10 h-10 object-cover rounded-lg border border-border/50 flex-shrink-0"
+            onError={() => setImgErr(true)}
+          />
+        ) : (
+          <span className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center font-serif font-bold text-sm flex-shrink-0",
+            rank === 0 ? "bg-amber-500/20 text-amber-600" :
+            rank === 1 ? "bg-gray-300/30 text-gray-600" :
+            rank === 2 ? "bg-orange-400/20 text-orange-600" :
+            "bg-muted/30 text-muted-foreground"
+          )}>
+            {rank + 1}
+          </span>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            {whisky.imageUrl && !imgErr && (
+              <span className={cn(
+                "text-xs font-bold font-serif",
+                rank === 0 ? "text-amber-600" : rank === 1 ? "text-gray-500" : rank === 2 ? "text-orange-600" : "text-muted-foreground"
+              )}>#{rank + 1}</span>
+            )}
+            <div className="font-serif font-bold text-sm text-primary truncate">{whisky.name}</div>
+          </div>
+          {whisky.distillery && (
+            <div className="text-[10px] text-muted-foreground font-mono uppercase truncate">
+              {[whisky.distillery, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null].filter(Boolean).join(" · ")}
+            </div>
+          )}
+        </div>
+        <div className="text-right flex-shrink-0">
+          <div className="text-lg font-mono font-black text-primary">Ø {avgOverall}</div>
+          <div className="text-[9px] text-muted-foreground">{count} Ratings</div>
+          {myScore !== null && (
+            <div className="text-[10px] text-primary/70 font-mono">{t("naked.you", "Du")}: {myScore}</div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function NakedResults({ tasting, whiskies }: { tasting: Tasting; whiskies: Whisky[] }) {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const { currentParticipant } = useAppStore();
 
   const { data: allRatings = [] } = useQuery({
@@ -238,34 +304,7 @@ function NakedResults({ tasting, whiskies }: { tasting: Tasting; whiskies: Whisk
 
       <div className="space-y-2">
         {whiskyResults.map((r, i) => (
-          <Card key={r.whisky.id} className="p-3 border-border/30 bg-card/70" data-testid={`naked-result-${r.whisky.id}`}>
-            <div className="flex items-center gap-3">
-              <span className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center font-serif font-bold text-sm flex-shrink-0",
-                i === 0 ? "bg-amber-500/20 text-amber-600" :
-                i === 1 ? "bg-gray-300/30 text-gray-600" :
-                i === 2 ? "bg-orange-400/20 text-orange-600" :
-                "bg-muted/30 text-muted-foreground"
-              )}>
-                {i + 1}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="font-serif font-bold text-sm text-primary truncate">{r.whisky.name}</div>
-                {r.whisky.distillery && (
-                  <div className="text-[10px] text-muted-foreground font-mono uppercase truncate">
-                    {[r.whisky.distillery, r.whisky.age ? `${r.whisky.age}y` : null, r.whisky.abv ? `${r.whisky.abv}%` : null].filter(Boolean).join(" · ")}
-                  </div>
-                )}
-              </div>
-              <div className="text-right flex-shrink-0">
-                <div className="text-lg font-mono font-black text-primary">Ø {r.avgOverall}</div>
-                <div className="text-[9px] text-muted-foreground">{r.count} Ratings</div>
-                {r.myScore !== null && (
-                  <div className="text-[10px] text-primary/70 font-mono">{t("naked.you", "Du")}: {r.myScore}</div>
-                )}
-              </div>
-            </div>
-          </Card>
+          <NakedResultCard key={r.whisky.id} whisky={r.whisky} rank={i} avgOverall={r.avgOverall} count={r.count} myScore={r.myScore} t={t} />
         ))}
       </div>
 
@@ -278,6 +317,49 @@ function NakedResults({ tasting, whiskies }: { tasting: Tasting; whiskies: Whisk
         <Download className="w-4 h-4" />
         {t("naked.download", "Ergebnis herunterladen")}
       </Button>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <Card className="p-5 border-primary/20 bg-primary/5 mt-4">
+          <div className="text-center space-y-3">
+            <Sparkles className="w-6 h-6 text-primary mx-auto" />
+            <div>
+              <h3 className="font-serif font-bold text-primary text-sm">{t("naked.ctaTitle", "Mehr aus deinem Whisky-Erlebnis machen?")}</h3>
+              <p className="text-xs text-muted-foreground mt-1">{t("naked.ctaDesc", "Mit einem kostenlosen CaskSense-Konto bekommst du:")}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-left">
+              <div className="flex items-start gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+                <span className="text-[11px] text-muted-foreground">{t("naked.ctaJournal", "Persönliches Whisky-Tagebuch")}</span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <User className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+                <span className="text-[11px] text-muted-foreground">{t("naked.ctaProfile", "Dein Geschmacksprofil")}</span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <BarChart3 className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+                <span className="text-[11px] text-muted-foreground">{t("naked.ctaStats", "Detaillierte Statistiken")}</span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <Wine className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+                <span className="text-[11px] text-muted-foreground">{t("naked.ctaRecommendations", "Whisky-Empfehlungen")}</span>
+              </div>
+            </div>
+            <Button
+              onClick={() => navigate("/login")}
+              className="w-full font-serif gap-2"
+              size="sm"
+              data-testid="button-naked-upgrade"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              {t("naked.ctaButton", "Kostenlos registrieren")}
+            </Button>
+          </div>
+        </Card>
+      </motion.div>
     </div>
   );
 }
@@ -390,26 +472,32 @@ export default function NakedTasting() {
               <div className="space-y-4">
                 <div className="text-center">
                   <LogIn className="w-6 h-6 text-primary mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground font-serif">{t("quickTasting.namePrompt")}</p>
+                  <p className="text-sm text-muted-foreground font-serif">{t("naked.loginPrompt", "Gib deinen Namen und eine PIN ein, um mitzumachen.")}</p>
                 </div>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder={t("quickTasting.namePlaceholder")}
+                  placeholder={t("naked.namePlaceholder", "Dein Name oder Kürzel")}
                   className="text-center h-11 font-serif"
                   autoFocus
                   data-testid="input-naked-name"
                 />
-                <Input
-                  type="password"
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
-                  placeholder={t("guestAuth.pinPlaceholder")}
-                  maxLength={6}
-                  className="text-center h-11 font-serif"
-                  onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-                  data-testid="input-naked-pin"
-                />
+                <div>
+                  <Input
+                    type="password"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    placeholder={t("guestAuth.pinPlaceholder")}
+                    maxLength={6}
+                    className="text-center h-11 font-serif"
+                    onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+                    data-testid="input-naked-pin"
+                  />
+                  <div className="flex items-start gap-1.5 mt-2">
+                    <Shield className="w-3 h-3 text-primary/60 mt-0.5 flex-shrink-0" />
+                    <p className="text-[10px] text-muted-foreground/70">{t("naked.pinExplain", "Die PIN schützt deine Bewertungen. Falls du die Seite schließt oder dein Gerät abstürzt, kannst du mit Name + PIN jederzeit zurückkommen.")}</p>
+                  </div>
+                </div>
                 <p className="text-[10px] text-muted-foreground/60 text-center">{t('guestAuth.consentNotice')}</p>
                 {joinError && <p className="text-xs text-destructive text-center">{joinError}</p>}
                 <Button
@@ -458,6 +546,16 @@ export default function NakedTasting() {
           </div>
         )}
 
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => navigate("/")}
+            className="text-[11px] text-muted-foreground/50 hover:text-primary transition-colors font-serif inline-flex items-center gap-1"
+            data-testid="link-naked-to-full"
+          >
+            <ExternalLink className="w-3 h-3" />
+            {t("naked.openFull", "CaskSense Vollversion öffnen")}
+          </button>
+        </div>
       </div>
     </div>
   );
