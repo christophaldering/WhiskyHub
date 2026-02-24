@@ -1,0 +1,226 @@
+We already started implementing a UI-mode system. Do NOT restart from scratch. This is a PATCH/FINISH task.
+You MUST first audit what exists, then adjust/extend to meet the exact requirements below.
+
+NON-NEGOTIABLE REQUIREMENTS SUMMARY
+- Exactly 3 UI modes: flow (default), focus, journal.
+- Mode persistence: DB (logged-in) + localStorage (guest fallback). DB overrides localStorage when available.
+- Mode selection can be overridden by HOST per session AND by USER profile:
+  - If session enforces a mode: session mode wins.
+  - Else: user profile mode wins.
+  - Else: flow default.
+- Naked is a session-only interface: NO sidebar, NO bottom nav, NO global header. No nav leakage.
+- FLOW mode: WhatsApp-like timeline with MULTIPLE drams shown as collapsible cards (tap to expand). Only one expanded at a time.
+- Ratings dimensions preserved: Nosing, Tasting, Abgang, Balance, Gesamt.
+- Gesamt slider behavior:
+  - Default suggestion = mean of available (non-empty) values among Nosing/Tasting/Abgang/Balanc e? (see below)
+  - Gesamt is OVERRULABLE (user can set explicitly)
+  - It must be possible to leave individual dimensions empty; empty values must NOT be included in mean calculation.
+- End screen must show: own scores + group average + reveal + ranking (if allowed by session settings).
+- Autosave: leaving page / refresh must not lose progress. Resume via link must work.
+
+==================================================
+PHASE 0 — MANDATORY AUDIT (STOP IF NOT DONE)
+==================================================
+Before coding ANY changes:
+1) Find the current Naked entry route(s) and component(s).
+   - Search for "naked", "guest", "join", "session", and for routes that render the minimal UI.
+2) Find where UI mode is currently stored and toggled:
+   - profile settings UI
+   - context/provider (if exists)
+   - DB persistence path
+   - localStorage keys used
+3) Find session configuration model:
+   - where host-defined settings live (including rating scale definitions and any session flags)
+4) Identify which layouts currently render sidebar/bottom nav and how to disable them.
+
+Output an audit summary:
+- files involved
+- current entry route path(s)
+- current UI mode behavior (what works, what not)
+THEN proceed.
+
+==================================================
+PHASE 1 — UI MODE RESOLUTION LOGIC (HOST + PROFILE + DEFAULT)
+==================================================
+Implement a single resolver function (no duplication):
+resolveUIMode({ sessionMode, userMode, fallback }) -> UIMode
+
+Rules:
+- If sessionMode is set (host enforced), use it.
+- Else if userMode exists, use it.
+- Else use "flow".
+
+Make sure this resolver is used by Naked rendering (and optionally full mode if intended).
+
+Data sources:
+- sessionMode: stored on session config (host set)
+- userMode: stored in DB user settings when logged in; localStorage when guest
+- default: "flow"
+
+==================================================
+PHASE 2 — PERSISTENCE (DB + localStorage fallback)
+==================================================
+1) Logged-in users:
+   - store uiMode in DB user settings (use existing user preferences mechanism; DO NOT invent a parallel system).
+2) Guests (not logged in):
+   - store uiMode in localStorage (key: "casksense.uiMode" unless an existing key exists; if exists, reuse it).
+3) Precedence:
+   - If logged-in user has DB setting, that wins.
+   - Else localStorage.
+   - Else flow default.
+
+Must persist after refresh and after logout/login.
+
+==================================================
+PHASE 3 — HOST CONTROL (SESSION SETTINGS)
+==================================================
+Implement host ability to:
+- optionally enforce a session UI mode (flow/focus/journal)
+- optionally allow/disallow ranking display
+- optionally allow/disallow reveal
+- optionally allow/disallow group averages
+
+If a session already has settings page: extend it.
+If not: implement minimally in host tools (but keep UI calm).
+Do NOT add new navigation entries.
+
+==================================================
+PHASE 4 — NAKED LAYOUT GUARD (NO NAV LEAK)
+==================================================
+Enforce that Naked routes render:
+- no sidebar
+- no bottom nav
+- no global header
+- no links to other app sections
+
+Implement via a dedicated NakedLayout at route level.
+Add a safety check:
+- if user tries to navigate to non-naked routes while in naked flow, redirect back to naked session route.
+
+==================================================
+PHASE 5 — FLOW MODE UI (TIMELINE + COLLAPSIBLE DRAMS)
+==================================================
+FLOW (default):
+- Timeline list of DRAMS (multiple drams visible as cards)
+- Each dram card collapsed by default (except first incomplete one)
+- Tap expands a dram card
+- Only ONE card can be expanded at a time
+- Each expanded card shows all 5 sliders at once + optional note field
+- Sticky bottom composer bar:
+   - optional note input (for currently expanded dram)
+   - Next button:
+     - if current dram incomplete -> goes to next missing required field OR moves to next dram (depending on session rules)
+     - if last dram done -> goes to recap/results
+
+System lines between drams:
+- “Dram 2 von 5” (subtle)
+
+No WhatsApp colors, no emojis, no avatars.
+
+==================================================
+PHASE 6 — FOCUS MODE UI (ONE DRAM AT A TIME)
+==================================================
+FOCUS:
+- show exactly one dram card at a time
+- progress indicator “2 / 5”
+- next/prev allowed
+- same sliders + note
+- transitions gentle (fade/slide)
+- must reuse same rating logic
+
+==================================================
+PHASE 7 — JOURNAL MODE UI (STRUCTURED, CALM)
+==================================================
+JOURNAL:
+- structured layout
+- tabs to jump between drams
+- reuse same sliders + notes
+- export action available if allowed
+
+==================================================
+PHASE 8 — SLIDER SCALES + OPTIONAL VALUES + GESAMT SUGGESTION
+==================================================
+
+A) Host-defined scales
+Sliders must respect host-defined min/max/step/decimals.
+UI must remain scale-neutral:
+- show chosen value clearly
+- optional subtle min/max label (not dominant)
+- ticks only if discrete steps
+
+B) Optional individual ratings
+It must be possible to leave individual dimensions blank.
+Blank means:
+- it is stored as null/undefined (not 0)
+- it is excluded from mean calculations
+
+C) Gesamt suggestion (IMPORTANT)
+Gesamt is a slider that can be user-set, BUT:
+- show a suggested value computed as mean of available values among:
+  - Nosing, Tasting, Abgang, Balance
+- Compute mean using ONLY dimensions that are not blank.
+- If all four are blank, suggested value is blank / not computed.
+- User can override Gesamt manually.
+- Track whether Gesamt was manually overridden (boolean flag) so that if user sets Gesamt explicitly, we do not keep overwriting it.
+- If user clears Gesamt, it returns to suggested mode.
+
+IMPORTANT: Do NOT include blank values in mean; do NOT treat blank as 0.
+
+==================================================
+PHASE 9 — AUTOSAVE + LEAVE & RESUME (CRITICAL)
+==================================================
+Autosave rules:
+- When user changes any slider or note, persist draft state within 1–2 seconds (debounced).
+- On navigation away / reload, state must be preserved.
+- Resume by opening the same session link must restore progress and which dram was last active.
+
+Storage:
+- Logged-in: save draft progress server-side (preferred, consistent across devices).
+- Guest: localStorage draft keyed by sessionId + participant identifier.
+If server-side draft exists, it wins over localStorage.
+
+==================================================
+PHASE 10 — RESULTS SCREEN (OWN + GROUP + REVEAL + RANKING)
+==================================================
+At the end show:
+- participant’s own per-dram scores and overall
+- group averages (if allowed by session)
+- reveal mapping (if allowed)
+- ranking (if allowed)
+
+If not allowed, hide those sections cleanly.
+
+==================================================
+HARD ACCEPTANCE CRITERIA (TASK FAILS IF ANY NOT MET)
+==================================================
+1) Exactly 3 modes exist, no more:
+   flow (default), focus, journal
+2) Mode resolution priority works:
+   session enforced > user profile > localStorage > flow default
+3) Naked routes render ZERO global nav components (sidebar/bottom nav/header)
+4) Flow mode timeline with collapsible dram cards exists; only one expanded at a time
+5) Optional blank ratings are supported and excluded from mean
+6) Gesamt suggestion exists AND is overrulable AND does not overwrite manual override
+7) Autosave works: refresh/leave/resume keeps progress
+8) Results include own + group avg + reveal + ranking (respecting permissions)
+9) No console errors; mobile portrait usable (no overlaps / unreachable buttons)
+
+==================================================
+QA REPORT (MANDATORY OUTPUT)
+==================================================
+After implementation, output:
+- Files changed list
+- How you found the Naked entry route and where it is now
+- How persistence works (DB/localStorage precedence)
+- How session enforced mode works
+- Tests executed (manual):
+  a) flow mode: expand/collapse, rate partial dims, autosave, refresh, resume link
+  b) focus mode: rate, prev/next, autosave
+  c) journal mode: tabs, autosave
+  d) overall: results show ranking + reveal when allowed; hidden when disallowed
+  e) scale tests:
+     - 1–10 step 0.5
+     - 0–100 step 1
+- Confirm acceptance criteria 1–9 all met
+
+Do not stop at partial completion. Fix until all criteria pass.
