@@ -1,0 +1,50 @@
+==================================================
+ADD-ON REQUIREMENT — STANDARD NAKED + ULTRA NAKED
+==================================================
+
+We must support two guest participation flavors:
+
+A) STANDARD NAKED (DEFAULT, RECOMMENDED)
+- No login required, but a stable anonymous guest identity MUST exist.
+- Generate a guestId (UUID) on first entry and persist it on device (localStorage preferred).
+- Use (sessionId + guestId) to associate drafts and final ratings.
+- This MUST enable:
+  - autosave
+  - leave & resume via link (same device/browser)
+  - stable ranking (avoid multiple entries via reload)
+
+B) ULTRA NAKED (OPTIONAL, ONE-SHOT)
+- Maximum anonymity, no durable identity.
+- Do NOT persist guestId to localStorage/cookies.
+- Progress is ephemeral; leaving/reloading loses resume guarantees.
+
+HOST CONTROL (PER SESSION)
+- Add a host setting: guestMode = "standard" | "ultra"
+- Default for all new sessions MUST be "standard".
+- If "ultra" is selected:
+  - Display a clear warning in the guest UI: 
+    “Ultra Naked: Fortschritt wird nicht gespeichert. Wenn du die Seite verlässt oder neu lädst, gehen deine Eingaben verloren.”
+  - Disable resume behavior (no drafts stored server-side or localStorage).
+  - Disable ranking contribution OR hide ranking completely for ultra guests (choose one; preferred: hide ranking in ultra mode).
+
+GUEST UI BEHAVIOR
+- STANDARD mode: show minimal hint (small text):
+  “Dein Fortschritt wird auf diesem Gerät gespeichert, damit du später fortsetzen kannst.”
+- ULTRA mode: show the warning above.
+- Never show any login prompt as mandatory.
+
+SECURITY / ANTI-ABUSE
+- STANDARD mode must prevent duplicate participation entries on simple reload by reusing guestId.
+- ULTRA mode accepts that duplicates can happen; therefore ranking must not be reliable and must be hidden/disabled (as above).
+
+ACCEPTANCE CRITERIA (HARD)
+1) New session defaults to guestMode="standard".
+2) STANDARD: guestId is created once and reused on refresh; resume works on same device.
+3) ULTRA: no guestId is persisted; refresh loses progress or creates a new ephemeral participation; warning is shown.
+4) ULTRA: ranking is not shown or not counted (must be implemented, not just “planned”).
+
+QA TESTS (MANDATORY)
+- STANDARD:
+  - open link, rate 1 dram, refresh => progress still there; ranking shows exactly one entry for that guest
+- ULTRA:
+  - open link, rate 1 dram, refresh => progress NOT reliably restored; warning visible; ranking hidden/disabled
