@@ -51,12 +51,13 @@ function NameEntry({ onJoin, loading }: { onJoin: (name: string, pin: string) =>
           />
           <div className="space-y-1">
             <Input
-              type="password"
+              type="tel"
               inputMode="numeric"
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder={t("guestAuth.pinPlaceholder")}
               maxLength={6}
+              minLength={4}
               className="text-center text-lg h-12 font-serif"
               onKeyDown={(e) => e.key === "Enter" && canSubmit && onJoin(name.trim(), pin)}
               data-testid="input-quick-pin"

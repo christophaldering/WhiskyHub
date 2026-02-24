@@ -1,0 +1,98 @@
+SPRINT 2 — JOIN/ONBOARDING STABILITY (Mobile PIN + Guest modes)
+
+This is a BUGFIX + UX hardening task. Do NOT refactor unrelated pages.
+Primary target: iPhone Safari join modal must never deadlock.
+
+==================================================
+PHASE 0 — AUDIT (MANDATORY, PRINT FIRST)
+==================================================
+1) Locate the Join-the-Tasting modal component(s):
+   - “Join the Tasting”
+   - “Join Session”
+   - quick join routes (/join/:code, /naked/:code)
+2) Locate session access settings:
+   - Where is PIN stored? (pinHash/pinEnabled/pinRequired/etc.)
+   - Where is guestMode stored? (standard/ultra)
+3) Locate validation logic:
+   - Where does “PIN is required (min. 4 digits)” come from?
+4) Locate modal layout CSS and scroll behavior on mobile.
+
+Print: file paths + relevant props/fields found. THEN implement.
+
+==================================================
+PHASE 1 — FIX THE PIN DEADLOCK (CORE)
+==================================================
+A) PIN must be required ONLY if the session is PIN-protected.
+   Implement a single boolean: isPinRequiredForJoin(session)
+   Use actual session fields (do NOT guess). If multiple fields exist, combine safely.
+
+B) UI must render PIN input whenever isPinRequiredForJoin(session) is true.
+   - Label: “PIN”
+   - Placeholder: “4+ Stellen”
+   - inputMode="numeric"
+   - type="tel" (or "password" if you prefer)
+   - minlength=4
+   - show error only after submit OR after field touched (no immediate red error on open)
+
+C) If isPinRequiredForJoin(session) is false:
+   - Do not validate PIN at all
+   - Do not show PIN error message
+
+D) If session is PIN-protected but PIN field fails to render (should not happen):
+   - Show a blocking fallback message instead of deadlocking:
+     “Diese Session ist PIN-geschützt. Bitte Seite neu laden.”
+   (prevents impossible state)
+
+==================================================
+PHASE 2 — MOBILE MODAL USABILITY (iPhone Safari)
+==================================================
+Ensure the join modal is usable on small screens:
+- Modal body: max-height: 80vh; overflow-y: auto;
+- Inputs must not be hidden behind the primary button
+- Keyboard open should not cut off PIN field
+- If needed: make footer sticky or put button below scroll content.
+
+==================================================
+PHASE 3 — GUEST MODES CLARITY (STANDARD vs ULTRA)
+==================================================
+1) Standard guest:
+   - Explain: “Fortschritt wird gespeichert (dieses Gerät)”
+   - Leave & resume must work per your spec (DB + localStorage fallback)
+2) Ultra (Naked):
+   - Show a prominent warning banner:
+     “ACHTUNG: Ultra Naked — Fortschritt wird NICHT gespeichert.”
+   - Ensure no persistence is attempted in ultra mode.
+
+Do not redesign guest system. Only ensure messaging + persistence guard rails are correct.
+
+==================================================
+PHASE 4 — QA (MANDATORY, MUST TEST)
+==================================================
+You must test these scenarios and report results:
+
+A) PIN-protected session:
+   - Mobile: PIN field visible
+   - Cannot join without PIN
+   - Join works with valid PIN
+
+B) Non-PIN session:
+   - No PIN field
+   - No PIN error
+   - Join works with name only
+
+C) Ultra mode:
+   - Warning banner shows
+   - Navigate away and back -> progress is NOT restored (as intended)
+
+D) Standard mode:
+   - Leave page and return -> progress is restored (DB/localStorage fallback)
+
+E) No console errors.
+
+==================================================
+OUTPUT REQUIRED
+==================================================
+- Files changed
+- Exactly which session fields determine isPinRequiredForJoin
+- Screenshots (or detailed description) for A and B on mobile
+- QA report A–E

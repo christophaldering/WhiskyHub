@@ -1898,7 +1898,7 @@ export default function TastingRoom() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 px-4">
         <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
-        <Card className="max-w-sm w-full border-border/50 shadow-lg">
+        <Card className="max-w-sm w-full border-border/50 shadow-lg max-h-[85vh] overflow-y-auto">
           <CardHeader className="text-center pb-2">
             <CardTitle className="font-serif text-2xl text-primary flex items-center justify-center gap-2">
               <User className="w-6 h-6" />
@@ -1923,12 +1923,13 @@ export default function TastingRoom() {
             <div className="space-y-2">
               <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">PIN</Label>
               <Input
-                type="password"
+                type="tel"
                 inputMode="numeric"
                 value={guestPin}
                 onChange={(e) => setGuestPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder={t("login.pinPlaceholder")}
+                placeholder={t("guestAuth.pinPlaceholder")}
                 maxLength={6}
+                minLength={4}
                 className="bg-secondary/20"
                 data-testid="input-guest-pin"
                 onKeyDown={(e) => e.key === "Enter" && guestName.trim() && guestPin.length >= 4 && handleGuestJoin()}
@@ -2072,11 +2073,13 @@ export default function TastingRoom() {
             <div className="space-y-2">
               <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t("login.pin")}</Label>
               <Input
-                type="password"
+                type="tel"
+                inputMode="numeric"
                 value={securePin}
-                onChange={(e) => setSecurePin(e.target.value)}
-                placeholder={t("login.pinPlaceholder")}
+                onChange={(e) => setSecurePin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder={t("guestAuth.pinPlaceholder")}
                 maxLength={6}
+                minLength={4}
                 className="bg-secondary/20"
                 data-testid="input-secure-pin"
               />
