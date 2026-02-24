@@ -425,14 +425,14 @@ export default function WhiskybaseCollection() {
 
   return (
     <div className="space-y-6 pb-20">
-      <div className="flex items-center justify-between">
+      <div className="space-y-3">
         <div>
           <h1 className="text-2xl font-bold font-display" data-testid="text-collection-title">
             {t("collection.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{t("collection.subtitle")}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {items.length > 0 && (
             <Button
               variant="outline"
@@ -461,27 +461,29 @@ export default function WhiskybaseCollection() {
           {items.length > 0 && (
             <Button
               variant="outline"
+              size="sm"
               onClick={() => syncFileInputRef.current?.click()}
               disabled={syncMutation.isPending}
               data-testid="button-sync-collection"
             >
               {syncMutation.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
               ) : (
-                <RefreshCw className="w-4 h-4 mr-2" />
+                <RefreshCw className="w-4 h-4 mr-1" />
               )}
               {syncMutation.isPending ? t("collection.syncing") : t("collection.syncButton")}
             </Button>
           )}
           <Button
+            size="sm"
             onClick={() => fileInputRef.current?.click()}
             disabled={importMutation.isPending}
             data-testid="button-import-collection"
           >
             {importMutation.isPending ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
             ) : (
-              <Upload className="w-4 h-4 mr-2" />
+              <Upload className="w-4 h-4 mr-1" />
             )}
             {importMutation.isPending ? t("collection.importing") : t("collection.importButton")}
           </Button>
