@@ -537,12 +537,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       items: [
         { href: "/tasting", icon: Home, label: t('nav.lobby'), match: (loc: string) => loc === "/tasting" },
         { href: "/tasting/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/tasting/sessions" },
-        { href: "/tasting/calendar", icon: Calendar, label: t('nav.calendar') },
         { href: "/my/journal", icon: NotebookPen, label: t('nav.journal'), match: (loc: string) => loc === "/my/journal" },
         { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
         { href: "/my/collection", icon: Archive, label: t('nav.collection') },
         { href: "/my/wishlist", icon: Star, label: t('nav.wishlist') },
         { href: "/recap", icon: History, label: t('nav.recap') },
+        { href: "/tasting/calendar", icon: Calendar, label: t('nav.calendar') },
         { href: "/my-tastings", icon: ClipboardList, label: t('nav.myTastings') },
         { href: "/tasting/host", icon: LayoutDashboard, label: t('nav.hostDashboard') },
       ],

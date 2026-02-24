@@ -1,0 +1,104 @@
+You are working on the CaskSense web app. Goal: implement a “NAKED participant interface” for guests to join a tasting session with zero distraction. This is NOT a new menu section; it is a session-only mode. It must preserve the existing evaluation systematics and use the existing data model as much as possible.
+
+NAKED PURPOSE (Functional definition)
+- Primary goal: allow a participant (guest) to join a specific tasting session easily, rate each dram with the existing dimensions, and at the end see and receive the session evaluation/recap.
+- “Naked” means: no menu, no sidebar, no bottom nav, no profile, no discover, no community features shown.
+- Minimal friction: optionally no account required (guest mode). If login exists, still allow “naked join”.
+
+CORE SYSTEMATICS (Must be preserved)
+For each dram: the rating dimensions remain:
+- Nosing
+- Tasting
+- Abgang
+- Balance
+- Gesamt
+(Use the existing definitions/specifications as currently implemented.)
+
+KEY UX REQUIREMENT
+The user liked the prior implementation with sliders “on one screen”. Keep “all-in-one” layout:
+- A single Dram card page shows all 5 sliders together.
+- Optional note field.
+- Save/Next buttons.
+- Calm, premium layout, lots of whitespace.
+
+VARIABLE HOST SCALES (Critical)
+Hosts can define the scale (min, max, step, allowed decimals) for each dimension (or a shared scale).
+NAKED UI must be scale-neutral:
+- Internally normalize values (0..1) OR use existing stored raw values, but UI must not look “mathy”.
+- Show only the selected value prominently.
+- Min/max labels (e.g., “1 … 10” or “0 … 100”) may appear in very subtle text under each slider (optional) but must not dominate the UI.
+- Tick marks only when host defined a step that implies discrete values; otherwise smooth.
+
+ROUTING / ENTRY
+Implement Naked mode as an isolated route that can be reached via session link:
+Option 1 (preferred):
+- /session/:sessionId/join?naked=1
+Option 2:
+- /naked/session/:sessionId
+Choose one and be consistent.
+Additionally implement a temporary developer preview route:
+- /naked-preview (only in dev or gated) that loads a sample session.
+
+NAVIGATION RULES IN NAKED MODE
+- Render NO global nav components (desktop, mobile).
+- Enforce by layout-level guard (e.g., a dedicated “NakedLayout”).
+- Any attempt to navigate to other areas should be blocked or redirected back to the naked session flow.
+
+NAKED SCREEN FLOW
+1) Welcome screen (minimal):
+   - Session title
+   - Optional “Name” or “Anonymous”
+   - “Start”
+2) Dram rating screen (repeat per dram):
+   - Top: “Dram A”, “2 of 4” progress indicator
+   - Center: Dram Card with 5 sliders + values + optional note
+   - Bottom: Save + Next
+3) Final recap screen:
+   - Show participant’s dimension scores per dram (and overall)
+   - Show group average (if allowed by session settings)
+   - Show reveal mapping to actual whiskies (if session is revealed)
+   - Provide “Get PDF / Export” (if allowed)
+   - Optional: “Save to my account” soft onboarding (if user wants; do NOT force)
+4) Exit:
+   - “Done” returns to a minimal confirmation page, not the full app.
+
+COMPONENT SPEC (Dram Card)
+- Card contains 5 consistent slider rows:
+  NOSING
+  TASTING
+  ABGANG
+  BALANCE
+  GESAMT
+- Each row:
+  - Label left
+  - Slider center
+  - Value right (big enough to read)
+  - Optional min/max in subtle small text below slider
+- Card must not require scrolling on mobile if possible (optimize spacing).
+- Keep typography and spacing premium; avoid bright colors; only subtle accent.
+
+DATA & COMPATIBILITY
+- Use existing session/dram/rating models.
+- Do not duplicate data storage pathways.
+- Ensure that ratings submitted in naked mode appear in the session’s normal recap/analytics.
+- Ensure access control: only participants with the session link can submit ratings; prevent cross-session access.
+
+QUALITY ASSURANCE (Mandatory)
+A) Unit/integration checks (as possible):
+- For a session with variable scales (e.g., 1–10 step 0.5; 0–100 step 1), confirm sliders display correctly and saved values match expected scale.
+- Ensure no global nav renders in naked routes.
+B) Manual clickpath tests (document):
+- Guest opens naked link → enters name → rates all drams → sees recap → downloads/receives export.
+- Guest refreshes mid-session: progress persists or gracefully resumes.
+- Host-defined scales: verify UI and stored values.
+- Reveal toggles: if not revealed, recap does not show whisky identities; after reveal it does.
+C) Mobile tests:
+- iPhone portrait: no overlaps, no unreachable buttons, no modal close issues.
+D) Security sanity:
+- A guest cannot access /admin, /profile, /discover etc. from naked mode; direct URL attempts redirect back.
+
+DELIVERABLES
+1) Implement Naked routes, layout guard, and Dram Card component.
+2) Provide a brief technical note on how scale definitions are read from the host/session configuration.
+3) Provide QA report with tests executed and results.
+4) Ensure zero regression to existing full-mode tasting flows.
