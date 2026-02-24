@@ -529,15 +529,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const isHost = currentParticipant && allTastings.some((t: any) => t.hostId === currentParticipant.id);
   const isAdmin = currentParticipant?.role === "admin";
+  const hasActiveSessions = allTastings.some((t: any) => ["open", "closed", "reveal"].includes(t.status));
 
   const navGroups: NavGroup[] = useMemo(() => [
-    {
+    ...(hasActiveSessions ? [{
       label: t('navGroup.jetzt'),
       defaultOpen: true,
       items: [
         { href: "/now", icon: Zap, label: t('nav.now'), match: (loc: string) => loc === "/now" },
       ],
-    },
+    }] : []),
     {
       label: t('navGroup.tastings'),
       defaultOpen: true,
@@ -576,7 +577,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
       ],
     }] : []),
-  ], [t, currentParticipant?.role]);
+  ], [t, currentParticipant?.role, hasActiveSessions]);
 
   const desktopNavRef = useRef<HTMLElement>(null);
   const mobileNavRef = useRef<HTMLElement>(null);
