@@ -1,0 +1,204 @@
+We are implementing a NEW NAKED PARTICIPANT INTERFACE for CaskSense.
+
+This is NOT a theme.
+This is a dedicated interaction mode.
+
+Mode name: "Focus Mode"
+Pattern: Card Deck (single dram in focus)
+Environment: React + Vite + Wouter
+Query params are already used in the project.
+
+-----------------------------------
+MANDATORY GOAL
+-----------------------------------
+
+Create a dedicated Naked Session UI in "Focus Mode" with:
+
+- One dram visible at a time
+- Dram card is collapsible
+- No global navigation rendered
+- No sidebar
+- No mobile bottom nav
+- No access to other app areas
+- Full compatibility with existing session data model
+- Uses existing 5 rating dimensions:
+  - Nosing
+  - Tasting
+  - Abgang
+  - Balance
+  - Gesamt
+
+-----------------------------------
+ROUTING
+-----------------------------------
+
+Implement a dedicated route:
+
+/session/:id/naked
+
+OR
+
+/session/:id?mode=naked&ui=focus
+
+Choose ONE consistent approach and implement fully.
+
+This route must render a dedicated layout:
+<NakedFocusLayout>
+
+This layout MUST:
+- Not import layout.tsx
+- Not render sidebar
+- Not render mobile bottom nav
+- Not render global header
+- Not render profile shortcuts
+
+-----------------------------------
+FOCUS MODE UI STRUCTURE
+-----------------------------------
+
+1) Sticky Top Bar:
+- Session name
+- "Guest Mode" indicator
+- Minimal back or close action (returns to final confirmation page)
+- No other links
+
+2) Dram Deck Structure:
+
+- Only ONE dram visible at a time
+- Card centered
+- Large title: "Dram A"
+- Subtle progress text: "2 of 5"
+
+Card behavior:
+- Collapsed by default
+- Tap to expand
+- When expanded:
+    - Render all 5 sliders simultaneously
+    - Optional note field
+    - Save button
+
+After Save:
+    - Collapse current card
+    - Smooth transition to next dram
+    - Scroll to top
+
+3) Bottom Action Bar (Sticky):
+- Primary button:
+    - "Next"
+    - On final dram: "Show Results"
+- Button disabled until all 5 dimensions have values
+
+-----------------------------------
+SLIDER BEHAVIOR
+-----------------------------------
+
+- Must respect host-defined scale:
+    - min
+    - max
+    - step
+    - decimals
+- No hardcoded 1–10 assumption
+- Display selected value clearly on the right side
+- Min/max labels subtle below slider
+
+-----------------------------------
+RESULT SCREEN
+-----------------------------------
+
+After last dram:
+
+Render:
+- Summary card
+- User's scores per dram
+- Optional group average (if allowed)
+- Reveal mapping (if session revealed)
+- Optional export button (if enabled)
+
+No navigation out of naked mode except:
+- "Done" button → confirmation screen
+
+-----------------------------------
+DATA REQUIREMENTS
+-----------------------------------
+
+- Must reuse existing rating submission logic
+- Must store ratings exactly as current journal expects
+- Must not duplicate session model
+- Must not break analytics/recap
+
+-----------------------------------
+SECURITY REQUIREMENTS
+-----------------------------------
+
+If user tries to access:
+- /profile
+- /admin
+- /discover
+- /my/journal
+from naked route:
+They must be redirected back to naked session.
+
+-----------------------------------
+VISUAL STYLE
+-----------------------------------
+
+- Calm
+- No bright WhatsApp colors
+- Neutral background
+- Generous whitespace
+- Card with soft shadow
+- No emojis
+- No chat bubbles
+
+-----------------------------------
+ACCEPTANCE CRITERIA (HARD)
+-----------------------------------
+
+The implementation is ONLY complete if:
+
+1) Visiting /session/:id/naked renders:
+   - No sidebar
+   - No mobile nav
+   - No global header
+   - Only NakedFocusLayout
+
+2) Only one dram visible at a time.
+
+3) Dram card collapses and expands correctly.
+
+4) Save stores data correctly (verify in journal after session).
+
+5) Next button disabled until 5 ratings filled.
+
+6) Refresh mid-session restores correct dram position.
+
+7) Mobile portrait:
+   - No overlapping UI
+   - No unreachable buttons
+   - No scroll lock issues
+
+8) Attempt to access other routes during naked mode redirects back.
+
+-----------------------------------
+MANDATORY QA REPORT
+-----------------------------------
+
+After implementation, provide:
+
+1) List of files created/modified
+2) Route definition snippet
+3) Confirmation of layout isolation
+4) Screenshot confirmation checklist (describe)
+5) Test of:
+   - Standard user
+   - Guest user
+   - Host-defined scale (example: 0–100)
+   - Multi-dram session
+6) Confirmation no regression to existing tasting flow
+
+If ANY acceptance criterion is not satisfied,
+do not mark task complete.
+
+-----------------------------------
+END OF SPEC
+-----------------------------------
