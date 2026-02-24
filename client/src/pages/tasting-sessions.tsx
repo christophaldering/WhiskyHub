@@ -1,22 +1,30 @@
 import { useState, lazy, Suspense } from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { TabsContent } from "@/components/ui/tabs";
 import { useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Wine, Loader2 } from "lucide-react";
-import { PageLayout } from "@/components/page-layout";
+import { PageLayout, type PageTab } from "@/components/page-layout";
 import Sessions from "@/pages/sessions";
 import TastingHistory from "@/pages/tasting-history";
 
 const HostDashboard = lazy(() => import("@/pages/host-dashboard"));
 const TastingRecap = lazy(() => import("@/pages/tasting-recap"));
 
+const VALID_TABS = ["sessions", "mine", "host", "recap"] as const;
+
+const TABS: PageTab[] = [
+  { key: "sessions", labelKey: "tastingSessions.tabAll", testId: "tab-sessions-all" },
+  { key: "mine", labelKey: "tastingSessions.tabMine", testId: "tab-sessions-mine" },
+  { key: "host", labelKey: "tastingSessions.tabHost", testId: "tab-sessions-host" },
+  { key: "recap", labelKey: "tastingSessions.tabRecap", testId: "tab-sessions-recap" },
+];
+
 export default function TastingSessions() {
   const { t } = useTranslation();
   const searchStr = useSearch();
   const params = new URLSearchParams(searchStr);
   const rawTab = params.get("tab") || "sessions";
-  const validTabs = ["sessions", "mine", "host", "recap"];
-  const initialTab = validTabs.includes(rawTab) ? rawTab : "sessions";
+  const initialTab = VALID_TABS.includes(rawTab as any) ? rawTab : "sessions";
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const handleTabChange = (value: string) => {
@@ -37,43 +45,28 @@ export default function TastingSessions() {
     <PageLayout
       icon={Wine}
       title={t("nav.sessions")}
+      tabs={TABS}
+      activeTabKey={activeTab}
+      onTabChange={handleTabChange}
+      tabsTestId="tabs-sessions"
       testId="tasting-sessions-page"
     >
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <div className="overflow-x-auto -mx-4 px-4 pb-1">
-          <TabsList className="w-full grid grid-cols-4" data-testid="tabs-sessions">
-            <TabsTrigger value="sessions" data-testid="tab-sessions-all">
-              {t("tastingSessions.tabAll", "Sessions")}
-            </TabsTrigger>
-            <TabsTrigger value="mine" data-testid="tab-sessions-mine">
-              {t("tastingSessions.tabMine", "Meine Tastings")}
-            </TabsTrigger>
-            <TabsTrigger value="host" data-testid="tab-sessions-host">
-              {t("tastingSessions.tabHost", "Host")}
-            </TabsTrigger>
-            <TabsTrigger value="recap" data-testid="tab-sessions-recap">
-              {t("tastingSessions.tabRecap", "Recap")}
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="sessions" className="mt-4">
-          <Sessions />
-        </TabsContent>
-        <TabsContent value="mine" className="mt-4">
-          <TastingHistory />
-        </TabsContent>
-        <TabsContent value="host" className="mt-4">
-          <Suspense fallback={lazyFallback}>
-            <HostDashboard />
-          </Suspense>
-        </TabsContent>
-        <TabsContent value="recap" className="mt-4">
-          <Suspense fallback={lazyFallback}>
-            <TastingRecap />
-          </Suspense>
-        </TabsContent>
-      </Tabs>
+      <TabsContent value="sessions" className="mt-4">
+        <Sessions />
+      </TabsContent>
+      <TabsContent value="mine" className="mt-4">
+        <TastingHistory />
+      </TabsContent>
+      <TabsContent value="host" className="mt-4">
+        <Suspense fallback={lazyFallback}>
+          <HostDashboard />
+        </Suspense>
+      </TabsContent>
+      <TabsContent value="recap" className="mt-4">
+        <Suspense fallback={lazyFallback}>
+          <TastingRecap />
+        </Suspense>
+      </TabsContent>
     </PageLayout>
   );
 }

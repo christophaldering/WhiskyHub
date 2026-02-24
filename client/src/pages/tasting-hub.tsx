@@ -1,14 +1,20 @@
 import { useState } from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { TabsContent } from "@/components/ui/tabs";
 import { useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Wine } from "lucide-react";
-import { PageLayout } from "@/components/page-layout";
+import { PageLayout, type PageTab } from "@/components/page-layout";
 import Home from "@/pages/home";
 import TastingTemplates from "@/pages/tasting-templates";
 import PairingSuggestions from "@/pages/pairing-suggestions";
 
 const VALID_TABS = ["lobby", "templates", "pairings"] as const;
+
+const TABS: PageTab[] = [
+  { key: "lobby", labelKey: "tastingHub.tabLobby", testId: "tab-lobby" },
+  { key: "templates", labelKey: "tastingHub.tabTemplates", testId: "tab-templates" },
+  { key: "pairings", labelKey: "tastingHub.tabPairings", testId: "tab-pairings" },
+];
 
 export default function TastingHub() {
   const { t } = useTranslation();
@@ -29,34 +35,22 @@ export default function TastingHub() {
   return (
     <PageLayout
       icon={Wine}
-      title="Tasting"
+      title={t("tastingHub.title")}
+      tabs={TABS}
+      activeTabKey={activeTab}
+      onTabChange={handleTabChange}
+      tabsTestId="tabs-list"
       testId="tasting-hub-page"
     >
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <div className="overflow-x-auto -mx-4 px-4 pb-1">
-          <TabsList className="w-full justify-start" data-testid="tabs-list">
-            <TabsTrigger value="lobby" data-testid="tab-lobby">
-              Lobby
-            </TabsTrigger>
-            <TabsTrigger value="templates" data-testid="tab-templates">
-              {t("tastingHub.templates", "Vorlagen")}
-            </TabsTrigger>
-            <TabsTrigger value="pairings" data-testid="tab-pairings">
-              Pairings
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="lobby" data-testid="tab-content-lobby">
-          <Home />
-        </TabsContent>
-        <TabsContent value="templates" data-testid="tab-content-templates">
-          <TastingTemplates />
-        </TabsContent>
-        <TabsContent value="pairings" data-testid="tab-content-pairings">
-          <PairingSuggestions />
-        </TabsContent>
-      </Tabs>
+      <TabsContent value="lobby" data-testid="tab-content-lobby">
+        <Home />
+      </TabsContent>
+      <TabsContent value="templates" data-testid="tab-content-templates">
+        <TastingTemplates />
+      </TabsContent>
+      <TabsContent value="pairings" data-testid="tab-content-pairings">
+        <PairingSuggestions />
+      </TabsContent>
     </PageLayout>
   );
 }

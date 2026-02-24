@@ -8,6 +8,7 @@ import { useAppStore } from "@/lib/store";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import type { EncyclopediaSuggestion } from "@shared/schema";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { PageLayout } from "@/components/page-layout";
 import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock, Settings, FlaskConical, Filter, AlertTriangle, Globe, UserPlus, BellRing, Megaphone, Scale } from "lucide-react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -853,26 +854,13 @@ export default function AdminPanel() {
     : 1;
 
   return (
-    <motion.div
-      className="max-w-5xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      data-testid="admin-panel-page"
-    >
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <ShieldAlert className="w-7 h-7 text-primary" />
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-admin-title">
-            {t("admin.title")}
-          </h1>
-        </div>
-        <p className="text-sm text-muted-foreground" data-testid="text-admin-subtitle">
-          {t("admin.subtitle")}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+    <PageLayout
+      icon={ShieldAlert}
+      title={t("admin.title")}
+      subtitle={t("admin.subtitle")}
+      testId="admin-panel-page"
+      headerContent={
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card data-testid="stat-total-participants">
           <CardContent className="p-4 text-center">
             <Users className="w-5 h-5 mx-auto mb-1 text-primary" />
@@ -902,7 +890,8 @@ export default function AdminPanel() {
           </CardContent>
         </Card>
       </div>
-
+      }
+    >
       <Tabs value={adminTab} onValueChange={setAdminTab} data-testid="admin-tabs">
         <Select value={adminTab} onValueChange={setAdminTab}>
           <SelectTrigger className="w-full mb-6" data-testid="admin-section-select">
@@ -1994,7 +1983,7 @@ export default function AdminPanel() {
           <OnlineUsersTab />
         </TabsContent>
       </Tabs>
-    </motion.div>
+    </PageLayout>
   );
 }
 
