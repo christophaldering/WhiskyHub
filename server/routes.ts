@@ -34,6 +34,13 @@ function getDefaultSetting(key: string): string {
     guest_mode_enabled: "true",
     maintenance_mode: "false",
     email_notifications_enabled: "true",
+    comparable_weights_region: "3",
+    comparable_weights_peat: "3",
+    comparable_weights_cask: "2",
+    comparable_weights_abv: "1",
+    comparable_weights_age: "1",
+    comparable_min_samples: "7",
+    comparable_fallback_behavior: "overall",
   };
   return defaults[key] ?? "";
 }
@@ -5751,7 +5758,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
   app.get("/api/app-settings/public", async (_req, res) => {
     try {
       const settings = await storage.getAppSettings();
-      const publicKeys = ["whats_new_enabled", "whats_new_text", "whats_new_version", "guest_mode_enabled", "maintenance_mode", "registration_open"];
+      const publicKeys = ["whats_new_enabled", "whats_new_text", "whats_new_version", "guest_mode_enabled", "maintenance_mode", "registration_open", "comparable_weights_region", "comparable_weights_peat", "comparable_weights_cask", "comparable_weights_abv", "comparable_weights_age", "comparable_min_samples", "comparable_fallback_behavior"];
       const result: Record<string, string> = {};
       for (const key of publicKeys) {
         result[key] = settings[key] ?? getDefaultSetting(key);
@@ -5779,6 +5786,13 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         guest_mode_enabled: "true",
         maintenance_mode: "false",
         email_notifications_enabled: "true",
+        comparable_weights_region: "3",
+        comparable_weights_peat: "3",
+        comparable_weights_cask: "2",
+        comparable_weights_abv: "1",
+        comparable_weights_age: "1",
+        comparable_min_samples: "7",
+        comparable_fallback_behavior: "overall",
       };
       const merged = { ...defaults, ...settings };
       res.json(merged);
@@ -5795,7 +5809,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       if (!requester || requester.role !== "admin") {
         return res.status(403).json({ message: "Admin access required" });
       }
-      const allowedKeys = ["whats_new_enabled", "whats_new_text", "whats_new_version", "registration_open", "guest_mode_enabled", "maintenance_mode", "email_notifications_enabled"];
+      const allowedKeys = ["whats_new_enabled", "whats_new_text", "whats_new_version", "registration_open", "guest_mode_enabled", "maintenance_mode", "email_notifications_enabled", "comparable_weights_region", "comparable_weights_peat", "comparable_weights_cask", "comparable_weights_abv", "comparable_weights_age", "comparable_min_samples", "comparable_fallback_behavior"];
       const filtered: Record<string, string> = {};
       for (const [key, value] of Object.entries(settings)) {
         if (allowedKeys.includes(key)) {

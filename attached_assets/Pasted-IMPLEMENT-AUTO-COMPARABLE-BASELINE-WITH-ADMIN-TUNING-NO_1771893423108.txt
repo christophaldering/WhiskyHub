@@ -1,0 +1,100 @@
+IMPLEMENT AUTO “COMPARABLE BASELINE” WITH ADMIN TUNING (NO DB MIGRATIONS)
+
+Goal:
+Add an automatic "Comparable Baseline" in tasting views.
+Default: comparable group is computed once per dram/session item (global comparable group).
+Optional advanced mode: compute comparable baseline per dimension.
+Keep UI minimal: only show a simple toggle "Reference: Overall | Comparable".
+Advanced option only in Calibration/Analyst or Admin setting.
+
+Hard Rules:
+- No route changes
+- No DB migrations / schema changes
+- No backend API contract changes (unless strictly additive & backward compatible)
+- No permission logic changes (only use existing roles/levels)
+- No feature removal
+- Preserve existing contextLevel + tastingMode logic
+- Performance must not degrade (use caching/memoization)
+
+-------------------------------------------------
+1) BASELINE TYPES
+-------------------------------------------------
+Baseline reference options:
+A) Overall Baseline: user's full history for each dimension (existing or implement)
+B) Comparable Baseline: automatically derived reference group based on whisky metadata.
+
+Comparable Baseline default:
+- dram-level comparable group (one group per dram, applied across dimensions)
+
+Optional advanced:
+- dimension-level comparable group (group selection can vary per dimension)
+
+-------------------------------------------------
+2) COMPARABLE GROUP AUTO SELECTION (NO USER FILTER UI)
+-------------------------------------------------
+Compute similarity score using available whisky metadata:
+- region
+- peat level (or inferred)
+- cask type
+- ABV range
+- age band (optional)
+Use weighted matching. Provide default weights.
+
+Admin-configurable weights + thresholds via app_settings (key-value):
+- comparable_weights_region
+- comparable_weights_peat
+- comparable_weights_cask
+- comparable_weights_abv
+- comparable_weights_age
+- comparable_min_samples (e.g., 7)
+- comparable_fallback_behavior (fallback to overall)
+
+If not enough comparable samples:
+- automatically fallback to Overall Baseline
+- show subtle note: “Not enough comparable reference data yet.”
+
+-------------------------------------------------
+3) UI
+-------------------------------------------------
+In tasting room rating UI:
+- show thin "typical range" band (25–75 percentile) + median marker for baseline
+- baseline visible in blind mode (self-only, no community), per spec
+- add simple selector in session header or near rating component:
+  “Referenz: Gesamt | Vergleichbar”
+- Advanced (only for Analyst/Admin OR Calibration mode):
+  “Erweitert: Vergleichbarkeit pro Dimension” (toggle)
+Do NOT add more filter controls.
+
+-------------------------------------------------
+4) SEPARATION OF CONCERNS
+-------------------------------------------------
+- Comparable baseline must respect contextLevel:
+  * contextLevel 0/1: self-only baseline (overall/comparable)
+  * contextLevel 2: community overlays may appear but must not dominate baseline
+- tastingMode blind/guided remains independent.
+
+-------------------------------------------------
+5) PERFORMANCE
+-------------------------------------------------
+- Memoize similarity computation per dram
+- Cache comparable group results per user + metadata signature in memory (or query cache)
+- Do not trigger extra heavy API calls when baseline is hidden
+
+-------------------------------------------------
+6) QA / VALIDATION (MANDATORY)
+-------------------------------------------------
+Provide a QA checklist and confirm:
+- Works on mobile
+- No console errors
+- Compile clean
+- Baseline shows with 0–2 tastings (placeholder state), 3–9 (provisional), 10+ (stable)
+- Comparable baseline falls back correctly when insufficient data
+- contextLevel + tastingMode combinations tested (blind/guided x 0/1/2)
+- No duplicated UI blocks
+- No permission leaks
+
+Deliverables:
+- Files changed
+- Summary of algorithm (weights, threshold, fallback)
+- Screenshots: Overall vs Comparable, and Advanced mode if enabled
+- Confirm no DB migrations and minimal-change approach

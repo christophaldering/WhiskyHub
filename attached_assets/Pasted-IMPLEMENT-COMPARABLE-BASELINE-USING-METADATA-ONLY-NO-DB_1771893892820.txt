@@ -1,0 +1,133 @@
+IMPLEMENT “COMPARABLE BASELINE” USING METADATA ONLY (NO DB MIGRATIONS)
+
+Goal:
+Add an automatic “Comparable Baseline” (self-only) in tasting views, based ONLY on whisky metadata.
+Users see a simple selector: “Referenz: Gesamt | Vergleichbar”.
+Default: Comparable group is computed once per dram (dram-level group).
+Optional advanced: per-dimension comparable groups (hidden behind “Erweitert”, Analyst/Admin only).
+
+Hard Rules:
+- No route changes
+- No DB migrations / schema changes
+- No breaking backend changes (additive only if needed)
+- No permission logic changes (use existing roles/levels only)
+- No feature removal
+- Keep existing tastingMode (blind/guided) and contextLevel (0/1/2) logic intact
+- Performance must not degrade (memoization/caching required)
+
+-------------------------------------------------
+1) DEFINITIONS
+-------------------------------------------------
+Overall Baseline (Gesamt):
+- User’s historical distribution per dimension (median + IQR 25–75%)
+
+Comparable Baseline (Vergleichbar) = METADATA ONLY:
+- A subset of the user’s own history selected by similarity to the current dram’s metadata:
+  - Region
+  - Peat level (if available)
+  - Cask type
+  - ABV (band)
+  - Age (band) optional
+
+No aroma tags, no notes text, no ML embeddings.
+
+-------------------------------------------------
+2) SIMILARITY MODEL (METADATA ONLY)
+-------------------------------------------------
+Compute similarity score per candidate whisky in user history.
+
+Default weights (admin-tunable):
+- region: 0.40
+- peat:   0.30
+- cask:   0.20
+- abv:    0.10
+- age:    0.00 (off by default, but supported)
+
+ABV band match:
+- match if within ±3% ABV (configurable)
+
+Age band match (if enabled):
+- match if within ±3 years (configurable)
+
+If metadata missing:
+- reduce that dimension’s contribution (do NOT exclude automatically)
+
+Comparable set selection:
+- take top-N most similar items OR all above threshold (choose the simplest stable approach)
+- enforce minimum sample size (default 7) for showing “Vergleichbar”
+
+Fallback behavior:
+- If comparable samples < min_samples -> automatically fallback to “Gesamt”
+- Show subtle note: “Noch nicht genug vergleichbare Referenzdaten — zeige Gesamt.”
+
+Admin tuning via app_settings (key-value) if exists:
+- comparable_weight_region
+- comparable_weight_peat
+- comparable_weight_cask
+- comparable_weight_abv
+- comparable_weight_age
+- comparable_min_samples
+- comparable_abv_band
+- comparable_age_band
+- comparable_threshold (optional)
+- comparable_enable_per_dimension (default false)
+
+-------------------------------------------------
+3) UI (INSTRUMENT STYLE)
+-------------------------------------------------
+In tasting rating UI (also in blind mode):
+- Always show the user’s baseline as a thin band (IQR 25–75) + median marker for each dimension
+- User’s current rating remains visually dominant
+- No flashy colors, no gamification badges
+
+Add simple selector (near header or rating module):
+- “Referenz: Gesamt | Vergleichbar”
+Behavior:
+- Selecting “Vergleichbar” uses comparable baseline if available, else auto-fallback to Gesamt (with subtle note)
+
+Advanced (Analyst/Admin or Calibration mode only):
+- “Erweitert: Vergleichbarkeit pro Dimension” toggle
+  - OFF (default): one comparable group per dram applied to all dimensions
+  - ON: comparable group computed separately per dimension (still metadata-only)
+  - Must be hidden for normal users to avoid complexity
+
+-------------------------------------------------
+4) INTEGRATION WITH EXISTING AXES
+-------------------------------------------------
+- tastingMode blind/guided stays independent of baseline selection
+- contextLevel behavior:
+  - contextLevel 0/1: show self-only baseline (Gesamt/Vergleichbar)
+  - contextLevel 2: community overlays may exist but must not visually dominate baseline
+- No community data used in baseline computation
+
+-------------------------------------------------
+5) PERFORMANCE REQUIREMENTS
+-------------------------------------------------
+- Memoize comparable selection per dram metadata signature
+- Cache per user session (React memo/query cache) to avoid recomputing on every keystroke
+- Do not introduce extra heavy API calls when baseline is hidden or unchanged
+
+-------------------------------------------------
+6) QA / VALIDATION (MANDATORY)
+-------------------------------------------------
+Before commit, verify and report:
+- Compile clean, no console errors
+- Mobile layout OK
+- Baseline states:
+  - 0–2 tastings: “Baseline entsteht” (placeholder, no fake range)
+  - 3–9: “Vorläufige Referenz”
+  - 10+: stable baseline (no extra helper text)
+- Comparable fallback works (insufficient samples)
+- Tested combinations: blind/guided × contextLevel 0/1/2 × reference Gesamt/Vergleichbar
+- No duplicated UI blocks
+- No permission leaks
+
+Deliverables:
+- Files modified
+- Summary of algorithm (weights, bands, min_samples, fallback)
+- Screenshots or verified states for:
+  - Gesamt baseline
+  - Vergleichbar baseline (available)
+  - Vergleichbar fallback to Gesamt (insufficient data)
+  - Advanced per-dimension toggle (if implemented)
+- Confirm: metadata-only, no DB migrations, minimal changes

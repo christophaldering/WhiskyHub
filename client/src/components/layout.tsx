@@ -517,12 +517,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       defaultOpen: true,
       items: [
         { href: "/app", icon: Home, label: t('nav.lobby') },
-        { href: "/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/sessions" || loc === "/my-tastings" || loc === "/host-dashboard" || loc === "/recap" || loc.startsWith("/recap/") || loc === "/export-notes" },
+        { href: "/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/sessions" || loc === "/export-notes" },
         { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
         { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
         { href: "/collection", icon: Archive, label: t('nav.myWhiskyCollection') },
         { href: "/wishlist", icon: Star, label: t('nav.myWhiskyWishlist') },
         { href: "/recap", icon: History, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
+        { href: "/my-tastings", icon: ClipboardList, label: t('nav.myTastings') },
+        { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
       ],
     },
     {
@@ -557,7 +559,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: t('navGroup.wissen'),
       items: [
         { href: "/lexicon", icon: BookOpen, label: t('nav.lexicon') },
-        { href: "/distilleries", icon: Landmark, label: t('nav.distilleries'), match: (loc: string) => loc === "/distilleries" || loc === "/distillery-map" },
+        { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
+        { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
         { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
         { href: "/research", icon: Microscope, label: t('nav.research') },
       ],

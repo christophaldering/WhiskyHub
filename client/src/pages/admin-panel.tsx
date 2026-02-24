@@ -8,7 +8,7 @@ import { useAppStore } from "@/lib/store";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import type { EncyclopediaSuggestion } from "@shared/schema";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock, Settings, FlaskConical, Filter, AlertTriangle, Globe, UserPlus, BellRing, Megaphone } from "lucide-react";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock, Settings, FlaskConical, Filter, AlertTriangle, Globe, UserPlus, BellRing, Megaphone, Scale } from "lucide-react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -2659,6 +2659,50 @@ function AdminSettingsTab({ participantId }: { participantId: string }) {
               checked={settings.email_notifications_enabled === "true"}
               onCheckedChange={() => toggleSetting("email_notifications_enabled")}
               data-testid="switch-email-notifications"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
+            <Scale className="w-5 h-5 text-blue-500" />
+            {t("admin.settingsComparable")}
+          </h3>
+          <p className="text-xs text-muted-foreground mb-4">{t("admin.settingsComparableDesc")}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[
+              { key: "comparable_weights_region", label: t("taxonomy.region") },
+              { key: "comparable_weights_peat", label: t("taxonomy.peat") },
+              { key: "comparable_weights_cask", label: t("taxonomy.cask") },
+              { key: "comparable_weights_abv", label: t("taxonomy.abv") },
+              { key: "comparable_weights_age", label: t("taxonomy.age") },
+              { key: "comparable_min_samples", label: t("admin.settingsComparableMinSamples") },
+            ].map(({ key, label }) => (
+              <div key={key} className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">{label}</label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={settings[key] || ""}
+                  onChange={(e) => updateSetting.mutate({ [key]: e.target.value })}
+                  className="h-8 text-sm"
+                  data-testid={`input-${key}`}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+            <div>
+              <p className="font-medium text-sm">{t("admin.settingsComparableFallback")}</p>
+              <p className="text-xs text-muted-foreground">{t("admin.settingsComparableFallbackDesc")}</p>
+            </div>
+            <Switch
+              checked={settings.comparable_fallback_behavior !== "none"}
+              onCheckedChange={() => updateSetting.mutate({ comparable_fallback_behavior: settings.comparable_fallback_behavior === "none" ? "overall" : "none" })}
+              data-testid="switch-comparable-fallback"
             />
           </div>
         </CardContent>

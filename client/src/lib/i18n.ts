@@ -923,7 +923,19 @@ const resources = {
         guessAge: "Guess Age",
         blindResults: "Your Blind Guess Results",
         guessVsActual: "{{guess}} → actual: {{actual}}",
-        notesPlaceholder: "Aromas, palate, finish..."
+        notesPlaceholder: "Aromas, palate, finish...",
+        baseline: {
+          label: "Reference",
+          overall: "Overall",
+          comparable: "Comparable",
+          advancedToggle: "Comparable per dimension",
+          typicalRange: "Typical range",
+          median: "Median",
+          fallbackInsufficient: "Not enough comparable reference data yet.",
+          fallbackNone: "No comparable reference data available.",
+          provisional: "Provisional (fewer than 10 ratings)",
+          placeholderFew: "Rate more whiskies to see your personal baseline.",
+        }
       },
       taxonomy: {
         category: "Category",
@@ -3851,7 +3863,19 @@ const resources = {
         guessAge: "Alter schätzen",
         blindResults: "Deine Blindverkostungs-Ergebnisse",
         guessVsActual: "{{guess}} → tatsächlich: {{actual}}",
-        notesPlaceholder: "Aromen, Gaumen, Abgang..."
+        notesPlaceholder: "Aromen, Gaumen, Abgang...",
+        baseline: {
+          label: "Referenz",
+          overall: "Gesamt",
+          comparable: "Vergleichbar",
+          advancedToggle: "Vergleichbarkeit pro Dimension",
+          typicalRange: "Typischer Bereich",
+          median: "Median",
+          fallbackInsufficient: "Noch nicht genügend vergleichbare Referenzdaten.",
+          fallbackNone: "Keine vergleichbaren Referenzdaten verfügbar.",
+          provisional: "Vorläufig (weniger als 10 Bewertungen)",
+          placeholderFew: "Bewerte mehr Whiskys, um deine persönliche Referenz zu sehen.",
+        }
       },
       taxonomy: {
         category: "Kategorie",
