@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { platformStatsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAppStore } from "@/lib/store";
+import { LoginDialog } from "@/components/login-dialog";
 import heroImage from "@/assets/images/hero-whisky.png";
 import christophImage from "@assets/22A3ABF8-0085-4C82-97DF-EAA0ACD46B4E_1771546683886.jpeg";
 import slideBlind from "@/assets/tour/slide-blind.png";
@@ -14,9 +14,8 @@ import slideAnalytics from "@/assets/tour/slide-analytics.png";
 import slideFlightboard from "@/assets/tour/slide-flightboard.png";
 import { LanguageToggle } from "@/components/language-toggle";
 import {
-  Brain, ArrowRight, Wine,
-  ChevronDown, Heart,
-  Presentation, Play, Star, Search, Beaker, CheckCircle2,
+  ArrowRight, Wine, Heart,
+  Presentation, Play,
   Zap, Layers, ClipboardList, Users, BarChart3, FlaskConical, Sparkles
 } from "lucide-react";
 
@@ -47,8 +46,8 @@ function AnimatedCounter({ value, suffix = "" }: { value: number; suffix?: strin
 export default function Landing() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
-  const { setPreviewExperienceLevel } = useAppStore();
   const [tastingCode, setTastingCode] = useState("");
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   const { data: stats } = useQuery({
     queryKey: ["platform-stats"],
@@ -214,7 +213,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Experience Levels */}
+      {/* Two Ways: Naked vs Full */}
       <section id="your-pace" className="py-10 sm:py-14 bg-gradient-to-b from-background via-amber-900/5 to-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <motion.div
@@ -228,125 +227,109 @@ export default function Landing() {
             <h2 className="text-3xl sm:text-4xl font-serif font-black text-primary mb-4">{t("landing.roles.title")}</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t("landing.roles.subtitle")}</p>
           </motion.div>
-          {/* Just Tasting — full-width hero card with code entry */}
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            custom={0}
-            variants={fadeUp}
-            className="bg-card border-2 border-emerald-500/40 hover:border-emerald-500/60 rounded-xl p-6 sm:p-8 transition-all group relative overflow-hidden mb-6"
-            data-testid="landing-role-guest"
-          >
-            <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl -translate-y-12 translate-x-12 opacity-60" />
-            <div className="relative flex flex-col sm:flex-row sm:items-start gap-5">
-              <div className="flex-shrink-0">
-                <div className="w-14 h-14 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Naked Tasting Card */}
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              custom={0}
+              variants={fadeUp}
+              className="bg-card border-2 border-emerald-500/40 hover:border-emerald-500/60 rounded-xl p-6 sm:p-8 transition-all group relative overflow-hidden flex flex-col"
+              data-testid="landing-mode-naked"
+            >
+              <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl -translate-y-12 translate-x-12 opacity-60" />
+              <div className="relative flex flex-col flex-1">
+                <div className="w-14 h-14 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <Wine className="w-7 h-7" />
                 </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-serif font-black text-primary text-xl sm:text-2xl mb-1">{t("landing.roles.guest.name")}</h3>
-                <p className="text-emerald-700/80 dark:text-emerald-400/80 font-medium text-sm mb-2">{t("landing.roles.guest.tagline")}</p>
-                <p className="text-muted-foreground text-sm leading-relaxed mb-3">{t("landing.roles.guest.desc")}</p>
-                <div className="flex gap-2 mb-3 max-w-sm">
+                <h3 className="font-serif font-black text-primary text-xl sm:text-2xl mb-1">{t("landing.roles.naked.name")}</h3>
+                <p className="text-emerald-700/80 dark:text-emerald-400/80 font-medium text-sm mb-3">{t("landing.roles.naked.tagline")}</p>
+                <p className="text-muted-foreground text-sm leading-relaxed mb-4">{t("landing.roles.naked.desc")}</p>
+                <div className="flex gap-2 mb-4 max-w-sm">
                   <Input
                     value={tastingCode}
                     onChange={(e) => setTastingCode(e.target.value.toUpperCase())}
                     placeholder={t("landing.quickJoin.placeholder")}
-                    className="font-mono text-sm tracking-widest h-9 uppercase bg-white/90 dark:bg-background/80 border-emerald-300/50 focus:border-emerald-500"
+                    className="font-mono text-sm tracking-widest h-10 uppercase bg-white/90 dark:bg-background/80 border-emerald-300/50 focus:border-emerald-500"
                     onKeyDown={(e) => e.key === "Enter" && tastingCode.trim() && navigate(`/naked/${tastingCode.trim()}`)}
-                    data-testid="input-just-tasting-code"
+                    data-testid="input-naked-code"
                   />
                   <Button
                     size="sm"
-                    className="text-xs gap-1.5 h-9 font-serif bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
+                    className="text-sm gap-1.5 h-10 font-serif bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 px-5"
                     onClick={() => tastingCode.trim() && navigate(`/naked/${tastingCode.trim()}`)}
                     disabled={!tastingCode.trim()}
-                    data-testid="button-just-tasting-go"
+                    data-testid="button-naked-go"
                   >
-                    {t("landing.roles.tryGuest")}
-                    <ArrowRight className="w-3 h-3" />
+                    {t("landing.roles.naked.cta")}
+                    <ArrowRight className="w-4 h-4" />
                   </Button>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {(t("landing.roles.guest.features") as string).split(", ").map((feat) => (
+                <div className="flex flex-wrap gap-1.5 mt-auto">
+                  {(t("landing.roles.naked.features") as string).split(", ").map((feat) => (
                     <span key={feat} className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-foreground/70 font-medium">
                       {feat}
                     </span>
                   ))}
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
 
-          {/* Separator — "Want more?" */}
+            {/* Full Experience Card */}
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              custom={1}
+              variants={fadeUp}
+              className="bg-card border-2 border-amber-500/30 hover:border-amber-500/50 rounded-xl p-6 sm:p-8 transition-all group relative overflow-hidden flex flex-col"
+              data-testid="landing-mode-full"
+            >
+              <div className="absolute top-0 right-0 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl -translate-y-12 translate-x-12 opacity-60" />
+              <div className="relative flex flex-col flex-1">
+                <div className="w-14 h-14 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Sparkles className="w-7 h-7" />
+                </div>
+                <h3 className="font-serif font-black text-primary text-xl sm:text-2xl mb-1">{t("landing.roles.full.name")}</h3>
+                <p className="text-amber-700/80 dark:text-amber-400/80 font-medium text-sm mb-3">{t("landing.roles.full.tagline")}</p>
+                <p className="text-muted-foreground text-sm leading-relaxed mb-4">{t("landing.roles.full.desc")}</p>
+                <Button
+                  size="lg"
+                  className="gap-2 font-serif bg-amber-600 hover:bg-amber-700 text-white mb-4 w-fit"
+                  onClick={() => setShowLoginDialog(true)}
+                  data-testid="button-full-signin"
+                >
+                  {t("landing.roles.full.cta")}
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+                <div className="flex flex-wrap gap-1.5 mt-auto">
+                  {(t("landing.roles.full.features") as string).split(", ").map((feat) => (
+                    <span key={feat} className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/10 text-foreground/70 font-medium">
+                      {feat}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Switch hint */}
           <motion.p
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            custom={1}
+            custom={2}
             variants={fadeUp}
-            className="text-center text-sm text-muted-foreground/50 mb-6 font-medium"
+            className="text-center text-sm text-muted-foreground/60 mt-6 font-medium"
           >
-            {t("landing.roles.guest.name")} {String.fromCharCode(8594)} {t("landing.roles.analyst.name")} — {t("landing.roles.subtitle").split("—")[1]?.trim() || ""}
+            {t("landing.roles.switchHint")}
           </motion.p>
-
-          {/* Explorer / Connoisseur / Analyst — three columns below */}
-          <div className="grid sm:grid-cols-3 gap-5">
-            {([
-              { key: "explorer", icon: Search, color: "bg-blue-500/15 text-blue-600", borderColor: "border-blue-500/30 hover:border-blue-500/50", accent: "bg-blue-500/10", btnClass: "bg-blue-600 hover:bg-blue-700 text-white", ctaKey: "tryExplorer", anchor: "profile" },
-              { key: "connoisseur", icon: Star, color: "bg-amber-500/15 text-amber-600", borderColor: "border-amber-500/30 hover:border-amber-500/50", accent: "bg-amber-500/10", btnClass: "bg-amber-600 hover:bg-amber-700 text-white", ctaKey: "tryConnoisseur", anchor: "dimensions" },
-              { key: "analyst", icon: Beaker, color: "bg-purple-500/15 text-purple-600", borderColor: "border-purple-500/30 hover:border-purple-500/50", accent: "bg-purple-500/10", btnClass: "bg-purple-600 hover:bg-purple-700 text-white", ctaKey: "tryAnalyst", anchor: "science" },
-            ] as const).map((role, i) => (
-              <motion.div
-                key={role.key}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={i + 2}
-                variants={fadeUp}
-                className={`bg-card border ${role.borderColor} rounded-xl p-5 transition-all group relative overflow-hidden cursor-pointer flex flex-col`}
-                data-testid={`landing-role-${role.key}`}
-                onClick={() => { setPreviewExperienceLevel(role.key); navigate("/app"); }}
-              >
-                <div className={`absolute top-0 right-0 w-24 h-24 ${role.accent} rounded-full blur-2xl -translate-y-8 translate-x-8 opacity-60`} />
-                <div className="relative flex flex-col flex-1">
-                  <div className={`w-11 h-11 rounded-lg ${role.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
-                    <role.icon className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-serif font-bold text-primary text-base mb-2">{t(`landing.roles.${role.key}.name`)}</h3>
-                  <Button
-                    size="sm"
-                    className={`text-xs gap-1.5 h-7 font-serif ${role.btnClass} mb-3 w-fit`}
-                    onClick={(e) => { e.stopPropagation(); setPreviewExperienceLevel(role.key); navigate("/app"); }}
-                    data-testid={`button-try-view-${role.key}`}
-                  >
-                    {t(`landing.roles.${role.ctaKey}`)}
-                    <ArrowRight className="w-3 h-3" />
-                  </Button>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-3">{t(`landing.roles.${role.key}.desc`)}</p>
-                  <p className="text-[11px] text-muted-foreground/60 font-medium mb-1.5">{t(`landing.roles.${role.key}.plus`)}</p>
-                  <div className="flex flex-wrap gap-1.5 mb-3 flex-1">
-                    {(t(`landing.roles.${role.key}.features`) as string).split(", ").map((feat) => (
-                      <span key={feat} className={`text-[11px] px-2 py-0.5 rounded-full ${role.accent} text-foreground/70 font-medium h-fit`}>
-                        {feat}
-                      </span>
-                    ))}
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); navigate(`/background#${role.anchor}`); }}
-                    className="text-[11px] text-muted-foreground/60 hover:text-primary underline underline-offset-2 transition-colors mt-auto"
-                    data-testid={`link-learn-more-${role.key}`}
-                  >
-                    {t("background.learnMore")} →
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
+
+      <LoginDialog open={showLoginDialog} onClose={() => setShowLoginDialog(false)} />
 
       {/* Live Stats */}
       {stats && (stats.totalTastings > 0 || stats.totalParticipants > 0) && (
