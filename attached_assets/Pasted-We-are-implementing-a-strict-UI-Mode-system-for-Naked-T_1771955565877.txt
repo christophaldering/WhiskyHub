@@ -1,0 +1,154 @@
+We are implementing a strict UI Mode system for Naked Tasting sessions in CaskSense.
+
+DEFAULT: "flow" is the default for all users (new users, users without setting, logged-out guests).
+
+GOAL:
+Implement exactly three interaction modes for tasting sessions:
+1) FLOW (default) – WhatsApp-like timeline, collapsible dram cards
+2) FOCUS – single card deck
+3) JOURNAL – structured document layout
+
+No additional modes. No themes. No experimentation.
+
+==================================================
+PHASE 0 — PRE-CODING AUDIT (MANDATORY)
+==================================================
+Before writing any code:
+1) Locate Naked session entry route(s) and component(s).
+2) Locate profile settings storage (DB and/or localStorage).
+3) Locate slider/rating components and host scale config.
+4) Identify global layout components that render sidebar/bottom nav.
+
+Output an audit summary (files + key components) BEFORE proceeding.
+
+==================================================
+PHASE 1 — UI MODE SYSTEM (GLOBAL)
+==================================================
+
+Create:
+- type UIMode = "flow" | "focus" | "journal"
+
+Implement UIModeContext:
+- Default mode MUST be "flow".
+- If user is logged in: persist in DB user settings (preferred).
+- If user is guest / not logged in: persist in localStorage.
+- On load: DB value overrides localStorage.
+- If none exists: use "flow".
+
+Hard requirement:
+- Mode change must update state immediately without full app reload.
+
+==================================================
+PHASE 2 — PROFILE UI (MODE SWITCH)
+==================================================
+In /profile add a section: "Tasting Interface Mode"
+
+Display exactly 3 selectable cards (no dropdown):
+- Flow (Default)
+- Focus
+- Journal
+
+Rules:
+- Selecting a card highlights it.
+- Save persists (DB if logged in; localStorage fallback).
+- After refresh, selection remains.
+- “Flow” is preselected if unset.
+
+==================================================
+PHASE 3 — NAKED LAYOUT GUARD (NO NAV LEAK)
+==================================================
+Create NakedLayout that enforces:
+- NO desktop sidebar
+- NO mobile bottom nav
+- NO global header
+- NO PRO badges/menus
+- No links to Discover/Profile/etc inside naked flow
+
+If a user attempts direct navigation from within naked flow to a non-naked route, redirect back to the naked session route.
+
+==================================================
+PHASE 4 — THREE MODES IMPLEMENTATION
+==================================================
+
+All three modes MUST reuse the same underlying rating model and slider components.
+No duplicated business logic.
+
+-------------------------------------
+MODE 1: FLOW (DEFAULT)
+-------------------------------------
+- Vertical timeline
+- Dram cards stacked
+- Each dram card is COLLAPSIBLE (tap to expand/collapse)
+- Only one card can be expanded at a time
+- Smooth expand/collapse animation
+- System lines between cards: “Dram 2 von 5”
+- Sticky bottom composer bar:
+   [ optional note input ] [ Next ]
+- No WhatsApp colors, no emojis, no avatars, no timestamps per dram.
+
+-------------------------------------
+MODE 2: FOCUS
+-------------------------------------
+- One dram visible at a time
+- Centered card
+- Progress top: “2 / 5”
+- Next button bottom (Prev optional)
+- Minimal scroll; transitions via fade/slide
+
+-------------------------------------
+MODE 3: JOURNAL
+-------------------------------------
+- Document layout
+- Clear headings per dram
+- Tabs to jump between drams (not sidebar links)
+- More whitespace
+- Export button available (if allowed by session settings)
+
+==================================================
+PHASE 5 — HOST-DEFINED SCALES (MUST WORK)
+==================================================
+Sliders must respect host-defined min/max/step/decimals.
+UI must remain scale-neutral:
+- Do not permanently show 0–100 etc as dominant UI.
+- Show selected value clearly.
+- Optional subtle min/max label under each slider.
+
+==================================================
+PHASE 6 — HARD ACCEPTANCE CRITERIA
+==================================================
+The task is NOT done unless ALL are true:
+
+A) Modes
+1) Exactly 3 modes exist: flow/focus/journal.
+2) Flow is default for all users without explicit setting.
+3) Mode persists after refresh and after logout/login.
+
+B) Naked
+4) Naked routes render zero global navigation components.
+5) No nav leakage: user cannot reach sidebar/bottom nav from naked routes.
+6) Switching mode does NOT reset ratings in progress.
+
+C) Quality
+7) Mobile portrait: no overlaps; all buttons reachable.
+8) No console errors.
+9) No duplicate business logic; shared core components reused.
+
+==================================================
+PHASE 7 — QA REPORT (MANDATORY OUTPUT)
+==================================================
+After implementation provide a QA report:
+
+1) List of changed files
+2) Proof of default mode behavior (describe how verified)
+3) Proof of persistence (DB/localStorage rules)
+4) Manual test results:
+   - flow mode (expand/collapse, next, recap)
+   - focus mode (next/prev, recap)
+   - journal mode (tabs, export)
+5) Verify host scale cases:
+   - 1–10 step 0.5
+   - 0–100 step 1
+6) Confirm no nav leakage
+7) Screenshots or short description of mobile portrait test
+
+If any check fails: fix and re-test before concluding.

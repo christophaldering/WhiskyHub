@@ -1,0 +1,186 @@
+We are implementing a strict UI Mode system for Naked Tasting sessions in CaskSense.
+
+This is NOT a design suggestion. This is a mandatory implementation task.
+
+GOAL:
+Implement exactly three interaction modes for tasting sessions:
+
+1. FLOW (WhatsApp-like timeline, collapsible dram cards)
+2. FOCUS (Single card deck, one dram at a time)
+3. JOURNAL (Structured document-style layout)
+
+No additional modes. No themes. No experimentation.
+
+The selected mode must be configurable in the user profile and persist.
+
+==================================================
+PHASE 0 — PRE-CODING AUDIT (MANDATORY)
+==================================================
+
+Before writing any code:
+
+1. Locate:
+   - Naked session rendering component(s)
+   - Session route definition(s)
+   - Profile settings storage logic
+   - Existing Context providers
+
+2. Identify:
+   - Where session state is stored
+   - Where sliders are implemented
+   - How query params are handled
+
+3. Confirm whether a global layout wrapper is used.
+   Naked mode MUST NOT render sidebar or bottom nav.
+
+Print an audit summary before proceeding.
+
+==================================================
+PHASE 1 — GLOBAL UI MODE SYSTEM
+==================================================
+
+Create:
+
+1. UIMode type:
+   type UIMode = "flow" | "focus" | "journal"
+
+2. UIModeContext:
+   - Stores current mode
+   - Provides setter
+   - Loads from user profile (DB or localStorage fallback)
+   - Defaults to "flow" if unset
+
+3. Profile setting:
+   In /profile add section:
+   "Tasting Interface Mode"
+
+   Provide 3 selectable cards:
+   - Flow – Familiar & low friction
+   - Focus – One dram at a time
+   - Journal – Structured & analytical
+
+Selection must:
+   - Update DB (if logged in)
+   - Persist on reload
+   - Immediately reflect in session
+
+No dropdown. Use 3 visual selectable blocks.
+
+==================================================
+PHASE 2 — NAKED SESSION LAYOUT GUARD
+==================================================
+
+Create a NakedLayout component.
+
+Rules:
+- Must not render sidebar
+- Must not render mobile bottom nav
+- Must not render global header
+- Must not allow navigation leakage
+- If user tries direct navigation, redirect back to session
+
+Enforce layout at route level.
+
+==================================================
+PHASE 3 — IMPLEMENT THE THREE MODES
+==================================================
+
+All modes must reuse the SAME data model and slider components.
+Only layout changes.
+
+-------------------------------------
+MODE 1: FLOW
+-------------------------------------
+
+Layout:
+- Timeline style vertical flow
+- Dram cards appear stacked
+- Each dram is COLLAPSIBLE
+- Only one expanded at a time
+- Smooth expand animation
+- System lines:
+  "Dram 2 von 5"
+- Sticky bottom bar:
+   [ Optional Note ] [ Next ]
+
+No emojis.
+No chat avatars.
+No WhatsApp colors.
+
+-------------------------------------
+MODE 2: FOCUS
+-------------------------------------
+
+Layout:
+- One dram visible at a time
+- Centered card
+- Large typography
+- Progress indicator top: "2 / 5"
+- Next button bottom
+- Optional Previous button
+- No scroll between drams
+- Card transitions via fade/slide
+
+This mode must feel ritualized and distraction-free.
+
+-------------------------------------
+MODE 3: JOURNAL
+-------------------------------------
+
+Layout:
+- Structured document style
+- Clear headings:
+   Dram A
+   Dram B
+- All sliders visible
+- Minimal animation
+- More white space
+- Tabs for navigation between drams
+- Export button visible at top
+
+Must feel analytical and calm.
+
+==================================================
+PHASE 4 — STRICT ACCEPTANCE CRITERIA
+==================================================
+
+1. Exactly three modes available in profile.
+2. Changing mode must:
+   - Persist after refresh
+   - Persist after logout/login
+3. Naked session must:
+   - Render no sidebar
+   - Render no bottom nav
+   - Render no PRO badges
+4. Switching modes must not reload entire app.
+5. Sliders must respect host-defined scale.
+6. No duplicated state logic.
+7. No code copy-paste between modes (reuse core components).
+8. Mobile portrait:
+   - No overflow
+   - Buttons reachable
+   - No clipped content
+
+==================================================
+PHASE 5 — QA REPORT (MANDATORY OUTPUT)
+==================================================
+
+After implementation:
+
+Provide written QA report including:
+
+1. List of files changed
+2. Description of UIMode persistence mechanism
+3. Verification:
+   - flow mode tested
+   - focus mode tested
+   - journal mode tested
+4. Confirm no navigation leakage
+5. Confirm host-defined scales render correctly
+6. Confirm switching mode does not reset ratings
+7. Confirm no console errors
+8. Provide manual test instructions
+
+If any acceptance criterion fails, fix before concluding.
+
+Do not stop at partial implementation.
