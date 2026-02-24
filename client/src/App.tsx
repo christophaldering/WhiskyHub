@@ -77,7 +77,7 @@ function Router() {
             <Switch>
               {/* === NEW CANONICAL ROUTES === */}
               <Route path="/home" component={HomeDashboard} />
-              <Route path="/now">{() => <RedirectWithQuery to="/tasting/sessions" query="tab=active" />}</Route>
+              <Route path="/now">{() => <RedirectWithQuery to="/tasting/sessions" query="tab=sessions" />}</Route>
               <Route path="/tasting" component={TastingHub} />
               <Route path="/tasting/sessions" component={TastingSessions} />
               <Route path="/tasting/calendar" component={TastingCalendar} />

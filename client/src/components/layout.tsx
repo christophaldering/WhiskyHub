@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { ACTIVE_STATUSES } from "@shared/constants";
 import { Home, LogOut, LogIn, Menu, User, Wine, Users, NotebookPen, Sparkles, Calendar, ShieldAlert, Landmark, Star, Archive, ChevronDown, ArrowLeft, ArrowRight, X, Settings, HelpCircle, Compass, Activity, BarChart3, BookOpen, ClipboardList, Database, Download, FileText, GitCompareArrows, GlassWater, Globe, Heart, HeartHandshake, History, Info, LayoutDashboard, Library, Map, Medal, Microscope, Package, Puzzle, Trophy, Zap } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
@@ -529,7 +530,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const isHost = currentParticipant && allTastings.some((t: any) => t.hostId === currentParticipant.id);
   const isAdmin = currentParticipant?.role === "admin";
-  const hasActiveSessions = allTastings.some((t: any) => ["open", "closed", "reveal"].includes(t.status));
+  const hasActiveSessions = allTastings.some((t: any) => (ACTIVE_STATUSES as readonly string[]).includes(t.status));
 
   const navGroups: NavGroup[] = useMemo(() => [
     ...(hasActiveSessions ? [{

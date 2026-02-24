@@ -13,6 +13,7 @@ import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertPart
 import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
+import { ACTIVE_STATUSES } from "@shared/constants";
 import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification } from "./email";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES } from "./ai-settings";
@@ -8814,8 +8815,7 @@ Important rules:
         return res.status(404).json({ message: "Not found" });
       }
 
-      const liveStatuses = ["open", "closed", "reveal"];
-      if (tasting.viewerLiveOnly && !liveStatuses.includes(tasting.status)) {
+      if (tasting.viewerLiveOnly && !(ACTIVE_STATUSES as readonly string[]).includes(tasting.status)) {
         return res.status(403).json({ message: "not_live", status: tasting.status });
       }
 

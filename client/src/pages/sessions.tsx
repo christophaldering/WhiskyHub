@@ -1,12 +1,13 @@
-import { useState, lazy, Suspense } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
+import { ACTIVE_STATUSES } from "@shared/constants";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { tastingApi, participantApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
-import { ArrowRight, Trash2, KeyRound, Loader2, Crown, Users, Plus, Camera, FileUp, Glasses, BookOpen, ChevronDown, Navigation, PenLine, History, LayoutDashboard, ClipboardList, Zap, CalendarDays } from "lucide-react";
+import { ArrowRight, Trash2, KeyRound, Loader2, Crown, Users, Plus, Camera, FileUp, Glasses, BookOpen, ChevronDown, Navigation, PenLine, CalendarDays } from "lucide-react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -19,12 +20,6 @@ import { AiTastingImportDialog } from "@/components/ai-tasting-import";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { cn } from "@/lib/utils";
 
-const TastingHistory = lazy(() => import("@/pages/tasting-history"));
-const HostDashboard = lazy(() => import("@/pages/host-dashboard"));
-const TastingRecap = lazy(() => import("@/pages/tasting-recap"));
-
-type HubTab = "active" | "mine" | "host" | "recap";
-
 export default function Sessions() {
   const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
@@ -34,7 +29,6 @@ export default function Sessions() {
   const [joinCode, setJoinCode] = useState("");
   const [joinLoading, setJoinLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"host" | "participant">("host");
-  const [hubTab, setHubTab] = useState<HubTab>("active");
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -74,7 +68,7 @@ export default function Sessions() {
 
   const deleteMutation = useMutation({
     mutationFn: async (tasting: any) => {
-      if (tasting.status === "open" || tasting.status === "closed" || tasting.status === "reveal") {
+      if ((ACTIVE_STATUSES as readonly string[]).includes(tasting.status)) {
         await tastingApi.updateStatus(tasting.id, "archived", undefined, currentParticipant!.id);
       }
       return tastingApi.updateStatus(tasting.id, "deleted", undefined, currentParticipant!.id);
@@ -190,7 +184,7 @@ export default function Sessions() {
   const participatedTastings = tastings.filter((s: any) => !isHostOf(s));
 
   const splitByStatus = (list: any[]) => ({
-    active: list.filter((s: any) => s.status === "open" || s.status === "closed" || s.status === "reveal"),
+    active: list.filter((s: any) => (ACTIVE_STATUSES as readonly string[]).includes(s.status)),
     drafts: list.filter((s: any) => s.status === "draft"),
     archived: list.filter((s: any) => s.status === "archived"),
   });
@@ -433,12 +427,7 @@ export default function Sessions() {
 
   if (!currentParticipant) {
     return (
-      <div className="space-y-10 max-w-4xl mx-auto min-w-0 overflow-x-hidden">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("nav.sessions")}</h1>
-          <div className="w-12 h-1 bg-primary/50 mt-3" />
-        </motion.div>
-
+      <div className="space-y-6">
         {joinSectionJsx}
         {createSectionJsx}
 
@@ -519,17 +508,8 @@ export default function Sessions() {
     );
   }
 
-  const isHost = hostedTastings.length > 0;
-
-  const hubTabs: { id: HubTab; label: string; icon: React.ElementType; show: boolean }[] = [
-    { id: "active", label: t("sessionsHub.active"), icon: Zap, show: true },
-    { id: "mine", label: t("sessionsHub.mine"), icon: History, show: true },
-    { id: "host", label: t("sessionsHub.host"), icon: LayoutDashboard, show: isHost },
-    { id: "recap", label: t("sessionsHub.recap"), icon: ClipboardList, show: true },
-  ];
-
-  const activeTabContent = (
-    <>
+  return (
+    <div className="space-y-6">
       {joinSectionJsx}
       {createSectionJsx}
 
@@ -583,62 +563,6 @@ export default function Sessions() {
           {renderSessionGroup(t("nav.sessionsActive"), currentList.active, 0.2)}
           {renderSessionGroup(t("nav.sessionsArchived"), currentList.archived, 0.3)}
         </div>
-      )}
-    </>
-  );
-
-  return (
-    <div className="space-y-6 max-w-4xl mx-auto min-w-0 overflow-x-hidden">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("nav.sessions")}</h1>
-        <div className="w-12 h-1 bg-primary/50 mt-3" />
-      </motion.div>
-
-      <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1" data-testid="sessions-hub-tabs">
-        {hubTabs.filter(tab => tab.show).map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setHubTab(tab.id)}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all shrink-0",
-              hubTab === tab.id
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground"
-            )}
-            data-testid={`hub-tab-${tab.id}`}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {hubTab === "active" && (
-        <div className="space-y-6">
-          {activeTabContent}
-        </div>
-      )}
-
-      {hubTab === "mine" && (
-        <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}>
-          <TastingHistory />
-        </Suspense>
-      )}
-
-      {hubTab === "host" && (
-        <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}>
-          <HostDashboard />
-        </Suspense>
-      )}
-
-      {hubTab === "recap" && (
-        <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}>
-          <TastingRecap />
-        </Suspense>
       )}
 
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
