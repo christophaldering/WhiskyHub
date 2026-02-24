@@ -15,8 +15,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Camera, X, User, KeyRound, Mail, Trash2, AlertTriangle } from "lucide-react";
+import { Camera, X, User, KeyRound, Mail, Trash2, AlertTriangle, Layers, Target, FileText } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
+import type { UIMode } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 const REGIONS = [
   "Speyside", "Highlands", "Islay", "Lowlands", "Campbeltown",
@@ -28,7 +30,7 @@ const CASK_TYPES = ["Bourbon", "Sherry", "Port", "Wine", "Rum", "Other"];
 
 export default function Profile() {
   const { t } = useTranslation();
-  const { currentParticipant, setParticipant } = useAppStore();
+  const { currentParticipant, setParticipant, uiMode, setUIMode } = useAppStore();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -530,6 +532,46 @@ export default function Profile() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <div className="border-t border-border/30 pt-6">
+            <h2 className="font-serif text-lg text-primary mb-2 flex items-center gap-2">
+              <Layers className="w-4 h-4" />
+              {t("profile.tastingInterfaceMode")}
+            </h2>
+            <p className="text-xs text-muted-foreground mb-4">{t("profile.tastingInterfaceModeDesc")}</p>
+            <div className="grid grid-cols-3 gap-3" data-testid="ui-mode-selector">
+              {([
+                { key: "flow" as UIMode, icon: Layers, label: t("profile.uiModeFlow"), desc: t("profile.uiModeFlowDesc"), isDefault: true },
+                { key: "focus" as UIMode, icon: Target, label: t("profile.uiModeFocus"), desc: t("profile.uiModeFocusDesc"), isDefault: false },
+                { key: "journal" as UIMode, icon: FileText, label: t("profile.uiModeJournal"), desc: t("profile.uiModeJournalDesc"), isDefault: false },
+              ]).map(m => {
+                const Icon = m.icon;
+                const selected = uiMode === m.key;
+                return (
+                  <button
+                    key={m.key}
+                    onClick={() => setUIMode(m.key)}
+                    className={cn(
+                      "relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-center",
+                      selected
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border/30 bg-card/50 hover:border-primary/30"
+                    )}
+                    data-testid={`button-ui-mode-${m.key}`}
+                  >
+                    {m.isDefault && (
+                      <span className="absolute -top-2 right-2 text-[8px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                        {t("profile.uiModeDefault")}
+                      </span>
+                    )}
+                    <Icon className={cn("w-6 h-6", selected ? "text-primary" : "text-muted-foreground")} />
+                    <span className={cn("text-sm font-serif font-bold", selected ? "text-primary" : "text-foreground")}>{m.label}</span>
+                    <span className="text-[10px] text-muted-foreground leading-tight">{m.desc}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

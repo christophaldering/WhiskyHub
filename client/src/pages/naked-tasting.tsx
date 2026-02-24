@@ -6,41 +6,141 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { tastingApi, whiskyApi, ratingApi, participantApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
+import type { UIMode } from "@/lib/store";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Wine, ArrowRight, ArrowLeft, Check, Download, Trophy, Shield, Sparkles, BookOpen, User, BarChart3, Sun, Moon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Wine, ArrowRight, ArrowLeft, Check, Download, Trophy, Shield, Sparkles, BookOpen, User, BarChart3, Sun, Moon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Layers, Target, FileText } from "lucide-react";
 import jsPDF from "jspdf";
 import type { Whisky, Tasting } from "@shared/schema";
 
 type WizardStep = "welcome" | "rating" | "recap" | "done";
 
-function DramCard({
-  whisky,
-  tasting,
-  participantId,
-  index,
-  total,
-  onNext,
-  onPrev,
-  isFirst,
-  isLast,
+const DIMENSIONS = [
+  { id: "nose", label: "Nosing" },
+  { id: "taste", label: "Tasting" },
+  { id: "finish", label: "Abgang" },
+  { id: "balance", label: "Balance" },
+];
+
+function getScaleConfig(scale: number) {
+  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
+  const mid = scale / 2;
+  const factor = step < 1 ? (1 / step) : 1;
+  return { step, mid, factor };
+}
+
+function computeAvg(s: Record<string, number | null>, step: number) {
+  const factor = step < 1 ? (1 / step) : 1;
+  const vals = [s.nose, s.taste, s.finish, s.balance].filter((v): v is number => v !== null);
+  if (vals.length === 0) return null;
+  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+  return Math.round(avg * factor) / factor;
+}
+
+function RatingSliders({
+  scores,
+  scale,
+  step,
+  overallManual,
+  onScore,
+  onResetOverall,
+  notes,
+  onNotesChange,
+  compact = false,
 }: {
-  whisky: Whisky;
-  tasting: Tasting;
-  participantId: string;
-  index: number;
-  total: number;
-  onNext: () => void;
-  onPrev: () => void;
-  isFirst: boolean;
-  isLast: boolean;
+  scores: Record<string, number | null>;
+  scale: number;
+  step: number;
+  overallManual: boolean;
+  onScore: (key: string, value: number) => void;
+  onResetOverall: () => void;
+  notes: string;
+  onNotesChange: (val: string) => void;
+  compact?: boolean;
 }) {
   const { t } = useTranslation();
-  const scale = tasting.ratingScale || 100;
   const mid = scale / 2;
-  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
+
+  return (
+    <div className={cn("space-y-4", compact && "space-y-3")}>
+      {DIMENSIONS.map(dim => {
+        const val = scores[dim.id] ?? mid;
+        return (
+          <div key={dim.id} data-testid={`slider-row-${dim.id}`}>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-serif font-semibold text-foreground/80 uppercase tracking-wide">{dim.label}</span>
+              <span className="text-lg font-mono font-black text-primary tabular-nums" data-testid={`value-${dim.id}`}>
+                {val}
+              </span>
+            </div>
+            <Slider
+              value={[val]}
+              max={scale}
+              min={0}
+              step={step}
+              onValueChange={(v) => onScore(dim.id, v[0])}
+              className="w-full"
+              data-testid={`slider-${dim.id}`}
+            />
+            <div className="flex justify-between mt-0.5">
+              <span className="text-[9px] text-muted-foreground/40 font-mono">0</span>
+              <span className="text-[9px] text-muted-foreground/40 font-mono">{scale}</span>
+            </div>
+          </div>
+        );
+      })}
+
+      <div className="pt-2 border-t border-border/20" data-testid="slider-row-overall">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-xs font-serif font-bold text-primary uppercase tracking-wide">Gesamt</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-mono font-black text-primary tabular-nums" data-testid="value-overall">
+              {scores.overall ?? "–"}
+            </span>
+            {overallManual && (
+              <button
+                onClick={onResetOverall}
+                className="text-[9px] text-primary/50 hover:text-primary font-mono"
+              >
+                ↺
+              </button>
+            )}
+          </div>
+        </div>
+        <Slider
+          value={[scores.overall ?? mid]}
+          max={scale}
+          min={0}
+          step={step}
+          onValueChange={(v) => onScore("overall", v[0])}
+          className="w-full [&_[role=slider]]:bg-primary [&_[data-orientation=horizontal]>span:first-child>span]:bg-primary/30"
+          data-testid="slider-overall"
+        />
+        <div className="flex justify-between mt-0.5">
+          <span className="text-[9px] text-muted-foreground/40 font-mono">0</span>
+          <span className="text-[9px] text-muted-foreground/40 font-mono">{scale}</span>
+        </div>
+      </div>
+
+      <div>
+        <textarea
+          value={notes}
+          onChange={(e) => onNotesChange(e.target.value)}
+          placeholder={t("quickTasting.notesPlaceholder")}
+          className="w-full bg-secondary/30 border border-border/20 rounded-lg px-3 py-2 text-sm font-serif text-foreground placeholder:text-muted-foreground/40 resize-none focus:outline-none focus:ring-1 focus:ring-primary/30"
+          rows={2}
+          data-testid="textarea-notes"
+        />
+      </div>
+    </div>
+  );
+}
+
+function useRatingState(whisky: Whisky, tasting: Tasting, participantId: string) {
+  const scale = tasting.ratingScale || 100;
+  const { step, mid } = getScaleConfig(scale);
 
   const { data: existingRating } = useQuery({
     queryKey: ["rating", participantId, whisky.id],
@@ -48,8 +148,7 @@ function DramCard({
     enabled: !!participantId && !!whisky.id,
   });
 
-  type ScoreVal = number | null;
-  const [scores, setScores] = useState<Record<string, ScoreVal>>({
+  const [scores, setScores] = useState<Record<string, number | null>>({
     nose: mid, taste: mid, finish: mid, balance: mid, overall: mid,
   });
   const [overallManual, setOverallManual] = useState(false);
@@ -77,20 +176,12 @@ function DramCard({
       };
       setScores(loaded);
       setNotes(existingRating.notes || "");
-      const avg = computeAvg(loaded);
+      const avg = computeAvg(loaded, step);
       if (avg !== null && loaded.overall !== null) {
         setOverallManual(Math.abs(loaded.overall - avg) > 0.01);
       }
     }
   }, [existingRating]);
-
-  const computeAvg = (s: Record<string, ScoreVal>) => {
-    const factor = step < 1 ? (1 / step) : 1;
-    const vals = [s.nose, s.taste, s.finish, s.balance].filter((v): v is number => v !== null);
-    if (vals.length === 0) return null;
-    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-    return Math.round(avg * factor) / factor;
-  };
 
   const triggerAutoSave = useCallback(() => {
     if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
@@ -119,24 +210,20 @@ function DramCard({
     } else {
       setScores(prev => {
         const next = { ...prev, [key]: clamped };
-        if (!overallManual) next.overall = computeAvg(next);
+        if (!overallManual) next.overall = computeAvg(next, step);
         return next;
       });
     }
     triggerAutoSave();
   };
 
-  const isBlind = tasting.blindMode && tasting.status === "open";
-  const whiskyLabel = isBlind ? `Dram ${index + 1}` : whisky.name;
+  const resetOverall = () => {
+    setOverallManual(false);
+    setScores(prev => ({ ...prev, overall: computeAvg(prev, step) }));
+    triggerAutoSave();
+  };
 
-  const dimensions = [
-    { id: "nose", label: "Nosing" },
-    { id: "taste", label: "Tasting" },
-    { id: "finish", label: "Abgang" },
-    { id: "balance", label: "Balance" },
-  ];
-
-  const handleNext = () => {
+  const flushSave = () => {
     if (autoSaveRef.current) {
       clearTimeout(autoSaveRef.current);
       saveMutation.mutate({
@@ -144,6 +231,57 @@ function DramCard({
         ...latestRef.current.scores, notes: latestRef.current.notes,
       });
     }
+  };
+
+  const handleNotesChange = (val: string) => {
+    setNotes(val);
+    triggerAutoSave();
+  };
+
+  return { scores, notes, overallManual, saved, handleScore, resetOverall, flushSave, handleNotesChange, scale, step };
+}
+
+function DramLabel({ whisky, tasting, index }: { whisky: Whisky; tasting: Tasting; index: number }) {
+  const isBlind = tasting.blindMode && tasting.status === "open";
+  const label = isBlind ? `Dram ${index + 1}` : whisky.name;
+  return (
+    <>
+      <h2 className="text-xl font-serif font-black text-primary leading-tight" data-testid="text-dram-label">
+        {label}
+      </h2>
+      {!isBlind && whisky.distillery && (
+        <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5 uppercase tracking-wide">
+          {[whisky.distillery, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null].filter(Boolean).join(" · ")}
+        </p>
+      )}
+    </>
+  );
+}
+
+function FocusMode({
+  whiskies,
+  tasting,
+  participantId,
+  dramIndex,
+  onNext,
+  onPrev,
+}: {
+  whiskies: Whisky[];
+  tasting: Tasting;
+  participantId: string;
+  dramIndex: number;
+  onNext: () => void;
+  onPrev: () => void;
+}) {
+  const { t } = useTranslation();
+  const whisky = whiskies[dramIndex];
+  const total = whiskies.length;
+  const isFirst = dramIndex === 0;
+  const isLast = dramIndex === total - 1;
+  const rating = useRatingState(whisky, tasting, participantId);
+
+  const handleNext = () => {
+    rating.flushSave();
     onNext();
   };
 
@@ -158,16 +296,9 @@ function DramCard({
     >
       <div className="text-center mb-4">
         <p className="text-[11px] text-muted-foreground/60 font-mono tracking-wider uppercase mb-1">
-          Dram {index + 1} {t("naked.of", "von")} {total}
+          Dram {dramIndex + 1} {t("naked.of", "von")} {total}
         </p>
-        <h2 className="text-xl font-serif font-black text-primary leading-tight" data-testid="text-dram-label">
-          {whiskyLabel}
-        </h2>
-        {!isBlind && whisky.distillery && (
-          <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5 uppercase tracking-wide">
-            {[whisky.distillery, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null].filter(Boolean).join(" · ")}
-          </p>
-        )}
+        <DramLabel whisky={whisky} tasting={tasting} index={dramIndex} />
       </div>
 
       <div className="flex items-center justify-center gap-1 mb-5">
@@ -176,83 +307,23 @@ function DramCard({
             key={i}
             className={cn(
               "h-1 rounded-full transition-all duration-300",
-              i === index ? "w-6 bg-primary" : i < index ? "w-3 bg-primary/40" : "w-3 bg-border/40"
+              i === dramIndex ? "w-6 bg-primary" : i < dramIndex ? "w-3 bg-primary/40" : "w-3 bg-border/40"
             )}
           />
         ))}
       </div>
 
-      <div className="flex-1 space-y-4">
-        {dimensions.map(dim => {
-          const val = scores[dim.id] ?? mid;
-          return (
-            <div key={dim.id} data-testid={`slider-row-${dim.id}`}>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-serif font-semibold text-foreground/80 uppercase tracking-wide">{dim.label}</span>
-                <span className="text-lg font-mono font-black text-primary tabular-nums" data-testid={`value-${dim.id}`}>
-                  {val}
-                </span>
-              </div>
-              <Slider
-                value={[val]}
-                max={scale}
-                min={0}
-                step={step}
-                onValueChange={(v) => handleScore(dim.id, v[0])}
-                className="w-full"
-                data-testid={`slider-${dim.id}-${whisky.id}`}
-              />
-              <div className="flex justify-between mt-0.5">
-                <span className="text-[9px] text-muted-foreground/40 font-mono">0</span>
-                <span className="text-[9px] text-muted-foreground/40 font-mono">{scale}</span>
-              </div>
-            </div>
-          );
-        })}
-
-        <div className="pt-2 border-t border-border/20" data-testid="slider-row-overall">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-serif font-bold text-primary uppercase tracking-wide">Gesamt</span>
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-mono font-black text-primary tabular-nums" data-testid="value-overall">
-                {scores.overall ?? "–"}
-              </span>
-              {overallManual && (
-                <button
-                  onClick={() => { setOverallManual(false); setScores(prev => ({ ...prev, overall: computeAvg(prev) })); triggerAutoSave(); }}
-                  className="text-[9px] text-primary/50 hover:text-primary font-mono"
-                  title={t("evaluation.resetToAvg")}
-                >
-                  ↺
-                </button>
-              )}
-            </div>
-          </div>
-          <Slider
-            value={[scores.overall ?? mid]}
-            max={scale}
-            min={0}
-            step={step}
-            onValueChange={(v) => handleScore("overall", v[0])}
-            className="w-full [&_[role=slider]]:bg-primary [&_[data-orientation=horizontal]>span:first-child>span]:bg-primary/30"
-            data-testid={`slider-overall-${whisky.id}`}
-          />
-          <div className="flex justify-between mt-0.5">
-            <span className="text-[9px] text-muted-foreground/40 font-mono">0</span>
-            <span className="text-[9px] text-muted-foreground/40 font-mono">{scale}</span>
-          </div>
-        </div>
-
-        <div>
-          <textarea
-            value={notes}
-            onChange={(e) => { setNotes(e.target.value); triggerAutoSave(); }}
-            placeholder={t("quickTasting.notesPlaceholder")}
-            className="w-full bg-secondary/30 border border-border/20 rounded-lg px-3 py-2 text-sm font-serif text-foreground placeholder:text-muted-foreground/40 resize-none focus:outline-none focus:ring-1 focus:ring-primary/30"
-            rows={2}
-            data-testid="textarea-notes"
-          />
-        </div>
+      <div className="flex-1">
+        <RatingSliders
+          scores={rating.scores}
+          scale={rating.scale}
+          step={rating.step}
+          overallManual={rating.overallManual}
+          onScore={rating.handleScore}
+          onResetOverall={rating.resetOverall}
+          notes={rating.notes}
+          onNotesChange={rating.handleNotesChange}
+        />
       </div>
 
       <div className="flex items-center gap-3 mt-4 pt-3 border-t border-border/15">
@@ -267,9 +338,9 @@ function DramCard({
           {t("quickTasting.prev")}
         </Button>
         <div className="flex items-center gap-1">
-          {saved && <Check className="w-3.5 h-3.5 text-green-600" />}
+          {rating.saved && <Check className="w-3.5 h-3.5 text-green-600" />}
           <span className="text-[9px] text-muted-foreground/50 font-mono">
-            {saved ? t("quickTasting.saved") : t("quickTasting.autoSaving")}
+            {rating.saved ? t("quickTasting.saved") : t("quickTasting.autoSaving")}
           </span>
         </div>
         <Button
@@ -282,6 +353,287 @@ function DramCard({
         </Button>
       </div>
     </motion.div>
+  );
+}
+
+function FlowDramCard({
+  whisky,
+  tasting,
+  participantId,
+  index,
+  total,
+  expanded,
+  onToggle,
+}: {
+  whisky: Whisky;
+  tasting: Tasting;
+  participantId: string;
+  index: number;
+  total: number;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const { t } = useTranslation();
+  const rating = useRatingState(whisky, tasting, participantId);
+
+  return (
+    <div className="space-y-1" data-testid={`flow-dram-${index}`}>
+      <p className="text-[10px] text-muted-foreground/50 font-mono tracking-wider uppercase text-center py-1">
+        Dram {index + 1} {t("naked.of", "von")} {total}
+      </p>
+      <div
+        className={cn(
+          "border rounded-xl transition-all duration-300 overflow-hidden",
+          expanded ? "border-primary/30 bg-card shadow-md" : "border-border/20 bg-card/50"
+        )}
+      >
+        <button
+          onClick={onToggle}
+          className="w-full flex items-center justify-between px-4 py-3 text-left"
+          data-testid={`button-toggle-dram-${index}`}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <span className={cn(
+              "w-7 h-7 rounded-full flex items-center justify-center text-xs font-mono font-bold flex-shrink-0",
+              expanded ? "bg-primary text-primary-foreground" : "bg-muted/30 text-muted-foreground"
+            )}>
+              {index + 1}
+            </span>
+            <div className="min-w-0">
+              <DramLabel whisky={whisky} tasting={tasting} index={index} />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {rating.saved && <Check className="w-3.5 h-3.5 text-green-600" />}
+            {rating.scores.overall != null && !expanded && (
+              <span className="text-sm font-mono font-bold text-primary">{rating.scores.overall}</span>
+            )}
+            {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+          </div>
+        </button>
+
+        <AnimatePresence>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden"
+            >
+              <div className="px-4 pb-4">
+                <RatingSliders
+                  scores={rating.scores}
+                  scale={rating.scale}
+                  step={rating.step}
+                  overallManual={rating.overallManual}
+                  onScore={rating.handleScore}
+                  onResetOverall={rating.resetOverall}
+                  notes={rating.notes}
+                  onNotesChange={rating.handleNotesChange}
+                  compact
+                />
+                <div className="flex items-center justify-center gap-1 mt-3">
+                  <span className="text-[9px] text-muted-foreground/50 font-mono">
+                    {rating.saved ? t("quickTasting.saved") : t("quickTasting.autoSaving")}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+function FlowMode({
+  whiskies,
+  tasting,
+  participantId,
+  onFinish,
+}: {
+  whiskies: Whisky[];
+  tasting: Tasting;
+  participantId: string;
+  onFinish: () => void;
+}) {
+  const { t } = useTranslation();
+  const [expandedIndex, setExpandedIndex] = useState(0);
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 space-y-2 pb-20">
+        {whiskies.map((w, i) => (
+          <FlowDramCard
+            key={w.id}
+            whisky={w}
+            tasting={tasting}
+            participantId={participantId}
+            index={i}
+            total={whiskies.length}
+            expanded={expandedIndex === i}
+            onToggle={() => setExpandedIndex(expandedIndex === i ? -1 : i)}
+          />
+        ))}
+      </div>
+
+      <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border/20 px-4 py-3 -mx-5 mt-auto">
+        <Button
+          onClick={onFinish}
+          className="w-full font-serif gap-2"
+          data-testid="button-flow-finish"
+        >
+          {t("quickTasting.finish")}
+          <Check className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function JournalDramTab({
+  whisky,
+  tasting,
+  participantId,
+  index,
+}: {
+  whisky: Whisky;
+  tasting: Tasting;
+  participantId: string;
+  index: number;
+}) {
+  const rating = useRatingState(whisky, tasting, participantId);
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-6 py-4" data-testid={`journal-dram-${index}`}>
+      <div className="space-y-1">
+        <DramLabel whisky={whisky} tasting={tasting} index={index} />
+      </div>
+
+      <RatingSliders
+        scores={rating.scores}
+        scale={rating.scale}
+        step={rating.step}
+        overallManual={rating.overallManual}
+        onScore={rating.handleScore}
+        onResetOverall={rating.resetOverall}
+        notes={rating.notes}
+        onNotesChange={rating.handleNotesChange}
+      />
+
+      <div className="flex items-center justify-center gap-1 pt-2">
+        {rating.saved && <Check className="w-3.5 h-3.5 text-green-600" />}
+        <span className="text-[9px] text-muted-foreground/50 font-mono">
+          {rating.saved ? t("quickTasting.saved") : t("quickTasting.autoSaving")}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function JournalMode({
+  whiskies,
+  tasting,
+  participantId,
+  onFinish,
+}: {
+  whiskies: Whisky[];
+  tasting: Tasting;
+  participantId: string;
+  onFinish: () => void;
+}) {
+  const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState(0);
+  const isBlind = tasting.blindMode && tasting.status === "open";
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex gap-1 overflow-x-auto pb-2 mb-2 border-b border-border/20 scrollbar-hide">
+        {whiskies.map((w, i) => {
+          const tabLabel = isBlind ? `Dram ${i + 1}` : (w.name.length > 12 ? w.name.slice(0, 12) + "..." : w.name);
+          return (
+            <button
+              key={w.id}
+              onClick={() => setActiveTab(i)}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-serif font-semibold whitespace-nowrap transition-all flex-shrink-0",
+                activeTab === i
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/20 text-muted-foreground hover:bg-muted/40"
+              )}
+              data-testid={`tab-dram-${i}`}
+            >
+              {tabLabel}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex-1">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <JournalDramTab
+              whisky={whiskies[activeTab]}
+              tasting={tasting}
+              participantId={participantId}
+              index={activeTab}
+            />
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border/20 px-4 py-3 -mx-5 mt-4">
+        <Button
+          onClick={onFinish}
+          className="w-full font-serif gap-2"
+          data-testid="button-journal-finish"
+        >
+          {t("quickTasting.finish")}
+          <Check className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ModeSwitcher({ mode, onModeChange }: { mode: UIMode; onModeChange: (m: UIMode) => void }) {
+  const { t } = useTranslation();
+  const modes: { key: UIMode; icon: typeof Layers; label: string }[] = [
+    { key: "flow", icon: Layers, label: t("naked.modeFlow") },
+    { key: "focus", icon: Target, label: t("naked.modeFocus") },
+    { key: "journal", icon: FileText, label: t("naked.modeJournal") },
+  ];
+
+  return (
+    <div className="flex items-center gap-1 bg-muted/20 rounded-lg p-0.5" data-testid="mode-switcher">
+      {modes.map(m => {
+        const Icon = m.icon;
+        return (
+          <button
+            key={m.key}
+            onClick={() => onModeChange(m.key)}
+            className={cn(
+              "flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-mono transition-all",
+              mode === m.key
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            data-testid={`button-mode-${m.key}`}
+          >
+            <Icon className="w-3 h-3" />
+            {m.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -538,7 +890,7 @@ function DoneScreen({ tasting }: { tasting: Tasting }) {
 export default function NakedTasting() {
   const { t } = useTranslation();
   const params = useParams<{ code: string }>();
-  const { currentParticipant, setParticipant, theme, toggleTheme } = useAppStore();
+  const { currentParticipant, setParticipant, theme, toggleTheme, uiMode, setUIMode } = useAppStore();
 
   const [wizardStep, setWizardStep] = useState<WizardStep>("welcome");
   const [dramIndex, setDramIndex] = useState(0);
@@ -618,6 +970,10 @@ export default function NakedTasting() {
     if (dramIndex > 0) setDramIndex(prev => prev - 1);
   };
 
+  const handleFinish = () => {
+    setWizardStep("recap");
+  };
+
   if (tastingLoading) {
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center">
@@ -646,13 +1002,18 @@ export default function NakedTasting() {
           <Wine className="w-4 h-4 text-primary/60" />
           <span className="font-serif text-[10px] text-muted-foreground/50 tracking-widest uppercase">CaskSense</span>
         </div>
-        <button
-          onClick={toggleTheme}
-          className="w-7 h-7 rounded-full bg-secondary/30 flex items-center justify-center text-muted-foreground/50 hover:text-primary transition-colors"
-          data-testid="button-naked-theme"
-        >
-          {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-        </button>
+        <div className="flex items-center gap-2">
+          {wizardStep === "rating" && (
+            <ModeSwitcher mode={uiMode} onModeChange={setUIMode} />
+          )}
+          <button
+            onClick={toggleTheme}
+            className="w-7 h-7 rounded-full bg-secondary/30 flex items-center justify-center text-muted-foreground/50 hover:text-primary transition-colors"
+            data-testid="button-naked-theme"
+          >
+            {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 max-w-lg mx-auto w-full px-5 pb-6">
@@ -745,18 +1106,35 @@ export default function NakedTasting() {
           )}
 
           {wizardStep === "rating" && currentParticipant && sortedWhiskies.length > 0 && (
-            <DramCard
-              key={`dram-${dramIndex}`}
-              whisky={sortedWhiskies[dramIndex]}
-              tasting={tasting}
-              participantId={currentParticipant.id}
-              index={dramIndex}
-              total={sortedWhiskies.length}
-              onNext={handleNextDram}
-              onPrev={handlePrevDram}
-              isFirst={dramIndex === 0}
-              isLast={dramIndex === sortedWhiskies.length - 1}
-            />
+            <motion.div key="rating" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col">
+              {uiMode === "focus" && (
+                <FocusMode
+                  key={`focus-${dramIndex}`}
+                  whiskies={sortedWhiskies}
+                  tasting={tasting}
+                  participantId={currentParticipant.id}
+                  dramIndex={dramIndex}
+                  onNext={handleNextDram}
+                  onPrev={handlePrevDram}
+                />
+              )}
+              {uiMode === "flow" && (
+                <FlowMode
+                  whiskies={sortedWhiskies}
+                  tasting={tasting}
+                  participantId={currentParticipant.id}
+                  onFinish={handleFinish}
+                />
+              )}
+              {uiMode === "journal" && (
+                <JournalMode
+                  whiskies={sortedWhiskies}
+                  tasting={tasting}
+                  participantId={currentParticipant.id}
+                  onFinish={handleFinish}
+                />
+              )}
+            </motion.div>
           )}
 
           {wizardStep === "recap" && currentParticipant && (
