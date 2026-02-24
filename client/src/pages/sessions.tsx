@@ -470,23 +470,34 @@ export default function Sessions() {
               <DialogDescription>{t("home.quickJoinDesc")}</DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
-              <Input
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                placeholder={t("aiImport.guestNamePlaceholder")}
-                onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
-                data-testid="input-guest-name-sessions"
-              />
-              <Input
-                value={guestPin}
-                onChange={(e) => setGuestPin(e.target.value)}
-                placeholder={t("aiImport.guestPinPlaceholder")}
-                type="password"
-                data-testid="input-guest-pin-sessions"
-              />
+              <div className="space-y-1.5">
+                <Label className="font-serif text-sm text-muted-foreground">{t("login.name")}</Label>
+                <Input
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder={t("aiImport.guestNamePlaceholder")}
+                  onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+                  autoFocus
+                  data-testid="input-guest-name-sessions"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="font-serif text-sm text-muted-foreground">PIN</Label>
+                <Input
+                  value={guestPin}
+                  onChange={(e) => setGuestPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder={t("login.pinPlaceholder")}
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+                  data-testid="input-guest-pin-sessions"
+                />
+                <p className="text-[11px] text-muted-foreground/70">{t("guestAuth.pinReminder")}</p>
+              </div>
               {guestError && <p className="text-xs text-destructive">{guestError}</p>}
               <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
-              <Button onClick={handleGuestSubmit} disabled={!guestName.trim() || guestLoading} className="w-full" data-testid="button-guest-submit-sessions">
+              <Button onClick={handleGuestSubmit} disabled={!guestName.trim() || !guestPin || guestPin.length < 4 || guestLoading} className="w-full" data-testid="button-guest-submit-sessions">
                 {guestLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("home.joinNow")}
               </Button>
             </div>

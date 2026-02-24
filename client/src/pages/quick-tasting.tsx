@@ -52,8 +52,9 @@ function NameEntry({ onJoin, loading }: { onJoin: (name: string, pin: string) =>
           <div className="space-y-1">
             <Input
               type="password"
+              inputMode="numeric"
               value={pin}
-              onChange={(e) => setPin(e.target.value)}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder={t("guestAuth.pinPlaceholder")}
               maxLength={6}
               className="text-center text-lg h-12 font-serif"

@@ -1194,8 +1194,9 @@ export default function NakedTasting() {
                   <div>
                     <Input
                       type="password"
+                      inputMode="numeric"
                       value={pin}
-                      onChange={(e) => setPin(e.target.value)}
+                      onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       placeholder={t("guestAuth.pinPlaceholder")}
                       maxLength={6}
                       className="text-center h-12 font-serif text-base bg-secondary/20 border-border/30"
