@@ -1,0 +1,103 @@
+Du bist ein technischer Auditor für das Projekt „CaskSense“.
+
+Ziel:
+Erstelle eine Status-Zusammenfassung der letzten Sprints mit Fokus auf Menüstruktur, Navigation und Tastings-Seite.
+
+Arbeite in 3 Phasen:
+(1) Git-Status + Commits
+(2) Datei-Inspektion (gezielte Stellen)
+(3) Konsistenzanalyse (aktive Session, Tabs, Layout-Ausnahmen)
+
+========================================================
+PHASE 1 — Git-Analyse
+========================================================
+
+Führe folgende Kommandos aus und gib die komplette Ausgabe zurück:
+
+A) git status
+B) git log --oneline -n 15
+C) git log -n 15 --name-only --pretty=format:"--- %h %ad %s" --date=short
+D) git diff --stat (falls uncommitted changes existieren)
+
+Dann:
+- cluster die Commits thematisch (Navigation, Layout, Guards, Tasting UX, Backend/Schema)
+- markiere Commits, die layout.tsx oder page-layout.tsx oder tasting pages betreffen
+
+========================================================
+PHASE 2 — Datei-Inspektion (gezielt)
+========================================================
+
+Untersuche NUR diese Dateien:
+
+client/src/components/layout.tsx
+client/src/components/page-layout.tsx
+client/src/pages/*tasting* (finde die passende sessions-seite)
+client/src/pages/tasting-room.tsx
+client/src/pages/host-dashboard.tsx
+server/routes.ts
+shared/schema.ts
+replit.md
+
+Für jede Datei:
+1) Was ist ihre Aufgabe?
+2) Welche “Navigation/State”-Logik enthält sie?
+3) Gibt es TODO/FIXME?
+4) Gibt es doppelte Logik (z.B. activeSession mehrfach definiert)?
+5) Gibt es client-only Guards, die serverseitig fehlen?
+6) Gibt es ungenutzte Exporte/Dead Code?
+
+========================================================
+PHASE 2a — Automatische Suche (WICHTIG)
+========================================================
+
+Führe eine Textsuche über das Repo aus (ripgrep) und gib Treffer + Kontext (je 10 Zeilen) zurück.
+
+1) "activeSession" 
+2) "now" 
+3) "JETZT"
+4) "/watch"
+5) "/naked"
+6) "PageLayout"
+7) "uiMode"
+8) "host" AND "guard"
+9) "draft" "open" "closed" "reveal" "archived"
+10) "tab="
+
+Wenn möglich, nutze:
+rg -n "<pattern>" client server shared
+
+========================================================
+PHASE 3 — Konsistenzanalyse
+========================================================
+
+Beantworte konkret:
+
+1) Definition "aktive Session"
+- ZITIERE den Code (die genaue Funktion / Bedingung), der bestimmt:
+  a) Sidebar-Gruppe JETZT sichtbar/Count
+  b) Tab "Aktiv" auf /tasting/sessions
+  c) Session-State-Machine Status auf Backend (falls vorhanden)
+
+2) Tastings-Seite Tab-Ebenen
+- Warum gibt es zwei Tab-Ebenen?
+- Welche query params / state steuern Ebene 1 (oben)?
+- Welche state/tabs steuern Ebene 2 (buttons)?
+- Sind sie gekoppelt oder unabhängig?
+
+3) Layout-Ausnahmen
+- Zeige die Route-Definitionen für /watch/:token und /naked/:code
+- ZITIERE, wo Layout bewusst umgangen wird.
+- Prüfe, ob PageLayout irgendwo trotzdem auftaucht.
+
+========================================================
+AUSGABEFORMAT
+========================================================
+
+1) Letzte Navigation-Sprints (Commit-Cluster, kurz)
+2) Aktueller Navigationszustand (Stabil / Teilstabil / Inkonsistent) + Begründung
+3) Tastings-Seite – strukturelle Bewertung (Tabs, Filter, Rollenmodell)
+4) Definition "aktive Session" (exakte Code-Zitate)
+5) Potentielle Drift-Risiken (Top 5)
+6) Empfehlung Finetuning-Schritt 1 (konkret: was ändern, wo, warum, Tests)
+
+Antworte präzise und technisch, ohne Marketing.
