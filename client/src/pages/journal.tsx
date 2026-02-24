@@ -179,20 +179,21 @@ export default function Journal() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-journal-title">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary truncate" data-testid="text-journal-title">
                   {t("journal.title")}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">{t("journal.subtitle")}</p>
               </div>
               <Button
                 onClick={handleNew}
-                className="bg-primary text-primary-foreground font-serif"
+                className="bg-primary text-primary-foreground font-serif flex-shrink-0 self-start sm:self-auto"
                 data-testid="button-new-journal-entry"
+                aria-label={t("journal.newEntry")}
               >
-                <Plus className="w-4 h-4 mr-2" />
-                {t("journal.newEntry")}
+                <Plus className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t("journal.newEntry")}</span>
               </Button>
             </div>
 
@@ -398,23 +399,23 @@ function EntryDetail({
 
   return (
     <div data-testid="journal-entry-detail">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-2">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm flex-shrink-0"
           data-testid="button-back-to-journal"
         >
           <ArrowLeft className="w-4 h-4" />
           {t("journal.back")}
         </button>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={onEdit} data-testid="button-edit-journal-entry">
-            <Pencil className="w-3.5 h-3.5 mr-1.5" />
-            {t("journal.editEntry")}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <Button variant="outline" size="sm" onClick={onEdit} data-testid="button-edit-journal-entry" title={t("journal.editEntry")}>
+            <Pencil className="w-3.5 h-3.5 sm:mr-1.5" />
+            <span className="hidden sm:inline">{t("journal.editEntry")}</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive" data-testid="button-delete-journal-entry">
-            <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-            {t("journal.deleteEntry")}
+          <Button variant="outline" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive" data-testid="button-delete-journal-entry" title={t("journal.deleteEntry")}>
+            <Trash2 className="w-3.5 h-3.5 sm:mr-1.5" />
+            <span className="hidden sm:inline">{t("journal.deleteEntry")}</span>
           </Button>
         </div>
       </div>
@@ -427,7 +428,7 @@ function EntryDetail({
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary">{entry.title}</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary">{entry.title}</h1>
             {entry.whiskyName && (
               <p className="text-lg text-foreground/80 font-serif mt-1">{entry.whiskyName}</p>
             )}

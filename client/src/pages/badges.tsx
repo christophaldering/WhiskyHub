@@ -474,7 +474,7 @@ export default function Badges() {
       >
         <div className="flex items-center gap-3 mb-2">
           <Trophy className="w-7 h-7 text-primary" />
-          <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-badges-title">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-badges-title">
             {t("badges.title")}
           </h1>
         </div>

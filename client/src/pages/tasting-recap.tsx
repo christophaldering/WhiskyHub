@@ -240,7 +240,7 @@ export default function TastingRecap() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center gap-3 mb-2">
             <Trophy className="w-7 h-7 text-primary" />
-            <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-recap-title">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-recap-title">
               {t("recap.title")}
             </h1>
           </div>
@@ -333,14 +333,14 @@ export default function TastingRecap() {
       `}</style>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Trophy className="w-7 h-7 text-primary" />
-            <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-recap-title">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <div className="flex items-center gap-3 min-w-0">
+            <Trophy className="w-7 h-7 text-primary flex-shrink-0" />
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary truncate" data-testid="text-recap-title">
               {t("recap.title")}
             </h1>
           </div>
-          <div className="flex gap-2 print:hidden flex-wrap">
+          <div className="flex gap-1.5 sm:gap-2 print:hidden flex-wrap">
             {!params.id && (
               <Button variant="ghost" size="sm" onClick={() => setSelectedTastingId(null)} data-testid="button-recap-back">
                 {t("recap.back")}
@@ -349,18 +349,18 @@ export default function TastingRecap() {
             {currentParticipant?.id === recap.tasting.hostId && (
               <ThankYouDialog tastingId={recap.tasting.id} tastingTitle={recap.tasting.title} />
             )}
-            <Button variant="outline" size="sm" onClick={handlePdfDownload} data-testid="button-pdf-recap">
-              <FileDown className="w-4 h-4 mr-1" /> PDF
+            <Button variant="outline" size="sm" onClick={handlePdfDownload} data-testid="button-pdf-recap" title="PDF">
+              <FileDown className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">PDF</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={handleCopy} data-testid="button-copy-recap">
-              <Copy className="w-4 h-4 mr-1" /> {t("recap.copyRecap")}
+            <Button variant="outline" size="sm" onClick={handleCopy} data-testid="button-copy-recap" title={t("recap.copyRecap")}>
+              <Copy className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">{t("recap.copyRecap")}</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={handlePrint} data-testid="button-print-recap">
-              <Printer className="w-4 h-4 mr-1" /> {t("recap.printRecap")}
+            <Button variant="outline" size="sm" onClick={handlePrint} data-testid="button-print-recap" title={t("recap.printRecap")}>
+              <Printer className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">{t("recap.printRecap")}</span>
             </Button>
             <Link href={`/export-notes${tastingId ? `?tastingId=${tastingId}` : ""}`}>
-              <Button variant="outline" size="sm" data-testid="button-export-notes">
-                <Download className="w-4 h-4 mr-1" /> {t("nav.exportNotes")}
+              <Button variant="outline" size="sm" data-testid="button-export-notes" title={t("nav.exportNotes")}>
+                <Download className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">{t("nav.exportNotes")}</span>
               </Button>
             </Link>
           </div>

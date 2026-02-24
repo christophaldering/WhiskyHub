@@ -183,7 +183,7 @@ export default function Recommendations() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-3 mb-2">
           <Sparkles className="w-7 h-7 text-primary" />
-          <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-rec-title">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-rec-title">
             {t("recommendations.title")}
           </h1>
         </div>

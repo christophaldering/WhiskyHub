@@ -864,7 +864,7 @@ export default function AdminPanel() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <ShieldAlert className="w-7 h-7 text-primary" />
-          <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-admin-title">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-admin-title">
             {t("admin.title")}
           </h1>
         </div>

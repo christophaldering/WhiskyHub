@@ -134,7 +134,7 @@ export default function ExportNotes() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-3 mb-2">
           <FileText className="w-7 h-7 text-primary" />
-          <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-export-title">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-export-title">
             {t("exportNotes.title")}
           </h1>
         </div>
@@ -174,22 +174,22 @@ export default function ExportNotes() {
 
         {notesData && (
           <>
-            <div className="flex items-center justify-between mb-6 print:hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 print:hidden">
               <p className="text-sm text-muted-foreground">
                 {t("exportNotes.notesCount", { count: notesData.notes?.length || 0 })}
               </p>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={handleCopyText} data-testid="button-copy-text">
-                  <Copy className="w-4 h-4 mr-2" />
-                  {t("exportNotes.copyText")}
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                <Button variant="outline" size="sm" onClick={handleCopyText} data-testid="button-copy-text" title={t("exportNotes.copyText")}>
+                  <Copy className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t("exportNotes.copyText")}</span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleDownloadWord} disabled={downloading} data-testid="button-download-word">
-                  <FileDown className="w-4 h-4 mr-2" />
-                  {t("exportNotes.downloadWord")}
+                <Button variant="outline" size="sm" onClick={handleDownloadWord} disabled={downloading} data-testid="button-download-word" title={t("exportNotes.downloadWord")}>
+                  <FileDown className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t("exportNotes.downloadWord")}</span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={handlePrint} data-testid="button-print">
-                  <Printer className="w-4 h-4 mr-2" />
-                  {t("exportNotes.print")}
+                <Button variant="outline" size="sm" onClick={handlePrint} data-testid="button-print" title={t("exportNotes.print")}>
+                  <Printer className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t("exportNotes.print")}</span>
                 </Button>
               </div>
             </div>
