@@ -1672,11 +1672,23 @@ export default function TastingRoom() {
 
 
   const toggleCoverRevealMutation = useMutation({
-    mutationFn: (revealed: boolean) => tastingApi.toggleCoverImageReveal(id!, currentParticipant.id, revealed),
+    mutationFn: (revealed: boolean) => tastingApi.toggleCoverImageReveal(id!, currentParticipant?.id, revealed),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasting", id] });
     },
   });
+
+  useEffect(() => {
+    if (tasting && prevStatusRef.current && prevStatusRef.current !== "archived" && tasting.status === "archived") {
+      const key = `donation_prompt_shown_${tasting.id}`;
+      if (!localStorage.getItem(key)) {
+        setShowDonationPrompt(true);
+      }
+    }
+    if (tasting) {
+      prevStatusRef.current = tasting.status;
+    }
+  }, [tasting?.status, tasting?.id]);
 
   if (!currentParticipant) {
     return (
@@ -1765,18 +1777,6 @@ export default function TastingRoom() {
     };
     return { showName: false, showMeta: false, showImage: photoRevealed };
   };
-
-  useEffect(() => {
-    if (tasting && prevStatusRef.current && prevStatusRef.current !== "archived" && tasting.status === "archived") {
-      const key = `donation_prompt_shown_${tasting.id}`;
-      if (!localStorage.getItem(key)) {
-        setShowDonationPrompt(true);
-      }
-    }
-    if (tasting) {
-      prevStatusRef.current = tasting.status;
-    }
-  }, [tasting?.status, tasting?.id]);
 
   const isGuidedMode = tasting?.guidedMode && (tasting.status === "open" || tasting.status === "draft");
 
