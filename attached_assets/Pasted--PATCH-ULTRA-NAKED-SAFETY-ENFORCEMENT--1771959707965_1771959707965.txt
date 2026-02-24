@@ -1,0 +1,108 @@
+===========================================
+PATCH: ULTRA NAKED SAFETY ENFORCEMENT
+===========================================
+
+GOAL:
+Ultra Naked must NEVER be activated silently.
+It requires explicit confirmation and enforces strict UI + logic behavior.
+
+------------------------------------------------
+1) HOST SETTING: ENFORCED CONFIRMATION MODAL
+------------------------------------------------
+
+When host switches guestMode from "standard" to "ultra":
+
+DO NOT immediately apply the change.
+
+Instead:
+Open a blocking confirmation modal with:
+
+TITLE:
+⚠️ ACHTUNG: Ultra Naked aktivieren?
+
+BODY:
+Ultra Naked speichert keinen Fortschritt.
+Teilnehmer können NICHT fortsetzen, wenn sie die Seite verlassen oder neu laden.
+Rankings werden deaktiviert.
+
+BUTTONS:
+[Abbrechen]  (closes modal, keep mode=standard)
+[Ultra aktivieren] (confirms, sets mode=ultra)
+
+Requirements:
+- Modal must block interaction behind it.
+- Mode only changes AFTER clicking "Ultra aktivieren".
+- ESC closes modal and keeps mode=standard.
+- Clicking outside does NOT confirm.
+
+------------------------------------------------
+2) GUEST UI WARNING (ULTRA MODE ONLY)
+------------------------------------------------
+
+If guestMode === "ultra":
+
+Render persistent warning banner at top of tasting UI:
+
+STYLE:
+- background: light warning tone (amber / orange)
+- left icon: warning triangle
+- bold headline
+
+TEXT (EXACT):
+
+⚠️ ACHTUNG: Ultra Naked.
+Fortschritt wird NICHT gespeichert.
+Seite verlassen oder neu laden = Eingaben verloren.
+
+Rules:
+- Must remain visible while in Ultra mode.
+- Must NOT appear in Standard mode.
+- Must not look like a subtle hint.
+
+------------------------------------------------
+3) LOGIC ENFORCEMENT
+------------------------------------------------
+
+If guestMode === "ultra":
+
+- Do NOT write guestId to localStorage.
+- Do NOT persist drafts server-side.
+- On refresh: participation is treated as new or empty.
+- Ranking component must be hidden OR excluded from aggregation.
+
+Preferred implementation:
+- Hide ranking completely in Ultra mode.
+
+------------------------------------------------
+4) ACCEPTANCE TESTS (MANDATORY)
+------------------------------------------------
+
+Test A:
+Switch to Ultra → Modal appears → Cancel → mode remains "standard".
+
+Test B:
+Switch to Ultra → Confirm → mode="ultra".
+
+Test C:
+Guest enters Ultra session → warning banner visible.
+
+Test D:
+Guest refreshes page → progress NOT reliably restored.
+
+Test E:
+Ranking not visible in Ultra session.
+
+------------------------------------------------
+5) VERIFY IMPLEMENTATION
+------------------------------------------------
+
+After implementation, confirm explicitly:
+
+✔ Modal blocks activation
+✔ Ultra cannot be enabled silently
+✔ Banner text EXACT match
+✔ Ranking disabled in Ultra
+✔ Standard mode unchanged
+
+Print confirmation checklist in console log:
+"ULTRA SAFETY PATCH VERIFIED"

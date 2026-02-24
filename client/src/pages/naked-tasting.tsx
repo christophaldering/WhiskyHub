@@ -1106,9 +1106,9 @@ export default function NakedTasting() {
               ) : !activeParticipant ? (
                 <div className="space-y-4 max-w-sm mx-auto">
                   {isUltraMode && (
-                    <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5" data-testid="ultra-warning">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                      <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed font-serif">
+                    <div className="flex items-start gap-2.5 bg-amber-500/15 border-2 border-amber-500/40 rounded-lg px-4 py-3" data-testid="ultra-warning">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-amber-700 dark:text-amber-400 leading-relaxed font-serif font-bold whitespace-pre-line">
                         {t("naked.ultraWarning")}
                       </p>
                     </div>
@@ -1178,9 +1178,9 @@ export default function NakedTasting() {
           {wizardStep === "rating" && activeParticipant && sortedWhiskies.length > 0 && (
             <motion.div key="rating" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col">
               {isUltraMode && (
-                <div className="flex items-center gap-1.5 bg-amber-500/10 rounded-lg px-2.5 py-1.5 mb-3" data-testid="ultra-banner-rating">
-                  <AlertTriangle className="w-3 h-3 text-amber-600 flex-shrink-0" />
-                  <p className="text-[9px] text-amber-700 dark:text-amber-400 font-serif">
+                <div className="flex items-center gap-2 bg-amber-500/15 border border-amber-500/30 rounded-lg px-3 py-2 mb-3" data-testid="ultra-banner-rating">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-400 font-serif font-semibold">
                     {t("naked.ultraBannerShort")}
                   </p>
                 </div>

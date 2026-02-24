@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Users, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3, Clock, Check, Trophy, FileDown, Wine, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Users, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3, Clock, Check, Trophy, FileDown, Wine, Search, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -909,6 +909,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   const [form, setForm] = useState({ title: "", date: "", location: "", videoLink: "", blindMode: false, ratingScale: 100, guestMode: "standard" as string });
   const [coverUploading, setCoverUploading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [showUltraConfirm, setShowUltraConfirm] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1082,9 +1083,13 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
                       key={mode}
                       type="button"
                       onClick={() => {
-                        const newForm = { ...form, guestMode: mode };
-                        setForm(newForm);
-                        triggerAutoSave(newForm);
+                        if (mode === "ultra" && form.guestMode !== "ultra") {
+                          setShowUltraConfirm(true);
+                        } else {
+                          const newForm = { ...form, guestMode: mode };
+                          setForm(newForm);
+                          triggerAutoSave(newForm);
+                        }
                       }}
                       className={cn(
                         "py-2 px-3 rounded-lg border text-sm font-serif font-bold transition-all",
@@ -1101,6 +1106,39 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
                 <p className="text-[10px] text-muted-foreground leading-tight mt-1">
                   {form.guestMode === "standard" ? t("sessionSettings.guestStandardDesc") : t("sessionSettings.guestUltraDesc")}
                 </p>
+                <AlertDialog open={showUltraConfirm} onOpenChange={(v) => { if (!v) setShowUltraConfirm(false); }}>
+                  <AlertDialogContent data-testid="ultra-confirm-modal">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="font-serif text-lg flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-amber-600" />
+                        {t("sessionSettings.ultraConfirmTitle")}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="whitespace-pre-line text-sm leading-relaxed">
+                        {t("sessionSettings.ultraConfirmBody")}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel
+                        onClick={() => setShowUltraConfirm(false)}
+                        data-testid="ultra-confirm-cancel"
+                      >
+                        {t("sessionSettings.ultraConfirmCancel")}
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          const newForm = { ...form, guestMode: "ultra" };
+                          setForm(newForm);
+                          triggerAutoSave(newForm);
+                          setShowUltraConfirm(false);
+                        }}
+                        className="bg-amber-600 hover:bg-amber-700 text-white"
+                        data-testid="ultra-confirm-activate"
+                      >
+                        {t("sessionSettings.ultraConfirmActivate")}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </>
           )}
