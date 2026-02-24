@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Camera, X, User, KeyRound, Mail, Trash2, AlertTriangle, Layers, Target, FileText } from "lucide-react";
+import { Camera, X, User, KeyRound, Mail, Trash2, AlertTriangle, Layers, Target, FileText, Settings } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
 import type { UIMode } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -582,6 +582,20 @@ export default function Profile() {
             data-testid="button-save-profile"
           >
             {saveMutation.isPending ? t("profile.saving") : t("profile.save")}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="w-full border-border/50 bg-card shadow-sm">
+        <CardContent className="pt-6">
+          <Button
+            variant="outline"
+            className="w-full font-serif"
+            onClick={() => navigate("/profile/account")}
+            data-testid="button-go-to-account"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            {t("nav.account")}
           </Button>
         </CardContent>
       </Card>

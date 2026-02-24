@@ -567,7 +567,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: t('navGroup.profil'),
       items: [
         { href: "/profile", icon: User, label: t('profile.title'), match: (loc: string) => loc === "/profile" },
-        { href: "/profile/account", icon: Settings, label: t('nav.account') },
         { href: "/profile/help", icon: HelpCircle, label: t('nav.help'), match: (loc: string) => loc === "/profile/help" },
       ],
     },
