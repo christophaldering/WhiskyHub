@@ -538,24 +538,38 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ] : []),
       ],
     },
-    ...(atLeast("explorer") ? [{
-      label: t('navGroup.analyse'),
+    ...(atLeast("connoisseur") ? [{
+      label: t('navGroup.pro'),
       items: [
-        { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
-        { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
-        ...(atLeast("connoisseur") ? [
-          { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
-          { href: "/community-rankings", icon: Trophy, label: t('nav.communityRankings') },
-          { href: "/taste-twins", icon: Users, label: t('nav.tasteTwins') },
+        { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
+        { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
+        { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
+        { href: "/benchmark", icon: Library, label: t('nav.benchmark') },
+        ...(atLeast("analyst") && (isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
+          { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
         ] : []),
         ...(atLeast("analyst") ? [
           { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
         ] : []),
+        ...(atLeast("analyst") ? [
+          { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
+        ] : []),
+      ],
+    }] : []),
+    ...(atLeast("explorer") ? [{
+      label: t('navGroup.profil'),
+      items: [
+        { href: "/profile", icon: User, label: t('profile.title') },
+        { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
+        { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
         ...(atLeast("connoisseur") ? [
+          { href: "/taste-twins", icon: Users, label: t('nav.tasteTwins') },
           { href: "/friends", icon: Heart, label: t('nav.friends') },
+          { href: "/community-rankings", icon: Trophy, label: t('nav.communityRankings') },
           { href: "/activity", icon: Rss, label: t('nav.activity') },
           { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
         ] : []),
+        { href: "/account", icon: Settings, label: t('nav.account') },
       ],
     }] : []),
     ...(atLeast("connoisseur") ? [{
@@ -565,42 +579,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/distilleries", icon: Landmark, label: t('nav.distilleries'), match: (loc: string) => loc === "/distilleries" || loc === "/distillery-map" },
         { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
         { href: "/research", icon: Microscope, label: t('nav.research') },
-        { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
-        { href: "/benchmark", icon: Library, label: t('nav.benchmark') },
-        { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
-        ...(atLeast("analyst") && (isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
-          { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
-        ] : []),
       ],
     }] : []),
-    ...(atLeast("explorer") ? [{
-      label: t('navGroup.konto'),
+    {
+      label: t('navGroup.ueber'),
       items: [
-        { href: "/profile", icon: User, label: t('profile.title') },
-        { href: "/account", icon: Settings, label: t('nav.account') },
-        ...(atLeast("analyst") ? [
-          { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
-        ] : []),
         { href: "/help", icon: HelpCircle, label: t('nav.help') },
         { href: "/about", icon: Info, label: t('nav.about') },
         ...(atLeast("connoisseur") ? [
           { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         ] : []),
         { href: "/donate", icon: HeartHandshake, label: t('nav.donate') },
-        ...(currentParticipant?.role === "admin" ? [
-          { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
-        ] : []),
+        { href: "/", icon: Globe, label: t('nav.landingPage') },
       ],
-    }] : [
-      {
-        label: t('navGroup.konto'),
-        items: [
-          { href: "/help", icon: HelpCircle, label: t('nav.help') },
-          { href: "/about", icon: Info, label: t('nav.about') },
-          { href: "/donate", icon: HeartHandshake, label: t('nav.donate') },
-        ],
-      },
-    ]),
+    },
+    ...(currentParticipant?.role === "admin" ? [{
+      label: t('navGroup.adminSection'),
+      items: [
+        { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
+      ],
+    }] : []),
   ], [t, isHost, isAdmin, expLevel, currentParticipant?.canAccessWhiskyDb, currentParticipant?.role, previewExperienceLevel]);
 
   const desktopNavRef = useRef<HTMLElement>(null);
