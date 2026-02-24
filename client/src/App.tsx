@@ -29,6 +29,7 @@ import Background from "@/pages/background";
 import News from "@/pages/news";
 import QuickTasting from "@/pages/quick-tasting";
 import NakedTasting from "@/pages/naked-tasting";
+import WatchScreen from "@/pages/watch-screen";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
 import HomeDashboard from "@/pages/home-dashboard";
@@ -67,6 +68,7 @@ function Router() {
         <Route path="/background" component={Background} />
         <Route path="/join/:code" component={QuickTasting} />
         <Route path="/naked/:code" component={NakedTasting} />
+        <Route path="/watch/:token" component={WatchScreen} />
         <Route path="/impressum" component={Impressum} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/intro" component={Intro} />

@@ -8796,5 +8796,158 @@ Important rules:
     }
   });
 
+  const watchCache = new Map<string, { data: any; timestamp: number }>();
+  const WATCH_CACHE_TTL = 3000;
+
+  app.get("/api/watch/:token", async (req: Request, res: Response) => {
+    try {
+      const token = req.params.token;
+      if (!token || token.length < 32) return res.status(404).json({ message: "Not found" });
+
+      const cached = watchCache.get(token);
+      if (cached && Date.now() - cached.timestamp < WATCH_CACHE_TTL) {
+        return res.json(cached.data);
+      }
+
+      const tasting = await storage.getTastingByViewerToken(token);
+      if (!tasting || !tasting.viewerEnabled) {
+        return res.status(404).json({ message: "Not found" });
+      }
+
+      const liveStatuses = ["open", "closed", "reveal"];
+      if (tasting.viewerLiveOnly && !liveStatuses.includes(tasting.status)) {
+        return res.status(403).json({ message: "not_live", status: tasting.status });
+      }
+
+      const whiskies = await storage.getWhiskiesForTasting(tasting.id);
+      const ratings = await storage.getRatingsForTasting(tasting.id);
+
+      const whiskyMap = new Map(whiskies.map(w => [w.id, w]));
+      const whiskyRatings = new Map<string, any[]>();
+      for (const r of ratings) {
+        if (!whiskyRatings.has(r.whiskyId)) whiskyRatings.set(r.whiskyId, []);
+        whiskyRatings.get(r.whiskyId)!.push(r);
+      }
+
+      const sortedWhiskies = [...whiskies].sort((a, b) => a.sortOrder - b.sortOrder);
+
+      const revealIndex = tasting.revealIndex ?? 0;
+      const revealStep = tasting.revealStep ?? 0;
+      const isBlind = tasting.blindMode ?? false;
+      const isRevealPhase = tasting.status === "reveal" || tasting.status === "archived";
+
+      const drams = sortedWhiskies.map((w, idx) => {
+        const wRatings = whiskyRatings.get(w.id) || [];
+        const overalls = wRatings.map((r: any) => r.overall).filter((v: any) => v != null);
+        const avgOverall = overalls.length > 0 ? Math.round((overalls.reduce((a: number, b: number) => a + b, 0) / overalls.length) * 10) / 10 : null;
+
+        const noseVals = wRatings.map((r: any) => r.nose).filter((v: any) => v != null);
+        const tasteVals = wRatings.map((r: any) => r.taste).filter((v: any) => v != null);
+        const finishVals = wRatings.map((r: any) => r.finish).filter((v: any) => v != null);
+        const balanceVals = wRatings.map((r: any) => r.balance).filter((v: any) => v != null);
+
+        const avg = (arr: number[]) => arr.length > 0 ? Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10 : null;
+
+        let revealed = false;
+        let whiskyName: string | null = null;
+        let whiskyDistillery: string | null = null;
+        let whiskyImageUrl: string | null = null;
+        let whiskyAge: string | null = null;
+        let whiskyAbv: number | null = null;
+
+        if (!isBlind) {
+          revealed = true;
+        } else if (isRevealPhase) {
+          if (idx < revealIndex) {
+            revealed = true;
+          } else if (idx === revealIndex) {
+            if (revealStep >= 1) whiskyName = w.name;
+            if (revealStep >= 2) { whiskyDistillery = w.distillery; whiskyAge = w.age; whiskyAbv = w.abv; }
+            if (revealStep >= 3) { whiskyImageUrl = w.imageUrl; revealed = true; }
+          }
+        }
+
+        if (revealed) {
+          whiskyName = w.name;
+          whiskyDistillery = w.distillery;
+          whiskyAge = w.age;
+          whiskyAbv = w.abv;
+          whiskyImageUrl = w.imageUrl;
+        }
+
+        return {
+          label: `#${idx + 1}`,
+          ratingCount: overalls.length,
+          ...(tasting.viewerAllowAverages ? {
+            avgOverall,
+            avgNose: avg(noseVals),
+            avgTaste: avg(tasteVals),
+            avgFinish: avg(finishVals),
+            avgBalance: avg(balanceVals),
+          } : {}),
+          ...(whiskyName ? { whiskyName } : {}),
+          ...(whiskyDistillery ? { whiskyDistillery } : {}),
+          ...(whiskyAge ? { whiskyAge } : {}),
+          ...(whiskyAbv ? { whiskyAbv } : {}),
+          ...(whiskyImageUrl ? { whiskyImageUrl } : {}),
+          revealed,
+        };
+      });
+
+      let dramRanking: { label: string; avgOverall: number | null; rank: number }[] = [];
+      if (tasting.viewerAllowRanking && tasting.viewerAllowAverages) {
+        const ranked = drams
+          .filter(d => d.avgOverall != null)
+          .sort((a, b) => (b.avgOverall ?? 0) - (a.avgOverall ?? 0))
+          .map((d, i) => ({ label: d.label, avgOverall: d.avgOverall ?? null, rank: i + 1 }));
+        dramRanking = ranked;
+      }
+
+      const responseData = {
+        sessionTitle: tasting.title,
+        status: tasting.status,
+        ratingScale: tasting.ratingScale,
+        isBlind,
+        revealIndex,
+        revealStep,
+        viewerAllowAverages: tasting.viewerAllowAverages,
+        viewerAllowRanking: tasting.viewerAllowRanking,
+        totalDrams: sortedWhiskies.length,
+        totalRatings: ratings.length,
+        drams,
+        dramRanking,
+      };
+
+      watchCache.set(token, { data: responseData, timestamp: Date.now() });
+
+      if (watchCache.size > 1000) {
+        const now = Date.now();
+        for (const [k, v] of watchCache) {
+          if (now - v.timestamp > WATCH_CACHE_TTL * 10) watchCache.delete(k);
+        }
+      }
+
+      res.json(responseData);
+    } catch (e: any) {
+      console.error("Watch endpoint error:", e);
+      res.status(500).json({ message: "Internal error" });
+    }
+  });
+
+  app.post("/api/tastings/:id/viewer-token", async (req: Request, res: Response) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      const { hostId } = req.body;
+      if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can manage viewer settings" });
+
+      const token = crypto.randomBytes(32).toString("hex");
+      const updated = await storage.updateTastingDetails(tasting.id, { viewerToken: token, viewerEnabled: true });
+      res.json({ viewerToken: updated?.viewerToken });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }
