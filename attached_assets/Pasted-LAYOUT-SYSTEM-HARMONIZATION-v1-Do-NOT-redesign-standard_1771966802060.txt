@@ -1,0 +1,101 @@
+LAYOUT SYSTEM HARMONIZATION — v1 (Do NOT redesign, standardize)
+
+Goal:
+Create a consistent, print-friendly, whisky-journal-like layout across the main app pages by introducing ONE shared PageLayout system and refactoring target pages to use it.
+
+This is NOT a visual redesign experiment. This is a consistency and structure task.
+Do not change routes. Do not change business logic. Do not rename features.
+
+==================================================
+PHASE 0 — AUDIT (MANDATORY, PRINT FIRST)
+==================================================
+1) Identify the current “best” reference layout: My Journal page (Mein Whisky / Journal).
+   - Capture its structure: header, subline, tabs, primary action placement, card styles.
+2) List all main pages that should use the shared layout (minimum set):
+   - /tasting (TastingHub)
+   - /tasting/sessions (TastingSessions)
+   - /my/journal (MyJournal)  [reference, should minimally change]
+   - /discover (DiscoverHub)
+   - /discover/distilleries (DiscoverDistilleries)
+   - /discover/community (DiscoverCommunity)
+   - /profile (Profile)
+3) Identify where headers/tabs/actions are currently implemented for each page and note inconsistencies.
+
+Output the audit summary and the list of pages + components + file paths.
+
+==================================================
+PHASE 1 — CREATE SHARED COMPONENTS
+==================================================
+Create a shared layout component:
+- File: client/src/components/page-layout.tsx (or similar)
+Export:
+A) <PageLayout>
+Props:
+- icon (Lucide icon)
+- title (string)
+- subtitle (string | ReactNode)
+- primaryAction (ReactNode | optional)
+- tabs (ReactNode | optional)
+- children
+
+Structure (must be consistent):
+- Max width container aligned with existing design
+- Header section:
+  - left: icon + title
+  - subtitle under title
+  - right: primaryAction aligned top-right
+- Tabs area under header (if provided)
+- Content area (children)
+No sidebar changes. PageLayout only standardizes the inner page scaffold.
+
+Also create a small helper:
+B) <PageTabs> (optional)
+Standardize tab styling to match existing journal tabs.
+
+==================================================
+PHASE 2 — STANDARDIZE CARD STYLE TOKENS (NO THEME CHANGE)
+==================================================
+Do NOT change colors/brand.
+But create reusable classnames or components for:
+- Card container
+- Section titles
+- Stat blocks (if used)
+Goal: same padding, radius, typography hierarchy across pages.
+
+==================================================
+PHASE 3 — APPLY TO TARGET PAGES (MINIMAL INVASIVE)
+==================================================
+Refactor each target page to use <PageLayout>:
+- Keep all existing content and logic.
+- Only move/standardize:
+  - page title + subtitle
+  - primary action button placement (top-right)
+  - tabs placement (below header)
+  - consistent spacing/margins
+
+MyJournal is the reference: only adapt it if needed to fit the shared component, but it must remain visually the same.
+
+==================================================
+PHASE 4 — PRINT/SCAN CONSISTENCY GUARDRail (FOUNDATION)
+==================================================
+Ensure that whenever a rating block exists (nosing/tasting/abgang/balance/gesamt), the order and labels are consistent.
+Do NOT implement PDF changes in this sprint. Just ensure the on-screen rating block uses a shared component if multiple pages contain it.
+
+If only TastingRoom contains rating sliders, extract:
+- <RatingBlock> that renders the consistent order and labels.
+
+==================================================
+PHASE 5 — QA / ACCEPTANCE (TASK FAILS IF NOT MET)
+==================================================
+1) All target pages use the shared PageLayout component.
+2) Header structure is consistent:
+   - icon + title + subtitle left, primary action right
+3) Tabs, when present, are always directly under header and look consistent.
+4) No route changes. No feature removal.
+5) No console errors.
+6) Visual check: pages feel like the same “book system” as MyJournal.
+
+OUTPUT REQUIRED:
+- Files changed
+- Before/after screenshots for 3 pages: /my/journal, /tasting/sessions, /discover
+- Note any pages skipped and why (must be justified)

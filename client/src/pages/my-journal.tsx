@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSearch } from "wouter";
 import { NotebookPen } from "lucide-react";
+import { PageLayout } from "@/components/page-layout";
 import Journal from "@/pages/journal";
 import MyWhiskies from "@/pages/my-whiskies";
 import Comparison from "@/pages/comparison";
@@ -30,14 +31,11 @@ export default function MyJournal() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="my-journal-page">
-      <div className="flex items-center gap-3 mb-6">
-        <NotebookPen className="w-7 h-7 text-primary" />
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-my-journal-title">
-          Mein Whisky
-        </h1>
-      </div>
-
+    <PageLayout
+      icon={NotebookPen}
+      title="Mein Whisky"
+      testId="my-journal-page"
+    >
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <div className="overflow-x-auto -mx-4 px-4 pb-1">
           <TabsList className="w-full inline-flex" data-testid="my-journal-tabs">
@@ -92,6 +90,6 @@ export default function MyJournal() {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }

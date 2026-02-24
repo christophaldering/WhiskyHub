@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Wine } from "lucide-react";
+import { PageLayout } from "@/components/page-layout";
 import Home from "@/pages/home";
 import TastingTemplates from "@/pages/tasting-templates";
 import PairingSuggestions from "@/pages/pairing-suggestions";
@@ -26,26 +27,25 @@ export default function TastingHub() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="tasting-hub-page">
-      <div className="flex items-center gap-3 mb-6">
-        <Wine className="w-7 h-7 text-primary" />
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-tasting-hub-title">
-          Tasting
-        </h1>
-      </div>
-
+    <PageLayout
+      icon={Wine}
+      title="Tasting"
+      testId="tasting-hub-page"
+    >
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="w-full justify-start" data-testid="tabs-list">
-          <TabsTrigger value="lobby" data-testid="tab-lobby">
-            Lobby
-          </TabsTrigger>
-          <TabsTrigger value="templates" data-testid="tab-templates">
-            {t("tastingHub.templates", "Vorlagen")}
-          </TabsTrigger>
-          <TabsTrigger value="pairings" data-testid="tab-pairings">
-            Pairings
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 pb-1">
+          <TabsList className="w-full justify-start" data-testid="tabs-list">
+            <TabsTrigger value="lobby" data-testid="tab-lobby">
+              Lobby
+            </TabsTrigger>
+            <TabsTrigger value="templates" data-testid="tab-templates">
+              {t("tastingHub.templates", "Vorlagen")}
+            </TabsTrigger>
+            <TabsTrigger value="pairings" data-testid="tab-pairings">
+              Pairings
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="lobby" data-testid="tab-content-lobby">
           <Home />
@@ -57,6 +57,6 @@ export default function TastingHub() {
           <PairingSuggestions />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }

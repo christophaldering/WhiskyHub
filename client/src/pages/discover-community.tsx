@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useSearch } from "wouter";
 import { Users, HeartHandshake, Trophy, Medal, Rss } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { PageLayout } from "@/components/page-layout";
 import WhiskyFriends from "@/pages/whisky-friends";
 import TasteTwins from "@/pages/taste-twins";
 import CommunityRankings from "@/pages/community-rankings";
@@ -26,17 +27,11 @@ export default function DiscoverCommunity() {
   const activeTab = VALID_TABS.includes(rawTab as any) ? rawTab : "friends";
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="discover-community-page">
-      <div className="flex items-center gap-3 mb-6">
-        <Users className="w-7 h-7 text-primary" />
-        <h1
-          className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary tracking-tight"
-          data-testid="text-community-title"
-        >
-          {t("community.title", "Community")}
-        </h1>
-      </div>
-
+    <PageLayout
+      icon={Users}
+      title={t("community.title", "Community")}
+      testId="discover-community-page"
+    >
       <Tabs value={activeTab} data-testid="community-tabs">
         <div className="overflow-x-auto -mx-4 px-4 pb-1">
           <TabsList className="w-max min-w-full sm:w-full grid grid-cols-5 h-10" data-testid="community-tabs-list">
@@ -75,6 +70,6 @@ export default function DiscoverCommunity() {
           <ActivityFeed />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }
