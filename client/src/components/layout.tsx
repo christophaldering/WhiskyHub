@@ -18,7 +18,8 @@ import { useQuery } from "@tanstack/react-query";
 import { profileApi, tastingApi, notificationApi, participantApi } from "@/lib/api";
 
 type NavItem = { href: string; icon: any; label: string; match?: (loc: string) => boolean };
-type NavGroup = { label: string; items: NavItem[]; defaultOpen?: boolean };
+type NavSubgroup = { key: string; label: string; items: NavItem[] };
+type NavGroup = { label: string; items: NavItem[]; defaultOpen?: boolean; subgroups?: NavSubgroup[] };
 
 const FullBleedContext = createContext<{ setFullBleed: (v: boolean) => void }>({ setFullBleed: () => {} });
 
@@ -193,15 +194,23 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
   const { currentParticipant, setParticipant, previewExperienceLevel, setPreviewExperienceLevel } = useAppStore();
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
+  const allGroupItems = useMemo(() => {
+    return navGroups.map(g => {
+      const all = [...g.items];
+      if (g.subgroups) g.subgroups.forEach(sg => all.push(...sg.items));
+      return all;
+    });
+  }, [navGroups]);
+
   const activeGroupIndex = useMemo(() => {
-    for (let gi = 0; gi < navGroups.length; gi++) {
-      for (const item of navGroups[gi].items) {
+    for (let gi = 0; gi < allGroupItems.length; gi++) {
+      for (const item of allGroupItems[gi]) {
         const isActive = item.match ? item.match(location) : location === item.href;
         if (isActive) return gi;
       }
     }
     return 0;
-  }, [location, navGroups]);
+  }, [location, allGroupItems]);
 
   const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
 
@@ -229,24 +238,77 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
     });
   };
 
+  const [expandedSubgroups, setExpandedSubgroups] = useState<Record<string, boolean>>(() => {
+    try {
+      const stored = localStorage.getItem("casksense:navSubgroups");
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
+  });
+
+  const toggleSubgroup = (key: string) => {
+    setExpandedSubgroups(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem("casksense:navSubgroups", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const activeSubgroupKey = useMemo(() => {
+    for (const group of navGroups) {
+      if (!group.subgroups) continue;
+      for (const sg of group.subgroups) {
+        for (const item of sg.items) {
+          const isActive = item.match ? item.match(location) : location === item.href;
+          if (isActive) return sg.key;
+        }
+      }
+    }
+    return null;
+  }, [location, navGroups]);
+
+  useEffect(() => {
+    if (activeSubgroupKey && !expandedSubgroups[activeSubgroupKey]) {
+      setExpandedSubgroups(prev => {
+        const next = { ...prev, [activeSubgroupKey]: true };
+        try { localStorage.setItem("casksense:navSubgroups", JSON.stringify(next)); } catch {}
+        return next;
+      });
+    }
+  }, [activeSubgroupKey]);
+
+  const isSubgroupExpanded = (key: string) => {
+    if (expandedSubgroups[key] !== undefined) return expandedSubgroups[key];
+    return false;
+  };
+
   useEffect(() => {
     const handler = (e: Event) => {
       const selector = (e as CustomEvent).detail as string;
       if (!selector) return;
       for (let gi = 0; gi < navGroups.length; gi++) {
-        const hasTarget = navGroups[gi].items.some(item => {
-          const hrefMatch = selector === `[href="${item.href}"]`;
-          return hrefMatch;
+        const hasTarget = allGroupItems[gi].some(item => {
+          return selector === `[href="${item.href}"]`;
         });
         if (hasTarget) {
           setExpandedGroups(prev => ({ ...prev, [gi]: true }));
+          if (navGroups[gi].subgroups) {
+            for (const sg of navGroups[gi].subgroups!) {
+              if (sg.items.some(item => selector === `[href="${item.href}"]`)) {
+                setExpandedSubgroups(prev => {
+                  const next = { ...prev, [sg.key]: true };
+                  try { localStorage.setItem("casksense:navSubgroups", JSON.stringify(next)); } catch {}
+                  return next;
+                });
+              }
+            }
+          }
           break;
         }
       }
     };
     window.addEventListener("tour-expand-for-selector", handler);
     return () => window.removeEventListener("tour-expand-for-selector", handler);
-  }, [navGroups]);
+  }, [navGroups, allGroupItems]);
 
   const isGroupExpanded = (gi: number) => {
     if (expandedGroups[gi] !== undefined) return expandedGroups[gi];
@@ -274,7 +336,8 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
       <nav ref={navInnerRef} className="flex-1 overflow-y-auto p-3 space-y-0.5">
         {navGroups.map((group, gi) => {
           const expanded = isGroupExpanded(gi);
-          const groupHasActive = group.items.some(item =>
+          const totalItems = group.items.length + (group.subgroups?.reduce((sum, sg) => sum + sg.items.length, 0) || 0);
+          const groupHasActive = allGroupItems[gi].some(item =>
             item.match ? item.match(location) : location === item.href
           );
           return (
@@ -296,7 +359,7 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
                 )}>
                   {group.label}
                   <span className="ml-1.5 text-[9px] font-normal normal-case tracking-normal opacity-60">
-                    ({group.items.length})
+                    ({totalItems})
                   </span>
                 </span>
                 <ChevronDown className={cn(
@@ -307,11 +370,51 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
               </button>
               <div className={cn(
                 "overflow-hidden transition-all duration-200",
-                expanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+                expanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
               )}>
                 {group.items.map((item) => (
                   <NavItemRow key={item.href} item={item} location={location} onNavigate={onNavigate} isPreviewMode={!currentParticipant} onLoginRequest={() => setShowLoginDialog(true)} />
                 ))}
+                {group.subgroups?.map((sg) => {
+                  const sgExpanded = isSubgroupExpanded(sg.key);
+                  const sgHasActive = sg.items.some(item =>
+                    item.match ? item.match(location) : location === item.href
+                  );
+                  return (
+                    <div key={sg.key} className="mt-0.5">
+                      <button
+                        onClick={() => toggleSubgroup(sg.key)}
+                        className={cn(
+                          "w-full flex items-center justify-between pl-5 pr-3 py-1 rounded-sm transition-all duration-150 cursor-pointer",
+                          sgHasActive
+                            ? "text-primary/90"
+                            : "text-muted-foreground/80 hover:text-foreground"
+                        )}
+                        data-testid={`nav-subgroup-toggle-${sg.key}`}
+                      >
+                        <span className={cn(
+                          "text-[9px] font-medium uppercase tracking-wider",
+                          sgHasActive ? "text-primary/70" : "text-muted-foreground/60"
+                        )}>
+                          {sg.label}
+                        </span>
+                        <ChevronDown className={cn(
+                          "w-2.5 h-2.5 transition-transform duration-150",
+                          sgExpanded ? "rotate-0" : "-rotate-90",
+                          sgHasActive ? "text-primary/50" : "text-muted-foreground/40"
+                        )} />
+                      </button>
+                      <div className={cn(
+                        "overflow-hidden transition-all duration-150",
+                        sgExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+                      )}>
+                        {sg.items.map((item) => (
+                          <NavItemRow key={item.href} item={item} location={location} onNavigate={onNavigate} isPreviewMode={!currentParticipant} onLoginRequest={() => setShowLoginDialog(true)} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
@@ -513,74 +616,85 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navGroups: NavGroup[] = useMemo(() => [
     {
-      label: t('navGroup.genuss'),
+      label: t('navGroup.tastings'),
       defaultOpen: true,
       items: [
-        { href: "/app", icon: Home, label: t('nav.lobby') },
         { href: "/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/sessions" || loc === "/export-notes" },
+        { href: "/app", icon: Home, label: t('nav.lobby') },
+        { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
+        { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
+        { href: "/recap", icon: History, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
+        { href: "/my-tastings", icon: ClipboardList, label: t('nav.myTastings') },
+      ],
+    },
+    {
+      label: t('navGroup.tagebuch'),
+      items: [
         { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
         { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
         { href: "/collection", icon: Archive, label: t('nav.myWhiskyCollection') },
         { href: "/wishlist", icon: Star, label: t('nav.myWhiskyWishlist') },
-        { href: "/recap", icon: History, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
-        { href: "/my-tastings", icon: ClipboardList, label: t('nav.myTastings') },
-        { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
       ],
     },
     {
-      label: t('navGroup.pro'),
-      items: [
-        { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
-        { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
-        { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
-        { href: "/benchmark", icon: Library, label: t('nav.benchmark') },
-        ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
-          { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
-        ] : []),
-        { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
-        { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
+      label: t('navGroup.entdecken'),
+      items: [],
+      subgroups: [
+        {
+          key: "community",
+          label: t('navSubgroup.community'),
+          items: [
+            { href: "/community-rankings", icon: Trophy, label: t('nav.communityRankings') },
+            { href: "/activity", icon: Rss, label: t('nav.activity') },
+            { href: "/taste-twins", icon: Users, label: t('nav.tasteTwins') },
+            { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
+            { href: "/friends", icon: Heart, label: t('nav.friends') },
+          ],
+        },
+        {
+          key: "analyticsTools",
+          label: t('navSubgroup.analyticsTools'),
+          items: [
+            { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
+            { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
+            { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
+            { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
+            { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
+            { href: "/benchmark", icon: Library, label: t('nav.benchmark') },
+          ],
+        },
+        {
+          key: "wissenForschung",
+          label: t('navSubgroup.wissenForschung'),
+          items: [
+            { href: "/lexicon", icon: BookOpen, label: t('nav.lexicon') },
+            { href: "/research", icon: Microscope, label: t('nav.research') },
+            { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
+            { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
+            { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
+            ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
+              { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
+            ] : []),
+          ],
+        },
       ],
     },
     {
-      label: t('navGroup.profil'),
+      label: t('navGroup.konto'),
       items: [
         { href: "/profile", icon: User, label: t('profile.title') },
         { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
-        { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
-        { href: "/taste-twins", icon: Users, label: t('nav.tasteTwins') },
-        { href: "/friends", icon: Heart, label: t('nav.friends') },
-        { href: "/community-rankings", icon: Trophy, label: t('nav.communityRankings') },
-        { href: "/activity", icon: Rss, label: t('nav.activity') },
-        { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
         { href: "/account", icon: Settings, label: t('nav.account') },
-      ],
-    },
-    {
-      label: t('navGroup.wissen'),
-      items: [
-        { href: "/lexicon", icon: BookOpen, label: t('nav.lexicon') },
-        { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
-        { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
-        { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
-        { href: "/research", icon: Microscope, label: t('nav.research') },
-      ],
-    },
-    {
-      label: t('navGroup.ueber'),
-      items: [
+        { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
         { href: "/help", icon: HelpCircle, label: t('nav.help') },
         { href: "/about", icon: Info, label: t('nav.about') },
         { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         { href: "/donate", icon: HeartHandshake, label: t('nav.donate') },
-        { href: "/", icon: Globe, label: t('nav.landingPage') },
+        ...(currentParticipant?.role === "admin" ? [
+          { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
+        ] : []),
       ],
     },
-    ...(currentParticipant?.role === "admin" ? [{
-      label: t('navGroup.adminSection'),
-      items: [
-        { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
-      ],
-    }] : []),
   ], [t, isHost, isAdmin, currentParticipant?.canAccessWhiskyDb, currentParticipant?.role]);
 
   const desktopNavRef = useRef<HTMLElement>(null);

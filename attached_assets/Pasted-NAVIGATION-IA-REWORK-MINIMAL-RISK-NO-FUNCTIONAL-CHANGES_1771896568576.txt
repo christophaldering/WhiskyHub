@@ -1,0 +1,166 @@
+NAVIGATION IA REWORK — MINIMAL RISK (NO FUNCTIONAL CHANGES, NO ROUTE CHANGES)
+
+Context / Current pain:
+Navigation is still too complex. We must reduce cognitive load for three core user situations:
+1) Invited participant: only wants to join, rate, see recap, download export.
+2) Host: prepare, run/administer, and evaluate tastings.
+3) Enthusiast/Power user: deeper interest (journal, collection) + analytics + knowledge/research + fun features.
+Important: The scientific/knowledge interface (lexicon, research, distilleries, bottlers, maps, database/library) must remain available.
+
+GOAL:
+Radically simplify the visible menu by reorganizing ONLY the navigation information architecture (groups, labels, ordering, collapsible subgroups), while keeping 100% of existing routes and features accessible.
+This must feel premium, calm, and easy—especially for invited participants.
+
+HARD RULES (MUST FOLLOW):
+- DO NOT change any routes/URLs.
+- DO NOT change backend, DB, migrations, API contracts.
+- DO NOT change permission/gating logic or roles.
+- DO NOT remove features or pages.
+- DO NOT refactor business logic, tasting logic, contextLevel logic, or view logic.
+- ONLY change navigation configuration + labels (i18n) + optional UI for collapsing groups.
+- Keep icons as-is unless already broken.
+- Compile clean, no runtime errors.
+
+DELIVERABLES (MANDATORY):
+- List files changed
+- Short mapping table: old nav item -> new section/subsection (route unchanged)
+- Confirm “no routes changed / no features removed / no permission logic changed”
+- Desktop + mobile screenshots (or equivalent) showing the new nav structure
+- QA checklist results (below)
+
+-------------------------------------------------
+A) NEW TOP-LEVEL NAV STRUCTURE (DESKTOP SIDEBAR)
+-------------------------------------------------
+Replace the current many groups with exactly FOUR top-level groups:
+
+1) TASTINGS
+2) TAGEBUCH
+3) ENTDECKEN
+4) KONTO
+
+Notes:
+- “Mein Profil” and “Mein Konto” must be merged under KONTO (avoid redundancy).
+- “Wissen” must NOT disappear; it becomes a subsection inside ENTDECKEN.
+
+-------------------------------------------------
+B) SECOND-LEVEL REDUCTION (CRITICAL)
+-------------------------------------------------
+Inside each top-level group, limit visible second-level items to a small, meaningful set.
+Use collapsible subgroups inside ENTDECKEN so it does NOT become a long list.
+
+ENTDECKEN must have exactly these collapsible subgroups:
+- Community
+- Analytics & Tools
+- Wissen & Forschung
+
+Default behavior:
+- On mobile: collapsed by default.
+- On desktop: collapsed by default EXCEPT the last opened subgroup (remember in localStorage).
+- Remember expand/collapse state per user in localStorage only (no DB).
+
+-------------------------------------------------
+C) REQUIRED CONTENT MAPPING (ROUTES MUST REMAIN)
+-------------------------------------------------
+1) TASTINGS (participant + host)
+Include links to:
+- /sessions (Sessions/Tastings list) as primary entry
+- /app (Lobby/Home) only if it is still needed; otherwise keep it but not as the first item
+- /tasting-calendar or /calendar (whichever exists) as “Kalender”
+- /host-dashboard (Host only, but do not change gating; only display if already allowed)
+- /recap or /tasting-recap (Recap / Rückblick)
+- /export-notes (if it exists, keep it reachable from Recap; do not add redundant nav item if already reachable)
+Do NOT add new pages.
+
+Participant UX requirement:
+- Ensure “Join/Beitreten” is obvious via /sessions and/or /app (existing join card). Do not create a new route.
+- Recap + Export must be easy to find after a tasting. If currently only reachable via Recap screen, that’s fine; do not duplicate.
+
+2) TAGEBUCH (personal/private)
+Include:
+- /journal (already renamed to “Mein privates Verkostungstagebuch”)
+- /my-whiskies (label shortened; DE: “Verkostete”, EN: “Tasted” or “Tasted Whiskies”)
+- /collection
+- /wishlist
+
+3) ENTDECKEN (deeper features, but neatly grouped)
+ENTDECKEN → Community subgroup:
+- /community-rankings
+- /activity (activity feed)
+- /taste-twins
+- /leaderboard
+- /friends or /whisky-friends (whichever exists)
+Avoid duplicates; if two pages are very similar, keep both routes but show only the more important one in nav and ensure the other remains reachable via in-page links (do NOT remove it).
+
+ENTDECKEN → Analytics & Tools subgroup:
+- /comparison
+- /recommendations
+- /pairings
+- /tasting-templates
+- /analytics (if exists; keep gating as-is)
+- /benchmark (if exists; keep gating as-is)
+No new tools. Just regroup.
+
+ENTDECKEN → Wissen & Forschung subgroup (IMPORTANT: must remain available):
+- /lexicon
+- /research
+- /distilleries
+- /distillery-map
+- /bottlers
+- /whisky-database (gated as-is)
+If some routes above do not exist, skip them; do not invent routes.
+
+4) KONTO (merge redundant profile/account)
+Include:
+- /profile
+- /flavor-profile
+- /account
+- /data-export (keep gating as-is; if analyst-only, keep it hidden unless allowed)
+- /help
+- /about
+- /privacy
+- /impressum
+Admin (only if admin already): /admin
+
+Important:
+- Do not show both “Profile” and “Account” in multiple places.
+- Keep legal/help/about reachable here (or footer), but do not create extra groups.
+
+-------------------------------------------------
+D) LABEL CLEANUP (I18N ONLY)
+-------------------------------------------------
+Only change labels where needed for clarity and brevity (DE/EN).
+Mandatory:
+- DE: “Meine verkosteten Whiskys” -> “Verkostete”
+- EN: “My Tasted Whiskies” -> “Tasted” (or “Tasted Whiskies” if “Tasted” is too ambiguous)
+- Keep “Mein privates Verkostungstagebuch” as the journal label (DE).
+
+Do NOT rename routes, filenames, or components—labels only.
+
+-------------------------------------------------
+E) MOBILE NAV (MINIMAL CHANGE)
+-------------------------------------------------
+If bottom navigation already exists, keep it structurally stable.
+Prefer:
+Home / Tastings / Tagebuch / Entdecken / Mehr (or Konto)
+But DO NOT do a redesign if it risks breaking; only align labels and ensure “Mehr/Konto” opens the full nav with the new grouping.
+
+-------------------------------------------------
+F) QA / VALIDATION CHECKLIST (MUST COMPLETE)
+-------------------------------------------------
+Before finalizing, verify and report:
+1) All existing pages/routes still accessible.
+2) No broken nav links.
+3) No permission leaks (guest cannot access gated routes by nav visibility).
+4) Desktop sidebar renders correctly at md+ breakpoint.
+5) Mobile menu + bottom nav work, no overlap or unreachable buttons (iPhone width).
+6) No duplicated menu items across groups.
+7) Compile clean, no console errors.
+8) Performance unchanged.
+
+REPORT BACK:
+- Files changed
+- Old->New mapping (route unchanged)
+- Screenshot/evidence of desktop + mobile nav
+- Confirmation of checklist items 1–8
+
+END.
