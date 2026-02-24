@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Users, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3, Clock, Check, Trophy, FileDown, Minimize2, Wine, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus, Camera, X, ImageIcon, ExternalLink, Pencil, Trash2, LayoutList, Copy, Settings, Eye, EyeOff, UserCog, User, Users, Shield, Mail, MoreHorizontal, Navigation, Loader2, Monitor, Video, Upload, Printer, ScreenShare, Glasses, Rows3, Clock, Check, Trophy, FileDown, Wine, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1618,6 +1618,12 @@ export default function TastingRoom() {
     return () => clearInterval(interval);
   }, [id, currentParticipant]);
 
+  const viewTabKey = useMemo(() => {
+    if (!id) return null;
+    const scope = currentParticipant?.id || `guest-${id}`;
+    return `casksense:viewTab:${id}:${scope}`;
+  }, [id, currentParticipant?.id]);
+
   const [focusMode, setFocusMode] = useState(false);
   const [overviewMode, setOverviewMode] = useState(false);
   const [guidedActive, setGuidedActive] = useState(false);
@@ -1626,38 +1632,55 @@ export default function TastingRoom() {
   const [presenterExited, setPresenterExited] = useState(false);
   const [showDonationPrompt, setShowDonationPrompt] = useState(false);
   const prevStatusRef = useRef<string | null>(null);
+  const tabRestoredRef = useRef(false);
+
+  useEffect(() => {
+    if (!viewTabKey || tabRestoredRef.current) return;
+    tabRestoredRef.current = true;
+    const saved = localStorage.getItem(viewTabKey);
+    if (saved === "focus") setFocusMode(true);
+    else if (saved === "overview") setOverviewMode(true);
+  }, [viewTabKey]);
 
   const enterFocusMode = useCallback(() => {
     setFocusMode(true);
+    setOverviewMode(false);
     window.history.pushState({ focusMode: true }, "", window.location.href);
-  }, []);
+    if (viewTabKey) localStorage.setItem(viewTabKey, "focus");
+  }, [viewTabKey]);
 
   const exitFocusMode = useCallback(() => {
     setFocusMode(false);
-  }, []);
+    if (viewTabKey) localStorage.setItem(viewTabKey, "flight-board");
+  }, [viewTabKey]);
 
   const enterOverviewMode = useCallback(() => {
     setOverviewMode(true);
+    setFocusMode(false);
     window.history.pushState({ overviewMode: true }, "", window.location.href);
-  }, []);
+    if (viewTabKey) localStorage.setItem(viewTabKey, "overview");
+  }, [viewTabKey]);
 
   const exitOverviewMode = useCallback(() => {
     setOverviewMode(false);
-  }, []);
+    if (viewTabKey) localStorage.setItem(viewTabKey, "flight-board");
+  }, [viewTabKey]);
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       if (focusMode) {
         setFocusMode(false);
+        if (viewTabKey) localStorage.setItem(viewTabKey, "flight-board");
         e.preventDefault();
       } else if (overviewMode) {
         setOverviewMode(false);
+        if (viewTabKey) localStorage.setItem(viewTabKey, "flight-board");
         e.preventDefault();
       }
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [focusMode, overviewMode]);
+  }, [focusMode, overviewMode, viewTabKey]);
 
   useEffect(() => {
     const handler = () => {
@@ -1995,6 +2018,18 @@ export default function TastingRoom() {
               <div className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm font-medium border border-border/50">
                 {t(`session.status.${tasting.status}`)}
               </div>
+              {tasting.blindMode && (
+                <div className="px-2.5 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-full text-xs font-serif font-medium border border-amber-500/20 flex items-center gap-1" data-testid="badge-session-mode-blind">
+                  <EyeOff className="w-3 h-3" />
+                  {t("sessionMode.blind")}
+                </div>
+              )}
+              {tasting.guidedMode && (
+                <div className="px-2.5 py-0.5 bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-full text-xs font-serif font-medium border border-blue-500/20 flex items-center gap-1" data-testid="badge-session-mode-guided">
+                  <Navigation className="w-3 h-3" />
+                  {t("sessionMode.guided")}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-1 mt-1 flex-wrap">
               {(isRevealPhase || tasting.status === "archived") && (isHost ? presenterExited : true) && (
@@ -2061,21 +2096,6 @@ export default function TastingRoom() {
                     >
                       <Eye className="w-3.5 h-3.5 mr-1.5" />
                       {t("focus.enterFocus")}
-                    </Button>
-                  </>
-                )}
-                {tasting.code && tasting.status === "open" && !tasting.guidedMode && (
-                  <>
-                    <div className="w-px h-5 bg-border/50" />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate(`/naked/${tasting.code}`)}
-                      className="font-serif text-xs rounded-md h-7 text-muted-foreground hover:text-primary hover:bg-primary/10 whitespace-nowrap"
-                      data-testid="button-naked-mode"
-                    >
-                      <Minimize2 className="w-3.5 h-3.5 mr-1.5" />
-                      Just Tasting
                     </Button>
                   </>
                 )}

@@ -2031,6 +2031,10 @@ const resources = {
         calendar: "Tasting Calendar",
         calendarDesc: "Plan and track sessions with friends",
       },
+      sessionMode: {
+        blind: "Blind Tasting",
+        guided: "Guided Tasting",
+      },
       sessionSettings: {
         blindMode: "Blind Mode",
         blindModeDesc: "Participants see only expression numbers. You control when identities are revealed.",
@@ -4979,6 +4983,10 @@ const resources = {
         journalDesc: "Führe ein privates Tagebuch über jeden Dram",
         calendar: "Tasting-Kalender",
         calendarDesc: "Plane und verfolge Sessions mit Freunden",
+      },
+      sessionMode: {
+        blind: "Blindverkostung",
+        guided: "Geführte Verkostung",
       },
       sessionSettings: {
         blindMode: "Blindverkostung",

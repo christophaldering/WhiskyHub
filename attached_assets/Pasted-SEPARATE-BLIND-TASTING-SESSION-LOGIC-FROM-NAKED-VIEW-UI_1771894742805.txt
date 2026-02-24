@@ -1,0 +1,94 @@
+SEPARATE “BLIND TASTING” (SESSION LOGIC) FROM “NAKED VIEW” (UI ONLY) + REMOVE “JUST TASTING”
+
+Context:
+We currently have session UI controls including “Just Tasting”, “Naked”, “Meine Sicht”, “Kontext”.
+We need a clean separation:
+- Blind/Guided is a SESSION MODE (logic/flow).
+- Naked/Meine Sicht/Kontext are VIEW MODES (UI visibility only).
+
+Decision from product owner:
+- Blind = Tasting session mode (not a view)
+- Naked = View mode (blank / nackt)
+- “Just Tasting” is redundant and should be removed (blank = Naked)
+
+Hard Rules:
+- NO route changes
+- NO DB changes
+- NO backend changes
+- NO permission/gating logic changes
+- NO feature removal (everything must remain reachable)
+- NO analytics/scoring changes
+- Only UI + state + conditional rendering changes
+- Keep icons as-is
+
+A) SESSION MODE: BLIND vs GUIDED (LOGIC, NOT UI VIEW)
+1) Introduce or confirm a session-level property “tastingMode” (or equivalent) with values:
+   - "blind"
+   - "guided"
+2) Ensure the UI clearly shows the session mode in the session header (small badge/text):
+   - DE: "Blindverkostung" / "Geführte Verkostung"
+   - EN: "Blind Tasting" / "Guided Tasting"
+3) Blind mode must follow the existing blind logic (whatever already exists): reveal rules, ordering,
+   host controls, etc. Do NOT change that logic. Only ensure it is correctly represented in UI.
+4) Guided mode stays unchanged.
+
+B) VIEW MODE: NAKED / MEINE SICHT / KONTEXT (UI VISIBILITY ONLY)
+1) Replace the current 4-button set with ONE segmented control for VIEW MODE with exactly 3 states:
+   - DE labels: [Naked] [Meine Sicht] [Kontext]
+   - EN labels: [Naked] [My View] [Context]
+2) Remove “Just Tasting” completely from the UI (and any related state), because “blank/nothing extra”
+   is exactly “Naked”.
+3) View mode must be per-session and persist:
+   - default viewMode = "naked"
+   - restore last chosen viewMode when returning to the same session:
+     - authenticated users: scoped by participantId + sessionId
+     - guests: scoped by guest-<sessionId>
+   - localStorage only (no DB)
+
+C) VIEW MODE RENDERING (CONDITIONAL RENDERING ONLY)
+viewMode = "naked" (blank / nackt):
+- Show only: rating inputs, own notes, structure guidance, minimal necessary session header/controls
+- Hide (do not render): community averages, rankings, percentiles, distribution charts, leaderboards,
+  taste twins, comparison panels, analytics panels, historical overlays
+- No blur, no overlays.
+
+viewMode = "self" (Meine Sicht):
+- Show: own historical comparison, own pattern evolution, personal averages
+- Still hide: all community/ranking/leaderboard/taste twins/community distribution
+
+viewMode = "context" (Kontext):
+- Show everything currently available.
+
+Important:
+- This is view-only. Do not change any data fetching endpoints, scoring, calculations.
+- Ensure hidden sections are not rendered, not just visually hidden.
+
+D) FIX “INACTIVE” STATES / WIRES
+Currently “Meine Sicht” and “Kontext” appear not active in some sessions.
+Ensure the segmented control is fully wired:
+- onClick changes viewMode state
+- components subscribe to viewMode and re-render
+- no disabled flags unless truly gated (keep existing gating)
+
+E) “RETURN WHERE I LEFT OFF”
+When the user returns to a session, restore:
+1) viewMode (as above)
+2) the last VIEW TAB (Flight-Board / Alle bewerten / Am Glas) if feasible via localStorage
+   - If too risky now, implement only viewMode restoration.
+
+F) QA VALIDATION (REQUIRED BEFORE COMMIT)
+1) All features still reachable in viewMode="context".
+2) No broken links.
+3) No permission leaks (guest cannot access gated features by switching view modes).
+4) Mobile tested (iPhone width + desktop).
+5) Compile clean.
+6) No duplicated UI blocks.
+7) No backend calls removed.
+8) Performance unchanged.
+
+Deliverables:
+- Files modified
+- Confirm blind/guided logic unchanged
+- Confirm view mode is conditional rendering only
+- Screenshots: blind+naked, blind+self, blind+context (and guided equivalents if quick)
+- Confirm compile success
