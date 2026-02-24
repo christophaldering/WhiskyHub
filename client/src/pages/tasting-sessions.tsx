@@ -10,7 +10,9 @@ export default function TastingSessions() {
   const { t } = useTranslation();
   const searchStr = useSearch();
   const params = new URLSearchParams(searchStr);
-  const initialTab = params.get("tab") === "mine" ? "mine" : "all";
+  const rawTab = params.get("tab") || "all";
+  const validTabs = ["all", "mine", "active"];
+  const initialTab = validTabs.includes(rawTab) ? rawTab : "all";
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const handleTabChange = (value: string) => {
@@ -35,9 +37,12 @@ export default function TastingSessions() {
       </motion.div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-2">
-        <TabsList className="w-full grid grid-cols-2">
+        <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="all" data-testid="tab-sessions-all">
             {t("tastingSessions.tabAll", "Alle Sessions")}
+          </TabsTrigger>
+          <TabsTrigger value="active" data-testid="tab-sessions-active">
+            {t("tastingSessions.tabActive", "Aktiv")}
           </TabsTrigger>
           <TabsTrigger value="mine" data-testid="tab-sessions-mine">
             {t("tastingSessions.tabMine", "Meine Tastings")}
@@ -45,6 +50,10 @@ export default function TastingSessions() {
         </TabsList>
 
         <TabsContent value="all" className="mt-4">
+          <Sessions />
+        </TabsContent>
+
+        <TabsContent value="active" className="mt-4">
           <Sessions />
         </TabsContent>
 

@@ -1,0 +1,251 @@
+MEGA-HARD PROMPT — MENU CLEANUP (Option C: Tasting-zentriert) — Wouter/Vite/React
+
+THIS IS A RESTRUCTURE TASK. DO NOT “reorder a few links”. DO NOT PARTIALLY IMPLEMENT.
+If you cannot meet acceptance criteria, keep working until you do.
+
+STACK FACTS
+- Frontend: React + Vite
+- Routing: Wouter
+- Query params already used for redirect/tab routing (keep using this pattern)
+- Backend: Express + Postgres + Drizzle
+
+GOAL (NON-NEGOTIABLE)
+Replace the current feature-cluster sidebar (GENUSS/PRO/PROFIL/WISSEN/ÜBER) with a TASTING-CENTRIC navigation model that is calm and minimal, while preserving ALL functionality via tabs/buttons and redirects.
+
+TARGET NAV (DESKTOP SIDEBAR)
+Exactly these sections, in this order:
+1) JETZT (optional; show only if there is an active session OR show as a normal link but it must be first)
+2) TASTINGS
+3) JOURNAL
+4) ENTDECKEN
+5) PROFIL
+ADMIN (admin-only, hidden for others)
+
+Hard link count rules:
+- Total visible sidebar links (excluding ADMIN) MUST be <= 12.
+- NO separate “PRO” section.
+- NO separate “WISSEN” section.
+- NO separate “ÜBER” section.
+
+TARGET NAV LINKS (EXACT)
+JETZT
+- /now  (preferred) OR reuse existing: /tasting/sessions?tab=active
+  If /now does not exist, create a lightweight route that redirects to /tasting/sessions?tab=active and shows “Continue” UI if available.
+
+TASTINGS (max 3 links)
+- /tasting
+- /tasting/sessions
+- /tasting/calendar
+
+JOURNAL (max 3 links)
+- /my/journal
+- /my/collection
+- /my/wishlist
+
+ENTDECKEN (max 3 links)
+- /discover
+- /discover/distilleries
+- /discover/community
+WISSEN is Option 1: Knowledge lives under ENTDECKEN (NOT under Help).
+Implement Lexicon/Research as sections/tabs reachable from /discover (or subroutes /discover/lexicon and /discover/research). Choose ONE approach but keep it under /discover.
+
+PROFIL (max 3 links)
+- /profile
+- /profile/account
+- /profile/help  (this consolidates help/about/features/donate but these must NOT exist as top-level sidebar items)
+
+ADMIN
+- /admin (admin-only)
+
+CRITICAL: REMOVE FROM SIDEBAR COMPLETELY
+These MUST NOT appear as sidebar links anymore:
+- /my-whiskies (Verkostete as its own link)
+- /recap
+- /my-tastings
+- /tasting/host
+- /comparison
+- /tasting-templates
+- /pairings
+- /benchmark
+- /analytics
+- /data-export
+- /lexicon
+- /distillery-map
+- /bottlers
+- /research
+- /about
+- /features
+- /donate
+- "/" (back to homepage)
+They remain accessible via tabs/sections/buttons INSIDE the target pages.
+
+==================================================
+PHASE 0 — MANDATORY AUDIT (STOP IF NOT DONE)
+==================================================
+Before coding:
+1) Identify the route registration file(s) for Wouter (likely App.tsx).
+2) Identify the sidebar + bottom nav component (layout.tsx).
+3) List current navGroups and all current sidebar links.
+4) List existing redirect/alias routes already implemented (especially those using query params).
+Print audit summary and then implement.
+
+==================================================
+PHASE 1 — IMPLEMENT NEW SIDEBAR STRUCTURE
+==================================================
+In layout.tsx (or wherever navGroups live):
+- Remove old sections: GENUSS, PRO, PROFIL, WISSEN, ÜBER
+- Create new navGroups: JETZT, TASTINGS, JOURNAL, ENTDECKEN, PROFIL (+ ADMIN)
+- Ensure link labels are calm and consistent (German UI OK).
+- Ensure icons remain, but do not add new flashy UI.
+
+HARD RULE:
+- After change, user must see at most 12 links in the sidebar (excluding admin-only link).
+
+==================================================
+PHASE 2 — MOBILE BOTTOM NAV (EXACT)
+==================================================
+Mobile bottom nav must be exactly 5 tabs:
+JETZT | TASTINGS | JOURNAL | ENTDECKEN | PROFIL
+
+- Jetzt routes to /now (or /tasting/sessions?tab=active).
+- Tastings routes to /tasting/sessions
+- Journal routes to /my/journal
+- Entdecken routes to /discover
+- Profil routes to /profile
+
+==================================================
+PHASE 3 — IN-PAGE CONSOLIDATION (NO FEATURE LOSS)
+==================================================
+A) /tasting/sessions
+Must provide tabs/filters that replace removed items:
+- “Alle Sessions”
+- “Meine Tastings” (hosted/participated)  (replaces /my-tastings)
+- “Aktiv” (replaces /now usage if /now redirects here)
+Implement tab selection via query param:
+- /tasting/sessions?tab=mine
+- /tasting/sessions?tab=active
+
+B) /my/journal
+Must provide internal tabs/actions that replace removed items:
+- Verkostet (replaces /my-whiskies)
+- Vergleich (replaces /comparison)
+- Recap (replaces /recap)
+- Analytik (PRO) (replaces /analytics)
+- Benchmark (PRO) (replaces /benchmark)
+- Export dialog with 2 tabs: PDF + Data (replaces /export-notes and /data-export)
+
+IMPORTANT:
+- Do NOT keep these as separate sidebar links.
+- It is OK if the old routes still exist as aliases (see PHASE 4).
+
+C) /discover
+Must provide access to Knowledge (Option 1):
+- Lexikon
+- Forschung & Sensorik
+Either as sections on /discover (preferred) or as:
+- /discover/lexicon
+- /discover/research
+But it MUST live under /discover.
+
+D) /discover/distilleries
+Must provide internal tabs:
+- Liste
+- Karte (replaces /distillery-map)
+- Abfüller (replaces /bottlers)
+
+E) /discover/community
+Must provide internal tabs:
+- Taste Twins
+- Freunde
+- Rankings
+- Aktivität
+- Leaderboard
+These replace the old profile/community links.
+
+F) /profile/help
+Must consolidate:
+- help/faq
+- about
+- features
+- donate
+As tabs/sections. No top-level sidebar links for these.
+
+==================================================
+PHASE 4 — ROUTE ALIASES / REDIRECTS (WOUTER)
+==================================================
+Old deep links must keep working.
+Implement as additional Wouter routes that redirect using setLocation(...) OR render the canonical component with proper query params.
+
+Minimum required mappings:
+
+JOURNAL ALIASES
+- /my-whiskies -> /my/journal?tab=tasted
+- /recap -> /my/journal?tab=recap
+- /comparison -> /my/journal?tab=compare
+- /analytics -> /my/journal?tab=analytics
+- /benchmark -> /my/journal?tab=benchmark
+- /data-export -> /my/journal?dialog=export&tab=data
+- /export-notes -> /my/journal?dialog=export&tab=pdf
+
+TASTINGS ALIASES
+- /my-tastings -> /tasting/sessions?tab=mine
+- /sessions -> /tasting/sessions
+- /calendar -> /tasting/calendar
+- /app -> /tasting  (or /now if you choose; must be consistent)
+
+DISCOVER / KNOWLEDGE ALIASES
+- /distillery-map -> /discover/distilleries?tab=map
+- /bottlers -> /discover/distilleries?tab=bottlers
+- /lexicon -> /discover?section=lexicon  OR /discover/lexicon (whichever you implement)
+- /research -> /discover?section=research OR /discover/research
+
+COMMUNITY ALIASES
+- /recommendations -> /discover
+- /taste-twins -> /discover/community?tab=twins
+- /friends -> /discover/community?tab=friends
+- /community-rankings -> /discover/community?tab=rankings
+- /activity -> /discover/community?tab=activity
+- /leaderboard -> /discover/community?tab=leaderboard
+
+ABOUT/HELP ALIASES
+- /help -> /profile/help?tab=help
+- /about -> /profile/help?tab=about
+- /features -> /profile/help?tab=features
+- /donate -> /profile/help?tab=donate
+
+ROLE GATING
+- /admin visible only to admins.
+- Whisky database route remains gated (host/admin/whitelist) but must NOT be a sidebar link.
+
+==================================================
+PHASE 5 — HARD ACCEPTANCE CRITERIA (TASK FAILS IF ANY NOT MET)
+==================================================
+1) Sidebar shows ONLY: Jetzt, Tastings, Journal, Entdecken, Profil (+ Admin if admin).
+2) Sidebar link count <= 12 (excluding admin).
+3) No “PRO”, “WISSEN”, “ÜBER” top-level sections remain in sidebar.
+4) Removed links listed above do NOT appear in sidebar.
+5) Mobile bottom nav shows EXACTLY 5 tabs as specified.
+6) All alias routes listed in PHASE 4 work and land on the correct tabs/sections.
+7) Core flows still work:
+   - join session, rate, see recap
+   - journal: open tabs (tasted/recap/compare/export)
+   - discover: distilleries map via tab
+8) Role gating works:
+   - non-admin cannot see /admin link and cannot access /admin
+   - non-host cannot access gated database
+   - non-PRO cannot see pro tabs (but base journal works)
+
+==================================================
+PHASE 6 — QA REPORT (MANDATORY OUTPUT)
+==================================================
+After implementation, output a QA report:
+- Files changed
+- Final sidebar list (all labels + hrefs)
+- Final mobile bottom nav list
+- Test results: open each sidebar link -> renders OK
+- Test each alias URL listed above -> correct landing
+- Role gating verification for: standard, host, pro, admin
+- Confirm no console errors in dev
+If anything fails, fix and retest before concluding.
+
+DO NOT STOP EARLY. DO NOT “ASSUME DONE”.
