@@ -2,28 +2,53 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
+type PageLayoutVariant = "default" | "narrow";
+
 interface PageLayoutProps {
   icon: LucideIcon;
   title: string;
   subtitle?: string | ReactNode;
   primaryAction?: ReactNode;
+  headerContent?: ReactNode;
   children: ReactNode;
+  variant?: PageLayoutVariant;
+  hideChrome?: boolean;
   testId?: string;
   className?: string;
 }
+
+const variantStyles: Record<PageLayoutVariant, string> = {
+  default: "max-w-5xl",
+  narrow: "max-w-2xl",
+};
 
 export function PageLayout({
   icon: Icon,
   title,
   subtitle,
   primaryAction,
+  headerContent,
   children,
+  variant = "default",
+  hideChrome = false,
   testId,
   className,
 }: PageLayoutProps) {
+  if (hideChrome) {
+    return (
+      <div className={cn("min-w-0 overflow-x-hidden", className)} data-testid={testId}>
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div
-      className={cn("max-w-5xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden", className)}
+      className={cn(
+        variantStyles[variant],
+        "mx-auto px-4 py-8 min-w-0 overflow-x-hidden",
+        className
+      )}
       data-testid={testId}
     >
       <div className="flex items-start justify-between gap-4 mb-6">
@@ -42,6 +67,7 @@ export function PageLayout({
           <div className="flex-shrink-0">{primaryAction}</div>
         )}
       </div>
+      {headerContent && <div className="mb-6">{headerContent}</div>}
       {children}
     </div>
   );

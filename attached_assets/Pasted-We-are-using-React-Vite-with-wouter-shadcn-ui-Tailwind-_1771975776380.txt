@@ -1,0 +1,52 @@
+We are using React + Vite with wouter, shadcn/ui + Tailwind, i18next. We already have PageLayout at client/src/components/page-layout.tsx.
+
+Goal: enforce visual and structural consistency across all main pages by standardizing on PageLayout, while supporting 2 official variants instead of ad-hoc exceptions.
+
+Tasks:
+1) Update PageLayout:
+   - Add prop variant: "default" | "narrow" | "immersive" (default="default")
+   - Implement container widths:
+     - default => max-w-5xl
+     - narrow  => max-w-2xl
+     - immersive => max-w-5xl but allow reduced page padding and optional full-bleed sections
+   - Add optional header tabs support:
+     tabs?: Array<{ key, labelKey, href?, badge?, disabled? }>
+     activeTabKey?: string
+     onTabChange?: (key) => void
+     Tabs must render in the PageLayout header (below title), using shadcn Tabs or a consistent in-house TabsRow component.
+   - Ensure title/subtitle/tab labels accept i18n keys (labelKey) and are translated via react-i18next.
+   - Add optional hideChrome boolean (default false). When true, hide global nav elements (for future Naked mode).
+
+2) Remove layout exceptions:
+   - Refactor /profile page to use PageLayout variant="narrow" rather than a custom shell.
+   - Refactor /my/wishlist to use PageLayout variant="immersive" and keep AnimatePresence within the page body.
+
+3) Eliminate duplicate headers/tabs:
+   - Audit the following pages and ensure they do NOT render their own extra H1 header or top tabs in the body. They must use PageLayout header slots instead:
+     /tasting
+     /tasting/sessions
+     /tasting/calendar
+     /my/journal
+     /my/collection
+     /my/wishlist
+     /discover
+     /discover/distilleries
+     /discover/community
+     /profile
+     /profile/help
+     /admin (admin only)
+
+4) i18n cleanup:
+   - Replace remaining hard-coded EN strings in headers/tabs/actions with i18n keys.
+   - Ensure language toggle affects all labels consistently.
+
+5) Verification / QA:
+   - For each page above, verify:
+     - Page uses PageLayout
+     - Header title style matches Sessions page
+     - No duplicate header/tab rows
+     - Container width correct per variant
+     - Mobile responsive (iPhone width): no overflow; bottom nav not overlapping primary CTA
+   - Provide a short QA report checklist with pass/fail per page.
+
+Do not change business logic. Do not redesign components beyond standardization.

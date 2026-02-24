@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Camera, X, User, KeyRound, Mail, Trash2, AlertTriangle, Layers, Target, FileText, Settings } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
+import { PageLayout } from "@/components/page-layout";
 import type { UIMode } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -249,15 +250,14 @@ export default function Profile() {
   }
 
   return (
-    <div className="flex flex-col items-center w-full max-w-2xl mx-auto py-10 px-4 space-y-6 min-w-0 overflow-x-hidden">
+    <PageLayout
+      icon={User}
+      title={t("profile.title")}
+      variant="narrow"
+      testId="profile-page"
+    >
       <Card className="w-full border-border/50 bg-card shadow-sm">
-        <CardHeader>
-          <h1 className="font-serif text-xl sm:text-3xl text-primary tracking-tight" data-testid="text-profile-title">
-            {t("profile.title")}
-          </h1>
-        </CardHeader>
-
-        <CardContent className="space-y-8">
+        <CardContent className="pt-6 space-y-8">
           <div className="space-y-2">
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">
               {t("profile.photo")}
@@ -680,6 +680,6 @@ export default function Profile() {
           </AlertDialog>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }

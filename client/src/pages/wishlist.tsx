@@ -34,6 +34,7 @@ import { Plus, ArrowLeft, Pencil, Trash2, Star, Wine, Calendar, Flame, Sparkles,
 import { Badge } from "@/components/ui/badge";
 import { wishlistScanApi, textExtractApi } from "@/lib/api";
 import { useLocation } from "wouter";
+import { PageLayout } from "@/components/page-layout";
 import type { WishlistEntry } from "@shared/schema";
 
 type View = "list" | "form";
