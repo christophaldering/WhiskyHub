@@ -1,0 +1,74 @@
+FIX SESSION CONTEXT TOGGLE (BLIND / MY VIEW / CONTEXT) + REMOVE REDUNDANCY
+
+Context:
+In the tasting session header we currently show multiple context-related buttons:
+"Just Tasting", "Naked", "Meine Sicht", "Kontext".
+Right now only parts of it work: "Meine Sicht" and "Kontext" appear inactive (no effect / disabled),
+and "Just Tasting" is redundant with "Naked" (same intent: minimal, no context).
+
+Goal:
+Deliver a clean, whisky-native, expert-friendly 3-level context switch that always works:
+Level 0 = Blind (formerly Naked)
+Level 1 = Meine Sicht (Self)
+Level 2 = Kontext (Full)
+
+Hard Rules:
+- NO route changes
+- NO backend/DB changes
+- NO permission/gating changes
+- NO analytics removal
+- NO feature removal
+- NO score-calculation changes
+- Only conditional rendering + correct UI wiring/state persistence
+
+A) DECIDE AND IMPLEMENT THE CORRECT MODEL
+1) Replace the current 4-button set with ONE segmented control with exactly 3 states:
+   [Blind] [Meine Sicht] [Kontext]
+   - DE labels exactly as above
+   - EN labels: [Blind] [My View] [Context]
+2) Remove "Just Tasting" from this context-control row IF it duplicates Blind/Naked.
+   - If "Just Tasting" was intended as a VIEW mode (not a context level), move it to the VIEW tab set
+     near "Flight-Board / Alle bewerten / Am Glas" (or remove it for now if unclear),
+     but do NOT mix it with contextLevel.
+
+B) FUNCTIONAL REQUIREMENTS
+1) On session load: default contextLevel = 0 (Blind) UNLESS the user already chose a level before.
+2) Persist last choice and restore it when returning:
+   - Authenticated users: key scoped by participantId + sessionId
+   - Guests: key scoped by guest-<sessionId> (or equivalent)
+   - Use localStorage only (no DB).
+3) Switching must update UI instantly with no reload.
+
+C) RENDERING LOGIC (NO FEATURE REMOVAL)
+contextLevel = 0 (Blind):
+- Show only rating inputs, own notes, structure guidance, minimal header
+- Hide: community averages, rankings, percentiles, distribution charts, leaderboards, taste twins,
+        comparison panels, analytics panels, historical overlays
+- No blur, no overlays: simply do not render those blocks
+
+contextLevel = 1 (Meine Sicht):
+- Show: own historical comparison, own pattern evolution, personal averages
+- Still hide: all community / ranking / leaderboard / taste twins / community distribution
+
+contextLevel = 2 (Kontext):
+- Show everything (full current functionality)
+
+D) FIX THE “INACTIVE BUTTONS” BUG
+Ensure the segmented control actually changes contextLevel and the relevant components subscribe to it.
+Find and fix any missing onClick handler, disabled flags, incorrect feature-gates, or wrong state keys.
+
+E) VALIDATION / QA (REQUIRED BEFORE COMMIT)
+1) Confirm all features are still reachable in Level 2.
+2) Confirm Level 0 and Level 1 hide only by conditional rendering (no route/API changes).
+3) No broken links.
+4) No permission leaks (guest cannot access gated features just by switching).
+5) Mobile tested.
+6) Compile clean.
+7) No duplicated UI blocks.
+8) Performance unchanged (no new expensive queries on each toggle).
+
+Deliverables:
+- List files modified
+- Short explanation of where contextLevel is stored and how it is restored
+- Screenshots (or equivalent) of Level 0 / Level 1 / Level 2 in a real session
+- Confirmation of compile success

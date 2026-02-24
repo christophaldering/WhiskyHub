@@ -432,16 +432,17 @@ export default function WhiskybaseCollection() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{t("collection.subtitle")}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           {items.length > 0 && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowStats(!showStats)}
+              title={t("collection.statistics")}
               data-testid="button-toggle-stats"
             >
-              <BarChart3 className="w-4 h-4 mr-1" />
-              {t("collection.statistics")}
+              <BarChart3 className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">{t("collection.statistics")}</span>
             </Button>
           )}
           {items.length > 0 && !priceSelectMode && (
@@ -452,10 +453,11 @@ export default function WhiskybaseCollection() {
                 setPriceSelectMode(true);
                 setSelectedForPrice(new Set());
               }}
+              title={t("collection.estimatePrices")}
               data-testid="button-start-price-estimate"
             >
-              <Sparkles className="w-4 h-4 mr-1" />
-              {t("collection.estimatePrices")}
+              <Sparkles className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">{t("collection.estimatePrices")}</span>
             </Button>
           )}
           {items.length > 0 && (
@@ -464,28 +466,30 @@ export default function WhiskybaseCollection() {
               size="sm"
               onClick={() => syncFileInputRef.current?.click()}
               disabled={syncMutation.isPending}
+              title={syncMutation.isPending ? t("collection.syncing") : t("collection.syncButton")}
               data-testid="button-sync-collection"
             >
               {syncMutation.isPending ? (
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                <Loader2 className="w-4 h-4 sm:mr-1 animate-spin" />
               ) : (
-                <RefreshCw className="w-4 h-4 mr-1" />
+                <RefreshCw className="w-4 h-4 sm:mr-1" />
               )}
-              {syncMutation.isPending ? t("collection.syncing") : t("collection.syncButton")}
+              <span className="hidden sm:inline">{syncMutation.isPending ? t("collection.syncing") : t("collection.syncButton")}</span>
             </Button>
           )}
           <Button
             size="sm"
             onClick={() => fileInputRef.current?.click()}
             disabled={importMutation.isPending}
+            title={importMutation.isPending ? t("collection.importing") : t("collection.importButton")}
             data-testid="button-import-collection"
           >
             {importMutation.isPending ? (
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              <Loader2 className="w-4 h-4 sm:mr-1 animate-spin" />
             ) : (
-              <Upload className="w-4 h-4 mr-1" />
+              <Upload className="w-4 h-4 sm:mr-1" />
             )}
-            {importMutation.isPending ? t("collection.importing") : t("collection.importButton")}
+            <span className="hidden sm:inline">{importMutation.isPending ? t("collection.importing") : t("collection.importButton")}</span>
           </Button>
           <input
             ref={fileInputRef}

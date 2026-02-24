@@ -675,17 +675,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <SpotlightProvider hints={spotlightHints} paused={!onboardingDone} />
       <TourProvider tours={tourDefinitions} paused={!onboardingDone} />
 
-      <header className="md:hidden sticky top-0 z-50 flex items-center justify-between p-4 border-b border-border/40 bg-card/95 backdrop-blur-lg">
-        <div className="flex items-center gap-2">
-          <span className="font-serif font-bold text-lg text-primary">{t('app.name')}</span>
+      <header className="md:hidden sticky top-0 z-50 flex items-center justify-between px-3 py-2 border-b border-border/40 bg-card/95 backdrop-blur-lg">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {location !== "/app" && location !== "/" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-primary h-8 w-8 flex-shrink-0"
+              onClick={() => { if (window.history.length > 1) window.history.back(); else window.location.href = "/app"; }}
+              data-testid="button-mobile-back"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          )}
+          <span className="font-serif font-bold text-lg text-primary truncate">{t('app.name')}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <ProfileAvatar size={48} showName showSignOut />
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <ProfileAvatar size={36} showName={false} showSignOut />
           <LanguageToggle />
           <ThemeToggle />
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-primary hover:bg-secondary">
+              <Button variant="ghost" size="icon" className="text-primary hover:bg-secondary h-8 w-8">
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
