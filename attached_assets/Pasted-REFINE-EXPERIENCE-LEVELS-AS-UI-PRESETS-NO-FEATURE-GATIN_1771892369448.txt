@@ -1,0 +1,61 @@
+REFINE EXPERIENCE LEVELS AS UI PRESETS (NO FEATURE GATING)
+
+Goal:
+Keep the 4 experience levels (Just Tasting, Explorer, Connoisseur, Analyst) because they are attractive for whisky experts,
+BUT redefine them as UI/interaction presets only — NOT as permissions or feature gating.
+
+Hard Rules:
+- No route changes
+- No DB changes
+- No backend changes
+- No permission/gating logic changes
+- No feature removal (everything remains reachable)
+- Only: UI structure, default expansion, emphasis, copy, and visual density
+
+Core Principle:
+Two independent axes:
+A) tastingMode: Blind vs Guided (existing behavior)
+B) contextLevel: 0=Naked/Blind-first, 1=My History, 2=Full Context (Community/Analytics)
+Experience level must ONLY influence the UI preset (what is prominent, collapsed, copy density), never what is allowed.
+
+1) EXPERIENCE LEVEL = UI PRESET SPEC
+Implement per experience level:
+- which panels are shown collapsed/expanded by default
+- which secondary actions are tucked under “More…”
+- amount of guidance text/tooltips displayed
+- density: compact spacing vs normal
+- session header controls prominence (segmented control visible for all)
+
+Suggested defaults:
+- Just Tasting: ultra-minimal, only rating + own notes expanded, everything else collapsed, minimal copy
+- Explorer: add gentle guidance copy and aroma prompts expanded, still keep comparisons collapsed
+- Connoisseur: prioritize personal consistency: own history panels expanded at contextLevel=1, compact UI
+- Analyst: full instrumentation, but organized: analytics/comparison sections accessible, default layout compact and scannable
+
+2) CONTEXTLEVEL DEFAULT + RESTORE
+- On session load: default contextLevel=0 if no prior choice exists
+- Restore last used contextLevel when returning (“resume where you left off”)
+  - Auth users: store scoped by participantId
+  - Guests: store scoped by guest-<sessionId>
+- Switching contextLevel updates state immediately (no reload) and persists.
+
+3) MOBILE & NAV CONSISTENCY
+- Ensure mobile layout remains clean (no truncation or overlap in bottom nav)
+- Experience level selector must be usable on mobile (tap targets, not tiny)
+
+4) VALIDATION / QA (MANDATORY BEFORE COMMIT)
+Provide a checklist and confirm each item:
+- All features reachable in contextLevel=2 for all experience levels
+- No broken links
+- No permission leaks
+- No duplicated UI blocks
+- No console errors
+- Mobile tested (iPhone width + Android width)
+- Compile clean
+- Performance unchanged (no extra heavy queries)
+
+Deliverables:
+- List of files modified
+- Brief explanation of the UI preset behavior
+- Screenshots (or at least verified states) for each experience level at contextLevel 0/1/2
+- Confirmation: “UI presets only, no functional gating changes”

@@ -508,13 +508,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, [currentParticipant?.id]);
 
-  const { previewExperienceLevel } = useAppStore();
   const isHost = currentParticipant && allTastings.some((t: any) => t.hostId === currentParticipant.id);
   const isAdmin = currentParticipant?.role === "admin";
-  const expLevel = currentParticipant ? (currentParticipant.experienceLevel || "connoisseur") : previewExperienceLevel;
-  const LEVELS = ["guest", "explorer", "connoisseur", "analyst"] as const;
-  const levelIndex = LEVELS.indexOf(expLevel as any);
-  const atLeast = (min: typeof LEVELS[number]) => levelIndex >= LEVELS.indexOf(min);
 
   const navGroups: NavGroup[] = useMemo(() => [
     {
@@ -523,56 +518,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       items: [
         { href: "/app", icon: Home, label: t('nav.lobby') },
         { href: "/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/sessions" || loc === "/my-tastings" || loc === "/host-dashboard" || loc === "/recap" || loc.startsWith("/recap/") || loc === "/export-notes" },
-        ...(atLeast("explorer") ? [
-          { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
-          { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
-        ] : []),
-        ...(atLeast("connoisseur") ? [
-          { href: "/collection", icon: Archive, label: t('nav.myWhiskyCollection') },
-        ] : []),
-        ...(atLeast("explorer") ? [
-          { href: "/wishlist", icon: Star, label: t('nav.myWhiskyWishlist') },
-        ] : []),
-        ...(atLeast("explorer") ? [
-          { href: "/recap", icon: History, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
-        ] : []),
+        { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
+        { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
+        { href: "/collection", icon: Archive, label: t('nav.myWhiskyCollection') },
+        { href: "/wishlist", icon: Star, label: t('nav.myWhiskyWishlist') },
+        { href: "/recap", icon: History, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
       ],
     },
-    ...(atLeast("connoisseur") ? [{
+    {
       label: t('navGroup.pro'),
       items: [
         { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
         { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
         { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
         { href: "/benchmark", icon: Library, label: t('nav.benchmark') },
-        ...(atLeast("analyst") && (isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
+        ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
           { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
         ] : []),
-        ...(atLeast("analyst") ? [
-          { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
-        ] : []),
-        ...(atLeast("analyst") ? [
-          { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
-        ] : []),
+        { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
+        { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
       ],
-    }] : []),
-    ...(atLeast("explorer") ? [{
+    },
+    {
       label: t('navGroup.profil'),
       items: [
         { href: "/profile", icon: User, label: t('profile.title') },
         { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
         { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
-        ...(atLeast("connoisseur") ? [
-          { href: "/taste-twins", icon: Users, label: t('nav.tasteTwins') },
-          { href: "/friends", icon: Heart, label: t('nav.friends') },
-          { href: "/community-rankings", icon: Trophy, label: t('nav.communityRankings') },
-          { href: "/activity", icon: Rss, label: t('nav.activity') },
-          { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
-        ] : []),
+        { href: "/taste-twins", icon: Users, label: t('nav.tasteTwins') },
+        { href: "/friends", icon: Heart, label: t('nav.friends') },
+        { href: "/community-rankings", icon: Trophy, label: t('nav.communityRankings') },
+        { href: "/activity", icon: Rss, label: t('nav.activity') },
+        { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
         { href: "/account", icon: Settings, label: t('nav.account') },
       ],
-    }] : []),
-    ...(atLeast("connoisseur") ? [{
+    },
+    {
       label: t('navGroup.wissen'),
       items: [
         { href: "/lexicon", icon: BookOpen, label: t('nav.lexicon') },
@@ -580,15 +561,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
         { href: "/research", icon: Microscope, label: t('nav.research') },
       ],
-    }] : []),
+    },
     {
       label: t('navGroup.ueber'),
       items: [
         { href: "/help", icon: HelpCircle, label: t('nav.help') },
         { href: "/about", icon: Info, label: t('nav.about') },
-        ...(atLeast("connoisseur") ? [
-          { href: "/features", icon: LayoutGrid, label: t('nav.features') },
-        ] : []),
+        { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         { href: "/donate", icon: HeartHandshake, label: t('nav.donate') },
         { href: "/", icon: Globe, label: t('nav.landingPage') },
       ],
@@ -599,7 +578,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
       ],
     }] : []),
-  ], [t, isHost, isAdmin, expLevel, currentParticipant?.canAccessWhiskyDb, currentParticipant?.role, previewExperienceLevel]);
+  ], [t, isHost, isAdmin, currentParticipant?.canAccessWhiskyDb, currentParticipant?.role]);
 
   const desktopNavRef = useRef<HTMLElement>(null);
   const mobileNavRef = useRef<HTMLElement>(null);
@@ -653,7 +632,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           { id: "guest-4", targetSelector: '[data-testid="select-experience-level"]', message: t("tour.guest.step4"), position: p },
         ],
       },
-      ...(atLeast("explorer") ? [{
+      {
         id: "tour-explorer",
         level: "explorer" as const,
         steps: [
@@ -661,8 +640,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           { id: "explorer-2", targetSelector: '[href="/flavor-profile"]', message: t("tour.explorer.step2"), position: p },
           { id: "explorer-3", targetSelector: '[href="/wishlist"]', message: t("tour.explorer.step3"), position: p },
         ],
-      }] : []),
-      ...(atLeast("connoisseur") ? [{
+      },
+      {
         id: "tour-connoisseur",
         level: "connoisseur" as const,
         steps: [
@@ -670,8 +649,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           { id: "connoisseur-2", targetSelector: '[href="/comparison"]', message: t("tour.connoisseur.step2"), position: p },
           { id: "connoisseur-3", targetSelector: '[href="/lexicon"]', message: t("tour.connoisseur.step3"), position: p },
         ],
-      }] : []),
-      ...(atLeast("analyst") ? [{
+      },
+      {
         id: "tour-analyst",
         level: "analyst" as const,
         steps: [
@@ -679,9 +658,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           { id: "analyst-2", targetSelector: '[href="/flavor-wheel"]', message: t("tour.analyst.step2"), position: p },
           { id: "analyst-3", targetSelector: '[href="/benchmark"]', message: t("tour.analyst.step3"), position: p },
         ],
-      }] : []),
+      },
     ];
-  }, [currentParticipant, t, expLevel]);
+  }, [currentParticipant, t]);
 
   return (
     <FullBleedContext.Provider value={{ setFullBleed }}>

@@ -79,9 +79,7 @@ export default function Discover() {
 
   const analyseLinks: HubLink[] = [
     { href: "/comparison", icon: GitCompareArrows, label: t("nav.comparison"), testId: "discover-comparison" },
-    ...(atLeast("analyst") ? [
-      { href: "/analytics", icon: BarChart3, label: t("nav.analytics"), testId: "discover-analytics" },
-    ] : []),
+    { href: "/analytics", icon: BarChart3, label: t("nav.analytics"), testId: "discover-analytics" },
     { href: "/recommendations", icon: Sparkles, label: t("nav.recommendations"), testId: "discover-recommendations" },
     { href: "/flavor-profile", icon: Activity, label: t("discoverHub.flavorAnalysis"), testId: "discover-flavor" },
     ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
