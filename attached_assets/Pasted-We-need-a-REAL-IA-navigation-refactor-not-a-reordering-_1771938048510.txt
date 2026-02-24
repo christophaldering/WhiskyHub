@@ -1,0 +1,76 @@
+We need a REAL IA/navigation refactor, not a reordering. Current change set only moved one nav line, which is insufficient. Implement the following with hard acceptance criteria. No fundamental architecture rewrite, but you MAY rename routes and must add redirects. Must provide QA report.
+
+GOAL (non-negotiable):
+- Reduce visible desktop sidebar nav items to MAX 12 total (excluding Admin which is hidden unless admin).
+- Reduce main top-level sections to exactly 4: TASTING, MEIN WHISKY, ENTDECKEN, PROFIL.
+- Remove PRO, WISSEN, ÜBER as top-level nav sections (their content must be moved under ENTDECKEN or PROFIL/help).
+- PRO is a feature layer: PRO tabs/sections appear within pages; no PRO nav section.
+
+PHASE 0 (mandatory audit before coding):
+1) List all current routes and nav sections from layout.tsx and mobile nav.
+2) Identify duplicates: journal vs my-whiskies, sessions vs my-tastings, recap vs analytics, export-notes vs data-export, etc.
+3) Propose file-level plan, then implement.
+
+TARGET NAV (Desktop Sidebar):
+1) TASTING (max 3 items)
+   - /tasting
+   - /tasting/sessions
+   - /tasting/calendar
+   “My Tastings” MUST become a tab inside /tasting/sessions (not a sidebar item).
+   Host tools MUST be contextual inside a session (not a sidebar item).
+
+2) MEIN WHISKY (max 3 items)
+   - /my/journal
+   - /my/collection
+   - /my/wishlist
+   Remove /my-whiskies as sidebar item. “Tasted whiskies” must be a filter/tab inside /my/journal.
+   Recap/Compare/Analytics/Benchmark/Export must be tabs/buttons inside /my/journal.
+
+3) ENTDECKEN (max 3 items)
+   - /discover
+   - /discover/distilleries (map+bottlers as tabs)
+   - /discover/community (friends/taste twins/rankings/leaderboard as tabs)
+   Whisky database must be gated and not a top sidebar item.
+
+4) PROFIL (max 2-3 items)
+   - /profile
+   - /profile/account
+   - /profile/help (includes: help/about/features/donate as tabs)
+
+ADMIN:
+- /admin remains but must not be shown unless admin.
+
+MOBILE BOTTOM NAV:
+Home | Tasting | Journal | Entdecken | Profil
+- Home routes to /home (create if missing) OR routes to /tasting. Choose and be consistent.
+
+ROUTES + REDIRECTS (required):
+You MAY rename routes. You MUST add redirects/alias mapping so old routes still work:
+- /my-whiskies -> /my/journal?view=tasted
+- /recap -> /my/journal?tab=recap
+- /my-tastings -> /tasting/sessions?tab=my
+- /analytics -> /my/journal?tab=analytics (PRO)
+- /benchmark -> /my/journal?tab=benchmark (PRO)
+- /export-notes and /data-export -> /my/journal?dialog=export
+- /comparison -> /my/journal?view=compare
+- knowledge pages (lexicon/research) moved to /discover or /profile/help (pick one)
+
+ROLE GATING (required):
+- Admin routes visible only to admin.
+- Host tools visible only to host/admin and only within session context.
+- PRO tabs visible only to PRO.
+
+QA (required deliverable):
+Provide a QA report including:
+- click-through of every sidebar item on desktop
+- click-through of every bottom nav item on mobile
+- verification of redirects (list old->new tested)
+- role gating checks for standard vs host vs pro vs admin
+
+ACCEPTANCE CRITERIA (hard):
+- Desktop sidebar shows ONLY the 4 sections above.
+- Total visible sidebar links <= 12.
+- /my-whiskies and /my-tastings and /tasting/host are NOT visible as sidebar links.
+- Redirects work for the old routes listed above.
+- QA report provided.
+If any criterion is not met, do not consider the task done.
