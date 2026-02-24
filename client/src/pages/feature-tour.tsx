@@ -361,7 +361,7 @@ export default function FeatureTour() {
                   {t("featureTour.endSubtitle")}
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-                  <Button onClick={() => navigate("/app")} className="font-serif gap-2" data-testid="button-tour-start">
+                  <Button onClick={() => navigate("/tasting")} className="font-serif gap-2" data-testid="button-tour-start">
                     {t("featureTour.startNow")}
                     <ChevronRight className="w-4 h-4" />
                   </Button>

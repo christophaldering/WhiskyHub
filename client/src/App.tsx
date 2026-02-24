@@ -1,49 +1,25 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation, useSearch } from "wouter";
+import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Layout from "@/components/layout";
-import Home from "@/pages/home";
 import TastingRoom from "@/pages/tasting-room";
 import Profile from "@/pages/profile";
-import WhiskyFriends from "@/pages/whisky-friends";
-import Sessions from "@/pages/sessions";
 import InviteAccept from "@/pages/invite-accept";
-import Journal from "@/pages/journal";
 import Wishlist from "@/pages/wishlist";
 import WhiskybaseCollection from "@/pages/whiskybase-collection";
 import Badges from "@/pages/badges";
-import Lexicon from "@/pages/lexicon";
 import FlavorProfile from "@/pages/flavor-profile";
-import Recommendations from "@/pages/recommendations";
-import Comparison from "@/pages/comparison";
-import TastingTemplates from "@/pages/tasting-templates";
-import ActivityFeed from "@/pages/activity-feed";
+import FlavorWheel from "@/pages/flavor-wheel";
 import TastingCalendar from "@/pages/tasting-calendar";
-import ExportNotes from "@/pages/export-notes";
 import HostDashboard from "@/pages/host-dashboard";
 import TastingRecap from "@/pages/tasting-recap";
-import FlavorWheel from "@/pages/flavor-wheel";
-import PairingSuggestions from "@/pages/pairing-suggestions";
-import Leaderboard from "@/pages/leaderboard";
 import AdminPanel from "@/pages/admin-panel";
-import DistilleryEncyclopedia from "@/pages/distillery-encyclopedia";
-import DistilleryMap from "@/pages/distillery-map";
-import Bottlers from "@/pages/bottlers";
 import WhiskyDatabase from "@/pages/whisky-database";
-import Donate from "@/pages/donate";
-import BenchmarkAnalyzer from "@/pages/benchmark-analyzer";
-import Features from "@/pages/features";
 import PhotoTasting from "@/pages/photo-tasting";
-import CommunityRankings from "@/pages/community-rankings";
-import TasteTwins from "@/pages/taste-twins";
-import TastingHistory from "@/pages/tasting-history";
-import MyWhiskies from "@/pages/my-whiskies";
-import About from "@/pages/about";
-import DataExport from "@/pages/data-export";
-import Analytics from "@/pages/analytics";
 import Method from "@/pages/method";
 import Intro from "@/pages/intro";
 import Landing from "@/pages/landing";
@@ -53,15 +29,33 @@ import Background from "@/pages/background";
 import News from "@/pages/news";
 import QuickTasting from "@/pages/quick-tasting";
 import NakedTasting from "@/pages/naked-tasting";
-import Research from "@/pages/research";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
+import HomeDashboard from "@/pages/home-dashboard";
+import TastingHub from "@/pages/tasting-hub";
+import TastingSessions from "@/pages/tasting-sessions";
+import MyJournal from "@/pages/my-journal";
+import DiscoverHub from "@/pages/discover-hub";
+import DiscoverDistilleries from "@/pages/discover-distilleries";
+import DiscoverCommunity from "@/pages/discover-community";
+import ProfileHelp from "@/pages/profile-help";
 import Account from "@/pages/account";
-import Help from "@/pages/help";
-import Discover from "@/pages/discover";
 import { BuildFooter } from "@/components/build-footer";
 import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
+
+function Redirect({ to }: { to: string }) {
+  const [, navigate] = useLocation();
+  useEffect(() => { navigate(to, { replace: true }); }, [to, navigate]);
+  return null;
+}
+
+function RedirectWithQuery({ to, query }: { to: string; query?: string }) {
+  const [, navigate] = useLocation();
+  const target = query ? `${to}?${query}` : to;
+  useEffect(() => { navigate(target, { replace: true }); }, [target, navigate]);
+  return null;
+}
 
 function Router() {
   return (
@@ -79,53 +73,83 @@ function Router() {
         <Route>
           <Layout>
             <Switch>
-              <Route path="/app" component={Home} />
-              <Route path="/news" component={News} />
-              <Route path="/sessions" component={Sessions} />
+              {/* === NEW CANONICAL ROUTES === */}
+              <Route path="/home" component={HomeDashboard} />
+              <Route path="/tasting" component={TastingHub} />
+              <Route path="/tasting/sessions" component={TastingSessions} />
+              <Route path="/tasting/calendar" component={TastingCalendar} />
+              <Route path="/tasting/host" component={HostDashboard} />
               <Route path="/tasting/:id" component={TastingRoom} />
+              <Route path="/my/journal" component={MyJournal} />
+              <Route path="/my/collection" component={WhiskybaseCollection} />
+              <Route path="/my/wishlist" component={Wishlist} />
+              <Route path="/discover" component={DiscoverHub} />
+              <Route path="/discover/distilleries" component={DiscoverDistilleries} />
+              <Route path="/discover/community" component={DiscoverCommunity} />
+              <Route path="/discover/database" component={WhiskyDatabase} />
               <Route path="/profile" component={Profile} />
-              <Route path="/friends" component={WhiskyFriends} />
-              <Route path="/journal" component={Journal} />
-              <Route path="/wishlist" component={Wishlist} />
-              <Route path="/collection" component={WhiskybaseCollection} />
+              <Route path="/profile/account" component={Account} />
+              <Route path="/profile/help" component={ProfileHelp} />
+              <Route path="/admin" component={AdminPanel} />
+
+              {/* === KEPT ROUTES (functional, not in nav) === */}
+              <Route path="/news" component={News} />
               <Route path="/badges" component={Badges} />
-              <Route path="/lexicon" component={Lexicon} />
               <Route path="/flavor-profile" component={FlavorProfile} />
               <Route path="/flavor-wheel" component={FlavorWheel} />
-              <Route path="/recommendations" component={Recommendations} />
-              <Route path="/comparison" component={Comparison} />
-              <Route path="/tasting-templates" component={TastingTemplates} />
-              <Route path="/activity" component={ActivityFeed} />
-              <Route path="/calendar" component={TastingCalendar} />
-              <Route path="/export-notes" component={ExportNotes} />
-              <Route path="/host-dashboard" component={HostDashboard} />
-              <Route path="/recap/:id" component={TastingRecap} />
-              <Route path="/recap" component={TastingRecap} />
-              <Route path="/pairings" component={PairingSuggestions} />
-              <Route path="/community-rankings" component={CommunityRankings} />
-              <Route path="/taste-twins" component={TasteTwins} />
-              <Route path="/leaderboard" component={Leaderboard} />
-              <Route path="/admin" component={AdminPanel} />
-              <Route path="/distilleries" component={DistilleryEncyclopedia} />
-              <Route path="/distillery-map" component={DistilleryMap} />
-              <Route path="/bottlers" component={Bottlers} />
-              <Route path="/whisky-database" component={WhiskyDatabase} />
-              <Route path="/donate" component={Donate} />
-              <Route path="/benchmark" component={BenchmarkAnalyzer} />
-              <Route path="/features" component={Features} />
               <Route path="/photo-tasting" component={PhotoTasting} />
-              <Route path="/reminders">{() => { window.location.replace("/sessions"); return null; }}</Route>
-              <Route path="/my-tastings" component={TastingHistory} />
-              <Route path="/my-whiskies" component={MyWhiskies} />
-              <Route path="/about" component={About} />
-              <Route path="/analytics" component={Analytics} />
               <Route path="/method" component={Method} />
-              <Route path="/research" component={Research} />
-              <Route path="/account" component={Account} />
-              <Route path="/data-export" component={DataExport} />
-              <Route path="/help" component={Help} />
-              <Route path="/discover" component={Discover} />
+              <Route path="/recap/:id" component={TastingRecap} />
               <Route path="/invite/:token" component={InviteAccept} />
+
+              {/* === REDIRECTS: Old routes → New routes === */}
+              {/* GENUSS old routes */}
+              <Route path="/app">{() => <Redirect to="/tasting" />}</Route>
+              <Route path="/sessions">{() => <Redirect to="/tasting/sessions" />}</Route>
+              <Route path="/journal">{() => <Redirect to="/my/journal" />}</Route>
+              <Route path="/my-whiskies">{() => <RedirectWithQuery to="/my/journal" query="tab=tasted" />}</Route>
+              <Route path="/collection">{() => <Redirect to="/my/collection" />}</Route>
+              <Route path="/wishlist">{() => <Redirect to="/my/wishlist" />}</Route>
+              <Route path="/recap">{() => <RedirectWithQuery to="/my/journal" query="tab=recap" />}</Route>
+              <Route path="/my-tastings">{() => <RedirectWithQuery to="/tasting/sessions" query="tab=mine" />}</Route>
+              <Route path="/host-dashboard">{() => <Redirect to="/tasting/host" />}</Route>
+              <Route path="/export-notes">{() => <RedirectWithQuery to="/my/journal" query="tab=export" />}</Route>
+              <Route path="/calendar">{() => <Redirect to="/tasting/calendar" />}</Route>
+
+              {/* PRO old routes */}
+              <Route path="/comparison">{() => <RedirectWithQuery to="/my/journal" query="tab=compare" />}</Route>
+              <Route path="/tasting-templates">{() => <RedirectWithQuery to="/tasting" query="tab=templates" />}</Route>
+              <Route path="/pairings">{() => <RedirectWithQuery to="/tasting" query="tab=pairings" />}</Route>
+              <Route path="/benchmark">{() => <RedirectWithQuery to="/my/journal" query="tab=benchmark" />}</Route>
+              <Route path="/whisky-database">{() => <Redirect to="/discover/database" />}</Route>
+              <Route path="/analytics">{() => <RedirectWithQuery to="/my/journal" query="tab=analytics" />}</Route>
+              <Route path="/data-export">{() => <RedirectWithQuery to="/my/journal" query="tab=export" />}</Route>
+
+              {/* PROFIL old routes */}
+              <Route path="/recommendations">{() => <Redirect to="/discover" />}</Route>
+              <Route path="/taste-twins">{() => <RedirectWithQuery to="/discover/community" query="tab=twins" />}</Route>
+              <Route path="/friends">{() => <RedirectWithQuery to="/discover/community" query="tab=friends" />}</Route>
+              <Route path="/community-rankings">{() => <RedirectWithQuery to="/discover/community" query="tab=rankings" />}</Route>
+              <Route path="/activity">{() => <RedirectWithQuery to="/discover/community" query="tab=activity" />}</Route>
+              <Route path="/leaderboard">{() => <RedirectWithQuery to="/discover/community" query="tab=leaderboard" />}</Route>
+              <Route path="/account">{() => <Redirect to="/profile/account" />}</Route>
+
+              {/* WISSEN old routes */}
+              <Route path="/lexicon">{() => <RedirectWithQuery to="/discover" query="section=lexicon" />}</Route>
+              <Route path="/distilleries">{() => <Redirect to="/discover/distilleries" />}</Route>
+              <Route path="/distillery-map">{() => <RedirectWithQuery to="/discover/distilleries" query="tab=map" />}</Route>
+              <Route path="/bottlers">{() => <RedirectWithQuery to="/discover/distilleries" query="tab=bottlers" />}</Route>
+              <Route path="/research">{() => <RedirectWithQuery to="/discover" query="section=research" />}</Route>
+
+              {/* ÜBER old routes */}
+              <Route path="/help">{() => <Redirect to="/profile/help" />}</Route>
+              <Route path="/about">{() => <RedirectWithQuery to="/profile/help" query="tab=about" />}</Route>
+              <Route path="/features">{() => <RedirectWithQuery to="/profile/help" query="tab=features" />}</Route>
+              <Route path="/donate">{() => <RedirectWithQuery to="/profile/help" query="tab=donate" />}</Route>
+
+              {/* Other redirects */}
+              <Route path="/reminders">{() => <Redirect to="/tasting/sessions" />}</Route>
+
               <Route component={NotFound} />
             </Switch>
           </Layout>

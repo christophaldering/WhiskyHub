@@ -120,7 +120,7 @@ export default function About() {
           className="py-12 text-center border-t border-border/30"
         >
           <button
-            onClick={() => navigate("/app")}
+            onClick={() => navigate("/tasting")}
             className="inline-flex items-center gap-2 px-8 py-3 border border-primary/40 text-primary rounded-sm font-serif text-sm tracking-wide hover:bg-primary/5 transition-colors"
             data-testid="button-about-back"
           >

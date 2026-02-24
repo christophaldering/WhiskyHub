@@ -67,7 +67,7 @@ export default function DistilleryEncyclopedia() {
         </div>
         <div className="flex items-center gap-2">
           <SuggestEntryDialog type="distillery" />
-          <Link href="/distillery-map">
+          <Link href="/discover/distilleries?tab=map">
             <Button variant="outline" size="sm" data-testid="link-distillery-map">
               <Map className="w-4 h-4 mr-1" /> {t("distillery.viewOnMap")}
             </Button>

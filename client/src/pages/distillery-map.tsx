@@ -200,7 +200,7 @@ export default function DistilleryMap() {
           <h1 className="text-3xl font-serif font-black text-primary tracking-tight">{t("distilleryMap.title")}</h1>
           <p className="text-muted-foreground font-serif italic mt-1 text-sm">{t("distilleryMap.subtitle")}</p>
         </div>
-        <Link href="/distilleries">
+        <Link href="/discover/distilleries">
           <Button variant="outline" size="sm" data-testid="link-encyclopedia">
             {t("distilleryMap.viewEncyclopedia")}
           </Button>

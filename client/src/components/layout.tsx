@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, LogIn, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Rss, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Brain, LayoutGrid, Star, Package, Archive, Bell, History, ChevronDown, HardDriveDownload, HeartHandshake, BarChart3, Newspaper, Globe, ArrowLeft, ArrowRight, GlassWater, Microscope, X, Settings, HelpCircle, Compass } from "lucide-react";
+import { Home, LogOut, LogIn, Menu, BookOpen, User, Wine, Users, Info, NotebookPen, Trophy, Library, Activity, Sparkles, GitCompareArrows, FileText, Calendar, Download, LayoutDashboard, ClipboardList, CircleDot, Puzzle, Medal, ShieldAlert, Landmark, Database, Map, Heart, Star, Package, Archive, History, ChevronDown, HeartHandshake, BarChart3, Globe, ArrowLeft, ArrowRight, GlassWater, Microscope, X, Settings, HelpCircle, Compass } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
@@ -107,7 +107,7 @@ function ProfileAvatar({ size = 36, showName = false, showSignOut = false }: { s
   );
 }
 
-const PUBLIC_NAV_ROUTES = ["/", "/about", "/features", "/research", "/donate"];
+const PUBLIC_NAV_ROUTES = ["/", "/profile/help", "/discover"];
 
 function NavItemRow({ item, location, onNavigate, isPreviewMode, onLoginRequest }: { item: NavItem; location: string; onNavigate: () => void; isPreviewMode?: boolean; onLoginRequest?: () => void }) {
   const { t } = useTranslation();
@@ -535,52 +535,51 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: t('navGroup.genuss'),
       defaultOpen: true,
       items: [
-        { href: "/app", icon: Home, label: t('nav.joinSession') },
-        { href: "/sessions", icon: Wine, label: t('nav.activeSessions'), match: (loc: string) => loc === "/sessions" },
-        { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
+        { href: "/tasting", icon: Home, label: t('nav.lobby'), match: (loc: string) => loc === "/tasting" },
+        { href: "/tasting/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/tasting/sessions" },
+        { href: "/tasting/calendar", icon: Calendar, label: t('nav.calendar') },
+        { href: "/my/journal", icon: NotebookPen, label: t('nav.journal'), match: (loc: string) => loc === "/my/journal" },
         { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
-        { href: "/collection", icon: Archive, label: t('nav.myWhiskyCollection') },
-        { href: "/wishlist", icon: Star, label: t('nav.myWhiskyWishlist') },
-        { href: "/recap", icon: History, label: t('nav.sessionResults'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
-        { href: "/my-tastings", icon: ClipboardList, label: t('nav.pastSessions') },
-        { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostSession') },
-        { href: "/export-notes", icon: Download, label: t('nav.pdfExport') },
-        { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
+        { href: "/my/collection", icon: Archive, label: t('nav.collection') },
+        { href: "/my/wishlist", icon: Star, label: t('nav.wishlist') },
+        { href: "/recap", icon: History, label: t('nav.recap') },
+        { href: "/my-tastings", icon: ClipboardList, label: t('nav.myTastings') },
+        { href: "/tasting/host", icon: LayoutDashboard, label: t('nav.hostDashboard') },
       ],
     },
     {
       label: t('navGroup.pro'),
       items: [
-        { href: "/comparison", icon: GitCompareArrows, label: t('nav.compare') },
+        { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
         { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
         { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
         { href: "/benchmark", icon: Library, label: t('nav.benchmark') },
         ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
-          { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
+          { href: "/discover/database", icon: Database, label: t('nav.whiskyDatabase') },
         ] : []),
         { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
-        { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
+        { href: "/data-export", icon: Download, label: t('nav.dataExport') },
       ],
     },
     {
       label: t('navGroup.profil'),
       items: [
         { href: "/profile", icon: User, label: t('profile.title') },
-        { href: "/flavor-profile", icon: Activity, label: t('nav.personalStats') },
+        { href: "/flavor-profile", icon: CircleDot, label: t('nav.flavorProfile') },
         { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
         { href: "/taste-twins", icon: Users, label: t('nav.tasteTwins') },
         { href: "/friends", icon: Heart, label: t('nav.friends') },
         { href: "/community-rankings", icon: Trophy, label: t('nav.communityRankings') },
-        { href: "/activity", icon: Rss, label: t('nav.activity') },
+        { href: "/activity", icon: Activity, label: t('nav.activity') },
         { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
-        { href: "/account", icon: Settings, label: t('nav.settings') },
+        { href: "/profile/account", icon: Settings, label: t('nav.account') },
       ],
     },
     {
       label: t('navGroup.wissen'),
       items: [
         { href: "/lexicon", icon: BookOpen, label: t('nav.lexicon') },
-        { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
+        { href: "/discover/distilleries", icon: Landmark, label: t('nav.distilleries') },
         { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
         { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
         { href: "/research", icon: Microscope, label: t('nav.research') },
@@ -589,9 +588,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     {
       label: t('navGroup.ueber'),
       items: [
-        { href: "/help", icon: HelpCircle, label: t('nav.help') },
+        { href: "/profile/help", icon: HelpCircle, label: t('nav.help') },
         { href: "/about", icon: Info, label: t('nav.about') },
-        { href: "/features", icon: LayoutGrid, label: t('nav.features') },
+        { href: "/features", icon: Sparkles, label: t('nav.features') },
         { href: "/donate", icon: HeartHandshake, label: t('nav.donate') },
         { href: "/", icon: Globe, label: t('nav.landingPage') },
       ],
@@ -642,36 +641,36 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         id: "tour-guest",
         level: "guest" as const,
         steps: [
-          { id: "guest-1", targetSelector: '[href="/app"]', message: t("tour.guest.step1"), position: p },
-          { id: "guest-2", targetSelector: '[href="/sessions"]', message: t("tour.guest.step2"), position: p },
-          { id: "guest-3", targetSelector: '[href="/sessions"]', message: t("tour.guest.step3"), position: p },
+          { id: "guest-1", targetSelector: '[href="/tasting"]', message: t("tour.guest.step1"), position: p },
+          { id: "guest-2", targetSelector: '[href="/tasting/sessions"]', message: t("tour.guest.step2"), position: p },
+          { id: "guest-3", targetSelector: '[href="/tasting/sessions"]', message: t("tour.guest.step3"), position: p },
         ],
       },
       {
         id: "tour-explorer",
         level: "explorer" as const,
         steps: [
-          { id: "explorer-1", targetSelector: '[href="/journal"]', message: t("tour.explorer.step1"), position: p },
-          { id: "explorer-2", targetSelector: '[href="/flavor-profile"]', message: t("tour.explorer.step2"), position: p },
-          { id: "explorer-3", targetSelector: '[href="/wishlist"]', message: t("tour.explorer.step3"), position: p },
+          { id: "explorer-1", targetSelector: '[href="/my/journal"]', message: t("tour.explorer.step1"), position: p },
+          { id: "explorer-2", targetSelector: '[href="/profile"]', message: t("tour.explorer.step2"), position: p },
+          { id: "explorer-3", targetSelector: '[href="/my/wishlist"]', message: t("tour.explorer.step3"), position: p },
         ],
       },
       {
         id: "tour-connoisseur",
         level: "connoisseur" as const,
         steps: [
-          { id: "connoisseur-1", targetSelector: '[href="/recommendations"]', message: t("tour.connoisseur.step1"), position: p },
-          { id: "connoisseur-2", targetSelector: '[href="/comparison"]', message: t("tour.connoisseur.step2"), position: p },
-          { id: "connoisseur-3", targetSelector: '[href="/lexicon"]', message: t("tour.connoisseur.step3"), position: p },
+          { id: "connoisseur-1", targetSelector: '[href="/discover"]', message: t("tour.connoisseur.step1"), position: p },
+          { id: "connoisseur-2", targetSelector: '[href="/my/journal"]', message: t("tour.connoisseur.step2"), position: p },
+          { id: "connoisseur-3", targetSelector: '[href="/discover"]', message: t("tour.connoisseur.step3"), position: p },
         ],
       },
       {
         id: "tour-analyst",
         level: "analyst" as const,
         steps: [
-          { id: "analyst-1", targetSelector: '[href="/analytics"]', message: t("tour.analyst.step1"), position: p },
-          { id: "analyst-2", targetSelector: '[href="/flavor-wheel"]', message: t("tour.analyst.step2"), position: p },
-          { id: "analyst-3", targetSelector: '[href="/benchmark"]', message: t("tour.analyst.step3"), position: p },
+          { id: "analyst-1", targetSelector: '[href="/my/journal"]', message: t("tour.analyst.step1"), position: p },
+          { id: "analyst-2", targetSelector: '[href="/my/journal"]', message: t("tour.analyst.step2"), position: p },
+          { id: "analyst-3", targetSelector: '[href="/my/journal"]', message: t("tour.analyst.step3"), position: p },
         ],
       },
     ];
@@ -693,7 +692,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               variant="ghost"
               size="icon"
               className="text-muted-foreground hover:text-primary h-8 w-8 flex-shrink-0"
-              onClick={() => { if (window.history.length > 1) window.history.back(); else window.location.href = "/app"; }}
+              onClick={() => { if (window.history.length > 1) window.history.back(); else window.location.href = "/tasting"; }}
               data-testid="button-mobile-back"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -757,16 +756,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/40 safe-area-bottom" style={{ paddingLeft: 'env(safe-area-inset-left, 0)', paddingRight: 'env(safe-area-inset-right, 0)' }}>
         <div className="flex items-center justify-around px-1 py-1.5">
           {(() => {
-            const tastingMatch = location.match(/^\/tasting\/([^/]+)/);
+            const tastingMatch = location.match(/^\/tasting\/([a-f0-9-]{8,})/i);
             const inTasting = !!tastingMatch;
             return [
               inTasting
                 ? { href: `/tasting/${tastingMatch![1]}`, icon: ArrowLeft, label: t('nav.backToTasting'), isCockpit: true }
-                : { href: "/app", icon: Home, label: t('nav.lobbyShort') },
-              { href: "/sessions", icon: Wine, label: t('nav.sessionsShort') },
-              { href: "/journal", icon: NotebookPen, label: t('nav.journalShort') },
+                : { href: "/home", icon: Home, label: t('nav.lobbyShort') },
+              { href: "/tasting", icon: Wine, label: "Tasting" },
+              { href: "/my/journal", icon: NotebookPen, label: t('nav.journalShort') },
               { href: "/discover", icon: Compass, label: t('nav.entdeckenShort') },
-              { href: "/more", icon: Menu, label: t('nav.moreShort'), isMore: true },
+              { href: "/profile", icon: User, label: t('navGroup.profil', 'Profil'), isMore: false },
             ];
           })().map((item) => {
             const isActive = location === item.href;

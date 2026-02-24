@@ -514,7 +514,7 @@ export default function QuickTasting() {
         {phase === "complete" && (
           <CompletionScreen
             tastingTitle={tasting.title}
-            onGoFull={() => navigate("/app")}
+            onGoFull={() => navigate("/tasting")}
             onStayMinimal={() => navigate("/")}
           />
         )}
@@ -527,7 +527,7 @@ export default function QuickTasting() {
               <p className="text-xs text-muted-foreground">
                 {t("quickTasting.fullVersionHint")}{" "}
                 <button
-                  onClick={() => navigate("/app")}
+                  onClick={() => navigate("/tasting")}
                   className="text-primary hover:underline font-semibold"
                   data-testid="link-full-version"
                 >

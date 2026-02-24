@@ -17,7 +17,7 @@ export default function NotFound() {
           </p>
 
           <div className="mt-8 flex justify-end">
-             <Link href="/app" className="text-primary hover:underline">
+             <Link href="/tasting" className="text-primary hover:underline">
                Return to Lobby
              </Link>
           </div>

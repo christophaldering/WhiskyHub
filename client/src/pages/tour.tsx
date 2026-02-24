@@ -645,7 +645,7 @@ export default function Tour() {
               <ArrowLeft className="w-4 h-4" />
               Zurück zur Übersicht
             </Button>
-            <Button variant="outline" onClick={() => navigate("/app")} className="font-serif gap-2" size="lg" data-testid="button-tour-start">
+            <Button variant="outline" onClick={() => navigate("/tasting")} className="font-serif gap-2" size="lg" data-testid="button-tour-start">
               Direkt zum Tool
               <ChevronRight className="w-4 h-4" />
             </Button>

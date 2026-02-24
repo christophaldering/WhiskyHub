@@ -555,7 +555,7 @@ export default function Home() {
           </h2>
         )}
         <div className="grid grid-cols-2 gap-4">
-          <Link href="/sessions">
+          <Link href="/tasting/sessions">
             <div className="bg-card border border-border/50 rounded-xl p-4 text-center hover:shadow-md transition-all duration-300 cursor-pointer" data-testid="card-stat-sessions">
               <Wine className="w-6 h-6 text-primary mx-auto mb-2" />
               {currentParticipant ? (
@@ -566,7 +566,7 @@ export default function Home() {
               <p className="text-xs text-muted-foreground mt-1">{t("home.activeSessions")}</p>
             </div>
           </Link>
-          <Link href="/journal">
+          <Link href="/my/journal">
             <div className="bg-card border border-border/50 rounded-xl p-4 text-center hover:shadow-md transition-all duration-300 cursor-pointer" data-testid="card-stat-journal">
               <NotebookPen className="w-6 h-6 text-primary mx-auto mb-2" />
               <ArrowRight className="w-4 h-4 text-muted-foreground mx-auto" />
@@ -618,7 +618,7 @@ export default function Home() {
               {t("hostShortcuts.title")}
             </h3>
             <div className="grid grid-cols-3 gap-3">
-              <Link href="/app">
+              <Link href="/tasting">
                 <div
                   className="bg-white/80 dark:bg-card border border-amber-200/50 rounded-lg p-3 text-center hover:shadow-md hover:border-amber-400/50 transition-all duration-300 cursor-pointer"
                   onClick={(e) => { e.preventDefault(); setShowHostForm(true); }}
@@ -628,7 +628,7 @@ export default function Home() {
                   <p className="text-xs font-medium text-foreground">{t("hostShortcuts.createTasting")}</p>
                 </div>
               </Link>
-              <Link href="/sessions">
+              <Link href="/tasting/sessions">
                 <div className="bg-white/80 dark:bg-card border border-amber-200/50 rounded-lg p-3 text-center hover:shadow-md hover:border-amber-400/50 transition-all duration-300 cursor-pointer" data-testid="host-shortcut-my-tastings">
                   <Wine className="w-5 h-5 text-amber-600 mx-auto mb-1.5" />
                   <p className="text-xs font-medium text-foreground">{t("hostShortcuts.myHostedTastings")}</p>

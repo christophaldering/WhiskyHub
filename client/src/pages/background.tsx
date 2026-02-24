@@ -189,7 +189,7 @@ export default function Background() {
         </div>
 
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="mt-16 text-center">
-          <Button onClick={() => navigate("/app")} className="font-serif gap-2" data-testid="button-open-app">
+          <Button onClick={() => navigate("/tasting")} className="font-serif gap-2" data-testid="button-open-app">
             {t("landing.cta.button")}
           </Button>
         </motion.div>

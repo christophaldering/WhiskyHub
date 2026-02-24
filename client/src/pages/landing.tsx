@@ -74,7 +74,7 @@ export default function Landing() {
             <Button variant="ghost" size="sm" onClick={() => document.getElementById("overview")?.scrollIntoView({ behavior: "smooth" })} className="font-serif text-sm hidden sm:inline-flex" data-testid="landing-nav-explore">
               {t("landing.nav.explore")}
             </Button>
-            <Button size="sm" onClick={() => navigate("/app")} className="font-serif text-sm gap-1.5" data-testid="landing-nav-login">
+            <Button size="sm" onClick={() => navigate("/tasting")} className="font-serif text-sm gap-1.5" data-testid="landing-nav-login">
               {t("landing.nav.login")}
             </Button>
           </div>
@@ -528,7 +528,7 @@ export default function Landing() {
             <p className="text-muted-foreground text-lg max-w-xl mx-auto">
               {t("landing.cta.desc")}
             </p>
-            <Button size="lg" onClick={() => navigate("/app")} className="font-serif text-base gap-2 px-10 py-6" data-testid="landing-cta-bottom">
+            <Button size="lg" onClick={() => navigate("/tasting")} className="font-serif text-base gap-2 px-10 py-6" data-testid="landing-cta-bottom">
               {t("landing.cta.button")}
               <ArrowRight className="w-5 h-5" />
             </Button>
