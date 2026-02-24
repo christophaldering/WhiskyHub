@@ -34,13 +34,17 @@ function getDefaultSetting(key: string): string {
     guest_mode_enabled: "true",
     maintenance_mode: "false",
     email_notifications_enabled: "true",
-    comparable_weights_region: "3",
-    comparable_weights_peat: "3",
-    comparable_weights_cask: "2",
-    comparable_weights_abv: "1",
-    comparable_weights_age: "1",
+    comparable_weight_region: "0.40",
+    comparable_weight_peat: "0.30",
+    comparable_weight_cask: "0.20",
+    comparable_weight_abv: "0.10",
+    comparable_weight_age: "0.00",
     comparable_min_samples: "7",
+    comparable_abv_band: "3",
+    comparable_age_band: "3",
+    comparable_threshold: "0.5",
     comparable_fallback_behavior: "overall",
+    comparable_enable_per_dimension: "false",
   };
   return defaults[key] ?? "";
 }
@@ -5758,7 +5762,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
   app.get("/api/app-settings/public", async (_req, res) => {
     try {
       const settings = await storage.getAppSettings();
-      const publicKeys = ["whats_new_enabled", "whats_new_text", "whats_new_version", "guest_mode_enabled", "maintenance_mode", "registration_open", "comparable_weights_region", "comparable_weights_peat", "comparable_weights_cask", "comparable_weights_abv", "comparable_weights_age", "comparable_min_samples", "comparable_fallback_behavior"];
+      const publicKeys = ["whats_new_enabled", "whats_new_text", "whats_new_version", "guest_mode_enabled", "maintenance_mode", "registration_open", "comparable_weight_region", "comparable_weight_peat", "comparable_weight_cask", "comparable_weight_abv", "comparable_weight_age", "comparable_min_samples", "comparable_abv_band", "comparable_age_band", "comparable_threshold", "comparable_fallback_behavior", "comparable_enable_per_dimension"];
       const result: Record<string, string> = {};
       for (const key of publicKeys) {
         result[key] = settings[key] ?? getDefaultSetting(key);
@@ -5786,13 +5790,17 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         guest_mode_enabled: "true",
         maintenance_mode: "false",
         email_notifications_enabled: "true",
-        comparable_weights_region: "3",
-        comparable_weights_peat: "3",
-        comparable_weights_cask: "2",
-        comparable_weights_abv: "1",
-        comparable_weights_age: "1",
+        comparable_weight_region: "0.40",
+        comparable_weight_peat: "0.30",
+        comparable_weight_cask: "0.20",
+        comparable_weight_abv: "0.10",
+        comparable_weight_age: "0.00",
         comparable_min_samples: "7",
+        comparable_abv_band: "3",
+        comparable_age_band: "3",
+        comparable_threshold: "0.5",
         comparable_fallback_behavior: "overall",
+        comparable_enable_per_dimension: "false",
       };
       const merged = { ...defaults, ...settings };
       res.json(merged);
@@ -5809,7 +5817,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       if (!requester || requester.role !== "admin") {
         return res.status(403).json({ message: "Admin access required" });
       }
-      const allowedKeys = ["whats_new_enabled", "whats_new_text", "whats_new_version", "registration_open", "guest_mode_enabled", "maintenance_mode", "email_notifications_enabled", "comparable_weights_region", "comparable_weights_peat", "comparable_weights_cask", "comparable_weights_abv", "comparable_weights_age", "comparable_min_samples", "comparable_fallback_behavior"];
+      const allowedKeys = ["whats_new_enabled", "whats_new_text", "whats_new_version", "registration_open", "guest_mode_enabled", "maintenance_mode", "email_notifications_enabled", "comparable_weight_region", "comparable_weight_peat", "comparable_weight_cask", "comparable_weight_abv", "comparable_weight_age", "comparable_min_samples", "comparable_abv_band", "comparable_age_band", "comparable_threshold", "comparable_fallback_behavior", "comparable_enable_per_dimension"];
       const filtered: Record<string, string> = {};
       for (const [key, value] of Object.entries(settings)) {
         if (allowedKeys.includes(key)) {

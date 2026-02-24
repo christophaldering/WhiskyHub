@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
@@ -30,6 +30,15 @@ import {
 } from "lucide-react";
 import { useInputFocused } from "@/hooks/use-input-focused";
 import type { Whisky, Tasting } from "@shared/schema";
+import {
+  type BaselineType,
+  type BaselineStats,
+  type Dimension,
+  type HistoricalRating,
+  useBaselineComputation,
+  parseComparableSettings,
+  DEFAULT_SETTINGS,
+} from "@/lib/comparable-baseline";
 
 interface FocusedTastingProps {
   tasting: Tasting;
@@ -208,6 +217,26 @@ function AiInsightsPanel({ whisky, tasting }: { whisky: Whisky; tasting: Tasting
   );
 }
 
+function BaselineBand({ stats, scale, dimId }: { stats: BaselineStats | undefined; scale: number; dimId: string }) {
+  if (!stats || stats.count === 0 || stats.state === "placeholder") return null;
+  const p25Pct = (stats.p25 / scale) * 100;
+  const p75Pct = (stats.p75 / scale) * 100;
+  const medPct = (stats.median / scale) * 100;
+
+  return (
+    <div className="relative w-full h-2 mt-0.5" data-testid={`baseline-band-${dimId}`}>
+      <div
+        className="absolute top-0 h-full rounded-sm bg-amber-400/20 border border-amber-400/30"
+        style={{ left: `${p25Pct}%`, width: `${Math.max(p75Pct - p25Pct, 0.5)}%` }}
+      />
+      <div
+        className="absolute top-0 h-full w-0.5 bg-amber-500/60 rounded-full"
+        style={{ left: `${medPct}%` }}
+      />
+    </div>
+  );
+}
+
 export function FocusedTasting({ tasting, whiskies, onExit, contextLevel = 2 }: FocusedTastingProps) {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
@@ -235,6 +264,86 @@ export function FocusedTasting({ tasting, whiskies, onExit, contextLevel = 2 }: 
   }, [revealIndex, isBlind, isHost]);
 
   const activeWhisky = whiskies[activeIndex] || whiskies[0];
+
+  const [baselineType, setBaselineType] = useState<BaselineType>("overall");
+
+  const { data: tastingHistory } = useQuery({
+    queryKey: ["tasting-history-baseline", participantId],
+    queryFn: async () => {
+      const res = await fetch(`/api/participants/${participantId}/tasting-history`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!participantId,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: appSettings } = useQuery({
+    queryKey: ["app-settings-public-baseline"],
+    queryFn: async () => {
+      const res = await fetch("/api/app-settings/public");
+      if (!res.ok) return {};
+      return res.json() as Promise<Record<string, string>>;
+    },
+    staleTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const comparableSettings = useMemo(
+    () => (appSettings ? parseComparableSettings(appSettings) : DEFAULT_SETTINGS),
+    [appSettings]
+  );
+
+  const historyRatings: HistoricalRating[] = useMemo(() => {
+    if (!tastingHistory || !Array.isArray(tastingHistory)) return [];
+    const ratings: HistoricalRating[] = [];
+    for (const session of tastingHistory) {
+      if (session.id === tasting.id) continue;
+      for (const w of session.whiskies || []) {
+        if (w.myRating) {
+          ratings.push({
+            whisky: {
+              region: w.region,
+              peatLevel: w.peatLevel,
+              caskInfluence: w.caskInfluence,
+              abv: w.abv,
+              age: w.age,
+            },
+            nose: w.myRating.nose,
+            taste: w.myRating.taste,
+            finish: w.myRating.finish,
+            balance: w.myRating.balance,
+            overall: w.myRating.overall,
+          });
+        }
+      }
+    }
+    return ratings;
+  }, [tastingHistory, tasting.id]);
+
+  const baselineDimensions: Dimension[] = useMemo(
+    () => isSimplified ? ["nose", "taste", "finish", "overall"] : ["nose", "taste", "finish", "balance", "overall"],
+    [isSimplified]
+  );
+
+  const whiskyMeta = useMemo(() => activeWhisky ? {
+    region: activeWhisky.region,
+    peatLevel: activeWhisky.peatLevel,
+    caskInfluence: activeWhisky.caskInfluence,
+    abv: activeWhisky.abv,
+    age: activeWhisky.age,
+  } : null, [activeWhisky?.id, activeWhisky?.region, activeWhisky?.peatLevel, activeWhisky?.caskInfluence, activeWhisky?.abv, activeWhisky?.age]);
+
+  const baselineResult = useBaselineComputation(
+    baselineType,
+    whiskyMeta,
+    historyRatings,
+    baselineDimensions,
+    comparableSettings,
+    participantId
+  );
+
   if (!activeWhisky) return null;
 
   const getBlindState = (idx: number, w?: Whisky, forEval = false) => {
@@ -648,8 +757,41 @@ export function FocusedTasting({ tasting, whiskies, onExit, contextLevel = 2 }: 
 
             {!isLocked && (
               <div className="space-y-6 mb-6">
+                {historyRatings.length > 0 && (
+                  <div className="flex items-center gap-2 justify-end" data-testid="baseline-selector">
+                    <span className="text-[10px] font-serif text-muted-foreground uppercase tracking-widest">{t("evaluation.baseline.label")}:</span>
+                    <div className="flex rounded-full border border-border/50 overflow-hidden">
+                      {(["overall", "comparable"] as const).map((bt) => (
+                        <button
+                          key={bt}
+                          onClick={() => setBaselineType(bt)}
+                          className={cn(
+                            "px-2.5 py-0.5 text-[10px] font-serif font-medium transition-colors",
+                            baselineType === bt
+                              ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                          data-testid={`baseline-btn-${bt}`}
+                        >
+                          {t(`evaluation.baseline.${bt}`)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {baselineResult?.fallbackReason && baselineType === "comparable" && (
+                  <p className="text-[10px] text-amber-600 dark:text-amber-400 font-serif italic text-right" data-testid="baseline-fallback-note">
+                    {baselineResult.fallbackReason === "no_comparable_data"
+                      ? t("evaluation.baseline.fallbackNone")
+                      : t("evaluation.baseline.fallbackInsufficient")}
+                  </p>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
-                  {categories.map((cat) => (
+                  {categories.map((cat) => {
+                    const dimStats = baselineResult?.dimensions?.[cat.id as Dimension];
+                    return (
                     <div key={cat.id} className="space-y-2 p-3 rounded-lg bg-card border border-border/30">
                       <div className="flex justify-between items-center">
                         <Label className="text-xs font-serif font-bold text-muted-foreground uppercase tracking-widest">{cat.label}</Label>
@@ -671,8 +813,10 @@ export function FocusedTasting({ tasting, whiskies, onExit, contextLevel = 2 }: 
                         disabled={isLocked}
                         data-testid={`focus-slider-${cat.id}`}
                       />
+                      <BaselineBand stats={dimStats} scale={scale} dimId={cat.id} />
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="p-4 rounded-lg bg-card border border-primary/20 text-center space-y-3">
@@ -693,6 +837,9 @@ export function FocusedTasting({ tasting, whiskies, onExit, contextLevel = 2 }: 
                     disabled={isLocked}
                     data-testid="focus-slider-overall"
                   />
+                  <div className="max-w-sm mx-auto">
+                    <BaselineBand stats={baselineResult?.dimensions?.overall} scale={scale} dimId="overall" />
+                  </div>
                 </div>
 
                 <div>

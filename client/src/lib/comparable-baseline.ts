@@ -12,6 +12,10 @@ export interface ComparableSettings {
   weights: ComparableWeights;
   minSamples: number;
   fallbackBehavior: "overall" | "none";
+  abvBand: number;
+  ageBand: number;
+  threshold: number;
+  enablePerDimension: boolean;
 }
 
 export interface WhiskyMetadata {
@@ -41,7 +45,7 @@ export interface BaselineStats {
   p25: number;
   p75: number;
   count: number;
-  isProvisional: boolean;
+  state: "placeholder" | "provisional" | "stable";
   isFallback: boolean;
 }
 
@@ -52,17 +56,21 @@ export interface BaselineResult {
 }
 
 export const DEFAULT_WEIGHTS: ComparableWeights = {
-  region: 3,
-  peat: 3,
-  cask: 2,
-  abv: 1,
-  age: 1,
+  region: 0.40,
+  peat: 0.30,
+  cask: 0.20,
+  abv: 0.10,
+  age: 0.00,
 };
 
 export const DEFAULT_SETTINGS: ComparableSettings = {
   weights: DEFAULT_WEIGHTS,
   minSamples: 7,
   fallbackBehavior: "overall",
+  abvBand: 3,
+  ageBand: 3,
+  threshold: 0.5,
+  enablePerDimension: false,
 };
 
 export function parseComparableSettings(
@@ -70,15 +78,19 @@ export function parseComparableSettings(
 ): ComparableSettings {
   return {
     weights: {
-      region: parseFloat(raw.comparable_weights_region) || DEFAULT_WEIGHTS.region,
-      peat: parseFloat(raw.comparable_weights_peat) || DEFAULT_WEIGHTS.peat,
-      cask: parseFloat(raw.comparable_weights_cask) || DEFAULT_WEIGHTS.cask,
-      abv: parseFloat(raw.comparable_weights_abv) || DEFAULT_WEIGHTS.abv,
-      age: parseFloat(raw.comparable_weights_age) || DEFAULT_WEIGHTS.age,
+      region: parseFloat(raw.comparable_weight_region) || DEFAULT_WEIGHTS.region,
+      peat: parseFloat(raw.comparable_weight_peat) || DEFAULT_WEIGHTS.peat,
+      cask: parseFloat(raw.comparable_weight_cask) || DEFAULT_WEIGHTS.cask,
+      abv: parseFloat(raw.comparable_weight_abv) || DEFAULT_WEIGHTS.abv,
+      age: parseFloat(raw.comparable_weight_age) || DEFAULT_WEIGHTS.age,
     },
     minSamples: parseInt(raw.comparable_min_samples) || DEFAULT_SETTINGS.minSamples,
     fallbackBehavior:
       raw.comparable_fallback_behavior === "none" ? "none" : "overall",
+    abvBand: parseFloat(raw.comparable_abv_band) || DEFAULT_SETTINGS.abvBand,
+    ageBand: parseFloat(raw.comparable_age_band) || DEFAULT_SETTINGS.ageBand,
+    threshold: parseFloat(raw.comparable_threshold) || DEFAULT_SETTINGS.threshold,
+    enablePerDimension: raw.comparable_enable_per_dimension === "true",
   };
 }
 
@@ -103,47 +115,32 @@ function normalizeCask(c?: string | null): string {
   return c.toLowerCase().trim();
 }
 
-function abvBucket(abv?: number | null): number {
+function parseAbv(abv?: number | null): number {
   if (abv == null || abv <= 0) return -1;
-  if (abv < 40) return 0;
-  if (abv <= 46) return 1;
-  if (abv <= 55) return 2;
-  return 3;
+  return abv;
 }
 
-function ageBucket(age?: string | null, ageBand?: string | null): number {
-  if (ageBand) {
-    const map: Record<string, number> = {
-      nas: 0,
-      young: 1,
-      classic: 2,
-      mature: 3,
-      old: 4,
-    };
-    return map[ageBand.toLowerCase().trim()] ?? -1;
-  }
+function parseAge(age?: string | null): number {
   if (!age) return -1;
   const num = parseInt(age);
-  if (isNaN(num)) return 0;
-  if (num < 10) return 1;
-  if (num < 18) return 2;
-  if (num < 25) return 3;
-  return 4;
+  return isNaN(num) ? -1 : num;
 }
 
 export function computeSimilarity(
   target: WhiskyMetadata,
   candidate: WhiskyMetadata,
-  weights: ComparableWeights
+  weights: ComparableWeights,
+  abvBand: number,
+  ageBand: number
 ): number {
   let score = 0;
-  let maxScore = 0;
+  let totalWeight = 0;
 
   const tRegion = normalizeRegion(target.region);
   const cRegion = normalizeRegion(candidate.region);
   if (tRegion && cRegion) {
     score += tRegion === cRegion ? weights.region : 0;
-    maxScore += weights.region;
+    totalWeight += weights.region;
   }
 
   const tPeat = normalizePeat(target.peatLevel);
@@ -151,31 +148,33 @@ export function computeSimilarity(
   if (tPeat >= 0 && cPeat >= 0) {
     const diff = Math.abs(tPeat - cPeat);
     score += diff === 0 ? weights.peat : diff === 1 ? weights.peat * 0.5 : 0;
-    maxScore += weights.peat;
+    totalWeight += weights.peat;
   }
 
   const tCask = normalizeCask(target.caskInfluence);
   const cCask = normalizeCask(candidate.caskInfluence);
   if (tCask && cCask) {
     score += tCask === cCask ? weights.cask : 0;
-    maxScore += weights.cask;
+    totalWeight += weights.cask;
   }
 
-  const tAbv = abvBucket(target.abv);
-  const cAbv = abvBucket(candidate.abv);
-  if (tAbv >= 0 && cAbv >= 0) {
-    score += tAbv === cAbv ? weights.abv : 0;
-    maxScore += weights.abv;
+  const tAbv = parseAbv(target.abv);
+  const cAbv = parseAbv(candidate.abv);
+  if (tAbv > 0 && cAbv > 0) {
+    score += Math.abs(tAbv - cAbv) <= abvBand ? weights.abv : 0;
+    totalWeight += weights.abv;
   }
 
-  const tAge = ageBucket(target.age, target.ageBand);
-  const cAge = ageBucket(candidate.age, candidate.ageBand);
-  if (tAge >= 0 && cAge >= 0) {
-    score += tAge === cAge ? weights.age : 0;
-    maxScore += weights.age;
+  if (weights.age > 0) {
+    const tAge = parseAge(target.age);
+    const cAge = parseAge(candidate.age);
+    if (tAge >= 0 && cAge >= 0) {
+      score += Math.abs(tAge - cAge) <= ageBand ? weights.age : 0;
+      totalWeight += weights.age;
+    }
   }
 
-  return maxScore > 0 ? score / maxScore : 0;
+  return totalWeight > 0 ? score / totalWeight : 0;
 }
 
 function percentile(sorted: number[], p: number): number {
@@ -188,9 +187,15 @@ function percentile(sorted: number[], p: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
 
+function deriveState(count: number): "placeholder" | "provisional" | "stable" {
+  if (count <= 2) return "placeholder";
+  if (count < 10) return "provisional";
+  return "stable";
+}
+
 function computeStats(values: number[]): Omit<BaselineStats, "isFallback"> {
   if (values.length === 0) {
-    return { median: 0, p25: 0, p75: 0, count: 0, isProvisional: true };
+    return { median: 0, p25: 0, p75: 0, count: 0, state: "placeholder" };
   }
   const sorted = [...values].sort((a, b) => a - b);
   return {
@@ -198,7 +203,7 @@ function computeStats(values: number[]): Omit<BaselineStats, "isFallback"> {
     p25: percentile(sorted, 25),
     p75: percentile(sorted, 75),
     count: values.length,
-    isProvisional: values.length < 10,
+    state: deriveState(values.length),
   };
 }
 
@@ -223,13 +228,15 @@ export function computeComparableBaseline(
   dimensions: Dimension[],
   settings: ComparableSettings
 ): BaselineResult {
-  const SIMILARITY_THRESHOLD = 0.5;
+  const scored = history.map((h) => ({
+    rating: h,
+    similarity: computeSimilarity(target, h.whisky, settings.weights, settings.abvBand, settings.ageBand),
+  }));
 
-  const comparable = history.filter(
-    (h) =>
-      computeSimilarity(target, h.whisky, settings.weights) >=
-      SIMILARITY_THRESHOLD
-  );
+  const comparable = scored
+    .filter((s) => s.similarity >= settings.threshold)
+    .sort((a, b) => b.similarity - a.similarity)
+    .map((s) => s.rating);
 
   if (comparable.length < settings.minSamples) {
     if (settings.fallbackBehavior === "overall") {
@@ -272,13 +279,17 @@ export function computeComparableBaseline(
 
 const baselineCacheMap = new Map<string, BaselineResult>();
 
+function metaSignature(m: WhiskyMetadata): string {
+  return `${normalizeRegion(m.region)}|${normalizePeat(m.peatLevel)}|${normalizeCask(m.caskInfluence)}|${parseAbv(m.abv)}|${parseAge(m.age)}`;
+}
+
 function cacheKey(
   type: BaselineType,
   participantId: string,
   whiskyMeta: WhiskyMetadata
 ): string {
   if (type === "overall") return `overall:${participantId}`;
-  return `comparable:${participantId}:${normalizeRegion(whiskyMeta.region)}:${normalizePeat(whiskyMeta.peatLevel)}:${normalizeCask(whiskyMeta.caskInfluence)}:${abvBucket(whiskyMeta.abv)}:${ageBucket(whiskyMeta.age, whiskyMeta.ageBand)}`;
+  return `comparable:${participantId}:${metaSignature(whiskyMeta)}`;
 }
 
 export function getBaseline(

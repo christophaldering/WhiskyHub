@@ -2673,19 +2673,22 @@ function AdminSettingsTab({ participantId }: { participantId: string }) {
           <p className="text-xs text-muted-foreground mb-4">{t("admin.settingsComparableDesc")}</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
-              { key: "comparable_weights_region", label: t("taxonomy.region") },
-              { key: "comparable_weights_peat", label: t("taxonomy.peat") },
-              { key: "comparable_weights_cask", label: t("taxonomy.cask") },
-              { key: "comparable_weights_abv", label: t("taxonomy.abv") },
-              { key: "comparable_weights_age", label: t("taxonomy.age") },
-              { key: "comparable_min_samples", label: t("admin.settingsComparableMinSamples") },
-            ].map(({ key, label }) => (
+              { key: "comparable_weight_region", label: t("taxonomy.region"), step: "0.05" },
+              { key: "comparable_weight_peat", label: t("taxonomy.peat"), step: "0.05" },
+              { key: "comparable_weight_cask", label: t("taxonomy.cask"), step: "0.05" },
+              { key: "comparable_weight_abv", label: t("taxonomy.abv"), step: "0.05" },
+              { key: "comparable_weight_age", label: t("taxonomy.age"), step: "0.05" },
+              { key: "comparable_min_samples", label: t("admin.settingsComparableMinSamples"), step: "1" },
+              { key: "comparable_abv_band", label: t("admin.settingsComparableAbvBand"), step: "1" },
+              { key: "comparable_age_band", label: t("admin.settingsComparableAgeBand"), step: "1" },
+              { key: "comparable_threshold", label: t("admin.settingsComparableThreshold"), step: "0.05" },
+            ].map(({ key, label, step }) => (
               <div key={key} className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">{label}</label>
                 <Input
                   type="number"
                   min={0}
-                  step={1}
+                  step={step}
                   value={settings[key] || ""}
                   onChange={(e) => updateSetting.mutate({ [key]: e.target.value })}
                   className="h-8 text-sm"
