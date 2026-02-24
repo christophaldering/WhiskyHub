@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, LogIn, Menu, User, Wine, Users, NotebookPen, Sparkles, Calendar, ShieldAlert, Landmark, Star, Archive, ChevronDown, ArrowLeft, ArrowRight, X, Settings, HelpCircle, Compass, Activity, BarChart3, BookOpen, CircleDot, ClipboardList, Database, Download, FileText, GitCompareArrows, GlassWater, Globe, Heart, HeartHandshake, History, Info, LayoutDashboard, Library, Map, Medal, Microscope, Package, Puzzle, Trophy } from "lucide-react";
+import { Home, LogOut, LogIn, Menu, User, Wine, Users, NotebookPen, Sparkles, Calendar, ShieldAlert, Landmark, Star, Archive, ChevronDown, ArrowLeft, ArrowRight, X, Settings, HelpCircle, Compass, Activity, BarChart3, BookOpen, ClipboardList, Database, Download, FileText, GitCompareArrows, GlassWater, Globe, Heart, HeartHandshake, History, Info, LayoutDashboard, Library, Map, Medal, Microscope, Package, Puzzle, Trophy } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
@@ -537,12 +537,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       items: [
         { href: "/tasting", icon: Home, label: t('nav.lobby'), match: (loc: string) => loc === "/tasting" },
         { href: "/tasting/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/tasting/sessions" },
-        { href: "/tasting/calendar", icon: Calendar, label: t('nav.calendar') },
         { href: "/my/journal", icon: NotebookPen, label: t('nav.journal'), match: (loc: string) => loc === "/my/journal" },
         { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
         { href: "/my/collection", icon: Archive, label: t('nav.collection') },
         { href: "/my/wishlist", icon: Star, label: t('nav.wishlist') },
         { href: "/recap", icon: History, label: t('nav.recap') },
+        { href: "/tasting/calendar", icon: Calendar, label: t('nav.calendar') },
         { href: "/my-tastings", icon: ClipboardList, label: t('nav.myTastings') },
         { href: "/tasting/host", icon: LayoutDashboard, label: t('nav.hostDashboard') },
       ],
