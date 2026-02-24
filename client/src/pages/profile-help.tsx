@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useSearch } from "wouter";
 import { HelpCircle, Info, Sparkles, Heart } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { PageLayout } from "@/components/page-layout";
 import Help from "@/pages/help";
 import About from "@/pages/about";
 import Features from "@/pages/features";
@@ -24,17 +25,11 @@ export default function ProfileHelp() {
   const activeTab = VALID_TABS.includes(rawTab as any) ? rawTab : "help";
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="profile-help-page">
-      <div className="flex items-center gap-3 mb-6">
-        <HelpCircle className="w-7 h-7 text-primary" />
-        <h1
-          className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary tracking-tight"
-          data-testid="text-profile-help-title"
-        >
-          {t("profileHelp.title", "Hilfe & Info")}
-        </h1>
-      </div>
-
+    <PageLayout
+      icon={HelpCircle}
+      title={t("profileHelp.title", "Hilfe & Info")}
+      testId="profile-help-page"
+    >
       <Tabs value={activeTab} data-testid="profile-help-tabs">
         <div className="overflow-x-auto -mx-4 px-4 pb-1">
           <TabsList className="w-max min-w-full sm:w-full grid grid-cols-4 h-10" data-testid="profile-help-tabs-list">
@@ -70,6 +65,6 @@ export default function ProfileHelp() {
           <Donate />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageLayout>
   );
 }

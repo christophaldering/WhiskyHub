@@ -140,7 +140,7 @@ export default function Wishlist() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="wishlist-page">
+    <div className="max-w-5xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="wishlist-page">
       <AnimatePresence mode="wait">
         {view === "list" && (
           <motion.div
@@ -150,26 +150,31 @@ export default function Wishlist() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
-              <div className="min-w-0">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary truncate" data-testid="text-wishlist-title">
-                  {t("wishlist.title")}
-                </h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {entries.length > 0
-                    ? t("wishlist.total", { count: entries.length })
-                    : t("wishlist.subtitle")}
-                </p>
+            <div className="flex items-start justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3 min-w-0">
+                <Star className="w-7 h-7 text-primary flex-shrink-0" />
+                <div className="min-w-0">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary tracking-tight truncate" data-testid="text-wishlist-title">
+                    {t("wishlist.title")}
+                  </h1>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {entries.length > 0
+                      ? t("wishlist.total", { count: entries.length })
+                      : t("wishlist.subtitle")}
+                  </p>
+                </div>
               </div>
-              <Button
-                onClick={handleNew}
-                className="bg-primary text-primary-foreground font-serif flex-shrink-0 self-start sm:self-auto"
-                data-testid="button-add-wishlist"
-                aria-label={t("wishlist.addWhisky")}
-              >
-                <Plus className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">{t("wishlist.addWhisky")}</span>
-              </Button>
+              <div className="flex-shrink-0">
+                <Button
+                  onClick={handleNew}
+                  className="bg-primary text-primary-foreground font-serif"
+                  data-testid="button-add-wishlist"
+                  aria-label={t("wishlist.addWhisky")}
+                >
+                  <Plus className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t("wishlist.addWhisky")}</span>
+                </Button>
+              </div>
             </div>
 
             {isLoading ? (
