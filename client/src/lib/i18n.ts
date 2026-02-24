@@ -652,6 +652,8 @@ const resources = {
         personalStats: "Personal Statistics",
         settings: "Settings",
         compare: "Compare",
+        now: "Continue",
+        nowShort: "Now",
         lobbyShort: "Home",
         sessionsShort: "Sessions",
         journalShort: "Journal",
@@ -726,6 +728,7 @@ const resources = {
         meineWelt: "My World",
         meinRaum: "My Space",
         system: "System",
+        jetzt: "Now",
       },
       navSubgroup: {
         community: "Community",
@@ -3639,6 +3642,8 @@ const resources = {
         personalStats: "Persönliche Statistik",
         settings: "Einstellungen",
         compare: "Vergleichen",
+        now: "Weiter",
+        nowShort: "Jetzt",
         lobbyShort: "Home",
         sessionsShort: "Sessions",
         journalShort: "Tagebuch",
@@ -3713,6 +3718,7 @@ const resources = {
         meineWelt: "Meine Welt",
         meinRaum: "Mein Raum",
         system: "System",
+        jetzt: "Jetzt",
       },
       navSubgroup: {
         community: "Community",
