@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { WelcomeOverlay } from "@/components/welcome-overlay";
 import { FeedbackButton } from "@/components/feedback-button";
-import { LevelOnboarding, isLevelOnboardingActive } from "@/components/level-onboarding";
 import { SpotlightProvider, TourProvider, type SpotlightHint, type TourDefinition } from "@/components/spotlight-hint";
 import { useTranslation } from "react-i18next";
 import { useAppStore, LANDING_VERSION } from "@/lib/store";
@@ -191,7 +190,7 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
   onNavigate: () => void;
 }) {
   const { t } = useTranslation();
-  const { currentParticipant, setParticipant, previewExperienceLevel, setPreviewExperienceLevel } = useAppStore();
+  const { currentParticipant, setParticipant } = useAppStore();
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   const allGroupItems = useMemo(() => {
@@ -439,81 +438,6 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
                 <LogOut className="w-3.5 h-3.5" />
               </Button>
             </div>
-            <div className="space-y-1 px-1">
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t('nav.levelSelector.label')}</span>
-              <div className="grid grid-cols-4 gap-1" data-testid="select-experience-level">
-                {([
-                  { id: "guest", icon: User, color: "text-slate-500", activeBg: "bg-slate-100 border-slate-300" },
-                  { id: "explorer", icon: Star, color: "text-amber-500", activeBg: "bg-amber-50 border-amber-300" },
-                  { id: "connoisseur", icon: Sparkles, color: "text-primary", activeBg: "bg-primary/10 border-primary/50" },
-                  { id: "analyst", icon: Brain, color: "text-violet-500", activeBg: "bg-violet-50 border-violet-300" },
-                ] as const).map((lvl) => {
-                  const Icon = lvl.icon;
-                  const isActive = (currentParticipant.experienceLevel || "connoisseur") === lvl.id;
-                  return (
-                    <button
-                      key={lvl.id}
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await participantApi.updateExperienceLevel(currentParticipant.id, lvl.id);
-                          setParticipant({ ...currentParticipant, experienceLevel: lvl.id });
-                        } catch {}
-                      }}
-                      className={`flex flex-col items-center gap-0.5 p-1.5 rounded-md border text-center transition-all ${
-                        isActive
-                          ? `${lvl.activeBg} ring-1 ring-primary/10`
-                          : "border-transparent hover:border-border/40 hover:bg-secondary/30"
-                      }`}
-                      title={t(`nav.levelSelector.${lvl.id}`)}
-                      data-testid={`button-sidebar-level-${lvl.id}`}
-                    >
-                      <Icon className={`w-3.5 h-3.5 ${isActive ? lvl.color : "text-muted-foreground/50"}`} />
-                      <span className={`text-[9px] leading-tight ${isActive ? "font-semibold text-foreground" : "text-muted-foreground/60"}`}>
-                        {t(`nav.levelSelector.${lvl.id}`)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-        {!currentParticipant && (
-          <div className="space-y-1.5">
-            <div className="space-y-1 px-1">
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t('nav.levelSelector.label')}</span>
-              <div className="grid grid-cols-4 gap-1" data-testid="select-preview-level">
-                {([
-                  { id: "guest", icon: User, color: "text-slate-500", activeBg: "bg-slate-100 border-slate-300" },
-                  { id: "explorer", icon: Star, color: "text-amber-500", activeBg: "bg-amber-50 border-amber-300" },
-                  { id: "connoisseur", icon: Sparkles, color: "text-primary", activeBg: "bg-primary/10 border-primary/50" },
-                  { id: "analyst", icon: Brain, color: "text-violet-500", activeBg: "bg-violet-50 border-violet-300" },
-                ] as const).map((lvl) => {
-                  const Icon = lvl.icon;
-                  const isActive = previewExperienceLevel === lvl.id;
-                  return (
-                    <button
-                      key={lvl.id}
-                      type="button"
-                      onClick={() => setPreviewExperienceLevel(lvl.id)}
-                      className={`flex flex-col items-center gap-0.5 p-1.5 rounded-md border text-center transition-all ${
-                        isActive
-                          ? `${lvl.activeBg} ring-1 ring-primary/10`
-                          : "border-transparent hover:border-border/40 hover:bg-secondary/30"
-                      }`}
-                      title={t(`nav.levelSelector.${lvl.id}`)}
-                      data-testid={`button-preview-level-${lvl.id}`}
-                    >
-                      <Icon className={`w-3.5 h-3.5 ${isActive ? lvl.color : "text-muted-foreground/50"}`} />
-                      <span className={`text-[9px] leading-tight ${isActive ? "font-semibold text-foreground" : "text-muted-foreground/60"}`}>
-                        {t(`nav.levelSelector.${lvl.id}`)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         )}
         {!currentParticipant && (
@@ -572,15 +496,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const serverBannerText = publicSettings?.whats_new_text || t('whatsNew.banner');
   const showWhatsNewBanner = !!currentParticipant && serverBannerEnabled && lastSeenLandingVersion < (serverBannerVersion || LANDING_VERSION);
 
-  const [onboardingDone, setOnboardingDone] = useState(() =>
-    !isLevelOnboardingActive(currentParticipant?.id)
-  );
-  const handleOnboardingComplete = useCallback(() => {
-    setTimeout(() => setOnboardingDone(true), 800);
-  }, []);
-  useEffect(() => {
-    setOnboardingDone(!isLevelOnboardingActive(currentParticipant?.id));
-  }, [currentParticipant?.id]);
+  const onboardingDone = true;
 
   const { data: allTastings = [] } = useQuery({
     queryKey: ["tastings", currentParticipant?.id],
@@ -616,85 +532,74 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navGroups: NavGroup[] = useMemo(() => [
     {
-      label: t('navGroup.tastings'),
+      label: t('navGroup.genuss'),
       defaultOpen: true,
       items: [
-        { href: "/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/sessions" || loc === "/export-notes" },
         { href: "/app", icon: Home, label: t('nav.lobby') },
+        { href: "/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/sessions" || loc === "/export-notes" },
         { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
-        { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
-        { href: "/recap", icon: History, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
-        { href: "/my-tastings", icon: ClipboardList, label: t('nav.myTastings') },
-      ],
-    },
-    {
-      label: t('navGroup.tagebuch'),
-      items: [
         { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
         { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
         { href: "/collection", icon: Archive, label: t('nav.myWhiskyCollection') },
         { href: "/wishlist", icon: Star, label: t('nav.myWhiskyWishlist') },
+        { href: "/recap", icon: History, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
+        { href: "/my-tastings", icon: ClipboardList, label: t('nav.myTastings') },
+        { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
       ],
     },
     {
-      label: t('navGroup.entdecken'),
-      items: [],
-      subgroups: [
-        {
-          key: "community",
-          label: t('navSubgroup.community'),
-          items: [
-            { href: "/community-rankings", icon: Trophy, label: t('nav.communityRankings') },
-            { href: "/activity", icon: Rss, label: t('nav.activity') },
-            { href: "/taste-twins", icon: Users, label: t('nav.tasteTwins') },
-            { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
-            { href: "/friends", icon: Heart, label: t('nav.friends') },
-          ],
-        },
-        {
-          key: "analyticsTools",
-          label: t('navSubgroup.analyticsTools'),
-          items: [
-            { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
-            { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
-            { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
-            { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
-            { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
-            { href: "/benchmark", icon: Library, label: t('nav.benchmark') },
-          ],
-        },
-        {
-          key: "wissenForschung",
-          label: t('navSubgroup.wissenForschung'),
-          items: [
-            { href: "/lexicon", icon: BookOpen, label: t('nav.lexicon') },
-            { href: "/research", icon: Microscope, label: t('nav.research') },
-            { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
-            { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
-            { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
-            ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
-              { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
-            ] : []),
-          ],
-        },
+      label: t('navGroup.pro'),
+      items: [
+        { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
+        { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
+        { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
+        { href: "/benchmark", icon: Library, label: t('nav.benchmark') },
+        ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
+          { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
+        ] : []),
+        { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
+        { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
       ],
     },
     {
-      label: t('navGroup.konto'),
+      label: t('navGroup.profil'),
       items: [
         { href: "/profile", icon: User, label: t('profile.title') },
         { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
+        { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
+        { href: "/taste-twins", icon: Users, label: t('nav.tasteTwins') },
+        { href: "/friends", icon: Heart, label: t('nav.friends') },
+        { href: "/community-rankings", icon: Trophy, label: t('nav.communityRankings') },
+        { href: "/activity", icon: Rss, label: t('nav.activity') },
+        { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
         { href: "/account", icon: Settings, label: t('nav.account') },
-        { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
+      ],
+    },
+    {
+      label: t('navGroup.wissen'),
+      items: [
+        { href: "/lexicon", icon: BookOpen, label: t('nav.lexicon') },
+        { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
+        { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
+        { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
+        { href: "/research", icon: Microscope, label: t('nav.research') },
+      ],
+    },
+    {
+      label: t('navGroup.ueber'),
+      items: [
         { href: "/help", icon: HelpCircle, label: t('nav.help') },
         { href: "/about", icon: Info, label: t('nav.about') },
         { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         { href: "/donate", icon: HeartHandshake, label: t('nav.donate') },
-        ...(currentParticipant?.role === "admin" ? [
-          { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
-        ] : []),
       ],
     },
+    ...(currentParticipant?.role === "admin" ? [{
+      label: t('navGroup.adminSection'),
+      items: [
+        { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
+      ],
+    }] : []),
   ], [t, isHost, isAdmin, currentParticipant?.canAccessWhiskyDb, currentParticipant?.role]);
 
   const desktopNavRef = useRef<HTMLElement>(null);
@@ -724,16 +629,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const handleNavigate = useCallback(() => setOpen(false), []);
 
   const spotlightHints: SpotlightHint[] = useMemo(() => {
-    if (!currentParticipant) return [];
-    return [
-      {
-        id: "experience-level-v1",
-        targetSelector: '[data-testid="select-experience-level"]',
-        message: t("spotlight.experienceLevel"),
-        position: "right",
-      },
-    ];
-  }, [currentParticipant, t]);
+    return [];
+  }, []);
 
   const tourDefinitions: TourDefinition[] = useMemo(() => {
     if (!currentParticipant) return [];
@@ -746,7 +643,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           { id: "guest-1", targetSelector: '[href="/app"]', message: t("tour.guest.step1"), position: p },
           { id: "guest-2", targetSelector: '[href="/sessions"]', message: t("tour.guest.step2"), position: p },
           { id: "guest-3", targetSelector: '[href="/sessions"]', message: t("tour.guest.step3"), position: p },
-          { id: "guest-4", targetSelector: '[data-testid="select-experience-level"]', message: t("tour.guest.step4"), position: p },
         ],
       },
       {
@@ -785,7 +681,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="fixed inset-0 z-0 bg-background" />
 
       <WelcomeOverlay />
-      <LevelOnboarding onComplete={handleOnboardingComplete} />
       <SpotlightProvider hints={spotlightHints} paused={!onboardingDone} />
       <TourProvider tours={tourDefinitions} paused={!onboardingDone} />
 

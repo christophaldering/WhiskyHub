@@ -33,8 +33,7 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
   const scale = tasting.ratingScale || 100;
   const mid = scale / 2;
   const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
-  const expLevel = currentParticipant?.experienceLevel;
-  const isSimplified = expLevel === "guest" || expLevel === "explorer";
+
 
   const { data: existingRating } = useQuery({
     queryKey: ["rating", participantId, whisky.id],
@@ -151,11 +150,9 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
 
   const computeAvg = useCallback((s: typeof scores) => {
     const factor = step < 1 ? (1 / step) : 1;
-    const avg = isSimplified
-      ? (s.nose + s.taste + s.finish) / 3
-      : (s.nose + s.taste + s.finish + s.balance) / 4;
+    const avg = (s.nose + s.taste + s.finish + s.balance) / 4;
     return Math.round(avg * factor) / factor;
-  }, [step, isSimplified]);
+  }, [step]);
 
   const handleScoreChange = useCallback((key: string, value: number) => {
     const factor = step < 1 ? (1 / step) : 1;
@@ -185,18 +182,12 @@ export function EvaluationForm({ whisky, tasting, blindState }: EvaluationFormPr
     }
   }, [isLocked, whisky.id, flushSave]);
 
-  const categories = isSimplified
-    ? [
-        { id: "nose", label: t('evaluation.nose') },
-        { id: "taste", label: t('evaluation.taste') },
-        { id: "finish", label: t('evaluation.finish') },
-      ]
-    : [
-        { id: "nose", label: t('evaluation.nose') },
-        { id: "taste", label: t('evaluation.taste') },
-        { id: "finish", label: t('evaluation.finish') },
-        { id: "balance", label: t('evaluation.balance') },
-      ];
+  const categories = [
+    { id: "nose", label: t('evaluation.nose') },
+    { id: "taste", label: t('evaluation.taste') },
+    { id: "finish", label: t('evaluation.finish') },
+    { id: "balance", label: t('evaluation.balance') },
+  ];
 
   return (
     <Card className="border-border/50 bg-card shadow-sm max-w-2xl mx-auto">

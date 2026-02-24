@@ -1,0 +1,109 @@
+PROMPT FÜR REPLIT
+REMOVE EXPERIENCE SYSTEM COMPLETELY (GLOBAL CLEAN ARCHITECTURE)
+GOAL
+Remove the entire Experience-Level system from CaskSense.
+This includes:
+Just Tasting
+Entdecker
+Kenner
+Analyst
+The system must be removed:
+visually
+logically
+textually
+from landing page
+from navigation
+from session logic
+from profile
+from metadata
+from UI badges
+from conditionals
+WITHOUT:
+breaking routing
+breaking permissions
+breaking feature gating
+breaking analytics
+breaking score logic
+breaking contextLevel system
+breaking Naked architecture
+This is a structural simplification, not a feature removal.
+1️⃣ REMOVE FROM UI
+Remove everywhere:
+Experience selector in sidebar
+Experience badge in session header
+Experience badges in profile
+Experience-based icons
+Experience display under signed-in user
+Any “Upgrade to Analyst” messaging
+Any experience-based feature visibility
+No visual remains.
+2️⃣ REMOVE FROM LANDING PAGE
+Remove:
+Any experience descriptions
+Any comparison between levels
+Any wording like:
+“From Just Tasting to Analyst”
+“Unlock advanced features”
+“Choose your level”
+Replace with positioning focused on:
+Structured tasting
+Naked-first evaluation
+Context-aware comparison
+Scientific reflection
+Community insight (optional)
+Landing page must reflect:
+CaskSense is one coherent tool.
+No levels. No gamification.
+3️⃣ REMOVE FROM LOGIC
+Search and remove:
+experienceLevel state
+experienceType
+experienceRole
+any enum related to experience
+any conditionals checking experience
+any feature gating based on experience
+If feature gating exists, migrate to:
+role-based gating (host/admin)
+subscription-based gating (if implemented)
+contextLevel-based rendering
+4️⃣ DATABASE CLEANUP (SAFE)
+If experienceLevel column exists:
+Option A (safer):
+Deprecate column but do not delete yet.
+Remove all reads and writes.
+Option B (after validation):
+Remove column completely.
+Do NOT remove user data.
+5️⃣ VALIDATION REQUIRED
+Before commit:
+No reference to experienceLevel in codebase.
+No UI element showing experience.
+No broken conditional rendering.
+No broken permissions.
+No broken routes.
+ContextLevel system still works.
+Blind tastings still work.
+Guided tastings still work.
+Mobile tested.
+Landing page renders correctly.
+Compile clean.
+No console warnings.
+6️⃣ DELIVERABLE
+Provide:
+List of files modified
+Confirmation no experience logic remains
+Confirmation landing page updated
+Confirmation compile success
+Screenshot of:
+Sidebar
+Session view
+Landing page
+🧠 ARCHITECTURAL NOTE
+Experience-Level system is deprecated in favor of:
+Role-based logic
+Session contextLevel
+Feature-based architecture
+CaskSense is now:
+One tool.
+Multiple modes.
+No artificial hierarchy.

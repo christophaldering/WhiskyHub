@@ -14,12 +14,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
-  Wine, ArrowRight, ArrowLeft, Check, ChevronDown,
-  Sparkles, User, Star, BookOpen, LogIn, Brain
+  Wine, ArrowRight, ArrowLeft, Check,
+  Sparkles
 } from "lucide-react";
 import type { Whisky, Tasting } from "@shared/schema";
-
-type InterestLevel = "guest" | "explorer" | "connoisseur" | "analyst";
 
 function NameEntry({ onJoin, loading }: { onJoin: (name: string, pin: string) => void; loading: boolean }) {
   const { t } = useTranslation();
@@ -99,9 +97,6 @@ function WhiskySliderCard({
   const scale = tasting.ratingScale || 100;
   const mid = scale / 2;
   const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
-  const { currentParticipant } = useAppStore();
-  const expLevel = currentParticipant?.experienceLevel;
-  const isSimplified = expLevel === "guest" || expLevel === "explorer";
   const { data: existingRating } = useQuery({
     queryKey: ["rating", participantId, whisky.id],
     queryFn: () => ratingApi.getMyRating(participantId, whisky.id),
@@ -164,9 +159,7 @@ function WhiskySliderCard({
 
   const computeAvg = (s: typeof scores) => {
     const factor = step < 1 ? (1 / step) : 1;
-    const avg = isSimplified
-      ? (s.nose + s.taste + s.finish) / 3
-      : (s.nose + s.taste + s.finish + s.balance) / 4;
+    const avg = (s.nose + s.taste + s.finish + s.balance) / 4;
     return Math.round(avg * factor) / factor;
   };
 
@@ -190,18 +183,12 @@ function WhiskySliderCard({
   };
 
   const isLocked = tasting.status !== "open" && tasting.status !== "draft";
-  const categories = isSimplified
-    ? [
-        { id: "nose", label: t("evaluation.nose"), emoji: "👃" },
-        { id: "taste", label: t("evaluation.taste"), emoji: "👅" },
-        { id: "finish", label: t("evaluation.finish"), emoji: "✨" },
-      ]
-    : [
-        { id: "nose", label: t("evaluation.nose"), emoji: "👃" },
-        { id: "taste", label: t("evaluation.taste"), emoji: "👅" },
-        { id: "finish", label: t("evaluation.finish"), emoji: "✨" },
-        { id: "balance", label: t("evaluation.balance"), emoji: "⚖️" },
-      ];
+  const categories = [
+    { id: "nose", label: t("evaluation.nose"), emoji: "👃" },
+    { id: "taste", label: t("evaluation.taste"), emoji: "👅" },
+    { id: "finish", label: t("evaluation.finish"), emoji: "✨" },
+    { id: "balance", label: t("evaluation.balance"), emoji: "⚖️" },
+  ];
 
   const isBlind = tasting.blindMode && tasting.status === "open";
   const whiskyLabel = isBlind ? `${t("blind.expressionLabel", "Expression")}` : whisky.name;
@@ -292,58 +279,6 @@ function WhiskySliderCard({
   );
 }
 
-function InterestLevelPicker({ onSelect }: { onSelect: (level: InterestLevel) => void }) {
-  const { t } = useTranslation();
-  const levels: { id: InterestLevel; icon: any; gradient: string }[] = [
-    { id: "guest", icon: User, gradient: "from-slate-500/20 to-slate-600/10" },
-    { id: "explorer", icon: Star, gradient: "from-amber-500/20 to-amber-600/10" },
-    { id: "connoisseur", icon: Sparkles, gradient: "from-primary/20 to-primary/10" },
-    { id: "analyst", icon: Brain, gradient: "from-violet-500/20 to-violet-600/10" },
-  ];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center justify-center min-h-[60vh] px-4"
-    >
-      <div className="w-full max-w-lg space-y-6 text-center">
-        <div className="space-y-2">
-          <h2 className="text-2xl sm:text-3xl font-serif font-black text-primary">{t("quickTasting.interestTitle")}</h2>
-          <p className="text-muted-foreground">{t("quickTasting.interestSubtitle")}</p>
-        </div>
-        <div className="space-y-3">
-          {levels.map((lvl, i) => (
-            <motion.button
-              key={lvl.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              onClick={() => onSelect(lvl.id)}
-              className={cn(
-                "w-full text-left p-4 rounded-xl border border-border/40 bg-gradient-to-r",
-                lvl.gradient,
-                "hover:border-primary/40 hover:shadow-md transition-all group"
-              )}
-              data-testid={`button-interest-${lvl.id}`}
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-background/50 flex items-center justify-center flex-shrink-0">
-                  <lvl.icon className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <div className="font-serif font-bold text-primary">{t(`quickTasting.level.${lvl.id}.title`)}</div>
-                  <div className="text-sm text-muted-foreground mt-0.5">{t(`quickTasting.level.${lvl.id}.desc`)}</div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary ml-auto mt-3 transition-colors" />
-              </div>
-            </motion.button>
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
 
 function CompletionScreen({ tastingTitle, onGoFull, onStayMinimal }: { tastingTitle: string; onGoFull: () => void; onStayMinimal: () => void }) {
   const { t } = useTranslation();
@@ -379,7 +314,7 @@ export default function QuickTasting() {
   const [, navigate] = useLocation();
   const { currentParticipant, setParticipant } = useAppStore();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [phase, setPhase] = useState<"name" | "rating" | "interest" | "complete">(
+  const [phase, setPhase] = useState<"name" | "rating" | "complete">(
     currentParticipant ? "rating" : "name"
   );
   const [joinError, setJoinError] = useState("");
@@ -415,7 +350,7 @@ export default function QuickTasting() {
         name: participant.name,
         role: participant.role,
         canAccessWhiskyDb: participant.canAccessWhiskyDb,
-        experienceLevel: participant.experienceLevel || "guest",
+
       });
       if (tasting) {
         await tastingApi.join(tasting.id, participant.id, tasting.code);
@@ -435,20 +370,6 @@ export default function QuickTasting() {
   }, [currentParticipant, tasting, phase]);
 
   const handleFinishRating = () => {
-    if (currentParticipant?.experienceLevel === "connoisseur" || currentParticipant?.experienceLevel === "analyst" || isPreviewMode) {
-      setPhase("complete");
-    } else {
-      setPhase("interest");
-    }
-  };
-
-  const handleInterestSelect = async (level: InterestLevel) => {
-    if (currentParticipant) {
-      try {
-        await participantApi.updateExperienceLevel(currentParticipant.id, level);
-        setParticipant({ ...currentParticipant, experienceLevel: level });
-      } catch {}
-    }
     setPhase("complete");
   };
 
@@ -590,10 +511,6 @@ export default function QuickTasting() {
           </div>
         )}
 
-        {phase === "interest" && (
-          <InterestLevelPicker onSelect={handleInterestSelect} />
-        )}
-
         {phase === "complete" && (
           <CompletionScreen
             tastingTitle={tasting.title}
@@ -603,7 +520,7 @@ export default function QuickTasting() {
         )}
       </main>
 
-      {phase !== "complete" && phase !== "interest" && !isPreviewMode && (
+      {phase !== "complete" && !isPreviewMode && (
         <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background/95 to-transparent pt-8 pb-4 px-4">
           <div className="max-w-lg mx-auto">
             <div className="bg-card/80 backdrop-blur-sm border border-border/30 rounded-xl p-3 text-center">

@@ -29,7 +29,7 @@ import {
   MessageSquare,
   DatabaseZap,
   Lightbulb,
-  Layers,
+
   BookMarked,
   Heart,
   EyeOff,
@@ -150,7 +150,6 @@ export default function Help() {
 
   const manualSections = [
     { icon: Wine, titleKey: "help.manual.gettingStartedTitle", contentKey: "help.manual.gettingStarted" },
-    { icon: Layers, titleKey: "help.manual.experienceLevelsTitle", contentKey: "help.manual.experienceLevels" },
     { icon: Users, titleKey: "help.manual.hostingTitle", contentKey: "help.manual.hosting" },
     { icon: Eye, titleKey: "help.manual.ratingModesTitle", contentKey: "help.manual.ratingModes" },
     { icon: EyeOff, titleKey: "help.manual.blindModeTitle", contentKey: "help.manual.blindMode" },

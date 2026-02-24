@@ -43,7 +43,6 @@ interface AdminParticipant {
   canAccessWhiskyDb: boolean;
   newsletterOptIn: boolean;
   communityContributor: boolean;
-  experienceLevel: string;
 }
 
 interface AdminTasting {
@@ -1040,26 +1039,6 @@ export default function AdminPanel() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Select
-              value=""
-              onValueChange={(level) => {
-                if (data?.participants) {
-                  const ids = data.participants.map((p: AdminParticipant) => p.id);
-                  batchLevelMutation.mutate({ participantIds: ids, level });
-                }
-              }}
-            >
-              <SelectTrigger className="w-[160px]" data-testid="select-batch-level">
-                <Star className="w-3 h-3 mr-1" />
-                <span className="text-xs">Alle Level setzen</span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="guest">Guest</SelectItem>
-                <SelectItem value="explorer">Explorer</SelectItem>
-                <SelectItem value="connoisseur">Connoisseur</SelectItem>
-                <SelectItem value="analyst">Analyst</SelectItem>
-              </SelectContent>
-            </Select>
             <Select value={filterRole} onValueChange={setFilterRole}>
               <SelectTrigger className="w-[140px]" data-testid="select-filter-role">
                 <SelectValue />
@@ -1133,21 +1112,6 @@ export default function AdminPanel() {
                               <SelectItem value="user">{t("admin.roleUser")}</SelectItem>
                               <SelectItem value="host">{t("admin.roleHost")}</SelectItem>
                               <SelectItem value="admin">{t("admin.roleAdmin")}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Select
-                            value={p.experienceLevel || "connoisseur"}
-                            onValueChange={(level) => levelMutation.mutate({ participantId: p.id, level })}
-                          >
-                            <SelectTrigger className="w-[120px] h-8 text-xs" data-testid={`select-level-${p.id}`}>
-                              <Star className="w-3 h-3 mr-1" />
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="guest">Guest</SelectItem>
-                              <SelectItem value="explorer">Explorer</SelectItem>
-                              <SelectItem value="connoisseur">Connoisseur</SelectItem>
-                              <SelectItem value="analyst">Analyst</SelectItem>
                             </SelectContent>
                           </Select>
                           {p.isHost && p.role !== "admin" && (
@@ -2433,8 +2397,6 @@ function ChangelogAdminTab({ participantId }: { participantId: string }) {
 }
 
 function OnlineUsersTab() {
-  const LEVEL_ICONS: Record<string, typeof User> = { guest: User, explorer: Star, connoisseur: Sparkles, analyst: Brain };
-  const LEVEL_COLORS: Record<string, string> = { guest: "text-slate-500", explorer: "text-amber-500", connoisseur: "text-primary", analyst: "text-violet-500" };
 
   const { data: onlineUsers = [], isLoading } = useQuery({
     queryKey: ["/api/admin/online-users"],
@@ -2482,15 +2444,13 @@ function OnlineUsersTab() {
       ) : (
         <div className="grid gap-2">
           {onlineUsers.map((u: any) => {
-            const LevelIcon = LEVEL_ICONS[u.experienceLevel] || User;
-            const levelColor = LEVEL_COLORS[u.experienceLevel] || "text-muted-foreground";
             const isRecent = new Date().getTime() - new Date(u.lastSeenAt).getTime() < 2 * 60 * 1000;
             return (
               <Card key={u.id} className="border-border/40" data-testid={`online-user-${u.id}`}>
                 <CardContent className="py-3 px-4 flex items-center gap-3">
                   <div className="relative">
                     <div className={`w-9 h-9 rounded-full bg-secondary/50 flex items-center justify-center`}>
-                      <LevelIcon className={`w-4 h-4 ${levelColor}`} />
+                      <User className={`w-4 h-4 text-muted-foreground`} />
                     </div>
                     <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${isRecent ? "bg-green-500" : "bg-amber-400"}`} />
                   </div>
@@ -2503,7 +2463,6 @@ function OnlineUsersTab() {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <div className="text-[11px] text-muted-foreground">{formatTime(u.lastSeenAt)}</div>
-                    <div className={`text-[10px] capitalize ${levelColor}`}>{u.experienceLevel || "—"}</div>
                   </div>
                 </CardContent>
               </Card>

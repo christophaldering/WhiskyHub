@@ -45,10 +45,6 @@ export default function Discover() {
   const [activeTab, setActiveTab] = useState<DiscoverTab>("community");
   const { currentParticipant } = useAppStore();
 
-  const expLevel = currentParticipant?.experienceLevel || "guest";
-  const LEVELS = ["guest", "explorer", "connoisseur", "analyst"] as const;
-  const levelIndex = LEVELS.indexOf(expLevel as any);
-  const atLeast = (min: typeof LEVELS[number]) => levelIndex >= LEVELS.indexOf(min);
   const isHost = currentParticipant?.role === "host" || currentParticipant?.role === "admin";
   const isAdmin = currentParticipant?.role === "admin";
 

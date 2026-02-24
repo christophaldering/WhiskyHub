@@ -1540,8 +1540,8 @@ export default function TastingRoom() {
     setGuestLoading(true);
     setGuestError("");
     try {
-      const guest = await participantApi.guestJoin(guestName.trim());
-      setParticipant({ id: guest.id, name: guest.name, role: guest.role, canAccessWhiskyDb: guest.canAccessWhiskyDb, experienceLevel: guest.experienceLevel });
+      const guest = await participantApi.guestJoin(guestName.trim(), "");
+      setParticipant({ id: guest.id, name: guest.name, role: guest.role, canAccessWhiskyDb: guest.canAccessWhiskyDb });
       if (guest.guest && !guest.pin) {
         setShowSecureAccount(true);
       }
@@ -1695,7 +1695,7 @@ export default function TastingRoom() {
 
 
   const toggleCoverRevealMutation = useMutation({
-    mutationFn: (revealed: boolean) => tastingApi.toggleCoverImageReveal(id!, currentParticipant?.id, revealed),
+    mutationFn: (revealed: boolean) => tastingApi.toggleCoverImageReveal(id!, currentParticipant?.id || "", revealed),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasting", id] });
     },

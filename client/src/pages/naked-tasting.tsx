@@ -890,7 +890,6 @@ export default function NakedTasting() {
         name: participant.name,
         role: participant.role,
         canAccessWhiskyDb: participant.canAccessWhiskyDb,
-        experienceLevel: participant.experienceLevel || "guest",
       });
       if (tasting) {
         await tastingApi.join(tasting.id, participant.id, tasting.code);
@@ -933,13 +932,7 @@ export default function NakedTasting() {
   const isOpen = tasting.status === "open";
   const isRevealed = tasting.status === "reveal" || tasting.status === "archived" || tasting.status === "closed";
 
-  const isAdvancedUser = currentParticipant ? (
-    currentParticipant.role === "admin" ||
-    currentParticipant.role === "host" ||
-    currentParticipant.experienceLevel === "analyst" ||
-    currentParticipant.experienceLevel === "connoisseur" ||
-    tasting.hostId === currentParticipant.id
-  ) : false;
+  const isAdvancedUser = true;
 
   return (
     <div className="min-h-screen bg-background text-foreground">

@@ -17,10 +17,10 @@ async function fetchJSON(url: string, options?: RequestInit) {
 
 // ===== Participants =====
 export const participantApi = {
-  loginOrCreate: (name: string, pin?: string, email?: string, newsletterOptIn?: boolean, experienceLevel?: string) =>
-    fetchJSON("/participants", { method: "POST", body: JSON.stringify({ name, pin, email, newsletterOptIn, experienceLevel }) }),
-  loginByEmail: (email: string, pin: string, experienceLevel?: string) =>
-    fetchJSON("/participants/login", { method: "POST", body: JSON.stringify({ email, pin, experienceLevel }) }),
+  loginOrCreate: (name: string, pin?: string, email?: string, newsletterOptIn?: boolean) =>
+    fetchJSON("/participants", { method: "POST", body: JSON.stringify({ name, pin, email, newsletterOptIn }) }),
+  loginByEmail: (email: string, pin: string) =>
+    fetchJSON("/participants/login", { method: "POST", body: JSON.stringify({ email, pin }) }),
   guestJoin: (name: string, pin: string) =>
     fetchJSON("/participants/guest", { method: "POST", body: JSON.stringify({ name, pin }) }),
   get: (id: string) => fetchJSON(`/participants/${id}`),
@@ -30,8 +30,6 @@ export const participantApi = {
     fetchJSON(`/participants/${id}/verify`, { method: "POST", body: JSON.stringify({ code }) }),
   resendVerification: (id: string) =>
     fetchJSON(`/participants/${id}/resend-verification`, { method: "POST", body: JSON.stringify({}) }),
-  updateExperienceLevel: (id: string, level: string) =>
-    fetchJSON(`/participants/${id}/experience-level`, { method: "PATCH", body: JSON.stringify({ level }) }),
   heartbeat: (id: string) =>
     fetchJSON(`/participants/${id}/heartbeat`, { method: "POST", body: JSON.stringify({}) }),
 };

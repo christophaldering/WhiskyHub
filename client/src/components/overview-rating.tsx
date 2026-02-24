@@ -48,9 +48,6 @@ function WhiskyCard({
   const scale = tasting.ratingScale || 100;
   const mid = scale / 2;
   const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
-  const { currentParticipant } = useAppStore();
-  const expLevel = currentParticipant?.experienceLevel;
-  const isSimplified = expLevel === "guest" || expLevel === "explorer";
   const [imgErr, setImgErr] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -64,16 +61,16 @@ function WhiskyCard({
   const [isDirty, setIsDirty] = useState(false);
   const [overallManual, setOverallManual] = useState(false);
 
-  const detailKeys = isSimplified ? (["nose", "taste", "finish"] as const) : DETAIL_KEYS;
+  const detailKeys = DETAIL_KEYS;
 
   const computeAvg = useCallback((s: Scores) => {
     const factor = step < 1 ? (1 / step) : 1;
-    const keys = isSimplified ? ["nose", "taste", "finish"] : ["nose", "taste", "finish", "balance"];
+    const keys = ["nose", "taste", "finish", "balance"];
     const vals = keys.map(k => s[k as ScoreKey]).filter((v): v is number => v !== null);
     if (vals.length === 0) return null;
     const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
     return Math.round(avg * factor) / factor;
-  }, [step, isSimplified]);
+  }, [step]);
 
   useEffect(() => {
     if (existingRating) {

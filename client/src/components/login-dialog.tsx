@@ -7,8 +7,8 @@ import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, ArrowLeft, CheckCircle, User, Star, Sparkles, Brain } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
+
 
 interface LoginDialogProps {
   open: boolean;
@@ -25,14 +25,6 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   const [loading, setLoading] = useState(false);
   const [isReturning, setIsReturning] = useState(true);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
-  const [experienceLevel, setExperienceLevel] = useState("connoisseur");
-
-  const LEVEL_OPTIONS = [
-    { id: "guest", icon: User, color: "text-slate-500", border: "border-slate-300", bg: "bg-slate-50" },
-    { id: "explorer", icon: Star, color: "text-amber-500", border: "border-amber-300", bg: "bg-amber-50" },
-    { id: "connoisseur", icon: Sparkles, color: "text-primary", border: "border-primary/50", bg: "bg-primary/5" },
-    { id: "analyst", icon: Brain, color: "text-violet-500", border: "border-violet-300", bg: "bg-violet-50" },
-  ] as const;
 
   const [verifyMode, setVerifyMode] = useState(false);
   const [pendingParticipant, setPendingParticipant] = useState<{ id: string; name: string; role?: string; email?: string } | null>(null);
@@ -72,8 +64,8 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     if (isReturning) {
       setLoading(true);
       try {
-        const participant = await participantApi.loginByEmail(email.trim(), pin, experienceLevel);
-        setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb, experienceLevel: participant.experienceLevel });
+        const participant = await participantApi.loginByEmail(email.trim(), pin);
+        setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
         onClose();
       } catch (e: any) {
         setError(e.message || "Login failed");
@@ -92,8 +84,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           name.trim(),
           pin,
           email.trim(),
-          newsletterOptIn,
-          experienceLevel
+          newsletterOptIn
         );
 
         if (!participant.emailVerified) {
@@ -104,7 +95,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           setVerifyError("");
         } else {
           localStorage.setItem(`casksense_level_chosen_${participant.id}`, "true");
-          setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb, experienceLevel: participant.experienceLevel });
+          setParticipant({ id: participant.id, name: participant.name, role: participant.role, canAccessWhiskyDb: participant.canAccessWhiskyDb });
           onClose();
         }
       } catch (e: any) {
@@ -125,7 +116,7 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
     setVerifyError("");
     try {
       const verified = await participantApi.verify(pendingParticipant.id, verifyCode.trim());
-      setParticipant({ id: verified.id, name: verified.name, role: verified.role, canAccessWhiskyDb: verified.canAccessWhiskyDb, experienceLevel: verified.experienceLevel });
+      setParticipant({ id: verified.id, name: verified.name, role: verified.role, canAccessWhiskyDb: verified.canAccessWhiskyDb });
       setVerifyMode(false);
       setPendingParticipant(null);
       onClose();
@@ -429,38 +420,6 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
         </div>
 
         <div className="space-y-4 mt-4">
-          <div className="space-y-2">
-            <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('quickTasting.interestTitle')}</Label>
-            <p className="text-[10px] text-muted-foreground/70">{t('quickTasting.interestSubtitle')}</p>
-            <div className="grid grid-cols-2 gap-1.5">
-              {LEVEL_OPTIONS.map((lvl) => {
-                const Icon = lvl.icon;
-                const isSelected = experienceLevel === lvl.id;
-                return (
-                  <button
-                    key={lvl.id}
-                    type="button"
-                    onClick={() => setExperienceLevel(lvl.id)}
-                    className={cn(
-                      "flex items-center gap-2 p-2 rounded-lg border text-left transition-all",
-                      isSelected
-                        ? `${lvl.border} ${lvl.bg} ring-1 ring-primary/20`
-                        : "border-border/40 hover:border-border"
-                    )}
-                    data-testid={`button-reg-level-${lvl.id}`}
-                  >
-                    <Icon className={cn("w-4 h-4 flex-shrink-0", isSelected ? lvl.color : "text-muted-foreground/50")} />
-                    <div className="min-w-0">
-                      <div className={cn("text-[11px] font-serif font-semibold leading-tight", isSelected ? "text-primary" : "text-muted-foreground")}>
-                        {t(`quickTasting.level.${lvl.id}.title`)}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {!isReturning && (
             <div className="space-y-2">
               <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.name')}</Label>
@@ -552,21 +511,11 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
           {!isReturning && (
             <div className="space-y-3 pt-2">
               <div className="grid grid-cols-2 gap-2">
-                <div className={cn(
-                  "rounded-lg p-2.5 border transition-all",
-                  experienceLevel === "guest" || experienceLevel === "explorer"
-                    ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
-                    : "bg-secondary/20 border-border/30"
-                )}>
+                <div className="rounded-lg p-2.5 border transition-all bg-secondary/20 border-border/30">
                   <p className="text-[11px] font-serif font-semibold text-primary">{t('guestAuth.pinOnlyTitle')}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{t('guestAuth.pinOnlyDesc')}</p>
                 </div>
-                <div className={cn(
-                  "rounded-lg p-2.5 border transition-all",
-                  experienceLevel === "connoisseur" || experienceLevel === "analyst"
-                    ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
-                    : "bg-secondary/20 border-border/30"
-                )}>
+                <div className="rounded-lg p-2.5 border transition-all bg-secondary/20 border-border/30">
                   <p className="text-[11px] font-serif font-semibold text-primary">{t('guestAuth.emailTitle')}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{t('guestAuth.emailDesc')}</p>
                 </div>

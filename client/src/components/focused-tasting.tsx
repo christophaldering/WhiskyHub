@@ -245,8 +245,7 @@ export function FocusedTasting({ tasting, whiskies, onExit, contextLevel = 2 }: 
   const scale = tasting.ratingScale || 100;
   const mid = scale / 2;
   const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
-  const expLevel = currentParticipant?.experienceLevel;
-  const isSimplified = expLevel === "guest" || expLevel === "explorer";
+
 
   const [activeIndex, setActiveIndex] = useState(() => {
     if (tasting.blindMode && tasting.revealIndex != null) return tasting.revealIndex;
@@ -323,8 +322,8 @@ export function FocusedTasting({ tasting, whiskies, onExit, contextLevel = 2 }: 
   }, [tastingHistory, tasting.id]);
 
   const baselineDimensions: Dimension[] = useMemo(
-    () => isSimplified ? ["nose", "taste", "finish", "overall"] : ["nose", "taste", "finish", "balance", "overall"],
-    [isSimplified]
+    () => ["nose", "taste", "finish", "balance", "overall"],
+    []
   );
 
   const whiskyMeta = useMemo(() => activeWhisky ? {
@@ -385,11 +384,9 @@ export function FocusedTasting({ tasting, whiskies, onExit, contextLevel = 2 }: 
 
   const computeAvg = useCallback((s: typeof scores) => {
     const factor = step < 1 ? (1 / step) : 1;
-    const avg = isSimplified
-      ? (s.nose + s.taste + s.finish) / 3
-      : (s.nose + s.taste + s.finish + s.balance) / 4;
+    const avg = (s.nose + s.taste + s.finish + s.balance) / 4;
     return Math.round(avg * factor) / factor;
-  }, [step, isSimplified]);
+  }, [step]);
 
   const prevWhiskyIdForResetRef = useRef(activeWhisky.id);
   useEffect(() => {
@@ -547,18 +544,12 @@ export function FocusedTasting({ tasting, whiskies, onExit, contextLevel = 2 }: 
   const currentAccumulated = dramTimers[activeWhisky.id] || 0;
   const isCurrentlyTimed = tasting.activeWhiskyId === activeWhisky.id;
 
-  const categories = isSimplified
-    ? [
-        { id: "nose", label: t("evaluation.nose"), emoji: "👃" },
-        { id: "taste", label: t("evaluation.taste"), emoji: "👅" },
-        { id: "finish", label: t("evaluation.finish"), emoji: "✨" },
-      ]
-    : [
-        { id: "nose", label: t("evaluation.nose"), emoji: "👃" },
-        { id: "taste", label: t("evaluation.taste"), emoji: "👅" },
-        { id: "finish", label: t("evaluation.finish"), emoji: "✨" },
-        { id: "balance", label: t("evaluation.balance"), emoji: "⚖️" },
-      ];
+  const categories = [
+    { id: "nose", label: t("evaluation.nose"), emoji: "👃" },
+    { id: "taste", label: t("evaluation.taste"), emoji: "👅" },
+    { id: "finish", label: t("evaluation.finish"), emoji: "✨" },
+    { id: "balance", label: t("evaluation.balance"), emoji: "⚖️" },
+  ];
 
   return (
     <div className="fixed inset-0 bg-background z-50 overflow-y-auto" style={{ height: '100dvh' }} data-testid="focused-tasting-screen">
