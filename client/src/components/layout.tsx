@@ -532,62 +532,58 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navGroups: NavGroup[] = useMemo(() => [
     {
-      label: t('navGroup.genuss'),
+      label: t('navGroup.sessions'),
       defaultOpen: true,
       items: [
-        { href: "/app", icon: Home, label: t('nav.lobby') },
-        { href: "/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/sessions" || loc === "/export-notes" },
+        { href: "/app", icon: Home, label: t('nav.joinSession') },
+        { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostSession') },
+        { href: "/sessions", icon: Wine, label: t('nav.activeSessions'), match: (loc: string) => loc === "/sessions" },
+        { href: "/my-tastings", icon: ClipboardList, label: t('nav.pastSessions') },
+        { href: "/recap", icon: History, label: t('nav.sessionResults'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
+        { href: "/export-notes", icon: Download, label: t('nav.pdfExport') },
         { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
+      ],
+    },
+    {
+      label: t('navGroup.privat'),
+      items: [
         { href: "/journal", icon: NotebookPen, label: t('nav.journal') },
         { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
         { href: "/collection", icon: Archive, label: t('nav.myWhiskyCollection') },
         { href: "/wishlist", icon: Star, label: t('nav.myWhiskyWishlist') },
-        { href: "/recap", icon: History, label: t('nav.recap'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
-        { href: "/my-tastings", icon: ClipboardList, label: t('nav.myTastings') },
-        { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostDashboard') },
-      ],
-    },
-    {
-      label: t('navGroup.pro'),
-      items: [
-        { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
-        { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
-        { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
-        { href: "/benchmark", icon: Library, label: t('nav.benchmark') },
-        ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
-          { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
-        ] : []),
-        { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
-        { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
-      ],
-    },
-    {
-      label: t('navGroup.profil'),
-      items: [
-        { href: "/profile", icon: User, label: t('profile.title') },
-        { href: "/flavor-profile", icon: Activity, label: t('nav.flavorProfile') },
+        { href: "/flavor-profile", icon: Activity, label: t('nav.personalStats') },
         { href: "/recommendations", icon: Sparkles, label: t('nav.recommendations') },
+      ],
+    },
+    {
+      label: t('navGroup.entdecken'),
+      items: [
+        { href: "/comparison", icon: GitCompareArrows, label: t('nav.compare') },
+        { href: "/community-rankings", icon: Trophy, label: t('nav.communityRankings') },
+        { href: "/benchmark", icon: Library, label: t('nav.benchmark') },
+        { href: "/research", icon: Microscope, label: t('nav.research') },
+        { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
         { href: "/taste-twins", icon: Users, label: t('nav.tasteTwins') },
         { href: "/friends", icon: Heart, label: t('nav.friends') },
-        { href: "/community-rankings", icon: Trophy, label: t('nav.communityRankings') },
         { href: "/activity", icon: Rss, label: t('nav.activity') },
         { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
-        { href: "/account", icon: Settings, label: t('nav.account') },
-      ],
-    },
-    {
-      label: t('navGroup.wissen'),
-      items: [
+        { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
+        { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
         { href: "/lexicon", icon: BookOpen, label: t('nav.lexicon') },
         { href: "/distilleries", icon: Landmark, label: t('nav.distilleries') },
         { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
         { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
-        { href: "/research", icon: Microscope, label: t('nav.research') },
+        ...((isHost || isAdmin || currentParticipant?.canAccessWhiskyDb) ? [
+          { href: "/whisky-database", icon: Database, label: t('nav.whiskyDatabase') },
+        ] : []),
       ],
     },
     {
-      label: t('navGroup.ueber'),
+      label: t('navGroup.konto'),
       items: [
+        { href: "/profile", icon: User, label: t('profile.title') },
+        { href: "/account", icon: Settings, label: t('nav.settings') },
+        { href: "/data-export", icon: HardDriveDownload, label: t('nav.dataExport') },
         { href: "/help", icon: HelpCircle, label: t('nav.help') },
         { href: "/about", icon: Info, label: t('nav.about') },
         { href: "/features", icon: LayoutGrid, label: t('nav.features') },
