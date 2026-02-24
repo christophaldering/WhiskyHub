@@ -1592,6 +1592,7 @@ export default function TastingRoom() {
 
   const [showLogin, setShowLogin] = useState(false);
   const [guestName, setGuestName] = useState("");
+  const [guestPin, setGuestPin] = useState("");
   const [guestLoading, setGuestLoading] = useState(false);
   const [guestError, setGuestError] = useState("");
   const [showSecureAccount, setShowSecureAccount] = useState(false);
@@ -1606,7 +1607,7 @@ export default function TastingRoom() {
     setGuestLoading(true);
     setGuestError("");
     try {
-      const guest = await participantApi.guestJoin(guestName.trim(), "");
+      const guest = await participantApi.guestJoin(guestName.trim(), guestPin);
       setParticipant({ id: guest.id, name: guest.name, role: guest.role, canAccessWhiskyDb: guest.canAccessWhiskyDb });
       if (guest.guest && !guest.pin) {
         setShowSecureAccount(true);
@@ -1803,14 +1804,28 @@ export default function TastingRoom() {
                 className="bg-secondary/20"
                 autoFocus
                 data-testid="input-guest-name"
-                onKeyDown={(e) => e.key === "Enter" && handleGuestJoin()}
               />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">PIN</Label>
+              <Input
+                type="password"
+                inputMode="numeric"
+                value={guestPin}
+                onChange={(e) => setGuestPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder={t("login.pinPlaceholder")}
+                maxLength={6}
+                className="bg-secondary/20"
+                data-testid="input-guest-pin"
+                onKeyDown={(e) => e.key === "Enter" && guestName.trim() && guestPin.length >= 4 && handleGuestJoin()}
+              />
+              <p className="text-[11px] text-muted-foreground/70">{t("guestAuth.pinReminder")}</p>
             </div>
             {guestError && <p className="text-sm text-destructive" data-testid="text-guest-error">{guestError}</p>}
             <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
             <Button
               onClick={handleGuestJoin}
-              disabled={guestLoading || !guestName.trim()}
+              disabled={guestLoading || !guestName.trim() || guestPin.length < 4}
               className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
               data-testid="button-guest-join"
             >
