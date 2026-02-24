@@ -1,0 +1,155 @@
+You are working on the CaskSense web app. Goal: implement a radically simplified navigation / information architecture (IA) for a calm, premium “whisky connoisseur” audience, WITHOUT breaking existing functionality. You MAY rename routes and move pages, but must preserve existing content and logic, and provide redirects from old routes to new routes. No fundamental architecture rewrite. Minimal invasive changes, high QA.
+
+PHASE 0 — BEFORE CODING (Mandatory Audit)
+1) Scan the codebase and list:
+   - Current route definitions and routing library (e.g., Next.js app router/pages router, React Router, etc.)
+   - Current navigation components (desktop sidebar/top nav, mobile bottom nav)
+   - Auth/role system and role checks (admin/host/pro/guest)
+   - Existing pages corresponding to the old routes given below
+2) Identify any route collisions, dead routes, or duplicated pages.
+3) Propose the exact file/module changes you will make (list files), then proceed.
+
+TARGET IA (New top-level navigation)
+Desktop: 4 main sections only:
+- Tasting
+- Mein Whisky
+- Entdecken
+- Profil
+
+Mobile bottom nav: 5 tabs:
+- Home
+- Tasting
+- Mein Whisky
+- Entdecken
+- Profil
+
+NOTE: “PRO” is NOT a menu section; PRO features appear as tabs/sections inside existing pages.
+NOTE: “Admin” is not visible in normal navigation (only for admins).
+
+NEW ROUTES (canonical)
+HOME
+- /home   (new)  — mobile-first home with “continue last session”, quick entry points
+
+TASTING (max 3 menu items)
+- /tasting                (Tasting start / lobby)
+- /tasting/sessions        (sessions list)
+- /tasting/calendar        (calendar)
+Within /tasting and/or /tasting/sessions implement internal tabs/CTAs for:
+- “My Tastings” (participated/hosted) as a TAB inside /tasting/sessions (NOT a separate menu item)
+- “Templates” and “Pairings” as TABS/sections inside /tasting (NOT separate menu items)
+- Host tools/dashboard must be CONTEXTUAL:
+  - /tasting/host (optional route) but do NOT show as a menu item; only show entry from within a session when the user is host/admin.
+
+MEIN WHISKY (max 3 menu items)
+- /my/journal              (main logbook feed; central)
+- /my/collection
+- /my/wishlist
+Everything else becomes internal tabs/buttons inside /my/journal:
+- “Tasted whiskies” = journal filter/view
+- “Compare” = action inside journal
+- “Recap” = tab inside journal
+- “Analytics” (PRO) = tab inside journal
+- “Benchmark” (PRO) = tab inside journal
+- “Export” = button inside journal that offers PDF + data export in one place
+
+ENTDECKEN (max 3 menu items)
+- /discover                (discover feed; recommendations etc.)
+- /discover/distilleries   (includes map + bottlers as tabs/sections)
+- /discover/community      (includes friends, taste twins, rankings, leaderboard as tabs)
+Whisky database (gated) becomes a section in /discover (or a subpage) but not a top menu item:
+- /discover/database  (optional), only for host/admin/whitelist
+
+PROFIL (max 3 menu items)
+- /profile
+- /profile/account
+- /profile/help   (help/about/features/donate consolidated here as tabs/sections or subroutes)
+Admin:
+- /admin remains, only visible for admin role and not in standard nav.
+
+OLD ROUTES → NEW ROUTES (Redirect Map)
+Implement robust redirects so existing deep links still work.
+
+Old → New:
+GENUSS
+- /app → /tasting (or /home if you choose; be consistent)
+- /sessions → /tasting/sessions
+- /journal → /my/journal
+- /my-whiskies → /my/journal (with filter “tasted” preselected if possible)
+- /collection → /my/collection
+- /wishlist → /my/wishlist
+- /recap → /my/journal (open recap tab)
+- /my-tastings → /tasting/sessions (open “my tastings” tab)
+- /host-dashboard → session-context entry (prefer /tasting/host or inside session)
+- /export-notes → /my/journal (open export dialog)
+- /calendar → /tasting/calendar
+
+PRO
+- /comparison → /my/journal (open compare view)
+- /tasting-templates → /tasting (open templates tab)
+- /pairings → /tasting (open pairings tab)
+- /benchmark → /my/journal (open benchmark tab; PRO)
+- /whisky-database → /discover/database (gated)
+- /analytics → /my/journal (open analytics tab; PRO)
+- /data-export → /my/journal (open export dialog; data tab)
+
+PROFIL
+- /profile → /profile
+- /flavor-profile → /profile (open flavor-profile section)
+- /recommendations → /discover (recommendations)
+- /taste-twins → /discover/community (taste twins tab)
+- /friends → /discover/community (friends tab)
+- /community-rankings → /discover/community (rankings tab)
+- /activity → /profile (activity section) OR /discover/community (activity tab) – choose one and keep consistent
+- /leaderboard → /discover/community (leaderboard tab)
+- /account → /profile/account
+
+WISSEN
+- /lexicon → /discover (lexicon section/tab) OR /profile/help (knowledge tab) – choose one, consistent
+- /distilleries → /discover/distilleries
+- /distillery-map → /discover/distilleries (map tab)
+- /bottlers → /discover/distilleries (bottlers tab)
+- /research → /discover (research section/tab) OR /profile/help
+
+ÜBER
+- /help → /profile/help
+- /about → /profile/help (about tab)
+- /features → /profile/help (features tab)
+- /donate → /profile/help (donate tab)
+Landing page:
+- / stays landing page as marketing OR redirects to /home (decide; do not break marketing page).
+
+IMPLEMENTATION REQUIREMENTS
+1) Keep the UI calm and premium; reduce visible menu items. No “PRO” section in the nav.
+2) Ensure role gating:
+   - Admin: /admin visible only to admins
+   - Host tools visible only if user has host/admin role AND in the context of a session
+   - Whisky database visible only to host/admin/whitelisted
+   - PRO tabs visible only to PRO users
+3) Mobile bottom nav must match the new IA.
+4) Any removed menu item must remain accessible through tabs/filters/buttons on the target page.
+
+QUALITY ASSURANCE (Mandatory)
+A) Automated / programmatic checks:
+- No broken routes: every menu item and redirect target returns 200 and renders.
+- Redirect map coverage: each old route redirects correctly.
+- Role gating: verify visibility of gated routes for each role (admin/host/pro/standard).
+B) Manual clickpath tests (must be documented):
+- Standard user:
+  - Navigate Home → Tasting → join a session → submit a rating → see recap
+  - Journal → filter tasted → compare → export
+  - Discover → distilleries map → community rankings
+- Host user:
+  - Create session → share link → see host tools inside session
+  - Access discover database if enabled
+- PRO user:
+  - Journal analytics tab, benchmark tab
+- Admin user:
+  - Admin panel accessible; not visible to others
+C) Mobile responsive tests:
+- iPhone portrait: bottom nav visible and usable; no overlapping bubbles; no unreachable close buttons.
+
+DELIVERABLES
+1) Implement changes.
+2) Provide a short changelog of routes and nav items.
+3) Provide a QA report with the tests executed and results.
+4) Ensure no regression in core tasting flow.
