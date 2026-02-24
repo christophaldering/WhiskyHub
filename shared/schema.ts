@@ -57,6 +57,7 @@ export const tastings = pgTable("tastings", {
   activeWhiskyId: varchar("active_whisky_id"), // tracks which whisky is currently being discussed
   aiHighlightsCache: text("ai_highlights_cache"), // Cached AI session highlights (JSON)
   aiHighlightsRatingCount: integer("ai_highlights_rating_count"), // Rating count when highlights were cached
+  guestMode: text("guest_mode").default("standard"), // "standard" | "ultra" — guest participation flavor
   sessionUiMode: text("session_ui_mode"), // null | flow | focus | journal — host-enforced UI mode
   showRanking: boolean("show_ranking").default(true),
   showGroupAvg: boolean("show_group_avg").default(true),

@@ -906,7 +906,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", date: "", location: "", videoLink: "", blindMode: false, ratingScale: 100 });
+  const [form, setForm] = useState({ title: "", date: "", location: "", videoLink: "", blindMode: false, ratingScale: 100, guestMode: "standard" as string });
   const [coverUploading, setCoverUploading] = useState(false);
   const [saved, setSaved] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -914,7 +914,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
 
   useEffect(() => {
     if (open && tasting) {
-      setForm({ title: tasting.title, date: tasting.date, location: tasting.location, videoLink: tasting.videoLink || "", blindMode: tasting.blindMode ?? false, ratingScale: tasting.ratingScale ?? 100 });
+      setForm({ title: tasting.title, date: tasting.date, location: tasting.location, videoLink: tasting.videoLink || "", blindMode: tasting.blindMode ?? false, ratingScale: tasting.ratingScale ?? 100, guestMode: (tasting as any).guestMode || "standard" });
       setSaved(false);
     }
     return () => {
@@ -950,7 +950,7 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   const handleDialogClose = (isOpen: boolean) => {
     if (!isOpen && form.title.trim() && currentParticipant) {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      const hasChanges = form.title !== tasting.title || form.date !== tasting.date || form.location !== tasting.location || form.videoLink !== (tasting.videoLink || "") || form.blindMode !== (tasting.blindMode ?? false) || form.ratingScale !== (tasting.ratingScale ?? 100);
+      const hasChanges = form.title !== tasting.title || form.date !== tasting.date || form.location !== tasting.location || form.videoLink !== (tasting.videoLink || "") || form.blindMode !== (tasting.blindMode ?? false) || form.ratingScale !== (tasting.ratingScale ?? 100) || form.guestMode !== ((tasting as any).guestMode || "standard");
       if (hasChanges && !saved) {
         updateMutation.mutate(form);
       }
@@ -1072,6 +1072,34 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
                   {form.ratingScale === 10 && t("sessionSettings.scaleDesc10")}
                   {form.ratingScale === 20 && t("sessionSettings.scaleDesc20")}
                   {form.ratingScale === 100 && t("sessionSettings.scaleDesc100")}
+                </p>
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("sessionSettings.guestMode")}</Label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  {(["standard", "ultra"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => {
+                        const newForm = { ...form, guestMode: mode };
+                        setForm(newForm);
+                        triggerAutoSave(newForm);
+                      }}
+                      className={cn(
+                        "py-2 px-3 rounded-lg border text-sm font-serif font-bold transition-all",
+                        form.guestMode === mode
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border/50 bg-secondary/20 text-muted-foreground hover:border-primary/50"
+                      )}
+                      data-testid={`button-edit-guest-mode-${mode}`}
+                    >
+                      {mode === "standard" ? t("sessionSettings.guestStandard") : t("sessionSettings.guestUltra")}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-tight mt-1">
+                  {form.guestMode === "standard" ? t("sessionSettings.guestStandardDesc") : t("sessionSettings.guestUltraDesc")}
                 </p>
               </div>
             </>

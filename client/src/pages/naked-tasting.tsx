@@ -11,7 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Wine, ArrowRight, ArrowLeft, Check, Download, Trophy, Shield, Sparkles, BookOpen, User, BarChart3, Sun, Moon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Layers, Target, FileText } from "lucide-react";
+import { Wine, ArrowRight, ArrowLeft, Check, Download, Trophy, Shield, Sparkles, BookOpen, User, BarChart3, Sun, Moon, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Layers, Target, FileText, AlertTriangle, Info } from "lucide-react";
 import jsPDF from "jspdf";
 import type { Whisky, Tasting } from "@shared/schema";
 
@@ -637,7 +637,7 @@ function ModeSwitcher({ mode, onModeChange }: { mode: UIMode; onModeChange: (m: 
   );
 }
 
-function RecapScreen({ tasting, whiskies, participantId }: { tasting: Tasting; whiskies: Whisky[]; participantId: string }) {
+function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: { tasting: Tasting; whiskies: Whisky[]; participantId: string; hideRanking?: boolean }) {
   const { t } = useTranslation();
   const scale = tasting.ratingScale || 100;
   const [sortByScore, setSortByScore] = useState(true);
@@ -737,6 +737,51 @@ function RecapScreen({ tasting, whiskies, participantId }: { tasting: Tasting; w
 
     doc.save(`${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß ]/g, "_")}_results.pdf`);
   };
+
+  if (hideRanking) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+        <div className="text-center space-y-2">
+          <Check className="w-10 h-10 text-green-500/80 mx-auto" />
+          <h2 className="text-2xl font-serif font-black text-primary">{t("naked.ultraRecapTitle", "Danke!")}</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
+            {t("naked.ultraRecapDesc", "Deine Bewertungen wurden übermittelt. Im Ultra-Naked-Modus wird kein Ranking angezeigt.")}
+          </p>
+        </div>
+
+        {sorted.some(r => r.myRating) && (
+          <div className="space-y-2">
+            <h3 className="text-xs font-serif font-semibold text-muted-foreground/70 uppercase tracking-wider text-center">
+              {t("naked.myDimensionScores", "Meine Bewertungen im Detail")}
+            </h3>
+            {sorted.filter(r => r.myRating).map(r => {
+              const rating = r.myRating as any;
+              const label = isBlind && !isRevealed ? `Dram ${whiskies.indexOf(r.whisky) + 1}` : r.whisky.name;
+              return (
+                <div key={r.whisky.id} className="bg-card/30 border border-border/15 rounded-lg p-3">
+                  <p className="font-serif font-bold text-xs text-foreground mb-1.5">{label}</p>
+                  <div className="grid grid-cols-5 gap-1 text-center">
+                    {[
+                      { label: "N", val: rating.nose },
+                      { label: "T", val: rating.taste },
+                      { label: "A", val: rating.finish },
+                      { label: "B", val: rating.balance },
+                      { label: "G", val: rating.overall },
+                    ].map(d => (
+                      <div key={d.label}>
+                        <p className="text-[8px] text-muted-foreground/50 font-mono uppercase">{d.label}</p>
+                        <p className="text-sm font-mono font-bold text-primary">{d.val ?? "–"}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
@@ -898,6 +943,7 @@ export default function NakedTasting() {
   const [pin, setPin] = useState("");
   const [joinError, setJoinError] = useState("");
   const [joining, setJoining] = useState(false);
+  const [ephemeralParticipant, setEphemeralParticipant] = useState<{ id: string; name: string; role: string; canAccessWhiskyDb?: boolean } | null>(null);
 
   const { data: tasting, isLoading: tastingLoading, error: tastingError } = useQuery<Tasting>({
     queryKey: ["tasting-by-code", params.code],
@@ -905,6 +951,9 @@ export default function NakedTasting() {
     enabled: !!params.code,
     refetchInterval: 10000,
   });
+
+  const isUltraMode = tasting?.guestMode === "ultra";
+  const activeParticipant = isUltraMode ? ephemeralParticipant : currentParticipant;
 
   const { data: whiskies = [] } = useQuery<Whisky[]>({
     queryKey: ["whiskies", tasting?.id],
@@ -919,15 +968,15 @@ export default function NakedTasting() {
 
   useEffect(() => {
     if (tasting && (tasting.status === "reveal" || tasting.status === "archived" || tasting.status === "closed")) {
-      if (currentParticipant) setWizardStep("recap");
+      if (activeParticipant) setWizardStep("recap");
     }
-  }, [tasting?.status, currentParticipant]);
+  }, [tasting?.status, activeParticipant]);
 
   useEffect(() => {
-    if (currentParticipant && tasting && tasting.status === "open" && wizardStep === "welcome") {
+    if (activeParticipant && tasting && tasting.status === "open" && wizardStep === "welcome") {
       setWizardStep("rating");
     }
-  }, [currentParticipant, tasting?.status]);
+  }, [activeParticipant, tasting?.status]);
 
   const handleJoin = async () => {
     if (!name.trim() || pin.length < 4) return;
@@ -935,12 +984,17 @@ export default function NakedTasting() {
     setJoinError("");
     try {
       const participant = await participantApi.guestJoin(name.trim(), pin);
-      setParticipant({
+      const pData = {
         id: participant.id,
         name: participant.name,
         role: participant.role,
         canAccessWhiskyDb: participant.canAccessWhiskyDb,
-      });
+      };
+      if (isUltraMode) {
+        setEphemeralParticipant(pData);
+      } else {
+        setParticipant(pData);
+      }
       if (tasting) {
         await tastingApi.join(tasting.id, participant.id, tasting.code);
       }
@@ -953,10 +1007,10 @@ export default function NakedTasting() {
   };
 
   useEffect(() => {
-    if (currentParticipant && tasting) {
+    if (!isUltraMode && currentParticipant && tasting) {
       tastingApi.join(tasting.id, currentParticipant.id, tasting.code).catch(() => {});
     }
-  }, [currentParticipant, tasting]);
+  }, [currentParticipant, tasting, isUltraMode]);
 
   const handleNextDram = () => {
     if (dramIndex < sortedWhiskies.length - 1) {
@@ -1049,8 +1103,24 @@ export default function NakedTasting() {
                   </p>
                   <p className="text-[10px] text-muted-foreground/50 font-mono">{t("naked.draftHint")}</p>
                 </motion.div>
-              ) : !currentParticipant ? (
+              ) : !activeParticipant ? (
                 <div className="space-y-4 max-w-sm mx-auto">
+                  {isUltraMode && (
+                    <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5" data-testid="ultra-warning">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed font-serif">
+                        {t("naked.ultraWarning")}
+                      </p>
+                    </div>
+                  )}
+                  {!isUltraMode && (
+                    <div className="flex items-start gap-2 bg-primary/5 border border-primary/10 rounded-lg px-3 py-2" data-testid="standard-hint">
+                      <Info className="w-3.5 h-3.5 text-primary/50 mt-0.5 flex-shrink-0" />
+                      <p className="text-[10px] text-muted-foreground/70 leading-relaxed font-serif">
+                        {t("naked.standardHint")}
+                      </p>
+                    </div>
+                  )}
                   <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -1090,7 +1160,7 @@ export default function NakedTasting() {
               ) : isOpen && sortedWhiskies.length > 0 ? (
                 <div className="text-center space-y-4">
                   <p className="text-sm text-muted-foreground font-serif">
-                    {t("naked.welcomeBack", "Willkommen, {{name}}!", { name: currentParticipant.name })}
+                    {t("naked.welcomeBack", "Willkommen, {{name}}!", { name: activeParticipant.name })}
                   </p>
                   <Button
                     onClick={() => setWizardStep("rating")}
@@ -1105,14 +1175,22 @@ export default function NakedTasting() {
             </motion.div>
           )}
 
-          {wizardStep === "rating" && currentParticipant && sortedWhiskies.length > 0 && (
+          {wizardStep === "rating" && activeParticipant && sortedWhiskies.length > 0 && (
             <motion.div key="rating" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col">
+              {isUltraMode && (
+                <div className="flex items-center gap-1.5 bg-amber-500/10 rounded-lg px-2.5 py-1.5 mb-3" data-testid="ultra-banner-rating">
+                  <AlertTriangle className="w-3 h-3 text-amber-600 flex-shrink-0" />
+                  <p className="text-[9px] text-amber-700 dark:text-amber-400 font-serif">
+                    {t("naked.ultraBannerShort")}
+                  </p>
+                </div>
+              )}
               {uiMode === "focus" && (
                 <FocusMode
                   key={`focus-${dramIndex}`}
                   whiskies={sortedWhiskies}
                   tasting={tasting}
-                  participantId={currentParticipant.id}
+                  participantId={activeParticipant.id}
                   dramIndex={dramIndex}
                   onNext={handleNextDram}
                   onPrev={handlePrevDram}
@@ -1122,7 +1200,7 @@ export default function NakedTasting() {
                 <FlowMode
                   whiskies={sortedWhiskies}
                   tasting={tasting}
-                  participantId={currentParticipant.id}
+                  participantId={activeParticipant.id}
                   onFinish={handleFinish}
                 />
               )}
@@ -1130,19 +1208,20 @@ export default function NakedTasting() {
                 <JournalMode
                   whiskies={sortedWhiskies}
                   tasting={tasting}
-                  participantId={currentParticipant.id}
+                  participantId={activeParticipant.id}
                   onFinish={handleFinish}
                 />
               )}
             </motion.div>
           )}
 
-          {wizardStep === "recap" && currentParticipant && (
+          {wizardStep === "recap" && activeParticipant && (
             <motion.div key="recap" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <RecapScreen
                 tasting={tasting}
                 whiskies={sortedWhiskies}
-                participantId={currentParticipant.id}
+                participantId={activeParticipant.id}
+                hideRanking={isUltraMode}
               />
               <div className="mt-6 text-center">
                 <Button

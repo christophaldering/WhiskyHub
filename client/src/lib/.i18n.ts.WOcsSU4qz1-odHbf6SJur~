@@ -2072,11 +2072,6 @@ const resources = {
         scaleDesc10: "Classic 10-point scale — good balance of speed and differentiation",
         scaleDesc20: "Professional scale (à la Serge Valentin) — fine-grained evaluation",
         scaleDesc100: "Maximum differentiation — for experienced tasters",
-        guestMode: "Guest Mode",
-        guestStandard: "Standard",
-        guestUltra: "Ultra",
-        guestStandardDesc: "Guests can save progress and resume later on the same device.",
-        guestUltraDesc: "Maximum anonymity — no progress saved. Refreshing the page loses all entries. Ranking is hidden.",
       },
       pdfExport: {
         title: "Export PDF",
@@ -5055,11 +5050,6 @@ const resources = {
         scaleDesc10: "Klassische 10-Punkte-Skala — gute Balance aus Tempo und Differenzierung",
         scaleDesc20: "Profi-Skala (à la Serge Valentin) — feingranulierte Bewertung",
         scaleDesc100: "Maximale Differenzierung — für erfahrene Verkoster",
-        guestMode: "Gästemodus",
-        guestStandard: "Standard",
-        guestUltra: "Ultra",
-        guestStandardDesc: "Gäste können ihren Fortschritt speichern und später auf demselben Gerät fortfahren.",
-        guestUltraDesc: "Maximale Anonymität — kein Fortschritt gespeichert. Seite neu laden verliert alle Eingaben. Ranking wird ausgeblendet.",
       },
       pdfExport: {
         title: "Als PDF exportieren",

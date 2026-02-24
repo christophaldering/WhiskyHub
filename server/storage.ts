@@ -83,7 +83,7 @@ export interface IStorage {
   createTasting(data: InsertTasting): Promise<Tasting>;
   updateTastingStatus(id: string, status: string, currentAct?: string): Promise<Tasting | undefined>;
   updateTastingReflection(id: string, reflection: string): Promise<Tasting | undefined>;
-  updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; videoLink: string | null; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean }>): Promise<Tasting | undefined>;
+  updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean }>): Promise<Tasting | undefined>;
   updateTasting(id: string, data: Partial<Record<string, any>>): Promise<Tasting | undefined>;
   transferTastingHost(id: string, newHostId: string): Promise<Tasting | undefined>;
   duplicateTasting(id: string, hostId: string): Promise<Tasting>;
@@ -420,7 +420,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; videoLink: string | null; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean }>): Promise<Tasting | undefined> {
+  async updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean }>): Promise<Tasting | undefined> {
     const updateData: any = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.date !== undefined) updateData.date = data.date;
@@ -432,6 +432,7 @@ export class DatabaseStorage implements IStorage {
     if (data.coverImageUrl !== undefined) updateData.coverImageUrl = data.coverImageUrl;
     if (data.coverImageRevealed !== undefined) updateData.coverImageRevealed = data.coverImageRevealed;
     if (data.videoLink !== undefined) updateData.videoLink = data.videoLink;
+    if (data.guestMode !== undefined) updateData.guestMode = data.guestMode;
     if (data.sessionUiMode !== undefined) updateData.sessionUiMode = data.sessionUiMode;
     if (data.showRanking !== undefined) updateData.showRanking = data.showRanking;
     if (data.showGroupAvg !== undefined) updateData.showGroupAvg = data.showGroupAvg;
