@@ -544,6 +544,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/recap", icon: History, label: t('nav.sessionResults'), match: (loc: string) => loc === "/recap" || loc.startsWith("/recap/") },
         { href: "/my-tastings", icon: ClipboardList, label: t('nav.pastSessions') },
         { href: "/host-dashboard", icon: LayoutDashboard, label: t('nav.hostSession') },
+        { href: "/export-notes", icon: Download, label: t('nav.pdfExport') },
         { href: "/calendar", icon: Calendar, label: t('nav.calendar') },
       ],
     },
@@ -592,7 +593,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/about", icon: Info, label: t('nav.about') },
         { href: "/features", icon: LayoutGrid, label: t('nav.features') },
         { href: "/donate", icon: HeartHandshake, label: t('nav.donate') },
-        { href: "/export-notes", icon: Download, label: t('nav.pdfExport') },
+        { href: "/", icon: Globe, label: t('nav.landingPage') },
       ],
     },
     ...(currentParticipant?.role === "admin" ? [{
