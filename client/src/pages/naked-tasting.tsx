@@ -39,6 +39,71 @@ function computeAvg(s: Record<string, number | null>, step: number) {
   return Math.round(avg * factor) / factor;
 }
 
+type DramDisplay = {
+  displayTitle: string;
+  displaySubtitle: string;
+  displayImageUrl: string | null;
+  isBlindHidden: boolean;
+};
+
+function getDramDisplay(tasting: Tasting, whisky: Whisky, index: number): DramDisplay {
+  const isBlindActive = tasting.blindMode && tasting.status === "open";
+  const isRevealed = tasting.status === "reveal" || tasting.status === "archived" || tasting.status === "closed";
+  const hidden = isBlindActive && !isRevealed;
+
+  if (hidden) {
+    return {
+      displayTitle: `Dram ${index + 1}`,
+      displaySubtitle: "",
+      displayImageUrl: null,
+      isBlindHidden: true,
+    };
+  }
+
+  const subtitle = [whisky.distillery, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null, whisky.region].filter(Boolean).join(" · ");
+
+  return {
+    displayTitle: whisky.name,
+    displaySubtitle: subtitle,
+    displayImageUrl: whisky.imageUrl || null,
+    isBlindHidden: false,
+  };
+}
+
+function DramThumbnail({ display, size = "sm", index }: { display: DramDisplay; size?: "sm" | "lg"; index: number }) {
+  const dim = size === "lg" ? "w-20 h-20 sm:w-28 sm:h-28" : "w-10 h-10 sm:w-12 sm:h-12";
+  const iconDim = size === "lg" ? "w-8 h-8" : "w-4 h-4";
+  const textSize = size === "lg" ? "text-xl font-bold" : "text-sm font-bold";
+
+  if (display.isBlindHidden) {
+    const letter = String.fromCharCode(65 + (index % 26));
+    return (
+      <div className={cn(dim, "rounded-full bg-muted/30 border border-border/20 flex items-center justify-center flex-shrink-0")} data-testid={`dram-thumb-blind-${index}`}>
+        <span className={cn(textSize, "text-muted-foreground font-mono")}>{letter}</span>
+      </div>
+    );
+  }
+
+  if (display.displayImageUrl) {
+    return (
+      <div className={cn(dim, "rounded-lg overflow-hidden flex-shrink-0 bg-muted/10 border border-border/10")} data-testid={`dram-thumb-${index}`}>
+        <img
+          src={display.displayImageUrl}
+          alt={display.displayTitle}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn(dim, "rounded-lg bg-muted/15 border border-border/15 flex items-center justify-center flex-shrink-0")} data-testid={`dram-thumb-fallback-${index}`}>
+      <Wine className={cn(iconDim, "text-muted-foreground/40")} />
+    </div>
+  );
+}
+
 function RatingSliders({
   scores,
   scale,
@@ -241,17 +306,16 @@ function useRatingState(whisky: Whisky, tasting: Tasting, participantId: string)
   return { scores, notes, overallManual, saved, handleScore, resetOverall, flushSave, handleNotesChange, scale, step };
 }
 
-function DramLabel({ whisky, tasting, index }: { whisky: Whisky; tasting: Tasting; index: number }) {
-  const isBlind = tasting.blindMode && tasting.status === "open";
-  const label = isBlind ? `Dram ${index + 1}` : whisky.name;
+function DramLabel({ whisky, tasting, index, compact = false }: { whisky: Whisky; tasting: Tasting; index: number; compact?: boolean }) {
+  const display = getDramDisplay(tasting, whisky, index);
   return (
     <>
-      <h2 className="text-xl font-serif font-black text-primary leading-tight" data-testid="text-dram-label">
-        {label}
+      <h2 className={cn(compact ? "text-sm" : "text-xl", "font-serif font-black text-primary leading-tight")} data-testid="text-dram-label">
+        {display.displayTitle}
       </h2>
-      {!isBlind && whisky.distillery && (
+      {display.displaySubtitle && (
         <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5 uppercase tracking-wide">
-          {[whisky.distillery, whisky.age ? `${whisky.age}y` : null, whisky.abv ? `${whisky.abv}%` : null].filter(Boolean).join(" · ")}
+          {display.displaySubtitle}
         </p>
       )}
     </>
@@ -298,6 +362,9 @@ function FocusMode({
         <p className="text-[11px] text-muted-foreground/60 font-mono tracking-wider uppercase mb-1">
           Dram {dramIndex + 1} {t("naked.of", "von")} {total}
         </p>
+        <div className="flex justify-center mb-2">
+          <DramThumbnail display={getDramDisplay(tasting, whisky, dramIndex)} size="lg" index={dramIndex} />
+        </div>
         <DramLabel whisky={whisky} tasting={tasting} index={dramIndex} />
       </div>
 
@@ -393,12 +460,7 @@ function FlowDramCard({
           data-testid={`button-toggle-dram-${index}`}
         >
           <div className="flex items-center gap-3 min-w-0">
-            <span className={cn(
-              "w-7 h-7 rounded-full flex items-center justify-center text-xs font-mono font-bold flex-shrink-0",
-              expanded ? "bg-primary text-primary-foreground" : "bg-muted/30 text-muted-foreground"
-            )}>
-              {index + 1}
-            </span>
+            <DramThumbnail display={getDramDisplay(tasting, whisky, index)} size="sm" index={index} />
             <div className="min-w-0">
               <DramLabel whisky={whisky} tasting={tasting} index={index} />
             </div>
@@ -492,43 +554,71 @@ function FlowMode({
   );
 }
 
-function JournalDramTab({
+function JournalDramRow({
   whisky,
   tasting,
   participantId,
   index,
+  expanded,
+  onToggle,
 }: {
   whisky: Whisky;
   tasting: Tasting;
   participantId: string;
   index: number;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
   const rating = useRatingState(whisky, tasting, participantId);
   const { t } = useTranslation();
+  const display = getDramDisplay(tasting, whisky, index);
+  const hasRating = rating.scores.overall != null;
 
   return (
-    <div className="space-y-6 py-4" data-testid={`journal-dram-${index}`}>
-      <div className="space-y-1">
-        <DramLabel whisky={whisky} tasting={tasting} index={index} />
-      </div>
+    <div className="border border-border/15 rounded-xl bg-card/40 overflow-hidden" data-testid={`journal-dram-${index}`}>
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left"
+        data-testid={`button-journal-toggle-${index}`}
+      >
+        <DramThumbnail display={display} size="sm" index={index} />
+        <div className="flex-1 min-w-0">
+          <p className="font-serif font-bold text-sm text-foreground truncate">{display.displayTitle}</p>
+          {display.displaySubtitle && (
+            <p className="text-[9px] text-muted-foreground/60 font-mono uppercase truncate">{display.displaySubtitle}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {hasRating ? (
+            <span className="text-xs font-mono font-bold text-primary">{rating.scores.overall}</span>
+          ) : (
+            <span className="text-[10px] text-muted-foreground/50 font-mono">{t("journal.statusOpen", "offen")}</span>
+          )}
+          {hasRating && <Check className="w-3 h-3 text-green-600" />}
+          {expanded ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+        </div>
+      </button>
 
-      <RatingSliders
-        scores={rating.scores}
-        scale={rating.scale}
-        step={rating.step}
-        overallManual={rating.overallManual}
-        onScore={rating.handleScore}
-        onResetOverall={rating.resetOverall}
-        notes={rating.notes}
-        onNotesChange={rating.handleNotesChange}
-      />
-
-      <div className="flex items-center justify-center gap-1 pt-2">
-        {rating.saved && <Check className="w-3.5 h-3.5 text-green-600" />}
-        <span className="text-[9px] text-muted-foreground/50 font-mono">
-          {rating.saved ? t("quickTasting.saved") : t("quickTasting.autoSaving")}
-        </span>
-      </div>
+      {expanded && (
+        <div className="px-4 pb-4 pt-1 border-t border-border/10">
+          <RatingSliders
+            scores={rating.scores}
+            scale={rating.scale}
+            step={rating.step}
+            overallManual={rating.overallManual}
+            onScore={rating.handleScore}
+            onResetOverall={rating.resetOverall}
+            notes={rating.notes}
+            onNotesChange={rating.handleNotesChange}
+          />
+          <div className="flex items-center justify-center gap-1 pt-3">
+            {rating.saved && <Check className="w-3.5 h-3.5 text-green-600" />}
+            <span className="text-[9px] text-muted-foreground/50 font-mono">
+              {rating.saved ? t("quickTasting.saved") : t("quickTasting.autoSaving")}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -545,49 +635,22 @@ function JournalMode({
   onFinish: () => void;
 }) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState(0);
-  const isBlind = tasting.blindMode && tasting.status === "open";
+  const [expandedIndex, setExpandedIndex] = useState<number>(-1);
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex gap-1 overflow-x-auto pb-2 mb-2 border-b border-border/20 scrollbar-hide">
-        {whiskies.map((w, i) => {
-          const tabLabel = isBlind ? `Dram ${i + 1}` : (w.name.length > 12 ? w.name.slice(0, 12) + "..." : w.name);
-          return (
-            <button
-              key={w.id}
-              onClick={() => setActiveTab(i)}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-serif font-semibold whitespace-nowrap transition-all flex-shrink-0",
-                activeTab === i
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted/20 text-muted-foreground hover:bg-muted/40"
-              )}
-              data-testid={`tab-dram-${i}`}
-            >
-              {tabLabel}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="flex-1">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
-            <JournalDramTab
-              whisky={whiskies[activeTab]}
-              tasting={tasting}
-              participantId={participantId}
-              index={activeTab}
-            />
-          </motion.div>
-        </AnimatePresence>
+      <div className="flex-1 space-y-2.5 pb-20">
+        {whiskies.map((w, i) => (
+          <JournalDramRow
+            key={w.id}
+            whisky={w}
+            tasting={tasting}
+            participantId={participantId}
+            index={i}
+            expanded={expandedIndex === i}
+            onToggle={() => setExpandedIndex(expandedIndex === i ? -1 : i)}
+          />
+        ))}
       </div>
 
       <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border/20 px-4 py-3 -mx-5 mt-4">
@@ -663,9 +726,6 @@ function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: 
     ? [...whiskyResults].sort((a, b) => b.avgOverall - a.avgOverall)
     : whiskyResults;
 
-  const isBlind = tasting.blindMode && tasting.status === "open";
-  const isRevealed = tasting.status === "reveal" || tasting.status === "archived" || tasting.status === "closed";
-
   const generatePdf = () => {
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageW = 210;
@@ -713,6 +773,7 @@ function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: 
 
     sorted.forEach((r, i) => {
       if (y > pageH - 40) { doc.addPage(); doc.setFillColor(248, 250, 252); doc.rect(0, 0, pageW, pageH, "F"); y = 25; }
+      const pdfDisplay = getDramDisplay(tasting, r.whisky, whiskies.indexOf(r.whisky));
       doc.setFillColor(i === 0 ? 255 : 250, i === 0 ? 251 : 250, i === 0 ? 235 : 252);
       doc.roundedRect(marginX, y - 4, contentW, 18, 2, 2, "F");
       doc.setFont("helvetica", "bold");
@@ -721,12 +782,12 @@ function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: 
       doc.text(`${i + 1}`, marginX + 5, y + 5);
       doc.setFontSize(11);
       doc.setTextColor(30, 41, 59);
-      doc.text(r.whisky.name, marginX + 15, y + 2);
-      if (r.whisky.distillery) {
+      doc.text(pdfDisplay.displayTitle, marginX + 15, y + 2);
+      if (pdfDisplay.displaySubtitle) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         doc.setTextColor(100, 116, 139);
-        doc.text([r.whisky.distillery, r.whisky.age ? `${r.whisky.age}y` : null].filter(Boolean).join(" · "), marginX + 15, y + 8);
+        doc.text(pdfDisplay.displaySubtitle, marginX + 15, y + 8);
       }
       doc.setFont("helvetica", "bold");
       doc.setFontSize(16);
@@ -756,10 +817,14 @@ function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: 
             </h3>
             {sorted.filter(r => r.myRating).map(r => {
               const rating = r.myRating as any;
-              const label = isBlind && !isRevealed ? `Dram ${whiskies.indexOf(r.whisky) + 1}` : r.whisky.name;
+              const idx = whiskies.indexOf(r.whisky);
+              const display = getDramDisplay(tasting, r.whisky, idx);
               return (
                 <div key={r.whisky.id} className="bg-card/30 border border-border/15 rounded-lg p-3">
-                  <p className="font-serif font-bold text-xs text-foreground mb-1.5">{label}</p>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <DramThumbnail display={display} size="sm" index={idx} />
+                    <p className="font-serif font-bold text-xs text-foreground">{display.displayTitle}</p>
+                  </div>
                   <div className="grid grid-cols-5 gap-1 text-center">
                     {[
                       { label: "N", val: rating.nose },
@@ -795,7 +860,8 @@ function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: 
 
       <div className="space-y-2">
         {sorted.map((r, i) => {
-          const label = isBlind && !isRevealed ? `Dram ${whiskies.indexOf(r.whisky) + 1}` : r.whisky.name;
+          const idx = whiskies.indexOf(r.whisky);
+          const display = getDramDisplay(tasting, r.whisky, idx);
           return (
             <motion.div
               key={r.whisky.id}
@@ -808,20 +874,12 @@ function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: 
               )}
               data-testid={`recap-result-${r.whisky.id}`}
             >
-              <span className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center font-serif font-bold text-sm flex-shrink-0",
-                i === 0 ? "bg-amber-500/20 text-amber-600" :
-                i === 1 ? "bg-gray-200/50 text-gray-600" :
-                i === 2 ? "bg-orange-400/15 text-orange-600" :
-                "bg-muted/20 text-muted-foreground"
-              )}>
-                {i + 1}
-              </span>
+              <DramThumbnail display={display} size="sm" index={idx} />
               <div className="flex-1 min-w-0">
-                <p className="font-serif font-bold text-sm text-foreground truncate">{label}</p>
-                {r.whisky.distillery && !isBlind && (
+                <p className="font-serif font-bold text-sm text-foreground truncate">{display.displayTitle}</p>
+                {display.displaySubtitle && (
                   <p className="text-[9px] text-muted-foreground/60 font-mono uppercase truncate">
-                    {[r.whisky.distillery, r.whisky.age ? `${r.whisky.age}y` : null].filter(Boolean).join(" · ")}
+                    {display.displaySubtitle}
                   </p>
                 )}
               </div>
@@ -844,10 +902,14 @@ function RecapScreen({ tasting, whiskies, participantId, hideRanking = false }: 
           </h3>
           {sorted.filter(r => r.myRating).map(r => {
             const rating = r.myRating as any;
-            const label = isBlind && !isRevealed ? `Dram ${whiskies.indexOf(r.whisky) + 1}` : r.whisky.name;
+            const idx = whiskies.indexOf(r.whisky);
+            const display = getDramDisplay(tasting, r.whisky, idx);
             return (
               <div key={r.whisky.id} className="bg-card/30 border border-border/15 rounded-lg p-3">
-                <p className="font-serif font-bold text-xs text-foreground mb-1.5">{label}</p>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <DramThumbnail display={display} size="sm" index={idx} />
+                  <p className="font-serif font-bold text-xs text-foreground">{display.displayTitle}</p>
+                </div>
                 <div className="grid grid-cols-5 gap-1 text-center">
                   {[
                     { label: "N", val: rating.nose },

@@ -1,0 +1,133 @@
+We already implemented UI modes (Flow/Focus/Journal) and guest modes (Standard/Ultra).
+Now implement thumbnails + a redesigned Journal (hybrid) BUT with strict blind-tasting privacy rules.
+
+This is a PATCH task. Do not rewrite architecture. Extend existing components.
+
+==================================================
+PHASE 0 — AUDIT (MANDATORY)
+==================================================
+Before changes:
+1) Locate where dram title/meta is rendered in:
+   - Flow mode
+   - Focus mode
+   - Journal mode
+2) Locate how blind mode is represented in session state/config:
+   - isBlind flag? reveal state? permissions?
+3) Locate where bottle images are stored / referenced:
+   - imageUrl? bottleImage? whiskyImage?
+4) Identify current “reveal” mechanics.
+
+Print audit summary (files + flags + data fields), then proceed.
+
+==================================================
+PHASE 1 — DEFINE A SINGLE “DISPLAY GUARD”
+==================================================
+Implement one shared helper (no duplication) used by all modes:
+
+getDramDisplay(session, dram, revealState) returns:
+- displayTitle (string)
+- displaySubtitle (string)
+- displayImageUrl (string | null)
+- isBlindHidden (boolean)
+
+Rules:
+A) If session is blind AND reveal is NOT active for the participant:
+   - displayTitle must be "Dram A" / "Dram 1" (no whisky name)
+   - displaySubtitle must NOT contain distillery/region/age/abv
+   - displayImageUrl must be null (no bottle thumbnail)
+   - Also hide any “encyclopedia” or external lookup entry points.
+B) If reveal IS active (or session is not blind):
+   - show real whisky name and allowed meta
+   - show thumbnail if available
+C) If reveal is disabled by host:
+   - even at end, keep hidden.
+
+This helper must be used in Flow, Focus, Journal to prevent leaks.
+
+==================================================
+PHASE 2 — THUMBNAILS IN FLOW + FOCUS + JOURNAL (WHEN ALLOWED)
+==================================================
+Add bottle thumbnails ONLY when getDramDisplay allows it.
+
+Sizing:
+- Flow: 40–56px left of title (compact)
+- Focus: 80–120px above title (hero)
+- Journal: 40–56px left of entry line
+
+Performance:
+- use lazy loading
+- use a small/optimized version if available; otherwise constrain via CSS (object-fit: cover)
+
+Fallback:
+If no image exists OR blind-hidden:
+- show a neutral bottle silhouette icon (NOT a broken image)
+- BUT: in blind mode, do NOT show even silhouette IF it could hint identity via shape.
+  => In blind mode: show only a neutral placeholder circle/label (e.g., "A", "B") – no bottle outline.
+
+==================================================
+PHASE 3 — REDESIGN JOURNAL MODE (HYBRID, SESSION-CONTEXT)
+==================================================
+Goal: Calm + modern hybrid for a TASTING session journal, not a global feed.
+
+Journal mode inside a session should become a “Tasting Log” view:
+
+Layout:
+- One page with a vertical list of drams (collapsible sections or compact rows)
+- Each row shows:
+  - (If allowed) thumbnail
+  - Title (whisky name OR “Dram X” if blind)
+  - Score summary (e.g., Gesamt value, or “—” if blank)
+  - Status indicator: “offen” / “bewertet”
+- Clicking a row expands to show the 5 sliders + note field (same components as other modes)
+- Tabs at top are allowed ONLY for:
+  - “Bewerten” (default)
+  - “Auswertung” (results/recap) (if allowed)
+No extra navigation links.
+
+Hybrid look:
+- more whitespace than Flow
+- more structure than Focus
+- minimal animations
+
+Blind rule applies:
+- If blind and not revealed, the list must not show names/images.
+
+==================================================
+PHASE 4 — RESULTS / RECAP UI: REVEAL-SAFE
+==================================================
+In results screen:
+- If blind and reveal not active, show only Dram labels and group averages/ranking by Dram label.
+- If reveal active and allowed, show names/images.
+
+Ranking:
+- In blind mode before reveal: ranking can be shown but must not contain whisky identity hints.
+- In ultra guest mode: ranking is hidden (already required in previous patch).
+
+==================================================
+HARD ACCEPTANCE CRITERIA
+==================================================
+Task is NOT done unless all are true:
+
+1) Flow shows thumbnails when not blind/revealed; shows NO identity info when blind & not revealed.
+2) Focus shows hero thumbnail when not blind/revealed; shows NO identity info when blind & not revealed.
+3) Journal (session journal) is redesigned to the hybrid list+expand pattern.
+4) One shared display guard is used everywhere (no duplicated blind checks).
+5) In blind mode before reveal:
+   - no whisky names
+   - no bottle images
+   - no distillery/region/age/abv
+   - no encyclopedia/database links
+6) After reveal (when allowed): names and thumbnails appear consistently.
+7) No console errors; mobile portrait usable.
+
+==================================================
+QA REPORT (MANDATORY)
+==================================================
+Provide:
+- list of changed files
+- confirm which flag drives blind mode and which flag drives reveal
+- screenshots or described checks:
+  a) blind session BEFORE reveal: Flow/Focus/Journal show only Dram labels
+  b) blind session AFTER reveal: names + thumbnails appear
+  c) non-blind session: thumbnails always visible when available
+  d) missing image: fallback works
