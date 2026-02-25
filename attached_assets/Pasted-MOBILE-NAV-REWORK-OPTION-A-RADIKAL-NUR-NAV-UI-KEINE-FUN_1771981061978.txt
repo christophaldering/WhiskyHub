@@ -1,0 +1,150 @@
+MOBILE NAV REWORK – OPTION A (RADIKAL) – NUR NAV/UI, KEINE FUNKTIONSÄNDERUNG
+
+Ziel:
+Mobile Navigation fühlt sich an wie WhatsApp/Strava: minimalistisch, edel, eine klare Hauptnavigation.
+Desktop bleibt unverändert (Sidebar wie bisher).
+
+ABSOLUTE VERBOTE (bei Unsicherheit: STOPPEN & berichten):
+- keine Datei löschen
+- keine Datei verschieben/umbenennen
+- keine Route ändern/entfernen/umleiten
+- keine Feature-Logik ändern (State, Hooks, API Calls, Berechnungen)
+- keine Rollen/Rechte ändern
+- keine Texte inhaltlich umschreiben (nur Short Labels für Nav erlaubt)
+- keine Funktionen deaktivieren oder verstecken (außer: Mobile-Hamburger Navigation UI wird entfernt/replaced)
+- kein Refactoring “zur Vereinfachung”
+- keine Backend/DB Änderungen
+
+ERLAUBT:
+- ausschließlich UI-/Layout-Anpassungen für Mobile Navigation
+- nur Navigationseinträge umhängen (Zugänge bleiben erreichbar)
+- Labels kürzen für Mobile BottomNav
+- Styles/Variants/Spacing anpassen (Premium Ruhe)
+
+------------------------------------------------------------
+MOBILE NAV KONZEPT (VERBINDLICH) – OPTION A
+------------------------------------------------------------
+
+1) Mobile hat genau EINE Hauptnavigation: Bottom Navigation mit 5 Tabs.
+2) Mobile hat KEIN Hamburger-Menü und KEINE mobile Sidebar.
+3) Unterseiten werden innerhalb der jeweiligen Tab-Seiten als Tabs/Segmented-Control angezeigt (wie Desktop-Zieldesign).
+4) Alle bisherigen Features bleiben erreichbar:
+   - Alles, was bisher im Hamburger/Sidebar erreichbar war, muss weiterhin erreichbar sein:
+     -> auf Mobile über den Tab „Profil“ (Settings/More Bereich innerhalb Profil)
+   - Admin ist nur für Admin sichtbar, aber erreichbar über Profil.
+
+BOTTOM NAV (5 Tabs, fix):
+1. Jetzt
+2. Tastings
+3. Tagebuch
+4. Entdecken
+5. Profil
+
+MOBILE LABEL REGEL (WICHTIG):
+- Labels müssen kurz sein und unter das Icon passen.
+- Maximal 10 Zeichen (inkl. Leerzeichen), bevorzugt 4–8 Zeichen.
+- Keine zweizeiligen Labels.
+- Wenn zu lang: kürzen.
+
+Vorgeschlagene Labels (bitte genau so verwenden, sofern möglich):
+- Jetzt
+- Tastings
+- Tagebuch
+- Entdecken
+- Profil
+
+Wenn „Tastings“ nicht passt: „Tasting“ (ohne s)
+Wenn „Entdecken“ nicht passt: „Explore“
+
+------------------------------------------------------------
+DETAILS PRO TAB (MOBILE)
+------------------------------------------------------------
+
+TAB „Jetzt“:
+- Route: /app (oder aktueller Lobby/Home-Route)
+- Inhalt: Lobby / Continue / aktuelle Hinweise
+
+TAB „Tastings“:
+- Route: /sessions (oder bestehende Tastings-Übersicht)
+- Untertabs IN DER SEITE (Segmented-Control): Sessions | Kalender | Host | Recap
+- Keine extra Navigationsebene.
+
+TAB „Tagebuch“:
+- Route: /journal (oder bestehende Journal-Seite)
+- Untertabs IN DER SEITE: Journal | Verkostet | Vergleich | Recap | Analytik (PRO) | Bibliothek (PRO) | Export
+
+TAB „Entdecken“:
+- Route: /recommendations oder /discover (bestehende Discover-Landing)
+- Untertabs IN DER SEITE: Empfehlungen | Destillerien | Community
+
+TAB „Profil“:
+- Route: /profile
+- Innerhalb Profil eine „Mehr/Settings“-Liste (keine Hamburger-Sidebar):
+  - Konto (/account)
+  - Hilfe (/help)
+  - Über (/about)
+  - Features (/features)
+  - Spenden (/donate)
+  - PRO Bereiche (Analytics/Data Export etc.) falls vorhanden
+  - Admin (/admin) NUR für Admin sichtbar
+  - Sprache / Dark Mode Settings bleiben erreichbar (UI-Controls können hier leben)
+
+WICHTIG:
+- Keine Funktionen entfernen. Nur die Einstiegspunkte werden auf Mobile in „Profil“ gebündelt.
+
+------------------------------------------------------------
+UMSETZUNG (TECHNISCH) – STRIKT UI/ROUTING UNVERÄNDERT
+------------------------------------------------------------
+
+1) Identifiziere die Komponente(n) für:
+   - Desktop Sidebar Navigation
+   - Mobile BottomNav
+   - Mobile Hamburger Drawer / mobile Sidebar
+
+2) Implementiere Responsive Layout-Switch:
+   - Desktop (>= md): Sidebar bleibt wie bisher.
+   - Mobile (< md): Sidebar/Hamburger wird NICHT gemountet/angezeigt.
+     Stattdessen: BottomNav ist sichtbar.
+
+3) Entferne auf Mobile:
+   - Hamburger Button im Header (nur mobile)
+   - Drawer/Sidebar overlay (nur mobile)
+   Desktop unverändert.
+
+4) Sicherstellen:
+   - Jede Route bleibt wie bisher erreichbar (mindestens über Profil-Liste auf Mobile).
+   - Keine Route wird “unlinked”.
+
+5) Text-Längen prüfen:
+   - BottomNav Labels dürfen nicht umbrechen.
+   - Falls nötig: CSS/Classes anpassen (text-xs, leading-none, truncate).
+
+6) Premium Ruhe:
+   - BottomNav minimalistisch, hell, ohne harte Border.
+   - Aktiver Tab: warmes Braun.
+   - Inaktive Tabs: grau.
+   - Keine starken Farben, keine dicken Linien.
+
+------------------------------------------------------------
+QA / SELBSTPRÜFUNG (PFLICHT)
+------------------------------------------------------------
+
+Nach Umsetzung bitte ausgeben:
+
+A) Bestätigung (explizit):
+- keine Routen geändert
+- keine Features deaktiviert/entfernt
+- keine Logik geändert
+- nur UI/Navigation mobile angepasst
+
+B) Mobile Navigation Checkliste:
+- Mobile zeigt nur BottomNav (5 Tabs)
+- Kein Hamburger sichtbar
+- Profil enthält Links zu: Konto, Hilfe, Über, Features, Spenden, Admin (role gated), PRO Bereiche
+- Labels sind einzeilig und passen unter Icons
+
+C) Geänderte Dateien:
+- Liste aller geänderten Dateien + 1 Satz pro Datei, was geändert wurde.
+
+START JETZT:
+Führe erst eine kurze Analyse durch (welche Komponenten betroffen sind), dann implementiere, dann QA berichten.
