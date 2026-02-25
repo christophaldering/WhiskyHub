@@ -15,11 +15,14 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Camera, X, User, KeyRound, Mail, Trash2, AlertTriangle, Layers, Target, FileText, Settings } from "lucide-react";
+import { Camera, X, User, KeyRound, Mail, Trash2, AlertTriangle, Layers, Target, FileText, Settings, HelpCircle, Info, Sparkles, Heart, ShieldAlert, ChevronRight } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
 import { PageLayout } from "@/components/page-layout";
+import { LanguageToggle } from "@/components/language-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type { UIMode } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { Link } from "wouter";
 
 const REGIONS = [
   "Speyside", "Highlands", "Islay", "Lowlands", "Campbeltown",
@@ -587,16 +590,35 @@ export default function Profile() {
       </Card>
 
       <Card className="w-full border-border/50 bg-card shadow-sm">
-        <CardContent className="pt-6">
-          <Button
-            variant="outline"
-            className="w-full font-serif"
-            onClick={() => navigate("/profile/account")}
-            data-testid="button-go-to-account"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            {t("nav.account")}
-          </Button>
+        <CardContent className="pt-6 space-y-1">
+          {[
+            { href: "/profile/account", icon: Settings, labelKey: "nav.account" },
+            { href: "/profile/help?tab=help", icon: HelpCircle, labelKey: "profileHelp.tabHelp", fallback: "Hilfe" },
+            { href: "/profile/help?tab=about", icon: Info, labelKey: "profileHelp.tabAbout", fallback: "Über CaskSense" },
+            { href: "/profile/help?tab=features", icon: Sparkles, labelKey: "profileHelp.tabFeatures", fallback: "Features" },
+            { href: "/profile/help?tab=donate", icon: Heart, labelKey: "profileHelp.tabDonate", fallback: "Spenden" },
+            ...(currentParticipant?.role === "admin" ? [{ href: "/admin", icon: ShieldAlert, labelKey: "nav.admin", fallback: "Admin" }] : []),
+          ].map((item) => (
+            <Link key={item.href} href={item.href}>
+              <div
+                className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer"
+                data-testid={`profile-link-${item.href.replace(/[/?=]/g, "-").replace(/^-/, "")}`}
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">{t(item.labelKey, item.fallback || "")}</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
+              </div>
+            </Link>
+          ))}
+          <div className="flex items-center justify-between px-3 py-2.5 mt-2 border-t border-border/30">
+            <span className="text-xs text-muted-foreground">{t("profile.appearance", "Darstellung")}</span>
+            <div className="flex items-center gap-1">
+              <LanguageToggle />
+              <ThemeToggle />
+            </div>
+          </div>
         </CardContent>
       </Card>
 

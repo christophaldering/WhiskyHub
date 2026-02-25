@@ -1,11 +1,10 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { ACTIVE_STATUSES } from "@shared/constants";
-import { Home, LogOut, LogIn, Menu, User, Wine, Users, NotebookPen, Sparkles, Calendar, ShieldAlert, Landmark, Star, Archive, ChevronDown, ArrowLeft, ArrowRight, X, Settings, HelpCircle, Compass, Activity, BarChart3, BookOpen, ClipboardList, Database, Download, FileText, GitCompareArrows, GlassWater, Globe, Heart, HeartHandshake, History, Info, LayoutDashboard, Library, Map, Medal, Microscope, Package, Puzzle, Trophy, Zap } from "lucide-react";
+import { Home, LogOut, LogIn, User, Wine, Users, NotebookPen, Sparkles, Calendar, ShieldAlert, Landmark, Star, Archive, ChevronDown, ArrowLeft, ArrowRight, X, Settings, HelpCircle, Compass, Activity, BarChart3, BookOpen, ClipboardList, Database, Download, FileText, GitCompareArrows, GlassWater, Globe, Heart, HeartHandshake, History, Info, LayoutDashboard, Library, Map, Medal, Microscope, Package, Puzzle, Trophy, Zap } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { WelcomeOverlay } from "@/components/welcome-overlay";
@@ -477,7 +476,6 @@ const MemoizedChildren = memo(function MemoizedChildren({ children }: { children
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const [open, setOpen] = useState(false);
   const [fullBleed, setFullBleed] = useState(false);
   const { t } = useTranslation();
   const { currentParticipant, setParticipant, lastSeenLandingVersion, setLastSeenLandingVersion } = useAppStore();
@@ -581,7 +579,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ], [t, currentParticipant?.role, hasActiveSessions]);
 
   const desktopNavRef = useRef<HTMLElement>(null);
-  const mobileNavRef = useRef<HTMLElement>(null);
 
   const scrollNavToActive = useCallback((navEl: HTMLElement | null) => {
     if (!navEl) return;
@@ -594,17 +591,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (open) scrollNavToActive(mobileNavRef.current);
-  }, [open, scrollNavToActive]);
-
-  useEffect(() => {
     const timer = setTimeout(() => {
       scrollNavToActive(desktopNavRef.current);
     }, 50);
     return () => clearTimeout(timer);
   }, [location, scrollNavToActive]);
 
-  const handleNavigate = useCallback(() => setOpen(false), []);
+  const handleNavigate = useCallback(() => {}, []);
 
   const spotlightHints: SpotlightHint[] = useMemo(() => {
     return [];
