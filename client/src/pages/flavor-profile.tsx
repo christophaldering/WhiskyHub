@@ -9,6 +9,8 @@ import { Activity, ChevronDown, ChevronUp, Users, Globe, User, BookOpen, Info } 
 import { GuestPreview } from "@/components/guest-preview";
 import { Link } from "wouter";
 import { FlavorWheelContent } from "./flavor-wheel";
+import { PageLayout } from "@/components/page-layout";
+import { TabsContent } from "@/components/ui/tabs";
 
 const COLORS = ["#c8a864", "#a8845c", "#8b6f47", "#d4a853", "#b8934a", "#9e7d3f", "#c4956c", "#d9b87c"];
 
@@ -404,10 +406,10 @@ export default function FlavorProfile() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <PageLayout icon={Activity} title={t("flavorProfile.title")} subtitle={t("flavorProfile.subtitle")} testId="flavor-profile-page">
         <div className="h-8 w-48 bg-card/50 rounded animate-pulse mb-4" />
         <div className="h-64 bg-card/50 rounded-lg animate-pulse" />
-      </div>
+      </PageLayout>
     );
   }
 
@@ -445,193 +447,148 @@ export default function FlavorProfile() {
 
   const hasData = totalRatings > 0 || totalJournalScores > 0;
 
+  const pageTabs = [
+    { key: "taste", labelKey: "flavorProfile.tabTaste", testId: "tab-taste" },
+    { key: "profile", labelKey: "flavorProfile.tabProfile", testId: "tab-profile" },
+    { key: "wheel", labelKey: "flavorProfile.tabWheel", testId: "tab-wheel" },
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="flavor-profile-page">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="flex items-center gap-3 mb-2">
-          <Activity className="w-7 h-7 text-primary" />
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-flavor-title">
-            {t("flavorProfile.title")}
-          </h1>
-        </div>
-        <p className="text-sm text-muted-foreground mb-4">{t("flavorProfile.subtitle")}</p>
+    <PageLayout
+      icon={Activity}
+      title={t("flavorProfile.title")}
+      subtitle={t("flavorProfile.subtitle")}
+      tabs={pageTabs}
+      activeTabKey={activeTab}
+      onTabChange={(key) => setActiveTab(key as "taste" | "profile" | "wheel")}
+      tabsTestId="tabs-flavor-profile"
+      testId="flavor-profile-page"
+    >
+      <TabsContent value="taste">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          {profile?.sources && (profile.sources.tastingRatings > 0 || profile.sources.journalEntries > 0) && (
+            <p className="text-xs text-muted-foreground/70 mb-8" data-testid="text-flavor-sources">
+              {isDE
+                ? `Basierend auf ${profile.sources.tastingRatings} Tasting-Bewertung${profile.sources.tastingRatings !== 1 ? "en" : ""} und ${profile.sources.journalEntries} Journal-Eintr${profile.sources.journalEntries !== 1 ? "ägen" : "ag"}`
+                : `Based on ${profile.sources.tastingRatings} tasting rating${profile.sources.tastingRatings !== 1 ? "s" : ""} and ${profile.sources.journalEntries} journal entr${profile.sources.journalEntries !== 1 ? "ies" : "y"}`}
+            </p>
+          )}
 
-        <div className="flex border-b border-border/40 mb-6">
-          <button
-            onClick={() => setActiveTab("taste")}
-            className={`px-4 py-2.5 text-sm font-serif font-medium transition-colors border-b-2 -mb-px ${activeTab === "taste" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-            data-testid="tab-taste"
-          >
-            {t("flavorProfile.tabTaste")}
-          </button>
-          <button
-            onClick={() => setActiveTab("profile")}
-            className={`px-4 py-2.5 text-sm font-serif font-medium transition-colors border-b-2 -mb-px ${activeTab === "profile" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-            data-testid="tab-profile"
-          >
-            {t("flavorProfile.tabProfile")}
-          </button>
-          <button
-            onClick={() => setActiveTab("wheel")}
-            className={`px-4 py-2.5 text-sm font-serif font-medium transition-colors border-b-2 -mb-px ${activeTab === "wheel" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-            data-testid="tab-wheel"
-          >
-            {t("flavorProfile.tabWheel")}
-          </button>
-        </div>
-
-        {activeTab === "taste" && (
-          <>
-            {profile?.sources && (profile.sources.tastingRatings > 0 || profile.sources.journalEntries > 0) && (
-              <p className="text-xs text-muted-foreground/70 mb-8" data-testid="text-flavor-sources">
-                {isDE
-                  ? `Basierend auf ${profile.sources.tastingRatings} Tasting-Bewertung${profile.sources.tastingRatings !== 1 ? "en" : ""} und ${profile.sources.journalEntries} Journal-Eintr${profile.sources.journalEntries !== 1 ? "ägen" : "ag"}`
-                  : `Based on ${profile.sources.tastingRatings} tasting rating${profile.sources.tastingRatings !== 1 ? "s" : ""} and ${profile.sources.journalEntries} journal entr${profile.sources.journalEntries !== 1 ? "ies" : "y"}`}
-              </p>
-            )}
-
-            {!hasData ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <Activity className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                <p className="font-serif">{t("flavorProfile.empty")}</p>
+          {!hasData ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <Activity className="w-12 h-12 mx-auto mb-4 opacity-30" />
+              <p className="font-serif">{t("flavorProfile.empty")}</p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              <div className="bg-card rounded-lg border border-border/40 p-6">
+                <h2 className="text-lg font-serif font-semibold mb-1 text-foreground">{t("flavorProfile.radarTitle")}</h2>
+                <p className="text-xs text-muted-foreground mb-1">{t("flavorProfile.radarSubtitle", { count: totalRatings })}</p>
+                <p className="text-xs text-muted-foreground/70 mb-4" data-testid="text-radar-desc">{t("flavorProfile.radarDesc")}</p>
+                <div className="h-[320px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
+                      <PolarGrid stroke="hsl(var(--border))" />
+                      <PolarAngleAxis dataKey="dimension" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12, fontFamily: "serif" }} />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                      <Radar name={isDE ? "Alle" : "Everyone"} dataKey="global" stroke="#9ca3af" fill="#9ca3af" fillOpacity={0.1} strokeDasharray="4 4" />
+                      <Radar name="Profile" dataKey="value" stroke="#c8a864" fill="#c8a864" fillOpacity={0.3} strokeWidth={2} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+                {profile?.avgScores && globalAvg && globalAvg.totalRatings > 0 && (
+                  <div className="mt-6 pt-4 border-t border-border/20">
+                    <h3 className="text-sm font-serif font-bold text-muted-foreground uppercase tracking-widest mb-1">{t("flavorProfile.personalVsGlobal")}</h3>
+                    <p className="text-xs text-muted-foreground/70 mb-2" data-testid="text-personal-vs-global-desc">{t("flavorProfile.personalVsGlobalDesc")}</p>
+                    <div className="text-xs text-muted-foreground mb-3">{t("flavorProfile.globalBasedOn", { ratings: globalAvg.totalRatings, participants: globalAvg.totalParticipants })}</div>
+                    <div className="space-y-2">
+                      {[
+                        { key: "nose", label: isDE ? "Nase" : "Nose", personal: profile.avgScores.nose, global: globalAvg.nose },
+                        { key: "taste", label: isDE ? "Geschmack" : "Taste", personal: profile.avgScores.taste, global: globalAvg.taste },
+                        { key: "finish", label: isDE ? "Abgang" : "Finish", personal: profile.avgScores.finish, global: globalAvg.finish },
+                        { key: "balance", label: "Balance", personal: profile.avgScores.balance, global: globalAvg.balance },
+                        { key: "overall", label: isDE ? "Gesamt" : "Overall", personal: profile.avgScores.overall, global: globalAvg.overall },
+                      ].map(({ key, label, personal, global }) => {
+                        const diff = Math.round((personal - global) * 10) / 10;
+                        return (
+                          <div key={key} className="flex items-center justify-between text-sm">
+                            <span className="font-serif text-muted-foreground w-20">{label}</span>
+                            <div className="flex items-center gap-4 flex-1 justify-end">
+                              <span className="font-mono text-foreground font-medium">{personal.toFixed(1)}</span>
+                              <span className="text-muted-foreground/50">vs</span>
+                              <span className="font-mono text-muted-foreground">{global.toFixed(1)}</span>
+                              <span className={`font-mono text-xs w-14 text-right ${diff > 0 ? "text-green-500" : diff < 0 ? "text-red-400" : "text-muted-foreground"}`}>
+                                {diff > 0 ? `+${diff}` : diff.toString()}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="space-y-8">
+
+              {regionData.length > 0 && (
                 <div className="bg-card rounded-lg border border-border/40 p-6">
-                  <h2 className="text-lg font-serif font-semibold mb-1 text-foreground">{t("flavorProfile.radarTitle")}</h2>
-                  <p className="text-xs text-muted-foreground mb-1">{t("flavorProfile.radarSubtitle", { count: totalRatings })}</p>
-                  <p className="text-xs text-muted-foreground/70 mb-4" data-testid="text-radar-desc">{t("flavorProfile.radarDesc")}</p>
-                  <div className="h-[320px]">
+                  <h2 className="text-lg font-serif font-semibold mb-1">{t("flavorProfile.regionTitle")}</h2>
+                  <p className="text-xs text-muted-foreground mb-1">{t("flavorProfile.regionSubtitle")}</p>
+                  <p className="text-xs text-muted-foreground/70 mb-4" data-testid="text-region-desc">{t("flavorProfile.regionDesc")}</p>
+                  <div className="h-[200px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
-                        <PolarGrid stroke="hsl(var(--border))" />
-                        <PolarAngleAxis dataKey="dimension" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12, fontFamily: "serif" }} />
-                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
-                        <Radar name={isDE ? "Alle" : "Everyone"} dataKey="global" stroke="#9ca3af" fill="#9ca3af" fillOpacity={0.1} strokeDasharray="4 4" />
-                        <Radar name="Profile" dataKey="value" stroke="#c8a864" fill="#c8a864" fillOpacity={0.3} strokeWidth={2} />
-                      </RadarChart>
+                      <BarChart data={regionData} layout="vertical" margin={{ left: 80 }}>
+                        <XAxis type="number" domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                        <YAxis type="category" dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} width={75} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                          labelStyle={{ color: "hsl(var(--foreground))" }}
+                          formatter={(value: number, name: string) => [value.toFixed(1), name === "avgScore" ? (isDE ? "Ø Bewertung" : "Avg Score") : (isDE ? "Anzahl" : "Count")]}
+                        />
+                        <Bar dataKey="avgScore" radius={[0, 4, 4, 0]}>
+                          {regionData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                        </Bar>
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
-                  {profile?.avgScores && globalAvg && globalAvg.totalRatings > 0 && (
-                    <div className="mt-6 pt-4 border-t border-border/20">
-                      <h3 className="text-sm font-serif font-bold text-muted-foreground uppercase tracking-widest mb-1">{t("flavorProfile.personalVsGlobal")}</h3>
-                      <p className="text-xs text-muted-foreground/70 mb-2" data-testid="text-personal-vs-global-desc">{t("flavorProfile.personalVsGlobalDesc")}</p>
-                      <div className="text-xs text-muted-foreground mb-3">{t("flavorProfile.globalBasedOn", { ratings: globalAvg.totalRatings, participants: globalAvg.totalParticipants })}</div>
-                      <div className="space-y-2">
-                        {[
-                          { key: "nose", label: isDE ? "Nase" : "Nose", personal: profile.avgScores.nose, global: globalAvg.nose },
-                          { key: "taste", label: isDE ? "Geschmack" : "Taste", personal: profile.avgScores.taste, global: globalAvg.taste },
-                          { key: "finish", label: isDE ? "Abgang" : "Finish", personal: profile.avgScores.finish, global: globalAvg.finish },
-                          { key: "balance", label: "Balance", personal: profile.avgScores.balance, global: globalAvg.balance },
-                          { key: "overall", label: isDE ? "Gesamt" : "Overall", personal: profile.avgScores.overall, global: globalAvg.overall },
-                        ].map(({ key, label, personal, global }) => {
-                          const diff = Math.round((personal - global) * 10) / 10;
-                          return (
-                            <div key={key} className="flex items-center justify-between text-sm">
-                              <span className="font-serif text-muted-foreground w-20">{label}</span>
-                              <div className="flex items-center gap-4 flex-1 justify-end">
-                                <span className="font-mono text-foreground font-medium">{personal.toFixed(1)}</span>
-                                <span className="text-muted-foreground/50">vs</span>
-                                <span className="font-mono text-muted-foreground">{global.toFixed(1)}</span>
-                                <span className={`font-mono text-xs w-14 text-right ${diff > 0 ? "text-green-500" : diff < 0 ? "text-red-400" : "text-muted-foreground"}`}>
-                                  {diff > 0 ? `+${diff}` : diff.toString()}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
                 </div>
+              )}
 
-                {regionData.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {peatData.length > 0 && (
                   <div className="bg-card rounded-lg border border-border/40 p-6">
-                    <h2 className="text-lg font-serif font-semibold mb-1">{t("flavorProfile.regionTitle")}</h2>
-                    <p className="text-xs text-muted-foreground mb-1">{t("flavorProfile.regionSubtitle")}</p>
-                    <p className="text-xs text-muted-foreground/70 mb-4" data-testid="text-region-desc">{t("flavorProfile.regionDesc")}</p>
-                    <div className="h-[200px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={regionData} layout="vertical" margin={{ left: 80 }}>
-                          <XAxis type="number" domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
-                          <YAxis type="category" dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} width={75} />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-                            labelStyle={{ color: "hsl(var(--foreground))" }}
-                            formatter={(value: number, name: string) => [value.toFixed(1), name === "avgScore" ? (isDE ? "Ø Bewertung" : "Avg Score") : (isDE ? "Anzahl" : "Count")]}
-                          />
-                          <Bar dataKey="avgScore" radius={[0, 4, 4, 0]}>
-                            {regionData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
+                    <h2 className="text-base font-serif font-semibold mb-1">{t("flavorProfile.peatTitle")}</h2>
+                    <p className="text-xs text-muted-foreground/70 mb-3" data-testid="text-peat-desc">{t("flavorProfile.peatDesc")}</p>
+                    <div className="space-y-3">
+                      {peatData.map((d) => (
+                        <div key={d.name} className="flex items-center justify-between">
+                          <span className="text-sm text-foreground">{d.name}</span>
+                          <div className="flex items-center gap-3">
+                            <div className="w-24 h-2 bg-secondary/50 rounded-full overflow-hidden">
+                              <div className="h-full bg-primary/60 rounded-full" style={{ width: `${d.avgScore}%` }} />
+                            </div>
+                            <span className="text-xs text-muted-foreground w-10 text-right">{d.avgScore}</span>
+                            <span className="text-[10px] text-muted-foreground/60">({d.count})</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {peatData.length > 0 && (
-                    <div className="bg-card rounded-lg border border-border/40 p-6">
-                      <h2 className="text-base font-serif font-semibold mb-1">{t("flavorProfile.peatTitle")}</h2>
-                      <p className="text-xs text-muted-foreground/70 mb-3" data-testid="text-peat-desc">{t("flavorProfile.peatDesc")}</p>
-                      <div className="space-y-3">
-                        {peatData.map((d) => (
-                          <div key={d.name} className="flex items-center justify-between">
-                            <span className="text-sm text-foreground">{d.name}</span>
-                            <div className="flex items-center gap-3">
-                              <div className="w-24 h-2 bg-secondary/50 rounded-full overflow-hidden">
-                                <div className="h-full bg-primary/60 rounded-full" style={{ width: `${d.avgScore}%` }} />
-                              </div>
-                              <span className="text-xs text-muted-foreground w-10 text-right">{d.avgScore}</span>
-                              <span className="text-[10px] text-muted-foreground/60">({d.count})</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {caskData.length > 0 && (
-                    <div className="bg-card rounded-lg border border-border/40 p-6">
-                      <h2 className="text-base font-serif font-semibold mb-1">{t("flavorProfile.caskTitle")}</h2>
-                      <p className="text-xs text-muted-foreground/70 mb-3" data-testid="text-cask-desc">{t("flavorProfile.caskDesc")}</p>
-                      <div className="space-y-3">
-                        {caskData.map((d) => (
-                          <div key={d.name} className="flex items-center justify-between">
-                            <span className="text-sm text-foreground">{d.name}</span>
-                            <div className="flex items-center gap-3">
-                              <div className="w-24 h-2 bg-secondary/50 rounded-full overflow-hidden">
-                                <div className="h-full bg-primary/60 rounded-full" style={{ width: `${d.avgScore}%` }} />
-                              </div>
-                              <span className="text-xs text-muted-foreground w-10 text-right">{d.avgScore}</span>
-                              <span className="text-[10px] text-muted-foreground/60">({d.count})</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {topWhiskies.length > 0 && (
+                {caskData.length > 0 && (
                   <div className="bg-card rounded-lg border border-border/40 p-6">
-                    <h2 className="text-lg font-serif font-semibold mb-1">{t("flavorProfile.topTitle")}</h2>
-                    <p className="text-xs text-muted-foreground/70 mb-4" data-testid="text-top-desc">{t("flavorProfile.topDesc")}</p>
+                    <h2 className="text-base font-serif font-semibold mb-1">{t("flavorProfile.caskTitle")}</h2>
+                    <p className="text-xs text-muted-foreground/70 mb-3" data-testid="text-cask-desc">{t("flavorProfile.caskDesc")}</p>
                     <div className="space-y-3">
-                      {topWhiskies.map((item, i) => (
-                        <div key={item.whisky.id} className="flex items-center gap-4 py-2 border-b border-border/20 last:border-0">
-                          <span className="text-lg font-serif font-bold text-primary/60 w-8">{i + 1}</span>
-                          {item.whisky.imageUrl && (
-                            <img src={item.whisky.imageUrl} alt={item.whisky.name} className="w-10 h-10 rounded object-cover" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate">{item.whisky.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {[item.whisky.distillery, item.whisky.region, item.whisky.age ? `${item.whisky.age}y` : null].filter(Boolean).join(" · ")}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-lg font-serif font-bold text-primary">{item.rating.overall.toFixed(1)}</span>
+                      {caskData.map((d) => (
+                        <div key={d.name} className="flex items-center justify-between">
+                          <span className="text-sm text-foreground">{d.name}</span>
+                          <div className="flex items-center gap-3">
+                            <div className="w-24 h-2 bg-secondary/50 rounded-full overflow-hidden">
+                              <div className="h-full bg-primary/60 rounded-full" style={{ width: `${d.avgScore}%` }} />
+                            </div>
+                            <span className="text-xs text-muted-foreground w-10 text-right">{d.avgScore}</span>
+                            <span className="text-[10px] text-muted-foreground/60">({d.count})</span>
                           </div>
                         </div>
                       ))}
@@ -639,18 +596,48 @@ export default function FlavorProfile() {
                   </div>
                 )}
               </div>
-            )}
-          </>
-        )}
 
-        {activeTab === "profile" && currentParticipant && (
+              {topWhiskies.length > 0 && (
+                <div className="bg-card rounded-lg border border-border/40 p-6">
+                  <h2 className="text-lg font-serif font-semibold mb-1">{t("flavorProfile.topTitle")}</h2>
+                  <p className="text-xs text-muted-foreground/70 mb-4" data-testid="text-top-desc">{t("flavorProfile.topDesc")}</p>
+                  <div className="space-y-3">
+                    {topWhiskies.map((item, i) => (
+                      <div key={item.whisky.id} className="flex items-center gap-4 py-2 border-b border-border/20 last:border-0">
+                        <span className="text-lg font-serif font-bold text-primary/60 w-8">{i + 1}</span>
+                        {item.whisky.imageUrl && (
+                          <img src={item.whisky.imageUrl} alt={item.whisky.name} className="w-10 h-10 rounded object-cover" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate">{item.whisky.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {[item.whisky.distillery, item.whisky.region, item.whisky.age ? `${item.whisky.age}y` : null].filter(Boolean).join(" · ")}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-lg font-serif font-bold text-primary">{item.rating.overall.toFixed(1)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </motion.div>
+      </TabsContent>
+
+      <TabsContent value="profile">
+        {currentParticipant && (
           <WhiskyProfileTab participantId={currentParticipant.id} t={t} isDE={isDE} />
         )}
+      </TabsContent>
 
-        {activeTab === "wheel" && currentParticipant && (
+      <TabsContent value="wheel">
+        {currentParticipant && (
           <FlavorWheelContent />
         )}
-      </motion.div>
-    </div>
+      </TabsContent>
+    </PageLayout>
   );
 }

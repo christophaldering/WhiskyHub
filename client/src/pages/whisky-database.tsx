@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, ArrowUpDown, ExternalLink, Wine, ShieldAlert, Star, Database } from "lucide-react";
 import { Link } from "wouter";
+import { PageLayout } from "@/components/page-layout";
 
 interface DbWhisky {
   id: string;
@@ -122,12 +123,13 @@ export default function WhiskyDatabase() {
     : null;
 
   return (
-    <div className="space-y-8 min-w-0 overflow-x-hidden" data-testid="whisky-database">
-      <header>
-        <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("whiskyDb.title")}</h1>
-        <p className="text-muted-foreground font-serif italic mt-2 text-base sm:text-lg">{t("whiskyDb.subtitle")}</p>
-      </header>
-
+    <PageLayout
+      icon={Database}
+      title={t("whiskyDb.title")}
+      subtitle={t("whiskyDb.subtitle")}
+      testId="whisky-database"
+    >
+      <div className="space-y-8">
       <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4" data-testid="banner-exclusive-access">
         <Database className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
         <p className="text-sm font-serif text-primary/80">{t("whiskyDb.exclusiveAccess")}</p>
@@ -264,6 +266,7 @@ export default function WhiskyDatabase() {
           </table>
         </div>
       )}
-    </div>
+      </div>
+    </PageLayout>
   );
 }
