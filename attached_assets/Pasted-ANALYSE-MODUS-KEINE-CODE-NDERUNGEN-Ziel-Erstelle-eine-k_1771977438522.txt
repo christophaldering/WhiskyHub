@@ -1,0 +1,95 @@
+ANALYSE-MODUS. KEINE CODE-ÄNDERUNGEN.
+
+Ziel:
+Erstelle eine kompakte Executive-Übersicht der aktuellen Feature-Erreichbarkeit in CaskSense.
+
+WICHTIG:
+- Keine Refactorings.
+- Keine Optimierungen.
+- Keine Code-Änderungen.
+- Nur Analyse und strukturierte Ausgabe.
+- Keine Verbesserungsvorschläge.
+
+--------------------------------------------------
+SCHRITT 1 – Feature-Inventar
+--------------------------------------------------
+
+Erstelle eine vollständige Liste aller funktionalen Features im System
+(basierend auf Routen, Page-Komponenten und Kontext-Aktionen).
+
+Nicht nur Hauptseiten, sondern auch:
+- Export-Funktionen
+- Recap
+- Vergleich
+- Analytik
+- Benchmark
+- Host Tools
+- Datenbank
+- Community-Features
+- etc.
+
+--------------------------------------------------
+SCHRITT 2 – Kategorisierung in 3 Listen
+--------------------------------------------------
+
+Gib exakt diese drei Listen aus:
+
+--------------------------------------------------
+1) SICHTBAR IM MENÜ
+--------------------------------------------------
+
+Features, die direkt über:
+- Desktop-Hauptnavigation
+- Mobile Bottom Navigation
+- Burger-Menü
+erreichbar sind.
+
+Pro Feature:
+- Feature-Name
+- Route
+- Rollen-Gating (all / pro / host / admin)
+
+--------------------------------------------------
+2) EXISTIERT, ABER NICHT IM MENÜ
+--------------------------------------------------
+
+Features, die:
+- im Code existieren
+- funktional erreichbar sind
+- aber nicht direkt im Hauptmenü verlinkt sind
+(z.B. nur über Buttons, Tabs oder Kontextzugriff)
+
+Pro Feature:
+- Feature-Name
+- Route
+- Wie erreichbar? (Button / Tab / Redirect / Kontext)
+- Rollen-Gating
+
+--------------------------------------------------
+3) EXISTIERT, ABER FAKTISCH NICHT ERREICHBAR
+--------------------------------------------------
+
+Features oder Routen, die:
+- im Code existieren
+- aber keine sichtbare UI-Referenz haben
+- und nicht über Redirects erreichbar sind
+
+Pro Feature:
+- Feature-Name
+- Route
+- Warum nicht erreichbar? (keine Referenz / kein Link / nur manuelle URL)
+
+--------------------------------------------------
+ABSCHLUSS
+--------------------------------------------------
+
+Zusammenfassung:
+
+- Gesamtanzahl Features
+- Anzahl sichtbar im Menü
+- Anzahl nicht im Menü, aber erreichbar
+- Anzahl faktisch nicht erreichbar
+
+Keine Bewertung.
+Keine Verbesserungsvorschläge.
+Nur klare Transparenz.
