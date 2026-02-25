@@ -531,26 +531,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const hasActiveSessions = allTastings.some((t: any) => (ACTIVE_STATUSES as readonly string[]).includes(t.status));
 
   const navGroups: NavGroup[] = useMemo(() => [
-    ...(hasActiveSessions ? [{
-      label: t('navGroup.jetzt'),
-      defaultOpen: true,
-      items: [
-        { href: "/now", icon: Zap, label: t('nav.now'), match: (loc: string) => loc === "/now" },
-      ],
-    }] : []),
     {
       label: t('navGroup.tastings'),
       defaultOpen: true,
       items: [
-        { href: "/tasting", icon: Home, label: t('nav.lobby'), match: (loc: string) => loc === "/tasting" },
         { href: "/tasting/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/tasting/sessions" },
-        { href: "/tasting/calendar", icon: Calendar, label: t('nav.calendar') },
+        { href: "/tasting", icon: Home, label: t('nav.tastingHub', 'Vorlagen & Pairings'), match: (loc: string) => loc === "/tasting" },
+        { href: "/tasting/calendar", icon: Calendar, label: t('nav.calendarShort', 'Kalender') },
       ],
     },
     {
       label: t('navGroup.tagebuch'),
       items: [
-        { href: "/my/journal", icon: NotebookPen, label: t('nav.journal'), match: (loc: string) => loc === "/my/journal" },
+        { href: "/my/journal", icon: NotebookPen, label: t('nav.journalPrivate', 'Private Verkostungen'), match: (loc: string) => loc === "/my/journal" },
         { href: "/my/collection", icon: Archive, label: t('nav.collection') },
         { href: "/my/wishlist", icon: Star, label: t('nav.wishlist') },
       ],
@@ -719,7 +712,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             const bottomItems = [
               inTasting
                 ? { href: `/tasting/${tastingMatch![1]}`, icon: ArrowLeft, label: t('nav.backToTasting'), isCockpit: true }
-                : { href: "/now", icon: Zap, label: t('nav.nowShort') },
+                : { href: "/tasting", icon: Home, label: "Home" },
               { href: "/tasting/sessions", icon: Wine, label: t('nav.sessionsShort') },
               { href: "/my/journal", icon: NotebookPen, label: t('nav.journalShort') },
               { href: "/discover", icon: Compass, label: t('nav.entdeckenShort') },
@@ -729,13 +722,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           })().map((item) => {
             const isActive = item.href === "/profile"
               ? location.startsWith("/profile")
-              : item.href === "/tasting/sessions"
-                ? location === "/tasting/sessions" || location === "/tasting" || location === "/tasting/calendar" || location === "/tasting/host"
-                : item.href === "/my/journal"
-                  ? location.startsWith("/my/")
-                  : item.href === "/discover"
-                    ? location.startsWith("/discover")
-                    : location === item.href;
+              : item.href === "/tasting"
+                ? location === "/tasting"
+                : item.href === "/tasting/sessions"
+                  ? location === "/tasting/sessions" || location === "/tasting/calendar" || location === "/tasting/host"
+                  : item.href === "/my/journal"
+                    ? location.startsWith("/my/")
+                    : item.href === "/discover"
+                      ? location.startsWith("/discover")
+                      : location === item.href;
             if ((item as any).isCockpit) {
               return (
                 <button
