@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { adminApi, feedbackApi } from "@/lib/api";
 import { apiRequest } from "@/lib/queryClient";
@@ -9,8 +8,7 @@ import { useAppStore } from "@/lib/store";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import type { EncyclopediaSuggestion } from "@shared/schema";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { PageLayout } from "@/components/page-layout";
-import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock, Settings, FlaskConical, Filter, AlertTriangle, Globe, UserPlus, BellRing, Megaphone, Scale, Construction, Trophy, CircleDot, Layers, Camera, LayoutDashboard, Compass as CompassIcon, ExternalLink } from "lucide-react";
+import { ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User, Calendar, MapPin, Eye, Hash, BarChart3, BookOpen, TrendingUp, ChevronDown, ChevronRight, Database, Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2, Lightbulb, CheckCircle, XCircle, MessageSquarePlus, Heart, Rocket, Wifi, Star, Brain, Clock, Settings, FlaskConical, Filter, AlertTriangle, Globe, UserPlus, BellRing, Megaphone, Scale } from "lucide-react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -855,13 +853,26 @@ export default function AdminPanel() {
     : 1;
 
   return (
-    <PageLayout
-      icon={ShieldAlert}
-      title={t("admin.title")}
-      subtitle={t("admin.subtitle")}
-      testId="admin-panel-page"
-      headerContent={
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <motion.div
+      className="max-w-5xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      data-testid="admin-panel-page"
+    >
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <ShieldAlert className="w-7 h-7 text-primary" />
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-admin-title">
+            {t("admin.title")}
+          </h1>
+        </div>
+        <p className="text-sm text-muted-foreground" data-testid="text-admin-subtitle">
+          {t("admin.subtitle")}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
         <Card data-testid="stat-total-participants">
           <CardContent className="p-4 text-center">
             <Users className="w-5 h-5 mx-auto mb-1 text-primary" />
@@ -891,8 +902,7 @@ export default function AdminPanel() {
           </CardContent>
         </Card>
       </div>
-      }
-    >
+
       <Tabs value={adminTab} onValueChange={setAdminTab} data-testid="admin-tabs">
         <Select value={adminTab} onValueChange={setAdminTab}>
           <SelectTrigger className="w-full mb-6" data-testid="admin-section-select">
@@ -957,9 +967,6 @@ export default function AdminPanel() {
             </SelectItem>
             <SelectItem value="online">
               <span className="flex items-center gap-2"><Wifi className="w-4 h-4" /> Online</span>
-            </SelectItem>
-            <SelectItem value="under-construction">
-              <span className="flex items-center gap-2"><Construction className="w-4 h-4" /> Under Construction</span>
             </SelectItem>
           </SelectContent>
         </Select>
@@ -1986,43 +1993,8 @@ export default function AdminPanel() {
         <TabsContent value="online">
           <OnlineUsersTab />
         </TabsContent>
-
-        <TabsContent value="under-construction">
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {t("admin.underConstructionDesc", "Seiten und Inhalte, die existieren aber derzeit nicht über die Navigation erreichbar sind. Alle Routen sind aktiv und funktionsfähig.")}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                { href: "/home", icon: LayoutDashboard, title: "Home Dashboard", desc: "Mini-Dashboard mit Schnelleinstieg: Session beitreten, erstellen, Journal, letzte Tastings." },
-                { href: "/badges", icon: Trophy, title: "Badges / Achievements", desc: "Achievement-System mit Badges für Verkostungen, Hosting, Journal und Community." },
-                { href: "/flavor-wheel", icon: CircleDot, title: "Aromarad (Standalone)", desc: "Interaktives Aromarad mit Statistiken. Eingebettete Version existiert im Flavor Profile Tab." },
-                { href: "/background", icon: Layers, title: "Hintergrundwissen", desc: "Sensorik-Hintergrundwissen: Verkostungsmechanik, Profile, Bewertungsdimensionen, Normalisierung." },
-                { href: "/intro", icon: CompassIcon, title: "Intro / Onboarding", desc: "Multi-Page Onboarding-Flow mit Projektphilosophie und Erklärung des Warum." },
-                { href: "/feature-tour", icon: Camera, title: "Feature-Tour", desc: "Geführte Tour durch alle Features in 6 Kategorien (Tastings, Hosting, Journal, Analytics, Community, Profil)." },
-                { href: "/method", icon: FlaskConical, title: "Methodik", desc: "Mathematische und statistische Grundlagen der Geschmacksprofile: Dimensionsmodell, Median, IQR, Stabilität." },
-              ].map((page) => (
-                <Link key={page.href} href={page.href}>
-                  <Card className="border-border/40 hover:border-primary/30 transition-colors cursor-pointer h-full" data-testid={`admin-uc-${page.href.replace("/", "")}`}>
-                    <CardContent className="p-4 flex items-start gap-3">
-                      <page.icon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-serif font-semibold">{page.title}</span>
-                          <ExternalLink className="w-3 h-3 text-muted-foreground/50" />
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{page.desc}</p>
-                        <code className="text-[10px] text-muted-foreground/50 mt-1 block">{page.href}</code>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </TabsContent>
       </Tabs>
-    </PageLayout>
+    </motion.div>
   );
 }
 

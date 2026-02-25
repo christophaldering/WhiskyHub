@@ -472,9 +472,8 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
             <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t('login.pin')}</Label>
             <Input
               type="password"
-              inputMode="numeric"
               value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onChange={(e) => setPin(e.target.value)}
               placeholder={t('login.pinPlaceholder')}
               maxLength={6}
               className="bg-secondary/20"

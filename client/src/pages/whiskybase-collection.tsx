@@ -57,7 +57,6 @@ import {
   X,
   Pencil,
 } from "lucide-react";
-import { PageLayout } from "@/components/page-layout";
 import { useToast } from "@/hooks/use-toast";
 import { GuestPreview } from "@/components/guest-preview";
 import type { WhiskybaseCollectionItem } from "@shared/schema";
@@ -425,13 +424,14 @@ export default function WhiskybaseCollection() {
   };
 
   return (
-    <PageLayout
-      icon={Archive}
-      title={t("collection.title")}
-      subtitle={t("collection.subtitle")}
-      testId="text-collection-title"
-    >
-      <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20">
+      <div className="space-y-3">
+        <div>
+          <h1 className="text-2xl font-bold font-display" data-testid="text-collection-title">
+            {t("collection.title")}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">{t("collection.subtitle")}</p>
+        </div>
         <div className="flex flex-wrap items-center gap-1.5">
           {items.length > 0 && (
             <Button
@@ -508,8 +508,9 @@ export default function WhiskybaseCollection() {
             data-testid="input-sync-file"
           />
         </div>
+      </div>
 
-        {items.length > 0 && !priceSelectMode && (
+      {items.length > 0 && !priceSelectMode && (
         <p className="text-xs text-muted-foreground">{t("collection.reimportHint")}</p>
       )}
 
@@ -1191,7 +1192,6 @@ export default function WhiskybaseCollection() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      </div>
-    </PageLayout>
+    </div>
   );
 }

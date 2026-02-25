@@ -1193,13 +1193,11 @@ export default function NakedTasting() {
                   />
                   <div>
                     <Input
-                      type="tel"
-                      inputMode="numeric"
+                      type="password"
                       value={pin}
-                      onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      onChange={(e) => setPin(e.target.value)}
                       placeholder={t("guestAuth.pinPlaceholder")}
                       maxLength={6}
-                      minLength={4}
                       className="text-center h-12 font-serif text-base bg-secondary/20 border-border/30"
                       onKeyDown={(e) => e.key === "Enter" && handleJoin()}
                       data-testid="input-naked-pin"

@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
-import { PageLayout } from "@/components/page-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,6 @@ import {
   Users,
   Clock,
   LogIn,
-  LayoutDashboard,
 } from "lucide-react";
 
 export default function HomeDashboard() {
@@ -61,14 +59,21 @@ export default function HomeDashboard() {
   };
 
   return (
-    <PageLayout
-      icon={LayoutDashboard}
-      title={t("dashboard.title", "CaskSense")}
-      subtitle={currentParticipant ? t("dashboard.welcome", "Willkommen, {{name}}", { name: currentParticipant.name }) : undefined}
-      variant="narrow"
-      testId="page-home-dashboard"
-    >
-      <div className="space-y-5">
+    <div className="flex flex-col w-full max-w-lg mx-auto px-4 py-6 space-y-5">
+      <div className="text-center space-y-1">
+        <h1 className="text-2xl font-serif font-bold tracking-tight text-primary">
+          {t("app.name", "CaskSense")}
+        </h1>
+        <p className="text-sm text-muted-foreground font-serif italic">
+          Dein Whisky-Tasting Companion
+        </p>
+        {currentParticipant && (
+          <p className="text-xs text-muted-foreground pt-1">
+            Willkommen, <span className="text-primary font-medium">{currentParticipant.name}</span>
+          </p>
+        )}
+      </div>
+
       <Card className="border-primary/20 bg-card/80 backdrop-blur">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm font-serif font-semibold text-primary uppercase tracking-widest">
@@ -200,7 +205,6 @@ export default function HomeDashboard() {
           </CardContent>
         </Card>
       )}
-      </div>
-    </PageLayout>
+    </div>
   );
 }

@@ -34,7 +34,6 @@ import { Plus, ArrowLeft, Pencil, Trash2, Star, Wine, Calendar, Flame, Sparkles,
 import { Badge } from "@/components/ui/badge";
 import { wishlistScanApi, textExtractApi } from "@/lib/api";
 import { useLocation } from "wouter";
-import { PageLayout } from "@/components/page-layout";
 import type { WishlistEntry } from "@shared/schema";
 
 type View = "list" | "form";
@@ -141,24 +140,7 @@ export default function Wishlist() {
   });
 
   return (
-    <PageLayout
-      icon={Star}
-      title={t("wishlist.title")}
-      subtitle={entries.length > 0 ? t("wishlist.total", { count: entries.length }) : t("wishlist.subtitle")}
-      variant="immersive"
-      testId="wishlist-page"
-      primaryAction={view === "list" ? (
-        <Button
-          onClick={handleNew}
-          className="bg-primary text-primary-foreground font-serif"
-          data-testid="button-add-wishlist"
-          aria-label={t("wishlist.addWhisky")}
-        >
-          <Plus className="w-4 h-4 sm:mr-2" />
-          <span className="hidden sm:inline">{t("wishlist.addWhisky")}</span>
-        </Button>
-      ) : undefined}
-    >
+    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="wishlist-page">
       <AnimatePresence mode="wait">
         {view === "list" && (
           <motion.div
@@ -168,6 +150,28 @@ export default function Wishlist() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary truncate" data-testid="text-wishlist-title">
+                  {t("wishlist.title")}
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {entries.length > 0
+                    ? t("wishlist.total", { count: entries.length })
+                    : t("wishlist.subtitle")}
+                </p>
+              </div>
+              <Button
+                onClick={handleNew}
+                className="bg-primary text-primary-foreground font-serif flex-shrink-0 self-start sm:self-auto"
+                data-testid="button-add-wishlist"
+                aria-label={t("wishlist.addWhisky")}
+              >
+                <Plus className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t("wishlist.addWhisky")}</span>
+              </Button>
+            </div>
+
             {isLoading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
@@ -327,7 +331,7 @@ export default function Wishlist() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </PageLayout>
+    </div>
   );
 }
 

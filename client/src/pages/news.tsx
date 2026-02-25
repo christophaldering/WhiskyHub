@@ -7,7 +7,6 @@ import { queryClient } from "@/lib/queryClient";
 import { useAppStore } from "@/lib/store";
 import { notificationApi } from "@/lib/api";
 import { Bell, CheckCheck, Wine, Users, Sparkles, Megaphone, Gift, ChevronRight, ChevronDown, ChevronUp, Plus, Send, Calendar } from "lucide-react";
-import { PageLayout } from "@/components/page-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -170,7 +169,11 @@ export default function News() {
 
   if (!currentParticipant) {
     return (
-      <PageLayout icon={Bell} title={t("news.title")} testId="page-news">
+      <div className="space-y-6 max-w-4xl mx-auto min-w-0 overflow-x-hidden">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+          <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("news.title")}</h1>
+          <div className="w-12 h-1 bg-primary/50 mt-3" />
+        </motion.div>
         <GuestPreview featureTitle={t("news.title")} featureDescription={t("news.guestDesc")}>
           <div className="space-y-3">
             {[1, 2, 3].map(i => (
@@ -181,45 +184,45 @@ export default function News() {
             ))}
           </div>
         </GuestPreview>
-      </PageLayout>
+      </div>
     );
   }
 
-  const primaryActions = (
-    <div className="flex items-center gap-2">
-      {unreadCount > 0 && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => markAllReadMutation.mutate()}
-          className="gap-1.5 text-xs"
-          data-testid="button-mark-all-read"
-        >
-          <CheckCheck className="w-3.5 h-3.5" />
-          {t("news.markAllRead")}
-        </Button>
-      )}
-      {isAdmin && (
-        <Button
-          size="sm"
-          onClick={() => setShowPostDialog(true)}
-          className="gap-1.5 text-xs"
-          data-testid="button-post-news"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          {t("news.postUpdate")}
-        </Button>
-      )}
-    </div>
-  );
-
   return (
-    <PageLayout
-      icon={Bell}
-      title={t("news.title")}
-      primaryAction={primaryActions}
-      testId="page-news"
-    >
+    <div className="space-y-6 max-w-4xl mx-auto min-w-0 overflow-x-hidden">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words" data-testid="text-news-title">{t("news.title")}</h1>
+            <div className="w-12 h-1 bg-primary/50 mt-3" />
+          </div>
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => markAllReadMutation.mutate()}
+                className="gap-1.5 text-xs"
+                data-testid="button-mark-all-read"
+              >
+                <CheckCheck className="w-3.5 h-3.5" />
+                {t("news.markAllRead")}
+              </Button>
+            )}
+            {isAdmin && (
+              <Button
+                size="sm"
+                onClick={() => setShowPostDialog(true)}
+                className="gap-1.5 text-xs"
+                data-testid="button-post-news"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {t("news.postUpdate")}
+              </Button>
+            )}
+          </div>
+        </div>
+      </motion.div>
 
       {unreadCount > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -425,6 +428,6 @@ export default function News() {
           </div>
         </DialogContent>
       </Dialog>
-    </PageLayout>
+    </div>
   );
 }

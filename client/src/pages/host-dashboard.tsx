@@ -4,10 +4,9 @@ import { motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { hostDashboardApi } from "@/lib/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { GlassWater, Users, Wine, Star, Calendar, Trophy, LayoutDashboard, Eye, ShieldAlert } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { GlassWater, Users, Wine, Star, Calendar, Trophy, LayoutDashboard, Eye } from "lucide-react";
+import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 interface HostSummary {
   totalTastings: number;
@@ -34,9 +33,7 @@ const statusColors: Record<string, string> = {
 export default function HostDashboard() {
   const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const [, navigate] = useLocation();
   const isDE = i18n.language === "de";
-  const isAdmin = currentParticipant?.role === "admin";
 
   const { data: summary, isLoading } = useQuery<HostSummary>({
     queryKey: ["host-dashboard", currentParticipant?.id],
@@ -67,27 +64,6 @@ export default function HostDashboard() {
   }
 
   const hasData = summary && summary.totalTastings > 0;
-
-  if (!hasData && !isAdmin) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4" data-testid="host-dashboard-no-access">
-        <ShieldAlert className="w-10 h-10 text-muted-foreground/50" />
-        <p className="text-muted-foreground font-serif text-center">
-          {isDE
-            ? "Du hast noch keine Tastings gehostet. Erstelle dein erstes Tasting, um das Host-Dashboard freizuschalten."
-            : "You haven't hosted any tastings yet. Create your first tasting to unlock the Host Dashboard."}
-        </p>
-        <Button
-          variant="outline"
-          className="font-serif"
-          onClick={() => navigate("/tasting/sessions")}
-          data-testid="button-go-to-sessions"
-        >
-          {isDE ? "Zu meinen Sessions" : "Go to Sessions"}
-        </Button>
-      </div>
-    );
-  }
 
   const chartData = summary?.averageScores
     ? [

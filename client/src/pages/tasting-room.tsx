@@ -906,31 +906,16 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", date: "", location: "", videoLink: "", blindMode: false, ratingScale: 100, guestMode: "standard" as string, viewerEnabled: false, viewerLiveOnly: true, viewerAllowAverages: true, viewerAllowRanking: true });
+  const [form, setForm] = useState({ title: "", date: "", location: "", videoLink: "", blindMode: false, ratingScale: 100, guestMode: "standard" as string });
   const [coverUploading, setCoverUploading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showUltraConfirm, setShowUltraConfirm] = useState(false);
-  const [viewerQrUrl, setViewerQrUrl] = useState<string | null>(null);
-  const [viewerCopied, setViewerCopied] = useState(false);
-  const [viewerTokenGenerating, setViewerTokenGenerating] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const viewerWatchUrl = tasting.viewerToken ? `${window.location.origin}/watch/${tasting.viewerToken}` : null;
-
-  useEffect(() => {
-    if (viewerWatchUrl) {
-      import("qrcode").then((QRCode) => {
-        QRCode.default.toDataURL(viewerWatchUrl, { width: 200, margin: 2 }).then(setViewerQrUrl);
-      });
-    } else {
-      setViewerQrUrl(null);
-    }
-  }, [viewerWatchUrl]);
-
   useEffect(() => {
     if (open && tasting) {
-      setForm({ title: tasting.title, date: tasting.date, location: tasting.location, videoLink: tasting.videoLink || "", blindMode: tasting.blindMode ?? false, ratingScale: tasting.ratingScale ?? 100, guestMode: (tasting as any).guestMode || "standard", viewerEnabled: tasting.viewerEnabled ?? false, viewerLiveOnly: tasting.viewerLiveOnly ?? true, viewerAllowAverages: tasting.viewerAllowAverages ?? true, viewerAllowRanking: tasting.viewerAllowRanking ?? true });
+      setForm({ title: tasting.title, date: tasting.date, location: tasting.location, videoLink: tasting.videoLink || "", blindMode: tasting.blindMode ?? false, ratingScale: tasting.ratingScale ?? 100, guestMode: (tasting as any).guestMode || "standard" });
       setSaved(false);
     }
     return () => {
@@ -1157,105 +1142,6 @@ function EditTastingDialog({ tasting }: { tasting: Tasting }) {
               </div>
             </>
           )}
-          <div className="border rounded-lg p-3 space-y-3 bg-secondary/10">
-            <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("sessionSettings.viewerTitle")}</Label>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-medium">{t("sessionSettings.viewerEnabled")}</p>
-                <p className="text-[10px] text-muted-foreground leading-tight">{t("sessionSettings.viewerEnabledDesc")}</p>
-              </div>
-              <Switch
-                checked={form.viewerEnabled}
-                onCheckedChange={async (v) => {
-                  if (v && !tasting.viewerToken) {
-                    setViewerTokenGenerating(true);
-                    try {
-                      const result = await fetch(`/api/tastings/${tasting.id}/viewer-token`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ hostId: currentParticipant!.id }),
-                      }).then(r => r.json());
-                      queryClient.invalidateQueries({ queryKey: ["tasting", tasting.id] });
-                    } catch (e) {}
-                    setViewerTokenGenerating(false);
-                  }
-                  const newForm = { ...form, viewerEnabled: v };
-                  setForm(newForm);
-                  triggerAutoSave(newForm);
-                }}
-                disabled={viewerTokenGenerating}
-                data-testid="switch-viewer-enabled"
-              />
-            </div>
-            {form.viewerEnabled && (
-              <>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs">{t("sessionSettings.viewerLiveOnly")}</p>
-                  <Switch
-                    checked={form.viewerLiveOnly}
-                    onCheckedChange={(v) => {
-                      const newForm = { ...form, viewerLiveOnly: v };
-                      setForm(newForm);
-                      triggerAutoSave(newForm);
-                    }}
-                    data-testid="switch-viewer-live-only"
-                  />
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs">{t("sessionSettings.viewerAllowAverages")}</p>
-                  <Switch
-                    checked={form.viewerAllowAverages}
-                    onCheckedChange={(v) => {
-                      const newForm = { ...form, viewerAllowAverages: v };
-                      setForm(newForm);
-                      triggerAutoSave(newForm);
-                    }}
-                    data-testid="switch-viewer-allow-averages"
-                  />
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs">{t("sessionSettings.viewerAllowRanking")}</p>
-                  <Switch
-                    checked={form.viewerAllowRanking}
-                    onCheckedChange={(v) => {
-                      const newForm = { ...form, viewerAllowRanking: v };
-                      setForm(newForm);
-                      triggerAutoSave(newForm);
-                    }}
-                    data-testid="switch-viewer-allow-ranking"
-                  />
-                </div>
-                {viewerWatchUrl && (
-                  <div className="space-y-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full text-xs gap-2"
-                      onClick={() => {
-                        navigator.clipboard.writeText(viewerWatchUrl);
-                        setViewerCopied(true);
-                        setTimeout(() => setViewerCopied(false), 2000);
-                      }}
-                      data-testid="button-copy-viewer-link"
-                    >
-                      {viewerCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                      {viewerCopied ? t("sessionSettings.viewerCopied") : t("sessionSettings.viewerCopyLink")}
-                    </Button>
-                    {viewerQrUrl && (
-                      <div className="flex flex-col items-center gap-1">
-                        <p className="text-[10px] text-muted-foreground">{t("sessionSettings.viewerQrTitle")}</p>
-                        <img src={viewerQrUrl} alt="Watch QR" className="w-32 h-32 rounded border" data-testid="img-viewer-qr" />
-                      </div>
-                    )}
-                    <p className="text-[10px] text-muted-foreground/70 text-center">{t("sessionSettings.viewerInfo")}</p>
-                  </div>
-                )}
-                {viewerTokenGenerating && (
-                  <p className="text-[10px] text-muted-foreground text-center">{t("sessionSettings.viewerGenerating")}</p>
-                )}
-              </>
-            )}
-          </div>
           <div>
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">{t("session.coverImage.label")}</Label>
             <input
@@ -1706,7 +1592,6 @@ export default function TastingRoom() {
 
   const [showLogin, setShowLogin] = useState(false);
   const [guestName, setGuestName] = useState("");
-  const [guestPin, setGuestPin] = useState("");
   const [guestLoading, setGuestLoading] = useState(false);
   const [guestError, setGuestError] = useState("");
   const [showSecureAccount, setShowSecureAccount] = useState(false);
@@ -1721,7 +1606,7 @@ export default function TastingRoom() {
     setGuestLoading(true);
     setGuestError("");
     try {
-      const guest = await participantApi.guestJoin(guestName.trim(), guestPin);
+      const guest = await participantApi.guestJoin(guestName.trim(), "");
       setParticipant({ id: guest.id, name: guest.name, role: guest.role, canAccessWhiskyDb: guest.canAccessWhiskyDb });
       if (guest.guest && !guest.pin) {
         setShowSecureAccount(true);
@@ -1898,7 +1783,7 @@ export default function TastingRoom() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 px-4">
         <LoginDialog open={showLogin} onClose={() => setShowLogin(false)} />
-        <Card className="max-w-sm w-full border-border/50 shadow-lg max-h-[85vh] overflow-y-auto">
+        <Card className="max-w-sm w-full border-border/50 shadow-lg">
           <CardHeader className="text-center pb-2">
             <CardTitle className="font-serif text-2xl text-primary flex items-center justify-center gap-2">
               <User className="w-6 h-6" />
@@ -1918,29 +1803,14 @@ export default function TastingRoom() {
                 className="bg-secondary/20"
                 autoFocus
                 data-testid="input-guest-name"
+                onKeyDown={(e) => e.key === "Enter" && handleGuestJoin()}
               />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">PIN</Label>
-              <Input
-                type="tel"
-                inputMode="numeric"
-                value={guestPin}
-                onChange={(e) => setGuestPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder={t("guestAuth.pinPlaceholder")}
-                maxLength={6}
-                minLength={4}
-                className="bg-secondary/20"
-                data-testid="input-guest-pin"
-                onKeyDown={(e) => e.key === "Enter" && guestName.trim() && guestPin.length >= 4 && handleGuestJoin()}
-              />
-              <p className="text-[11px] text-muted-foreground/70">{t("guestAuth.pinReminder")}</p>
             </div>
             {guestError && <p className="text-sm text-destructive" data-testid="text-guest-error">{guestError}</p>}
             <p className="text-[10px] text-muted-foreground/60 leading-relaxed">{t('guestAuth.consentNotice')}</p>
             <Button
               onClick={handleGuestJoin}
-              disabled={guestLoading || !guestName.trim() || guestPin.length < 4}
+              disabled={guestLoading || !guestName.trim()}
               className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
               data-testid="button-guest-join"
             >
@@ -2073,13 +1943,11 @@ export default function TastingRoom() {
             <div className="space-y-2">
               <Label className="font-serif text-sm uppercase tracking-widest text-muted-foreground">{t("login.pin")}</Label>
               <Input
-                type="tel"
-                inputMode="numeric"
+                type="password"
                 value={securePin}
-                onChange={(e) => setSecurePin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder={t("guestAuth.pinPlaceholder")}
+                onChange={(e) => setSecurePin(e.target.value)}
+                placeholder={t("login.pinPlaceholder")}
                 maxLength={6}
-                minLength={4}
                 className="bg-secondary/20"
                 data-testid="input-secure-pin"
               />

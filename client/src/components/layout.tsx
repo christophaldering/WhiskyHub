@@ -1,10 +1,10 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { ACTIVE_STATUSES } from "@shared/constants";
-import { Home, LogOut, LogIn, User, Wine, Users, NotebookPen, Sparkles, Calendar, ShieldAlert, Landmark, Star, Archive, ChevronDown, ArrowLeft, ArrowRight, X, Settings, HelpCircle, Compass, Activity, BarChart3, BookOpen, ClipboardList, Database, Download, FileText, GitCompareArrows, GlassWater, Globe, Heart, HeartHandshake, History, Info, LayoutDashboard, Library, Map, Medal, Microscope, Package, Puzzle, Trophy, Zap } from "lucide-react";
+import { Home, LogOut, LogIn, Menu, User, Wine, Users, NotebookPen, Sparkles, Calendar, ShieldAlert, Landmark, Star, Archive, ChevronDown, ArrowLeft, ArrowRight, X, Settings, HelpCircle, Compass, Activity, BarChart3, BookOpen, ClipboardList, Database, Download, FileText, GitCompareArrows, GlassWater, Globe, Heart, HeartHandshake, History, Info, LayoutDashboard, Library, Map, Medal, Microscope, Package, Puzzle, Trophy } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { WelcomeOverlay } from "@/components/welcome-overlay";
@@ -476,6 +476,7 @@ const MemoizedChildren = memo(function MemoizedChildren({ children }: { children
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const [open, setOpen] = useState(false);
   const [fullBleed, setFullBleed] = useState(false);
   const { t } = useTranslation();
   const { currentParticipant, setParticipant, lastSeenLandingVersion, setLastSeenLandingVersion } = useAppStore();
@@ -528,39 +529,68 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const isHost = currentParticipant && allTastings.some((t: any) => t.hostId === currentParticipant.id);
   const isAdmin = currentParticipant?.role === "admin";
-  const hasActiveSessions = allTastings.some((t: any) => (ACTIVE_STATUSES as readonly string[]).includes(t.status));
 
   const navGroups: NavGroup[] = useMemo(() => [
     {
-      label: t('navGroup.tastings'),
+      label: t('navGroup.genuss'),
       defaultOpen: true,
       items: [
+        { href: "/tasting", icon: Home, label: t('nav.lobby'), match: (loc: string) => loc === "/tasting" },
         { href: "/tasting/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/tasting/sessions" },
-        { href: "/tasting", icon: Home, label: t('nav.tastingHub', 'Vorlagen & Pairings'), match: (loc: string) => loc === "/tasting" },
-        { href: "/tasting/calendar", icon: Calendar, label: t('nav.calendarShort', 'Kalender') },
-      ],
-    },
-    {
-      label: t('navGroup.tagebuch'),
-      items: [
-        { href: "/my/journal", icon: NotebookPen, label: t('nav.journalPrivate', 'Private Verkostungen'), match: (loc: string) => loc === "/my/journal" },
+        { href: "/tasting/calendar", icon: Calendar, label: t('nav.calendar') },
+        { href: "/my/journal", icon: NotebookPen, label: t('nav.journal'), match: (loc: string) => loc === "/my/journal" },
+        { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
         { href: "/my/collection", icon: Archive, label: t('nav.collection') },
         { href: "/my/wishlist", icon: Star, label: t('nav.wishlist') },
+        { href: "/recap", icon: History, label: t('nav.recap') },
+        { href: "/my-tastings", icon: ClipboardList, label: t('nav.myTastings') },
+        { href: "/tasting/host", icon: LayoutDashboard, label: t('nav.hostDashboard') },
       ],
     },
     {
-      label: t('navGroup.entdecken'),
+      label: t('navGroup.pro'),
       items: [
-        { href: "/discover", icon: Compass, label: t('nav.discoverHub'), match: (loc: string) => loc === "/discover" },
-        { href: "/discover/distilleries", icon: Landmark, label: t('nav.distilleries'), match: (loc: string) => loc === "/discover/distilleries" },
-        { href: "/discover/community", icon: Users, label: t('navSubgroup.community'), match: (loc: string) => loc === "/discover/community" },
+        { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
+        { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
+        { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
+        { href: "/benchmark", icon: Library, label: t('nav.benchmark') },
+        { href: "/discover/database", icon: Database, label: t('nav.whiskyDatabase') },
+        { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
+        { href: "/data-export", icon: Download, label: t('nav.dataExport') },
       ],
     },
     {
       label: t('navGroup.profil'),
       items: [
         { href: "/profile", icon: User, label: t('profile.title'), match: (loc: string) => loc === "/profile" },
+        { href: "/flavor-profile", icon: Sparkles, label: t('nav.flavorProfile') },
+        { href: "/recommendations", icon: Compass, label: t('nav.recommendations') },
+        { href: "/taste-twins", icon: Users, label: t('nav.tasteTwins') },
+        { href: "/friends", icon: HeartHandshake, label: t('nav.friends') },
+        { href: "/community-rankings", icon: Trophy, label: t('nav.communityRankings') },
+        { href: "/activity", icon: Activity, label: t('nav.activity') },
+        { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
+        { href: "/profile/account", icon: Settings, label: t('nav.account') },
+      ],
+    },
+    {
+      label: t('navGroup.wissen'),
+      items: [
+        { href: "/lexicon", icon: BookOpen, label: t('nav.lexicon') },
+        { href: "/discover/distilleries", icon: Landmark, label: t('nav.distilleries'), match: (loc: string) => loc === "/discover/distilleries" },
+        { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
+        { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
+        { href: "/research", icon: Microscope, label: t('nav.research') },
+      ],
+    },
+    {
+      label: t('navGroup.ueber'),
+      items: [
         { href: "/profile/help", icon: HelpCircle, label: t('nav.help'), match: (loc: string) => loc === "/profile/help" },
+        { href: "/about", icon: Info, label: t('nav.about') },
+        { href: "/features", icon: Sparkles, label: t('nav.features') },
+        { href: "/donate", icon: Heart, label: t('nav.donate') },
+        { href: "/", icon: Globe, label: t('nav.landingPage'), match: (loc: string) => false },
       ],
     },
     ...(currentParticipant?.role === "admin" ? [{
@@ -569,9 +599,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
       ],
     }] : []),
-  ], [t, currentParticipant?.role, hasActiveSessions]);
+  ], [t, currentParticipant?.role]);
 
   const desktopNavRef = useRef<HTMLElement>(null);
+  const mobileNavRef = useRef<HTMLElement>(null);
 
   const scrollNavToActive = useCallback((navEl: HTMLElement | null) => {
     if (!navEl) return;
@@ -584,13 +615,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (open) scrollNavToActive(mobileNavRef.current);
+  }, [open, scrollNavToActive]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       scrollNavToActive(desktopNavRef.current);
     }, 50);
     return () => clearTimeout(timer);
   }, [location, scrollNavToActive]);
 
-  const handleNavigate = useCallback(() => {}, []);
+  const handleNavigate = useCallback(() => setOpen(false), []);
 
   const spotlightHints: SpotlightHint[] = useMemo(() => {
     return [];
@@ -648,7 +683,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <SpotlightProvider hints={spotlightHints} paused={!onboardingDone} />
       <TourProvider tours={tourDefinitions} paused={!onboardingDone} />
 
-      <header className="md:hidden sticky top-0 z-50 flex items-center justify-between px-3 py-2 border-b border-border/20 bg-card/95 backdrop-blur-lg">
+      <header className="md:hidden sticky top-0 z-50 flex items-center justify-between px-3 py-2 border-b border-border/40 bg-card/95 backdrop-blur-lg">
         <div className="flex items-center gap-1.5 min-w-0">
           {location !== "/app" && location !== "/" && (
             <Button
@@ -664,7 +699,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <span className="font-serif font-bold text-lg text-primary truncate">{t('app.name')}</span>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <ProfileAvatar size={32} showName={false} />
+          <ProfileAvatar size={36} showName={false} showSignOut />
+          <LanguageToggle />
+          <ThemeToggle />
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-primary hover:bg-secondary h-8 w-8">
+                <Menu className="w-5 h-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 border-r-border/40 w-72 bg-card">
+              <NavContent navInnerRef={mobileNavRef} location={location} navGroups={navGroups} onNavigate={handleNavigate} />
+            </SheetContent>
+          </Sheet>
         </div>
       </header>
 
@@ -704,33 +751,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <FeedbackButton />
       </div>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/98 backdrop-blur-xl border-t border-border/15 safe-area-bottom" style={{ paddingLeft: 'env(safe-area-inset-left, 0)', paddingRight: 'env(safe-area-inset-right, 0)' }}>
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/40 safe-area-bottom" style={{ paddingLeft: 'env(safe-area-inset-left, 0)', paddingRight: 'env(safe-area-inset-right, 0)' }}>
         <div className="flex items-center justify-around px-1 py-1.5">
           {(() => {
             const tastingMatch = location.match(/^\/tasting\/([a-f0-9-]{8,})/i);
             const inTasting = !!tastingMatch;
-            const bottomItems = [
+            return [
               inTasting
                 ? { href: `/tasting/${tastingMatch![1]}`, icon: ArrowLeft, label: t('nav.backToTasting'), isCockpit: true }
-                : { href: "/tasting", icon: Home, label: "Home" },
-              { href: "/tasting/sessions", icon: Wine, label: t('nav.sessionsShort') },
+                : { href: "/home", icon: Home, label: t('nav.lobbyShort') },
+              { href: "/tasting", icon: Wine, label: "Tasting" },
               { href: "/my/journal", icon: NotebookPen, label: t('nav.journalShort') },
               { href: "/discover", icon: Compass, label: t('nav.entdeckenShort') },
-              { href: "/profile", icon: User, label: t('navGroup.profil', 'Profil') },
+              { href: "/profile", icon: User, label: t('navGroup.profil', 'Profil'), isMore: false },
             ];
-            return bottomItems;
           })().map((item) => {
-            const isActive = item.href === "/profile"
-              ? location.startsWith("/profile")
-              : item.href === "/tasting"
-                ? location === "/tasting"
-                : item.href === "/tasting/sessions"
-                  ? location === "/tasting/sessions" || location === "/tasting/calendar" || location === "/tasting/host"
-                  : item.href === "/my/journal"
-                    ? location.startsWith("/my/")
-                    : item.href === "/discover"
-                      ? location.startsWith("/discover")
-                      : location === item.href;
+            const isActive = location === item.href;
             if ((item as any).isCockpit) {
               return (
                 <button
@@ -740,7 +776,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   data-testid="bottom-nav-cockpit"
                 >
                   <ArrowLeft className="w-5 h-5" />
-                  <span className="text-[10px] leading-none font-semibold truncate max-w-[64px]">{item.label}</span>
+                  <span className="text-[10px] leading-tight font-semibold truncate max-w-[64px]">{item.label}</span>
+                </button>
+              );
+            }
+            if ((item as any).isMore) {
+              return (
+                <button
+                  key="more"
+                  onClick={() => setOpen(true)}
+                  className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px] text-muted-foreground hover:text-foreground transition-colors"
+                  data-testid="bottom-nav-more"
+                >
+                  <Menu className="w-5 h-5" />
+                  <span className="text-[10px] leading-tight truncate max-w-[64px]">{item.label}</span>
                 </button>
               );
             }
@@ -751,12 +800,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     "flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px] transition-colors",
                     isActive
                       ? "text-primary"
-                      : "text-muted-foreground/70"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                   data-testid={`bottom-nav-${item.href.replace("/", "") || "home"}`}
                 >
-                  <item.icon className={cn("w-5 h-5", isActive && "stroke-[2.5]")} />
-                  <span className={cn("text-[10px] leading-none truncate max-w-[64px]", isActive ? "font-semibold" : "font-normal")}>{item.label}</span>
+                  <item.icon className="w-5 h-5" />
+                  <span className={cn("text-[10px] leading-tight truncate max-w-[64px]", isActive && "font-semibold")}>{item.label}</span>
                 </div>
               </Link>
             );

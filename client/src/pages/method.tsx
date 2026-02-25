@@ -1,9 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { FlaskConical, ChevronDown, ChevronUp } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
-import { PageLayout } from "@/components/page-layout";
 
 function Section({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -22,24 +21,21 @@ export default function Method() {
   const { i18n } = useTranslation();
   const isDE = i18n.language === "de";
 
-  const title = isDE ? "So wird dein Profil erstellt" : "How Your Profile Is Built";
-  const subtitle = isDE
-    ? "Transparenz ist uns wichtig. Hier erklären wir genau, wie dein Whisky-Profil berechnet wird."
-    : "Transparency matters to us. Here we explain exactly how your whisky profile is calculated.";
-
   return (
-    <PageLayout
-      icon={FlaskConical}
-      title={title}
-      subtitle={subtitle}
-      testId="method-page"
-      primaryAction={
-        <Link href="/flavor-profile" className="text-xs text-primary/70 hover:text-primary transition-colors" data-testid="link-back-profile">
-          ← {isDE ? "Zurück zum Geschmacksprofil" : "Back to Flavor Profile"}
-        </Link>
-      }
-    >
+    <div className="max-w-3xl mx-auto px-4 py-8" data-testid="method-page">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <div className="flex items-center gap-3 mb-2">
+          <BookOpen className="w-7 h-7 text-primary" />
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary">
+            {isDE ? "So wird dein Profil erstellt" : "How Your Profile Is Built"}
+          </h1>
+        </div>
+        <p className="text-sm text-muted-foreground mb-8">
+          {isDE
+            ? "Transparenz ist uns wichtig. Hier erklären wir genau, wie dein Whisky-Profil berechnet wird."
+            : "Transparency matters to us. Here we explain exactly how your whisky profile is calculated."}
+        </p>
+
         <div className="space-y-6">
           <Section title={isDE ? "Für Enthusiasten" : "For Enthusiasts"}>
             <div className="prose prose-sm max-w-none text-muted-foreground space-y-3">
@@ -169,7 +165,13 @@ export default function Method() {
             </div>
           </Section>
         </div>
+
+        <div className="mt-8 text-center">
+          <Link href="/flavor-profile" className="text-xs text-primary/70 hover:text-primary transition-colors" data-testid="link-back-profile">
+            ← {isDE ? "Zurück zum Geschmacksprofil" : "Back to Flavor Profile"}
+          </Link>
+        </div>
       </motion.div>
-    </PageLayout>
+    </div>
   );
 }

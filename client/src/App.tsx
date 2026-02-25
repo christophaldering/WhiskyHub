@@ -29,7 +29,6 @@ import Background from "@/pages/background";
 import News from "@/pages/news";
 import QuickTasting from "@/pages/quick-tasting";
 import NakedTasting from "@/pages/naked-tasting";
-import WatchScreen from "@/pages/watch-screen";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
 import HomeDashboard from "@/pages/home-dashboard";
@@ -68,7 +67,6 @@ function Router() {
         <Route path="/background" component={Background} />
         <Route path="/join/:code" component={QuickTasting} />
         <Route path="/naked/:code" component={NakedTasting} />
-        <Route path="/watch/:token" component={WatchScreen} />
         <Route path="/impressum" component={Impressum} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/intro" component={Intro} />
@@ -77,7 +75,6 @@ function Router() {
             <Switch>
               {/* === NEW CANONICAL ROUTES === */}
               <Route path="/home" component={HomeDashboard} />
-              <Route path="/now">{() => <RedirectWithQuery to="/tasting/sessions" query="tab=sessions" />}</Route>
               <Route path="/tasting" component={TastingHub} />
               <Route path="/tasting/sessions" component={TastingSessions} />
               <Route path="/tasting/calendar" component={TastingCalendar} />
@@ -116,7 +113,7 @@ function Router() {
               <Route path="/recap">{() => <RedirectWithQuery to="/my/journal" query="tab=recap" />}</Route>
               <Route path="/my-tastings">{() => <RedirectWithQuery to="/tasting/sessions" query="tab=mine" />}</Route>
               <Route path="/host-dashboard">{() => <Redirect to="/tasting/host" />}</Route>
-              <Route path="/export-notes">{() => <RedirectWithQuery to="/my/journal" query="dialog=export&tab=pdf" />}</Route>
+              <Route path="/export-notes">{() => <RedirectWithQuery to="/my/journal" query="tab=export" />}</Route>
               <Route path="/calendar">{() => <Redirect to="/tasting/calendar" />}</Route>
 
               {/* PRO old routes */}
@@ -126,7 +123,7 @@ function Router() {
               <Route path="/benchmark">{() => <RedirectWithQuery to="/my/journal" query="tab=benchmark" />}</Route>
               <Route path="/whisky-database">{() => <Redirect to="/discover/database" />}</Route>
               <Route path="/analytics">{() => <RedirectWithQuery to="/my/journal" query="tab=analytics" />}</Route>
-              <Route path="/data-export">{() => <RedirectWithQuery to="/my/journal" query="dialog=export&tab=data" />}</Route>
+              <Route path="/data-export">{() => <RedirectWithQuery to="/my/journal" query="tab=export" />}</Route>
 
               {/* PROFIL old routes */}
               <Route path="/recommendations">{() => <Redirect to="/discover" />}</Route>
@@ -145,7 +142,7 @@ function Router() {
               <Route path="/research">{() => <RedirectWithQuery to="/discover" query="section=research" />}</Route>
 
               {/* ÜBER old routes */}
-              <Route path="/help">{() => <RedirectWithQuery to="/profile/help" query="tab=help" />}</Route>
+              <Route path="/help">{() => <Redirect to="/profile/help" />}</Route>
               <Route path="/about">{() => <RedirectWithQuery to="/profile/help" query="tab=about" />}</Route>
               <Route path="/features">{() => <RedirectWithQuery to="/profile/help" query="tab=features" />}</Route>
               <Route path="/donate">{() => <RedirectWithQuery to="/profile/help" query="tab=donate" />}</Route>

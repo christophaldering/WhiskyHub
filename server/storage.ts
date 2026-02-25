@@ -78,13 +78,12 @@ export interface IStorage {
   // Tastings
   getTasting(id: string): Promise<Tasting | undefined>;
   getTastingByCode(code: string): Promise<Tasting | undefined>;
-  getTastingByViewerToken(token: string): Promise<Tasting | undefined>;
   getAllTastings(): Promise<Tasting[]>;
   getTastingsForParticipant(participantId: string): Promise<Tasting[]>;
   createTasting(data: InsertTasting): Promise<Tasting>;
   updateTastingStatus(id: string, status: string, currentAct?: string): Promise<Tasting | undefined>;
   updateTastingReflection(id: string, reflection: string): Promise<Tasting | undefined>;
-  updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean; viewerEnabled: boolean; viewerToken: string | null; viewerLiveOnly: boolean; viewerAllowAverages: boolean; viewerAllowRanking: boolean }>): Promise<Tasting | undefined>;
+  updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean }>): Promise<Tasting | undefined>;
   updateTasting(id: string, data: Partial<Record<string, any>>): Promise<Tasting | undefined>;
   transferTastingHost(id: string, newHostId: string): Promise<Tasting | undefined>;
   duplicateTasting(id: string, hostId: string): Promise<Tasting>;
@@ -376,11 +375,6 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getTastingByViewerToken(token: string): Promise<Tasting | undefined> {
-    const [result] = await db.select().from(tastings).where(eq(tastings.viewerToken, token));
-    return result;
-  }
-
   async getAllTastings(): Promise<Tasting[]> {
     return db.select().from(tastings).where(ne(tastings.status, "deleted"));
   }
@@ -426,7 +420,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean; viewerEnabled: boolean; viewerToken: string | null; viewerLiveOnly: boolean; viewerAllowAverages: boolean; viewerAllowRanking: boolean }>): Promise<Tasting | undefined> {
+  async updateTastingDetails(id: string, data: Partial<{ title: string; date: string; location: string; blindMode: boolean; reflectionEnabled: boolean; reflectionMode: string; reflectionVisibility: string; coverImageUrl: string | null; coverImageRevealed: boolean; videoLink: string | null; guestMode: string; sessionUiMode: string | null; showRanking: boolean; showGroupAvg: boolean; showReveal: boolean }>): Promise<Tasting | undefined> {
     const updateData: any = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.date !== undefined) updateData.date = data.date;
@@ -443,11 +437,6 @@ export class DatabaseStorage implements IStorage {
     if (data.showRanking !== undefined) updateData.showRanking = data.showRanking;
     if (data.showGroupAvg !== undefined) updateData.showGroupAvg = data.showGroupAvg;
     if (data.showReveal !== undefined) updateData.showReveal = data.showReveal;
-    if (data.viewerEnabled !== undefined) updateData.viewerEnabled = data.viewerEnabled;
-    if (data.viewerToken !== undefined) updateData.viewerToken = data.viewerToken;
-    if (data.viewerLiveOnly !== undefined) updateData.viewerLiveOnly = data.viewerLiveOnly;
-    if (data.viewerAllowAverages !== undefined) updateData.viewerAllowAverages = data.viewerAllowAverages;
-    if (data.viewerAllowRanking !== undefined) updateData.viewerAllowRanking = data.viewerAllowRanking;
     if (Object.keys(updateData).length === 0) return this.getTasting(id);
     const [result] = await db.update(tastings).set(updateData).where(eq(tastings.id, id)).returning();
     return result;

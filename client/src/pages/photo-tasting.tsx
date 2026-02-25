@@ -2,7 +2,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useState, useCallback } from "react";
 import { Camera, Upload, Loader2, Check, AlertTriangle, X, Wine, Plus, Trash2, Edit2, CheckCircle2, Database, ArrowRight, ExternalLink, Search } from "lucide-react";
-import { PageLayout } from "@/components/page-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -213,15 +212,16 @@ export default function PhotoTasting() {
   };
 
   return (
-    <PageLayout
-      icon={Camera}
-      title={t("photoTasting.title")}
-      subtitle={t("photoTasting.subtitle")}
-      testId="text-photo-tasting-title"
-    >
-      <p className="text-[10px] text-muted-foreground/50 -mt-4 mb-6" data-testid="text-ai-notice-photo">{t("legal.aiNotice")}</p>
+    <div className="max-w-4xl mx-auto space-y-8 min-w-0 overflow-x-hidden">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight" data-testid="text-photo-tasting-title">
+          {t("photoTasting.title")}
+        </h1>
+        <p className="text-muted-foreground mt-2 max-w-2xl">{t("photoTasting.subtitle")}</p>
+        <p className="text-[10px] text-muted-foreground/50 mt-1" data-testid="text-ai-notice-photo">{t("legal.aiNotice")}</p>
+        <div className="w-12 h-1 bg-primary/50 mt-3" />
+      </motion.div>
 
-      <div className="space-y-8">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         {["upload", "review", "details"].map((s, i) => (
           <div key={s} className="flex items-center gap-2">
@@ -579,7 +579,6 @@ export default function PhotoTasting() {
           </motion.div>
         )}
       </AnimatePresence>
-      </div>
-    </PageLayout>
+    </div>
   );
 }

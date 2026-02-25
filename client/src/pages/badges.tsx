@@ -3,9 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { statsApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
-import { Award, Lock } from "lucide-react";
+import { Trophy, Lock } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
-import { PageLayout } from "@/components/page-layout";
 
 interface ParticipantStats {
   totalRatings: number;
@@ -467,12 +466,19 @@ export default function Badges() {
   const earnedCount = BADGES.filter((b) => b.check(s)).length;
 
   return (
-    <PageLayout icon={Award} title={t("badges.title")} subtitle={t("badges.subtitle")} testId="badges-page">
+    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="badges-page">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
+        <div className="flex items-center gap-3 mb-2">
+          <Trophy className="w-7 h-7 text-primary" />
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-badges-title">
+            {t("badges.title")}
+          </h1>
+        </div>
+        <p className="text-sm text-muted-foreground mb-2">{t("badges.subtitle")}</p>
         <p className="text-sm font-medium text-primary/80 mb-8" data-testid="text-badges-count">
           {earnedCount} / {BADGES.length} {t("badges.earned")}
         </p>
@@ -547,6 +553,6 @@ export default function Badges() {
           </div>
         )}
       </motion.div>
-    </PageLayout>
+    </div>
   );
 }
