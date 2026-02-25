@@ -662,7 +662,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <SpotlightProvider hints={spotlightHints} paused={!onboardingDone} />
       <TourProvider tours={tourDefinitions} paused={!onboardingDone} />
 
-      <header className="md:hidden sticky top-0 z-50 flex items-center justify-between px-3 py-2 border-b border-border/40 bg-card/95 backdrop-blur-lg">
+      <header className="md:hidden sticky top-0 z-50 flex items-center justify-between px-3 py-2 border-b border-border/20 bg-card/95 backdrop-blur-lg">
         <div className="flex items-center gap-1.5 min-w-0">
           {location !== "/app" && location !== "/" && (
             <Button
@@ -678,19 +678,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <span className="font-serif font-bold text-lg text-primary truncate">{t('app.name')}</span>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <ProfileAvatar size={36} showName={false} showSignOut />
-          <LanguageToggle />
-          <ThemeToggle />
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-primary hover:bg-secondary h-8 w-8">
-                <Menu className="w-5 h-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 border-r-border/40 w-72 bg-card">
-              <NavContent navInnerRef={mobileNavRef} location={location} navGroups={navGroups} onNavigate={handleNavigate} />
-            </SheetContent>
-          </Sheet>
+          <ProfileAvatar size={32} showName={false} />
         </div>
       </header>
 
@@ -730,12 +718,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <FeedbackButton />
       </div>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/40 safe-area-bottom" style={{ paddingLeft: 'env(safe-area-inset-left, 0)', paddingRight: 'env(safe-area-inset-right, 0)' }}>
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/98 backdrop-blur-xl border-t border-border/15 safe-area-bottom" style={{ paddingLeft: 'env(safe-area-inset-left, 0)', paddingRight: 'env(safe-area-inset-right, 0)' }}>
         <div className="flex items-center justify-around px-1 py-1.5">
           {(() => {
             const tastingMatch = location.match(/^\/tasting\/([a-f0-9-]{8,})/i);
             const inTasting = !!tastingMatch;
-            return [
+            const bottomItems = [
               inTasting
                 ? { href: `/tasting/${tastingMatch![1]}`, icon: ArrowLeft, label: t('nav.backToTasting'), isCockpit: true }
                 : { href: "/now", icon: Zap, label: t('nav.nowShort') },
@@ -744,8 +732,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               { href: "/discover", icon: Compass, label: t('nav.entdeckenShort') },
               { href: "/profile", icon: User, label: t('navGroup.profil', 'Profil') },
             ];
+            return bottomItems;
           })().map((item) => {
-            const isActive = location === item.href;
+            const isActive = item.href === "/profile"
+              ? location.startsWith("/profile")
+              : item.href === "/tasting/sessions"
+                ? location === "/tasting/sessions" || location === "/tasting" || location === "/tasting/calendar" || location === "/tasting/host"
+                : item.href === "/my/journal"
+                  ? location.startsWith("/my/")
+                  : item.href === "/discover"
+                    ? location.startsWith("/discover")
+                    : location === item.href;
             if ((item as any).isCockpit) {
               return (
                 <button
@@ -755,20 +752,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   data-testid="bottom-nav-cockpit"
                 >
                   <ArrowLeft className="w-5 h-5" />
-                  <span className="text-[10px] leading-tight font-semibold truncate max-w-[64px]">{item.label}</span>
-                </button>
-              );
-            }
-            if ((item as any).isMore) {
-              return (
-                <button
-                  key="more"
-                  onClick={() => setOpen(true)}
-                  className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px] text-muted-foreground hover:text-foreground transition-colors"
-                  data-testid="bottom-nav-more"
-                >
-                  <Menu className="w-5 h-5" />
-                  <span className="text-[10px] leading-tight truncate max-w-[64px]">{item.label}</span>
+                  <span className="text-[10px] leading-none font-semibold truncate max-w-[64px]">{item.label}</span>
                 </button>
               );
             }
@@ -779,12 +763,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     "flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px] transition-colors",
                     isActive
                       ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground"
+                      : "text-muted-foreground/70"
                   )}
                   data-testid={`bottom-nav-${item.href.replace("/", "") || "home"}`}
                 >
-                  <item.icon className="w-5 h-5" />
-                  <span className={cn("text-[10px] leading-tight truncate max-w-[64px]", isActive && "font-semibold")}>{item.label}</span>
+                  <item.icon className={cn("w-5 h-5", isActive && "stroke-[2.5]")} />
+                  <span className={cn("text-[10px] leading-none truncate max-w-[64px]", isActive ? "font-semibold" : "font-normal")}>{item.label}</span>
                 </div>
               </Link>
             );
