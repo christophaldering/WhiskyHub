@@ -40,6 +40,11 @@ import DiscoverDistilleries from "@/pages/discover-distilleries";
 import DiscoverCommunity from "@/pages/discover-community";
 import ProfileHelp from "@/pages/profile-help";
 import Account from "@/pages/account";
+import LabDarkLayout from "@/lab-dark/LabDarkLayout";
+import LabHome from "@/lab-dark/pages/LabHome";
+import LabSessions from "@/lab-dark/pages/LabSessions";
+import LabDiscover from "@/lab-dark/pages/LabDiscover";
+import LabSessionDetail from "@/lab-dark/pages/LabSessionDetail";
 import { BuildFooter } from "@/components/build-footer";
 import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
@@ -70,6 +75,17 @@ function Router() {
         <Route path="/impressum" component={Impressum} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/intro" component={Intro} />
+        <Route path="/lab-dark/:rest*">
+          <LabDarkLayout>
+            <Switch>
+              <Route path="/lab-dark/home" component={LabHome} />
+              <Route path="/lab-dark/sessions" component={LabSessions} />
+              <Route path="/lab-dark/discover" component={LabDiscover} />
+              <Route path="/lab-dark/session/:id" component={LabSessionDetail} />
+              <Route path="/lab-dark">{() => <Redirect to="/lab-dark/home" />}</Route>
+            </Switch>
+          </LabDarkLayout>
+        </Route>
         <Route>
           <Layout>
             <Switch>

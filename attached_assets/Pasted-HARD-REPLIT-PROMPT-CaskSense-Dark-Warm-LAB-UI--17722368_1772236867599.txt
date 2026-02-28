@@ -1,0 +1,173 @@
+HARD REPLIT PROMPT (CaskSense / Dark Warm LAB UI)
+=================================================
+
+ROLE
+You are the lead engineer + UI architect for the existing CaskSense codebase (React/TS frontend, Express/TS backend, shared schema with Drizzle/Zod). Your task is to introduce a NEW parallel UI surface “Dark Warm Lab” WITHOUT changing the database schema and WITHOUT creating any new database, tables, or migrations. Both the existing UI and the new Lab UI MUST use the identical DB and the identical backend API routes. This is non-negotiable.
+
+PRIMARY GOAL
+Create a fully functional parallel UI at route prefix:
+/lab-dark
+
+It must include 3 pages:
+1) /lab-dark/home
+2) /lab-dark/sessions (list / overview)
+3) /lab-dark/discover
+
+AND a detail route for active tasting:
+4) /lab-dark/session/:sessionId (or the project’s existing session id param style)
+
+The Lab UI must feel “Apple-clean + whisky-warm (Dark Warm)” and be production-grade, but it is an experiment surface that must not disturb the current UI.
+
+STRICT DB / API RULES
+- DO NOT add or modify DB schemas.
+- DO NOT create migrations.
+- DO NOT introduce a second DB connection.
+- DO NOT create “v2” API endpoints.
+- DO NOT duplicate business logic on the server.
+- ALL data used by /lab-dark must come from the existing API endpoints and existing shared hooks/services.
+- If a required API does not exist, add it ONLY if it is general-purpose and ALSO used by the current UI, but do not change DB schema.
+
+SAFETY REQUIREMENTS
+- The existing UI routes must continue to work unchanged.
+- The new /lab-dark routes must be fully isolated in UI code, but reuse the same data layer.
+- Use feature toggles only inside the UI if needed; do not change the DB.
+- If authentication/role guarding exists, follow the same guard rules for /lab-dark routes.
+- Ensure navigation does not accidentally link regular users into /lab-dark unless explicitly intended (keep /lab-dark accessible via direct URL; optionally add a hidden “Lab” link only visible to admin/dev if such role exists).
+
+IMPLEMENTATION PLAN (DO THIS IN ORDER)
+======================================
+
+STEP 0 — RECON
+1) Identify:
+   - existing router setup (React Router or similar) and route definitions
+   - existing API client layer (fetch wrapper, React Query, tRPC, etc.)
+   - existing session/tasting models and endpoints
+   - existing auth/guard patterns
+2) List the existing endpoints you will call for:
+   - active session / sessions list
+   - session detail / lineup
+   - bottles list / search
+   - pairings/templates/knowledge (if they exist)
+If any of these features do not exist, implement the UI stubs with empty states and clear “Coming soon” blocks, but do not invent new DB schema.
+
+STEP 1 — CREATE LAB ROUTE GROUP
+Create a new route group under /lab-dark in the client router:
+- /lab-dark/home
+- /lab-dark/sessions
+- /lab-dark/discover
+- /lab-dark/session/:sessionId
+
+Do not touch existing routes. Add new routes only.
+
+STEP 2 — BUILD LAB APP SHELL (DARK WARM)
+Create a dedicated layout wrapper for lab pages:
+client/src/lab-dark/LabDarkLayout.tsx
+
+Requirements:
+- Dark warm theme tokens (CSS variables or tailwind config usage) local to Lab layout if possible.
+- Minimal top bar: left brand “CaskSense”, center optional title, right icons (optional).
+- Bottom navigation (mobile): Home / Sessions / Discover / Cellar (Cellar can be placeholder route or link to existing if already present; if not present in lab, show disabled).
+- Desktop: Sidebar allowed but keep minimal; prefer top+left compact nav.
+
+Create a tokens file:
+client/src/lab-dark/theme.ts (or .css)
+- Define background, surface, text, muted text, accent (amber/copper) variables.
+- Ensure high contrast and accessible focus states.
+
+STEP 3 — REUSE EXISTING DATA LAYER (CRITICAL)
+Do NOT create a separate API client.
+Instead:
+- Find existing hooks/services like:
+  useSessions(), useSession(sessionId), useBottles(), useTemplates(), usePairings(), useKnowledge()
+- If they exist, import and use them directly in lab pages.
+- If they do not exist, refactor minimally:
+  - Extract shared hooks from existing pages into reusable hooks in:
+    client/src/hooks/...
+  - Ensure both existing UI pages and lab pages use the same hooks.
+  - Do not change returned data structures.
+  - Keep server endpoints unchanged.
+
+STEP 4 — IMPLEMENT THE 3 KEY SCREENS (HIGH POLISH)
+A) LAB HOME (/lab-dark/home)
+- Header: “Good evening, Christoph” (if user name available; else “Good evening”)
+- Hero card:
+   - If an active session exists: show session title, meta, primary CTA “Continue” links to /lab-dark/session/:id
+   - Else: show “Ready for a pour?” with CTAs “Quick Log” and “New Session” (wire to existing create flows if available; else open a bottom sheet with placeholder)
+- Quick Actions grid:
+   - Quick Log (bottom sheet)
+   - New Session
+   - Discover Pairing
+- Recent section:
+   - last 3 tastings/logs/sessions based on existing endpoints; if not available show empty state.
+
+Quick Log Sheet:
+- Step 1: select bottle (search + recent)
+- Step 2: Nose/Palate/Finish segmented control with slider + short note
+- Step 3: overall score + save
+Wire saving to existing endpoint for creating a log/tasting note if it exists; if not exists, keep “Save” disabled with tooltip.
+
+B) LAB SESSIONS (/lab-dark/sessions)
+- Show sessions list using existing sessions endpoint/hook.
+- Tabs: Active / Planned / Templates / History (if these concepts exist; else show Active + History only).
+- Each row: title, date, count of whiskies, status.
+- Click opens /lab-dark/session/:sessionId.
+
+C) LAB DISCOVER (/lab-dark/discover)
+- Search bar (calls existing bottles search/list endpoint)
+- Chips: Bottles / Pairings / Templates / Knowledge
+- Bottles: list rows with meta and quick action (favorite/add)
+- Pairings/Templates/Knowledge: use existing data; otherwise stubs with empty states.
+
+D) LAB SESSION DETAIL (/lab-dark/session/:sessionId)
+- Use the existing session detail hook
+- Display:
+   - session header (title, meta, lineup count)
+   - whisky focus card with progress
+   - segmented ritual: Nose / Palate / Finish
+   - per-section slider + note field
+   - overall score slider
+   - prev/next navigation within lineup
+- Save interactions must call the same endpoints as the existing UI uses for notes/ratings.
+
+STEP 5 — DESIGN QUALITY REQUIREMENTS
+- Use consistent spacing (8px grid).
+- Cards: radius 16–20.
+- Avoid visual clutter: no more than 1 accent color.
+- Use subtle transitions (around 200–280ms).
+- Use Bottom Sheets for secondary controls.
+- Copy must be short, Apple-like, no exclamation marks, no emoji in-app.
+
+STEP 6 — HARD GUARANTEE: SINGLE DB
+To ensure one DB is used regardless of UI:
+- Verify server has exactly one DB config/connection.
+- Ensure no new env vars or DB URLs are introduced.
+- Do not create “lab” server or separate express app.
+- /lab-dark must be client-side routing only, served by same server as current UI.
+- If there is any SSR or server route mapping, ensure /lab-dark routes serve the same SPA entry.
+
+STEP 7 — TESTING / VALIDATION CHECKLIST
+After implementation, run through:
+1) Existing UI pages still function (no regressions).
+2) /lab-dark pages load without console errors.
+3) Lab pages call the same endpoints (check network panel).
+4) Creating/updating notes/ratings in lab reflects in existing UI (same DB).
+5) No migrations created. No schema changes.
+6) Build passes, TypeScript passes.
+
+DELIVERABLES
+- Code changes committed.
+- A short markdown note in replit.md or README:
+  - What /lab-dark is
+  - How to access it
+  - Confirmation that it uses the same DB and same API
+  - Any known stubs/limitations
+
+DO NOT
+- Do not rename existing routes.
+- Do not remove existing UI.
+- Do not introduce a new DB or separate server.
+- Do not create duplicate endpoints like /api/v2/*.
+- Do not add heavy new libraries unless already used.
+
+START NOW
+Proceed to implement step-by-step. If you encounter missing hooks, refactor them from existing pages into shared hooks used by both existing and lab pages, without changing API or DB schema.
