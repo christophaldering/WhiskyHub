@@ -1,9 +1,9 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Wine, Plus, Compass, Clock, ChevronRight, Sparkles, X, Search } from "lucide-react";
+import { Wine, Plus, Compass, ChevronRight, X } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, journalApi, ratingApi } from "@/lib/api";
+import { tastingApi, journalApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 
 export default function LabHome() {

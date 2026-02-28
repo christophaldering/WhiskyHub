@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Wine, Calendar, Users, ChevronRight, Clock } from "lucide-react";
+import { Wine, Calendar, ChevronRight, Clock } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
 

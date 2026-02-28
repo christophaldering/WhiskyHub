@@ -63,6 +63,31 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **GPT-4o**: For AI-powered features like bottle identification and content generation.
 -   **Capacitor**: For wrapping the PWA as native iOS and Android applications.
 
+## Dark Warm Lab UI (`/lab-dark`)
+
+An experimental parallel UI surface with an "Apple-clean + whisky-warm" dark theme. It is a client-side-only addition that reuses the same database, API endpoints, and data layer as the main UI.
+
+### Access
+- Direct URL: `/lab-dark` (redirects to `/lab-dark/home`)
+- Admin sidebar: "Dark Lab" link under the Admin section (admin-only)
+
+### Pages
+- `/lab-dark/home` — Personalized greeting, active session card, quick actions, recent tastings, Quick Log sheet
+- `/lab-dark/sessions` — Sessions list with Active/History tabs
+- `/lab-dark/discover` — Bottle search from journal + collection, with Coming Soon stubs for Pairings/Templates/Knowledge
+- `/lab-dark/session/:id` — Session detail with whisky navigation, per-dimension rating sliders, notes, auto-save with 800ms debounce
+
+### Confirmation
+- Uses the same PostgreSQL database and same API endpoints as the main UI
+- No new DB tables, migrations, or schema changes
+- No new server routes or v2 endpoints
+- All data created in Lab Dark is visible in the main UI and vice versa
+- Files located in `client/src/lab-dark/` with scoped CSS (`.lab-dark` class)
+
+### Known Stubs/Limitations
+- Discover > Pairings, Templates, Knowledge tabs show "Coming soon" placeholders
+- No desktop sidebar in Lab layout (mobile-first bottom nav only)
+
 ## Ideas / Future Features
 
 -   **Live Status Dashboard**: Show online participants count, active/planned/completed tastings summary, and friends' online status on the Home page. Includes heartbeat-based presence tracking, friend online indicators, and direct contact options (email, profile link, tasting invite). Requires new server-side session tracking system.

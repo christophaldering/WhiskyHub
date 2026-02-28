@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Search, Wine, BookOpen, Puzzle, FileText, ChevronRight, Sparkles } from "lucide-react";
+import { Search, Wine, BookOpen, Puzzle, FileText, Sparkles } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, journalApi, collectionApi } from "@/lib/api";
+import { journalApi, collectionApi } from "@/lib/api";
 
 type DiscoverTab = "bottles" | "pairings" | "templates" | "knowledge";
 
