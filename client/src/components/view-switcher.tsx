@@ -106,11 +106,11 @@ export function ViewSwitcherLegacy() {
   return (
     <button
       onClick={handleSwitch}
-      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+      className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-amber-900/30 to-amber-800/20 text-amber-500 hover:from-amber-900/50 hover:to-amber-800/30 transition-all border border-amber-700/30 hover:border-amber-600/40"
       data-testid="switch-to-v2"
     >
-      <ArrowRightLeft className="w-3.5 h-3.5" />
-      Dark Warm
+      <ArrowRightLeft className="w-4 h-4" />
+      <span>Dark Warm UI</span>
     </button>
   );
 }
