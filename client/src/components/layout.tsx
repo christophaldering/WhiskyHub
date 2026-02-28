@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Home, LogOut, LogIn, Menu, User, Wine, Users, NotebookPen, Sparkles, Calendar, ShieldAlert, Landmark, Star, Archive, ChevronDown, ArrowLeft, ArrowRight, X, Settings, HelpCircle, Compass, Activity, BarChart3, BookOpen, ClipboardList, Database, Download, FileText, GitCompareArrows, GlassWater, Globe, Heart, HeartHandshake, History, Info, LayoutDashboard, Library, Map, Medal, Microscope, Package, Puzzle, Trophy, FlaskConical } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
+import { ViewSwitcherLegacy } from "@/components/view-switcher";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -700,6 +701,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <span className="font-serif font-bold text-lg text-primary truncate">{t('app.name')}</span>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
+          <ViewSwitcherLegacy />
           <ProfileAvatar size={36} showName={false} showSignOut />
           <LanguageToggle />
           <ThemeToggle />

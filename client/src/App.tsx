@@ -52,6 +52,7 @@ import V2SessionDetail from "@/v2/pages/V2SessionDetail";
 import V2Discover from "@/v2/pages/V2Discover";
 import V2Cellar from "@/v2/pages/V2Cellar";
 import V2More from "@/v2/pages/V2More";
+import { getUIPref } from "@/components/view-switcher";
 import { BuildFooter } from "@/components/build-footer";
 import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
@@ -73,7 +74,11 @@ function Router() {
   return (
     <>
       <Switch>
-        <Route path="/" component={Landing} />
+        <Route path="/">{() => {
+          const pref = getUIPref();
+          return pref === "legacy" ? <Landing /> : <Redirect to="/app/home" />;
+        }}</Route>
+        <Route path="/landing" component={Landing} />
         <Route path="/feature-tour" component={FeatureTour} />
         <Route path="/tour" component={Tour} />
         <Route path="/background" component={Background} />

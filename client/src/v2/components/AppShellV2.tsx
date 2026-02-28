@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Home, Wine, Compass, Archive, MoreHorizontal } from "lucide-react";
+import { ViewSwitcherV2 } from "@/components/view-switcher";
 import "../theme/tokens.css";
 
 interface AppShellV2Props {
@@ -39,18 +40,21 @@ export default function AppShellV2({ children }: AppShellV2Props) {
             CaskSense
           </span>
         </Link>
-        <Link href="/app/more">
-          <div
-            className="flex items-center justify-center w-9 h-9 rounded-full cursor-pointer transition-colors"
-            style={{
-              background: location.startsWith("/app/more") ? "var(--v2-accent-muted)" : "transparent",
-              color: location.startsWith("/app/more") ? "var(--v2-accent)" : "var(--v2-text-muted)",
-            }}
-            data-testid="nav-more"
-          >
-            <MoreHorizontal className="w-5 h-5" />
-          </div>
-        </Link>
+        <div className="flex items-center gap-2">
+          <ViewSwitcherV2 />
+          <Link href="/app/more">
+            <div
+              className="flex items-center justify-center w-9 h-9 rounded-full cursor-pointer transition-colors"
+              style={{
+                background: location.startsWith("/app/more") ? "var(--v2-accent-muted)" : "transparent",
+                color: location.startsWith("/app/more") ? "var(--v2-accent)" : "var(--v2-text-muted)",
+              }}
+              data-testid="nav-more"
+            >
+              <MoreHorizontal className="w-5 h-5" />
+            </div>
+          </Link>
+        </div>
       </header>
 
       <div className="hidden lg:block fixed left-0 top-[52px] bottom-0 z-30 w-[72px]"
