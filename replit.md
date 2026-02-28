@@ -1,7 +1,7 @@
 # CaskSense - Whisky Tasting Application
 
 ## Overview
-CaskSense is a web application for hosting and participating in collaborative whisky tasting sessions. It allows hosts to create events, invite participants, and guide them through a structured whisky evaluation. Participants rate whiskies, and the host manages session progression through various stages, including a multi-act reveal phase with analytics and charts. The platform aims to provide an engaging experience for whisky enthusiasts to share, compare, and deepen their understanding of whisky through session management, personalized analytics, and a comprehensive whisky journal. The project envisions becoming the leading platform for structured whisky tasting, fostering a global community and offering sophisticated tools for both casual and expert enthusiasts.
+CaskSense is a web application for hosting and participating in collaborative whisky tasting sessions. It enables hosts to create events, invite participants, and manage structured whisky evaluations. Participants rate whiskies, and hosts control session progression through various stages, including a multi-act reveal with analytics and charts. The platform aims to provide an engaging experience for whisky enthusiasts, offering session management, personalized analytics, and a comprehensive whisky journal. The project's vision is to become a leading platform for structured whisky tasting, fostering a global community and providing sophisticated tools for all levels of enthusiasts.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -9,85 +9,56 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Full-Stack Structure
-The application uses a monorepo structure with client, server, and shared code, all built with TypeScript and ESM modules. A shared `schema.ts` file defines Drizzle ORM and Zod validation schemas for data consistency.
+The application uses a monorepo structure with client, server, and shared code, all built with TypeScript and ESM modules. A shared `schema.ts` file defines Drizzle ORM and Zod validation schemas.
 
 ### Frontend (`client/`)
-The frontend is a React application built with Vite, using Wouter for routing, TanStack React Query for server state management, and Zustand for client-side state. The UI is developed with shadcn/ui (new-york style) based on Radix UI and Tailwind CSS, featuring a custom muted slate blue theme and light mode. Framer Motion handles animations, Recharts provides data visualizations, and react-i18next is used for internationalization (English and German). Fonts are Playfair Display and Inter. PWA support is included for installability and offline access. UI elements adapt dynamically to chosen rating scales (5/10/20/100 points). All users get the full feature set regardless of experience level.
+The frontend is a React application built with Vite, utilizing Wouter for routing, TanStack React Query for server state management, and Zustand for client-side state. The UI uses shadcn/ui (new-york style) based on Radix UI and Tailwind CSS, featuring a custom muted slate blue theme and light mode. Framer Motion is used for animations, Recharts for data visualizations, and react-i18next for internationalization (English and German). PWA support is included. UI elements dynamically adapt to chosen rating scales (5/10/20/100 points).
 
 ### Backend (`server/`)
-The backend is an Express 5 HTTP server that provides RESTful API endpoints. It serves frontend assets in production and integrates with the Vite development server. Participant identification is managed client-side.
+The backend is an Express 5 HTTP server providing RESTful API endpoints. It serves frontend assets in production and integrates with the Vite development server.
 
 ### Database
 PostgreSQL is the primary database, accessed via Drizzle ORM. The schema includes tables for participants, tastings, whiskies, ratings, profiles, and journal entries, using UUIDs for identifiers.
 
 ### Key Design Decisions
--   **Authentication**: Participant authentication uses a name and a mandatory 4-digit PIN. Account deletion anonymizes personal data while preserving ratings.
--   **Shared Schema**: A single source of truth for database schema and validation ensures consistency across the stack.
--   **Session State Machine**: Tastings progress through defined stages (draft, open, closed, reveal, archived) with host-controlled advancement and a multi-act reveal stage for results.
+-   **Authentication**: Participant authentication uses a name and a mandatory 4-digit PIN.
+-   **Shared Schema**: Ensures data consistency across the stack.
+-   **Session State Machine**: Tastings progress through defined stages (draft, open, closed, reveal, archived) with host-controlled advancement.
 -   **Asynchronous Updates**: React Query polling enables near real-time updates for session data.
--   **Data Import & Management**: Hosts can import whisky data from spreadsheets and upload bottle photos, stored in Replit Object Storage.
--   **Tasting Features**: Includes whisky management, flight board view, PDF export of tasting menus, blind mode, discussion panel, tasting note generator, and host-uploadable cover images. Host delegation allows transferring host roles.
--   **Personalization & Analytics**: Features participant profiles, a whisky journal, achievement badges, personal flavor profiles (radar charts), whisky recommendations, side-by-side comparisons, and a flavor wheel. Privacy-respecting per-tasting analytics are provided, showing aggregated group statistics alongside individual participant data. Platform-wide analytics (measurement quality, predictive validity, AI analysis) are admin-only.
--   **Data Access Model**: Participants see their own ratings + anonymized group analytics for tastings they attended. Hosts see all individual ratings for their hosted tastings. Platform-wide cross-tasting analytics and exports are admin-only. Consent notice at login informs participants about data visibility.
--   **Data Export Permissions**: Three-tier system with PIN verification. Own-level (all users): profile, journal, wishlist, collection, friends. Extended-level (host/admin): bundled tasting ratings across all sessions. Admin-level: full data export. Friends export excludes email addresses for non-admins.
--   **Internationalization**: Only German (DE) and English (EN) are actively supported and selectable. Other language files exist as fallback but are hidden from the language selector.
+-   **Data Import & Management**: Hosts can import whisky data from spreadsheets and upload bottle photos.
+-   **Tasting Features**: Includes whisky management, flight board view, PDF export of tasting menus, blind mode, discussion panel, tasting note generator, and host-uploadable cover images.
+-   **Personalization & Analytics**: Features participant profiles, a whisky journal, achievement badges, personal flavor profiles (radar charts), whisky recommendations, side-by-side comparisons, and a flavor wheel. Privacy-respecting per-tasting analytics are provided.
+-   **Data Access Model**: Participants see their own ratings and anonymized group analytics. Hosts see all individual ratings for their hosted tastings. Platform-wide cross-tasting analytics are admin-only.
+-   **Internationalization**: Actively supports German (DE) and English (EN).
 -   **Host Tools**: Host briefing notes, a tasting curation wizard, calendar view, and a dashboard summary.
--   **Communication**: Session invitations via email or QR codes, with a friend activity feed and configurable tasting reminders.
+-   **Communication**: Session invitations via email or QR codes.
 -   **Knowledge Base**: Includes a Whisky Lexicon, Distillery Encyclopedia, and Independent Bottlers Encyclopedia.
--   **AI Integration**: AI-powered bottle identification for journal entries and AI-powered newsletter content generation. AI bottle scan results are cached for efficiency. AI-powered market price estimation for collection items (rate-limited to 1x/week for non-admins). AI-powered tasting suggestions from own collection.
--   **Collection Sync**: Whiskybase collection supports smart sync/diff via CSV re-upload. Shows new, removed, and changed items with per-item decision making (add/keep/delete/update). Price estimation with "KI-geschätzt" badge, manual override available. Rate limit: 1x/week for regular users, unlimited for admin.
--   **Tasting Creation**: Multiple whisky input methods — single entry, list import (Excel/CSV), from own Whiskybase collection, AI-curated suggestions from collection (horizontal/vertical/contrast/mixed themes). Curation wizard supports "From My Collection" source toggle.
--   **Guest Mode**: Two guest participation flavors controlled per-session by host via `guestMode` field ("standard" default, "ultra"). **Standard Naked**: Participant identity persisted in Zustand/localStorage for resume on same device; duplicate prevention via reused participantId; hint banner shown. **Ultra Naked**: Ephemeral in-memory participant (not persisted to Zustand); refresh loses progress; warning banner shown in welcome + rating screens; ranking hidden in RecapScreen. Host toggles guestMode in EditTastingDialog alongside blindMode/ratingScale. Naked Tasting supports three UI modes: Flow (default, timeline with collapsible dram cards), Focus (one dram at a time, card deck pattern), and Journal (structured document with tabs). Mode is stored as `uiMode` in Zustand store (localStorage-persisted), configurable in profile settings and switchable in the naked tasting header. All modes share the same `RatingSliders` and `useRatingState` components — no duplicated business logic. Naked routes (`/naked/:code`) render outside `<Layout>`, ensuring zero sidebar/bottom-nav leakage.
--   **Rating System**: Dynamic step sizing for rating sliders and auto-calculated overall scores with manual override. Full 4-dimension rating for all users.
--   **Context Level**: Three-tier data visibility control within active tasting sessions. Level 0 (Naked) shows only rating inputs and own notes. Level 1 (Self) adds personal progress and AI whisky insights. Level 2 (Full) shows community analytics, discussion panel, reflection panel, and attendee roster. Persisted in client store. Switcher UI in tasting room header. Default is 0 (Naked).
--   **Experience Levels**: Removed. All users get the full experience. No feature gating by level. Only role-based restrictions remain (admin panel, whisky database access).
--   **Navigation Structure (v2 IA)**: Desktop sidebar has 6 sections: Genuss (Lobby, Sessions, Calendar, Journal, Verkostete, Collection, Wishlist, Recap, My Tastings, Host Dashboard), Pro (Comparison, Templates, Pairings, Benchmark, Whisky Database, Analytics, Data Export), Profil (Profile, Whisky Profile, Recommendations, Taste Twins, Friends, Community Rankings, Activity, Leaderboard, Account), Wissen (Lexicon, Distilleries, Distillery Map, Bottlers, Research), Über (Help, About, Features, Donate, Landing Page), Admin (Admin Panel, admin-only). Mobile bottom nav: 5 tabs (Home, Tasting, Journal, Entdecken, Profil). Many sidebar items use old standalone routes that redirect to composite tabbed pages with query params. All old routes redirect to new canonical routes. Whisky Database (/discover/database) gated to host/admin/whitelisted. Accordion behavior: one top-level section expanded at a time.
--   **Whisky Library**: Formerly "Benchmark-Analyse", now a tabbed library with Import, Tastingnotizen, Auswertungen, Artikel, and Sonstiges tabs. Post-upload classification dialog routes extracted data to library (with category), wishlist, or tasted whiskies. Uses `libraryCategory` field on benchmark_entries.
--   **Data Source Tracking**: Journal entries have a `source` field (casksense/imported/whiskybase). "Meine verkosteten Whiskys" and "Mein Whisky-Profil" pages include data source filters. CaskSense session data is default; imported/external data only shown when actively enabled by the user.
--   **Whisky Profile Page**: Renamed from "Geschmacksprofil" to "Mein Whisky-Profil" with 3 distinct tabs: "Geschmacksanalyse" (radar chart, region/peat/cask breakdowns, top list), "Whisky-Profil" (statistical analysis, rating behavior), "Aromarad" (flavor wheel). Each analytics section has explanatory descriptions in DE/EN.
--   **Participant Deduplication**: Backend calculations (global averages, platform analytics, host dashboard, admin stats) deduplicate participants by (name, pin) combination to avoid double-counting the same person across multiple tastings.
--   **About the Method**: Tasting methodology content integrated into the About page's Overview tab as compact cards, replacing the standalone `/about-method` page.
--   **Admin AI Profiles**: Admin panel includes PIN-protected AI participant profiles. Admin must re-enter their PIN to unlock GPT-4o-generated 2-3 sentence profiles for all participants, covering taste preferences, rating behavior, and sensory science insights. Anonymized participants shown with alias names only.
--   **Admin Settings**: Centralized platform settings in admin panel: What's New banner toggle with custom text, registration open/closed, guest mode, maintenance mode, email notifications. Settings stored in `app_settings` key-value table. Banner controlled by server settings instead of hardcoded version.
--   **Test Data Management**: Tastings can be flagged as "test data" (isTestData field). Test-flagged tastings are excluded from platform analytics and global averages. Admin can toggle per-tasting or use bulk cleanup filters (title pattern, date, participant count). Bulk cleanup supports preview, mark-as-test, and permanent delete actions.
--   **AI Kill Switch**: Admin can disable AI features globally or per-feature via settings. Frontend uses `useAIStatus` hook (`client/src/hooks/use-ai-status.ts`) to poll `/api/ai-status` and disable AI buttons with tooltip messages and warning banners when AI is off. Affected areas: journal scan, wishlist scan, focused tasting insights, photo tasting analyze, library upload, newsletter generation, AI participant profiles.
+-   **AI Integration**: AI-powered bottle identification for journal entries, newsletter content generation, market price estimation, and tasting suggestions.
+-   **Collection Sync**: Whiskybase collection supports smart sync/diff via CSV re-upload.
+-   **Tasting Creation**: Supports multiple whisky input methods, including single entry, list import, and AI-curated suggestions.
+-   **Guest Mode**: Offers "Standard Naked" (persisted identity) and "Ultra Naked" (ephemeral identity) participation modes, controllable by the host. Naked Tasting supports Flow, Focus, and Journal UI modes.
+-   **Rating System**: Dynamic step sizing for rating sliders and auto-calculated overall scores with manual override.
+-   **Context Level**: Three-tier data visibility control within active tasting sessions: Naked (0), Self (1), and Full (2).
+-   **Navigation Structure**: Desktop sidebar with 6 sections (Genuss, Pro, Profil, Wissen, Über, Admin) and a mobile bottom nav with 5 tabs (Home, Tasting, Journal, Entdecken, Profil).
+-   **Whisky Library**: A tabbed library for managing whisky data, including import, tasting notes, analyses, articles, and other categories.
+-   **Data Source Tracking**: Journal entries track their source (casksense/imported/whiskybase).
+-   **Whisky Profile Page**: Provides "Geschmacksanalyse," "Whisky-Profil," and "Aromarad" tabs.
+-   **Participant Deduplication**: Backend deduplicates participants by (name, pin) for accurate analytics.
+-   **Admin AI Profiles**: Admin panel includes PIN-protected AI participant profiles generated by GPT-4o.
+-   **Admin Settings**: Centralized platform settings for banners, registration, guest mode, maintenance, and email notifications.
+-   **Test Data Management**: Tastings can be flagged as "test data" to exclude them from platform analytics.
+-   **AI Kill Switch**: Admin can disable AI features globally or per-feature.
+
+### V2 Dark Warm UI (`/app`)
+A complete UI redesign with an Apple-clean aesthetic and a whisky-warm dark color palette. It features a streamlined 4-tab navigation (Home, Sessions, Discover, Cellar) with a "More" overflow for advanced features. It shares the same database and API endpoints as the original UI.
 
 ## External Dependencies
 
 -   **PostgreSQL**: Primary database.
 -   **Google Fonts**: For web fonts.
--   **Nodemailer**: For sending email notifications and invitations.
+-   **Nodemailer**: For sending email notifications.
 -   **ExcelJS**: For reading and writing Excel files.
 -   **qrcode**: For generating QR code invitations.
 -   **Replit Object Storage**: For storing uploaded images.
--   **GPT-4o**: For AI-powered features like bottle identification and content generation.
--   **Capacitor**: For wrapping the PWA as native iOS and Android applications.
-
-## Dark Warm Lab UI (`/lab-dark`)
-
-An experimental parallel UI surface with an "Apple-clean + whisky-warm" dark theme. It is a client-side-only addition that reuses the same database, API endpoints, and data layer as the main UI.
-
-### Access
-- Direct URL: `/lab-dark` (redirects to `/lab-dark/home`)
-- Admin sidebar: "Dark Lab" link under the Admin section (admin-only)
-
-### Pages
-- `/lab-dark/home` — Personalized greeting, active session card, quick actions, recent tastings, Quick Log sheet
-- `/lab-dark/sessions` — Sessions list with Active/History tabs
-- `/lab-dark/discover` — Bottle search from journal + collection, with Coming Soon stubs for Pairings/Templates/Knowledge
-- `/lab-dark/session/:id` — Session detail with whisky navigation, per-dimension rating sliders, notes, auto-save with 800ms debounce
-
-### Confirmation
-- Uses the same PostgreSQL database and same API endpoints as the main UI
-- No new DB tables, migrations, or schema changes
-- No new server routes or v2 endpoints
-- All data created in Lab Dark is visible in the main UI and vice versa
-- Files located in `client/src/lab-dark/` with scoped CSS (`.lab-dark` class)
-
-### Known Stubs/Limitations
-- Discover > Pairings, Templates, Knowledge tabs show "Coming soon" placeholders
-- No desktop sidebar in Lab layout (mobile-first bottom nav only)
-
-## Ideas / Future Features
-
--   **Live Status Dashboard**: Show online participants count, active/planned/completed tastings summary, and friends' online status on the Home page. Includes heartbeat-based presence tracking, friend online indicators, and direct contact options (email, profile link, tasting invite). Requires new server-side session tracking system.
+-   **GPT-4o**: For AI-powered features.
+-   **Capacitor**: For wrapping the PWA as native mobile applications.

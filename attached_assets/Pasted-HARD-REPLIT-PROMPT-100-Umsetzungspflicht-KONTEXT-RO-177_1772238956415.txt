@@ -1,0 +1,251 @@
+HARD REPLIT PROMPT (100% Umsetzungspflicht)
+==========================================
+
+KONTEXT / ROLLE
+Du bist Lead Engineer + Produkt-Designer (20 Jahre Apple UI), Whisky-Genießer, und übernimmst die komplette Neugestaltung von CaskSense im Stil „Dark Warm“ – OHNE Funktionsverlust. Absolut kritisch: ALLE bereits vorhandenen Features müssen integriert bleiben und weiterhin funktionieren. Nichts darf „wegfallen“, auch wenn es im neuen UI anders platziert/umbenannt wird.
+
+NICHT VERHANDELBAR (MUSS)
+1) ZERO FEATURE LOSS:
+   - Jede existierende Seite/Route/Feature muss im neuen Auftritt erreichbar bleiben.
+   - Wenn ein Feature in der neuen IA keinen Platz hat: es muss unter „More“/„Tools“/„Advanced“/„Library“ integriert werden (nicht löschen, nicht verstecken bis unauffindbar).
+2) SINGLE DB / SINGLE API:
+   - Es darf KEINE zweite Datenbank geben.
+   - Keine neue DB-Connection, keine neuen DB-URLs, keine migrations, keine schema changes.
+   - Beide Oberflächen (bestehende + neue Dark Warm) nutzen dieselben bestehenden API-Endpunkte.
+3) SAFE REFACTOR:
+   - Bestehende UI bleibt funktionsfähig.
+   - Neue Dark-Warm UI entsteht parallel (v2) und kann später als Default aktiviert werden.
+4) 100% Umsetzung:
+   - Arbeite strikt nach den unten definierten Phasen + Abnahmekriterien.
+   - Wenn etwas unklar ist: nicht nachfragen, sondern Codebase analysieren, Defaults setzen und weitermachen.
+
+ZIEL
+A) Neue Dark-Warm Oberfläche als Default-App-Shell + Navigation + Seitenstruktur („App V2“), die alle bestehenden Features integriert.
+B) Zusätzlich: Landingpage Dark-Warm redesign mit sauberem Abzweig in die App.
+C) Bestehende Oberfläche bleibt zunächst unter /legacy erreichbar.
+
+ROUTING / RELEASE-STRATEGIE (hart)
+- Neue Oberfläche unter:
+  /app  (oder bestehende App-Root, wenn bereits vorhanden)
+- Bestehende Oberfläche wird NICHT gelöscht, sondern nach:
+  /legacy  gemountet (redirect/route alias)
+- Landingpage (/) verweist sauber auf /app.
+- Optional: /lab-dark bleibt als Experiment-Surface bestehen, wird aber in /app integriert oder als „Preview“ verlinkt.
+
+WICHTIG: Falls es technisch/architektonisch leichter ist, darfst du die neue Oberfläche zunächst unter /v2 bauen und dann final /app setzen. Aber am Ende muss gelten:
+- /app = neue Dark Warm UI
+- /legacy = alte UI
+- DB und API identisch
+
+PHASE 0 — INVENTAR (MUSS VOLLSTÄNDIG)
+1) Scanne den Code und erstelle automatisch ein „Feature-Inventar“:
+   - Alle Client-Routen (React Router o.ä.)
+   - Alle Pages (client/src/pages/** oder equivalent)
+   - Alle Navigationseinträge (Sidebar, BottomNav, Menüs)
+   - Alle Server-API-Routen (server/routes.ts o.ä.)
+   - Alle zentralen Datenmodelle/Schema (shared/schema.ts o.ä.)
+2) Erstelle eine Datei:
+   docs/feature-inventory.md
+   mit Tabellen:
+   - Route -> Page -> Zweck -> Datenquellen (API/hook) -> Status (muss in V2)
+   - Feature -> Aktuelle UI-Stelle -> Ziel-Stelle in V2
+3) Erstelle eine Datei:
+   docs/v2-sitemap.md
+   mit der neuen IA (siehe PHASE 1) und Mapping jeder existierenden Route/Feature.
+
+ABNAHME PHASE 0:
+- docs/feature-inventory.md existiert.
+- Es sind ALLE gefundenen Routen/Pages/Features aufgeführt.
+- Kein Feature darf als „obsolete“ markiert werden. Wenn du etwas als überflüssig empfindest, markiere es als „Advanced“ und integriere es in V2.
+
+PHASE 1 — DESIGN SYSTEM „DARK WARM“ (APPLE + WHISKY)
+1) Implementiere ein V2 Theme System:
+   - CSS Variables oder Tailwind Tokens (nur eine Methode, konsistent)
+   - Farben:
+     background: near-black graphite
+     surface: charcoal
+     text: warm off-white
+     muted text: warm gray
+     accent: amber/copper (sparsam)
+   - Radius: 16–20
+   - Shadow: soft
+   - Motion: 200–280ms, keine Bounce-Effekte
+2) Komponenten-Bibliothek V2 (klein, aber hochwertig):
+   - AppShellV2 (TopBar + Content + Mobile BottomNav)
+   - PageHeaderV2
+   - CardV2
+   - ListRowV2
+   - SegmentedControlV2
+   - BottomSheetV2
+   - SearchBarV2
+   - FilterSheetV2
+   - EmptyStateV2
+   - ToastV2
+3) Lege alles unter:
+   client/src/v2/...
+   z.B.
+   client/src/v2/theme/
+   client/src/v2/components/
+   client/src/v2/layout/
+
+ABNAHME PHASE 1:
+- V2 Theme ist aktiv auf allen V2 Seiten.
+- Bestehende UI ist NICHT visuell/technisch beeinträchtigt.
+- Keine neuen Dependencies ohne Not (wenn nötig: minimal, begründen im docs/v2-notes.md).
+
+PHASE 2 — NEUE IA (OHNE FEATUREVERLUST)
+Die V2 Navigation darf nur 4 Primärpunkte haben:
+- Home
+- Sessions
+- Discover
+- Cellar
++ „More“ (Overflow-Menü in TopBar) für alles Weitere.
+
+DEFINITION V2 SEITEN (MUSS):
+/app/home
+/app/sessions
+/app/session/:id (oder bestehender Param-Standard)
+/app/discover
+/app/cellar
+
+Zusätzlich, um Feature-Verlust zu verhindern:
+- /app/more (optional als Sammelseite)
+- /app/admin/* (falls existierend, integrieren und verlinken)
+- /app/tools/* (falls existierend)
+
+INTEGRATIONSPFLICHT:
+Alle bestehenden Features müssen einem dieser Bereiche zugeordnet werden:
+- Home: Quick Actions, Recents, Active Session CTA
+- Sessions: Active/Planned/History + Calendar view (wenn existiert)
+- Discover: Bottles, Pairings, Templates, Knowledge, Library
+- Cellar: private diary, stats, collection, favorites
+- More/Tools: alles übrige (Host dashboard, settings, exports, etc.)
+
+ABNAHME PHASE 2:
+- docs/v2-sitemap.md enthält Mapping für jedes Feature aus feature-inventory.md
+- In V2 ist jedes Feature per Navigation oder „More“ erreichbar.
+
+PHASE 3 — DATENLAYER: EIN DB, EIN API (KRITISCH)
+1) KEIN neues API.
+2) KEIN doppelter Client.
+3) Wenn es bereits Hooks/Services gibt (useSessions, useBottles, etc.):
+   - Reuse in V2.
+4) Wenn die Logik in alten Pages inline steckt:
+   - Extrahiere in shared hooks:
+     client/src/hooks/...
+   - UND nutze dieselben hooks sowohl in Legacy als auch in V2.
+5) Zeige im Netzwerk-Tab (implizit) und dokumentiere:
+   docs/v2-data-sources.md
+   - V2 Seite -> verwendete Endpoints
+
+ABNAHME PHASE 3:
+- Kein db schema diff.
+- Keine migrations.
+- Kein zweiter DB connection string.
+- V2 und Legacy zeigen identische Daten (z.B. gleiche Sessions-Liste).
+
+PHASE 4 — V2 SCREEN SPECS (DARK WARM) + IMPLEMENTIERUNG
+Du implementierst die folgenden Screens in hoher Qualität.
+
+A) /app/home (Kaminraum)
+- Hero Card:
+  - Wenn aktive Session existiert: Continue -> /app/session/:id
+  - sonst: Quick Log / New Session
+- Quick Actions: Quick Log, New Session, Pairings
+- Recents: letzte 3 Items (Sessions/Logs/Bottles) je nach vorhandenen Daten
+- Optional: ein Insight Nugget (nur wenn Daten vorhanden; sonst weglassen)
+
+Quick Log als Bottom Sheet:
+- Flasche auswählen (Search + recents)
+- Nose/Palate/Finish segmented
+- Score + Save
+WICHTIG: Save nur, wenn es existierenden endpoint dafür gibt. Sonst UI-only mit klarer disabled state.
+
+B) /app/sessions
+- Tabs: Active / Planned / Templates / History (nur zeigen, wenn Datenkonzept existiert; ansonsten die vorhandenen Kategorien)
+- List rows: title, date, count, status
+- Calendar view toggle: nur wenn bereits vorhanden, ansonsten placeholder „in development“ (aber keine Fake-Daten)
+- Klick -> /app/session/:id
+
+C) /app/session/:id (Tasting Room Ritual)
+- Session Header (title + meta)
+- Lineup Progress
+- Whisky Focus Card
+- Nose/Palate/Finish segmented mit sliders + notes
+- Overall Score
+- Prev/Next innerhalb lineup
+- Save via bestehende endpoints/flows.
+
+D) /app/discover
+- Search-first
+- Chips: Bottles / Pairings / Templates / Knowledge
+- Jede Kategorie nutzt existierende Daten. Wenn ein Bereich heute als eigene Seite existiert, integriere ihn, aber halte ihn auch unter „More“ erreichbar (kein Verlust).
+
+E) /app/cellar
+- My bottles / collection (falls vorhanden)
+- Private diary („Private Verkostungen“) (falls vorhanden)
+- Stats/Insights (falls vorhanden)
+- Favorites (falls vorhanden)
+Wenn nicht vorhanden: nutze vorhandene Seiten/Features und mappe sie hier rein; andernfalls setze „in development“ mit konkreten Platzhaltern, aber verlinke weiterhin zur existierenden Legacy-Funktion, wenn diese existiert.
+
+ABNAHME PHASE 4:
+- Alle V2 Screens laufen ohne console errors.
+- Alle Buttons/Links funktionieren.
+- Kein Feature aus Inventory ist verloren.
+
+PHASE 5 — LANDINGPAGE DARK WARM (PUBLIC)
+1) Redesign / (Landing) auf Dark Warm.
+2) Struktur:
+   - Hero: Value prop + CTA „Open App“ -> /app
+   - Ritual (Nose/Palate/Finish)
+   - 6 Feature Cards (Sessions, Templates, Pairings, Private Diary, Calendar, Insights)
+   - Roadmap „In development“ (optional)
+   - „Preview / Lab“: Link zu /lab-dark/home oder direkt V2 Preview
+3) Keine langen Texte, Apple-like.
+
+ABNAHME PHASE 5:
+- / lädt schnell, wirkt hochwertig, CTA führt zu /app.
+- Kein Bruch im Design.
+
+PHASE 6 — LEGACY MOUNT + REDIRECTS (sicher)
+1) Stelle sicher:
+   - /legacy führt zur bisherigen Startseite/App
+   - /app ist neue UI
+2) Wenn nötig: setze redirects in client router (und server spa fallback) so, dass deep links funktionieren.
+
+ABNAHME PHASE 6:
+- /legacy und alle alten Unterseiten funktionieren.
+- /app und deep links funktionieren.
+- Keine 404 durch SPA routing.
+
+PHASE 7 — VERIFIKATION: „NO REGRETS“ CHECKLIST (MUSS)
+Erstelle docs/v2-acceptance.md mit Checkliste und bestätige (durch Code/Logik), dass:
+- DB unverändert
+- API unverändert (keine v2 endpoints)
+- Legacy intakt
+- V2 integriert alle Features
+- Alle existierenden Features sind erreichbar (direkt oder via More)
+
+WICHTIGE TECHNISCHE DETAILS
+- Verwende vorhandenes Routing und Auth-Guard Patterns 1:1.
+- Keine „Design-Explosion“: V2 components konsistent wiederverwenden.
+- Keine „doppelte Wahrheit“: Keine neue State Machine, wenn existiert.
+- Wo es Überschneidungen gibt (z.B. Sessions vs. Home Sessions):
+  - Reuse dieselbe Logik/hook.
+
+START
+Beginne sofort mit PHASE 0: Inventar & Mapping.
+Danach implementiere PHASE 1–7 sequentiell.
+Wenn du auf Konflikte stößt: entscheide pragmatisch, aber halte die MUST-Regeln ein.
+Am Ende müssen /app und /legacy beide funktionieren, und ALLE Features müssen integriert sein.
+
+COMMIT-STRATEGIE
+- Verwende kleine Commits pro Phase:
+  feat(v2): inventory + sitemap
+  feat(v2): dark-warm theme + components
+  feat(v2): app shell + routing
+  feat(v2): home/sessions/session/discover/cellar
+  feat(landing): dark-warm landing + app entry
+  chore(v2): legacy mount + redirects + docs
+
+ENDE
