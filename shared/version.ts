@@ -1,3 +1,6 @@
+// RECOVERY-STAMP: 2026-02-28 | v2.0.0-stable | commit: 0eed61d2
+// Sidebar 6-section nav, Naked Tasting (Standard+Ultra), Blind-Mode getDramDisplay,
+// 3 UI modes (Flow/Focus/Journal), AI Kill Switch, Context Levels, all redirects live.
 export const APP_VERSION = "2.0.0";
 export const APP_NAME = "CaskSense";
 export const APP_RELEASE_DATE = "2026-02-21";
