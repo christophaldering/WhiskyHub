@@ -18,6 +18,12 @@ import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_inte
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES } from "./ai-settings";
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from "docx";
 import sharp from "sharp";
+import { extractTextFromImage } from "./lib/ocr.js";
+import { getWhiskyIndex } from "./lib/whiskyIndex.js";
+import { scoreWhiskies, extractHints } from "./lib/matching.js";
+import { LRUCache as LRUCacheImpl } from "./lib/cache.js";
+
+const identifyCache = new LRUCacheImpl<any>(200, 24 * 60 * 60 * 1000);
 
 const aiScanCache = new Map<string, { result: any; timestamp: number }>();
 let tourCacheVersion = Date.now();
@@ -1247,6 +1253,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/whisky/identify", scanUpload.single("photo"), async (req: any, res: Response) => {
+    const startMs = Date.now();
     try {
       console.log("[SIMPLE_MODE][IDENTIFY] request received");
       const file = req.file;
@@ -1255,23 +1262,51 @@ export async function registerRoutes(
       }
       const photoUrl = `/uploads/${file.filename}`;
       console.log(`[SIMPLE_MODE][IDENTIFY] photo saved: ${photoUrl}`);
-      const fname = (file.originalname || "").toLowerCase();
-      let candidates = [
-        { name: "Lagavulin 16", distillery: "Lagavulin", confidence: 0.85 },
-        { name: "Ardbeg Uigeadail", distillery: "Ardbeg", confidence: 0.72 },
-        { name: "Balvenie DoubleWood 12", distillery: "The Balvenie", confidence: 0.58 },
-      ];
-      if (fname.includes("lagavulin")) {
-        candidates[0].confidence = 0.97;
-      } else if (fname.includes("ardbeg")) {
-        candidates = [candidates[1], candidates[0], candidates[2]];
-        candidates[0].confidence = 0.95;
-      } else if (fname.includes("balvenie")) {
-        candidates = [candidates[2], candidates[0], candidates[1]];
-        candidates[0].confidence = 0.93;
+
+      const imageBuffer = fs.readFileSync(file.path);
+      const hash = LRUCacheImpl.hashBuffer(imageBuffer);
+      const cached = identifyCache.get(hash);
+      if (cached) {
+        console.log("[SIMPLE_MODE][IDENTIFY] cache hit");
+        return res.json({ ...cached, photoUrl });
       }
-      console.log(`[SIMPLE_MODE][IDENTIFY] returning ${candidates.length} candidates`);
-      res.json({ candidates, photoUrl });
+
+      const ocrText = await extractTextFromImage(file.path);
+      console.log(`[SIMPLE_MODE][OCR] text: "${ocrText.substring(0, 120)}..."`);
+
+      if (!ocrText.trim()) {
+        console.log("[SIMPLE_MODE][IDENTIFY] no text extracted, returning empty");
+        const result = { candidates: [], photoUrl };
+        return res.json(result);
+      }
+
+      const hints = extractHints(ocrText);
+      console.log(`[SIMPLE_MODE][MATCH] hints:`, JSON.stringify(hints));
+
+      const index = await getWhiskyIndex();
+      const candidates = scoreWhiskies(ocrText, hints, index);
+
+      const lowConfidence = candidates.length === 0 || candidates[0].confidence < 0.15;
+      if (lowConfidence) {
+        console.log("[SIMPLE_MODE][MATCH] low confidence, filtering");
+      }
+
+      const finalCandidates = lowConfidence ? [] : candidates;
+      const tookMs = Date.now() - startMs;
+      console.log(`[SIMPLE_MODE][IDENTIFY] returning ${finalCandidates.length} candidates in ${tookMs}ms`);
+
+      const isDev = process.env.NODE_ENV !== "production" || process.env.SIMPLE_DEBUG === "true";
+      const debug = isDev ? {
+        ocrText: ocrText.substring(0, 300),
+        tokens: ocrText.split(/\s+/).slice(0, 50),
+        hints,
+        tookMs,
+        indexSize: index.length,
+      } : undefined;
+
+      const result = { candidates: finalCandidates, debug };
+      if (hash) identifyCache.set(hash, result);
+      res.json({ ...result, photoUrl });
     } catch (e: any) {
       console.error("[SIMPLE_MODE][IDENTIFY] error:", e.message);
       res.status(500).json({ message: e.message });

@@ -165,8 +165,14 @@ function CandidateSheet({
           />
         )}
         <div>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: 0 }}>We found</h3>
-          <p style={{ fontSize: 12, color: c.muted, margin: "2px 0 0" }}>{candidates.length} possible matches</p>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: 0 }}>
+            {candidates.length > 0 ? "We found" : "Not sure"}
+          </h3>
+          <p style={{ fontSize: 12, color: c.muted, margin: "2px 0 0" }}>
+            {candidates.length > 0
+              ? `${candidates.length} possible match${candidates.length > 1 ? "es" : ""}`
+              : "We couldn't confidently identify this whisky."}
+          </p>
         </div>
       </div>
 

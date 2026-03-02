@@ -1,0 +1,162 @@
+HARD PROMPT (Replit) — PHASE 2: ECHTE FOTO-ERKENNUNG (AHA-Effekt) via OCR + Fuzzy-Match + Optional Whiskybase Lookup
+Ziel: Der erste Nutzer-Loop muss “magisch” wirken: Foto → Trefferliste → Confirm → Log (Simple Mode).
+Phase 1 UI/Flow bleibt UNVERÄNDERT. Wir ersetzen nur die Mock-Engine durch echte Erkennung.
+
+WICHTIG:
+- Keine DB-Schema-Änderungen. Keine Migrationen.
+- Simple Mode bleibt ohne Legacy-Menüs/Layouts.
+- Keine Dead Ends: wenn Erkennung unsicher ist → Unknown-Fallback + manuelle Suche.
+
+────────────────────────────────────────────────────────────
+A) AKZEPTANZKRITERIEN (MUSS)
+1) /api/whisky/identify verarbeitet ein Foto und liefert echte Kandidaten basierend auf dem Labeltext.
+2) AHA-Qualität: Bei typischen Flaschenfotos (Front-Label, halbwegs scharf) soll in ≥70% der Fälle
+   ein plausibler Top-Match unter den ersten 3 Kandidaten landen (aus lokaler DB).
+3) Matching-Priorität:
+   (1) Local DB whiskies (höchste Priorität)
+   (2) “Had before” (falls vorhanden)
+   (3) Optional: External lookup (Whiskybase) nur wenn API/Key konfiguriert, sonst skip.
+4) Confidence + Kandidatenliste muss stabil sein:
+   - candidates[0..2] immer sortiert nach confidence
+   - confidence 0..1 + badge mapping (High >=0.78, Medium 0.55–0.77, Low <0.55)
+5) Wenn confidence Low und keine guten Treffer:
+   - return candidates = []
+   - UI zeigt “We’re not sure” → Create Unknown / Manual Search / Retake
+6) Performance:
+   - identify endpoint soll i.d.R. < 4 Sekunden sein (inkl. OCR), sonst “processing” + Timeout-Fallback.
+7) Privacy:
+   - Fotos werden nur für Identifikation genutzt.
+   - Falls externer OCR-Service genutzt wird: klarer Hinweis im /simple-test + optionaler Toggle via ENV.
+
+────────────────────────────────────────────────────────────
+B) TECHNISCHE STRATEGIE (UMSETZEN, NICHT NUR BESCHREIBEN)
+Wir implementieren OCR + Normalisierung + Fuzzy Matching + Caching.
+
+1) OCR ENGINE — 2-stufig, robust
+Implementiere serverseitig eine OCR-Abstraktion:
+- try OCR_PROVIDER=cloud (wenn Keys vorhanden) → beste Qualität
+- else fallback OCR_PROVIDER=local (wenn Libraries verfügbar)
+- else fallback: return candidates=[] (aber Flow bleibt stabil)
+
+Erlaubte Provider (priorisiert):
+A) Google Cloud Vision (sehr gut) falls env vorhanden:
+   - GOOGLE_APPLICATION_CREDENTIALS oder API Key (je nach Setup)
+B) AWS Textract (ok) falls env vorhanden
+C) Local OCR: tesseract.js (nur wenn runtime stabil; sonst lieber kein Local OCR)
+Wähle pragmatisch das Beste, was im Repo/Runtime realistisch läuft.
+WICHTIG: Kein “TODO”. Implementiere eine funktionierende Variante + saubere Fehlermeldungen.
+
+2) TEXT NORMALIZATION (MUSS)
+Aus OCR-Text wird ein Token-Set:
+- uppercase
+- remove punctuation
+- replace common noise words: SINGLE, MALT, SCOTCH, WHISKY, WHISKEY, THE, DISTILLERY, LIMITED, EDITION, YEARS/YO
+- normalize ABV patterns (e.g. 46%, 46.0% → 46)
+- extract candidate fields via regex:
+  - abv: (\d{2}\.?\d?)\s*%
+  - age: (\d{1,2})\s*(YO|YEARS|YEAR)
+  - cask hints: SHERRY, BOURBON, PX, OLOROSO, PORT, RUM, WINE, MADEIRA
+- Build:
+  normalizedText
+  tokens[]
+  hints: { abv?, age?, caskTokens[] }
+
+3) LOCAL DB INDEX (MUSS)
+Baue beim Serverstart oder on-demand einen In-Memory-Index der whiskies:
+- whiskyId
+- name
+- distillery (if available)
+- optional: bottler, series, region
+- precomputed searchable strings + token sets
+
+If DB access layer exists (Drizzle etc.), query whiskies table.
+If no whiskies table exists, query whatever catalog you have. If none, stop and return candidates=[].
+
+4) FUZZY MATCHING (MUSS)
+Implementiere Scoring:
+score = 0..1 based on:
+- token overlap (Jaccard)
+- trigram similarity or levenshtein ratio on normalized strings
+- bonus if age hint matches whisky name tokens
+- bonus if abv hint close to known abv (if stored)
+- bonus if distillery token present
+
+Return top 3 with confidence.
+Confidence calibration:
+- start with similarity measure, clamp 0..1
+- if top confidence < 0.55 => treat as no confident match → candidates = []
+
+5) PHOTO HASH CACHE (MUSS)
+Compute SHA256 hash of uploaded image bytes.
+Cache result in LRU for 24h:
+- key: hash
+- value: identify response (candidates + debug)
+This avoids repeated OCR calls and makes demos snappy.
+
+6) OPTIONAL: “External lookup” (ONLY IF CONFIGURED)
+If WHISKYBASE_API_KEY (or other catalog key) exists:
+- use extracted tokens (distillery + name) for lookup
+- map result to candidate entries
+If not configured: skip entirely (no errors, no TODO text).
+
+7) DEBUG (DEV ONLY)
+Return debug fields only in dev:
+- ocrText (truncated)
+- tokens (first 50)
+- tookMs
+Guard behind NODE_ENV !== 'production' or ENV SIMPLE_DEBUG=true.
+
+────────────────────────────────────────────────────────────
+C) API CONTRACT (MUST REMAIN STABLE)
+POST /api/whisky/identify
+Input: multipart/form-data image (preferred) OR photoUrl
+Output:
+{
+  "photoUrl": "...optional",
+  "candidates": [
+    {
+      "source": "local" | "external",
+      "whiskyId": "optional",
+      "name": "...",
+      "distillery": "...optional",
+      "abv": 46.0 optional,
+      "age": 12 optional,
+      "whiskybaseId": "optional",
+      "confidence": 0.0-1.0
+    }
+  ],
+  "debug": { ...optional }
+}
+
+────────────────────────────────────────────────────────────
+D) UI/UX (UNCHANGED, but ensure AHA)
+Keep Phase-1 Bottom Sheet exactly, but:
+- Show “High/Medium/Low” badge derived from confidence.
+- If candidates empty: show “We couldn’t confidently identify this whisky.” + Create Unknown / Manual / Retake.
+
+────────────────────────────────────────────────────────────
+E) FILES TO MODIFY (EXPLICIT)
+Backend:
+- server/routes.ts (replace mock identify with real)
+- server/lib/ocr.ts (new): provider abstraction
+- server/lib/whiskyIndex.ts (new): DB indexing + tokenization
+- server/lib/matching.ts (new): scoring functions
+- server/lib/cache.ts (new): LRU cache
+Frontend: NO changes except optional badge mapping (if not already)
+
+────────────────────────────────────────────────────────────
+F) TESTS / SIMPLE-TEST (MUST UPDATE)
+Update /simple-test checklist:
+- Scan a clear label photo → expect candidates with confidence badge
+- Scan a random object → expect “not sure” fallback
+- Repeat same photo → should be fast (cache hit)
+Log console prefix: [SIMPLE_MODE][OCR] [SIMPLE_MODE][MATCH]
+
+────────────────────────────────────────────────────────────
+G) GUARDRAILS
+- No DB schema changes
+- No legacy layout
+- No brittle dependency that breaks build: if OCR provider missing, fail gracefully and return candidates=[]
+- Keep upload size limit and image-only validation
+
+DO IT NOW. NO QUESTIONS. Prefer pragmatic implementation that produces real “aha” matches in the small-circle test.
