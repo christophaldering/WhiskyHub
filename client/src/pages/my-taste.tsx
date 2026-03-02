@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
@@ -10,6 +11,7 @@ const colors = {
   text: "#f5f0e8",
   muted: "#888",
   accent: "#d4a256",
+  error: "#c44",
 };
 
 const cardStyle: React.CSSProperties = {
@@ -19,19 +21,26 @@ const cardStyle: React.CSSProperties = {
   padding: "24px",
 };
 
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  background: colors.bg,
+  border: `1px solid ${colors.border}`,
+  borderRadius: 8,
+  color: colors.text,
+  padding: "10px 14px",
+  fontSize: 14,
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+const LS_KEY = "casksense_participant_id";
+
 function StatRow({ label, value }: { label: string; value: number | null | undefined }) {
   const display = value != null ? value.toFixed(1) : "—";
   const hasValue = value != null;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "8px 0",
-      }}
-    >
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
       <span style={{ fontSize: 14, color: colors.text }}>{label}</span>
       <span
         style={{
@@ -47,9 +56,111 @@ function StatRow({ label, value }: { label: string; value: number | null | undef
   );
 }
 
+function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; role?: string }) => void }) {
+  const [name, setName] = useState("");
+  const [pin, setPin] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !pin.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const result = await participantApi.loginOrCreate(name.trim(), pin.trim());
+      if (result?.id) {
+        localStorage.setItem(LS_KEY, result.id);
+        onUnlock({ id: result.id, name: result.name, role: result.role });
+      } else {
+        setError("Unexpected response. Please try again.");
+      }
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("Invalid PIN")) {
+        setError("Wrong PIN. Please try again.");
+      } else if (msg.includes("email")) {
+        setError("No account found. Use the same name and PIN from your tasting.");
+      } else {
+        setError(msg || "Could not unlock. Check name and PIN.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={cardStyle} data-testid="card-unlock">
+      <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: colors.muted, margin: "0 0 16px" }}>
+        Unlock your taste profile
+      </h2>
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <input
+          type="text"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={inputStyle}
+          data-testid="input-unlock-name"
+          autoComplete="off"
+        />
+        <input
+          type="password"
+          placeholder="PIN"
+          value={pin}
+          onChange={(e) => setPin(e.target.value)}
+          style={{ ...inputStyle, letterSpacing: 3 }}
+          data-testid="input-unlock-pin"
+          autoComplete="off"
+        />
+        <button
+          type="submit"
+          disabled={loading || !name.trim() || !pin.trim()}
+          data-testid="button-unlock"
+          style={{
+            width: "100%",
+            padding: "10px",
+            fontSize: 15,
+            fontWeight: 600,
+            background: loading ? colors.border : colors.accent,
+            color: colors.bg,
+            border: "none",
+            borderRadius: 8,
+            cursor: loading ? "wait" : "pointer",
+            opacity: (!name.trim() || !pin.trim()) ? 0.5 : 1,
+            transition: "opacity 0.2s",
+          }}
+        >
+          {loading ? "…" : "Unlock"}
+        </button>
+        {error && (
+          <p style={{ fontSize: 12, color: colors.error, margin: 0, textAlign: "center" }} data-testid="text-unlock-error">
+            {error}
+          </p>
+        )}
+      </form>
+    </div>
+  );
+}
+
 export default function MyTastePage() {
-  const { currentParticipant } = useAppStore();
+  const { currentParticipant, setParticipant } = useAppStore();
   const pid = currentParticipant?.id;
+
+  useEffect(() => {
+    if (!pid) {
+      const storedId = localStorage.getItem(LS_KEY);
+      if (storedId) {
+        participantApi.get(storedId).then((p: any) => {
+          if (p?.id) {
+            setParticipant({ id: p.id, name: p.name, role: p.role });
+          }
+        }).catch(() => {
+          localStorage.removeItem(LS_KEY);
+        });
+      }
+    }
+  }, [pid, setParticipant]);
 
   const { data: participant } = useQuery({
     queryKey: ["participant-detail", pid],
@@ -59,8 +170,7 @@ export default function MyTastePage() {
 
   const { data: insightData } = useQuery({
     queryKey: ["participant-insights", pid],
-    queryFn: () =>
-      fetch(`/api/participants/${pid}/insights`).then((r) => r.json()),
+    queryFn: () => fetch(`/api/participants/${pid}/insights`).then((r) => r.json()),
     enabled: !!pid,
   });
 
@@ -68,8 +178,11 @@ export default function MyTastePage() {
   const exploration = participant?.explorationIndex ?? null;
   const smoke = participant?.smokeAffinityIndex ?? null;
   const hasStats = stability != null || exploration != null || smoke != null;
-
   const insight = insightData?.insight ?? null;
+
+  const handleUnlock = (p: { id: string; name: string; role?: string }) => {
+    setParticipant(p);
+  };
 
   return (
     <div
@@ -104,6 +217,8 @@ export default function MyTastePage() {
         >
           My Taste
         </h1>
+
+        {!pid && <UnlockCard onUnlock={handleUnlock} />}
 
         <div style={cardStyle} data-testid="card-today">
           <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: colors.muted, margin: "0 0 16px" }}>
@@ -141,7 +256,7 @@ export default function MyTastePage() {
           </h2>
           {!pid ? (
             <p style={{ fontSize: 13, color: colors.muted, margin: 0 }} data-testid="text-snapshot-login">
-              Log in to see your taste profile.
+              Unlock to see your taste profile.
             </p>
           ) : hasStats ? (
             <div>
@@ -162,7 +277,7 @@ export default function MyTastePage() {
           </h2>
           {!pid ? (
             <p style={{ fontSize: 13, color: colors.muted, margin: 0 }}>
-              Log in to see your insights.
+              Unlock to see your insights.
             </p>
           ) : insight ? (
             <p style={{ fontSize: 14, lineHeight: 1.6, color: colors.text, margin: 0 }} data-testid="text-insight-message">
