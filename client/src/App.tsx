@@ -31,6 +31,8 @@ import QuickTasting from "@/pages/quick-tasting";
 import NakedTasting from "@/pages/naked-tasting";
 import SupportConsole from "@/pages/support-console";
 import MyTastePage from "@/pages/my-taste";
+import EnterPage from "@/pages/enter";
+import LogWhiskyPage from "@/pages/log-whisky";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
 import HomeDashboard from "@/pages/home-dashboard";
@@ -82,8 +84,9 @@ function Router() {
         <Route path="/tour" component={Tour} />
         <Route path="/background" component={Background} />
         <Route path="/join/:code" component={QuickTasting} />
-        <Route path="/join">{() => <Redirect to="/tasting/sessions" />}</Route>
-        <Route path="/log">{() => <Redirect to="/my/journal" />}</Route>
+        <Route path="/enter" component={EnterPage} />
+        <Route path="/join">{() => <Redirect to="/enter" />}</Route>
+        <Route path="/log" component={LogWhiskyPage} />
         <Route path="/naked/:code" component={NakedTasting} />
         <Route path="/support" component={SupportConsole} />
         <Route path="/my-taste" component={MyTastePage} />
