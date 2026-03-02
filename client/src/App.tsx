@@ -74,10 +74,7 @@ function Router() {
   return (
     <>
       <Switch>
-        <Route path="/">{() => {
-          const pref = getUIPref();
-          return pref === "legacy" ? <Landing /> : <Redirect to="/app/home" />;
-        }}</Route>
+        <Route path="/" component={Landing} />
         <Route path="/landing" component={Landing} />
         <Route path="/feature-tour" component={FeatureTour} />
         <Route path="/tour" component={Tour} />
