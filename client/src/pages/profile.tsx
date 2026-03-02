@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Camera, X, User, KeyRound, Mail, Trash2, AlertTriangle, Layers, Target, FileText } from "lucide-react";
+import { Camera, X, User, KeyRound, Mail, Trash2, AlertTriangle, Layers, Target, FileText, Sparkles } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
 import type { UIMode } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -63,6 +63,17 @@ export default function Profile() {
     queryKey: ["participant", currentParticipant?.id],
     queryFn: () => participantApi.get(currentParticipant!.id),
     enabled: !!currentParticipant,
+  });
+
+  const { data: insightData } = useQuery({
+    queryKey: ["insights", currentParticipant?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/participants/${currentParticipant!.id}/insights`);
+      if (!res.ok) return { insight: null };
+      return res.json();
+    },
+    enabled: !!currentParticipant,
+    staleTime: 300_000,
   });
 
   useEffect(() => {
@@ -258,6 +269,23 @@ export default function Profile() {
         </CardHeader>
 
         <CardContent className="space-y-8">
+          {insightData?.insight && (
+            <div
+              className="rounded-lg border px-4 py-3 flex items-start gap-3"
+              style={{ borderColor: "#d4a256", background: "rgba(212,162,86,0.06)" }}
+              data-testid="card-taste-insight"
+            >
+              <Sparkles className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#d4a256" }} />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "#d4a256" }}>
+                  Taste Insight
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {insightData.insight.message}
+                </p>
+              </div>
+            </div>
+          )}
           <div className="space-y-2">
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">
               {t("profile.photo")}

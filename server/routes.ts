@@ -4013,6 +4013,21 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
     }
   });
 
+  // ===== TASTE INSIGHTS =====
+
+  app.get("/api/participants/:id/insights", async (req, res) => {
+    try {
+      const participant = await storage.getParticipant(req.params.id);
+      if (!participant) return res.status(404).json({ message: "Not found" });
+
+      const { generateParticipantInsights } = await import("./insight-engine");
+      const insights = await generateParticipantInsights(req.params.id);
+      res.json({ insight: insights.length > 0 ? insights[0] : null });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== FLAVOR PROFILE =====
 
   app.get("/api/participants/:id/flavor-profile", async (req, res) => {
