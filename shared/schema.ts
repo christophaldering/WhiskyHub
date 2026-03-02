@@ -18,6 +18,10 @@ export const participants = pgTable("participants", {
   newsletterOptIn: boolean("newsletter_opt_in").default(false),
   communityContributor: boolean("community_contributor").default(false),
   experienceLevel: text("experience_level").default("connoisseur"),
+  smokeAffinityIndex: real("smoke_affinity_index"),
+  sweetnessBias: real("sweetness_bias"),
+  ratingStabilityScore: real("rating_stability_score"),
+  explorationIndex: real("exploration_index"),
   lastSeenAt: timestamp("last_seen_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -216,6 +220,10 @@ export const ratings = pgTable("ratings", {
   notes: text("notes").default(""),
   guessAbv: real("guess_abv"),
   guessAge: text("guess_age"),
+  normalizedScore: real("normalized_score"),
+  calibrationDelta: real("calibration_delta"),
+  blindVsOpenDelta: real("blind_vs_open_delta"),
+  confidenceWeight: real("confidence_weight"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
