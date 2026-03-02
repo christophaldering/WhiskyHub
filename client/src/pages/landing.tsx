@@ -63,7 +63,7 @@ export default function Landing() {
             width: "100%",
           }}
         >
-          <Link href="/tasting">
+          <Link href="/join">
             <motion.div
               whileTap={{ scale: 0.97 }}
               style={{
@@ -80,13 +80,13 @@ export default function Landing() {
                 cursor: "pointer",
                 border: "none",
               }}
-              data-testid="button-start-tasting"
+              data-testid="button-join-tasting"
             >
-              Start Tasting
+              Join a Tasting
             </motion.div>
           </Link>
 
-          <Link href="/my/journal">
+          <Link href="/log">
             <motion.div
               whileTap={{ scale: 0.97 }}
               style={{
@@ -98,14 +98,41 @@ export default function Landing() {
                 fontWeight: 600,
                 fontFamily: "system-ui, sans-serif",
                 background: "transparent",
-                color: "#f5f0e8",
+                color: "#d4a256",
                 borderRadius: "12px",
                 cursor: "pointer",
-                border: "1px solid #3d3529",
+                border: "1px solid #d4a256",
               }}
               data-testid="button-log-whisky"
             >
               Log a Whisky
+            </motion.div>
+          </Link>
+
+          <Link href="/profile">
+            <motion.div
+              whileTap={{ scale: 0.97 }}
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "0.85rem",
+                textAlign: "center",
+                fontSize: "0.9rem",
+                fontWeight: 500,
+                fontFamily: "system-ui, sans-serif",
+                background: "transparent",
+                color: "#f5f0e8",
+                borderRadius: "12px",
+                cursor: "pointer",
+                border: "none",
+                opacity: 0.6,
+                transition: "opacity 0.2s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.6")}
+              data-testid="button-my-taste"
+            >
+              My Taste
             </motion.div>
           </Link>
         </div>

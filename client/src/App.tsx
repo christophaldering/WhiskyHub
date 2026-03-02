@@ -81,6 +81,8 @@ function Router() {
         <Route path="/tour" component={Tour} />
         <Route path="/background" component={Background} />
         <Route path="/join/:code" component={QuickTasting} />
+        <Route path="/join">{() => <Redirect to="/tasting/sessions" />}</Route>
+        <Route path="/log">{() => <Redirect to="/my/journal" />}</Route>
         <Route path="/naked/:code" component={NakedTasting} />
         <Route path="/support" component={SupportConsole} />
         <Route path="/impressum" component={Impressum} />
