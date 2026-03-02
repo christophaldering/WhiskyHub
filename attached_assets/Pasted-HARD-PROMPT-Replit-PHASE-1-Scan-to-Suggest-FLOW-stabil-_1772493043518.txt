@@ -1,0 +1,163 @@
+HARD PROMPT (Replit) — PHASE 1: “Scan-to-Suggest” FLOW stabil (ohne OCR), inkl. Unknown-Fallback
+Ziel: Wir bauen JETZT einen komplett stabilen Simple-Flow, der auf Mobile funktioniert.
+WICHTIG: In Phase 1 gibt es noch KEINE echte Foto-Erkennung. Stattdessen:
+- Foto aufnehmen + Upload an Backend funktioniert zuverlässig
+- Backend liefert eine “Mock Identification” (statisch oder regelbasiert)
+- UI/UX, Candidate-Auswahl, Prefill, Unknown-Fallback, Save-Flow sind fertig
+Dann können wir in Phase 2 die echte OCR/Matching-Engine austauschen, ohne UI nochmal anzufassen.
+
+NICHTS an der DB ändern. Keine Migration. Keine Schema-Änderung.
+Legacy-Menüs dürfen in Simple Mode NICHT erscheinen.
+
+────────────────────────────────────────────────────────────
+A) AKZEPTANZKRITERIEN (MUSS)
+1) Landing-Button “Log a Whisky” führt zu /log-simple (SimpleShell, keine Sidebar/Legacy Layout).
+2) /log-simple hat “Scan label” Button. Mobile: öffnet Kamera (capture).
+3) Nach Foto: Upload ans Backend klappt. Backend antwortet sofort.
+4) Ergebnis wird als Bottom Sheet gezeigt:
+   - Top match + 2 Alternativen (Mock)
+   - Buttons: “Use this”, “Retake”, “Search manually”, “Create as Unknown”
+5) “Create as Unknown” (MUSS) ermöglicht Loggen ohne Treffer:
+   - required: Whisky name
+   - optional: distillery, age, abv, cask, whiskybaseId, price
+   - photo preview (falls aufgenommen)
+6) “Save” funktioniert IMMER:
+   - Wenn whiskyId gewählt → normal speichern via bestehendem Endpoint
+   - Wenn Unknown → speichern ohne DB-Änderung:
+       a) bevorzugt: vorhandenes notes/meta Feld nutzen (structured block)
+       b) fallback: localStorage key "simple_unknown_logs" + Copy-to-clipboard JSON Button
+7) Nach Save: Success State mit “Log another” + “Go to My Taste”
+8) /simple-test Seite existiert: Happy Path + Unknown Path Buttons/Checkliste.
+
+────────────────────────────────────────────────────────────
+B) IMPLEMENTATION — KONKRET (UMSETZEN)
+1) SIMPLE SHELL (neu)
+- client/src/components/simple/simple-shell.tsx
+- Minimal: centered container, dark-warm background, no nav, no workspace UI.
+
+2) ROUTES (neu)
+- /log-simple
+- /simple-test
+- /api/whisky/identify (Phase-1 mock)
+- /api/uploads/photo (oder reuse existing upload infra falls vorhanden)
+
+3) /log-simple UI (MUSS exakt so)
+Top Section “Whisky”
+- Field: Whisky (search/select)
+- Secondary text link: “Create as Unknown”
+- Primary button: “Scan label” (camera icon)
+
+Scan flow:
+- Tap “Scan label” → open camera capture (input type="file" accept="image/*" capture="environment")
+- After capture:
+  - show thumbnail preview
+  - show “Identifying…” spinner
+  - upload image to backend (multipart/form-data)
+  - call POST /api/whisky/identify with photoUrl OR with the file directly (choose the simpler)
+  - receive mock candidates
+
+Bottom Sheet “We found”
+- list candidates (max 3):
+  - name, distillery, confidence badge (High/Medium/Low)
+- actions:
+  - Use this → sets selected whisky (whiskyId if provided else name/distillery)
+  - Retake → re-open camera
+  - Search manually → focus whisky search input + show dropdown results
+  - Create as Unknown → opens Unknown section
+
+Unknown section (collapsed by default):
+- Whisky name (required)
+- Distillery (optional)
+- Age (optional)
+- ABV (optional)
+- Cask (optional)
+- Whiskybase ID (optional)
+- Price (optional)
+
+Scoring:
+- Overall score slider (0–100) + numeric display
+- Notes textarea
+
+Save:
+- If selected whisky has whiskyId: use existing create-log mutation
+- Else if Unknown:
+   - Try save to existing endpoint with notes/meta structured block:
+     [UNKNOWN_WHISKY]
+     Name: ...
+     Distillery: ...
+     Age: ...
+     ABV: ...
+     Cask: ...
+     WhiskybaseId: ...
+     Price: ...
+     PhotoUrl: ...
+     [/UNKNOWN_WHISKY]
+   - If backend rejects/doesn’t support: store in localStorage "simple_unknown_logs"
+     and show “Copied JSON” button + “Download JSON” (optional).
+
+4) BACKEND: Phase-1 identify endpoint (MOCK)
+Add POST /api/whisky/identify
+Input:
+- Either receives image file OR photoUrl (choose easiest)
+Behavior:
+- Return candidates deterministically (no OCR):
+  Option A (simple): always return 3 fixed candidates:
+    1) Lagavulin 16
+    2) Ardbeg Uigeadail
+    3) Balvenie DoubleWood 12
+  Option B (slightly smarter): if filename contains “lagavulin/ardbeg/balvenie” then boost match.
+
+Return format:
+{
+  "candidates": [
+    { "whiskyId": optional, "name":"...", "distillery":"...", "confidence":0.85 },
+    ...
+  ],
+  "photoUrl": "..."
+}
+
+Important:
+- Keep interface stable for Phase 2 (same output shape).
+- Add console logs prefix [SIMPLE_MODE][IDENTIFY]
+
+5) UPLOAD
+Implement simplest upload path compatible with stack:
+- server route accepts multipart via multer (or existing)
+- store file to /uploads (or temp) and return a served URL
+- Ensure static hosting of upload directory is configured
+- Add basic size limit (e.g., 5MB) and reject non-images.
+
+6) /simple-test page
+Include buttons:
+- Open /log-simple
+- Trigger scan (instructions)
+- Force unknown (instructions)
+Checklist:
+- Scan → candidates appear
+- Select candidate → prefill
+- Save → success
+- Unknown create → save → success/local fallback
+
+────────────────────────────────────────────────────────────
+C) FILES TO TOUCH (EXPLICIT)
+- client/src/App.tsx (router): add /log-simple, /simple-test
+- client/src/pages/landing.tsx: “Log a Whisky” → /log-simple
+- client/src/components/simple/simple-shell.tsx (new)
+- client/src/pages/simple-log.tsx (new)
+- client/src/pages/simple-test.tsx (new)
+- server/routes.ts: add /api/whisky/identify + upload endpoint + static serving for uploads
+
+────────────────────────────────────────────────────────────
+D) GUARDRAILS (NICHT VERHANDELN)
+- No legacy layout on /log-simple
+- No DB schema changes
+- No dependency on OCR in Phase 1
+- No dead ends
+
+────────────────────────────────────────────────────────────
+E) FINAL REPORT (PRINT AFTER IMPLEMENTATION)
+After code changes, output:
+1) List of new routes
+2) How uploads work (path + URL)
+3) Example response from /api/whisky/identify
+4) Exact manual test steps (mobile)
