@@ -23,6 +23,7 @@ import { getWhiskyIndex } from "./lib/whiskyIndex.js";
 import { scoreWhiskies, scoreWhiskiesMultiLine, extractHints, detectMode } from "./lib/matching.js";
 import { LRUCache as LRUCacheImpl } from "./lib/cache.js";
 import { normalize } from "./lib/whiskyIndex.js";
+import { searchOnline, getProviderStatus } from "./lib/onlineSearch.js";
 
 const identifyCache = new LRUCacheImpl<any>(200, 24 * 60 * 60 * 1000);
 
@@ -1388,6 +1389,54 @@ export async function registerRoutes(
       console.error("[SIMPLE_MODE][IDENTIFY-TEXT] error:", e.message);
       res.status(500).json({ message: e.message });
     }
+  });
+
+  app.post("/api/whisky/identify-online", async (req: Request, res: Response) => {
+    const startMs = Date.now();
+    try {
+      const clientIp = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
+      if (!checkIdentifyRateLimit(clientIp)) {
+        return res.status(429).json({ message: "Too many requests. Please wait a few minutes." });
+      }
+
+      const { query, ocrText, sendPhoto, photoUrl } = req.body || {};
+      const searchQuery = (query || ocrText || "").trim();
+
+      if (!searchQuery || searchQuery.length < 2) {
+        return res.status(400).json({ message: "Query text is required" });
+      }
+
+      console.log(`[SIMPLE_MODE][ONLINE_SEARCH] request: query="${searchQuery.substring(0, 80)}" sendPhoto=${!!sendPhoto}`);
+
+      const onlineResult = await searchOnline(searchQuery);
+
+      const index = await getWhiskyIndex();
+      for (const c of onlineResult.candidates) {
+        const localMatches = scoreWhiskies(c.name + (c.distillery ? ` ${c.distillery}` : ""), extractHints(c.name), index);
+        if (localMatches.length > 0 && localMatches[0].confidence >= 0.4) {
+          c.whiskyId = localMatches[0].whiskyId;
+          c.confidence = Math.min(0.85, c.confidence + 0.15);
+          c.confidence = Math.round(c.confidence * 100) / 100;
+          console.log(`[SIMPLE_MODE][ONLINE_SEARCH] mapped "${c.name}" → local ${localMatches[0].name} (${c.confidence})`);
+        }
+      }
+
+      const tookMs = Date.now() - startMs;
+      console.log(`[SIMPLE_MODE][ONLINE_SEARCH] returning ${onlineResult.candidates.length} candidates in ${tookMs}ms`);
+
+      res.json({
+        candidates: onlineResult.candidates,
+        debug: onlineResult.debug ? { ...onlineResult.debug, tookMs } : undefined,
+      });
+    } catch (e: any) {
+      console.error("[SIMPLE_MODE][ONLINE_SEARCH] error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/whisky/identify-status", (_req: Request, res: Response) => {
+    const status = getProviderStatus();
+    res.json(status);
   });
 
   app.post("/api/uploads/scan-photo", scanUpload.single("photo"), async (req: any, res: Response) => {

@@ -22,7 +22,8 @@ The V2 "Dark Warm" UI is a complete redesign of CaskSense with an Apple-clean ae
 - Discover > Pairings, Templates, Distilleries, Community, Knowledge tabs show "Coming soon" placeholders with "Open in Classic View" links to legacy
 - Cellar > Stats and Badges tabs link to legacy pages
 - More page links all advanced features to legacy routes
-- No desktop sidebar in V2 (mobile-first bottom nav; desktop uses compact left sidebar)
+- No desktop sidebar in V2 (mobile-first bottom nav with 5 tabs: Home, Sessions, Discover, Cellar, More; desktop uses compact left sidebar with same 5 items)
+- `/app/join/:code` and `/app/naked/:code` render outside AppShellV2 (no nav chrome for tasting flows)
 
 ## Simple Mode
 A minimal "Simple Mode" UI for first-time users and small circle testing. Three entry points from the landing page, all rendered with `SimpleShell` (centered, max 420px, Dark Warm, no navigation chrome).

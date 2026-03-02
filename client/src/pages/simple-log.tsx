@@ -244,24 +244,73 @@ function DescribeSheet({
   );
 }
 
+function CandidateRow({ cand, index, onSelect }: { cand: Candidate; index: number; onSelect: (c: Candidate) => void }) {
+  const badge = confidenceLabel(cand.confidence);
+  const isOnline = cand.source === "external";
+  return (
+    <button
+      onClick={() => onSelect(cand)}
+      data-testid={`button-candidate-${index}`}
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        width: "100%",
+        padding: "12px 14px",
+        background: index === 0 ? `${c.accent}15` : "transparent",
+        border: `1px solid ${index === 0 ? c.accent : c.border}`,
+        borderRadius: 10,
+        cursor: "pointer",
+        textAlign: "left",
+        fontFamily: "system-ui, sans-serif",
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{cand.name}</div>
+        <div style={{ fontSize: 12, color: c.muted }}>{cand.distillery}</div>
+        {isOnline && cand.externalUrl && (
+          <a
+            href={cand.externalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            style={{ fontSize: 10, color: c.accent, textDecoration: "underline" }}
+            data-testid={`link-external-${index}`}
+          >
+            Open source
+          </a>
+        )}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: isOnline ? "#6ba3d6" : badge.color, background: isOnline ? "#6ba3d620" : `${badge.color}20`, padding: "3px 8px", borderRadius: 6 }}>
+          {isOnline ? "Online" : badge.text}
+        </span>
+        <span style={{ fontSize: 9, color: c.muted }}>{cand.source === "local" ? "Library" : "External"}</span>
+      </div>
+    </button>
+  );
+}
+
 function CandidateSheet({
   candidates,
   photoUrl,
   isMenuMode,
+  showOnlineSearch,
   onSelect,
   onRetake,
   onSearchManually,
   onCreateUnknown,
-  onLogAnother,
+  onSearchOnline,
 }: {
   candidates: Candidate[];
   photoUrl: string;
   isMenuMode: boolean;
+  showOnlineSearch: boolean;
   onSelect: (c: Candidate) => void;
   onRetake: () => void;
   onSearchManually: () => void;
   onCreateUnknown: () => void;
-  onLogAnother?: () => void;
+  onSearchOnline: () => void;
 }) {
   return (
     <motion.div
@@ -312,55 +361,189 @@ function CandidateSheet({
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-        {candidates.map((cand, i) => {
-          const badge = confidenceLabel(cand.confidence);
-          return (
-            <button
-              key={i}
-              onClick={() => onSelect(cand)}
-              data-testid={`button-candidate-${i}`}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                width: "100%",
-                padding: "12px 14px",
-                background: i === 0 ? `${c.accent}15` : "transparent",
-                border: `1px solid ${i === 0 ? c.accent : c.border}`,
-                borderRadius: 10,
-                cursor: "pointer",
-                textAlign: "left",
-                fontFamily: "system-ui, sans-serif",
-              }}
-            >
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{cand.name}</div>
-                <div style={{ fontSize: 12, color: c.muted }}>{cand.distillery}</div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: badge.color, background: `${badge.color}20`, padding: "3px 8px", borderRadius: 6 }}>
-                  {badge.text}
-                </span>
-                {cand.source && (
-                  <span style={{ fontSize: 9, color: c.muted }}>{cand.source === "local" ? "Library" : "External"}</span>
-                )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      {candidates.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+          {candidates.map((cand, i) => (
+            <CandidateRow key={i} cand={cand} index={i} onSelect={onSelect} />
+          ))}
+        </div>
+      )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {candidates.length === 0 && (
+          <button onClick={onCreateUnknown} data-testid="button-create-unknown" style={btnPrimary}>Create as Unknown</button>
+        )}
+        {candidates.length === 0 && (
+          <button onClick={onSearchManually} data-testid="button-search-manually" style={btnOutline}>Search manually</button>
+        )}
+        {showOnlineSearch && (
+          <button onClick={onSearchOnline} data-testid="button-search-online" style={{ ...btnOutline, color: "#6ba3d6", borderColor: "#6ba3d640" }}>
+            Search online (Beta)
+            <span style={{ display: "block", fontSize: 10, color: c.muted, fontWeight: 400, marginTop: 2 }}>may send text externally</span>
+          </button>
+        )}
         <button onClick={onRetake} data-testid="button-retake" style={btnOutline}>Try again</button>
-        <button onClick={onSearchManually} data-testid="button-search-manually" style={btnOutline}>Search manually</button>
-        <button onClick={onCreateUnknown} data-testid="button-create-unknown" style={{ ...btnOutline, color: c.muted, borderColor: c.muted }}>Create as Unknown</button>
+        {candidates.length > 0 && (
+          <button onClick={onSearchManually} data-testid="button-search-manually" style={btnOutline}>Search manually</button>
+        )}
+        {candidates.length > 0 && (
+          <button onClick={onCreateUnknown} data-testid="button-create-unknown" style={{ ...btnOutline, color: c.muted, borderColor: c.muted }}>Create as Unknown</button>
+        )}
       </div>
     </motion.div>
   );
 }
 
-type SheetView = "none" | "picker" | "describe" | "candidates" | "identifying";
+function OnlineSearchSheet({
+  query,
+  photoUrl,
+  onSelect,
+  onClose,
+}: {
+  query: string;
+  photoUrl: string;
+  onSelect: (c: Candidate) => void;
+  onClose: () => void;
+}) {
+  const [sendPhoto, setSendPhoto] = useState(false);
+  const [showPhotoToggle, setShowPhotoToggle] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [searched, setSearched] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const doSearch = async () => {
+    setSearching(true);
+    setErrorMsg("");
+    try {
+      const res = await fetch("/api/whisky/identify-online", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query,
+          sendPhoto,
+          photoUrl: sendPhoto ? photoUrl : null,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        if (res.status === 429) throw new Error("Too many requests. Please wait.");
+        throw new Error(err.message || "Online search failed");
+      }
+
+      const data = await res.json();
+      setCandidates(data.candidates || []);
+      setSearched(true);
+
+      if (data.candidates.length === 0) {
+        if (data.debug?.provider === "off") {
+          setErrorMsg("Online search not configured.");
+        } else {
+          setErrorMsg("No results found online.");
+        }
+      }
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        setErrorMsg("Online search timed out.");
+      } else {
+        setErrorMsg(err?.message || "Online search failed.");
+      }
+      setSearched(true);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", damping: 25, stiffness: 300 }}
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: c.card,
+        borderTop: `1px solid ${c.border}`,
+        borderRadius: "16px 16px 0 0",
+        padding: "20px 20px 40px",
+        zIndex: 100,
+        maxHeight: "80vh",
+        overflowY: "auto",
+      }}
+      data-testid="sheet-online-search"
+    >
+      <div style={{ width: 40, height: 4, background: c.border, borderRadius: 2, margin: "0 auto 16px" }} />
+      <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 8px" }}>Search online (Beta)</h3>
+      <p style={{ fontSize: 12, color: c.muted, margin: "0 0 16px" }}>
+        Searching for: <span style={{ color: c.text }}>{query.substring(0, 60)}{query.length > 60 ? "..." : ""}</span>
+      </p>
+
+      {!searched && (
+        <>
+          <button
+            onClick={() => setShowPhotoToggle(!showPhotoToggle)}
+            style={{ background: "none", border: "none", color: c.muted, fontSize: 11, cursor: "pointer", padding: "4px 0", marginBottom: 8, fontFamily: "system-ui, sans-serif" }}
+            data-testid="button-toggle-photo-option"
+          >
+            {showPhotoToggle ? "Hide options" : "Advanced options"}
+          </button>
+
+          {showPhotoToggle && photoUrl && (
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: c.muted, marginBottom: 4, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={sendPhoto}
+                onChange={(e) => setSendPhoto(e.target.checked)}
+                data-testid="checkbox-send-photo"
+                style={{ accentColor: c.accent }}
+              />
+              Also send photo (better results)
+            </label>
+          )}
+          {showPhotoToggle && sendPhoto && (
+            <p style={{ fontSize: 10, color: c.muted, margin: "0 0 12px", fontStyle: "italic" }}>Sends the image to a third-party API.</p>
+          )}
+
+          <button
+            onClick={doSearch}
+            disabled={searching}
+            data-testid="button-run-online-search"
+            style={{ ...btnPrimary, background: "#6ba3d6", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8 }}
+          >
+            {searching ? (
+              <>
+                <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #fff4", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                Searching online...
+              </>
+            ) : "Search now"}
+          </button>
+        </>
+      )}
+
+      {searched && candidates.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+          {candidates.map((cand, i) => (
+            <CandidateRow key={i} cand={cand} index={i} onSelect={onSelect} />
+          ))}
+        </div>
+      )}
+
+      {searched && errorMsg && (
+        <p style={{ fontSize: 13, color: c.muted, textAlign: "center", margin: "12px 0" }}>{errorMsg}</p>
+      )}
+
+      <button onClick={onClose} data-testid="button-close-online" style={{ ...btnOutline, marginTop: searched ? 8 : 12, color: c.muted, borderColor: c.muted, fontSize: 13 }}>
+        {searched ? "Back" : "Cancel"}
+      </button>
+    </motion.div>
+  );
+}
+
+type SheetView = "none" | "picker" | "describe" | "candidates" | "identifying" | "onlineSearch";
 
 export default function SimpleLogPage() {
   const { currentParticipant, setParticipant } = useAppStore();
@@ -390,6 +573,7 @@ export default function SimpleLogPage() {
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isMenuMode, setIsMenuMode] = useState(false);
   const [lastResult, setLastResult] = useState<IdentifyResult | null>(null);
+  const [onlineQuery, setOnlineQuery] = useState("");
 
   const processFiles = async (files: File[]) => {
     setScanning(true);
@@ -426,6 +610,7 @@ export default function SimpleLogPage() {
       setPhotoUrl(bestResult.photoUrl || "");
       setIsMenuMode(bestResult.debug?.detectedMode === "menu");
       setLastResult(bestResult);
+      setOnlineQuery(bestResult.debug?.ocrText || whiskyName || "");
       setSheetView("candidates");
     } catch (err: any) {
       setError(err?.message || "Identification failed. Try again.");

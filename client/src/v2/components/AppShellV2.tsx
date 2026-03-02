@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, Wine, User } from "lucide-react";
+import { Home, Wine, Compass, Archive, MoreHorizontal } from "lucide-react";
 import { ViewSwitcherV2 } from "@/components/view-switcher";
 import "../theme/tokens.css";
 
@@ -11,7 +11,9 @@ interface AppShellV2Props {
 const NAV_ITEMS = [
   { href: "/app/home", icon: Home, label: "Home" },
   { href: "/app/sessions", icon: Wine, label: "Sessions" },
-  { href: "/legacy/profile", icon: User, label: "Profile" },
+  { href: "/app/discover", icon: Compass, label: "Discover" },
+  { href: "/app/cellar", icon: Archive, label: "Cellar" },
+  { href: "/app/more", icon: MoreHorizontal, label: "More" },
 ];
 
 export default function AppShellV2({ children }: AppShellV2Props) {

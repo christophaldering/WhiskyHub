@@ -104,6 +104,10 @@ function Router() {
         <Route path="/privacy" component={Privacy} />
         <Route path="/intro" component={Intro} />
 
+        {/* === V2 DARK WARM UI (standalone routes, no shell) === */}
+        <Route path="/app/join/:code" component={QuickTasting} />
+        <Route path="/app/naked/:code" component={NakedTasting} />
+
         {/* === V2 DARK WARM UI === */}
         <Route path="/app/:rest*">
           <AppShellV2>

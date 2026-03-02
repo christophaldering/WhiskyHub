@@ -63,4 +63,5 @@
 - [x] /legacy/* — Existing UI
 - [x] /lab-dark/* — Experimental Lab surface
 - [x] /join/:code, /naked/:code — Special routes work
+- [x] /app/join/:code, /app/naked/:code — V2 equivalents (outside AppShellV2)
 - [x] No 404 errors on any mapped route

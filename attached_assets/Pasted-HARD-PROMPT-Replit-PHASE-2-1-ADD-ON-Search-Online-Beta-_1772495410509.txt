@@ -1,0 +1,136 @@
+HARD PROMPT (Replit) — PHASE 2.1 ADD-ON: “Search Online (Beta)” als OPT-IN Deep Search (DSGVO-bewusst, kein Scraping)
+Ziel: Wenn lokale DB + OCR keinen sicheren Treffer liefern, bekommt der Nutzer OPTIONAL einen “Search online (Beta)” Button.
+Wichtig: NICHT automatisch. Nur auf expliziten Klick. Transparenz + Timeout + klare Quellenkennzeichnung.
+Keine DB-Schema-Änderungen. Simple Mode bleibt ohne Legacy-Menüs.
+
+────────────────────────────────────────────────────────────
+A) AKZEPTANZKRITERIEN (MUSS)
+1) In /log-simple erscheint der Button “Search online (Beta)” NUR wenn:
+   - identify candidates leer sind ODER top confidence < 0.55
+2) Klick auf “Search online (Beta)” startet externen Lookup:
+   - standardmäßig werden NUR TEXTDATEN (OCR text / user query) gesendet, NICHT das Foto
+   - Foto darf nur gesendet werden, wenn user explizit zustimmt (separater Toggle “Send photo” OFF by default)
+3) Ergebnis wird im gleichen Candidate-Sheet angezeigt, aber klar markiert:
+   - badge: “Online”
+   - source="external"
+   - optional externalUrl pro candidate
+4) Timeout: max 5 Sekunden. Bei Timeout:
+   - “Online search timed out” + Fallback auf Unknown/Manual bleibt.
+5) Keine Dead Ends: Unknown/Manual sind immer verfügbar.
+6) Kein Scraping von Whiskybase oder Webseiten per HTML parsing.
+   - Externe Suche darf NUR über offizielle APIs laufen (Search API / Product DB API).
+7) /simple-test zeigt:
+   - ob Online Search aktiviert ist
+   - ob Photo-Sending erlaubt ist (default: false)
+
+────────────────────────────────────────────────────────────
+B) UI SPEZIFIKATION (MUSS)
+Wenn Local Identify scheitert:
+- Banner: “We’re not sure.”
+- Buttons:
+  1) Create as Unknown (primary)
+  2) Search manually (secondary)
+  3) Search online (Beta) (secondary, with small “may send text externally” note)
+
+Beim Klick “Search online (Beta)”:
+- show spinner “Searching online…”
+- optional checkbox (collapsed by default):
+  - [ ] Also send photo (better results) — OFF by default
+  - tiny note: “Sends the image to a third-party API.”
+- show results as candidates list:
+  - Candidate row: name, distillery (if any), confidence, “Online” badge
+  - “Open source” link if externalUrl exists
+- User picks ONE candidate → prefill → proceed to log
+
+────────────────────────────────────────────────────────────
+C) BACKEND ENDPOINTS (MUST)
+Add:
+1) POST /api/whisky/identify-online
+Request JSON:
+{
+  "query": string,              // normalized query built from OCR/text input
+  "ocrText": string | null,      // optional
+  "sendPhoto": boolean,          // default false
+  "photoUrl": string | null      // only if sendPhoto=true and available
+}
+Response:
+{
+  "candidates": [
+    {
+      "source":"external",
+      "name":"...",
+      "distillery":"...optional",
+      "abv": number optional,
+      "age": number optional,
+      "whiskybaseId": "optional",
+      "priceHint":"optional",
+      "externalUrl":"optional",
+      "confidence": 0..1
+    }
+  ],
+  "debug": { "provider":"...", "tookMs":... } optional
+}
+
+────────────────────────────────────────────────────────────
+D) ONLINE PROVIDER (PRAGMATISCH, API-BASIERT)
+Implementiere Online Search über genau EINEN Provider, gesteuert per ENV:
+
+ENV:
+- ONLINE_SEARCH_PROVIDER = "serpapi" | "google_cse" | "off" (default "off")
+- SERPAPI_API_KEY (if serpapi)
+- GOOGLE_CSE_API_KEY + GOOGLE_CSE_CX (if google cse)
+
+Rules:
+- If provider is "off" or key missing:
+  - return candidates=[]
+  - frontend shows “Online search not configured”
+- If provider configured:
+  - build query string from normalized tokens (e.g. "Lagavulin 16 43% whisky")
+  - call provider API, parse top results (titles/snippets)
+  - extract candidate names with heuristics (keep it simple, robust)
+  - produce up to 5 candidates with confidence (0.55–0.75 typical)
+  - include externalUrl from search result
+  - DO NOT scrape pages. Do not fetch page HTML.
+
+Optional (nice but not required in 2.1):
+- If user provides barcode (EAN), add provider:
+  ONLINE_BARCODE_PROVIDER="ean_search"
+  EAN_SEARCH_API_KEY
+  Call its API and map product name → candidate list.
+
+────────────────────────────────────────────────────────────
+E) MATCHING EXTERNAL → LOCAL (AHA BOOST)
+After obtaining external candidate names:
+- run the SAME local fuzzy matcher against local DB using external name tokens
+- If a strong local match exists:
+  - return candidate with whiskyId populated (preferred)
+  - confidence boosted
+This makes “Online search” feel integrated, not separate.
+
+Output candidates should prefer those that map to local whiskyId.
+
+────────────────────────────────────────────────────────────
+F) PRIVACY / COMPLIANCE (MUST)
+- Default sendPhoto=false
+- Only send text unless user toggles sendPhoto=true
+- Add server-side logging prefix: [SIMPLE_MODE][ONLINE_SEARCH]
+- In /simple-test show a notice:
+  - “Online search uses <provider> and sends text externally (photo only if enabled).”
+
+────────────────────────────────────────────────────────────
+G) FILES TO MODIFY (EXPLICIT)
+Backend:
+- server/routes.ts: add POST /api/whisky/identify-online
+- server/lib/onlineSearch.ts (new): provider client + parsing
+- server/lib/normalize.ts: reuse for query building
+- server/lib/matching.ts: reuse to map external → local whiskyId
+
+Frontend:
+- client/src/pages/simple-log.tsx:
+  - add “Search online (Beta)” button in the failure state
+  - add optional toggle “Send photo” (default off)
+  - call /api/whisky/identify-online and show candidates
+- client/src/pages/simple-test.tsx:
+  - show provider configuration + test button “Run online search”
+
+DO IT NOW. NO QUESTIONS. Keep it stable and opt-in. No scraping.
