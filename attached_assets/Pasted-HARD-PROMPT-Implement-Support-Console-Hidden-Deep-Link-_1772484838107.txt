@@ -1,0 +1,117 @@
+HARD PROMPT — Implement "Support Console" (Hidden Deep-Link Hub)
+
+ZIEL
+Eine versteckte Support Console implementieren, die Deep Links zu allen bestehenden Features bietet,
+ohne diese wieder in der normalen Navigation sichtbar zu machen.
+
+ANFORDERUNGEN
+- Keine bestehenden Seiten/Routes löschen oder verändern.
+- Keine Navigationseinträge hinzufügen (weder V2 noch Legacy).
+- Support Console nur per Direkt-URL erreichbar (z.B. /support).
+- PIN-geschützt (Client-seitig minimal + optional server-seitig).
+- "Dunkel-warm" Look (V2 Tokens), sehr schlicht.
+- Enthält: Suchfeld + Gruppen + Copy-Link Buttons + "Open" Links.
+
+SCHRITT 1 — ENV / PIN
+1) Lege eine Umgebungsvariable für den Support-PIN fest:
+   - Frontend: VITE_SUPPORT_PIN
+   - Beispiel: VITE_SUPPORT_PIN=4937
+2) Wenn VITE_SUPPORT_PIN fehlt:
+   - Support Console zeigt nur "Disabled (no PIN set)" und keine Links.
+
+SCHRITT 2 — Neue Seite erstellen
+Erstelle Datei:
+client/src/pages/support-console.tsx
+
+Inhalt:
+- Seite zeigt zuerst ein PIN-Input (4–10 Zeichen ok).
+- Wenn PIN korrekt (matches import.meta.env.VITE_SUPPORT_PIN):
+  - Zeige Support Console
+- Wenn falsch:
+  - "Access denied"
+- Speichere erfolgreiche Freischaltung in sessionStorage:
+  key: casksense_support_unlocked = "1"
+  (damit kein erneutes Eingeben während Session nötig ist)
+
+UI:
+- Hintergrund #1a1714
+- Cards #242018
+- Accent #d4a256
+- Text #f5f0e8
+- Sehr clean, keine Icons nötig
+
+Support Console Inhalt (Deep Links)
+Erstelle eine konstante Link-Liste (array), gruppiert:
+
+Groups:
+A) Core
+- / (Landing)
+- /join
+- /log
+- /profile (oder die existierende Profil-Route)
+
+B) V2 Hidden (App)
+- /app
+- /app/sessions
+- /app/discover
+- /app/cellar
+- /app/admin (falls existiert)
+- /app/more (falls Route existiert; soll aber keine Feature-Liste mehr zeigen)
+
+C) Legacy Hidden
+- /legacy
+- /legacy/tasting/sessions
+- /legacy/journal
+- /legacy/discover
+- /legacy/profile
+- /legacy/admin (falls existiert)
+
+D) Admin / System
+- /admin (falls existiert)
+- /legacy/admin (falls existiert)
+
+Funktionen:
+- Suchfeld filtert in Echtzeit (Titel oder URL).
+- Jede Zeile hat:
+  - Titel
+  - URL (monospace)
+  - Button "Copy"
+  - Link "Open" (target=_blank)
+
+SCHRITT 3 — Routing hinzufügen (ohne Navigation)
+Öffne:
+client/src/App.tsx
+
+- Import hinzufügen:
+  import SupportConsole from "./pages/support-console";
+
+- Route hinzufügen:
+  <Route path="/support" component={SupportConsole} />
+
+WICHTIG:
+- Keine Menüs/Sidebars/BottomNav anpassen.
+- Kein Link irgendwo im UI hinzufügen.
+
+SCHRITT 4 — Optionaler Server-Schutz (empfohlen, minimal)
+Falls du die Konsole zusätzlich serverseitig absichern willst:
+- Erstelle Endpoint GET /api/support/ping, der nur antwortet wenn Header x-support-pin korrekt ist.
+- Frontend ruft ping nach PIN-Eingabe auf.
+- Wenn kein server-side Schutz gewünscht: weglassen.
+
+SCHRITT 5 — Abschluss-Checks
+- /support ist erreichbar, aber nicht verlinkt.
+- Ohne VITE_SUPPORT_PIN: Console disabled.
+- Mit PIN: Links sichtbar, Copy & Open funktionieren.
+- Alle bestehenden Routes unverändert.
+- Build ohne TS Errors.
+
+LIEFERUMFANG
+- Neue Datei: client/src/pages/support-console.tsx
+- App Routing ergänzt: /support
+- KEINE Änderungen an Navigation/Layouts außer Routing.
+
+AM ENDE
+Gib eine kurze Zusammenfassung aus:
+- Welche Dateien wurden geändert/neu erstellt?
+- Wie lautet die Route?
+- Was passiert wenn PIN fehlt?
