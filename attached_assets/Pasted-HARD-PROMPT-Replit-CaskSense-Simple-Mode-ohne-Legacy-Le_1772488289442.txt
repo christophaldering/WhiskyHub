@@ -1,0 +1,144 @@
+HARD PROMPT (Replit) — CaskSense “Simple Mode” ohne Legacy-Leaks
+Ziel: Die versprochene Einfachheit MUSS wirklich gelten. Die Landing-Buttons dürfen NICHT mehr in Legacy-Menüs / Sidebar / Workspace-UI leiten.
+
+NICHTS an der DB ändern. Keine Migration. Keine Schema-Änderung.
+Alle bestehenden Legacy-Features bleiben erreichbar, aber NUR über einen bewusst gesetzten “Pro / Legacy”-Einstieg.
+
+────────────────────────────────────────────────────────────
+A) AKZEPTANZKRITERIEN (MUSS)
+1) Landing hat genau 3 Primär-CTAs:
+   - Join a Tasting  → /enter
+   - Log a Whisky    → /log-simple
+   - My Taste        → /my-taste  (bestehend)
+2) Diese 3 Routen sind “Simple Mode”:
+   - KEIN Legacy PageLayout / LayoutShell / Sidebar / BottomNav
+   - KEINE Workspace-Navigation
+   - KEIN automatisches Redirect in /tasting/sessions, /my/journal, /profile o.ä.
+   - Dark-Warm Look & Feel konsistent, aber minimalistisch
+3) Legacy/Pro bleibt erreichbar NUR über:
+   - ein kleiner Textlink auf der Landing: “Already using CaskSense Pro?” → /app (oder bestehender Legacy-Entry)
+4) Direkte Legacy-Routen bleiben technisch existent, aber:
+   - Wenn jemand aus Simple Mode auf /join, /log, /profile geht: NICHT mehr auf Legacy routen.
+   - Stattdessen: /join → /enter, /log → /log-simple, /profile → /my-taste (oder /account-simple wenn vorhanden)
+5) Keine DB-Änderungen: nutzt bestehende Endpoints/Mutations so weit möglich.
+6) Logging & Error Boundary:
+   - Jede Simple-Page hat try/catch (oder React error boundary) + klare Fehlermeldung.
+   - Console-Logs mit Prefix: [SIMPLE_MODE]
+7) “Idiotensicherer Join-Flow”:
+   - Code-Feld (6–10 chars), trim/uppercase, validate.
+   - Fehlermeldung: “Code not found or expired.”
+   - Erfolgsfall: direkte Weiterleitung in bestehendes Tasting-Room Erlebnis (z.B. /tasting-room/:id oder bestehende Route) — aber OHNE Sidebar (siehe unten: Simple Tasting Room Wrapper).
+8) “Happy Path Test” muss dokumentiert werden als /simple-test (eine Seite mit Checkliste + Buttons).
+9) Leichte Zugriffskontrolle für Small Circle Test:
+   - Optionaler PIN / Rate-Limit (clientseitig minimal + serverseitig, falls vorhanden). Mindestens:
+     - 5 Versuche / 5 Minuten pro IP (oder per session key) für Join-Code lookup.
+10) “Simple Feedback Form”:
+   - Route: /simple-feedback (Formular: Name optional, 1–5 rating, Freitext, Send)
+   - Speichern: wenn kein Backend vorhanden, dann lokal (localStorage) + “Copy to clipboard” Button.
+   - Wenn Backend existiert: poste an bestehenden Feedback/notes endpoint; sonst fallback.
+
+────────────────────────────────────────────────────────────
+B) ANALYSE & IMPLEMENTATION PLAN (UMSETZEN, NICHT NUR BESCHREIBEN)
+
+1) Routing: neue Top-Level Routes ergänzen
+   - /enter
+   - /log-simple
+   - /simple-test
+   - /simple-feedback
+   - (Optional) /tasting-room-simple/:id  (Wrapper ohne Legacy layout)
+
+2) Layout Trennung:
+   - Erstelle ein neues Minimal-Layout für Simple Mode:
+     - Keine Sidebar, keine Topnav, kein Workspace switch.
+     - Zentrierter Container, max width ~560–720px, große Typo, warm/dunkel.
+   - Wichtig: KEINE Verwendung des bestehenden PageLayout/LayoutShell, falls diese Legacy-Navigation einziehen.
+   - Neue Komponente: client/src/components/simple/simple-shell.tsx
+
+3) Landing Page:
+   - Stelle sicher, dass Landing-Buttons auf /enter, /log-simple, /my-taste gehen.
+   - Unten ein kleiner Link “Already using CaskSense Pro?” → auf die bisherige Legacy Start-Route (z.B. /app oder /workspaces).
+
+4) Redirect-Fixes (Leak-Stopper):
+   - /join darf NICHT mehr auf /tasting/sessions. Ersetze redirect: /join → /enter
+   - /log darf NICHT mehr auf /my/journal. Ersetze redirect: /log → /log-simple
+   - /profile darf NICHT mehr auf Legacy profile. Route /profile → /my-taste (oder /account-simple falls angelegt)
+   - Falls es eine Navigation gibt, die “Join” oder “Log” irgendwohin linkt: überall auf die Simple-Routen umstellen.
+
+5) Join Flow (/enter):
+   UI:
+   - Title: “Join a Tasting”
+   - Input: “Enter your tasting code”
+   - Primary button: “Join”
+   - Secondary: “Back”
+   Logic:
+   - On submit: call existing join/lookup endpoint (find it in server/routes.ts)
+   - If endpoint expects workspace/session id: map from code to session
+   - Success: route to /tasting-room-simple/:sessionId (Wrapper)
+   - Error: show inline message + log console [SIMPLE_MODE] join error
+
+6) Simple Tasting Room Wrapper (/tasting-room-simple/:id):
+   - Reuse existing tasting-room component/content, BUT render it without Legacy layout.
+   - If tasting-room currently assumes LayoutShell, refactor:
+     a) Extract core room UI into a pure component (no layout).
+     b) Legacy route wraps it with legacy layout.
+     c) Simple route wraps it with SimpleShell.
+   - Goal: identical functionality, different chrome.
+
+7) Log Flow (/log-simple):
+   - Minimal form: Whisky name, rating (1–10 or existing scale), notes.
+   - Use existing create log/journal mutation if available.
+   - If not available: store in localStorage with key “simple_logs”.
+   - After save: show “Saved.” + CTA: “Log another” and “Go to My Taste”
+
+8) Simple Test Page (/simple-test):
+   - Checkliste (Happy Path):
+     - Open Landing
+     - Join a tasting with code
+     - Submit rating in tasting room
+     - Log a whisky
+     - Open My Taste
+     - Leave feedback
+   - Buttons to open each route.
+   - Display build info (env) + base URL.
+   - Include warning if current URL is not the intended stable URL (simple string check).
+
+9) Feedback Page (/simple-feedback):
+   - 1–5 overall satisfaction, 1–5 simplicity rating, free text.
+   - Store local (and/or post).
+   - Provide “Copy feedback summary” button.
+
+10) Add small “Rate-limit/PIN” option:
+   - Add environment variable SIMPLE_MODE_PIN (optional).
+   - If set, /enter requires PIN once per session (store in sessionStorage).
+   - Rate-limit join code attempts: implement minimal in backend if possible; if not, client fallback with local timestamps.
+
+────────────────────────────────────────────────────────────
+C) DATEIEN (EXPLIZIT ANFASSEN)
+- client/src/App.tsx (oder router entry): neue routes einhängen
+- client/src/pages/landing.tsx (oder entsprechende landing page): Links umstellen
+- server/routes.ts: join endpoint prüfen; ggf. add minimal rate-limit middleware
+- client/src/components/simple/simple-shell.tsx (neu)
+- client/src/pages/simple-enter.tsx (neu)
+- client/src/pages/simple-log.tsx (neu)
+- client/src/pages/simple-test.tsx (neu)
+- client/src/pages/simple-feedback.tsx (neu)
+- client/src/pages/tasting-room-simple.tsx (neu wrapper)
+- ggf. refactor: client/src/pages/tasting-room.tsx → core component extrahieren
+
+────────────────────────────────────────────────────────────
+D) NICHT VERHANDELN (GUARDRAILS)
+- KEINE neue Sidebar/Navigation in Simple Mode.
+- Keine Workspace-Abhängigkeit erzwingen.
+- Keine DB-Schema Änderungen.
+- Keine neuen “komplexen” Menüs in Simple Mode.
+- Simple Mode muss auch ohne Login “graceful” sein.
+
+────────────────────────────────────────────────────────────
+E) FINAL CHECK (MUSS AM ENDE AUSGEGEBEN WERDEN)
+Nach Implementierung:
+1) Liste aller Routen + kurzer Zweck.
+2) Bestätigung, dass /join, /log, /profile nicht mehr in Legacy führen.
+3) Screenshot-Äquivalent: kurze Textbeschreibung der Landing + Simple Pages.
+4) Kurze Anleitung “Small Circle Test” (1 Minute).
+
+JETZT UMSETZEN. KEINE RÜCKFRAGEN. Wenn etwas unklar ist, entscheide pragmatisch zugunsten von “Simple Mode first”.
