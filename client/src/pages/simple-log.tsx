@@ -65,11 +65,24 @@ interface Candidate {
   distillery: string;
   confidence: number;
   whiskyId?: string;
+  source?: "local" | "external";
+}
+
+interface IdentifyResult {
+  candidates: Candidate[];
+  photoUrl?: string;
+  debug?: {
+    detectedMode?: "label" | "menu" | "text";
+    ocrText?: string;
+    queryText?: string;
+    tookMs?: number;
+    indexSize?: number;
+  };
 }
 
 function confidenceLabel(conf: number): { text: string; color: string } {
-  if (conf >= 0.8) return { text: "High", color: c.high };
-  if (conf >= 0.6) return { text: "Medium", color: c.medium };
+  if (conf >= 0.78) return { text: "High", color: c.high };
+  if (conf >= 0.55) return { text: "Medium", color: c.medium };
   return { text: "Low", color: c.low };
 }
 
@@ -85,15 +98,12 @@ function UnlockBlock({ onUnlock }: { onUnlock: (p: { id: string; name: string; r
     setLoading(true);
     setError("");
     try {
-      console.log("[SIMPLE_MODE] unlock attempt", name.trim());
       const result = await participantApi.loginOrCreate(name.trim(), pin.trim());
       if (result?.id) {
-        console.log("[SIMPLE_MODE] unlock success", result.id);
         onUnlock({ id: result.id, name: result.name, role: result.role });
       }
     } catch (err: any) {
       const msg = err?.message || "";
-      console.error("[SIMPLE_MODE] unlock error", msg);
       if (msg.includes("Invalid PIN")) setError("Wrong PIN.");
       else if (msg.includes("email")) setError("No account found.");
       else setError(msg || "Something went wrong.");
@@ -117,20 +127,141 @@ function UnlockBlock({ onUnlock }: { onUnlock: (p: { id: string; name: string; r
   );
 }
 
+function IdentifyPicker({
+  onTakePhoto,
+  onUploadPhotos,
+  onDescribe,
+  onClose,
+}: {
+  onTakePhoto: () => void;
+  onUploadPhotos: () => void;
+  onDescribe: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", damping: 25, stiffness: 300 }}
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: c.card,
+        borderTop: `1px solid ${c.border}`,
+        borderRadius: "16px 16px 0 0",
+        padding: "20px 20px 40px",
+        zIndex: 100,
+      }}
+      data-testid="sheet-identify-picker"
+    >
+      <div style={{ width: 40, height: 4, background: c.border, borderRadius: 2, margin: "0 auto 16px" }} />
+      <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Identify</h3>
+      <p style={{ fontSize: 12, color: c.muted, margin: "0 0 16px" }}>Photo used only to identify the whisky.</p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <button onClick={onTakePhoto} data-testid="button-take-photo" style={{ ...btnPrimary, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <span style={{ fontSize: 18 }}>📷</span> Take Photo
+        </button>
+        <button onClick={onUploadPhotos} data-testid="button-upload-photos" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <span style={{ fontSize: 18 }}>🖼️</span> Upload Photo(s)
+        </button>
+        <button onClick={onDescribe} data-testid="button-describe" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <span style={{ fontSize: 18 }}>✏️</span> Describe
+        </button>
+      </div>
+
+      <button onClick={onClose} data-testid="button-close-picker" style={{ ...btnOutline, marginTop: 12, color: c.muted, borderColor: c.muted, fontSize: 13 }}>
+        Cancel
+      </button>
+    </motion.div>
+  );
+}
+
+function DescribeSheet({
+  onSubmit,
+  onClose,
+  loading,
+}: {
+  onSubmit: (query: string) => void;
+  onClose: () => void;
+  loading: boolean;
+}) {
+  const [query, setQuery] = useState("");
+
+  return (
+    <motion.div
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", damping: 25, stiffness: 300 }}
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: c.card,
+        borderTop: `1px solid ${c.border}`,
+        borderRadius: "16px 16px 0 0",
+        padding: "20px 20px 40px",
+        zIndex: 100,
+      }}
+      data-testid="sheet-describe"
+    >
+      <div style={{ width: 40, height: 4, background: c.border, borderRadius: 2, margin: "0 auto 16px" }} />
+      <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 12px" }}>Describe the whisky</h3>
+
+      <textarea
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Type whisky name / distillery / age / cask ..."
+        rows={3}
+        style={{ ...inputStyle, resize: "vertical", marginBottom: 12 }}
+        data-testid="input-describe-query"
+        autoFocus
+      />
+
+      <button
+        onClick={() => query.trim() && onSubmit(query.trim())}
+        disabled={loading || !query.trim()}
+        data-testid="button-find-matches"
+        style={{ ...btnPrimary, opacity: !query.trim() ? 0.5 : 1, cursor: loading ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+      >
+        {loading ? (
+          <>
+            <span style={{ display: "inline-block", width: 14, height: 14, border: `2px solid ${c.muted}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+            Searching...
+          </>
+        ) : "Find matches"}
+      </button>
+
+      <button onClick={onClose} data-testid="button-close-describe" style={{ ...btnOutline, marginTop: 8, color: c.muted, borderColor: c.muted, fontSize: 13 }}>
+        Cancel
+      </button>
+    </motion.div>
+  );
+}
+
 function CandidateSheet({
   candidates,
   photoUrl,
+  isMenuMode,
   onSelect,
   onRetake,
   onSearchManually,
   onCreateUnknown,
+  onLogAnother,
 }: {
   candidates: Candidate[];
   photoUrl: string;
+  isMenuMode: boolean;
   onSelect: (c: Candidate) => void;
   onRetake: () => void;
   onSearchManually: () => void;
   onCreateUnknown: () => void;
+  onLogAnother?: () => void;
 }) {
   return (
     <motion.div
@@ -173,6 +304,11 @@ function CandidateSheet({
               ? `${candidates.length} possible match${candidates.length > 1 ? "es" : ""}`
               : "We couldn't confidently identify this whisky."}
           </p>
+          {isMenuMode && candidates.length > 0 && (
+            <p style={{ fontSize: 11, color: c.accent, margin: "4px 0 0", fontStyle: "italic" }} data-testid="text-menu-hint">
+              Multiple items detected — pick one to log.
+            </p>
+          )}
         </div>
       </div>
 
@@ -202,16 +338,21 @@ function CandidateSheet({
                 <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{cand.name}</div>
                 <div style={{ fontSize: 12, color: c.muted }}>{cand.distillery}</div>
               </div>
-              <span style={{ fontSize: 11, fontWeight: 600, color: badge.color, background: `${badge.color}20`, padding: "3px 8px", borderRadius: 6 }}>
-                {badge.text}
-              </span>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: badge.color, background: `${badge.color}20`, padding: "3px 8px", borderRadius: 6 }}>
+                  {badge.text}
+                </span>
+                {cand.source && (
+                  <span style={{ fontSize: 9, color: c.muted }}>{cand.source === "local" ? "Library" : "External"}</span>
+                )}
+              </div>
             </button>
           );
         })}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <button onClick={onRetake} data-testid="button-retake" style={btnOutline}>Retake</button>
+        <button onClick={onRetake} data-testid="button-retake" style={btnOutline}>Try again</button>
         <button onClick={onSearchManually} data-testid="button-search-manually" style={btnOutline}>Search manually</button>
         <button onClick={onCreateUnknown} data-testid="button-create-unknown" style={{ ...btnOutline, color: c.muted, borderColor: c.muted }}>Create as Unknown</button>
       </div>
@@ -219,10 +360,13 @@ function CandidateSheet({
   );
 }
 
+type SheetView = "none" | "picker" | "describe" | "candidates" | "identifying";
+
 export default function SimpleLogPage() {
   const { currentParticipant, setParticipant } = useAppStore();
   const pid = currentParticipant?.id;
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const [whiskyName, setWhiskyName] = useState("");
   const [distillery, setDistillery] = useState("");
@@ -241,62 +385,112 @@ export default function SimpleLogPage() {
 
   const [scanning, setScanning] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [showSheet, setShowSheet] = useState(false);
+  const [sheetView, setSheetView] = useState<SheetView>("none");
   const [photoUrl, setPhotoUrl] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [isMenuMode, setIsMenuMode] = useState(false);
+  const [lastResult, setLastResult] = useState<IdentifyResult | null>(null);
 
-  const handleScan = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processFiles = async (files: File[]) => {
     setScanning(true);
+    setSheetView("identifying");
     setError("");
-    console.log("[SIMPLE_MODE] scan started, file:", file.name, file.size);
 
     try {
-      const formData = new FormData();
-      formData.append("photo", file);
+      let bestResult: IdentifyResult = { candidates: [] };
 
-      const res = await fetch("/api/whisky/identify", {
+      for (const file of files.slice(0, 5)) {
+        const formData = new FormData();
+        formData.append("photo", file);
+
+        const res = await fetch("/api/whisky/identify", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          if (res.status === 429) throw new Error("Too many requests. Please wait a few minutes.");
+          throw new Error(err.message || "Identification failed");
+        }
+
+        const data: IdentifyResult = await res.json();
+
+        if (data.candidates.length > (bestResult.candidates?.length || 0) ||
+            (data.candidates[0]?.confidence || 0) > (bestResult.candidates?.[0]?.confidence || 0)) {
+          bestResult = data;
+        }
+      }
+
+      setCandidates(bestResult.candidates || []);
+      setPhotoUrl(bestResult.photoUrl || "");
+      setIsMenuMode(bestResult.debug?.detectedMode === "menu");
+      setLastResult(bestResult);
+      setSheetView("candidates");
+    } catch (err: any) {
+      setError(err?.message || "Identification failed. Try again.");
+      setSheetView("none");
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    await processFiles(files);
+  };
+
+  const handleUploadChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    if (uploadInputRef.current) uploadInputRef.current.value = "";
+    await processFiles(files);
+  };
+
+  const handleDescribeSubmit = async (query: string) => {
+    setScanning(true);
+    setSheetView("identifying");
+    setError("");
+
+    try {
+      const res = await fetch("/api/whisky/identify-text", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
       });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Identification failed");
+        if (res.status === 429) throw new Error("Too many requests. Please wait a few minutes.");
+        throw new Error(err.message || "Search failed");
       }
 
-      const data = await res.json();
-      console.log("[SIMPLE_MODE] identify result:", data);
+      const data: IdentifyResult = await res.json();
       setCandidates(data.candidates || []);
-      setPhotoUrl(data.photoUrl || "");
-      setShowSheet(true);
+      setPhotoUrl("");
+      setIsMenuMode(data.debug?.detectedMode === "menu");
+      setLastResult(data);
+      setSheetView("candidates");
     } catch (err: any) {
-      console.error("[SIMPLE_MODE] scan error:", err);
-      setError(err?.message || "Scan failed. Try again.");
+      setError(err?.message || "Search failed. Try again.");
+      setSheetView("none");
     } finally {
       setScanning(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
   const handleSelectCandidate = (cand: Candidate) => {
-    console.log("[SIMPLE_MODE] candidate selected:", cand.name);
     setWhiskyName(cand.name);
     setDistillery(cand.distillery);
     setSelectedCandidate(cand);
-    setShowSheet(false);
+    setSheetView("none");
     setShowUnknown(false);
   };
 
   const handleCreateUnknown = () => {
-    console.log("[SIMPLE_MODE] create as unknown");
-    setShowSheet(false);
+    setSheetView("none");
     setShowUnknown(true);
     setWhiskyName("");
     setDistillery("");
@@ -304,15 +498,24 @@ export default function SimpleLogPage() {
   };
 
   const handleRetake = () => {
-    setShowSheet(false);
+    setSheetView("picker");
     setCandidates([]);
     setPhotoUrl("");
-    setTimeout(() => fileInputRef.current?.click(), 100);
+    setLastResult(null);
   };
 
   const handleSearchManually = () => {
-    setShowSheet(false);
+    setSheetView("none");
     setCandidates([]);
+  };
+
+  const handleLogAnother = () => {
+    if (lastResult) {
+      setCandidates(lastResult.candidates || []);
+      setPhotoUrl(lastResult.photoUrl || "");
+      setIsMenuMode(lastResult.debug?.detectedMode === "menu");
+      setSheetView("candidates");
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -333,7 +536,6 @@ export default function SimpleLogPage() {
       const existing = JSON.parse(localStorage.getItem("simple_unknown_logs") || "[]");
       existing.push(entry);
       localStorage.setItem("simple_unknown_logs", JSON.stringify(existing));
-      console.log("[SIMPLE_MODE] log saved locally (no participant)");
       setSaved(true);
       return;
     }
@@ -341,8 +543,6 @@ export default function SimpleLogPage() {
     setSaving(true);
     setError("");
     try {
-      console.log("[SIMPLE_MODE] saving log for", pid, showUnknown ? "(unknown)" : "(known)");
-
       const body: Record<string, any> = {
         title: whiskyName.trim(),
         whiskyName: whiskyName.trim(),
@@ -374,10 +574,8 @@ export default function SimpleLogPage() {
         throw new Error(err.message || "Save failed");
       }
 
-      console.log("[SIMPLE_MODE] log saved to server");
       setSaved(true);
     } catch (err: any) {
-      console.error("[SIMPLE_MODE] save error:", err);
       const entry = {
         whiskyName: whiskyName.trim(),
         distillery: distillery.trim(),
@@ -391,7 +589,6 @@ export default function SimpleLogPage() {
       const existing = JSON.parse(localStorage.getItem("simple_unknown_logs") || "[]");
       existing.push(entry);
       localStorage.setItem("simple_unknown_logs", JSON.stringify(existing));
-      console.log("[SIMPLE_MODE] fallback: saved to localStorage");
       setSaved(true);
     } finally {
       setSaving(false);
@@ -414,6 +611,7 @@ export default function SimpleLogPage() {
     setPhotoUrl("");
     setCandidates([]);
     setSelectedCandidate(null);
+    setIsMenuMode(false);
   };
 
   const handleCopyJson = () => {
@@ -421,16 +619,38 @@ export default function SimpleLogPage() {
     navigator.clipboard.writeText(logs);
   };
 
+  const handleDownloadJson = () => {
+    const logs = localStorage.getItem("simple_unknown_logs") || "[]";
+    const blob = new Blob([logs], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `casksense-logs-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const showOverlay = sheetView !== "none";
+
   return (
     <SimpleShell>
       <input
-        ref={fileInputRef}
+        ref={cameraInputRef}
         type="file"
         accept="image/*"
         capture="environment"
-        onChange={handleFileChange}
+        onChange={handleCameraChange}
         style={{ display: "none" }}
         data-testid="input-camera"
+      />
+      <input
+        ref={uploadInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleUploadChange}
+        style={{ display: "none" }}
+        data-testid="input-upload"
       />
 
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
@@ -447,11 +667,21 @@ export default function SimpleLogPage() {
                 <div style={{ ...btnOutline, textAlign: "center" }} data-testid="button-goto-taste">My Taste</div>
               </Link>
             </div>
-            <button onClick={handleCopyJson} data-testid="button-copy-json" style={{ ...btnOutline, marginTop: 10, fontSize: 12, color: c.muted, borderColor: c.muted }}>
-              Copy local logs (JSON)
-            </button>
+            {lastResult && lastResult.candidates.length > 0 && (lastResult.debug?.detectedMode === "menu" || isMenuMode) && (
+              <button onClick={() => { handleReset(); setTimeout(handleLogAnother, 100); }} data-testid="button-log-from-menu" style={{ ...btnOutline, marginTop: 10, fontSize: 13, color: c.accent, borderColor: c.accent }}>
+                Log another from same menu
+              </button>
+            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+              <button onClick={handleCopyJson} data-testid="button-copy-json" style={{ ...btnOutline, flex: 1, fontSize: 12, color: c.muted, borderColor: c.muted }}>
+                Copy JSON
+              </button>
+              <button onClick={handleDownloadJson} data-testid="button-download-json" style={{ ...btnOutline, flex: 1, fontSize: 12, color: c.muted, borderColor: c.muted }}>
+                Download JSON
+              </button>
+            </div>
           </div>
-        ) : (pid || !pid) && !saved ? (
+        ) : (
           <div style={cardStyle} data-testid="card-log-form">
             <h1 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 20px", color: c.text }}>Log a Whisky</h1>
 
@@ -470,9 +700,9 @@ export default function SimpleLogPage() {
               <div style={{ display: "flex", gap: 10 }}>
                 <button
                   type="button"
-                  onClick={handleScan}
+                  onClick={() => setSheetView("picker")}
                   disabled={scanning}
-                  data-testid="button-scan-label"
+                  data-testid="button-identify"
                   style={{
                     flex: 1,
                     padding: "10px 14px",
@@ -493,11 +723,9 @@ export default function SimpleLogPage() {
                   {scanning ? (
                     <>
                       <span style={{ display: "inline-block", width: 14, height: 14, border: `2px solid ${c.muted}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                      Identifying…
+                      Identifying...
                     </>
-                  ) : (
-                    <>📷 Scan label</>
-                  )}
+                  ) : "Identify"}
                 </button>
                 <button
                   type="button"
@@ -570,7 +798,7 @@ export default function SimpleLogPage() {
               </div>
 
               <button type="submit" disabled={saving || !whiskyName.trim() || (!pid)} data-testid="button-save-log" style={{ ...btnPrimary, opacity: (!whiskyName.trim() || !pid) ? 0.5 : 1, cursor: saving ? "wait" : "pointer", marginTop: 4 }}>
-                {saving ? "Saving…" : "Save"}
+                {saving ? "Saving..." : "Save"}
               </button>
               {!pid && whiskyName.trim() && (
                 <p style={{ fontSize: 11, color: c.muted, margin: 0, textAlign: "center" }}>Unlock above to save.</p>
@@ -578,28 +806,85 @@ export default function SimpleLogPage() {
               {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }}>{error}</p>}
             </form>
           </div>
-        ) : null}
+        )}
       </motion.div>
 
       <AnimatePresence>
-        {showSheet && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-              style={{ position: "fixed", inset: 0, background: "#000", zIndex: 99 }}
-              onClick={() => setShowSheet(false)}
-            />
-            <CandidateSheet
-              candidates={candidates}
-              photoUrl={photoUrl}
-              onSelect={handleSelectCandidate}
-              onRetake={handleRetake}
-              onSearchManually={handleSearchManually}
-              onCreateUnknown={handleCreateUnknown}
-            />
-          </>
+        {showOverlay && (
+          <motion.div
+            key="overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "#000", zIndex: 99 }}
+            onClick={() => { if (!scanning) setSheetView("none"); }}
+          />
+        )}
+
+        {sheetView === "picker" && (
+          <IdentifyPicker
+            key="picker"
+            onTakePhoto={() => {
+              setSheetView("none");
+              setTimeout(() => cameraInputRef.current?.click(), 100);
+            }}
+            onUploadPhotos={() => {
+              setSheetView("none");
+              setTimeout(() => uploadInputRef.current?.click(), 100);
+            }}
+            onDescribe={() => setSheetView("describe")}
+            onClose={() => setSheetView("none")}
+          />
+        )}
+
+        {sheetView === "describe" && (
+          <DescribeSheet
+            key="describe"
+            onSubmit={handleDescribeSubmit}
+            onClose={() => setSheetView("none")}
+            loading={scanning}
+          />
+        )}
+
+        {sheetView === "identifying" && (
+          <motion.div
+            key="identifying"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            style={{
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: c.card,
+              borderTop: `1px solid ${c.border}`,
+              borderRadius: "16px 16px 0 0",
+              padding: "40px 20px 60px",
+              zIndex: 100,
+              textAlign: "center",
+            }}
+            data-testid="sheet-identifying"
+          >
+            <div style={{ width: 40, height: 4, background: c.border, borderRadius: 2, margin: "0 auto 24px" }} />
+            <div style={{ display: "inline-block", width: 24, height: 24, border: `3px solid ${c.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: 16 }} />
+            <p style={{ fontSize: 15, fontWeight: 600, color: c.text, margin: 0 }}>Identifying...</p>
+            <p style={{ fontSize: 12, color: c.muted, margin: "6px 0 0" }}>Analyzing your photo</p>
+          </motion.div>
+        )}
+
+        {sheetView === "candidates" && (
+          <CandidateSheet
+            key="candidates"
+            candidates={candidates}
+            photoUrl={photoUrl}
+            isMenuMode={isMenuMode}
+            onSelect={handleSelectCandidate}
+            onRetake={handleRetake}
+            onSearchManually={handleSearchManually}
+            onCreateUnknown={handleCreateUnknown}
+          />
         )}
       </AnimatePresence>
 

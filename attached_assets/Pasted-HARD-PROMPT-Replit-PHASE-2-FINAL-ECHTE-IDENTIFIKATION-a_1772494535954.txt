@@ -1,0 +1,193 @@
+HARD PROMPT (Replit) — PHASE 2 (FINAL): ECHTE IDENTIFIKATION aus (1) Label-Foto, (2) Menü-/Text-Foto, (3) Text-Eingabe, (4) optional Barcode
+Ziel: echter “Aha”-Effekt im Small-Circle-Test: Nutzer hält Kamera drauf (Flasche ODER Menütext) oder tippt Text → App schlägt passende Whiskys vor → Nutzer bestätigt → Log wird vorbefüllt → Save.
+Phase-1 UI/Flow bleibt SIMPLE und ohne Legacy-Menüs.
+
+NICHTS an der DB ändern. Keine Migration. Keine Schema-Änderung.
+Keine Dead Ends.
+
+────────────────────────────────────────────────────────────
+A) AKZEPTANZKRITERIEN (MUSS)
+1) /log-simple bleibt SimpleShell (kein Legacy Layout, keine Sidebar, keine Workspaces).
+2) IDENTIFY muss 3 Eingabewege bieten (gleichwertig):
+   A) Take Photo (Kamera) – Flaschenlabel ODER Menü/Preisliste/Textseite
+   B) Upload Photo(s) (Galerie/Datei; auch Textfotos)
+   C) Describe (Texteingabe)
+   (Optional D) Barcode Scan, falls schnell realisierbar – sonst nicht blockierend.
+3) Foto-Identifikation funktioniert für:
+   - Flaschenlabel-Foto (typischer use case)
+   - Menü-/Text-Foto (Restaurantkarte, Tasting-Flight-Liste, Regal-Schild)
+   => beide werden über OCR → Matching verarbeitet.
+4) Output ist immer Kandidatenliste (Top 3) mit confidence + Quelle:
+   - source: "local" | "external"
+   - confidence 0..1, sortiert absteigend
+   - badge mapping: High >=0.78, Medium 0.55–0.77, Low <0.55
+5) Matching-Priorität:
+   (1) Local DB (whiskies) + “had before” (Logs)
+   (2) Optional external lookup NUR wenn Keys konfiguriert
+6) Wenn keine confident matches:
+   - candidates=[]
+   - UI zeigt “We’re not sure” + Create as Unknown + Manual Search + Retake/Try again
+7) Save funktioniert IMMER:
+   - Treffer → normal speichern via bestehendem endpoint (whiskyId)
+   - Kein Treffer → Unknown-Fallback (structured block in notes/meta oder localStorage)
+8) Performance:
+   - Identify soll i.d.R. < 4s pro Bild sein
+   - Multiple photos: sequenziell, Partial results erlaubt
+9) Datenschutz/Transparenz:
+   - UI-Hinweis: “Photo used only to identify the whisky.”
+   - Wenn externer OCR Provider aktiv: Hinweis im /simple-test.
+
+────────────────────────────────────────────────────────────
+B) UI/UX (MUSS exakt so; SIMPLE)
+Auf /log-simple:
+- Primary row: Whisky (Search/Select)
+- Button: “Identify” (statt nur “Scan label”)
+Beim Klick: Bottom Sheet “Identify”
+  1) Take Photo (camera)
+  2) Upload Photo(s)
+  3) Describe (text)
+
+B1) Take Photo / Upload Photo(s)
+- Nimmt 1..5 Bilder an
+- Nach Auswahl: zeigt thumbnails + “Identifying…”
+- Ergebnis: Bottom Sheet “We found”
+  - Kandidatenliste (max 3) mit Name/Distillery/Badge
+  - Buttons: Use this / Retake / Search manually / Create as Unknown
+- Für Textfotos (Menü):
+  - Wenn OCR mehrere Whisky-Namen findet:
+    => zeige Kandidatenliste + kleinen Hinweis “Multiple items detected”
+    => Nutzer wählt EINEN Whisky zum Loggen (MVP)
+    => Zusätzlich Button “Log another from same menu” der Identify-Ergebnis cached und erneute Auswahl erlaubt (ohne neues OCR).
+
+B2) Describe (Text-Eingabe)
+- Textarea: “Type whisky name / distillery / age / cask …”
+- Button: “Find matches”
+- Calls /api/whisky/identify-text
+- Uses the same “We found” sheet
+
+B3) Manual Search
+- Fokussiert Whisky search input und zeigt lokale Treffer (my library + had before).
+
+B4) Unknown
+- “Create as Unknown” öffnet expand section:
+  - Required: name
+  - Optional: distillery, age, abv, cask, whiskybaseId, price
+  - photo preview (if available)
+
+────────────────────────────────────────────────────────────
+C) BACKEND — ECHTE IDENTIFIKATION (MUST implement, robust)
+Wir ersetzen Mock durch OCR+Matching. Der Identify-Output bleibt gleich.
+
+C1) Endpoints
+1) POST /api/whisky/identify        (multipart form-data image OR {photoUrl})
+2) POST /api/whisky/identify-text   (JSON { query: string })
+Optional:
+3) POST /api/whisky/identify-barcode (JSON { ean: string }) — only if quick
+
+C2) OCR Provider Abstraktion (server/lib/ocr.ts)
+- Choose best available provider:
+  a) If GOOGLE_VISION_API_KEY or credentials exist → use Google Cloud Vision OCR
+  b) else if AWS creds exist → Textract
+  c) else attempt local OCR only if dependable in this runtime (avoid breaking builds)
+  d) else return empty candidates gracefully
+No TODOs; implement at least one working provider path; otherwise fail gracefully.
+
+C3) Normalization + Entity Extraction (server/lib/normalize.ts)
+From OCR text / user query:
+- uppercase, remove punctuation
+- remove noise words (SINGLE, MALT, SCOTCH, WHISKY, DISTILLERY, LIMITED, EDITION, THE, SMALL, BATCH)
+- extract:
+  - abv: (\d{2}\.?\d?)\s*%
+  - age: (\d{1,2})\s*(YO|YEARS|YEAR)
+  - cask tokens: SHERRY, PX, OLOROSO, BOURBON, PORT, RUM, WINE, MADEIRA, VIRGIN OAK
+- build token list + normalized string
+
+C4) Local DB Index (server/lib/whiskyIndex.ts)
+- Build an in-memory index of local whiskies:
+  whiskyId, name, distillery?, abv?, age?
+  searchableString, tokens, trigrams
+- Refresh on server start; add simple TTL refresh if needed.
+If no whisky catalog exists, return candidates=[] and log warning.
+
+C5) Matching (server/lib/matching.ts)
+Compute confidence score 0..1 combining:
+- token overlap (Jaccard)
+- trigram similarity (Dice coefficient) on normalized strings
+- bonuses for age/abv matches
+Return top 3 sorted.
+If top < 0.55 => candidates=[]
+
+C6) “Menu/Text Photo” special handling
+If OCR text seems to include multiple whisky-like items:
+- Heuristic: split lines, detect lines with (AGE or ABV or known distillery tokens)
+- Generate candidate sets per line
+- Aggregate and deduplicate candidates, keep top 6 internally, but return top 3 in API.
+- Include debug hint: debug.detectedMode = "menu" | "label" | "text"
+Front-end uses this only to show “Multiple items detected”.
+
+C7) Caching (server/lib/cache.ts)
+- Hash image bytes SHA256
+- LRU cache response for 24h
+- Cache key also for identify-text queries (normalized query)
+
+C8) Rate limiting
+- Identify endpoints: 5 requests per 5 minutes per IP/session (minimal middleware)
+- Must not block normal usage; show clear error message.
+
+C9) External lookup (OPTIONAL ONLY IF CONFIGURED)
+If EXTERNAL_WHISKY_LOOKUP_PROVIDER is set and keys exist:
+- Use provider to fetch candidates by name/distillery/age
+- Merge into candidates with source="external"
+If not configured: skip silently.
+
+────────────────────────────────────────────────────────────
+D) PERSISTENZ (NO DB CHANGES)
+Saving logs:
+- If whiskyId known: save normally using existing endpoint
+- If Unknown: save using existing endpoint with structured block in notes/meta if possible:
+  [UNKNOWN_WHISKY]
+  Name: ...
+  Distillery: ...
+  Age: ...
+  ABV: ...
+  Cask: ...
+  WhiskybaseId: ...
+  Price: ...
+  PhotoUrl: ...
+  [/UNKNOWN_WHISKY]
+- If backend does not accept: store in localStorage "simple_unknown_logs"
+  + provide “Copy JSON” and “Download JSON” buttons.
+
+────────────────────────────────────────────────────────────
+E) FRONTEND SUPPORT FOR MULTI-ITEM MENU PHOTO (MVP)
+- When identify returns candidates and debug.detectedMode="menu":
+  show small caption “Multiple items detected — pick one to log.”
+- Add CTA “Log another from same menu”:
+  re-open candidate sheet using cached last response (no new OCR).
+- Keep it SIMPLE; no batch logging yet.
+
+────────────────────────────────────────────────────────────
+F) /simple-test UPDATE (MUST)
+Add sections:
+1) Label photo test
+2) Menu/text photo test
+3) Text describe test
+4) Cache test (repeat same image)
+5) Unknown fallback test
+Show which OCR provider is active (cloud/local/none).
+
+────────────────────────────────────────────────────────────
+G) FILES (EXPLICIT)
+Backend:
+- server/routes.ts (implement identify endpoints, remove mock)
+- server/lib/ocr.ts (new)
+- server/lib/normalize.ts (new)
+- server/lib/whiskyIndex.ts (new)
+- server/lib/matching.ts (new)
+- server/lib/cache.ts (new)
+Frontend:
+- client/src/pages/simple-log.tsx (add Identify picker + text mode)
+- client/src/pages/simple-test.tsx (update checklist)
+- Keep SimpleShell as is.
+
+DO IT NOW. NO QUESTIONS. Keep Simple Mode simple. Prefer graceful degradation over breaking builds.

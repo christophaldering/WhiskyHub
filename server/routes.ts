@@ -20,10 +20,24 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Headi
 import sharp from "sharp";
 import { extractTextFromImage } from "./lib/ocr.js";
 import { getWhiskyIndex } from "./lib/whiskyIndex.js";
-import { scoreWhiskies, extractHints } from "./lib/matching.js";
+import { scoreWhiskies, scoreWhiskiesMultiLine, extractHints, detectMode } from "./lib/matching.js";
 import { LRUCache as LRUCacheImpl } from "./lib/cache.js";
+import { normalize } from "./lib/whiskyIndex.js";
 
 const identifyCache = new LRUCacheImpl<any>(200, 24 * 60 * 60 * 1000);
+
+const identifyRateLimit = new Map<string, { count: number; resetAt: number }>();
+function checkIdentifyRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = identifyRateLimit.get(ip);
+  if (!entry || now > entry.resetAt) {
+    identifyRateLimit.set(ip, { count: 1, resetAt: now + 5 * 60 * 1000 });
+    return true;
+  }
+  if (entry.count >= 5) return false;
+  entry.count++;
+  return true;
+}
 
 const aiScanCache = new Map<string, { result: any; timestamp: number }>();
 let tourCacheVersion = Date.now();
@@ -1255,6 +1269,11 @@ export async function registerRoutes(
   app.post("/api/whisky/identify", scanUpload.single("photo"), async (req: any, res: Response) => {
     const startMs = Date.now();
     try {
+      const clientIp = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
+      if (!checkIdentifyRateLimit(clientIp)) {
+        return res.status(429).json({ message: "Too many requests. Please wait a few minutes." });
+      }
+
       console.log("[SIMPLE_MODE][IDENTIFY] request received");
       const file = req.file;
       if (!file) {
@@ -1276,15 +1295,19 @@ export async function registerRoutes(
 
       if (!ocrText.trim()) {
         console.log("[SIMPLE_MODE][IDENTIFY] no text extracted, returning empty");
-        const result = { candidates: [], photoUrl };
-        return res.json(result);
+        return res.json({ candidates: [], photoUrl });
       }
 
       const hints = extractHints(ocrText);
       console.log(`[SIMPLE_MODE][MATCH] hints:`, JSON.stringify(hints));
 
       const index = await getWhiskyIndex();
-      const candidates = scoreWhiskies(ocrText, hints, index);
+      const mode = detectMode(ocrText);
+      console.log(`[SIMPLE_MODE][IDENTIFY] detected mode: ${mode}`);
+
+      const candidates = mode === "menu"
+        ? scoreWhiskiesMultiLine(ocrText, hints, index)
+        : scoreWhiskies(ocrText, hints, index);
 
       const lowConfidence = candidates.length === 0 || candidates[0].confidence < 0.15;
       if (lowConfidence) {
@@ -1302,6 +1325,7 @@ export async function registerRoutes(
         hints,
         tookMs,
         indexSize: index.length,
+        detectedMode: mode,
       } : undefined;
 
       const result = { candidates: finalCandidates, debug };
@@ -1309,6 +1333,59 @@ export async function registerRoutes(
       res.json({ ...result, photoUrl });
     } catch (e: any) {
       console.error("[SIMPLE_MODE][IDENTIFY] error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/whisky/identify-text", async (req: Request, res: Response) => {
+    const startMs = Date.now();
+    try {
+      const clientIp = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
+      if (!checkIdentifyRateLimit(clientIp)) {
+        return res.status(429).json({ message: "Too many requests. Please wait a few minutes." });
+      }
+
+      const { query } = req.body || {};
+      if (!query || typeof query !== "string" || query.trim().length < 2) {
+        return res.status(400).json({ message: "Query text is required (at least 2 characters)" });
+      }
+
+      const queryText = query.trim();
+      console.log(`[SIMPLE_MODE][IDENTIFY-TEXT] query: "${queryText.substring(0, 100)}"`);
+
+      const cacheKey = `text:${normalize(queryText)}`;
+      const cached = identifyCache.get(cacheKey);
+      if (cached) {
+        console.log("[SIMPLE_MODE][IDENTIFY-TEXT] cache hit");
+        return res.json(cached);
+      }
+
+      const hints = extractHints(queryText);
+      const index = await getWhiskyIndex();
+      const photoMode = detectMode(queryText);
+      const candidates = photoMode === "menu"
+        ? scoreWhiskiesMultiLine(queryText, hints, index)
+        : scoreWhiskies(queryText, hints, index);
+
+      const lowConfidence = candidates.length === 0 || candidates[0].confidence < 0.15;
+      const finalCandidates = lowConfidence ? [] : candidates;
+      const tookMs = Date.now() - startMs;
+      console.log(`[SIMPLE_MODE][IDENTIFY-TEXT] returning ${finalCandidates.length} candidates in ${tookMs}ms`);
+
+      const isDev = process.env.NODE_ENV !== "production" || process.env.SIMPLE_DEBUG === "true";
+      const debug = isDev ? {
+        queryText: queryText.substring(0, 300),
+        hints,
+        tookMs,
+        indexSize: index.length,
+        detectedMode: "text" as const,
+      } : undefined;
+
+      const result = { candidates: finalCandidates, debug };
+      identifyCache.set(cacheKey, result);
+      res.json(result);
+    } catch (e: any) {
+      console.error("[SIMPLE_MODE][IDENTIFY-TEXT] error:", e.message);
       res.status(500).json({ message: e.message });
     }
   });

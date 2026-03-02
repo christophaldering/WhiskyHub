@@ -132,3 +132,78 @@ export function extractHints(text: string): OcrHints {
 
   return hints;
 }
+
+const DISTILLERY_TOKENS = new Set([
+  "ARDBEG", "LAGAVULIN", "LAPHROAIG", "BOWMORE", "CAOL", "ILA", "KILCHOMAN",
+  "KILKERRAN", "BRUICHLADDICH", "BUNNAHABHAIN", "TOBERMORY", "TALISKER",
+  "HIGHLAND", "PARK", "MACALLAN", "GLENFIDDICH", "GLENLIVET", "BALVENIE",
+  "SPRINGBANK", "ABERLOUR", "DALMORE", "OBAN", "GLENMORANGIE",
+  "AILSA", "BAY", "COMPASS", "BOX", "NIKKA", "YAMAZAKI", "HAKUSHU",
+]);
+
+export function detectMode(ocrText: string): "label" | "menu" | "text" {
+  const lines = ocrText.split(/\n/).map((l) => l.trim()).filter((l) => l.length > 2);
+  if (lines.length <= 2) return "label";
+
+  const distilleriesFound = new Set<string>();
+  let linesWithDistillery = 0;
+  let ageAbvCount = 0;
+
+  for (const line of lines) {
+    const upper = line.toUpperCase();
+    let lineDistillery = "";
+    for (const dt of DISTILLERY_TOKENS) {
+      if (upper.includes(dt)) {
+        lineDistillery = dt;
+        distilleriesFound.add(dt);
+      }
+    }
+    if (lineDistillery) linesWithDistillery++;
+
+    const hasAge = /\d{1,2}\s*(YO|YEARS?|YEAR|JAHRE)/.test(upper);
+    const hasAbv = /\d{2}\.?\d?\s*%/.test(upper);
+    if (hasAge || hasAbv) ageAbvCount++;
+  }
+
+  if (distilleriesFound.size >= 2) return "menu";
+  if (distilleriesFound.size >= 1 && ageAbvCount >= 3) return "menu";
+  if (lines.length >= 6 && linesWithDistillery >= 3) return "menu";
+  return "label";
+}
+
+export function scoreWhiskiesMultiLine(
+  ocrText: string,
+  hints: OcrHints,
+  index: IndexedWhisky[]
+): MatchCandidate[] {
+  const lines = ocrText.split(/\n/).map((l) => l.trim()).filter((l) => l.length > 3);
+  const allCandidates = new Map<string, MatchCandidate>();
+
+  for (const line of lines) {
+    const lineHints = extractHints(line);
+    const mergedHints: OcrHints = {
+      abv: lineHints.abv || hints.abv,
+      age: lineHints.age || hints.age,
+      caskTokens: [...new Set([...lineHints.caskTokens, ...hints.caskTokens])],
+    };
+    const lineCandidates = scoreWhiskies(line, mergedHints, index);
+    for (const c of lineCandidates) {
+      const existing = allCandidates.get(c.whiskyId);
+      if (!existing || c.confidence > existing.confidence) {
+        allCandidates.set(c.whiskyId, c);
+      }
+    }
+  }
+
+  const fullTextCandidates = scoreWhiskies(ocrText, hints, index);
+  for (const c of fullTextCandidates) {
+    const existing = allCandidates.get(c.whiskyId);
+    if (!existing || c.confidence > existing.confidence) {
+      allCandidates.set(c.whiskyId, c);
+    }
+  }
+
+  return Array.from(allCandidates.values())
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, 3);
+}

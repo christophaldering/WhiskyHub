@@ -55,6 +55,18 @@ A complete UI redesign with an Apple-clean aesthetic and a whisky-warm dark colo
 ### Simple Mode (`/enter`, `/log-simple`, `/my-taste`)
 A minimal "Simple Mode" for first-time users with no navigation chrome. Three entry points from the landing page, all rendered with `SimpleShell` (centered container, Dark Warm colors, no sidebar/nav). Includes `/simple-test` (happy-path checklist) and `/simple-feedback` (user feedback form). Join flow includes client-side rate limiting (5 attempts / 5 min). Redirect leak prevention: `/join`→`/enter`, `/log`→`/log-simple`, `/profile`→`/my-taste`. Files in `client/src/pages/simple-*.tsx` and `client/src/components/simple/`.
 
+### Whisky Identification (Phase 2)
+AI-powered whisky identification with 3 input methods on `/log-simple`:
+-   **Take Photo**: Camera capture of bottle label or menu → GPT-4o Vision OCR → fuzzy matching against DB index.
+-   **Upload Photo(s)**: Gallery/file upload (1-5 images), best result used.
+-   **Describe**: Text input → direct fuzzy matching (no OCR needed, instant).
+-   **Endpoints**: `POST /api/whisky/identify` (multipart photo), `POST /api/whisky/identify-text` (JSON query).
+-   **Pipeline**: `server/lib/ocr.ts` (GPT-4o Vision) → `server/lib/whiskyIndex.ts` (in-memory DB index, 5min TTL) → `server/lib/matching.ts` (token overlap + trigram + distillery/name substring + age bonus) → `server/lib/cache.ts` (LRU SHA-256, 24h TTL, 200 entries).
+-   **Menu Detection**: `detectMode()` identifies multi-whisky text (menu/list) when 2+ distilleries found; uses per-line scoring + aggregation.
+-   **Confidence Badges**: High >=0.78, Medium 0.55-0.77, Low <0.55. Source shown as "Library"/"External".
+-   **Rate Limiting**: 5 requests per 5 minutes per IP on identify endpoints.
+-   **Fallback**: Unknown whisky → structured block in journal notes or localStorage with Copy/Download JSON.
+
 ## External Dependencies
 
 -   **PostgreSQL**: Primary database.
