@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, Wine, Compass, Archive, MoreHorizontal } from "lucide-react";
+import { Home, Wine, User } from "lucide-react";
 import { ViewSwitcherV2 } from "@/components/view-switcher";
 import "../theme/tokens.css";
 
@@ -11,8 +11,7 @@ interface AppShellV2Props {
 const NAV_ITEMS = [
   { href: "/app/home", icon: Home, label: "Home" },
   { href: "/app/sessions", icon: Wine, label: "Sessions" },
-  { href: "/app/discover", icon: Compass, label: "Discover" },
-  { href: "/app/cellar", icon: Archive, label: "Cellar" },
+  { href: "/legacy/profile", icon: User, label: "Profile" },
 ];
 
 export default function AppShellV2({ children }: AppShellV2Props) {
@@ -40,21 +39,7 @@ export default function AppShellV2({ children }: AppShellV2Props) {
             CaskSense
           </span>
         </Link>
-        <div className="flex items-center gap-2">
-          <ViewSwitcherV2 />
-          <Link href="/app/more">
-            <div
-              className="flex items-center justify-center w-9 h-9 rounded-full cursor-pointer transition-colors"
-              style={{
-                background: location.startsWith("/app/more") ? "var(--v2-accent-muted)" : "transparent",
-                color: location.startsWith("/app/more") ? "var(--v2-accent)" : "var(--v2-text-muted)",
-              }}
-              data-testid="nav-more"
-            >
-              <MoreHorizontal className="w-5 h-5" />
-            </div>
-          </Link>
-        </div>
+        <ViewSwitcherV2 />
       </header>
 
       <div className="hidden lg:block fixed left-0 top-[52px] bottom-0 z-30 w-[72px]"
@@ -82,19 +67,6 @@ export default function AppShellV2({ children }: AppShellV2Props) {
               </Link>
             );
           })}
-          <Link href="/app/more">
-            <div
-              className="flex flex-col items-center gap-0.5 px-2 py-2 rounded-xl cursor-pointer transition-colors w-16"
-              style={{
-                color: location.startsWith("/app/more") ? "var(--v2-accent)" : "var(--v2-text-muted)",
-                background: location.startsWith("/app/more") ? "var(--v2-accent-muted)" : "transparent",
-              }}
-              data-testid="sidebar-nav-more"
-            >
-              <MoreHorizontal className="w-5 h-5" strokeWidth={location.startsWith("/app/more") ? 2.2 : 1.8} />
-              <span className="text-[10px] font-medium">More</span>
-            </div>
-          </Link>
         </div>
       </div>
 
