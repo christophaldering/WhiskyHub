@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, LogIn, Menu, User, Wine, Users, NotebookPen, Sparkles, Calendar, ShieldAlert, Landmark, Star, Archive, ChevronDown, ArrowLeft, ArrowRight, X, Settings, HelpCircle, Compass, Activity, BarChart3, BookOpen, ClipboardList, Database, Download, FileText, GitCompareArrows, GlassWater, Globe, Heart, HeartHandshake, History, Info, LayoutDashboard, Library, Map, Medal, Microscope, Package, Puzzle, Trophy, FlaskConical } from "lucide-react";
+import { Home, LogOut, LogIn, Menu, User, Wine, ChevronDown, ArrowLeft, ArrowRight, X, Settings, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { ViewSwitcherLegacy } from "@/components/view-switcher";
@@ -529,9 +529,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, [currentParticipant?.id]);
 
-  const isHost = currentParticipant && allTastings.some((t: any) => t.hostId === currentParticipant.id);
-  const isAdmin = currentParticipant?.role === "admin";
-
   const navGroups: NavGroup[] = useMemo(() => [
     {
       label: t('navGroup.genuss'),
@@ -539,70 +536,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       items: [
         { href: "/tasting", icon: Home, label: t('nav.lobby'), match: (loc: string) => loc === "/tasting" },
         { href: "/tasting/sessions", icon: Wine, label: t('nav.sessions'), match: (loc: string) => loc === "/tasting/sessions" },
-        { href: "/tasting/calendar", icon: Calendar, label: t('nav.calendar') },
-        { href: "/my/journal", icon: NotebookPen, label: t('nav.journal'), match: (loc: string) => loc === "/my/journal" },
-        { href: "/my-whiskies", icon: GlassWater, label: t('nav.myTastedWhiskies') },
-        { href: "/my/collection", icon: Archive, label: t('nav.collection') },
-        { href: "/my/wishlist", icon: Star, label: t('nav.wishlist') },
-        { href: "/recap", icon: History, label: t('nav.recap') },
-        { href: "/my-tastings", icon: ClipboardList, label: t('nav.myTastings') },
-        { href: "/tasting/host", icon: LayoutDashboard, label: t('nav.hostDashboard') },
-      ],
-    },
-    {
-      label: t('navGroup.pro'),
-      items: [
-        { href: "/comparison", icon: GitCompareArrows, label: t('nav.comparison') },
-        { href: "/tasting-templates", icon: FileText, label: t('nav.templates') },
-        { href: "/pairings", icon: Puzzle, label: t('nav.pairings') },
-        { href: "/benchmark", icon: Library, label: t('nav.benchmark') },
-        { href: "/discover/database", icon: Database, label: t('nav.whiskyDatabase') },
-        { href: "/analytics", icon: BarChart3, label: t('nav.analytics') },
-        { href: "/data-export", icon: Download, label: t('nav.dataExport') },
       ],
     },
     {
       label: t('navGroup.profil'),
       items: [
         { href: "/profile", icon: User, label: t('profile.title'), match: (loc: string) => loc === "/profile" },
-        { href: "/flavor-profile", icon: Sparkles, label: t('nav.flavorProfile') },
-        { href: "/recommendations", icon: Compass, label: t('nav.recommendations') },
-        { href: "/taste-twins", icon: Users, label: t('nav.tasteTwins') },
-        { href: "/friends", icon: HeartHandshake, label: t('nav.friends') },
-        { href: "/community-rankings", icon: Trophy, label: t('nav.communityRankings') },
-        { href: "/activity", icon: Activity, label: t('nav.activity') },
-        { href: "/leaderboard", icon: Medal, label: t('nav.leaderboard') },
         { href: "/profile/account", icon: Settings, label: t('nav.account') },
       ],
     },
-    {
-      label: t('navGroup.wissen'),
-      items: [
-        { href: "/lexicon", icon: BookOpen, label: t('nav.lexicon') },
-        { href: "/discover/distilleries", icon: Landmark, label: t('nav.distilleries'), match: (loc: string) => loc === "/discover/distilleries" },
-        { href: "/distillery-map", icon: Map, label: t('nav.distilleryMap') },
-        { href: "/bottlers", icon: Package, label: t('nav.bottlers') },
-        { href: "/research", icon: Microscope, label: t('nav.research') },
-      ],
-    },
-    {
-      label: t('navGroup.ueber'),
-      items: [
-        { href: "/profile/help", icon: HelpCircle, label: t('nav.help'), match: (loc: string) => loc === "/profile/help" },
-        { href: "/about", icon: Info, label: t('nav.about') },
-        { href: "/features", icon: Sparkles, label: t('nav.features') },
-        { href: "/donate", icon: Heart, label: t('nav.donate') },
-        { href: "/", icon: Globe, label: t('nav.landingPage'), match: (loc: string) => false },
-      ],
-    },
-    ...(currentParticipant?.role === "admin" ? [{
-      label: t('navGroup.adminSection'),
-      items: [
-        { href: "/admin", icon: ShieldAlert, label: t('nav.admin') },
-        { href: "/lab-dark/home", icon: FlaskConical, label: "Dark Lab", match: (loc: string) => loc.startsWith("/lab-dark") },
-      ],
-    }] : []),
-  ], [t, currentParticipant?.role]);
+  ], [t]);
 
   const desktopNavRef = useRef<HTMLElement>(null);
   const mobileNavRef = useRef<HTMLElement>(null);
@@ -765,8 +708,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 ? { href: `/tasting/${tastingMatch![1]}`, icon: ArrowLeft, label: t('nav.backToTasting'), isCockpit: true }
                 : { href: "/home", icon: Home, label: t('nav.lobbyShort') },
               { href: "/tasting", icon: Wine, label: "Tasting" },
-              { href: "/my/journal", icon: NotebookPen, label: t('nav.journalShort') },
-              { href: "/discover", icon: Compass, label: t('nav.entdeckenShort') },
               { href: "/profile", icon: User, label: t('navGroup.profil', 'Profil'), isMore: false },
             ];
           })().map((item) => {
