@@ -33,6 +33,11 @@ import SupportConsole from "@/pages/support-console";
 import MyTastePage from "@/pages/my-taste";
 import EnterPage from "@/pages/enter";
 import LogWhiskyPage from "@/pages/log-whisky";
+import SimpleEnterPage from "@/pages/simple-enter";
+import SimpleLogPage from "@/pages/simple-log";
+import SimpleFeedbackPage from "@/pages/simple-feedback";
+import SimpleTestPage from "@/pages/simple-test";
+import TastingRoomSimple from "@/pages/tasting-room-simple";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
 import HomeDashboard from "@/pages/home-dashboard";
@@ -84,9 +89,13 @@ function Router() {
         <Route path="/tour" component={Tour} />
         <Route path="/background" component={Background} />
         <Route path="/join/:code" component={QuickTasting} />
-        <Route path="/enter" component={EnterPage} />
+        <Route path="/enter" component={SimpleEnterPage} />
         <Route path="/join">{() => <Redirect to="/enter" />}</Route>
-        <Route path="/log" component={LogWhiskyPage} />
+        <Route path="/log-simple" component={SimpleLogPage} />
+        <Route path="/log">{() => <Redirect to="/log-simple" />}</Route>
+        <Route path="/simple-test" component={SimpleTestPage} />
+        <Route path="/simple-feedback" component={SimpleFeedbackPage} />
+        <Route path="/tasting-room-simple/:id" component={TastingRoomSimple} />
         <Route path="/naked/:code" component={NakedTasting} />
         <Route path="/support" component={SupportConsole} />
         <Route path="/my-taste" component={MyTastePage} />
@@ -198,9 +207,9 @@ function Router() {
               <Route path="/discover/distilleries" component={DiscoverDistilleries} />
               <Route path="/discover/community" component={DiscoverCommunity} />
               <Route path="/discover/database" component={WhiskyDatabase} />
-              <Route path="/profile" component={Profile} />
               <Route path="/profile/account" component={Account} />
               <Route path="/profile/help" component={ProfileHelp} />
+              <Route path="/profile">{() => <Redirect to="/my-taste" />}</Route>
               <Route path="/admin" component={AdminPanel} />
               <Route path="/news" component={News} />
               <Route path="/badges" component={Badges} />

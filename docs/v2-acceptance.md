@@ -37,8 +37,28 @@
 - [x] Collection/Wishlist from existing collectionApi/wishlistApi
 - [x] No feature marked as "obsolete"
 
+## Simple Mode
+- [x] Landing has 3 primary CTAs: Join (/enter), Log (/log-simple), My Taste (/my-taste)
+- [x] All Simple pages use SimpleShell — no sidebar, no bottom nav, no legacy layout
+- [x] /join redirects to /enter (not /tasting/sessions)
+- [x] /log redirects to /log-simple (not /my/journal)
+- [x] /profile redirects to /my-taste (not legacy profile)
+- [x] Landing shows "Already using CaskSense Pro?" link to /app
+- [x] Join flow: name/PIN → code entry → tasting-room-simple/:id
+- [x] Rate-limit: 5 attempts / 5 minutes on join code lookup (client-side sessionStorage)
+- [x] /simple-test page with happy-path checklist + route buttons
+- [x] /simple-feedback page with satisfaction/simplicity ratings + clipboard copy
+- [x] Console logs prefixed with [SIMPLE_MODE]
+- [x] Error handling with inline messages on all Simple pages
+
 ## Routing
-- [x] / — Landing page
+- [x] / — Landing page (3 Simple Mode CTAs + Pro link)
+- [x] /enter — Simple join flow (SimpleShell)
+- [x] /log-simple — Simple whisky log (SimpleShell)
+- [x] /my-taste — Taste profile (SimpleShell)
+- [x] /tasting-room-simple/:id — Rating room without legacy layout
+- [x] /simple-test — Happy-path test checklist
+- [x] /simple-feedback — Feedback form
 - [x] /app/* — V2 Dark Warm UI
 - [x] /legacy/* — Existing UI
 - [x] /lab-dark/* — Experimental Lab surface

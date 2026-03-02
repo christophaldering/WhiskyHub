@@ -86,7 +86,7 @@ export default function Landing() {
             </motion.div>
           </Link>
 
-          <Link href="/log">
+          <Link href="/log-simple">
             <motion.div
               whileTap={{ scale: 0.97 }}
               style={{
@@ -151,16 +151,16 @@ export default function Landing() {
         }}
       >
         <Link
-          href="/legacy"
+          href="/app"
           style={{
             fontSize: "0.75rem",
             color: "#6b6354",
             textDecoration: "none",
             fontFamily: "system-ui, sans-serif",
           }}
-          data-testid="link-legacy"
+          data-testid="link-pro"
         >
-          Already using CaskSense?
+          Already using CaskSense Pro?
         </Link>
       </motion.div>
     </div>

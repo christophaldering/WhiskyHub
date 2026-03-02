@@ -50,7 +50,10 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **AI Kill Switch**: Admin can disable AI features globally or per-feature.
 
 ### V2 Dark Warm UI (`/app`)
-A complete UI redesign with an Apple-clean aesthetic and a whisky-warm dark color palette. It features a streamlined 4-tab navigation (Home, Sessions, Discover, Cellar) with a "More" overflow for advanced features. It shares the same database and API endpoints as the original UI.
+A complete UI redesign with an Apple-clean aesthetic and a whisky-warm dark color palette. It features a streamlined 4-tab navigation (Home, Sessions, Discover, Cellar) with a "More" overflow for advanced features. More page provides grouped links to all legacy features (Profile, Host Tools, Analysis, Social, Knowledge, About, Legal, Admin). It shares the same database and API endpoints as the original UI.
+
+### Simple Mode (`/enter`, `/log-simple`, `/my-taste`)
+A minimal "Simple Mode" for first-time users with no navigation chrome. Three entry points from the landing page, all rendered with `SimpleShell` (centered container, Dark Warm colors, no sidebar/nav). Includes `/simple-test` (happy-path checklist) and `/simple-feedback` (user feedback form). Join flow includes client-side rate limiting (5 attempts / 5 min). Redirect leak prevention: `/join`→`/enter`, `/log`→`/log-simple`, `/profile`→`/my-taste`. Files in `client/src/pages/simple-*.tsx` and `client/src/components/simple/`.
 
 ## External Dependencies
 
