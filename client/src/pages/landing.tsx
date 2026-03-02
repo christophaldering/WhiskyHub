@@ -63,7 +63,7 @@ export default function Landing() {
             width: "100%",
           }}
         >
-          <Link href="/join">
+          <Link href="/tasting">
             <motion.div
               whileTap={{ scale: 0.97 }}
               style={{
@@ -86,7 +86,7 @@ export default function Landing() {
             </motion.div>
           </Link>
 
-          <Link href="/log">
+          <Link href="/my/journal">
             <motion.div
               whileTap={{ scale: 0.97 }}
               style={{

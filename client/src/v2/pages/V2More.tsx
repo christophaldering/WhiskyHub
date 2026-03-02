@@ -36,7 +36,7 @@ export default function V2More() {
       items: [
         { icon: User, title: "Profile", subtitle: "Your tasting identity", route: "/legacy/profile" },
         { icon: Settings, title: "Account", subtitle: "Settings & preferences", route: "/legacy/profile/account" },
-        { icon: Bell, title: "Notifications", subtitle: "Manage alerts", route: "/legacy/reminders" },
+        { icon: Bell, title: "Notifications", subtitle: "Manage alerts", route: "/legacy/tasting/sessions" },
       ],
     },
     {
@@ -89,8 +89,8 @@ export default function V2More() {
     {
       label: "Legal",
       items: [
-        { icon: Scale, title: "Impressum", route: "/legacy/impressum" },
-        { icon: Shield, title: "Privacy", route: "/legacy/privacy" },
+        { icon: Scale, title: "Impressum", route: "/impressum" },
+        { icon: Shield, title: "Privacy", route: "/privacy" },
       ],
     },
     ...(isAdmin
