@@ -30,6 +30,7 @@ import News from "@/pages/news";
 import QuickTasting from "@/pages/quick-tasting";
 import NakedTasting from "@/pages/naked-tasting";
 import SupportConsole from "@/pages/support-console";
+import MyTastePage from "@/pages/my-taste";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
 import HomeDashboard from "@/pages/home-dashboard";
@@ -85,6 +86,8 @@ function Router() {
         <Route path="/log">{() => <Redirect to="/my/journal" />}</Route>
         <Route path="/naked/:code" component={NakedTasting} />
         <Route path="/support" component={SupportConsole} />
+        <Route path="/my-taste" component={MyTastePage} />
+        <Route path="/taste" component={MyTastePage} />
         <Route path="/impressum" component={Impressum} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/intro" component={Intro} />
