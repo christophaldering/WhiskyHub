@@ -1504,14 +1504,20 @@ export async function registerRoutes(
     try {
       const data = insertRatingSchema.parse(req.body);
 
-      // Check if the tasting is still open for ratings
       const tasting = await storage.getTasting(data.tastingId);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
       if (tasting.status !== "open" && tasting.status !== "draft") {
         return res.status(403).json({ message: "Evaluation is locked" });
       }
 
-      const rating = await storage.upsertRating(data);
+      const maxScale = tasting.ratingScale || 100;
+      let normalizedScore: number | null = null;
+      if (data.overall != null) {
+        const clamped = Math.max(0, Math.min(data.overall, maxScale));
+        normalizedScore = maxScale === 100 ? clamped : Math.round((clamped / maxScale) * 1000) / 10;
+      }
+
+      const rating = await storage.upsertRating({ ...data, normalizedScore });
       res.json(rating);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
