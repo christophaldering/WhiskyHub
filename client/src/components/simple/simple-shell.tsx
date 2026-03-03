@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { Wine, PenLine, User, KeyRound } from "lucide-react";
+import { Wine, PenLine, Crown, User, BarChart3, KeyRound } from "lucide-react";
 import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
 import type { SessionMode } from "@/lib/session";
@@ -18,7 +18,9 @@ const c = {
 const NAV_ITEMS = [
   { href: "/enter", icon: Wine, label: "Join" },
   { href: "/log-simple", icon: PenLine, label: "Log" },
+  { href: "/host", icon: Crown, label: "Host" },
   { href: "/my-taste", icon: User, label: "My Taste" },
+  { href: "/analyze", icon: BarChart3, label: "Analyze" },
 ];
 
 interface SimpleShellProps {
@@ -147,7 +149,7 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
                   flexDirection: "column",
                   alignItems: "center",
                   gap: 2,
-                  padding: "4px 16px",
+                  padding: "4px 10px",
                   cursor: "pointer",
                   color: active ? c.accent : c.mutedLight,
                   transition: "color 0.2s",

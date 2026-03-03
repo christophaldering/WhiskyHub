@@ -106,7 +106,7 @@ export default function Landing() {
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "1rem",
+            gap: "0.75rem",
             width: "100%",
           }}
         >
@@ -116,9 +116,9 @@ export default function Landing() {
               style={{
                 display: "block",
                 width: "100%",
-                padding: "1rem",
+                padding: "0.875rem",
                 textAlign: "center",
-                fontSize: "1rem",
+                fontSize: "0.95rem",
                 fontWeight: 600,
                 fontFamily: "system-ui, sans-serif",
                 background: "#d4a256",
@@ -139,9 +139,9 @@ export default function Landing() {
               style={{
                 display: "block",
                 width: "100%",
-                padding: "1rem",
+                padding: "0.875rem",
                 textAlign: "center",
-                fontSize: "1rem",
+                fontSize: "0.95rem",
                 fontWeight: 600,
                 fontFamily: "system-ui, sans-serif",
                 background: "transparent",
@@ -156,15 +156,38 @@ export default function Landing() {
             </motion.div>
           </Link>
 
+          <Link href="/host">
+            <motion.div
+              whileTap={{ scale: 0.97 }}
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "0.875rem",
+                textAlign: "center",
+                fontSize: "0.95rem",
+                fontWeight: 600,
+                fontFamily: "system-ui, sans-serif",
+                background: "transparent",
+                color: "#d4a256",
+                borderRadius: "12px",
+                cursor: "pointer",
+                border: "1px solid #d4a256",
+              }}
+              data-testid="button-host-tasting"
+            >
+              Host a Tasting
+            </motion.div>
+          </Link>
+
           <Link href="/my-taste">
             <motion.div
               whileTap={{ scale: 0.97 }}
               style={{
                 display: "block",
                 width: "100%",
-                padding: "1rem",
+                padding: "0.875rem",
                 textAlign: "center",
-                fontSize: "1rem",
+                fontSize: "0.95rem",
                 fontWeight: 600,
                 fontFamily: "system-ui, sans-serif",
                 background: "transparent",
@@ -176,6 +199,29 @@ export default function Landing() {
               data-testid="button-my-taste"
             >
               My Taste
+            </motion.div>
+          </Link>
+
+          <Link href="/analyze">
+            <motion.div
+              whileTap={{ scale: 0.97 }}
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "0.875rem",
+                textAlign: "center",
+                fontSize: "0.95rem",
+                fontWeight: 600,
+                fontFamily: "system-ui, sans-serif",
+                background: "transparent",
+                color: "#d4a256",
+                borderRadius: "12px",
+                cursor: "pointer",
+                border: "1px solid #d4a256",
+              }}
+              data-testid="button-analyze"
+            >
+              Analyze
             </motion.div>
           </Link>
         </div>

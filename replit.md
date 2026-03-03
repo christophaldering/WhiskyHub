@@ -42,7 +42,8 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Guest Mode**: Offers "Standard Naked" (persisted identity) and "Ultra Naked" (ephemeral identity) participation modes, controllable by the host. Naked Tasting supports Flow, Focus, and Journal UI modes.
 -   **Rating System**: Dynamic step sizing for rating sliders and auto-calculated overall scores with manual override.
 -   **Context Level**: Three-tier data visibility control within active tasting sessions: Naked (0), Self (1), and Full (2).
--   **Navigation Structure**: Desktop sidebar with 6 sections (Genuss, Pro, Profil, Wissen, Über, Admin) and a mobile bottom nav with 5 tabs (Home, Tasting, Journal, Entdecken, Profil).
+-   **Navigation Structure (Simple Mode)**: 5-tab bottom nav: Join (`/enter`), Log (`/log-simple`), Host (`/host`), My Taste (`/my-taste`), Analyze (`/analyze`). Landing page shows 5 matching CTA buttons. Simple Mode pages wrapped in `SimpleShell`. Host and Analyze are hub pages linking to legacy features.
+-   **Navigation Structure (Legacy)**: Desktop sidebar with 6 sections (Genuss, Pro, Profil, Wissen, Über, Admin).
 -   **Whisky Library**: A tabbed library for managing whisky data, including import, tasting notes, analyses, articles, and other categories.
 -   **Data Source Tracking**: Journal entries track their source (casksense/imported/whiskybase).
 -   **Whisky Profile Page**: Provides "Geschmacksanalyse," "Whisky-Profil," and "Aromarad" tabs.

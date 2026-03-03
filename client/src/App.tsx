@@ -37,6 +37,8 @@ import SimpleEnterPage from "@/pages/simple-enter";
 import SimpleLogPage from "@/pages/simple-log";
 import SimpleFeedbackPage from "@/pages/simple-feedback";
 import SimpleTestPage from "@/pages/simple-test";
+import SimpleHostPage from "@/pages/simple-host";
+import SimpleAnalyzePage from "@/pages/simple-analyze";
 import TastingRoomSimple from "@/pages/tasting-room-simple";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
@@ -97,6 +99,8 @@ function Router() {
         <Route path="/tasting-room-simple/:id" component={TastingRoomSimple} />
         <Route path="/naked/:code" component={NakedTasting} />
         <Route path="/support" component={SupportConsole} />
+        <Route path="/host" component={SimpleHostPage} />
+        <Route path="/analyze" component={SimpleAnalyzePage} />
         <Route path="/my-taste" component={MyTastePage} />
         <Route path="/taste" component={MyTastePage} />
         <Route path="/impressum" component={Impressum} />
