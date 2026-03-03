@@ -1196,19 +1196,34 @@ export default function SimpleLogPage() {
                 onClick={() => setShowDetailed(!showDetailed)}
                 data-testid="button-toggle-detailed"
                 style={{
-                  background: "none",
-                  border: "none",
+                  width: "100%",
+                  background: showDetailed ? `${c.accent}10` : "transparent",
+                  border: `1px solid ${showDetailed ? c.accent : c.border}`,
+                  borderRadius: 10,
                   cursor: "pointer",
-                  color: showDetailed ? c.accent : c.mutedLight,
-                  fontSize: 12,
+                  color: c.text,
+                  fontSize: 13,
                   fontFamily: "system-ui, sans-serif",
-                  padding: "10px 0 0",
+                  padding: "10px 14px",
+                  marginTop: 12,
                   display: "flex",
-                  alignItems: "center",
-                  gap: 4,
+                  flexDirection: "column",
+                  gap: 6,
+                  textAlign: "left",
+                  transition: "border-color 0.2s, background 0.2s",
                 }}
               >
-                Rate in detail {showDetailed ? "▴" : "▾"} (4 dimensions)
+                <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                  <span style={{ fontWeight: 600, fontSize: 13 }}>Rate in detail</span>
+                  <span style={{ fontSize: 16, color: c.accent, transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)" }}>▾</span>
+                </span>
+                {!showDetailed && (
+                  <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {["Nose", "Taste", "Finish", "Balance"].map((dim) => (
+                      <span key={dim} style={{ fontSize: 10, color: c.mutedLight, background: `${c.border}`, padding: "2px 8px", borderRadius: 20, letterSpacing: 0.3 }}>{dim}</span>
+                    ))}
+                  </span>
+                )}
               </button>
 
               <AnimatePresence>
