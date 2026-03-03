@@ -1,0 +1,68 @@
+HARD PROMPT — “System Status Snapshot” (copy/paste bundle for ChatGPT)
+
+You are working in an existing full-stack Replit project (CaskSense). 
+Create a single file `SYSTEM_STATUS.md` in the repo root that contains a comprehensive, human-readable snapshot of the current system state so it can be pasted into ChatGPT.
+
+CRITICAL RULES:
+- DO NOT print or include any secrets, tokens, passwords, API keys, database URLs, cookies, auth headers, private keys.
+- Redact any secret-like values (replace with "***REDACTED***").
+- Keep it concise but complete. Prefer bullet points and short code excerpts only where necessary.
+- If something cannot be determined safely, say “UNKNOWN”.
+
+WHAT TO INCLUDE IN `SYSTEM_STATUS.md`:
+
+1) Repo Overview
+- Tech stack summary (frontend framework, backend framework, DB/ORM, hosting runtime)
+- Folder structure (top-level tree: client/, server/, shared/, etc.)
+- How to run (dev commands), and main entry points.
+
+2) Routing & Navigation Map
+- List all client routes and which layout/shell they use (SimpleShell vs Classic/Legacy layout)
+- Explicitly include: `/` landing, `/log-simple`, `/join`, `/my-taste`, classic pages (home/sessions/discover/cellar), and any workspace routes if present.
+- For each route: purpose + guard/auth requirement.
+
+3) Auth / Session State
+- Describe current auth/session model:
+  - storage keys used (sessionStorage/localStorage) — key names only
+  - endpoints used (e.g., /api/simple/unlock, /api/session/signin/resume/signout)
+  - where “Sign in / Unlock” UI lives (icons, sheets)
+  - known issues/TODOs in auth
+- Mention whether “remember me” exists and how resume works (without secrets).
+
+4) Identify Pipeline (Whisky recognition)
+- Endpoints: local identify, identify-text, identify-online (if present)
+- OCR provider implementation status and selection logic
+- Matching logic summary (normalization, scoring)
+- Caching and rate limiting summary
+- Fallback behavior when no match found (“manual entry”, “unknown log”, etc.)
+
+5) Logging / Scoring Model
+- What fields exist for a log entry (overall score, detailed 4-dim scores, notes)
+- Where detailed scores are persisted (DB vs notes block vs localStorage)
+- Current UI behavior: default overall + accordion detailed.
+
+6) Feature Flags / Env (names only)
+- List environment variable NAMES referenced in code (no values):
+  - e.g., SIMPLE_MODE_PIN, ONLINE_SEARCH_PROVIDER, SERPAPI_API_KEY, etc.
+
+7) Recent Changes (git)
+- Show last 20 git commits:
+  - `git --no-pager log -20 --oneline`
+- Briefly summarize what changed in the last 5 commits in plain English.
+
+8) Known Bugs / Gaps
+- Bullet list of current known issues (e.g., sign out missing in classic view, unlock not working, etc.)
+- For each: where it is (file/route) and what happens.
+
+9) “How to verify quickly”
+- A 10-step smoke test checklist:
+  - landing → log-simple → identify → manual → save (unlock) → my taste
+  - classic home greeting and session menu
+  - online search configured/unconfigured behavior
+  - etc.
+
+IMPLEMENTATION STEPS:
+A) Generate `SYSTEM_STATUS.md` exactly as specified.
+B) Also print the contents of `SYSTEM_STATUS.md` to the console at the end, so the user can copy it in one go.
+
+Then STOP.
