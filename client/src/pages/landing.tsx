@@ -115,21 +115,17 @@ export default function Landing() {
               style={{
                 display: "block",
                 width: "100%",
-                padding: "0.85rem",
+                padding: "1rem",
                 textAlign: "center",
-                fontSize: "0.9rem",
-                fontWeight: 500,
+                fontSize: "1rem",
+                fontWeight: 600,
                 fontFamily: "system-ui, sans-serif",
                 background: "transparent",
-                color: "#f5f0e8",
+                color: "#d4a256",
                 borderRadius: "12px",
                 cursor: "pointer",
-                border: "none",
-                opacity: 0.6,
-                transition: "opacity 0.2s",
+                border: "1px solid #d4a256",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.6")}
               data-testid="button-my-taste"
             >
               My Taste
@@ -138,31 +134,6 @@ export default function Landing() {
         </div>
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.5 }}
-        style={{
-          position: "fixed",
-          bottom: "2rem",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-        }}
-      >
-        <Link
-          href="/app"
-          style={{
-            fontSize: "0.75rem",
-            color: "#6b6354",
-            textDecoration: "none",
-            fontFamily: "system-ui, sans-serif",
-          }}
-          data-testid="link-pro"
-        >
-          Already using CaskSense Pro?
-        </Link>
-      </motion.div>
     </div>
   );
 }
