@@ -776,6 +776,21 @@ export default function SimpleLogPage() {
     }
   };
 
+  const getWhiskyHistory = (name: string): { score: number; date: string } | null => {
+    if (!name.trim()) return null;
+    try {
+      const logs: { whiskyName?: string; score?: number; overall?: number; date?: string; timestamp?: string }[] = JSON.parse(localStorage.getItem("simple_manual_logs") || "[]");
+      const scores: { whiskyName?: string; overall?: number; timestamp?: string }[] = JSON.parse(localStorage.getItem("simple_score_details") || "[]");
+      const normalize = (s: string) => s.trim().toLowerCase();
+      const target = normalize(name);
+      const allEntries = [
+        ...logs.filter(l => normalize(l.whiskyName || "") === target).map(l => ({ score: l.score ?? 0, date: l.date || l.timestamp || "" })),
+        ...scores.filter(s => normalize(s.whiskyName || "") === target).map(s => ({ score: s.overall ?? 0, date: s.timestamp || "" })),
+      ].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      return allEntries[0] || null;
+    } catch { return null; }
+  };
+
   const buildScoresBlock = () => {
     if (!showDetailed) return "";
     return `\n[SCORES] Nose:${detailedScores.nose} Taste:${detailedScores.taste} Finish:${detailedScores.finish} Balance:${detailedScores.balance} [/SCORES]`;
@@ -1006,6 +1021,18 @@ export default function SimpleLogPage() {
                         {selectedCandidate && unknownAbv ? ` · ${unknownAbv}` : ""}
                       </div>
                     )}
+                    {(() => {
+                      const hist = getWhiskyHistory(whiskyName);
+                      if (!hist) return null;
+                      const d = hist.date ? new Date(hist.date) : null;
+                      const dateStr = d ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "2-digit" }) : "";
+                      return (
+                        <div style={{ fontSize: 11, color: c.mutedLight, marginTop: 4, display: "flex", alignItems: "center", gap: 6 }} data-testid="text-whisky-history">
+                          <span>Logged before · {hist.score} pts{dateStr ? ` · ${dateStr}` : ""}</span>
+                          <Link href="/my-taste" style={{ color: c.accent, fontSize: 11, textDecoration: "underline", textDecorationColor: `${c.accent}40`, textUnderlineOffset: 2 }} data-testid="link-compare">Compare</Link>
+                        </div>
+                      );
+                    })()}
                   </div>
                   <button
                     type="button"
@@ -1060,6 +1087,9 @@ export default function SimpleLogPage() {
                           </>
                         ) : "Identify"}
                       </button>
+                      <div style={{ fontSize: 11, color: c.mutedLight, textAlign: "center", marginBottom: 2, letterSpacing: 0.2 }} data-testid="text-identify-hint">
+                        Use photo · upload · describe · search online
+                      </div>
                       <button
                         type="button"
                         onClick={() => { setShowManual(true); setSelectedCandidate(null); }}
@@ -1168,7 +1198,7 @@ export default function SimpleLogPage() {
                   gap: 4,
                 }}
               >
-                Detailed {showDetailed ? "▴" : "▾"} (4)
+                Rate in detail {showDetailed ? "▴" : "▾"} (4 dimensions)
               </button>
 
               <AnimatePresence>
@@ -1259,6 +1289,10 @@ export default function SimpleLogPage() {
                   />
                 )}
               </AnimatePresence>
+
+              <div style={{ fontSize: 11, color: c.mutedLight, textAlign: "center", marginTop: 8 }} data-testid="text-save-hint">
+                Your tasting will be added to My Taste
+              </div>
 
               {error && <p style={{ fontSize: 12, color: c.error, margin: "10px 0 0", textAlign: "center" }}>{error}</p>}
             </div>

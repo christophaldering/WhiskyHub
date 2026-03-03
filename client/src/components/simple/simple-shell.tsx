@@ -146,36 +146,60 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
                   {auth.unlocked ? (auth.name || "Guest") : "Locked"}
                 </div>
                 <div style={{ fontSize: 11, color: c.mutedLight }}>
-                  {auth.unlocked ? "Session unlocked" : "Not signed in"}
+                  {auth.unlocked ? "Session unlocked" : "Save tastings under your name"}
                 </div>
               </div>
             </div>
 
-            <button
-              onClick={handleLogout}
-              disabled={!auth.unlocked}
-              data-testid="button-logout"
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                padding: 12,
-                fontSize: 14,
-                fontWeight: 500,
-                background: auth.unlocked ? "transparent" : c.bg,
-                color: auth.unlocked ? "#c44" : c.muted,
-                border: `1px solid ${auth.unlocked ? "#c4444440" : c.border}`,
-                borderRadius: 10,
-                cursor: auth.unlocked ? "pointer" : "not-allowed",
-                fontFamily: "system-ui, sans-serif",
-                opacity: auth.unlocked ? 1 : 0.5,
-              }}
-            >
-              <LogOut style={{ width: 16, height: 16 }} />
-              Logout
-            </button>
+            {auth.unlocked ? (
+              <button
+                onClick={handleLogout}
+                data-testid="button-logout"
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: 12,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  background: "transparent",
+                  color: "#c44",
+                  border: "1px solid #c4444440",
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  fontFamily: "system-ui, sans-serif",
+                }}
+              >
+                <LogOut style={{ width: 16, height: 16 }} />
+                Logout
+              </button>
+            ) : (
+              <button
+                onClick={() => { setShowUserSheet(false); navigate("/log-simple"); }}
+                data-testid="button-unlock-from-sheet"
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: 12,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  background: c.accent,
+                  color: c.bg,
+                  border: "none",
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  fontFamily: "system-ui, sans-serif",
+                }}
+              >
+                <KeyRound style={{ width: 16, height: 16 }} />
+                Unlock
+              </button>
+            )}
           </div>
         </div>
       )}
