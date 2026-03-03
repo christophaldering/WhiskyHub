@@ -1,0 +1,63 @@
+HARD PROMPT — Session UX Hardening (Classic + V2 + Simple) + Logout always reachable
+
+Context:
+Project uses shared auth in `client/src/lib/session.ts` and a `SessionSheet` component at `client/src/components/session-sheet.tsx`.
+There are three shells: SimpleShell, AppShellV2, and Legacy Layout.
+
+Goal:
+Make sign-in/sign-out consistent and always reachable.
+Fix any state bugs (e.g., showing disabled Logout when signed out).
+No DB migrations.
+
+A) Enforce SessionSheet state rendering (must be impossible to show “Logout disabled”)
+In `client/src/components/session-sheet.tsx`:
+- If session.signedIn === false:
+  - Show: “Signed out”
+  - Show primary CTA: “Sign in”
+  - Hide “Sign out/Logout” completely (do not render it disabled)
+- If session.signedIn === true:
+  - Show: “Signed in”
+  - Show name if available else “Session active”
+  - Show primary CTA: “Sign out”
+  - Hide “Sign in” CTA
+
+Also:
+- Remove wording “Locked / Not signed in” from UI.
+- Use only “Signed out / Signed in”.
+
+B) Ensure a visible Session entry point in ALL shells
+1) SimpleShell: top-right icon already exists — verify it opens SessionSheet.
+2) AppShellV2: add a top-right session icon in the header area of all V2 pages (home/sessions/discover/cellar/more).
+   - Icon opens SessionSheet.
+   - If signed in, show a small dot/initial on the icon.
+3) Legacy Layout: add the same top-right session icon in the header area (or existing header actions row) to open SessionSheet.
+
+C) Wire auto-resume on app start (one place only)
+In the top-level app bootstrap (likely `client/src/App.tsx` or the highest layout mount):
+- Call `tryAutoResume()` from `client/src/lib/session.ts` exactly once on first mount.
+- While it runs, do not block UI; just ensure SessionSheet and greetings update after completion.
+
+D) Fix greetings that imply login
+Classic home currently shows “Good morning, Christoph”.
+Change rule:
+- If signedIn && session_name exists: “Good morning, {name}”
+- Else: “Good morning” (no name)
+This prevents false “logged-in” impressions.
+
+E) Make Sign out discoverable from the UI you showed (Classic View header)
+In the Classic home header (where “Classic View” pill and the ⋯ menu are):
+- Add a small profile/session icon next to ⋯ (or replace ⋯ with session icon if space tight).
+- Clicking opens SessionSheet.
+- Do not rely on ⋯ for logout.
+
+F) QA checklist (must pass)
+1) Signed out: SessionSheet shows Sign in only (no logout at all).
+2) Signed in: SessionSheet shows Sign out only.
+3) Sign out immediately updates all shells (Simple, V2, Legacy) without refresh.
+4) Greeting drops name when signed out.
+5) Session icon exists and works on:
+   - /log-simple
+   - /app/home
+   - /legacy/home
+
+Implement now. Keep styling consistent with dark-warm theme.
