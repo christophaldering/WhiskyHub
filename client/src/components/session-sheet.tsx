@@ -190,8 +190,9 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
               <LogOut style={{ width: 16, height: 16 }} />
               Sign out
             </button>
-            <div style={{ fontSize: 11, color: c.mutedLight, textAlign: "center", marginTop: 8 }}>
+            <div style={{ fontSize: 11, color: c.mutedLight, textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
               Signing out clears this session on this device.
+              <br />Your saved tastings remain safe.
             </div>
           </>
         ) : showForm ? (
@@ -225,7 +226,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
                 style={{ accentColor: isDark ? darkColors.accent : undefined, width: 14, height: 14 }}
                 data-testid="checkbox-session-remember"
               />
-              Stay signed in on this device
+              Remember me on this device
             </label>
             <button
               type="submit"
@@ -281,8 +282,9 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
               <KeyRound style={{ width: 16, height: 16 }} />
               Sign in
             </button>
-            <div style={{ fontSize: 11, color: c.mutedLight, textAlign: "center", marginTop: 8 }}>
-              Sign in to save and sync your tastings.
+            <div style={{ fontSize: 11, color: c.mutedLight, textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
+              Sign in with your PIN to save tastings across sessions.
+              <br />No account needed — just a PIN.
             </div>
           </>
         )}
