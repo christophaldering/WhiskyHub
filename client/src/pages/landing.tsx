@@ -1,7 +1,21 @@
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { KeyRound } from "lucide-react";
+import { getSession, tryAutoResume } from "@/lib/session";
+import SessionSheet from "@/components/session-sheet";
 
 export default function Landing() {
+  const [showSessionSheet, setShowSessionSheet] = useState(false);
+  const [session, setSession] = useState(() => getSession());
+  const refreshSession = useCallback(() => setSession(getSession()), []);
+
+  useEffect(() => {
+    tryAutoResume().then(() => refreshSession());
+    window.addEventListener("session-change", refreshSession);
+    return () => window.removeEventListener("session-change", refreshSession);
+  }, [refreshSession]);
+
   return (
     <div
       style={{
@@ -14,8 +28,27 @@ export default function Landing() {
         justifyContent: "center",
         padding: "2rem 1.5rem",
         fontFamily: "'Playfair Display', Georgia, serif",
+        position: "relative",
       }}
     >
+      <button
+        onClick={() => setShowSessionSheet(true)}
+        style={{
+          position: "fixed",
+          top: "1rem",
+          right: "1rem",
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          padding: "6px",
+          color: session.signedIn ? "#d4a256" : "#6b6354",
+          zIndex: 10,
+        }}
+        data-testid="button-landing-session"
+      >
+        <KeyRound size={18} strokeWidth={session.signedIn ? 2.2 : 1.4} />
+      </button>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -115,21 +148,17 @@ export default function Landing() {
               style={{
                 display: "block",
                 width: "100%",
-                padding: "0.85rem",
+                padding: "1rem",
                 textAlign: "center",
-                fontSize: "0.9rem",
-                fontWeight: 500,
+                fontSize: "1rem",
+                fontWeight: 600,
                 fontFamily: "system-ui, sans-serif",
                 background: "transparent",
-                color: "#f5f0e8",
+                color: "#d4a256",
                 borderRadius: "12px",
                 cursor: "pointer",
-                border: "none",
-                opacity: 0.6,
-                transition: "opacity 0.2s",
+                border: "1px solid #d4a256",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.6")}
               data-testid="button-my-taste"
             >
               My Taste
@@ -138,31 +167,13 @@ export default function Landing() {
         </div>
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.5 }}
-        style={{
-          position: "fixed",
-          bottom: "2rem",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-        }}
-      >
-        <Link
-          href="/app"
-          style={{
-            fontSize: "0.75rem",
-            color: "#6b6354",
-            textDecoration: "none",
-            fontFamily: "system-ui, sans-serif",
-          }}
-          data-testid="link-pro"
-        >
-          Already using CaskSense Pro?
-        </Link>
-      </motion.div>
+      <SessionSheet
+        open={showSessionSheet}
+        onClose={() => setShowSessionSheet(false)}
+        onSessionChange={refreshSession}
+        defaultMode="log"
+        variant="dark"
+      />
     </div>
   );
 }
