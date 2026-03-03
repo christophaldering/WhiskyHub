@@ -1090,7 +1090,7 @@ export default function SimpleLogPage() {
                     style={{ ...inputStyle, height: 44, marginBottom: showManual ? 0 : 10 }}
                     data-testid="input-whisky-name"
                     autoComplete="off"
-                    placeholder="Whisky name"
+                    placeholder="e.g. Octomore 15.2"
                   />
 
                   {!showManual && (
@@ -1125,11 +1125,9 @@ export default function SimpleLogPage() {
                           </>
                         ) : "Identify"}
                       </button>
-                      {!introSeen && (
-                        <div style={{ fontSize: 13, color: c.mutedLight, textAlign: "center", marginBottom: 2, lineHeight: 1.4, maxWidth: 300, marginLeft: "auto", marginRight: "auto" }} data-testid="text-identify-hint">
-                          Identify by photo, description or search. Matches your history automatically.
-                        </div>
-                      )}
+                      <div style={{ fontSize: 12, color: c.mutedLight, textAlign: "center", marginBottom: 2, lineHeight: 1.4, maxWidth: 300, marginLeft: "auto", marginRight: "auto" }} data-testid="text-identify-hint">
+                        Identify by photo, description or search — or add manually.
+                      </div>
                       <button
                         type="button"
                         onClick={() => { setShowManual(true); setSelectedCandidate(null); }}
