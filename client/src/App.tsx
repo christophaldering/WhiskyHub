@@ -39,6 +39,11 @@ import SimpleFeedbackPage from "@/pages/simple-feedback";
 import SimpleTestPage from "@/pages/simple-test";
 import SimpleHostPage from "@/pages/simple-host";
 import SimpleAnalyzePage from "@/pages/simple-analyze";
+import MyTasteFlavors from "@/pages/my-taste-flavors";
+import MyTasteCompare from "@/pages/my-taste-compare";
+import DiscoverLexicon from "@/pages/discover-lexicon";
+import DiscoverCommunityNative from "@/pages/discover-community-native";
+import DiscoverDistilleriesNative from "@/pages/discover-distilleries-native";
 import TastingRoomSimple from "@/pages/tasting-room-simple";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
@@ -103,7 +108,12 @@ function Router() {
         <Route path="/host" component={SimpleHostPage} />
         <Route path="/analyze" component={SimpleAnalyzePage} />
         <Route path="/my-taste" component={MyTastePage} />
+        <Route path="/my-taste/flavors" component={MyTasteFlavors} />
+        <Route path="/my-taste/compare" component={MyTasteCompare} />
         <Route path="/taste" component={MyTastePage} />
+        <Route path="/discover/lexicon" component={DiscoverLexicon} />
+        <Route path="/discover/community" component={DiscoverCommunityNative} />
+        <Route path="/discover/distilleries" component={DiscoverDistilleriesNative} />
         <Route path="/impressum" component={Impressum} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/intro" component={Intro} />

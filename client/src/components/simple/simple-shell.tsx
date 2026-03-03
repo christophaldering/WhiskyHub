@@ -20,7 +20,7 @@ const NAV_ITEMS = [
   { href: "/log-simple", icon: PenLine, label: "Log", match: ["/log-simple", "/log"] },
   { href: "/host", icon: Crown, label: "Host", match: ["/host"] },
   { href: "/my-taste", icon: User, label: "My Taste", match: ["/my-taste", "/taste"] },
-  { href: "/analyze", icon: Compass, label: "Discover", match: ["/analyze"] },
+  { href: "/analyze", icon: Compass, label: "Discover", match: ["/analyze", "/discover"] },
 ];
 
 interface SimpleShellProps {
