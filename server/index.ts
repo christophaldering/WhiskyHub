@@ -6,33 +6,38 @@ import { APP_NAME, getVersionInfo } from "@shared/version";
 import { warmupGmailToken, sendEmail, buildReminderEmail } from "./email";
 import { storage } from "./storage";
 
+let ready = false;
+
+const LOADING_HTML =
+  "<!DOCTYPE html><html><head><meta charset='utf-8'><title>CaskSense</title>" +
+  "<meta http-equiv='refresh' content='2'></head>" +
+  "<body style='background:#1a1714;color:#f5f0e8;font-family:system-ui;" +
+  "display:flex;align-items:center;justify-content:center;min-height:100vh;" +
+  "margin:0'><p>Starting up\u2026</p></body></html>";
+
 const app = express();
-const httpServer = createServer(app);
+
+const httpServer = createServer((req, res) => {
+  if (req.url === "/__health" || req.url === "/__health/") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end('{"status":"ok"}');
+    return;
+  }
+
+  if (!ready) {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(LOADING_HTML);
+    return;
+  }
+
+  app(req, res);
+});
 
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
   }
 }
-
-let ready = false;
-
-app.get("/__health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
-});
-
-app.use((req, res, next) => {
-  if (ready || req.path === "/__health") {
-    return next();
-  }
-  res.status(200).send(
-    "<!DOCTYPE html><html><head><meta charset='utf-8'><title>CaskSense</title>" +
-    "<meta http-equiv='refresh' content='2'></head>" +
-    "<body style='background:#1a1714;color:#f5f0e8;font-family:system-ui;" +
-    "display:flex;align-items:center;justify-content:center;min-height:100vh;" +
-    "margin:0'><p>Starting up\u2026</p></body></html>"
-  );
-});
 
 app.use(
   express.json({
