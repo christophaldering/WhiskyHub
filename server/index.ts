@@ -15,17 +15,8 @@ declare module "http" {
   }
 }
 
-let serverReady = false;
-
 app.get("/__health", (_req, res) => {
-  res.status(200).json({ status: serverReady ? "ok" : "starting" });
-});
-
-app.use((req, res, next) => {
-  if (!serverReady && !req.path.startsWith("/api")) {
-    return res.status(200).send("<!DOCTYPE html><html><head><meta charset='utf-8'><title>CaskSense</title><meta http-equiv='refresh' content='3'></head><body style='background:#1a1714;color:#f5f0e8;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0'><p>Starting up…</p></body></html>");
-  }
-  next();
+  res.status(200).json({ status: "ok" });
 });
 
 app.use(
@@ -77,16 +68,20 @@ app.use((req, res, next) => {
 
 const port = parseInt(process.env.PORT || "5000", 10);
 
-httpServer.listen(
-  {
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  },
-  () => {
-    log(`Listening on port ${port}, initializing...`);
-  },
-);
+function stopPreloadProcess(): Promise<void> {
+  const preloadPid = parseInt(process.env.PRELOAD_PID || "0", 10);
+  if (!preloadPid) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    try {
+      process.kill(preloadPid, "SIGTERM");
+      log(`Sent SIGTERM to preload process (PID ${preloadPid})`);
+    } catch {
+      log("Preload process already stopped");
+    }
+    setTimeout(resolve, 500);
+  });
+}
 
 (async () => {
   await registerRoutes(httpServer, app);
@@ -111,36 +106,45 @@ httpServer.listen(
     await setupVite(httpServer, app);
   }
 
-  serverReady = true;
-  const v = getVersionInfo();
-  log(`${APP_NAME} v${v.version} (build ${v.gitSha}) [${v.env}]`);
-  log(`serving on port ${port}`);
-  log(`Build time: ${v.buildTime}`);
-  warmupGmailToken();
+  await stopPreloadProcess();
 
-  setInterval(async () => {
-    try {
-      const pending = await storage.getUpcomingRemindersToSend();
-      for (const { reminder, tasting, participant } of pending) {
-        const { subject, html } = buildReminderEmail({
-          name: participant.name,
-          tastingTitle: tasting.title,
-          tastingDate: tasting.date,
-          tastingLocation: tasting.location,
-          offsetMinutes: reminder.offsetMinutes,
-          language: participant.language || "en",
-        });
-        const sent = await sendEmail({ to: participant.email!, subject, html });
-        if (sent) {
-          await storage.logReminderSent(participant.id, tasting.id, reminder.offsetMinutes);
-          log(`Reminder sent to ${participant.name} for "${tasting.title}" (${reminder.offsetMinutes}min)`, "scheduler");
+  httpServer.listen(
+    {
+      port,
+      host: "0.0.0.0",
+    },
+    () => {
+      const v = getVersionInfo();
+      log(`${APP_NAME} v${v.version} (build ${v.gitSha}) [${v.env}]`);
+      log(`serving on port ${port}`);
+      log(`Build time: ${v.buildTime}`);
+      warmupGmailToken();
+
+      setInterval(async () => {
+        try {
+          const pending = await storage.getUpcomingRemindersToSend();
+          for (const { reminder, tasting, participant } of pending) {
+            const { subject, html } = buildReminderEmail({
+              name: participant.name,
+              tastingTitle: tasting.title,
+              tastingDate: tasting.date,
+              tastingLocation: tasting.location,
+              offsetMinutes: reminder.offsetMinutes,
+              language: participant.language || "en",
+            });
+            const sent = await sendEmail({ to: participant.email!, subject, html });
+            if (sent) {
+              await storage.logReminderSent(participant.id, tasting.id, reminder.offsetMinutes);
+              log(`Reminder sent to ${participant.name} for "${tasting.title}" (${reminder.offsetMinutes}min)`, "scheduler");
+            }
+          }
+          if (pending.length > 0) {
+            log(`Processed ${pending.length} reminder(s)`, "scheduler");
+          }
+        } catch (e) {
+          log(`Reminder scheduler error: ${(e as Error).message}`, "scheduler");
         }
-      }
-      if (pending.length > 0) {
-        log(`Processed ${pending.length} reminder(s)`, "scheduler");
-      }
-    } catch (e) {
-      log(`Reminder scheduler error: ${(e as Error).message}`, "scheduler");
-    }
-  }, 5 * 60 * 1000);
+      }, 5 * 60 * 1000);
+    },
+  );
 })();

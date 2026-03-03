@@ -1,6 +1,6 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile } from "fs/promises";
+import { rm, readFile, copyFile } from "fs/promises";
 import { execSync } from "child_process";
 
 function getGitSha(): string {
@@ -71,6 +71,9 @@ async function buildAll() {
     external: externals,
     logLevel: "info",
   });
+
+  console.log("copying preload script...");
+  await copyFile("server/preload.cjs", "dist/preload.cjs");
 }
 
 buildAll().catch((err) => {
