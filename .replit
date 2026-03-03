@@ -60,3 +60,4 @@ integrations = ["google-mail:1.0.0", "javascript_object_storage:2.0.0", "javascr
 
 [userenv.shared]
 VITE_SUPPORT_PIN = "4937"
+SIMPLE_MODE_PIN = "#Sammy26"
