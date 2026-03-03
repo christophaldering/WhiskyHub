@@ -83,6 +83,18 @@ app.use((req, res, next) => {
 
 const port = parseInt(process.env.PORT || "5000", 10);
 
+httpServer.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EADDRINUSE") {
+    log(`Port ${port} is already in use, retrying in 1s...`);
+    setTimeout(() => {
+      httpServer.listen({ port, host: "0.0.0.0" });
+    }, 1000);
+  } else {
+    console.error("Server error:", err);
+    process.exit(1);
+  }
+});
+
 httpServer.listen(
   {
     port,
