@@ -1,7 +1,22 @@
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { KeyRound } from "lucide-react";
+import { getSession, tryAutoResume } from "@/lib/session";
+import SessionSheet from "@/components/session-sheet";
 
 export default function Landing() {
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [session, setSession] = useState(() => getSession());
+
+  const refreshSession = useCallback(() => setSession(getSession()), []);
+
+  useEffect(() => {
+    tryAutoResume().then(() => refreshSession());
+    window.addEventListener("session-change", refreshSession);
+    return () => window.removeEventListener("session-change", refreshSession);
+  }, [refreshSession]);
+
   return (
     <div
       style={{
@@ -14,8 +29,35 @@ export default function Landing() {
         justifyContent: "center",
         padding: "2rem 1.5rem",
         fontFamily: "'Playfair Display', Georgia, serif",
+        position: "relative",
       }}
     >
+      <button
+        onClick={() => setSheetOpen(true)}
+        style={{
+          position: "absolute",
+          top: "1rem",
+          right: "1rem",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: 6,
+          color: session.signedIn ? "#d4a256" : "#6b6354",
+          opacity: session.signedIn ? 1 : 0.6,
+          transition: "opacity 0.2s, color 0.2s",
+        }}
+        data-testid="button-session-key"
+        aria-label="Session"
+      >
+        <KeyRound style={{ width: 20, height: 20 }} strokeWidth={session.signedIn ? 2.2 : 1.6} />
+      </button>
+
+      <SessionSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onSessionChange={refreshSession}
+        variant="dark"
+      />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
