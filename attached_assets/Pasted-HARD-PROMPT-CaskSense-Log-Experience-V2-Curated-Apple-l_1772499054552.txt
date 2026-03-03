@@ -1,0 +1,174 @@
+HARD PROMPT — CaskSense Log Experience V2 (Curated, Apple-like, No Feature Changes)
+
+GOAL:
+Refactor /log-simple into a curated, ritual-like experience.
+DO NOT change backend logic, OCR, Online Search, DB schema, or scoring persistence.
+ONLY refactor layout, hierarchy, visual states, and micro-interactions.
+
+No legacy layout. Keep SimpleShell.
+
+────────────────────────────────────────
+1) STRUCTURE — Single Screen, 4 Sections
+
+Rebuild /log-simple into exactly 4 vertical sections:
+
+1. IDENTIFY
+2. SCORE
+3. REFLECTION
+4. SAVE
+
+Each section separated by ~36px vertical spacing.
+
+────────────────────────────────────────
+2) IDENTIFY SECTION
+
+Remove the current “Unknown” button entirely.
+
+Before selection:
+- Show section label “WHISKY”
+- Search input (44px height)
+- Full-width primary button: “Identify”
+- Below it as subtle text link: “Add manually”
+
+After successful selection:
+- Collapse search input into a Whisky Card (fade-in 180ms)
+- Whisky Card contains:
+  - Name (18px semibold)
+  - Meta line (region · abv)
+  - “Logged before …” hint if available
+  - Small “Change” text link (not icon button)
+
+Manual entry:
+- When “Add manually” clicked:
+  - Show small chip: “Manual entry”
+  - Expand optional fields (distillery, age, abv, cask, whiskybaseId, price)
+  - Keep minimal styling (no heavy boxes)
+
+No secondary button next to Identify.
+
+────────────────────────────────────────
+3) SCORE SECTION
+
+Label: “SCORE”
+
+Primary element:
+- Large centered number (56–72px)
+- Caption “Overall” below it (muted)
+- Slim slider below number
+- No visible 0/100 labels
+
+Micro interaction:
+- Number subtly scales (1.00 → 1.03) when slider moves.
+
+Detailed scoring:
+- Text link: “Detailed ▾ (4)”
+- Accordion expand (200ms)
+- Four compact sliders:
+  Nose
+  Taste
+  Finish
+  Balance
+- Default collapsed.
+
+No layout clutter.
+
+────────────────────────────────────────
+4) REFLECTION SECTION
+
+Label: “REFLECTION”
+
+Replace “Notes” label with:
+- Title: “Reflection”
+- Prompt text: “What stands out?”
+
+Textarea:
+- Minimum height 120px
+- Subtle border
+- Warm focus glow
+
+Optional chips below textarea:
+- Smoky
+- Fruity
+- Dry
+- Oily
+- Sherry
+- Peaty
+(only if chip feature already exists)
+
+────────────────────────────────────────
+5) SAVE SECTION
+
+Primary button:
+- Full width
+- Height 52px
+- Text: “Save tasting”
+
+Remove persistent unlock block.
+
+If user is locked:
+- Save button appears normal
+- On click → slide-up Unlock Card (not fullscreen)
+
+Unlock Card:
+- Title: “Unlock to save”
+- Name (optional)
+- PIN (required)
+- Unlock button
+- Cancel text link
+- Inline error message if wrong PIN
+- On success: card disappears and Save executes.
+
+No permanent gray area on screen.
+
+────────────────────────────────────────
+6) HEADER / USER
+
+In SimpleShell top-right:
+- User icon (24px)
+- Tap opens bottom sheet:
+  - Name or “Guest”
+  - Status: Unlocked / Locked
+  - Logout button
+- Logout clears sessionStorage simple auth only
+- Redirect to landing
+
+────────────────────────────────────────
+7) MICRO-TRANSITIONS
+
+Add subtle motion:
+- Identify success → Whisky Card fade-in (180ms)
+- Detailed expand → smooth accordion (200ms)
+- Unlock card → slide-up (180ms)
+- Save success → small inline “Saved.” state
+
+No bouncing, no dramatic motion.
+
+────────────────────────────────────────
+8) REMOVE
+
+Remove:
+- “Unknown” button
+- Visible Distillery field in default state
+- Permanent unlock block
+- Competing secondary buttons
+
+────────────────────────────────────────
+9) DO NOT TOUCH
+
+Do not modify:
+- OCR logic
+- Online search logic
+- Backend endpoints
+- DB schema
+- Scoring persistence
+- Unknown fallback behavior
+- Rate limiting
+
+Only refactor UI and experience.
+
+────────────────────────────────────────
+DELIVERABLE AFTER IMPLEMENTATION:
+1) Confirm sections order.
+2) Confirm Unknown button removed.
+3) Confirm Save gating works.
+4) Confirm no legacy layout appears.

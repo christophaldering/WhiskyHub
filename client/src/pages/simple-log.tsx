@@ -88,7 +88,7 @@ function confidenceLabel(conf: number): { text: string; color: string } {
   return { text: "Low", color: c.low };
 }
 
-function InlineUnlock({ onUnlocked }: { onUnlocked: (name: string, pid?: string) => void }) {
+function UnlockCard({ onUnlocked, onCancel }: { onUnlocked: (name: string, pid?: string) => void; onCancel: () => void }) {
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
@@ -135,26 +135,45 @@ function InlineUnlock({ onUnlocked }: { onUnlocked: (name: string, pid?: string)
 
   return (
     <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: "auto" }}
-      exit={{ opacity: 0, height: 0 }}
+      initial={{ y: 80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 80, opacity: 0 }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
       style={{
-        borderTop: `1px solid ${c.border}`,
-        paddingTop: 14,
-        marginTop: 10,
+        background: c.card,
+        border: `1px solid ${c.border}`,
+        borderRadius: 14,
+        padding: "20px 20px 24px",
+        marginTop: 12,
       }}
-      data-testid="section-inline-unlock"
+      data-testid="card-unlock"
     >
-      <p style={{ fontSize: 12, color: c.muted, margin: "0 0 10px" }}>Unlock to save your log.</p>
+      <h3 style={{ fontSize: 15, fontWeight: 600, color: c.text, margin: "0 0 12px" }}>Unlock to save</h3>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <input type="text" placeholder="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} style={{ ...inputStyle, fontSize: 13, padding: "10px 12px" }} data-testid="input-unlock-name" autoComplete="off" />
         <input type="password" placeholder="PIN *" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, fontSize: 13, padding: "10px 12px", letterSpacing: 3 }} data-testid="input-unlock-pin" autoComplete="off" />
-        <button type="submit" disabled={loading || !pin.trim()} data-testid="button-inline-unlock" style={{ ...btnPrimary, fontSize: 13, padding: 10, opacity: !pin.trim() ? 0.5 : 1, cursor: loading ? "wait" : "pointer" }}>
+        <button type="submit" disabled={loading || !pin.trim()} data-testid="button-unlock-submit" style={{ ...btnPrimary, fontSize: 14, padding: 12, opacity: !pin.trim() ? 0.5 : 1, cursor: loading ? "wait" : "pointer" }}>
           {loading ? "Unlocking…" : "Unlock"}
         </button>
         {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }}>{error}</p>}
       </form>
+      <button
+        type="button"
+        onClick={onCancel}
+        style={{ background: "none", border: "none", cursor: "pointer", color: c.mutedLight, fontSize: 12, fontFamily: "system-ui, sans-serif", width: "100%", textAlign: "center", marginTop: 10 }}
+        data-testid="button-unlock-cancel"
+      >
+        Cancel
+      </button>
     </motion.div>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.2, textTransform: "uppercase", color: c.mutedLight, marginBottom: 10 }}>
+      {children}
+    </div>
   );
 }
 
@@ -904,35 +923,40 @@ export default function SimpleLogPage() {
     URL.revokeObjectURL(url);
   };
 
+  const [scoreAnimating, setScoreAnimating] = useState(false);
   const showOverlay = sheetView !== "none";
+
+  const handleScoreChange = (val: number) => {
+    setScore(val);
+    setScoreAnimating(true);
+    setTimeout(() => setScoreAnimating(false), 120);
+  };
+
+  const hasWhisky = !!(whiskyName.trim() && (selectedCandidate || showManual));
+
+  const handleSaveClick = () => {
+    if (!unlocked) {
+      setShowUnlockPanel(true);
+      return;
+    }
+    handleSave({ preventDefault: () => {} } as React.FormEvent);
+  };
 
   return (
     <SimpleShell>
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleCameraChange}
-        style={{ display: "none" }}
-        data-testid="input-camera"
-      />
-      <input
-        ref={uploadInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handleUploadChange}
-        style={{ display: "none" }}
-        data-testid="input-upload"
-      />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleCameraChange} style={{ display: "none" }} data-testid="input-camera" />
+      <input ref={uploadInputRef} type="file" accept="image/*" multiple onChange={handleUploadChange} style={{ display: "none" }} data-testid="input-upload" />
 
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         {saved ? (
-          <div style={{ ...cardStyle, textAlign: "center" }} data-testid="card-log-success">
-            <div style={{ fontSize: 32, marginBottom: 12 }}>✓</div>
-            <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Saved</h2>
-            <p style={{ fontSize: 13, color: c.muted, margin: "0 0 20px" }}>{whiskyName} logged.</p>
+          <div style={{ textAlign: "center", padding: "40px 0 20px" }} data-testid="card-log-success">
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: `${c.success}20`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                <span style={{ fontSize: 24, color: c.success }}>✓</span>
+              </div>
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Saved.</h2>
+              <p style={{ fontSize: 14, color: c.mutedLight, margin: "0 0 28px" }}>{whiskyName}</p>
+            </motion.div>
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={handleReset} data-testid="button-log-another" style={{ ...btnPrimary, flex: 1 }}>Log another</button>
               <Link href="/my-taste" style={{ flex: 1, textDecoration: "none" }}>
@@ -944,254 +968,302 @@ export default function SimpleLogPage() {
                 Log another from same menu
               </button>
             )}
-            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-              <button onClick={handleCopyJson} data-testid="button-copy-json" style={{ ...btnOutline, flex: 1, fontSize: 12, color: c.muted, borderColor: c.muted }}>
-                Copy JSON
-              </button>
-              <button onClick={handleDownloadJson} data-testid="button-download-json" style={{ ...btnOutline, flex: 1, fontSize: 12, color: c.muted, borderColor: c.muted }}>
-                Download JSON
-              </button>
-            </div>
           </div>
         ) : (
-          <div style={cardStyle} data-testid="card-log-form">
-            <h1 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 20px", color: c.text }}>Log a Whisky</h1>
+          <form onSubmit={handleSave} data-testid="form-log">
 
-            {photoUrl && (
-              <div style={{ marginBottom: 16, textAlign: "center" }}>
-                <img src={photoUrl} alt="Scanned label" style={{ width: 80, height: 80, borderRadius: 10, objectFit: "cover", border: `1px solid ${c.border}` }} data-testid="img-photo-preview" />
-              </div>
-            )}
+            {/* ── SECTION 1: IDENTIFY ── */}
+            <div style={{ marginBottom: 36 }} data-testid="section-identify">
+              <SectionLabel>Whisky</SectionLabel>
 
-            <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div>
-                <label style={{ fontSize: 12, color: c.muted, display: "block", marginBottom: 4 }}>Whisky name *</label>
-                <input type="text" value={whiskyName} onChange={(e) => setWhiskyName(e.target.value)} style={inputStyle} data-testid="input-whisky-name" autoComplete="off" />
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <button
-                  type="button"
-                  onClick={() => setSheetView("picker")}
-                  disabled={scanning}
-                  data-testid="button-identify"
+              <AnimatePresence mode="wait">
+              {hasWhisky && !showManual ? (
+                <motion.div
+                  key="whisky-card"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
                   style={{
-                    flex: 1,
-                    padding: "10px 14px",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    background: scanning ? c.border : c.accent,
-                    color: scanning ? c.muted : c.bg,
-                    border: "none",
-                    borderRadius: 8,
-                    cursor: scanning ? "wait" : "pointer",
-                    fontFamily: "system-ui, sans-serif",
+                    background: c.card,
+                    border: `1px solid ${c.border}`,
+                    borderRadius: 12,
+                    padding: "16px 18px",
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
+                    alignItems: "flex-start",
+                    gap: 14,
                   }}
+                  data-testid="card-whisky-selected"
                 >
-                  {scanning ? (
-                    <>
-                      <span style={{ display: "inline-block", width: 14, height: 14, border: `2px solid ${c.muted}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                      Identifying...
-                    </>
-                  ) : "Identify"}
-                </button>
-                {!showManual && (
+                  {photoUrl && (
+                    <img src={photoUrl} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover", border: `1px solid ${c.border}`, flexShrink: 0 }} data-testid="img-whisky-thumb" />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 18, fontWeight: 600, color: c.text, lineHeight: 1.2 }} data-testid="text-whisky-name">{whiskyName}</div>
+                    {distillery && (
+                      <div style={{ fontSize: 13, color: c.mutedLight, marginTop: 2 }} data-testid="text-whisky-meta">
+                        {distillery}
+                        {selectedCandidate && unknownAbv ? ` · ${unknownAbv}` : ""}
+                      </div>
+                    )}
+                  </div>
                   <button
                     type="button"
-                    onClick={() => { setShowManual(true); setSelectedCandidate(null); }}
-                    data-testid="button-add-manually"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: c.muted,
-                      fontSize: 12,
-                      fontFamily: "system-ui, sans-serif",
-                      padding: "8px 4px",
-                      whiteSpace: "nowrap",
-                      textDecoration: "underline",
-                      textDecorationColor: `${c.muted}60`,
-                      textUnderlineOffset: 2,
-                    }}
+                    onClick={() => { setWhiskyName(""); setDistillery(""); setSelectedCandidate(null); }}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: c.mutedLight, fontSize: 12, fontFamily: "system-ui, sans-serif", padding: "2px 0", flexShrink: 0, textDecoration: "underline", textDecorationColor: `${c.mutedLight}40`, textUnderlineOffset: 2 }}
+                    data-testid="button-change-whisky"
                   >
-                    Add manually
+                    Change
                   </button>
-                )}
+                </motion.div>
+              ) : (
+                <motion.div key="whisky-input" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+                  <input
+                    type="text"
+                    value={whiskyName}
+                    onChange={(e) => setWhiskyName(e.target.value)}
+                    style={{ ...inputStyle, height: 44, marginBottom: showManual ? 0 : 10 }}
+                    data-testid="input-whisky-name"
+                    autoComplete="off"
+                    placeholder="Whisky name"
+                  />
+
+                  {!showManual && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setSheetView("picker")}
+                        disabled={scanning}
+                        data-testid="button-identify"
+                        style={{
+                          width: "100%",
+                          padding: "11px 14px",
+                          fontSize: 14,
+                          fontWeight: 600,
+                          background: scanning ? c.border : c.accent,
+                          color: scanning ? c.muted : c.bg,
+                          border: "none",
+                          borderRadius: 8,
+                          cursor: scanning ? "wait" : "pointer",
+                          fontFamily: "system-ui, sans-serif",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 6,
+                          marginBottom: 6,
+                        }}
+                      >
+                        {scanning ? (
+                          <>
+                            <span style={{ display: "inline-block", width: 14, height: 14, border: `2px solid ${c.muted}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                            Identifying...
+                          </>
+                        ) : "Identify"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowManual(true); setSelectedCandidate(null); }}
+                        data-testid="button-add-manually"
+                        style={{ background: "none", border: "none", cursor: "pointer", color: c.mutedLight, fontSize: 12, fontFamily: "system-ui, sans-serif", padding: 0, textAlign: "center", width: "100%" }}
+                      >
+                        or <span style={{ textDecoration: "underline", textDecorationColor: `${c.mutedLight}50`, textUnderlineOffset: 2 }}>add manually</span>
+                      </button>
+                    </>
+                  )}
+
+                  <AnimatePresence>
+                  {showManual && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 14 }}
+                      data-testid="section-manual"
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 500, color: c.accent, background: `${c.accent}18`, padding: "3px 10px", borderRadius: 20 }} data-testid="chip-manual-entry">
+                          <span style={{ fontSize: 9 }}>✎</span> Manual entry
+                        </span>
+                        <button type="button" onClick={() => setShowManual(false)} style={{ background: "none", border: "none", cursor: "pointer", color: c.muted, fontSize: 11, fontFamily: "system-ui, sans-serif", padding: 4 }} data-testid="button-hide-manual">
+                          Collapse
+                        </button>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Distillery</label>
+                        <input type="text" value={distillery} onChange={(e) => setDistillery(e.target.value)} style={inputStyle} data-testid="input-manual-distillery" autoComplete="off" />
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Age</label>
+                          <input type="text" value={unknownAge} onChange={(e) => setUnknownAge(e.target.value)} style={inputStyle} data-testid="input-manual-age" placeholder="e.g. 12" autoComplete="off" />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>ABV</label>
+                          <input type="text" value={unknownAbv} onChange={(e) => setUnknownAbv(e.target.value)} style={inputStyle} data-testid="input-manual-abv" placeholder="e.g. 46%" autoComplete="off" />
+                        </div>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Cask type</label>
+                        <input type="text" value={unknownCask} onChange={(e) => setUnknownCask(e.target.value)} style={inputStyle} data-testid="input-manual-cask" placeholder="e.g. Sherry" autoComplete="off" />
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Whiskybase ID</label>
+                          <input type="text" value={unknownWbId} onChange={(e) => setUnknownWbId(e.target.value)} style={inputStyle} data-testid="input-manual-wbid" autoComplete="off" />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Price</label>
+                          <input type="text" value={unknownPrice} onChange={(e) => setUnknownPrice(e.target.value)} style={inputStyle} data-testid="input-manual-price" placeholder="e.g. €65" autoComplete="off" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                  </AnimatePresence>
+                </motion.div>
+              )}
+              </AnimatePresence>
+            </div>
+
+            {/* ── SECTION 2: SCORE ── */}
+            <div style={{ marginBottom: 36 }} data-testid="section-score">
+              <SectionLabel>Score</SectionLabel>
+
+              <div style={{ textAlign: "center", marginBottom: 8 }}>
+                <motion.div
+                  animate={{ scale: scoreAnimating ? 1.03 : 1 }}
+                  transition={{ duration: 0.12 }}
+                  style={{ fontSize: 60, fontWeight: 700, color: c.text, lineHeight: 1, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif" }}
+                  data-testid="text-score-value"
+                >
+                  {score}
+                </motion.div>
+                <div style={{ fontSize: 12, color: c.mutedLight, marginTop: 4 }}>Overall</div>
               </div>
 
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={score}
+                onChange={(e) => handleScoreChange(Number(e.target.value))}
+                data-testid="input-score"
+                style={{ width: "100%", accentColor: c.accent, display: "block" }}
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowDetailed(!showDetailed)}
+                data-testid="button-toggle-detailed"
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: showDetailed ? c.accent : c.mutedLight,
+                  fontSize: 12,
+                  fontFamily: "system-ui, sans-serif",
+                  padding: "10px 0 0",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                Detailed {showDetailed ? "▴" : "▾"} (4)
+              </button>
+
               <AnimatePresence>
-              {showManual && (
+              {showDetailed && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 0", borderTop: `1px solid ${c.border}` }}
-                  data-testid="section-manual"
+                  transition={{ duration: 0.2 }}
+                  style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 12, marginTop: 4, borderTop: `1px solid ${c.border}` }}
+                  data-testid="section-detailed-scoring"
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4,
-                      fontSize: 11,
-                      fontWeight: 500,
-                      color: c.accent,
-                      background: `${c.accent}18`,
-                      padding: "3px 10px",
-                      borderRadius: 20,
-                    }} data-testid="chip-manual-entry">
-                      <span style={{ fontSize: 9 }}>✎</span> Manual entry
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowManual(false)}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: c.muted, fontSize: 11, fontFamily: "system-ui, sans-serif", padding: 4 }}
-                      data-testid="button-hide-manual"
-                    >
-                      Collapse
-                    </button>
-                  </div>
-                  <p style={{ fontSize: 12, color: c.muted, margin: 0 }}>Fill in what you know — everything except name is optional.</p>
-                  <div>
-                    <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Distillery</label>
-                    <input type="text" value={distillery} onChange={(e) => setDistillery(e.target.value)} style={inputStyle} data-testid="input-manual-distillery" autoComplete="off" />
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Age</label>
-                      <input type="text" value={unknownAge} onChange={(e) => setUnknownAge(e.target.value)} style={inputStyle} data-testid="input-manual-age" placeholder="e.g. 12" autoComplete="off" />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>ABV</label>
-                      <input type="text" value={unknownAbv} onChange={(e) => setUnknownAbv(e.target.value)} style={inputStyle} data-testid="input-manual-abv" placeholder="e.g. 46%" autoComplete="off" />
-                    </div>
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Cask type</label>
-                    <input type="text" value={unknownCask} onChange={(e) => setUnknownCask(e.target.value)} style={inputStyle} data-testid="input-manual-cask" placeholder="e.g. Sherry" autoComplete="off" />
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Whiskybase ID</label>
-                      <input type="text" value={unknownWbId} onChange={(e) => setUnknownWbId(e.target.value)} style={inputStyle} data-testid="input-manual-wbid" autoComplete="off" />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Price</label>
-                      <input type="text" value={unknownPrice} onChange={(e) => setUnknownPrice(e.target.value)} style={inputStyle} data-testid="input-manual-price" placeholder="e.g. €65" autoComplete="off" />
-                    </div>
-                  </div>
+                  {(["Nose", "Taste", "Finish", "Balance"] as const).map((dim) => {
+                    const key = dim.toLowerCase() as "nose" | "taste" | "finish" | "balance";
+                    return (
+                      <div key={dim} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 12, color: c.mutedLight, width: 50, flexShrink: 0 }}>{dim}</span>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={detailedScores[key]}
+                          onChange={(e) => setDetailedScores((prev) => ({ ...prev, [key]: Number(e.target.value) }))}
+                          data-testid={`input-score-${key}`}
+                          style={{ flex: 1, accentColor: c.accent }}
+                        />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: c.accent, width: 28, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{detailedScores[key]}</span>
+                      </div>
+                    );
+                  })}
                 </motion.div>
               )}
               </AnimatePresence>
+            </div>
 
-              {!showManual && (
-                <div>
-                  <label style={{ fontSize: 12, color: c.muted, display: "block", marginBottom: 4 }}>Distillery</label>
-                  <input type="text" value={distillery} onChange={(e) => setDistillery(e.target.value)} style={inputStyle} data-testid="input-distillery" autoComplete="off" />
-                </div>
-              )}
+            {/* ── SECTION 3: REFLECTION ── */}
+            <div style={{ marginBottom: 36 }} data-testid="section-reflection">
+              <SectionLabel>Reflection</SectionLabel>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={4}
+                style={{
+                  ...inputStyle,
+                  resize: "vertical",
+                  minHeight: 120,
+                  transition: "border-color 0.2s, box-shadow 0.2s",
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = c.accent; e.currentTarget.style.boxShadow = `0 0 0 2px ${c.accent}20`; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = c.border; e.currentTarget.style.boxShadow = "none"; }}
+                data-testid="input-notes"
+                placeholder="What stands out?"
+              />
+            </div>
 
-              <div>
-                <label style={{ fontSize: 12, color: c.muted, display: "block", marginBottom: 4 }}>
-                  Overall: <span style={{ color: c.accent, fontWeight: 600 }}>{score}</span>
-                </label>
-                <input type="range" min={0} max={100} value={score} onChange={(e) => setScore(Number(e.target.value))} data-testid="input-score" style={{ width: "100%", accentColor: c.accent }} />
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: c.muted }}><span>0</span><span>100</span></div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowDetailed(!showDetailed)}
-                  data-testid="button-toggle-detailed"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: showDetailed ? c.accent : c.muted,
-                    fontSize: 12,
-                    fontFamily: "system-ui, sans-serif",
-                    padding: "6px 0 0",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                  }}
-                >
-                  <span style={{ fontSize: 10, transition: "transform 0.2s", transform: showDetailed ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block" }}>▸</span>
-                  {showDetailed ? "Hide detailed scoring" : "Detailed scoring (4)"}
-                </button>
-
-                <AnimatePresence>
-                {showDetailed && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 10,
-                      paddingTop: 10,
-                      marginTop: 6,
-                      borderTop: `1px solid ${c.border}`,
-                    }}
-                    data-testid="section-detailed-scoring"
-                  >
-                    {(["Nose", "Taste", "Finish", "Balance"] as const).map((dim) => {
-                      const key = dim.toLowerCase() as "nose" | "taste" | "finish" | "balance";
-                      return (
-                        <div key={dim} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ fontSize: 12, color: c.muted, width: 48, flexShrink: 0 }}>{dim}</span>
-                          <input
-                            type="range"
-                            min={0}
-                            max={100}
-                            value={detailedScores[key]}
-                            onChange={(e) => setDetailedScores((prev) => ({ ...prev, [key]: Number(e.target.value) }))}
-                            data-testid={`input-score-${key}`}
-                            style={{ flex: 1, accentColor: c.accent }}
-                          />
-                          <span style={{ fontSize: 12, fontWeight: 600, color: c.accent, width: 28, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{detailedScores[key]}</span>
-                        </div>
-                      );
-                    })}
-                  </motion.div>
-                )}
-                </AnimatePresence>
-              </div>
-
-              <div>
-                <label style={{ fontSize: 12, color: c.muted, display: "block", marginBottom: 4 }}>Notes</label>
-                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} style={{ ...inputStyle, resize: "vertical" }} data-testid="input-notes" placeholder="What do you taste?" />
-              </div>
-
-              {unlocked ? (
-                <button type="submit" disabled={saving || !whiskyName.trim()} data-testid="button-save-log" style={{ ...btnPrimary, opacity: !whiskyName.trim() ? 0.5 : 1, cursor: saving ? "wait" : "pointer", marginTop: 4 }}>
-                  {saving ? "Saving..." : "Save"}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowUnlockPanel(true)}
-                  disabled={!whiskyName.trim()}
-                  data-testid="button-save-locked"
-                  style={{ ...btnPrimary, opacity: !whiskyName.trim() ? 0.5 : 1, cursor: "pointer", marginTop: 4, background: c.border, color: c.muted }}
-                >
-                  🔒 Unlock to save
-                </button>
-              )}
+            {/* ── SECTION 4: SAVE ── */}
+            <div data-testid="section-save">
+              <button
+                type="button"
+                onClick={handleSaveClick}
+                disabled={saving || !whiskyName.trim()}
+                data-testid="button-save-log"
+                style={{
+                  width: "100%",
+                  height: 52,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  background: !whiskyName.trim() ? c.border : c.accent,
+                  color: !whiskyName.trim() ? c.muted : c.bg,
+                  border: "none",
+                  borderRadius: 10,
+                  cursor: saving ? "wait" : !whiskyName.trim() ? "not-allowed" : "pointer",
+                  fontFamily: "system-ui, sans-serif",
+                  transition: "background 0.2s, color 0.2s",
+                }}
+              >
+                {saving ? "Saving..." : "Save tasting"}
+              </button>
 
               <AnimatePresence>
                 {showUnlockPanel && !unlocked && (
-                  <InlineUnlock onUnlocked={handleUnlocked} />
+                  <UnlockCard
+                    onUnlocked={(name, participantId) => {
+                      handleUnlocked(name, participantId);
+                      setTimeout(() => handleSave({ preventDefault: () => {} } as React.FormEvent), 100);
+                    }}
+                    onCancel={() => setShowUnlockPanel(false)}
+                  />
                 )}
               </AnimatePresence>
 
-              {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }}>{error}</p>}
-            </form>
-          </div>
+              {error && <p style={{ fontSize: 12, color: c.error, margin: "10px 0 0", textAlign: "center" }}>{error}</p>}
+            </div>
+
+          </form>
         )}
       </motion.div>
 
@@ -1210,26 +1282,15 @@ export default function SimpleLogPage() {
         {sheetView === "picker" && (
           <IdentifyPicker
             key="picker"
-            onTakePhoto={() => {
-              setSheetView("none");
-              setTimeout(() => cameraInputRef.current?.click(), 100);
-            }}
-            onUploadPhotos={() => {
-              setSheetView("none");
-              setTimeout(() => uploadInputRef.current?.click(), 100);
-            }}
+            onTakePhoto={() => { setSheetView("none"); setTimeout(() => cameraInputRef.current?.click(), 100); }}
+            onUploadPhotos={() => { setSheetView("none"); setTimeout(() => uploadInputRef.current?.click(), 100); }}
             onDescribe={() => setSheetView("describe")}
             onClose={() => setSheetView("none")}
           />
         )}
 
         {sheetView === "describe" && (
-          <DescribeSheet
-            key="describe"
-            onSubmit={handleDescribeSubmit}
-            onClose={() => setSheetView("none")}
-            loading={scanning}
-          />
+          <DescribeSheet key="describe" onSubmit={handleDescribeSubmit} onClose={() => setSheetView("none")} loading={scanning} />
         )}
 
         {sheetView === "identifying" && (
@@ -1239,18 +1300,7 @@ export default function SimpleLogPage() {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            style={{
-              position: "fixed",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              background: c.card,
-              borderTop: `1px solid ${c.border}`,
-              borderRadius: "16px 16px 0 0",
-              padding: "40px 20px 60px",
-              zIndex: 100,
-              textAlign: "center",
-            }}
+            style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: c.card, borderTop: `1px solid ${c.border}`, borderRadius: "16px 16px 0 0", padding: "40px 20px 60px", zIndex: 100, textAlign: "center" }}
             data-testid="sheet-identifying"
           >
             <div style={{ width: 40, height: 4, background: c.border, borderRadius: 2, margin: "0 auto 24px" }} />
