@@ -17,8 +17,8 @@ The frontend is a React application built with Vite, utilizing Wouter for routin
 ### Backend (`server/`)
 The backend is an Express 5 HTTP server providing RESTful API endpoints. It serves frontend assets in production and integrates with the Vite development server.
 
-### Production Startup (Preload Pattern)
-A lightweight `server/preload.cjs` script runs as a separate process during deployment startup. It starts an HTTP server on port 5000 immediately (within ~200ms), responding to all requests with HTTP 200. This ensures deployment healthchecks pass while the main Express app initializes (~5-7 seconds). The main app signals the preload process via SIGTERM when ready, then takes over port 5000. Deployment run command: `bash -c "node dist/preload.cjs & PRELOAD_PID=$!; PRELOAD_PID=$PRELOAD_PID node dist/index.cjs"`. The preload script is copied to `dist/` during build by `script/build.ts`.
+### Production Startup (Immediate Listen)
+`server/index.ts` binds to port 5000 immediately on startup, before async initialization (route registration, static serving, etc.). The `/__health` endpoint and a "Starting up…" loading page are available instantly. Once all routes and middleware are loaded, a `ready` flag flips and the app serves normally. Deployment run command: `node dist/index.cjs`. The legacy `server/preload.cjs` is still copied to `dist/` by `script/build.ts` but is no longer used.
 
 ### Database
 PostgreSQL is the primary database, accessed via Drizzle ORM. The schema includes tables for participants, tastings, whiskies, ratings, profiles, and journal entries, using UUIDs for identifiers.
