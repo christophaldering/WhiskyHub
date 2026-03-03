@@ -1,16 +1,24 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { Wine, Plus, Compass, ChevronRight } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, journalApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
+import { getSession } from "@/lib/session";
 import { PageHeaderV2, CardV2, BottomSheetV2, SegmentedControlV2 } from "../components";
 
 export default function V2Home() {
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
   const [quickLogOpen, setQuickLogOpen] = useState(false);
+  const [session, setSession] = useState(() => getSession());
+  const refreshSession = useCallback(() => setSession(getSession()), []);
+
+  useEffect(() => {
+    window.addEventListener("session-change", refreshSession);
+    return () => window.removeEventListener("session-change", refreshSession);
+  }, [refreshSession]);
 
   const { data: tastings } = useQuery({
     queryKey: ["tastings", currentParticipant?.id],
@@ -24,7 +32,7 @@ export default function V2Home() {
     ?.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
     ?.slice(0, 3);
 
-  const firstName = currentParticipant?.name?.split(" ")[0] || "";
+  const firstName = session.signedIn ? (session.name?.split(" ")[0] || currentParticipant?.name?.split(" ")[0] || "") : "";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
@@ -49,7 +57,7 @@ export default function V2Home() {
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto">
       <PageHeaderV2
-        title={`${greeting}, ${firstName}`}
+        title={firstName ? `${greeting}, ${firstName}` : greeting}
         subtitle="Your whisky journey at a glance"
       />
 

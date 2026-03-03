@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import heroImage from "@/assets/images/hero-whisky.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
+import { getSession } from "@/lib/session";
 import { tastingApi, participantApi, wotdApi, notificationApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { LoginDialog } from "@/components/login-dialog";
@@ -211,6 +212,13 @@ export default function Home() {
   const { t } = useTranslation();
   const { currentParticipant, setParticipant } = useAppStore();
   const [, navigate] = useLocation();
+  const [sessionState, setSessionState] = useState(() => getSession());
+  const refreshSessionState = useCallback(() => setSessionState(getSession()), []);
+
+  useEffect(() => {
+    window.addEventListener("session-change", refreshSessionState);
+    return () => window.removeEventListener("session-change", refreshSessionState);
+  }, [refreshSessionState]);
 
   const [joinCode, setJoinCode] = useState("");
   const [showLogin, setShowLogin] = useState(false);
@@ -533,7 +541,7 @@ export default function Home() {
             </p>
           </div>
         </div>
-        {currentParticipant && (
+        {currentParticipant && sessionState.signedIn && (
           <div className="text-center pt-4">
             <p className="text-sm text-muted-foreground">
               Signed in as <span className="font-semibold text-primary">{currentParticipant.name}</span>
@@ -549,7 +557,7 @@ export default function Home() {
         transition={{ delay: 0.15, duration: 0.8 }}
         className="w-full space-y-4"
       >
-        {currentParticipant && (
+        {currentParticipant && sessionState.signedIn && (
           <h2 className="font-serif text-2xl text-primary" data-testid="text-welcome-back">
             {t("home.welcomeBack", { name: currentParticipant.name })}
           </h2>

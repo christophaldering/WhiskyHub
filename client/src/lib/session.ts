@@ -101,6 +101,7 @@ export async function signIn(opts: {
   if (data.resumeToken) {
     setRemember(data.resumeToken, opts.mode, displayName);
   }
+  window.dispatchEvent(new Event("session-change"));
   return { ok: true, name: displayName || undefined, resumeToken: data.resumeToken };
 }
 
@@ -131,6 +132,7 @@ export async function tryAutoResume(): Promise<boolean> {
     const mode = (data.mode || localStorage.getItem(LK_MODE) || "log") as SessionMode;
     const name = data.name || localStorage.getItem(LK_NAME) || null;
     setSessionStorage(mode, name);
+    window.dispatchEvent(new Event("session-change"));
     return true;
   } catch {
     clearRemember();
@@ -149,6 +151,7 @@ export async function signOut(): Promise<void> {
   } catch {}
   clearSessionStorage();
   clearRemember();
+  window.dispatchEvent(new Event("session-change"));
 }
 
 function migrateLegacyKeys() {
