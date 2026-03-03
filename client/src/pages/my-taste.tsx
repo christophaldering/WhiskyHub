@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
+import SimpleShell from "@/components/simple/simple-shell";
 
 const colors = {
   bg: "#1a1714",
@@ -185,19 +186,10 @@ export default function MyTastePage() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100dvh",
-        background: colors.bg,
-        color: colors.text,
-        fontFamily: "system-ui, -apple-system, sans-serif",
-      }}
-    >
+    <SimpleShell>
       <div
         style={{
-          maxWidth: 420,
-          margin: "0 auto",
-          padding: "48px 20px 64px",
+          width: "100%",
           display: "flex",
           flexDirection: "column",
           gap: 20,
@@ -300,6 +292,6 @@ export default function MyTastePage() {
           </Link>
         </div>
       </div>
-    </div>
+    </SimpleShell>
   );
 }
