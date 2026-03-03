@@ -213,18 +213,18 @@ function IdentifyPicker({
       data-testid="sheet-identify-picker"
     >
       <div style={{ width: 40, height: 4, background: c.border, borderRadius: 2, margin: "0 auto 16px" }} />
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Identify</h3>
-      <p style={{ fontSize: 12, color: c.muted, margin: "0 0 16px" }}>Photo used only to identify the whisky.</p>
+      <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Identify a whisky</h3>
+      <p style={{ fontSize: 12, color: c.muted, margin: "0 0 16px" }}>Snap the label, a menu, or a shelf — we'll match it to our library.</p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <button onClick={onTakePhoto} data-testid="button-take-photo" style={{ ...btnPrimary, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>📷</span> Take Photo
+          <span style={{ fontSize: 18 }}>📷</span> Take a photo
         </button>
         <button onClick={onUploadPhotos} data-testid="button-upload-photos" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>🖼️</span> Upload Photo(s)
+          <span style={{ fontSize: 18 }}>🖼️</span> Upload from gallery
         </button>
         <button onClick={onDescribe} data-testid="button-describe" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>✏️</span> Describe
+          <span style={{ fontSize: 18 }}>✏️</span> Type what you see
         </button>
       </div>
 
@@ -266,7 +266,8 @@ function DescribeSheet({
       data-testid="sheet-describe"
     >
       <div style={{ width: 40, height: 4, background: c.border, borderRadius: 2, margin: "0 auto 16px" }} />
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 12px" }}>Describe the whisky</h3>
+      <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Describe the bottle</h3>
+      <p style={{ fontSize: 12, color: c.muted, margin: "0 0 12px" }}>Type the name, distillery, or anything you see on the label.</p>
 
       <textarea
         value={query}
