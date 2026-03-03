@@ -1,10 +1,16 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
+import { Mic, MicOff } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
 import SimpleShell from "@/components/simple/simple-shell";
+
+const SpeechRecognitionAPI =
+  typeof window !== "undefined"
+    ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    : null;
 
 const c = {
   bg: "#1a1714",
@@ -647,6 +653,39 @@ export default function SimpleLogPage() {
   const [detailedScores, setDetailedScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50 });
   const [detailTouched, setDetailTouched] = useState(false);
   const [overrideActive, setOverrideActive] = useState(false);
+
+  const [voiceListening, setVoiceListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const hasSpeechAPI = !!SpeechRecognitionAPI;
+
+  const toggleVoice = useCallback(() => {
+    if (voiceListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setVoiceListening(false);
+      return;
+    }
+    if (!SpeechRecognitionAPI) return;
+    const recognition = new SpeechRecognitionAPI();
+    recognition.lang = "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.onresult = (event: any) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          transcript += event.results[i][0].transcript;
+        }
+      }
+      if (transcript) {
+        setNotes((prev) => (prev ? prev + " " + transcript.trim() : transcript.trim()));
+      }
+    };
+    recognition.onerror = () => setVoiceListening(false);
+    recognition.onend = () => setVoiceListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setVoiceListening(true);
+  }, [voiceListening]);
 
   const [scanning, setScanning] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -1360,7 +1399,35 @@ export default function SimpleLogPage() {
 
             {/* ── SECTION 3: REFLECTION ── */}
             <div style={{ marginBottom: 36 }} data-testid="section-reflection">
-              <SectionLabel>Reflection</SectionLabel>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <SectionLabel>Reflection</SectionLabel>
+                {hasSpeechAPI && (
+                  <button
+                    type="button"
+                    onClick={toggleVoice}
+                    data-testid="button-voice-input"
+                    aria-label={voiceListening ? "Stop voice input" : "Start voice input"}
+                    style={{
+                      background: voiceListening ? "#c4444420" : "transparent",
+                      border: `1px solid ${voiceListening ? "#c44" : c.border}`,
+                      borderRadius: 8,
+                      cursor: "pointer",
+                      padding: "6px 10px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                      color: voiceListening ? "#c44" : c.mutedLight,
+                      fontSize: 11,
+                      fontFamily: "system-ui, sans-serif",
+                      transition: "all 0.2s",
+                      animation: voiceListening ? "pulse-mic 1.5s ease-in-out infinite" : "none",
+                    }}
+                  >
+                    {voiceListening ? <MicOff style={{ width: 14, height: 14 }} /> : <Mic style={{ width: 14, height: 14 }} />}
+                    {voiceListening ? "Stop" : "Voice"}
+                  </button>
+                )}
+              </div>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -1370,11 +1437,13 @@ export default function SimpleLogPage() {
                   resize: "vertical",
                   minHeight: 120,
                   transition: "border-color 0.2s, box-shadow 0.2s",
+                  borderColor: voiceListening ? "#c44" : c.border,
+                  boxShadow: voiceListening ? "0 0 0 2px #c4444420" : "none",
                 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = c.accent; e.currentTarget.style.boxShadow = `0 0 0 2px ${c.accent}20`; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = c.border; e.currentTarget.style.boxShadow = "none"; }}
+                onFocus={(e) => { if (!voiceListening) { e.currentTarget.style.borderColor = c.accent; e.currentTarget.style.boxShadow = `0 0 0 2px ${c.accent}20`; } }}
+                onBlur={(e) => { if (!voiceListening) { e.currentTarget.style.borderColor = c.border; e.currentTarget.style.boxShadow = "none"; } }}
                 data-testid="input-notes"
-                placeholder="What stands out?"
+                placeholder={voiceListening ? "Listening..." : "What stands out?"}
               />
             </div>
 
@@ -1482,7 +1551,10 @@ export default function SimpleLogPage() {
         )}
       </AnimatePresence>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse-mic { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+      `}</style>
     </SimpleShell>
   );
 }
