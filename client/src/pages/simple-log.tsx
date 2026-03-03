@@ -645,6 +645,8 @@ export default function SimpleLogPage() {
   const [unknownPrice, setUnknownPrice] = useState("");
   const [showDetailed, setShowDetailed] = useState(false);
   const [detailedScores, setDetailedScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50 });
+  const [detailTouched, setDetailTouched] = useState(false);
+  const [overrideActive, setOverrideActive] = useState(false);
 
   const [scanning, setScanning] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -928,6 +930,8 @@ export default function SimpleLogPage() {
     setIsMenuMode(false);
     setShowDetailed(false);
     setDetailedScores({ nose: 50, taste: 50, finish: 50, balance: 50 });
+    setDetailTouched(false);
+    setOverrideActive(false);
   };
 
   const handleCopyJson = () => {
@@ -949,8 +953,34 @@ export default function SimpleLogPage() {
   const [scoreAnimating, setScoreAnimating] = useState(false);
   const showOverlay = sheetView !== "none";
 
+  const calcOverall = (scores: typeof detailedScores) =>
+    Math.round((scores.nose + scores.taste + scores.finish + scores.balance) / 4);
+
   const handleScoreChange = (val: number) => {
+    if (showDetailed && detailTouched) {
+      setOverrideActive(true);
+    }
     setScore(val);
+    setScoreAnimating(true);
+    setTimeout(() => setScoreAnimating(false), 120);
+  };
+
+  const handleDetailScoreChange = (key: "nose" | "taste" | "finish" | "balance", val: number) => {
+    const next = { ...detailedScores, [key]: val };
+    setDetailedScores(next);
+    setDetailTouched(true);
+    if (!overrideActive) {
+      const avg = calcOverall(next);
+      setScore(avg);
+      setScoreAnimating(true);
+      setTimeout(() => setScoreAnimating(false), 120);
+    }
+  };
+
+  const resetOverride = () => {
+    setOverrideActive(false);
+    const avg = calcOverall(detailedScores);
+    setScore(avg);
     setScoreAnimating(true);
     setTimeout(() => setScoreAnimating(false), 120);
   };
@@ -1169,27 +1199,31 @@ export default function SimpleLogPage() {
             <div style={{ marginBottom: 36 }} data-testid="section-score">
               <SectionLabel>Score</SectionLabel>
 
-              <div style={{ textAlign: "center", marginBottom: 8 }}>
-                <motion.div
-                  animate={{ scale: scoreAnimating ? 1.03 : 1 }}
-                  transition={{ duration: 0.12 }}
-                  style={{ fontSize: 60, fontWeight: 700, color: c.text, lineHeight: 1, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif" }}
-                  data-testid="text-score-value"
-                >
-                  {score}
-                </motion.div>
-                <div style={{ fontSize: 12, color: c.mutedLight, marginTop: 4 }}>Overall</div>
-              </div>
+              {!showDetailed && (
+                <>
+                  <div style={{ textAlign: "center", marginBottom: 8 }}>
+                    <motion.div
+                      animate={{ scale: scoreAnimating ? 1.03 : 1 }}
+                      transition={{ duration: 0.12 }}
+                      style={{ fontSize: 60, fontWeight: 700, color: c.text, lineHeight: 1, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif" }}
+                      data-testid="text-score-value"
+                    >
+                      {score}
+                    </motion.div>
+                    <div style={{ fontSize: 12, color: c.mutedLight, marginTop: 4 }}>Overall</div>
+                  </div>
 
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={score}
-                onChange={(e) => handleScoreChange(Number(e.target.value))}
-                data-testid="input-score"
-                style={{ width: "100%", accentColor: c.accent, display: "block" }}
-              />
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={score}
+                    onChange={(e) => handleScoreChange(Number(e.target.value))}
+                    data-testid="input-score"
+                    style={{ width: "100%", accentColor: c.accent, display: "block" }}
+                  />
+                </>
+              )}
 
               <button
                 type="button"
@@ -1205,7 +1239,7 @@ export default function SimpleLogPage() {
                   fontSize: 13,
                   fontFamily: "system-ui, sans-serif",
                   padding: "10px 14px",
-                  marginTop: 12,
+                  marginTop: showDetailed ? 0 : 12,
                   display: "flex",
                   flexDirection: "column",
                   gap: 6,
@@ -1246,7 +1280,7 @@ export default function SimpleLogPage() {
                           min={0}
                           max={100}
                           value={detailedScores[key]}
-                          onChange={(e) => setDetailedScores((prev) => ({ ...prev, [key]: Number(e.target.value) }))}
+                          onChange={(e) => handleDetailScoreChange(key, Number(e.target.value))}
                           data-testid={`input-score-${key}`}
                           style={{ flex: 1, accentColor: c.accent }}
                         />
@@ -1254,6 +1288,73 @@ export default function SimpleLogPage() {
                       </div>
                     );
                   })}
+
+                  <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 12, marginTop: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                      <div>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>Overall</span>
+                        {detailTouched && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              color: overrideActive ? c.accent : c.mutedLight,
+                              background: overrideActive ? `${c.accent}15` : `${c.border}`,
+                              padding: "2px 8px",
+                              borderRadius: 20,
+                              marginLeft: 8,
+                            }}
+                            data-testid="badge-score-mode"
+                          >
+                            {overrideActive ? "Manual" : "Calculated"}
+                          </span>
+                        )}
+                      </div>
+                      <motion.div
+                        animate={{ scale: scoreAnimating ? 1.05 : 1 }}
+                        transition={{ duration: 0.12 }}
+                        style={{ fontSize: 28, fontWeight: 700, color: c.text, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif", lineHeight: 1 }}
+                        data-testid="text-score-value"
+                      >
+                        {score}
+                      </motion.div>
+                    </div>
+
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={score}
+                      onChange={(e) => handleScoreChange(Number(e.target.value))}
+                      data-testid="input-score"
+                      style={{ width: "100%", accentColor: c.accent, display: "block" }}
+                    />
+
+                    {overrideActive && (
+                      <button
+                        type="button"
+                        onClick={resetOverride}
+                        data-testid="button-reset-override"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: c.accent,
+                          fontSize: 11,
+                          fontFamily: "system-ui, sans-serif",
+                          padding: "6px 0 0",
+                          textDecoration: "underline",
+                          textUnderlineOffset: 2,
+                        }}
+                      >
+                        Reset to calculated
+                      </button>
+                    )}
+                    {detailTouched && !overrideActive && (
+                      <div style={{ fontSize: 11, color: c.mutedLight, paddingTop: 4 }}>
+                        Average of Nose, Taste, Finish, Balance
+                      </div>
+                    )}
+                  </div>
                 </motion.div>
               )}
               </AnimatePresence>
