@@ -36,6 +36,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **AI Integration**: AI for bottle identification, newsletter content generation, market price estimation, and tasting suggestions.
 -   **Collection Sync**: Whiskybase collection supports smart sync/diff via CSV re-upload.
 -   **Host Wizard (Simple Mode)**: A 4-step inline wizard for creating sessions, adding whiskies, inviting participants, and running live tastings.
+-   **Tasting Results**: `/tasting-results/:id` displays a ranked list of whiskies by average overall score after a tasting ends. Shows avg score, rating count, and expandable detail breakdowns (Nose/Taste/Finish/Balance bars). Includes CSV export. Backend: `GET /api/tastings/:id/results`. Accessible from Host History list and Run Live ended state. File: `client/src/pages/tasting-results.tsx`.
 -   **Participant Tasting Room**: A dedicated view for participants during live tastings, adapting to guided or free mode, blind settings, and reveal stages.
 -   **Tasting Creation**: Supports single entry, list import, and AI-curated suggestions for whiskies.
 -   **Guest Mode**: Offers "Standard Naked" (persisted identity) and "Ultra Naked" (ephemeral identity) participation modes.

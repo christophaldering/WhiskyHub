@@ -45,6 +45,7 @@ import DiscoverLexicon from "@/pages/discover-lexicon";
 import DiscoverCommunityNative from "@/pages/discover-community-native";
 import DiscoverDistilleriesNative from "@/pages/discover-distilleries-native";
 import TastingRoomSimple from "@/pages/tasting-room-simple";
+import TastingResultsPage from "@/pages/tasting-results";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
 import HomeDashboard from "@/pages/home-dashboard";
@@ -103,6 +104,7 @@ function Router() {
         <Route path="/simple-test" component={SimpleTestPage} />
         <Route path="/simple-feedback" component={SimpleFeedbackPage} />
         <Route path="/tasting-room-simple/:id" component={TastingRoomSimple} />
+        <Route path="/tasting-results/:id" component={TastingResultsPage} />
         <Route path="/naked/:code" component={NakedTasting} />
         <Route path="/support" component={SupportConsole} />
         <Route path="/host" component={SimpleHostPage} />

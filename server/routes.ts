@@ -1850,6 +1850,77 @@ export async function registerRoutes(
     res.json(list);
   });
 
+  app.get("/api/tastings/:id/results", async (req, res) => {
+    try {
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Not found" });
+
+      const [allRatings, allWhiskies] = await Promise.all([
+        storage.getRatingsForTasting(req.params.id),
+        storage.getWhiskiesForTasting(req.params.id),
+      ]);
+
+      const whiskyMap = new Map(allWhiskies.map((w) => [w.id, w]));
+
+      const grouped: Record<string, typeof allRatings> = {};
+      for (const r of allRatings) {
+        if (!grouped[r.whiskyId]) grouped[r.whiskyId] = [];
+        grouped[r.whiskyId].push(r);
+      }
+
+      const avg = (arr: number[]) => arr.length ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10 : null;
+
+      const results = Object.entries(grouped).map(([whiskyId, rats]) => {
+        const w = whiskyMap.get(whiskyId);
+        const overalls = rats.map((r) => r.overall).filter((v): v is number => v != null);
+        const noses = rats.map((r) => r.nose).filter((v): v is number => v != null);
+        const tastes = rats.map((r) => r.taste).filter((v): v is number => v != null);
+        const finishes = rats.map((r) => r.finish).filter((v): v is number => v != null);
+        const balances = rats.map((r) => r.balance).filter((v): v is number => v != null);
+
+        return {
+          whiskyId,
+          name: w?.name ?? "Unknown",
+          distillery: w?.distillery ?? null,
+          age: w?.age ?? null,
+          abv: w?.abv ?? null,
+          region: w?.region ?? null,
+          sortOrder: w?.sortOrder ?? 0,
+          ratingCount: rats.length,
+          avgOverall: avg(overalls),
+          avgNose: avg(noses),
+          avgTaste: avg(tastes),
+          avgFinish: avg(finishes),
+          avgBalance: avg(balances),
+          ratings: rats.map((r) => ({
+            participantId: r.participantId,
+            overall: r.overall,
+            nose: r.nose,
+            taste: r.taste,
+            finish: r.finish,
+            balance: r.balance,
+            notes: r.notes,
+          })),
+        };
+      });
+
+      results.sort((a, b) => (b.avgOverall ?? 0) - (a.avgOverall ?? 0));
+
+      res.json({
+        tastingId: tasting.id,
+        title: tasting.title,
+        status: tasting.status,
+        blindMode: tasting.blindMode,
+        whiskyCount: allWhiskies.length,
+        totalRatings: allRatings.length,
+        results,
+      });
+    } catch (err: any) {
+      console.error("Error fetching results:", err);
+      res.status(500).json({ message: "Internal error" });
+    }
+  });
+
   app.get("/api/tastings/:id/ratings", async (req, res) => {
     const list = await storage.getRatingsForTasting(req.params.id);
     res.json(list);

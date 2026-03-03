@@ -1344,28 +1344,51 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
             <p style={{ fontSize: 14, color: c.muted, marginBottom: 12 }}>
               Session is <strong style={{ color: c.text }}>{tasting.status}</strong>.
             </p>
-            <button
-              type="button"
-              onClick={() => navigate(`/legacy/tasting/${tasting.id}`)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "10px 20px",
-                fontSize: 14,
-                fontWeight: 600,
-                background: c.accent,
-                color: c.bg,
-                border: "none",
-                borderRadius: 10,
-                cursor: "pointer",
-                fontFamily: "system-ui, sans-serif",
-              }}
-              data-testid="button-view-session"
-            >
-              View in Full Dashboard
-              <ArrowRight style={{ width: 14, height: 14 }} />
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+              <button
+                type="button"
+                onClick={() => navigate(`/tasting-results/${tasting.id}`)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "10px 20px",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  background: c.accent,
+                  color: c.bg,
+                  border: "none",
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  fontFamily: "system-ui, sans-serif",
+                }}
+                data-testid="button-view-results"
+              >
+                View Results
+                <ArrowRight style={{ width: 14, height: 14 }} />
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(`/legacy/tasting/${tasting.id}`)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "8px 16px",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  background: "none",
+                  color: c.muted,
+                  border: `1px solid ${c.border}`,
+                  borderRadius: 8,
+                  cursor: "pointer",
+                  fontFamily: "system-ui, sans-serif",
+                }}
+                data-testid="button-view-session"
+              >
+                Full Dashboard
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -1566,7 +1589,7 @@ export default function SimpleHostPage() {
                     </h3>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {pastTastings.slice(0, 5).map((t) => (
-                        <Link key={t.id} href={`/legacy/tasting/${t.id}`}>
+                        <Link key={t.id} href={`/tasting-results/${t.id}`}>
                           <div style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }} data-testid={`card-tasting-${t.id}`}>
                             <div>
                               <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
