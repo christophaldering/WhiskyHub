@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff } from "lucide-react";
+import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, ExternalLink } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import QRCodeLib from "qrcode";
 
 const c = {
   bg: "#1a1714",
@@ -37,6 +38,8 @@ const inputStyle: React.CSSProperties = {
 };
 
 const blindLabel = (index: number) => String.fromCharCode(65 + index);
+
+type WizardStep = "list" | "step1" | "step2" | "step3";
 
 interface TastingFull {
   id: string;
@@ -139,6 +142,88 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
   );
 }
 
+function StepBadge({ step }: { step: number }) {
+  return (
+    <span style={{ fontSize: 11, fontWeight: 700, color: c.accent, background: `${c.accent}20`, padding: "2px 8px", borderRadius: 10 }}>
+      Step {step}
+    </span>
+  );
+}
+
+function CopyButton({ text, label, fullWidth }: { text: string; label: string; fullWidth?: boolean }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        background: "none",
+        border: `1px solid ${copied ? c.success + "60" : c.border}`,
+        borderRadius: 8,
+        padding: "8px 14px",
+        color: copied ? c.success : c.muted,
+        fontSize: 13,
+        cursor: "pointer",
+        fontFamily: "system-ui, sans-serif",
+        transition: "all 0.2s",
+        width: fullWidth ? "100%" : "auto",
+      }}
+      data-testid={`button-copy-${label.toLowerCase().replace(/\s+/g, "-")}`}
+    >
+      {copied ? <Check style={{ width: 14, height: 14 }} /> : <Copy style={{ width: 14, height: 14 }} />}
+      {copied ? "Copied!" : label}
+    </button>
+  );
+}
+
+function TastingHeader({ tasting }: { tasting: TastingFull }) {
+  const [copied, setCopied] = useState(false);
+  const isBlind = !!tasting.blindMode;
+
+  return (
+    <div style={{ ...cardStyle, border: `1px solid ${c.success}40`, padding: "14px 20px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{tasting.title}</div>
+          <div style={{ fontSize: 12, color: c.muted, marginTop: 2, display: "flex", alignItems: "center", gap: 8 }}>
+            <span>Code: <strong style={{ color: c.accent, letterSpacing: "0.08em" }}>{tasting.code}</strong></span>
+            {isBlind && (
+              <span style={{ fontSize: 10, color: c.accent, background: `${c.accent}20`, padding: "1px 6px", borderRadius: 6 }}>
+                <EyeOff style={{ width: 10, height: 10, display: "inline", verticalAlign: "middle", marginRight: 3 }} />
+                Blind
+              </span>
+            )}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            try { await navigator.clipboard.writeText(tasting.code); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
+          }}
+          style={{ background: "none", border: `1px solid ${c.border}`, borderRadius: 8, padding: "5px 10px", color: copied ? c.success : c.muted, fontSize: 11, cursor: "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", gap: 4 }}
+          data-testid="button-copy-code"
+        >
+          {copied ? <Check style={{ width: 12, height: 12 }} /> : <Copy style={{ width: 12, height: 12 }} />}
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () => void; onCreated: (tasting: TastingFull) => void }) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
@@ -195,7 +280,7 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
       </button>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: c.accent, background: `${c.accent}20`, padding: "2px 8px", borderRadius: 10 }}>Step 1</span>
+        <StepBadge step={1} />
         <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: c.text }} data-testid="text-wizard-title">
           Create a Tasting Session
         </h3>
@@ -310,8 +395,7 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
   );
 }
 
-function AddWhiskiesStep({ tasting, onDone }: { tasting: TastingFull; onDone: () => void }) {
-  const [, navigate] = useLocation();
+function AddWhiskiesStep({ tasting, onDone, onNext }: { tasting: TastingFull; onDone: () => void; onNext: () => void }) {
   const [whiskies, setWhiskies] = useState<Whisky[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -322,7 +406,6 @@ function AddWhiskiesStep({ tasting, onDone }: { tasting: TastingFull; onDone: ()
   const [showDetails, setShowDetails] = useState(false);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState(false);
 
   const isBlind = !!tasting.blindMode;
 
@@ -403,45 +486,13 @@ function AddWhiskiesStep({ tasting, onDone }: { tasting: TastingFull; onDone: ()
     } catch {}
   };
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(tasting.code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
-  };
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ ...cardStyle, border: `1px solid ${c.success}40`, padding: "14px 20px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{tasting.title}</div>
-            <div style={{ fontSize: 12, color: c.muted, marginTop: 2, display: "flex", alignItems: "center", gap: 8 }}>
-              <span>Code: <strong style={{ color: c.accent, letterSpacing: "0.08em" }}>{tasting.code}</strong></span>
-              {isBlind && (
-                <span style={{ fontSize: 10, color: c.accent, background: `${c.accent}20`, padding: "1px 6px", borderRadius: 6 }}>
-                  <EyeOff style={{ width: 10, height: 10, display: "inline", verticalAlign: "middle", marginRight: 3 }} />
-                  Blind
-                </span>
-              )}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleCopy}
-            style={{ background: "none", border: `1px solid ${c.border}`, borderRadius: 8, padding: "5px 10px", color: copied ? c.success : c.muted, fontSize: 11, cursor: "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", gap: 4 }}
-            data-testid="button-copy-code"
-          >
-            {copied ? <Check style={{ width: 12, height: 12 }} /> : <Copy style={{ width: 12, height: 12 }} />}
-            {copied ? "Copied" : "Copy"}
-          </button>
-        </div>
-      </div>
+      <TastingHeader tasting={tasting} />
 
       <div style={cardStyle}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: c.accent, background: `${c.accent}20`, padding: "2px 8px", borderRadius: 10 }}>Step 2</span>
+          <StepBadge step={2} />
           <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: c.text }} data-testid="text-step2-title">
             Add Whiskies
           </h3>
@@ -490,51 +541,20 @@ function AddWhiskiesStep({ tasting, onDone }: { tasting: TastingFull; onDone: ()
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
                   <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 4 }}>Distillery</label>
-                  <input
-                    type="text"
-                    value={distillery}
-                    onChange={(e) => setDistillery(e.target.value)}
-                    placeholder="e.g. Lagavulin"
-                    style={{ ...inputStyle, fontSize: 13 }}
-                    data-testid="input-whisky-distillery"
-                  />
+                  <input type="text" value={distillery} onChange={(e) => setDistillery(e.target.value)} placeholder="e.g. Lagavulin" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-distillery" />
                 </div>
                 <div>
                   <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 4 }}>ABV %</label>
-                  <input
-                    type="number"
-                    value={abv}
-                    onChange={(e) => setAbv(e.target.value)}
-                    placeholder="e.g. 43"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    style={{ ...inputStyle, fontSize: 13 }}
-                    data-testid="input-whisky-abv"
-                  />
+                  <input type="number" value={abv} onChange={(e) => setAbv(e.target.value)} placeholder="e.g. 43" step="0.1" min="0" max="100" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-abv" />
                 </div>
               </div>
               <div>
                 <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 4 }}>Cask Type</label>
-                <input
-                  type="text"
-                  value={cask}
-                  onChange={(e) => setCask(e.target.value)}
-                  placeholder="e.g. Ex-Bourbon, Sherry"
-                  style={{ ...inputStyle, fontSize: 13 }}
-                  data-testid="input-whisky-cask"
-                />
+                <input type="text" value={cask} onChange={(e) => setCask(e.target.value)} placeholder="e.g. Ex-Bourbon, Sherry" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-cask" />
               </div>
               <div>
                 <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 4 }}>Notes</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Host notes about this whisky"
-                  rows={2}
-                  style={{ ...inputStyle, fontSize: 13, resize: "vertical", minHeight: 40 }}
-                  data-testid="input-whisky-notes"
-                />
+                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Host notes about this whisky" rows={2} style={{ ...inputStyle, fontSize: 13, resize: "vertical", minHeight: 40 }} data-testid="input-whisky-notes" />
               </div>
             </div>
           )}
@@ -584,38 +604,17 @@ function AddWhiskiesStep({ tasting, onDone }: { tasting: TastingFull; onDone: ()
               {whiskies.map((w, i) => (
                 <div
                   key={w.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    background: c.bg,
-                    border: `1px solid ${c.border}`,
-                    borderRadius: 8,
-                    padding: "10px 12px",
-                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 8, background: c.bg, border: `1px solid ${c.border}`, borderRadius: 8, padding: "10px 12px" }}
                   data-testid={`card-whisky-${w.id}`}
                 >
                   <div style={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}>
-                    <button
-                      type="button"
-                      onClick={() => handleMove(i, "up")}
-                      disabled={i === 0}
-                      style={{ background: "none", border: "none", cursor: i === 0 ? "default" : "pointer", color: i === 0 ? c.border : c.muted, padding: 0, lineHeight: 1 }}
-                      data-testid={`button-move-up-${w.id}`}
-                    >
+                    <button type="button" onClick={() => handleMove(i, "up")} disabled={i === 0} style={{ background: "none", border: "none", cursor: i === 0 ? "default" : "pointer", color: i === 0 ? c.border : c.muted, padding: 0, lineHeight: 1 }} data-testid={`button-move-up-${w.id}`}>
                       <ChevronUp style={{ width: 14, height: 14 }} />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleMove(i, "down")}
-                      disabled={i === whiskies.length - 1}
-                      style={{ background: "none", border: "none", cursor: i === whiskies.length - 1 ? "default" : "pointer", color: i === whiskies.length - 1 ? c.border : c.muted, padding: 0, lineHeight: 1 }}
-                      data-testid={`button-move-down-${w.id}`}
-                    >
+                    <button type="button" onClick={() => handleMove(i, "down")} disabled={i === whiskies.length - 1} style={{ background: "none", border: "none", cursor: i === whiskies.length - 1 ? "default" : "pointer", color: i === whiskies.length - 1 ? c.border : c.muted, padding: 0, lineHeight: 1 }} data-testid={`button-move-down-${w.id}`}>
                       <ChevronDown style={{ width: 14, height: 14 }} />
                     </button>
                   </div>
-
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                       {isBlind && (
@@ -638,13 +637,7 @@ function AddWhiskiesStep({ tasting, onDone }: { tasting: TastingFull; onDone: ()
                       </div>
                     )}
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(w.id)}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: c.muted, padding: 4, flexShrink: 0 }}
-                    data-testid={`button-delete-whisky-${w.id}`}
-                  >
+                  <button type="button" onClick={() => handleDelete(w.id)} style={{ background: "none", border: "none", cursor: "pointer", color: c.muted, padding: 4, flexShrink: 0 }} data-testid={`button-delete-whisky-${w.id}`}>
                     <Trash2 style={{ width: 15, height: 15 }} />
                   </button>
                 </div>
@@ -658,6 +651,231 @@ function AddWhiskiesStep({ tasting, onDone }: { tasting: TastingFull; onDone: ()
             </p>
           </div>
         )}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <button
+          type="button"
+          onClick={onNext}
+          style={{
+            width: "100%",
+            padding: "12px",
+            fontSize: 15,
+            fontWeight: 600,
+            background: c.accent,
+            color: c.bg,
+            border: "none",
+            borderRadius: 10,
+            cursor: "pointer",
+            fontFamily: "system-ui, sans-serif",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+          }}
+          data-testid="button-next-to-invite"
+        >
+          Next: Invite Participants
+          <ArrowRight style={{ width: 16, height: 16 }} />
+        </button>
+        <button
+          type="button"
+          onClick={onDone}
+          style={{
+            width: "100%",
+            padding: "10px",
+            fontSize: 13,
+            background: "none",
+            color: c.muted,
+            border: `1px solid ${c.border}`,
+            borderRadius: 10,
+            cursor: "pointer",
+            fontFamily: "system-ui, sans-serif",
+          }}
+          data-testid="button-done-whiskies"
+        >
+          Back to Host
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function InviteStep({ tasting, onDone }: { tasting: TastingFull; onDone: () => void }) {
+  const [, navigate] = useLocation();
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [showQr, setShowQr] = useState(false);
+
+  const joinUrl = `${window.location.origin}/enter?code=${tasting.code}`;
+
+  useEffect(() => {
+    QRCodeLib.toDataURL(joinUrl, {
+      width: 240,
+      margin: 2,
+      color: { dark: "#1a1714", light: "#ffffff" },
+      errorCorrectionLevel: "M",
+    }).then(setQrDataUrl).catch(() => setQrDataUrl(null));
+  }, [joinUrl]);
+
+  const downloadQr = () => {
+    if (!qrDataUrl) return;
+    const a = document.createElement("a");
+    a.href = qrDataUrl;
+    a.download = `casksense-${tasting.code}-qr.png`;
+    a.click();
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <TastingHeader tasting={tasting} />
+
+      <div style={cardStyle}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+          <StepBadge step={3} />
+          <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: c.text }} data-testid="text-step3-title">
+            Invite Participants
+          </h3>
+        </div>
+
+        <p style={{ fontSize: 13, color: c.muted, margin: "0 0 20px" }}>
+          Share the session code or join link with your guests. No login required — they just need the code.
+        </p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ background: c.bg, borderRadius: 10, padding: "16px", textAlign: "center" }}>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: c.muted, marginBottom: 6 }}>
+              Session Code
+            </div>
+            <div
+              style={{
+                fontSize: 36,
+                fontWeight: 700,
+                letterSpacing: "0.15em",
+                color: c.accent,
+                fontFamily: "'Playfair Display', monospace",
+                marginBottom: 10,
+              }}
+              data-testid="text-session-code-large"
+            >
+              {tasting.code}
+            </div>
+            <CopyButton text={tasting.code} label="Copy Code" />
+          </div>
+
+          <div style={{ background: c.bg, borderRadius: 10, padding: "16px" }}>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: c.muted, marginBottom: 8 }}>
+              Join Link
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: c.text,
+                background: c.card,
+                padding: "10px 12px",
+                borderRadius: 8,
+                border: `1px solid ${c.border}`,
+                wordBreak: "break-all",
+                marginBottom: 10,
+                fontFamily: "monospace",
+              }}
+              data-testid="text-join-link"
+            >
+              {joinUrl}
+            </div>
+            <CopyButton text={joinUrl} label="Copy Link" fullWidth />
+          </div>
+
+          <div style={{ background: c.bg, borderRadius: 10, padding: "16px" }}>
+            <button
+              type="button"
+              onClick={() => setShowQr(!showQr)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: c.text,
+                fontSize: 14,
+                fontFamily: "system-ui, sans-serif",
+                padding: 0,
+              }}
+              data-testid="button-toggle-qr"
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <QrCode style={{ width: 18, height: 18, color: c.accent }} />
+                <span style={{ fontWeight: 600 }}>QR Code</span>
+              </div>
+              <ChevronDown style={{ width: 14, height: 14, color: c.muted, transform: showQr ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+            </button>
+
+            {showQr && qrDataUrl && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginTop: 14 }}>
+                <div style={{ background: "#fff", padding: 12, borderRadius: 10 }}>
+                  <img src={qrDataUrl} alt="QR Code" style={{ width: 200, height: 200, display: "block" }} data-testid="img-qr-code" />
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={downloadQr}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      background: "none",
+                      border: `1px solid ${c.border}`,
+                      borderRadius: 8,
+                      padding: "8px 14px",
+                      color: c.muted,
+                      fontSize: 12,
+                      cursor: "pointer",
+                      fontFamily: "system-ui, sans-serif",
+                    }}
+                    data-testid="button-download-qr"
+                  >
+                    <Download style={{ width: 14, height: 14 }} />
+                    Save
+                  </button>
+                  <CopyButton text={joinUrl} label="Copy Link" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {typeof navigator.share === "function" && (
+            <button
+              type="button"
+              onClick={() => {
+                navigator.share({
+                  title: `Join: ${tasting.title}`,
+                  text: `Join my whisky tasting "${tasting.title}" on CaskSense!\nSession Code: ${tasting.code}`,
+                  url: joinUrl,
+                }).catch(() => {});
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                padding: "12px",
+                fontSize: 14,
+                fontWeight: 600,
+                background: `${c.accent}15`,
+                color: c.accent,
+                border: `1px solid ${c.accent}40`,
+                borderRadius: 10,
+                cursor: "pointer",
+                fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="button-native-share"
+            >
+              <Share2 style={{ width: 16, height: 16 }} />
+              Share via…
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -699,7 +917,7 @@ function AddWhiskiesStep({ tasting, onDone }: { tasting: TastingFull; onDone: ()
             cursor: "pointer",
             fontFamily: "system-ui, sans-serif",
           }}
-          data-testid="button-done-whiskies"
+          data-testid="button-done-invite"
         >
           Back to Host
         </button>
@@ -714,7 +932,7 @@ export default function SimpleHostPage() {
   const session = getSession();
   const pid = session.pid || localStorage.getItem("casksense_participant_id");
 
-  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardStep, setWizardStep] = useState<WizardStep>("list");
   const [createdTasting, setCreatedTasting] = useState<TastingFull | null>(null);
 
   const { data: tastings = [], isLoading } = useQuery<TastingFull[]>({
@@ -734,12 +952,13 @@ export default function SimpleHostPage() {
 
   const handleCreated = (tasting: TastingFull) => {
     setCreatedTasting(tasting);
-    setWizardOpen(false);
+    setWizardStep("step2");
     queryClient.invalidateQueries({ queryKey: ["/api/tastings", pid] });
   };
 
-  const handleDismissSuccess = () => {
+  const handleDismiss = () => {
     setCreatedTasting(null);
+    setWizardStep("list");
     queryClient.invalidateQueries({ queryKey: ["/api/tastings", pid] });
   };
 
@@ -761,10 +980,12 @@ export default function SimpleHostPage() {
     );
   }
 
+  const showingWizard = wizardStep !== "list";
+
   return (
     <SimpleShell showBack={false}>
       <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
-        {!createdTasting && (
+        {!showingWizard && (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }} data-testid="text-host-title">
@@ -774,47 +995,49 @@ export default function SimpleHostPage() {
                 Create a session, add whiskies, and run the tasting live.
               </p>
             </div>
-            {!wizardOpen && (
-              <button
-                onClick={() => setWizardOpen(true)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  background: c.accent,
-                  color: c.bg,
-                  border: "none",
-                  borderRadius: 10,
-                  padding: "8px 16px",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  flexShrink: 0,
-                }}
-                data-testid="button-create-tasting"
-              >
-                <Plus style={{ width: 16, height: 16 }} />
-                New
-              </button>
-            )}
+            <button
+              onClick={() => setWizardStep("step1")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                background: c.accent,
+                color: c.bg,
+                border: "none",
+                borderRadius: 10,
+                padding: "8px 16px",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+              data-testid="button-create-tasting"
+            >
+              <Plus style={{ width: 16, height: 16 }} />
+              New
+            </button>
           </div>
         )}
 
-        {createdTasting && (
-          <AddWhiskiesStep tasting={createdTasting} onDone={handleDismissSuccess} />
+        {wizardStep === "step1" && (
+          <CreateWizard pid={pid} onClose={() => setWizardStep("list")} onCreated={handleCreated} />
         )}
 
-        {wizardOpen && !createdTasting && (
-          <CreateWizard pid={pid} onClose={() => setWizardOpen(false)} onCreated={handleCreated} />
+        {wizardStep === "step2" && createdTasting && (
+          <AddWhiskiesStep tasting={createdTasting} onDone={handleDismiss} onNext={() => setWizardStep("step3")} />
         )}
 
-        {!createdTasting && (
+        {wizardStep === "step3" && createdTasting && (
+          <InviteStep tasting={createdTasting} onDone={handleDismiss} />
+        )}
+
+        {!showingWizard && (
           <>
             {isLoading ? (
               <div style={{ textAlign: "center", color: c.muted, padding: "32px 0" }}>
                 Loading...
               </div>
-            ) : tastings.length === 0 && !wizardOpen ? (
+            ) : tastings.length === 0 ? (
               <div style={{ ...cardStyle, textAlign: "center" }}>
                 <p style={{ color: c.muted, fontSize: 14, margin: "8px 0" }} data-testid="text-no-tastings">
                   No tastings yet. Create your first one!
@@ -833,9 +1056,7 @@ export default function SimpleHostPage() {
                           <div style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }} data-testid={`card-tasting-${t.id}`}>
                             <div>
                               <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
-                              <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>
-                                Code: {t.code}
-                              </div>
+                              <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>Code: {t.code}</div>
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                               <StatusBadge status={t.status} />

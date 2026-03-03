@@ -68,7 +68,8 @@ export default function SimpleEnterPage() {
 
   const sessionSignedIn = getSession().signedIn;
   const [step, setStep] = useState<"name" | "code">(currentParticipant || sessionSignedIn ? "code" : "name");
-  const [code, setCode] = useState("");
+  const prefillCode = new URLSearchParams(window.location.search).get("code") || "";
+  const [code, setCode] = useState(prefillCode.toUpperCase());
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
