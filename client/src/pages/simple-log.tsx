@@ -631,6 +631,7 @@ export default function SimpleLogPage() {
   const [error, setError] = useState("");
 
   const [showManual, setShowManual] = useState(false);
+  const [introSeen, setIntroSeen] = useState(() => { try { return localStorage.getItem("simple_intro_seen") === "true"; } catch { return false; } });
   const [unknownAge, setUnknownAge] = useState("");
   const [unknownAbv, setUnknownAbv] = useState("");
   const [unknownCask, setUnknownCask] = useState("");
@@ -745,6 +746,7 @@ export default function SimpleLogPage() {
     setSelectedCandidate(cand);
     setSheetView("none");
     setShowManual(false);
+    if (!introSeen) { setIntroSeen(true); try { localStorage.setItem("simple_intro_seen", "true"); } catch {} }
   };
 
   const handleCreateUnknown = () => {
@@ -1087,9 +1089,11 @@ export default function SimpleLogPage() {
                           </>
                         ) : "Identify"}
                       </button>
-                      <div style={{ fontSize: 11, color: c.mutedLight, textAlign: "center", marginBottom: 2, letterSpacing: 0.2 }} data-testid="text-identify-hint">
-                        Use photo · upload · describe · search online
-                      </div>
+                      {!introSeen && (
+                        <div style={{ fontSize: 13, color: c.mutedLight, textAlign: "center", marginBottom: 2, lineHeight: 1.4, maxWidth: 300, marginLeft: "auto", marginRight: "auto" }} data-testid="text-identify-hint">
+                          Identify by photo, description or search. Matches your history automatically.
+                        </div>
+                      )}
                       <button
                         type="button"
                         onClick={() => { setShowManual(true); setSelectedCandidate(null); }}
