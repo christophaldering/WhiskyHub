@@ -1350,8 +1350,13 @@ export default function SimpleLogPage() {
                     style={{ ...inputStyle, height: 44, marginBottom: showManual ? 0 : 10 }}
                     data-testid="input-whisky-name"
                     autoComplete="off"
-                    placeholder="e.g. Octomore 15.2"
+                    placeholder="Identify by photo, description or search"
                   />
+                  {!showManual && (
+                    <div style={{ fontSize: 12, color: c.mutedLight, marginTop: 4, marginBottom: 10, lineHeight: 1.4 }} data-testid="text-identify-helper">
+                      Matches your history automatically – or add manually.
+                    </div>
+                  )}
 
                   {!showManual && (
                     <>
@@ -1375,7 +1380,7 @@ export default function SimpleLogPage() {
                           alignItems: "center",
                           justifyContent: "center",
                           gap: 6,
-                          marginBottom: 6,
+                          marginBottom: 8,
                         }}
                       >
                         {scanning ? (
@@ -1385,9 +1390,6 @@ export default function SimpleLogPage() {
                           </>
                         ) : "Identify"}
                       </button>
-                      <div style={{ fontSize: 12, color: c.mutedLight, textAlign: "center", marginBottom: 2, lineHeight: 1.4, maxWidth: 300, marginLeft: "auto", marginRight: "auto" }} data-testid="text-identify-hint">
-                        Identify by photo, description or search — or add manually.
-                      </div>
                       <button
                         type="button"
                         onClick={() => { setShowManual(true); setSelectedCandidate(null); }}
@@ -1511,9 +1513,15 @@ export default function SimpleLogPage() {
                 </span>
                 {!showDetailed && (
                   <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {["Nose", "Taste", "Finish", "Balance"].map((dim) => (
-                      <span key={dim} style={{ fontSize: 10, color: c.mutedLight, background: `${c.border}`, padding: "2px 8px", borderRadius: 20, letterSpacing: 0.3 }}>{dim}</span>
-                    ))}
+                    {(["Nose", "Taste", "Finish", "Balance"] as const).map((dim) => {
+                      const key = dim.toLowerCase() as DimKey;
+                      const chipCount = detailChips[key].length;
+                      return (
+                        <span key={dim} style={{ fontSize: 10, color: chipCount > 0 ? c.accent : c.mutedLight, background: chipCount > 0 ? `${c.accent}15` : c.border, padding: "2px 8px", borderRadius: 20, letterSpacing: 0.3 }}>
+                          {dim}{chipCount > 0 ? ` (${chipCount})` : ""}
+                        </span>
+                      );
+                    })}
                   </span>
                 )}
               </button>
@@ -1525,29 +1533,32 @@ export default function SimpleLogPage() {
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.2 }}
-                  style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 12, marginTop: 4, borderTop: `1px solid ${c.border}` }}
+                  style={{ paddingTop: 8, marginTop: 4 }}
                   data-testid="section-detailed-scoring"
                 >
                   {(["Nose", "Taste", "Finish", "Balance"] as const).map((dim) => {
-                    const key = dim.toLowerCase() as "nose" | "taste" | "finish" | "balance";
+                    const key = dim.toLowerCase() as DimKey;
                     return (
-                      <div key={dim} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 12, color: c.mutedLight, width: 50, flexShrink: 0 }}>{dim}</span>
-                        <input
-                          type="range"
-                          min={0}
-                          max={100}
-                          value={detailedScores[key]}
-                          onChange={(e) => handleDetailScoreChange(key, Number(e.target.value))}
-                          data-testid={`input-score-${key}`}
-                          style={{ flex: 1, accentColor: c.accent }}
-                        />
-                        <span style={{ fontSize: 13, fontWeight: 600, color: c.accent, width: 28, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{detailedScores[key]}</span>
-                      </div>
+                      <DetailModule
+                        key={dim}
+                        dim={key}
+                        label={dim}
+                        score={detailedScores[key]}
+                        onScoreChange={(val) => handleDetailScoreChange(key, val)}
+                        chips={detailChips[key]}
+                        onToggleChip={handleToggleChip}
+                        text={detailTexts[key]}
+                        onTextChange={handleDetailTextChange}
+                        expanded={expandedModules[key]}
+                        onToggleExpand={() => toggleModule(key)}
+                        voiceListening={voiceListening && voiceTarget === key}
+                        onToggleVoice={toggleVoice}
+                        hasSpeechAPI={hasSpeechAPI}
+                      />
                     );
                   })}
 
-                  <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 12, marginTop: 4 }}>
+                  <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 14, marginTop: 8 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                       <div>
                         <span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>Overall</span>
@@ -1563,7 +1574,7 @@ export default function SimpleLogPage() {
                             }}
                             data-testid="badge-score-mode"
                           >
-                            {overrideActive ? "Manual" : "Calculated"}
+                            {overrideActive ? "Manually adjusted" : "Suggested"}
                           </span>
                         )}
                       </div>
@@ -1577,6 +1588,12 @@ export default function SimpleLogPage() {
                       </motion.div>
                     </div>
 
+                    {detailTouched && !overrideActive && (
+                      <div style={{ fontSize: 11, color: c.mutedLight, marginBottom: 6 }} data-testid="text-score-suggestion">
+                        Suggested overall score based on your detailed ratings
+                      </div>
+                    )}
+
                     <input
                       type="range"
                       min={0}
@@ -1586,6 +1603,10 @@ export default function SimpleLogPage() {
                       data-testid="input-score"
                       style={{ width: "100%", accentColor: c.accent, display: "block" }}
                     />
+
+                    <div style={{ fontSize: 11, color: c.mutedLight, paddingTop: 4 }}>
+                      You can adjust this score manually.
+                    </div>
 
                     {overrideActive && (
                       <button
@@ -1607,11 +1628,6 @@ export default function SimpleLogPage() {
                         Reset to calculated
                       </button>
                     )}
-                    {detailTouched && !overrideActive && (
-                      <div style={{ fontSize: 11, color: c.mutedLight, paddingTop: 4 }}>
-                        Average of Nose, Taste, Finish, Balance
-                      </div>
-                    )}
                   </div>
                 </motion.div>
               )}
@@ -1620,52 +1636,51 @@ export default function SimpleLogPage() {
 
             {/* ── SECTION 3: REFLECTION ── */}
             <div style={{ marginBottom: 36 }} data-testid="section-reflection">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                <SectionLabel>Reflection</SectionLabel>
+              <SectionLabel>Reflection</SectionLabel>
+              <div style={{ position: "relative" }}>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={4}
+                  style={{
+                    ...inputStyle,
+                    resize: "vertical",
+                    minHeight: 120,
+                    paddingRight: hasSpeechAPI ? 40 : 14,
+                    transition: "border-color 0.2s, box-shadow 0.2s",
+                    borderColor: (voiceListening && voiceTarget === "notes") ? "#c44" : c.border,
+                    boxShadow: (voiceListening && voiceTarget === "notes") ? "0 0 0 2px #c4444420" : "none",
+                  }}
+                  onFocus={(e) => { if (!(voiceListening && voiceTarget === "notes")) { e.currentTarget.style.borderColor = c.accent; e.currentTarget.style.boxShadow = `0 0 0 2px ${c.accent}20`; } }}
+                  onBlur={(e) => { if (!(voiceListening && voiceTarget === "notes")) { e.currentTarget.style.borderColor = c.border; e.currentTarget.style.boxShadow = "none"; } }}
+                  data-testid="input-notes"
+                  placeholder={(voiceListening && voiceTarget === "notes") ? "Listening..." : "What stands out?"}
+                />
                 {hasSpeechAPI && (
                   <button
                     type="button"
-                    onClick={toggleVoice}
+                    onClick={() => toggleVoice("notes")}
                     data-testid="button-voice-input"
-                    aria-label={voiceListening ? "Stop voice input" : "Start voice input"}
+                    aria-label={(voiceListening && voiceTarget === "notes") ? "Stop voice input" : "Start voice input"}
                     style={{
-                      background: voiceListening ? "#c4444420" : "transparent",
-                      border: `1px solid ${voiceListening ? "#c44" : c.border}`,
-                      borderRadius: 8,
+                      position: "absolute",
+                      right: 10,
+                      top: 10,
+                      background: (voiceListening && voiceTarget === "notes") ? "#c4444420" : "transparent",
+                      border: "none",
+                      borderRadius: 6,
                       cursor: "pointer",
-                      padding: "6px 10px",
+                      padding: 6,
+                      color: (voiceListening && voiceTarget === "notes") ? "#c44" : c.mutedLight,
                       display: "flex",
                       alignItems: "center",
-                      gap: 5,
-                      color: voiceListening ? "#c44" : c.mutedLight,
-                      fontSize: 11,
-                      fontFamily: "system-ui, sans-serif",
-                      transition: "all 0.2s",
-                      animation: voiceListening ? "pulse-mic 1.5s ease-in-out infinite" : "none",
+                      animation: (voiceListening && voiceTarget === "notes") ? "pulse-mic 1.5s ease-in-out infinite" : "none",
                     }}
                   >
-                    {voiceListening ? <MicOff style={{ width: 14, height: 14 }} /> : <Mic style={{ width: 14, height: 14 }} />}
-                    {voiceListening ? "Stop" : "Voice"}
+                    {(voiceListening && voiceTarget === "notes") ? <MicOff style={{ width: 16, height: 16 }} /> : <Mic style={{ width: 16, height: 16 }} />}
                   </button>
                 )}
               </div>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={4}
-                style={{
-                  ...inputStyle,
-                  resize: "vertical",
-                  minHeight: 120,
-                  transition: "border-color 0.2s, box-shadow 0.2s",
-                  borderColor: voiceListening ? "#c44" : c.border,
-                  boxShadow: voiceListening ? "0 0 0 2px #c4444420" : "none",
-                }}
-                onFocus={(e) => { if (!voiceListening) { e.currentTarget.style.borderColor = c.accent; e.currentTarget.style.boxShadow = `0 0 0 2px ${c.accent}20`; } }}
-                onBlur={(e) => { if (!voiceListening) { e.currentTarget.style.borderColor = c.border; e.currentTarget.style.boxShadow = "none"; } }}
-                data-testid="input-notes"
-                placeholder={voiceListening ? "Listening..." : "What stands out?"}
-              />
             </div>
 
             {/* ── SECTION 4: SAVE ── */}
