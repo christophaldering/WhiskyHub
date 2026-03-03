@@ -24,7 +24,7 @@ The backend is an Express 5 HTTP server providing RESTful API endpoints. It serv
 PostgreSQL is the primary database, accessed via Drizzle ORM. The schema includes tables for participants, tastings, whiskies, ratings, profiles, and journal entries, using UUIDs for identifiers.
 
 ### Key Design Decisions
--   **Authentication**: Participant authentication uses a name and a mandatory 4-digit PIN.
+-   **Authentication**: Participant authentication uses a name and a mandatory password, stored as bcrypt hashes via `server/lib/auth.ts` (`hashPassword`, `verifyPassword`). Legacy plain-text PINs are supported transparently by `verifyPassword` (auto-detects hash vs plain). `bcryptjs` is the hashing library. The `SIMPLE_MODE_PIN` env var remains as a global fallback for the support console.
 -   **Shared Schema**: Ensures data consistency across the stack.
 -   **Session State Machine**: Tastings progress through defined stages (draft, open, closed, reveal, archived) with host-controlled advancement.
 -   **Asynchronous Updates**: React Query polling enables near real-time updates for session data.

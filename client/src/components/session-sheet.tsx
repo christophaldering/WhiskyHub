@@ -94,7 +94,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     setSiLoading(false);
     if (!result.ok) {
       const msg = result.error || "";
-      if (msg.includes("Invalid PIN")) setSiError("Wrong PIN.");
+      if (msg.includes("Invalid p") || msg.includes("Invalid P")) setSiError("Wrong password.");
       else if (msg.includes("Too many")) setSiError("Too many attempts. Wait a moment.");
       else setSiError(msg || "Something went wrong.");
       return;
@@ -210,7 +210,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
             )}
             <input
               type="password"
-              placeholder="PIN"
+              placeholder="Password"
               value={siPin}
               onChange={(e) => setSiPin(e.target.value)}
               style={{ ...inputStyle, letterSpacing: 3 }}
@@ -283,8 +283,8 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
               Sign in
             </button>
             <div style={{ fontSize: 11, color: c.mutedLight, textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
-              Sign in with your PIN to save tastings across sessions.
-              <br />No account needed — just a PIN.
+              Sign in with your password to save tastings across sessions.
+              <br />No account needed — just a password.
             </div>
           </>
         )}

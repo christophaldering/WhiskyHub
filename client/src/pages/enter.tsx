@@ -51,8 +51,8 @@ export default function EnterPage() {
       }
     } catch (err: any) {
       const msg = err?.message || "";
-      if (msg.includes("Invalid PIN")) {
-        setError("Wrong PIN.");
+      if (msg.includes("Invalid p") || msg.includes("Invalid P")) {
+        setError("Wrong password.");
       } else if (msg.includes("email")) {
         setError("No account found. Use the name and PIN from a previous tasting.");
       } else {
@@ -115,7 +115,7 @@ export default function EnterPage() {
                 Who are you?
               </h1>
               <p style={{ fontSize: 13, color: c.muted, margin: "0 0 20px" }}>
-                Enter your name and PIN from a previous tasting.
+                Enter your name and password.
               </p>
               <form onSubmit={handleIdentify} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <input
@@ -130,7 +130,7 @@ export default function EnterPage() {
                 />
                 <input
                   type="password"
-                  placeholder="PIN"
+                  placeholder="Password"
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
                   style={{ ...inputStyle, letterSpacing: 3 }}

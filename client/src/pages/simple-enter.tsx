@@ -97,8 +97,8 @@ export default function SimpleEnterPage() {
     } catch (err: any) {
       const msg = err?.message || "";
       console.error("[SIMPLE_MODE] identify error", msg);
-      if (msg.includes("Invalid PIN")) setError("Wrong PIN.");
-      else if (msg.includes("email")) setError("No account found. Use the name and PIN from a previous tasting.");
+      if (msg.includes("Invalid p") || msg.includes("Invalid P")) setError("Wrong password.");
+      else if (msg.includes("email")) setError("No account found.");
       else setError(msg || "Something went wrong.");
     } finally {
       setLoading(false);
@@ -154,10 +154,10 @@ export default function SimpleEnterPage() {
         {step === "name" ? (
           <div style={cardStyle} data-testid="card-identify">
             <h1 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 4px", color: c.text }}>Who are you?</h1>
-            <p style={{ fontSize: 13, color: c.muted, margin: "0 0 20px" }}>Enter your name and PIN from a previous tasting.</p>
+            <p style={{ fontSize: 13, color: c.muted, margin: "0 0 20px" }}>Enter your name and password.</p>
             <form onSubmit={handleIdentify} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} data-testid="input-enter-name" autoFocus autoComplete="off" />
-              <input type="password" placeholder="PIN" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-enter-pin" autoComplete="off" />
+              <input type="password" placeholder="Password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-enter-pin" autoComplete="off" />
               <button type="submit" disabled={loading || !name.trim() || !pin.trim()} data-testid="button-identify" style={{ width: "100%", padding: 12, fontSize: 15, fontWeight: 600, background: c.accent, color: c.bg, border: "none", borderRadius: 8, cursor: loading ? "wait" : "pointer", opacity: (!name.trim() || !pin.trim()) ? 0.5 : 1 }}>
                 {loading ? "…" : "Continue"}
               </button>

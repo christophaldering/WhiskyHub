@@ -77,8 +77,8 @@ function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; ro
       }
     } catch (err: any) {
       const msg = err?.message || "";
-      if (msg.includes("Invalid PIN")) {
-        setError("Wrong PIN. Please try again.");
+      if (msg.includes("Invalid p") || msg.includes("Invalid P")) {
+        setError("Wrong password. Please try again.");
       } else if (msg.includes("email")) {
         setError("No account found. Use the same name and PIN from your tasting.");
       } else {
@@ -106,7 +106,7 @@ function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; ro
         />
         <input
           type="password"
-          placeholder="PIN"
+          placeholder="Password"
           value={pin}
           onChange={(e) => setPin(e.target.value)}
           style={{ ...inputStyle, letterSpacing: 3 }}
