@@ -1451,10 +1451,10 @@ export async function registerRoutes(
     }
   });
 
-  // ===== SIMPLE MODE AUTH =====
-  const simpleUnlockAttempts = new Map<string, { count: number; resetAt: number }>();
-  const simpleResumeTokens = new Map<string, { mode: string; name?: string; expiresAt: number }>();
-  const simpleResumeAttempts = new Map<string, { count: number; resetAt: number }>();
+  // ===== SESSION AUTH (shared by Classic + Simple) =====
+  const sessionSigninAttempts = new Map<string, { count: number; resetAt: number }>();
+  const sessionResumeTokens = new Map<string, { mode: string; name?: string; expiresAt: number }>();
+  const sessionResumeAttempts = new Map<string, { count: number; resetAt: number }>();
 
   function generateResumeToken(): string {
     const bytes = new Uint8Array(32);
@@ -1464,22 +1464,22 @@ export async function registerRoutes(
 
   setInterval(() => {
     const now = Date.now();
-    for (const [k, v] of simpleResumeTokens) {
-      if (now > v.expiresAt) simpleResumeTokens.delete(k);
+    for (const [k, v] of sessionResumeTokens) {
+      if (now > v.expiresAt) sessionResumeTokens.delete(k);
     }
   }, 60 * 60 * 1000);
 
-  app.post("/api/simple/unlock", (req: Request, res: Response) => {
+  const handleSignin = (req: Request, res: Response) => {
     const clientIp = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
     const now = Date.now();
-    const entry = simpleUnlockAttempts.get(clientIp);
+    const entry = sessionSigninAttempts.get(clientIp);
     if (entry && now < entry.resetAt) {
       if (entry.count >= 5) {
         return res.status(429).json({ ok: false, message: "Too many attempts. Please wait." });
       }
       entry.count++;
     } else {
-      simpleUnlockAttempts.set(clientIp, { count: 1, resetAt: now + 5 * 60 * 1000 });
+      sessionSigninAttempts.set(clientIp, { count: 1, resetAt: now + 5 * 60 * 1000 });
     }
 
     const { name, pin, mode, remember } = req.body || {};
@@ -1492,14 +1492,14 @@ export async function registerRoutes(
     const configuredPin = process.env.SIMPLE_MODE_PIN;
     if (!configuredPin) {
       if (process.env.NODE_ENV === "production") {
-        console.warn("[SIMPLE_MODE][AUTH] SIMPLE_MODE_PIN not set in production");
+        console.warn("[SESSION][AUTH] SIMPLE_MODE_PIN not set in production");
         return res.status(500).json({ ok: false, message: "PIN not configured" });
       }
-      console.warn("[SIMPLE_MODE][AUTH] SIMPLE_MODE_PIN not set — allowing unlock in dev");
+      console.warn("[SESSION][AUTH] SIMPLE_MODE_PIN not set — allowing signin in dev");
       const result: any = { ok: true, name: authMode === "log" ? (name || undefined) : undefined, mode: authMode };
       if (remember) {
         const token = generateResumeToken();
-        simpleResumeTokens.set(token, { mode: authMode, name: result.name, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
+        sessionResumeTokens.set(token, { mode: authMode, name: result.name, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
         result.resumeToken = token;
       }
       return res.json(result);
@@ -1507,54 +1507,62 @@ export async function registerRoutes(
 
     if (pin.trim() === configuredPin) {
       const displayName = authMode === "log" ? (name || undefined) : undefined;
-      console.log(`[SIMPLE_MODE][AUTH] unlock success for "${displayName || "anon"}" mode=${authMode}`);
-      const e = simpleUnlockAttempts.get(clientIp);
+      console.log(`[SESSION][AUTH] signin success for "${displayName || "anon"}" mode=${authMode}`);
+      const e = sessionSigninAttempts.get(clientIp);
       if (e) e.count = 0;
       const result: any = { ok: true, name: displayName, mode: authMode };
       if (remember) {
         const token = generateResumeToken();
-        simpleResumeTokens.set(token, { mode: authMode, name: displayName, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
+        sessionResumeTokens.set(token, { mode: authMode, name: displayName, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
         result.resumeToken = token;
       }
       return res.json(result);
     }
 
-    console.log(`[SIMPLE_MODE][AUTH] unlock failed for "${name || "anon"}"`);
+    console.log(`[SESSION][AUTH] signin failed for "${name || "anon"}"`);
     return res.status(401).json({ ok: false, message: "Invalid PIN" });
-  });
+  };
 
-  app.post("/api/simple/resume", (req: Request, res: Response) => {
+  const handleResume = (req: Request, res: Response) => {
     const clientIp = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
     const now = Date.now();
-    const rEntry = simpleResumeAttempts.get(clientIp);
+    const rEntry = sessionResumeAttempts.get(clientIp);
     if (rEntry && now < rEntry.resetAt) {
       if (rEntry.count >= 30) {
         return res.status(429).json({ ok: false, message: "Too many attempts." });
       }
       rEntry.count++;
     } else {
-      simpleResumeAttempts.set(clientIp, { count: 1, resetAt: now + 60 * 1000 });
+      sessionResumeAttempts.set(clientIp, { count: 1, resetAt: now + 60 * 1000 });
     }
 
     const { resumeToken } = req.body || {};
     if (!resumeToken || typeof resumeToken !== "string") {
       return res.status(400).json({ ok: false });
     }
-    const stored = simpleResumeTokens.get(resumeToken);
+    const stored = sessionResumeTokens.get(resumeToken);
     if (!stored || now > stored.expiresAt) {
-      if (stored) simpleResumeTokens.delete(resumeToken);
+      if (stored) sessionResumeTokens.delete(resumeToken);
       return res.status(401).json({ ok: false });
     }
     return res.json({ ok: true, mode: stored.mode, name: stored.name });
-  });
+  };
 
-  app.post("/api/simple/logout", (req: Request, res: Response) => {
+  const handleSignout = (req: Request, res: Response) => {
     const { resumeToken } = req.body || {};
     if (resumeToken && typeof resumeToken === "string") {
-      simpleResumeTokens.delete(resumeToken);
+      sessionResumeTokens.delete(resumeToken);
     }
     return res.json({ ok: true });
-  });
+  };
+
+  app.post("/api/session/signin", handleSignin);
+  app.post("/api/session/resume", handleResume);
+  app.post("/api/session/signout", handleSignout);
+
+  app.post("/api/simple/unlock", handleSignin);
+  app.post("/api/simple/resume", handleResume);
+  app.post("/api/simple/logout", handleSignout);
 
   // ===== FLIGHT IMPORT =====
 

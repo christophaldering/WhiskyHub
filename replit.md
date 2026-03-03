@@ -55,17 +55,18 @@ A complete UI redesign with an Apple-clean aesthetic and a whisky-warm dark colo
 ### Simple Mode (`/enter`, `/log-simple`, `/my-taste`)
 A minimal "Simple Mode" for first-time users with no navigation chrome. Three entry points from the landing page, all rendered with `SimpleShell` (centered container, Dark Warm colors, no sidebar/nav). Includes `/simple-test` (happy-path checklist) and `/simple-feedback` (user feedback form). Join flow includes client-side rate limiting (5 attempts / 5 min). Redirect leak prevention: `/join`→`/enter`, `/log`→`/log-simple`, `/profile`→`/my-taste`. Files in `client/src/pages/simple-*.tsx` and `client/src/components/simple/`.
 
-### Simple Auth v2 (Sign In / Auto-Resume)
+### Session Auth v2 (Sign In / Auto-Resume)
 -   **Terminology**: UI uses "Sign in" / "Sign out" (internally `unlocked` state variable).
 -   **Two modes**: `log` (personalized saving, name optional) and `tasting` (anonymous, PIN-only).
--   **Session persistence**: `sessionStorage` keys (`simple_unlocked`, `simple_mode`, `simple_name`, `simple_pid`) — cleared on tab close.
--   **Auto-resume**: On sign-in with "Stay signed in" checked, server generates a 32-byte hex `resumeToken` stored in `localStorage` (`simple_remember`, `simple_resume_token`, `simple_resume_mode`, `simple_resume_name`). On next visit, `tryAutoResume()` calls `POST /api/simple/resume` to restore session. No plaintext PIN stored.
--   **Endpoints**: `POST /api/simple/unlock` (validates PIN, returns optional resumeToken), `POST /api/simple/resume` (validates token, returns mode/name), `POST /api/simple/logout` (invalidates token).
--   **Rate limits**: unlock 5/5min per IP, resume 30/min per IP.
+-   **Session persistence**: `sessionStorage` keys (`session_signed_in`, `session_mode`, `session_name`, `session_pid`) — cleared on tab close.
+-   **Auto-resume**: On sign-in with "Stay signed in" checked, server generates a 32-byte hex `resumeToken` stored in `localStorage` (`session_remember`, `session_resume_token`, `session_resume_mode`, `session_resume_name`). On next visit, `tryAutoResume()` calls `POST /api/session/resume` to restore session. No plaintext PIN stored.
+-   **Endpoints**: `POST /api/session/signin` (validates PIN, returns optional resumeToken), `POST /api/session/resume` (validates token, returns mode/name), `POST /api/session/signout` (invalidates token). Old `/api/simple/unlock|resume|logout` kept as aliases.
+-   **Rate limits**: signin 5/5min per IP, resume 30/min per IP.
 -   **Token storage**: In-memory `Map` with 14-day TTL. Tokens lost on server restart (graceful fallback to signed-out).
 -   **Gating**: Users can fill whisky/score/notes while signed out. Save click gates on sign-in — after successful sign-in, save auto-proceeds.
--   **Auth lib**: `client/src/lib/simple-auth.ts` — `getAuth()`, `signIn()`, `tryAutoResume()`, `signOut()`, backward-compatible `getSimpleAuth()`, `setSimpleAuth()`, `clearSimpleAuth()`.
--   **SimpleShell session sheet**: Shows "Signed out" + "Sign in" button (opens inline form) when locked; shows name + "Sign out" when signed in.
+-   **Auth lib**: `client/src/lib/session.ts` — canonical module with `getSession()`, `signIn()`, `tryAutoResume()`, `signOut()`, `setSessionPid()`. `client/src/lib/simple-auth.ts` is a backward-compat wrapper.
+-   **SessionSheet component**: `client/src/components/session-sheet.tsx` — shared bottom sheet for sign-in/sign-out, used in both SimpleShell (dark variant) and Classic Layout (light variant). Shows session status, inline sign-in form with name/PIN/remember, sign-out button.
+-   **Classic Layout integration**: Key icon button in header bar opens SessionSheet (light variant). Auto-resumes on mount.
 
 ### Whisky Identification (Phase 2)
 AI-powered whisky identification with 3 input methods on `/log-simple`:

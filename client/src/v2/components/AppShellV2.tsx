@@ -1,7 +1,9 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, Wine, Compass, Archive, MoreHorizontal } from "lucide-react";
+import { Home, Wine, Compass, Archive, MoreHorizontal, KeyRound } from "lucide-react";
 import { ViewSwitcherV2 } from "@/components/view-switcher";
+import { getSession, tryAutoResume } from "@/lib/session";
+import SessionSheet from "@/components/session-sheet";
 import "../theme/tokens.css";
 
 interface AppShellV2Props {
@@ -18,6 +20,13 @@ const NAV_ITEMS = [
 
 export default function AppShellV2({ children }: AppShellV2Props) {
   const [location] = useLocation();
+  const [showSessionSheet, setShowSessionSheet] = useState(false);
+  const [session, setSessionState] = useState(() => getSession());
+  const refreshSession = useCallback(() => setSessionState(getSession()), []);
+
+  useEffect(() => {
+    tryAutoResume().then(() => refreshSession());
+  }, [refreshSession]);
 
   const isActive = (href: string) =>
     location === href || (href !== "/app/home" && location.startsWith(href));
@@ -41,7 +50,21 @@ export default function AppShellV2({ children }: AppShellV2Props) {
             CaskSense
           </span>
         </Link>
-        <ViewSwitcherV2 />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSessionSheet(true)}
+            className="p-1.5 rounded-lg transition-colors cursor-pointer"
+            style={{
+              color: session.signedIn ? "var(--v2-accent)" : "var(--v2-text-muted)",
+              background: "transparent",
+              border: "none",
+            }}
+            data-testid="button-v2-session"
+          >
+            <KeyRound className="w-4 h-4" strokeWidth={session.signedIn ? 2.2 : 1.6} />
+          </button>
+          <ViewSwitcherV2 />
+        </div>
       </header>
 
       <div className="hidden lg:block fixed left-0 top-[52px] bottom-0 z-30 w-[72px]"
@@ -101,6 +124,14 @@ export default function AppShellV2({ children }: AppShellV2Props) {
           );
         })}
       </nav>
+
+      <SessionSheet
+        open={showSessionSheet}
+        onClose={() => setShowSessionSheet(false)}
+        onSessionChange={refreshSession}
+        defaultMode="log"
+        variant="dark"
+      />
     </div>
   );
 }

@@ -1,10 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, LogOut, LogIn, Menu, User, Wine, ChevronDown, ArrowLeft, ArrowRight, X, Settings, Sparkles } from "lucide-react";
+import { Home, LogOut, LogIn, Menu, User, Wine, ChevronDown, ArrowLeft, ArrowRight, X, Settings, Sparkles, KeyRound } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { ViewSwitcherLegacy } from "@/components/view-switcher";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
+import { getSession, tryAutoResume } from "@/lib/session";
+import SessionSheet from "@/components/session-sheet";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
@@ -483,6 +485,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const { currentParticipant, setParticipant, lastSeenLandingVersion, setLastSeenLandingVersion } = useAppStore();
 
+  const [showSessionSheet, setShowSessionSheet] = useState(false);
+  const [session, setSessionState] = useState(() => getSession());
+  const refreshSession = useCallback(() => setSessionState(getSession()), []);
+
+  useEffect(() => {
+    tryAutoResume().then(() => refreshSession());
+  }, [refreshSession]);
+
   const { data: publicSettings } = useQuery({
     queryKey: ["public-app-settings"],
     queryFn: async () => {
@@ -646,7 +656,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <ViewSwitcherLegacy />
-          <ProfileAvatar size={36} showName={false} showSignOut />
+          <ProfileAvatar size={36} showName={false} showSignOut={false} />
+          <button
+            onClick={() => setShowSessionSheet(true)}
+            className={cn(
+              "p-1.5 rounded-lg transition-colors",
+              session.signedIn
+                ? "text-primary hover:bg-primary/10"
+                : "text-muted-foreground hover:bg-secondary"
+            )}
+            data-testid="button-classic-session"
+          >
+            <KeyRound className="w-4 h-4" strokeWidth={session.signedIn ? 2.2 : 1.6} />
+          </button>
           <LanguageToggle />
           <ThemeToggle />
           <Sheet open={open} onOpenChange={setOpen}>
@@ -697,6 +719,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </main>
         <FeedbackButton />
       </div>
+
+      <SessionSheet
+        open={showSessionSheet}
+        onClose={() => setShowSessionSheet(false)}
+        onSessionChange={refreshSession}
+        defaultMode="log"
+        variant="light"
+      />
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/40 safe-area-bottom" style={{ paddingLeft: 'env(safe-area-inset-left, 0)', paddingRight: 'env(safe-area-inset-right, 0)' }}>
         <div className="flex items-center justify-around px-1 py-1.5">

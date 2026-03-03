@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
-import { getAuth, signIn, setSimpleAuth } from "@/lib/simple-auth";
+import { getSession, signIn, setSessionPid } from "@/lib/session";
 import SimpleShell from "@/components/simple/simple-shell";
 
 const c = {
@@ -120,7 +120,7 @@ function SignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, pid?:
         try {
           const pResult = await participantApi.loginOrCreate(name.trim(), pin.trim());
           if (pResult?.id) {
-            setSimpleAuth(displayName, pResult.id);
+            setSessionPid(pResult.id);
             onSignedIn(displayName, pResult.id);
             return;
           }
@@ -605,15 +605,15 @@ export default function SimpleLogPage() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
-  const [unlocked, setUnlocked] = useState(() => getAuth().unlocked);
-  const [pid, setPid] = useState<string | undefined>(() => getAuth().pid || currentParticipant?.id);
+  const [unlocked, setUnlocked] = useState(() => getSession().signedIn);
+  const [pid, setPid] = useState<string | undefined>(() => getSession().pid || currentParticipant?.id);
   const [showUnlockPanel, setShowUnlockPanel] = useState(false);
 
   useEffect(() => {
-    const auth = getAuth();
-    if (auth.unlocked) {
+    const sess = getSession();
+    if (sess.signedIn) {
       setUnlocked(true);
-      if (auth.pid) setPid(auth.pid);
+      if (sess.pid) setPid(sess.pid);
     }
     if (currentParticipant?.id) setPid(currentParticipant.id);
   }, [currentParticipant]);

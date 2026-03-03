@@ -1,0 +1,144 @@
+HARD PROMPT (Replit) — Session sauber lösen: sichtbarer Sign-in/Sign-out Entry + einheitliche Auth für Classic & Simple
+
+GOAL:
+Make session/account handling obvious, consistent, and accessible in BOTH Classic View and Simple Mode:
+- Always provide a visible entry point to session (profile icon)
+- Provide Sign in / Sign out in a single “Session” bottom sheet
+- Use the SAME auth state everywhere (Classic pages + /log-simple + tasting)
+- Remove “hidden logout” reliance on the ⋯ menu
+
+NO DB migrations. No real account system required. Keep lightweight PIN-based “sign in”.
+
+────────────────────────────────────────────────────────
+A) SINGLE SOURCE OF TRUTH (AUTH STATE)
+Create/confirm a single auth module used by all UIs:
+
+Frontend module: client/src/lib/session.ts (or reuse simple-auth but rename/export as shared)
+Must expose:
+- getSession(): { signedIn:boolean, name?:string|null, mode?:"log"|"tasting", remember?:boolean }
+- signIn({ pin, name?, mode, remember }): Promise<void>
+- tryAutoResume(): Promise<void>  // uses resumeToken if present
+- signOut(): Promise<void>
+
+Storage rules:
+- sessionStorage:
+  - session_signed_in="1"
+  - session_mode="log"|"tasting"
+  - session_name="<string>" (log only; optional)
+- localStorage (only if remember enabled):
+  - session_remember="1"
+  - session_resume_token="<token>"
+  - session_resume_mode="log"|"tasting"
+  - session_resume_name="<string>" (log only optional)
+
+Never store plaintext PIN.
+
+Auto-resume:
+- Call tryAutoResume() once at app start (top-level App mount or Layout mount),
+  before rendering headers so “Good morning, {name}” is correct.
+
+────────────────────────────────────────────────────────
+B) BACKEND (TOKEN-BASED RESUME)
+Ensure these endpoints exist and are used by BOTH Classic & Simple:
+
+1) POST /api/session/signin
+Body: { pin:string, name?:string, mode:"log"|"tasting", remember:boolean }
+- Validate pin via env SIMPLE_MODE_PIN (required)
+- If mode==="log": require name only if env SESSION_LOG_REQUIRES_NAME==="true"
+- If mode==="tasting": ignore name (PIN-only)
+- If remember===true: return { ok:true, resumeToken }
+- Else return { ok:true }
+
+2) POST /api/session/resume
+Body: { resumeToken:string }
+- If valid: return { ok:true, mode, name? }
+- Else 401
+
+3) POST /api/session/signout
+Body: { resumeToken?:string }
+- Invalidate token if provided
+- Return ok:true
+
+No DB required:
+- In-memory token map with TTL 14 days is fine for MVP.
+- If server restarts, resume may fail → client clears stored token and shows signed out.
+
+Rate limiting:
+- signin attempts: 5/5min per IP
+- resume: 30/min per IP
+
+────────────────────────────────────────────────────────
+C) VISIBLE SESSION ENTRY EVERYWHERE (Classic + Simple)
+Add a profile/session icon in the TOP RIGHT of the main header for Classic View AND Simple Mode:
+
+- Icon: 👤 (or key/profile glyph)
+- If signed in: show a small dot or initial
+- If signed out: outline icon
+
+Tap opens a bottom sheet: “Session”
+
+Do NOT hide sign out in ⋯ menu anymore.
+
+────────────────────────────────────────────────────────
+D) SESSION BOTTOM SHEET CONTENT (ONE SHEET, ALL STATES)
+Title: “Session”
+
+If SIGNED OUT:
+- Status: “Signed out”
+- Primary button: “Sign in”
+- Helper text: “Sign in to save and sync your tastings.”
+- Toggle: “Stay signed in on this device” (default ON in log mode, OFF in tasting mode)
+- Optional mode hint:
+  - On /log-simple or My Taste areas: default mode="log"
+  - On tasting join/participation: default mode="tasting"
+
+Press “Sign in” → opens Sign-In form inside the sheet (or nested sheet):
+- Name field:
+  - shown if mode==="log" (optional unless required)
+  - hidden if mode==="tasting"
+- PIN field required
+- Confirm button: “Sign in”
+
+If SIGNED IN:
+- Status: “Signed in”
+- Show name if available else “Session active”
+- Show mode: “Log mode” or “Anonymous tasting”
+- Button: “Sign out” (primary destructive or secondary)
+- Small text: “Signing out clears this session on this device.”
+
+Sign out clears sessionStorage and localStorage resume token, calls backend signout, closes sheet.
+
+Remove/replace any “Locked / Not signed in / disabled Logout” UI.
+There must NEVER be a disabled Logout shown while signed out.
+
+────────────────────────────────────────────────────────
+E) CLASSIC HOME GREETING CONSISTENCY
+On Classic Home (“Good morning, Christoph”):
+- If signed in and name exists → show greeting with name
+- If signed out → show “Good morning” without name OR “Welcome”
+- Tapping the greeting name (optional) also opens Session sheet.
+
+────────────────────────────────────────────────────────
+F) REMOVE DUPLICATE / CONFLICTING AUTH
+- Replace any existing Simple-only unlock endpoints or UI gates to use the new shared session module + /api/session/* endpoints.
+- Ensure /log-simple Save gating uses getSession().signedIn:
+  - If not signed in → open Session sheet directly with mode="log" and return to save after success.
+
+────────────────────────────────────────────────────────
+G) ACCEPTANCE TESTS (MUST PASS)
+1) Classic Home:
+- Profile icon visible
+- Signed out: Session sheet offers Sign in (no Logout visible)
+- Signed in: shows name + Sign out works
+
+2) /log-simple:
+- User can fill form signed out
+- On Save: prompts Session sign-in (mode log)
+- After sign-in: save proceeds
+- Refresh: if “Stay signed in” ON → remains signed in
+
+3) Tasting flow:
+- If anonymous mode: PIN-only sign-in (no name), still shows signed in (anonymous) in Session sheet
+- Sign out clears it everywhere
+
+IMPLEMENT NOW. NO QUESTIONS.
