@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronDown, Copy, Check, ArrowRight, X } from "lucide-react";
+import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -13,6 +13,7 @@ const c = {
   muted: "#888",
   accent: "#d4a256",
   success: "#6ec177",
+  danger: "#e57373",
 };
 
 const cardStyle: React.CSSProperties = {
@@ -35,13 +36,27 @@ const inputStyle: React.CSSProperties = {
   boxSizing: "border-box",
 };
 
-interface Tasting {
+const blindLabel = (index: number) => String.fromCharCode(65 + index);
+
+interface TastingFull {
   id: string;
   title: string;
   status: string;
   code: string;
   date: string | null;
   location: string | null;
+  blindMode?: boolean;
+}
+
+interface Whisky {
+  id: string;
+  tastingId: string;
+  name: string;
+  distillery: string | null;
+  abv: number | null;
+  notes: string | null;
+  sortOrder: number;
+  caskInfluence: string | null;
 }
 
 function generateCode() {
@@ -124,7 +139,7 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
   );
 }
 
-function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () => void; onCreated: (tasting: Tasting) => void }) {
+function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () => void; onCreated: (tasting: TastingFull) => void }) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
@@ -179,9 +194,12 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
         <X style={{ width: 18, height: 18 }} />
       </button>
 
-      <h3 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 16px", color: c.text }} data-testid="text-wizard-title">
-        Create a Tasting Session
-      </h3>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: c.accent, background: `${c.accent}20`, padding: "2px 8px", borderRadius: 10 }}>Step 1</span>
+        <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: c.text }} data-testid="text-wizard-title">
+          Create a Tasting Session
+        </h3>
+      </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div>
@@ -261,7 +279,7 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
         )}
 
         {error && (
-          <div style={{ fontSize: 13, color: "#e57373", background: "#e5737315", padding: "8px 12px", borderRadius: 8 }} data-testid="text-create-error">
+          <div style={{ fontSize: 13, color: c.danger, background: `${c.danger}15`, padding: "8px 12px", borderRadius: 8 }} data-testid="text-create-error">
             {error}
           </div>
         )}
@@ -292,71 +310,354 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
   );
 }
 
-function SuccessCard({ tasting, onDismiss }: { tasting: Tasting; onDismiss: () => void }) {
+function AddWhiskiesStep({ tasting, onDone }: { tasting: TastingFull; onDone: () => void }) {
   const [, navigate] = useLocation();
+  const [whiskies, setWhiskies] = useState<Whisky[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
+  const [distillery, setDistillery] = useState("");
+  const [abv, setAbv] = useState("");
+  const [cask, setCask] = useState("");
+  const [notes, setNotes] = useState("");
+  const [showDetails, setShowDetails] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+
+  const isBlind = !!tasting.blindMode;
+
+  const fetchWhiskies = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/tastings/${tasting.id}/whiskies`);
+      if (res.ok) {
+        const data = await res.json();
+        setWhiskies(data.sort((a: Whisky, b: Whisky) => a.sortOrder - b.sortOrder));
+      }
+    } catch {}
+    setLoading(false);
+  }, [tasting.id]);
+
+  useEffect(() => { fetchWhiskies(); }, [fetchWhiskies]);
+
+  const handleAdd = async () => {
+    if (!name.trim() || adding) return;
+    setAdding(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/whiskies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tastingId: tasting.id,
+          name: name.trim(),
+          distillery: distillery.trim() || null,
+          abv: abv ? parseFloat(abv) : null,
+          caskInfluence: cask.trim() || null,
+          notes: notes.trim() || null,
+          sortOrder: whiskies.length,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to add whisky");
+      }
+
+      setName("");
+      setDistillery("");
+      setAbv("");
+      setCask("");
+      setNotes("");
+      setShowDetails(false);
+      await fetchWhiskies();
+    } catch (e: any) {
+      setError(e.message || "Something went wrong");
+    }
+    setAdding(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await fetch(`/api/whiskies/${id}`, { method: "DELETE" });
+      await fetchWhiskies();
+    } catch {}
+  };
+
+  const handleMove = async (index: number, direction: "up" | "down") => {
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= whiskies.length) return;
+
+    const updated = [...whiskies];
+    [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
+
+    const order = updated.map((w, i) => ({ id: w.id, sortOrder: i }));
+    setWhiskies(updated.map((w, i) => ({ ...w, sortOrder: i })));
+
+    try {
+      await fetch(`/api/tastings/${tasting.id}/reorder`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order }),
+      });
+    } catch {}
+  };
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(tasting.code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
+    } catch {}
   };
 
   return (
-    <div style={{ ...cardStyle, border: `1px solid ${c.success}40` }}>
-      <div style={{ textAlign: "center", marginBottom: 16 }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>🥃</div>
-        <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 4px" }} data-testid="text-success-title">
-          Session Created!
-        </h3>
-        <p style={{ fontSize: 13, color: c.muted, margin: 0 }}>
-          {tasting.title}
-        </p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ ...cardStyle, border: `1px solid ${c.success}40`, padding: "14px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{tasting.title}</div>
+            <div style={{ fontSize: 12, color: c.muted, marginTop: 2, display: "flex", alignItems: "center", gap: 8 }}>
+              <span>Code: <strong style={{ color: c.accent, letterSpacing: "0.08em" }}>{tasting.code}</strong></span>
+              {isBlind && (
+                <span style={{ fontSize: 10, color: c.accent, background: `${c.accent}20`, padding: "1px 6px", borderRadius: 6 }}>
+                  <EyeOff style={{ width: 10, height: 10, display: "inline", verticalAlign: "middle", marginRight: 3 }} />
+                  Blind
+                </span>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleCopy}
+            style={{ background: "none", border: `1px solid ${c.border}`, borderRadius: 8, padding: "5px 10px", color: copied ? c.success : c.muted, fontSize: 11, cursor: "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", gap: 4 }}
+            data-testid="button-copy-code"
+          >
+            {copied ? <Check style={{ width: 12, height: 12 }} /> : <Copy style={{ width: 12, height: 12 }} />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
       </div>
 
-      <div style={{ background: c.bg, borderRadius: 10, padding: "16px", textAlign: "center", marginBottom: 16 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: c.muted, marginBottom: 6 }}>
-          Session Code
+      <div style={cardStyle}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: c.accent, background: `${c.accent}20`, padding: "2px 8px", borderRadius: 10 }}>Step 2</span>
+          <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: c.text }} data-testid="text-step2-title">
+            Add Whiskies
+          </h3>
         </div>
-        <div
-          style={{
-            fontSize: 32,
-            fontWeight: 700,
-            letterSpacing: "0.15em",
-            color: c.accent,
-            fontFamily: "'Playfair Display', monospace",
-          }}
-          data-testid="text-session-code"
-        >
-          {tasting.code}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: c.muted, display: "block", marginBottom: 6 }}>
+              Whisky Name *
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Lagavulin 16"
+              style={inputStyle}
+              maxLength={200}
+              onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
+              data-testid="input-whisky-name"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowDetails(!showDetails)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: c.muted,
+              fontSize: 12,
+              fontFamily: "system-ui, sans-serif",
+              padding: "2px 0",
+            }}
+            data-testid="button-toggle-details"
+          >
+            <ChevronDown style={{ width: 12, height: 12, transform: showDetails ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+            Details (optional)
+          </button>
+
+          {showDetails && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingLeft: 4 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 4 }}>Distillery</label>
+                  <input
+                    type="text"
+                    value={distillery}
+                    onChange={(e) => setDistillery(e.target.value)}
+                    placeholder="e.g. Lagavulin"
+                    style={{ ...inputStyle, fontSize: 13 }}
+                    data-testid="input-whisky-distillery"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 4 }}>ABV %</label>
+                  <input
+                    type="number"
+                    value={abv}
+                    onChange={(e) => setAbv(e.target.value)}
+                    placeholder="e.g. 43"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    style={{ ...inputStyle, fontSize: 13 }}
+                    data-testid="input-whisky-abv"
+                  />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 4 }}>Cask Type</label>
+                <input
+                  type="text"
+                  value={cask}
+                  onChange={(e) => setCask(e.target.value)}
+                  placeholder="e.g. Ex-Bourbon, Sherry"
+                  style={{ ...inputStyle, fontSize: 13 }}
+                  data-testid="input-whisky-cask"
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 4 }}>Notes</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Host notes about this whisky"
+                  rows={2}
+                  style={{ ...inputStyle, fontSize: 13, resize: "vertical", minHeight: 40 }}
+                  data-testid="input-whisky-notes"
+                />
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div style={{ fontSize: 12, color: c.danger, background: `${c.danger}15`, padding: "6px 10px", borderRadius: 8 }} data-testid="text-whisky-error">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={!name.trim() || adding}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              padding: "10px",
+              fontSize: 14,
+              fontWeight: 600,
+              background: name.trim() ? c.accent : c.border,
+              color: name.trim() ? c.bg : c.muted,
+              border: "none",
+              borderRadius: 10,
+              cursor: name.trim() ? "pointer" : "not-allowed",
+              fontFamily: "system-ui, sans-serif",
+              transition: "background 0.2s",
+            }}
+            data-testid="button-add-whisky"
+          >
+            <Plus style={{ width: 16, height: 16 }} />
+            {adding ? "Adding…" : "Add Whisky"}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleCopy}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            marginTop: 10,
-            background: "none",
-            border: `1px solid ${c.border}`,
-            borderRadius: 8,
-            padding: "6px 14px",
-            color: copied ? c.success : c.muted,
-            fontSize: 12,
-            cursor: "pointer",
-            fontFamily: "system-ui, sans-serif",
-            transition: "color 0.2s",
-          }}
-          data-testid="button-copy-code"
-        >
-          {copied ? <Check style={{ width: 14, height: 14 }} /> : <Copy style={{ width: 14, height: 14 }} />}
-          {copied ? "Copied!" : "Copy Code"}
-        </button>
+
+        {loading ? (
+          <div style={{ textAlign: "center", color: c.muted, fontSize: 13, padding: "16px 0" }}>Loading…</div>
+        ) : whiskies.length > 0 ? (
+          <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: c.muted, marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
+              <span>{whiskies.length} {whiskies.length === 1 ? "whisky" : "whiskies"} added</span>
+              {isBlind && <span style={{ color: c.accent, fontSize: 11 }}><EyeOff style={{ width: 11, height: 11, display: "inline", verticalAlign: "middle", marginRight: 3 }} />Blind labels active</span>}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {whiskies.map((w, i) => (
+                <div
+                  key={w.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    background: c.bg,
+                    border: `1px solid ${c.border}`,
+                    borderRadius: 8,
+                    padding: "10px 12px",
+                  }}
+                  data-testid={`card-whisky-${w.id}`}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => handleMove(i, "up")}
+                      disabled={i === 0}
+                      style={{ background: "none", border: "none", cursor: i === 0 ? "default" : "pointer", color: i === 0 ? c.border : c.muted, padding: 0, lineHeight: 1 }}
+                      data-testid={`button-move-up-${w.id}`}
+                    >
+                      <ChevronUp style={{ width: 14, height: 14 }} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleMove(i, "down")}
+                      disabled={i === whiskies.length - 1}
+                      style={{ background: "none", border: "none", cursor: i === whiskies.length - 1 ? "default" : "pointer", color: i === whiskies.length - 1 ? c.border : c.muted, padding: 0, lineHeight: 1 }}
+                      data-testid={`button-move-down-${w.id}`}
+                    >
+                      <ChevronDown style={{ width: 14, height: 14 }} />
+                    </button>
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                      {isBlind && (
+                        <span style={{ fontSize: 13, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif" }} data-testid={`text-blind-label-${w.id}`}>
+                          {blindLabel(i)}
+                        </span>
+                      )}
+                      {!isBlind && (
+                        <span style={{ fontSize: 12, fontWeight: 600, color: c.muted, fontVariantNumeric: "tabular-nums", minWidth: 18 }}>
+                          {i + 1}.
+                        </span>
+                      )}
+                      <span style={{ fontSize: 14, fontWeight: 600, color: c.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} data-testid={`text-whisky-name-${w.id}`}>
+                        {isBlind ? `${blindLabel(i)} — ${w.name}` : w.name}
+                      </span>
+                    </div>
+                    {(w.distillery || w.abv) && (
+                      <div style={{ fontSize: 11, color: c.muted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {[w.distillery, w.abv ? `${w.abv}%` : null, w.caskInfluence].filter(Boolean).join(" · ")}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(w.id)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: c.muted, padding: 4, flexShrink: 0 }}
+                    data-testid={`button-delete-whisky-${w.id}`}
+                  >
+                    <Trash2 style={{ width: 15, height: 15 }} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 14, textAlign: "center" }}>
+            <p style={{ color: c.muted, fontSize: 13, margin: 0 }} data-testid="text-no-whiskies">
+              No whiskies yet. Add your first one above.
+            </p>
+          </div>
+        )}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -379,14 +680,14 @@ function SuccessCard({ tasting, onDismiss }: { tasting: Tasting; onDismiss: () =
             justifyContent: "center",
             gap: 8,
           }}
-          data-testid="button-continue-whiskies"
+          data-testid="button-go-to-session"
         >
-          Continue to Add Whiskies
+          Go to Session
           <ArrowRight style={{ width: 16, height: 16 }} />
         </button>
         <button
           type="button"
-          onClick={onDismiss}
+          onClick={onDone}
           style={{
             width: "100%",
             padding: "10px",
@@ -398,7 +699,7 @@ function SuccessCard({ tasting, onDismiss }: { tasting: Tasting; onDismiss: () =
             cursor: "pointer",
             fontFamily: "system-ui, sans-serif",
           }}
-          data-testid="button-dismiss-success"
+          data-testid="button-done-whiskies"
         >
           Back to Host
         </button>
@@ -414,9 +715,9 @@ export default function SimpleHostPage() {
   const pid = session.pid || localStorage.getItem("casksense_participant_id");
 
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [createdTasting, setCreatedTasting] = useState<Tasting | null>(null);
+  const [createdTasting, setCreatedTasting] = useState<TastingFull | null>(null);
 
-  const { data: tastings = [], isLoading } = useQuery<Tasting[]>({
+  const { data: tastings = [], isLoading } = useQuery<TastingFull[]>({
     queryKey: ["/api/tastings", pid],
     queryFn: async () => {
       if (!pid) return [];
@@ -431,7 +732,7 @@ export default function SimpleHostPage() {
   const draftTastings = tastings.filter((t) => t.status === "draft");
   const pastTastings = tastings.filter((t) => t.status === "closed" || t.status === "archived");
 
-  const handleCreated = (tasting: Tasting) => {
+  const handleCreated = (tasting: TastingFull) => {
     setCreatedTasting(tasting);
     setWizardOpen(false);
     queryClient.invalidateQueries({ queryKey: ["/api/tastings", pid] });
@@ -439,6 +740,7 @@ export default function SimpleHostPage() {
 
   const handleDismissSuccess = () => {
     setCreatedTasting(null);
+    queryClient.invalidateQueries({ queryKey: ["/api/tastings", pid] });
   };
 
   if (!pid) {
@@ -462,169 +764,175 @@ export default function SimpleHostPage() {
   return (
     <SimpleShell showBack={false}>
       <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }} data-testid="text-host-title">
-              Host a Tasting
-            </h2>
-            <p style={{ fontSize: 13, color: c.muted, marginTop: 4 }}>
-              Create a session, add whiskies, and run the tasting live.
-            </p>
+        {!createdTasting && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }} data-testid="text-host-title">
+                Host a Tasting
+              </h2>
+              <p style={{ fontSize: 13, color: c.muted, marginTop: 4 }}>
+                Create a session, add whiskies, and run the tasting live.
+              </p>
+            </div>
+            {!wizardOpen && (
+              <button
+                onClick={() => setWizardOpen(true)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: c.accent,
+                  color: c.bg,
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "8px 16px",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  flexShrink: 0,
+                }}
+                data-testid="button-create-tasting"
+              >
+                <Plus style={{ width: 16, height: 16 }} />
+                New
+              </button>
+            )}
           </div>
-          {!wizardOpen && !createdTasting && (
-            <button
-              onClick={() => setWizardOpen(true)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                background: c.accent,
-                color: c.bg,
-                border: "none",
-                borderRadius: 10,
-                padding: "8px 16px",
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: "pointer",
-                flexShrink: 0,
-              }}
-              data-testid="button-create-tasting"
-            >
-              <Plus style={{ width: 16, height: 16 }} />
-              New
-            </button>
-          )}
-        </div>
+        )}
 
         {createdTasting && (
-          <SuccessCard tasting={createdTasting} onDismiss={handleDismissSuccess} />
+          <AddWhiskiesStep tasting={createdTasting} onDone={handleDismissSuccess} />
         )}
 
         {wizardOpen && !createdTasting && (
           <CreateWizard pid={pid} onClose={() => setWizardOpen(false)} onCreated={handleCreated} />
         )}
 
-        {isLoading ? (
-          <div style={{ textAlign: "center", color: c.muted, padding: "32px 0" }}>
-            Loading...
-          </div>
-        ) : tastings.length === 0 && !wizardOpen && !createdTasting ? (
-          <div style={{ ...cardStyle, textAlign: "center" }}>
-            <p style={{ color: c.muted, fontSize: 14, margin: "8px 0" }} data-testid="text-no-tastings">
-              No tastings yet. Create your first one!
-            </p>
-          </div>
-        ) : (
+        {!createdTasting && (
           <>
-            {activeTastings.length > 0 && (
-              <div>
-                <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.accent, marginBottom: 10 }}>
-                  Live
-                </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {activeTastings.map((t) => (
-                    <Link key={t.id} href={`/legacy/tasting/${t.id}`}>
-                      <div style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }} data-testid={`card-tasting-${t.id}`}>
-                        <div>
-                          <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
-                          <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>
-                            Code: {t.code}
+            {isLoading ? (
+              <div style={{ textAlign: "center", color: c.muted, padding: "32px 0" }}>
+                Loading...
+              </div>
+            ) : tastings.length === 0 && !wizardOpen ? (
+              <div style={{ ...cardStyle, textAlign: "center" }}>
+                <p style={{ color: c.muted, fontSize: 14, margin: "8px 0" }} data-testid="text-no-tastings">
+                  No tastings yet. Create your first one!
+                </p>
+              </div>
+            ) : (
+              <>
+                {activeTastings.length > 0 && (
+                  <div>
+                    <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.accent, marginBottom: 10 }}>
+                      Live
+                    </h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {activeTastings.map((t) => (
+                        <Link key={t.id} href={`/legacy/tasting/${t.id}`}>
+                          <div style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }} data-testid={`card-tasting-${t.id}`}>
+                            <div>
+                              <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
+                              <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>
+                                Code: {t.code}
+                              </div>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <StatusBadge status={t.status} />
+                              <ChevronRight style={{ width: 16, height: 16, color: c.muted }} />
+                            </div>
                           </div>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <StatusBadge status={t.status} />
-                          <ChevronRight style={{ width: 16, height: 16, color: c.muted }} />
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {draftTastings.length > 0 && (
+                  <div>
+                    <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 10 }}>
+                      Drafts
+                    </h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {draftTastings.map((t) => (
+                        <Link key={t.id} href={`/legacy/tasting/${t.id}`}>
+                          <div style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }} data-testid={`card-tasting-${t.id}`}>
+                            <div>
+                              <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
+                              {t.date && <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>{t.date}</div>}
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <StatusBadge status={t.status} />
+                              <ChevronRight style={{ width: 16, height: 16, color: c.muted }} />
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {pastTastings.length > 0 && (
+                  <div>
+                    <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 10 }}>
+                      History
+                    </h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {pastTastings.slice(0, 5).map((t) => (
+                        <Link key={t.id} href={`/legacy/tasting/${t.id}`}>
+                          <div style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }} data-testid={`card-tasting-${t.id}`}>
+                            <div>
+                              <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
+                              {t.date && <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>{t.date}</div>}
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <StatusBadge status={t.status} />
+                              <ChevronRight style={{ width: 16, height: 16, color: c.muted }} />
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                      {pastTastings.length > 5 && (
+                        <Link href="/legacy/tasting/sessions">
+                          <div style={{ textAlign: "center", color: c.accent, fontSize: 13, padding: 8, cursor: "pointer" }} data-testid="link-all-sessions">
+                            Show all {pastTastings.length} tastings →
+                          </div>
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
-            {draftTastings.length > 0 && (
-              <div>
-                <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 10 }}>
-                  Drafts
-                </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {draftTastings.map((t) => (
-                    <Link key={t.id} href={`/legacy/tasting/${t.id}`}>
-                      <div style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }} data-testid={`card-tasting-${t.id}`}>
-                        <div>
-                          <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
-                          {t.date && <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>{t.date}</div>}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <StatusBadge status={t.status} />
-                          <ChevronRight style={{ width: 16, height: 16, color: c.muted }} />
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 2 }}>
+                Tools
+              </h3>
+              <Link href="/legacy/tasting?tab=templates">
+                <div style={{ ...cardStyle, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} data-testid="link-templates">
+                  <FileText style={{ width: 18, height: 18, color: c.accent }} />
+                  <span style={{ fontSize: 14 }}>Tasting Templates</span>
+                  <ChevronRight style={{ width: 14, height: 14, color: c.muted, marginLeft: "auto" }} />
                 </div>
-              </div>
-            )}
-
-            {pastTastings.length > 0 && (
-              <div>
-                <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 10 }}>
-                  History
-                </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {pastTastings.slice(0, 5).map((t) => (
-                    <Link key={t.id} href={`/legacy/tasting/${t.id}`}>
-                      <div style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }} data-testid={`card-tasting-${t.id}`}>
-                        <div>
-                          <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
-                          {t.date && <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>{t.date}</div>}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <StatusBadge status={t.status} />
-                          <ChevronRight style={{ width: 16, height: 16, color: c.muted }} />
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                  {pastTastings.length > 5 && (
-                    <Link href="/legacy/tasting/sessions">
-                      <div style={{ textAlign: "center", color: c.accent, fontSize: 13, padding: 8, cursor: "pointer" }} data-testid="link-all-sessions">
-                        Show all {pastTastings.length} tastings →
-                      </div>
-                    </Link>
-                  )}
+              </Link>
+              <Link href="/legacy/tasting/calendar">
+                <div style={{ ...cardStyle, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} data-testid="link-calendar">
+                  <Calendar style={{ width: 18, height: 18, color: c.accent }} />
+                  <span style={{ fontSize: 14 }}>Calendar</span>
+                  <ChevronRight style={{ width: 14, height: 14, color: c.muted, marginLeft: "auto" }} />
                 </div>
-              </div>
-            )}
+              </Link>
+              <Link href="/legacy/tasting/host">
+                <div style={{ ...cardStyle, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} data-testid="link-host-dashboard">
+                  <Settings style={{ width: 18, height: 18, color: c.accent }} />
+                  <span style={{ fontSize: 14 }}>Full Host Dashboard</span>
+                  <ChevronRight style={{ width: 14, height: 14, color: c.muted, marginLeft: "auto" }} />
+                </div>
+              </Link>
+            </div>
           </>
         )}
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 2 }}>
-            Tools
-          </h3>
-          <Link href="/legacy/tasting?tab=templates">
-            <div style={{ ...cardStyle, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} data-testid="link-templates">
-              <FileText style={{ width: 18, height: 18, color: c.accent }} />
-              <span style={{ fontSize: 14 }}>Tasting Templates</span>
-              <ChevronRight style={{ width: 14, height: 14, color: c.muted, marginLeft: "auto" }} />
-            </div>
-          </Link>
-          <Link href="/legacy/tasting/calendar">
-            <div style={{ ...cardStyle, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} data-testid="link-calendar">
-              <Calendar style={{ width: 18, height: 18, color: c.accent }} />
-              <span style={{ fontSize: 14 }}>Calendar</span>
-              <ChevronRight style={{ width: 14, height: 14, color: c.muted, marginLeft: "auto" }} />
-            </div>
-          </Link>
-          <Link href="/legacy/tasting/host">
-            <div style={{ ...cardStyle, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} data-testid="link-host-dashboard">
-              <Settings style={{ width: 18, height: 18, color: c.accent }} />
-              <span style={{ fontSize: 14 }}>Full Host Dashboard</span>
-              <ChevronRight style={{ width: 14, height: 14, color: c.muted, marginLeft: "auto" }} />
-            </div>
-          </Link>
-        </div>
       </div>
     </SimpleShell>
   );
