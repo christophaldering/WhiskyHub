@@ -5,6 +5,9 @@ import { KeyRound } from "lucide-react";
 import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
 
+const HERO_BG_ENABLED = false;
+const HERO_BG_URL = "/images/landing-hero.jpg";
+
 export default function Landing() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [session, setSession] = useState(() => getSession());
@@ -20,7 +23,9 @@ export default function Landing() {
   return (
     <div
       style={{
-        background: "#1a1714",
+        background: HERO_BG_ENABLED
+          ? `linear-gradient(rgba(26,23,20,0.88), rgba(26,23,20,0.94)), url(${HERO_BG_URL}) center/cover no-repeat`
+          : "#1a1714",
         color: "#f5f0e8",
         minHeight: "100dvh",
         display: "flex",
