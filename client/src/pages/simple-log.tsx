@@ -12,6 +12,7 @@ const c = {
   border: "#2e2a24",
   text: "#f5f0e8",
   muted: "#888",
+  mutedLight: "#8a7e6d",
   accent: "#d4a256",
   error: "#c44",
   success: "#6a9a5b",
@@ -401,7 +402,7 @@ function CandidateSheet({
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {candidates.length === 0 && (
-          <button onClick={onCreateUnknown} data-testid="button-create-unknown" style={btnPrimary}>Create as Unknown</button>
+          <button onClick={onCreateUnknown} data-testid="button-add-manually-sheet" style={btnPrimary}>Add manually</button>
         )}
         {candidates.length === 0 && (
           <button onClick={onSearchManually} data-testid="button-search-manually" style={btnOutline}>Search manually</button>
@@ -417,7 +418,7 @@ function CandidateSheet({
           <button onClick={onSearchManually} data-testid="button-search-manually" style={btnOutline}>Search manually</button>
         )}
         {candidates.length > 0 && (
-          <button onClick={onCreateUnknown} data-testid="button-create-unknown" style={{ ...btnOutline, color: c.muted, borderColor: c.muted }}>Create as Unknown</button>
+          <button onClick={onCreateUnknown} data-testid="button-add-manually-alt" style={{ ...btnOutline, color: c.mutedLight || c.muted, borderColor: `${c.muted}40` }}>Add manually</button>
         )}
       </div>
     </motion.div>
@@ -610,12 +611,14 @@ export default function SimpleLogPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
-  const [showUnknown, setShowUnknown] = useState(false);
+  const [showManual, setShowManual] = useState(false);
   const [unknownAge, setUnknownAge] = useState("");
   const [unknownAbv, setUnknownAbv] = useState("");
   const [unknownCask, setUnknownCask] = useState("");
   const [unknownWbId, setUnknownWbId] = useState("");
   const [unknownPrice, setUnknownPrice] = useState("");
+  const [showDetailed, setShowDetailed] = useState(false);
+  const [detailedScores, setDetailedScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50 });
 
   const [scanning, setScanning] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -722,12 +725,12 @@ export default function SimpleLogPage() {
     setDistillery(cand.distillery);
     setSelectedCandidate(cand);
     setSheetView("none");
-    setShowUnknown(false);
+    setShowManual(false);
   };
 
   const handleCreateUnknown = () => {
     setSheetView("none");
-    setShowUnknown(true);
+    setShowManual(true);
     setWhiskyName("");
     setDistillery("");
     setSelectedCandidate(null);
@@ -754,24 +757,51 @@ export default function SimpleLogPage() {
     }
   };
 
+  const buildScoresBlock = () => {
+    if (!showDetailed) return "";
+    return `\n[SCORES] Nose:${detailedScores.nose} Taste:${detailedScores.taste} Finish:${detailedScores.finish} Balance:${detailedScores.balance} [/SCORES]`;
+  };
+
+  const persistDetailedScores = () => {
+    if (!showDetailed) return;
+    try {
+      const existing = JSON.parse(localStorage.getItem("simple_score_details") || "[]");
+      existing.push({
+        whiskyName: whiskyName.trim(),
+        overall: score,
+        nose: detailedScores.nose,
+        taste: detailedScores.taste,
+        finish: detailedScores.finish,
+        balance: detailedScores.balance,
+        timestamp: new Date().toISOString(),
+      });
+      localStorage.setItem("simple_score_details", JSON.stringify(existing));
+    } catch {}
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!whiskyName.trim()) return;
 
+    const scoresBlock = buildScoresBlock();
+
     if (!pid) {
+      const notesLocal = (notes.trim() + scoresBlock).trim();
       const entry = {
         whiskyName: whiskyName.trim(),
         distillery: distillery.trim(),
         score,
-        notes: notes.trim(),
+        detailedScores: showDetailed ? { ...detailedScores } : undefined,
+        notes: notesLocal,
         photoUrl,
-        isUnknown: showUnknown,
-        unknownMeta: showUnknown ? { age: unknownAge, abv: unknownAbv, cask: unknownCask, whiskybaseId: unknownWbId, price: unknownPrice } : undefined,
+        isManual: showManual,
+        manualMeta: showManual ? { age: unknownAge, abv: unknownAbv, cask: unknownCask, whiskybaseId: unknownWbId, price: unknownPrice } : undefined,
         date: new Date().toISOString(),
       };
-      const existing = JSON.parse(localStorage.getItem("simple_unknown_logs") || "[]");
+      const existing = JSON.parse(localStorage.getItem("simple_manual_logs") || "[]");
       existing.push(entry);
-      localStorage.setItem("simple_unknown_logs", JSON.stringify(existing));
+      localStorage.setItem("simple_manual_logs", JSON.stringify(existing));
+      persistDetailedScores();
       setSaved(true);
       return;
     }
@@ -779,17 +809,19 @@ export default function SimpleLogPage() {
     setSaving(true);
     setError("");
     try {
+      const notesWithScores = (notes.trim() + scoresBlock).trim() || undefined;
+
       const body: Record<string, any> = {
         title: whiskyName.trim(),
         whiskyName: whiskyName.trim(),
         distillery: distillery.trim() || undefined,
         personalScore: score,
-        noseNotes: notes.trim() || undefined,
+        noseNotes: notesWithScores,
         source: "casksense",
         imageUrl: photoUrl || undefined,
       };
 
-      if (showUnknown) {
+      if (showManual) {
         if (unknownAge.trim()) body.age = unknownAge.trim();
         if (unknownAbv.trim()) body.abv = unknownAbv.trim();
         if (unknownCask.trim()) body.caskType = unknownCask.trim();
@@ -810,21 +842,25 @@ export default function SimpleLogPage() {
         throw new Error(err.message || "Save failed");
       }
 
+      persistDetailedScores();
       setSaved(true);
     } catch (err: any) {
+      const notesFallback = (notes.trim() + scoresBlock).trim();
       const entry = {
         whiskyName: whiskyName.trim(),
         distillery: distillery.trim(),
         score,
-        notes: notes.trim(),
+        detailedScores: showDetailed ? { ...detailedScores } : undefined,
+        notes: notesFallback,
         photoUrl,
-        isUnknown: showUnknown,
-        unknownMeta: showUnknown ? { age: unknownAge, abv: unknownAbv, cask: unknownCask, whiskybaseId: unknownWbId, price: unknownPrice } : undefined,
+        isManual: showManual,
+        manualMeta: showManual ? { age: unknownAge, abv: unknownAbv, cask: unknownCask, whiskybaseId: unknownWbId, price: unknownPrice } : undefined,
         date: new Date().toISOString(),
       };
-      const existing = JSON.parse(localStorage.getItem("simple_unknown_logs") || "[]");
+      const existing = JSON.parse(localStorage.getItem("simple_manual_logs") || "[]");
       existing.push(entry);
-      localStorage.setItem("simple_unknown_logs", JSON.stringify(existing));
+      localStorage.setItem("simple_manual_logs", JSON.stringify(existing));
+      persistDetailedScores();
       setSaved(true);
     } finally {
       setSaving(false);
@@ -838,7 +874,7 @@ export default function SimpleLogPage() {
     setNotes("");
     setSaved(false);
     setError("");
-    setShowUnknown(false);
+    setShowManual(false);
     setUnknownAge("");
     setUnknownAbv("");
     setUnknownCask("");
@@ -848,15 +884,17 @@ export default function SimpleLogPage() {
     setCandidates([]);
     setSelectedCandidate(null);
     setIsMenuMode(false);
+    setShowDetailed(false);
+    setDetailedScores({ nose: 50, taste: 50, finish: 50, balance: 50 });
   };
 
   const handleCopyJson = () => {
-    const logs = localStorage.getItem("simple_unknown_logs") || "[]";
+    const logs = localStorage.getItem("simple_manual_logs") || "[]";
     navigator.clipboard.writeText(logs);
   };
 
   const handleDownloadJson = () => {
-    const logs = localStorage.getItem("simple_unknown_logs") || "[]";
+    const logs = localStorage.getItem("simple_manual_logs") || "[]";
     const blob = new Blob([logs], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -931,7 +969,7 @@ export default function SimpleLogPage() {
                 <input type="text" value={whiskyName} onChange={(e) => setWhiskyName(e.target.value)} style={inputStyle} data-testid="input-whisky-name" autoComplete="off" />
               </div>
 
-              <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <button
                   type="button"
                   onClick={() => setSheetView("picker")}
@@ -961,57 +999,96 @@ export default function SimpleLogPage() {
                     </>
                   ) : "Identify"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => { setShowUnknown(!showUnknown); setSelectedCandidate(null); }}
-                  data-testid="button-toggle-unknown"
-                  style={{ ...btnOutline, flex: 0, whiteSpace: "nowrap", padding: "10px 14px", fontSize: 13 }}
-                >
-                  {showUnknown ? "Hide" : "Unknown?"}
-                </button>
+                {!showManual && (
+                  <button
+                    type="button"
+                    onClick={() => { setShowManual(true); setSelectedCandidate(null); }}
+                    data-testid="button-add-manually"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: c.muted,
+                      fontSize: 12,
+                      fontFamily: "system-ui, sans-serif",
+                      padding: "8px 4px",
+                      whiteSpace: "nowrap",
+                      textDecoration: "underline",
+                      textDecorationColor: `${c.muted}60`,
+                      textUnderlineOffset: 2,
+                    }}
+                  >
+                    Add manually
+                  </button>
+                )}
               </div>
 
-              {showUnknown && (
+              <AnimatePresence>
+              {showManual && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 0", borderTop: `1px solid ${c.border}` }}
-                  data-testid="section-unknown"
+                  data-testid="section-manual"
                 >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      fontSize: 11,
+                      fontWeight: 500,
+                      color: c.accent,
+                      background: `${c.accent}18`,
+                      padding: "3px 10px",
+                      borderRadius: 20,
+                    }} data-testid="chip-manual-entry">
+                      <span style={{ fontSize: 9 }}>✎</span> Manual entry
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowManual(false)}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: c.muted, fontSize: 11, fontFamily: "system-ui, sans-serif", padding: 4 }}
+                      data-testid="button-hide-manual"
+                    >
+                      Collapse
+                    </button>
+                  </div>
                   <p style={{ fontSize: 12, color: c.muted, margin: 0 }}>Fill in what you know — everything except name is optional.</p>
                   <div>
                     <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Distillery</label>
-                    <input type="text" value={distillery} onChange={(e) => setDistillery(e.target.value)} style={inputStyle} data-testid="input-unknown-distillery" autoComplete="off" />
+                    <input type="text" value={distillery} onChange={(e) => setDistillery(e.target.value)} style={inputStyle} data-testid="input-manual-distillery" autoComplete="off" />
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <div style={{ flex: 1 }}>
                       <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Age</label>
-                      <input type="text" value={unknownAge} onChange={(e) => setUnknownAge(e.target.value)} style={inputStyle} data-testid="input-unknown-age" placeholder="e.g. 12" autoComplete="off" />
+                      <input type="text" value={unknownAge} onChange={(e) => setUnknownAge(e.target.value)} style={inputStyle} data-testid="input-manual-age" placeholder="e.g. 12" autoComplete="off" />
                     </div>
                     <div style={{ flex: 1 }}>
                       <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>ABV</label>
-                      <input type="text" value={unknownAbv} onChange={(e) => setUnknownAbv(e.target.value)} style={inputStyle} data-testid="input-unknown-abv" placeholder="e.g. 46%" autoComplete="off" />
+                      <input type="text" value={unknownAbv} onChange={(e) => setUnknownAbv(e.target.value)} style={inputStyle} data-testid="input-manual-abv" placeholder="e.g. 46%" autoComplete="off" />
                     </div>
                   </div>
                   <div>
                     <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Cask type</label>
-                    <input type="text" value={unknownCask} onChange={(e) => setUnknownCask(e.target.value)} style={inputStyle} data-testid="input-unknown-cask" placeholder="e.g. Sherry" autoComplete="off" />
+                    <input type="text" value={unknownCask} onChange={(e) => setUnknownCask(e.target.value)} style={inputStyle} data-testid="input-manual-cask" placeholder="e.g. Sherry" autoComplete="off" />
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <div style={{ flex: 1 }}>
                       <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Whiskybase ID</label>
-                      <input type="text" value={unknownWbId} onChange={(e) => setUnknownWbId(e.target.value)} style={inputStyle} data-testid="input-unknown-wbid" autoComplete="off" />
+                      <input type="text" value={unknownWbId} onChange={(e) => setUnknownWbId(e.target.value)} style={inputStyle} data-testid="input-manual-wbid" autoComplete="off" />
                     </div>
                     <div style={{ flex: 1 }}>
                       <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Price</label>
-                      <input type="text" value={unknownPrice} onChange={(e) => setUnknownPrice(e.target.value)} style={inputStyle} data-testid="input-unknown-price" placeholder="e.g. €65" autoComplete="off" />
+                      <input type="text" value={unknownPrice} onChange={(e) => setUnknownPrice(e.target.value)} style={inputStyle} data-testid="input-manual-price" placeholder="e.g. €65" autoComplete="off" />
                     </div>
                   </div>
                 </motion.div>
               )}
+              </AnimatePresence>
 
-              {!showUnknown && (
+              {!showManual && (
                 <div>
                   <label style={{ fontSize: 12, color: c.muted, display: "block", marginBottom: 4 }}>Distillery</label>
                   <input type="text" value={distillery} onChange={(e) => setDistillery(e.target.value)} style={inputStyle} data-testid="input-distillery" autoComplete="off" />
@@ -1020,10 +1097,69 @@ export default function SimpleLogPage() {
 
               <div>
                 <label style={{ fontSize: 12, color: c.muted, display: "block", marginBottom: 4 }}>
-                  Score: <span style={{ color: c.accent, fontWeight: 600 }}>{score}</span>
+                  Overall: <span style={{ color: c.accent, fontWeight: 600 }}>{score}</span>
                 </label>
                 <input type="range" min={0} max={100} value={score} onChange={(e) => setScore(Number(e.target.value))} data-testid="input-score" style={{ width: "100%", accentColor: c.accent }} />
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: c.muted }}><span>0</span><span>100</span></div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowDetailed(!showDetailed)}
+                  data-testid="button-toggle-detailed"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: showDetailed ? c.accent : c.muted,
+                    fontSize: 12,
+                    fontFamily: "system-ui, sans-serif",
+                    padding: "6px 0 0",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  <span style={{ fontSize: 10, transition: "transform 0.2s", transform: showDetailed ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block" }}>▸</span>
+                  {showDetailed ? "Hide detailed scoring" : "Detailed scoring (4)"}
+                </button>
+
+                <AnimatePresence>
+                {showDetailed && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 10,
+                      paddingTop: 10,
+                      marginTop: 6,
+                      borderTop: `1px solid ${c.border}`,
+                    }}
+                    data-testid="section-detailed-scoring"
+                  >
+                    {(["Nose", "Taste", "Finish", "Balance"] as const).map((dim) => {
+                      const key = dim.toLowerCase() as "nose" | "taste" | "finish" | "balance";
+                      return (
+                        <div key={dim} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ fontSize: 12, color: c.muted, width: 48, flexShrink: 0 }}>{dim}</span>
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            value={detailedScores[key]}
+                            onChange={(e) => setDetailedScores((prev) => ({ ...prev, [key]: Number(e.target.value) }))}
+                            data-testid={`input-score-${key}`}
+                            style={{ flex: 1, accentColor: c.accent }}
+                          />
+                          <span style={{ fontSize: 12, fontWeight: 600, color: c.accent, width: 28, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{detailedScores[key]}</span>
+                        </div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+                </AnimatePresence>
               </div>
 
               <div>
