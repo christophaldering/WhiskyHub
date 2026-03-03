@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, ExternalLink } from "lucide-react";
+import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, Timer, BarChart3 } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -39,7 +39,7 @@ const inputStyle: React.CSSProperties = {
 
 const blindLabel = (index: number) => String.fromCharCode(65 + index);
 
-type WizardStep = "list" | "step1" | "step2" | "step3";
+type WizardStep = "list" | "step1" | "step2" | "step3" | "step4";
 
 interface TastingFull {
   id: string;
@@ -49,6 +49,26 @@ interface TastingFull {
   date: string | null;
   location: string | null;
   blindMode?: boolean;
+  activeWhiskyId?: string | null;
+  guidedMode?: boolean;
+  guidedWhiskyIndex?: number;
+  guidedRevealStep?: number;
+  showRanking?: boolean;
+  showGroupAvg?: boolean;
+  ratingPrompt?: string | null;
+}
+
+interface Rating {
+  id: string;
+  whiskyId: string;
+  participantId: string;
+  overall: number | null;
+}
+
+interface TastingParticipant {
+  id: string;
+  participantId: string;
+  participant: { id: string; name: string };
 }
 
 interface Whisky {
@@ -701,7 +721,7 @@ function AddWhiskiesStep({ tasting, onDone, onNext }: { tasting: TastingFull; on
   );
 }
 
-function InviteStep({ tasting, onDone }: { tasting: TastingFull; onDone: () => void }) {
+function InviteStep({ tasting, onDone, onNext }: { tasting: TastingFull; onDone: () => void; onNext: () => void }) {
   const [, navigate] = useLocation();
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
@@ -881,7 +901,7 @@ function InviteStep({ tasting, onDone }: { tasting: TastingFull; onDone: () => v
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <button
           type="button"
-          onClick={() => navigate(`/legacy/tasting/${tasting.id}`)}
+          onClick={onNext}
           style={{
             width: "100%",
             padding: "12px",
@@ -898,9 +918,9 @@ function InviteStep({ tasting, onDone }: { tasting: TastingFull; onDone: () => v
             justifyContent: "center",
             gap: 8,
           }}
-          data-testid="button-go-to-session"
+          data-testid="button-next-to-live"
         >
-          Go to Session
+          Next: Go Live
           <ArrowRight style={{ width: 16, height: 16 }} />
         </button>
         <button
@@ -922,6 +942,452 @@ function InviteStep({ tasting, onDone }: { tasting: TastingFull; onDone: () => v
           Back to Host
         </button>
       </div>
+    </div>
+  );
+}
+
+function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: TastingFull; pid: string; onDone: () => void }) {
+  const [, navigate] = useLocation();
+
+  const { data: liveTasting } = useQuery<TastingFull>({
+    queryKey: ["/api/tastings", initialTasting.id, "live"],
+    queryFn: async () => {
+      const res = await fetch(`/api/tastings/${initialTasting.id}`);
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    refetchInterval: 3000,
+    initialData: initialTasting,
+  });
+  const tasting = liveTasting || initialTasting;
+
+  const { data: whiskies = [] } = useQuery<Whisky[]>({
+    queryKey: ["/api/tastings", tasting.id, "whiskies-live"],
+    queryFn: async () => {
+      const res = await fetch(`/api/tastings/${tasting.id}/whiskies`);
+      if (!res.ok) return [];
+      return (await res.json()).sort((a: Whisky, b: Whisky) => a.sortOrder - b.sortOrder);
+    },
+  });
+
+  const { data: participants = [] } = useQuery<TastingParticipant[]>({
+    queryKey: ["/api/tastings", tasting.id, "participants-live"],
+    queryFn: async () => {
+      const res = await fetch(`/api/tastings/${tasting.id}/participants`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    refetchInterval: 5000,
+  });
+
+  const { data: ratings = [] } = useQuery<Rating[]>({
+    queryKey: ["/api/tastings", tasting.id, "ratings-live"],
+    queryFn: async () => {
+      const res = await fetch(`/api/tastings/${tasting.id}/ratings`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    refetchInterval: 5000,
+    enabled: tasting.status === "open",
+  });
+
+  const isBlind = !!tasting.blindMode;
+  const isOpen = tasting.status === "open";
+  const isDraft = tasting.status === "draft";
+
+  const activeIndex = tasting.guidedWhiskyIndex ?? -1;
+  const activeWhisky = activeIndex >= 0 && activeIndex < whiskies.length ? whiskies[activeIndex] : null;
+  const revealStep = tasting.guidedRevealStep ?? 0;
+  const showResults = !!tasting.showGroupAvg;
+
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!timerRunning) return;
+    const interval = setInterval(() => setTimerSeconds((s) => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, [timerRunning]);
+
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const patchTasting = async (body: Record<string, any>) => {
+    await fetch(`/api/tastings/${tasting.id}/details`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  };
+
+  const updateStatus = async (status: string) => {
+    await fetch(`/api/tastings/${tasting.id}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, hostId: pid }),
+    });
+  };
+
+  const updateGuided = async (body: Record<string, any>) => {
+    await fetch(`/api/tastings/${tasting.id}/guided-mode`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hostId: pid, ...body }),
+    });
+  };
+
+  const goToWhisky = async (index: number) => {
+    await fetch(`/api/tastings/${tasting.id}/guided-goto`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hostId: pid, whiskyIndex: index, revealStep: 0 }),
+    });
+    setTimerSeconds(0);
+    setTimerRunning(false);
+  };
+
+  const handleStartSession = async () => {
+    await updateStatus("open");
+    if (whiskies.length > 0) {
+      await updateGuided({ guidedMode: true, guidedWhiskyIndex: 0, guidedRevealStep: 0 });
+    }
+    setTimerSeconds(0);
+  };
+
+  const handleEndSession = async () => {
+    await updateStatus("closed");
+    setTimerRunning(false);
+  };
+
+  const handleReveal = async () => {
+    const nextStep = Math.min((tasting.guidedRevealStep ?? 0) + 1, 3);
+    await updateGuided({ guidedRevealStep: nextStep });
+  };
+
+  const handleToggleResults = async () => {
+    await patchTasting({ showGroupAvg: !showResults, showRanking: !showResults });
+  };
+
+  const activeRatings = activeWhisky ? ratings.filter((r) => r.whiskyId === activeWhisky.id) : [];
+  const avgScore = activeRatings.length > 0
+    ? Math.round(activeRatings.reduce((sum, r) => sum + (r.overall ?? 0), 0) / activeRatings.length)
+    : null;
+
+  const guestParticipants = participants.filter((p) => p.participantId !== pid);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <TastingHeader tasting={tasting} />
+
+      <div style={cardStyle}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <StepBadge step={4} />
+          <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: c.text }} data-testid="text-step4-title">
+            Run Live
+          </h3>
+          <span style={{
+            fontSize: 10,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            color: isOpen ? c.success : isDraft ? c.muted : c.accent,
+            background: isOpen ? `${c.success}20` : isDraft ? `${c.muted}20` : `${c.accent}20`,
+            padding: "2px 8px",
+            borderRadius: 6,
+            marginLeft: "auto",
+          }} data-testid="badge-session-status">
+            {tasting.status}
+          </span>
+        </div>
+
+        {isDraft && (
+          <div style={{ textAlign: "center", padding: "16px 0" }}>
+            <p style={{ color: c.muted, fontSize: 13, marginBottom: 16 }}>
+              {whiskies.length === 0
+                ? "Add whiskies first, then start the session."
+                : `Ready to go with ${whiskies.length} ${whiskies.length === 1 ? "whisky" : "whiskies"}.`}
+            </p>
+            <button
+              type="button"
+              onClick={handleStartSession}
+              disabled={whiskies.length === 0}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "12px 32px",
+                fontSize: 16,
+                fontWeight: 700,
+                background: whiskies.length > 0 ? c.success : c.border,
+                color: whiskies.length > 0 ? "#fff" : c.muted,
+                border: "none",
+                borderRadius: 12,
+                cursor: whiskies.length > 0 ? "pointer" : "not-allowed",
+                fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="button-start-session"
+            >
+              <Play style={{ width: 18, height: 18 }} />
+              Start Session
+            </button>
+          </div>
+        )}
+
+        {isOpen && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ background: c.bg, borderRadius: 10, padding: "16px" }}>
+              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: c.muted, marginBottom: 8 }}>
+                Current Whisky
+              </div>
+              {activeWhisky ? (
+                <div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif", marginBottom: 4 }} data-testid="text-active-whisky">
+                    {isBlind ? `Whisky ${blindLabel(activeIndex)}` : activeWhisky.name}
+                  </div>
+                  {isBlind && (
+                    <div style={{ fontSize: 13, color: c.muted }} data-testid="text-active-whisky-real">
+                      Host view: {activeWhisky.name}
+                    </div>
+                  )}
+                  {activeWhisky.distillery && (
+                    <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>
+                      {[activeWhisky.distillery, activeWhisky.abv ? `${activeWhisky.abv}%` : null].filter(Boolean).join(" · ")}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ fontSize: 14, color: c.muted }}>No whisky selected</div>
+              )}
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => { setTimerRunning(!timerRunning); }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    background: `${c.accent}15`,
+                    border: `1px solid ${c.accent}30`,
+                    borderRadius: 8,
+                    padding: "6px 12px",
+                    color: c.accent,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontFamily: "monospace",
+                  }}
+                  data-testid="button-timer"
+                >
+                  <Timer style={{ width: 14, height: 14 }} />
+                  {formatTime(timerSeconds)}
+                  <span style={{ fontSize: 10, fontWeight: 400, marginLeft: 4 }}>{timerRunning ? "⏸" : "▶"}</span>
+                </button>
+
+                {timerSeconds > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { setTimerSeconds(0); setTimerRunning(false); }}
+                    style={{ background: "none", border: "none", color: c.muted, fontSize: 11, cursor: "pointer", fontFamily: "system-ui, sans-serif", textDecoration: "underline" }}
+                    data-testid="button-timer-reset"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {whiskies.map((w, i) => (
+                <button
+                  key={w.id}
+                  type="button"
+                  onClick={() => goToWhisky(i)}
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: 13,
+                    fontWeight: i === activeIndex ? 700 : 500,
+                    background: i === activeIndex ? c.accent : c.bg,
+                    color: i === activeIndex ? c.bg : c.text,
+                    border: `1px solid ${i === activeIndex ? c.accent : c.border}`,
+                    borderRadius: 8,
+                    cursor: "pointer",
+                    fontFamily: "system-ui, sans-serif",
+                  }}
+                  data-testid={`button-select-whisky-${w.id}`}
+                >
+                  {isBlind ? blindLabel(i) : `${i + 1}`}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {isBlind && activeWhisky && (
+                <button
+                  type="button"
+                  onClick={handleReveal}
+                  disabled={revealStep >= 3}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    padding: "10px",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    background: revealStep < 3 ? `${c.accent}15` : c.border,
+                    color: revealStep < 3 ? c.accent : c.muted,
+                    border: `1px solid ${revealStep < 3 ? c.accent + "40" : c.border}`,
+                    borderRadius: 10,
+                    cursor: revealStep < 3 ? "pointer" : "not-allowed",
+                    fontFamily: "system-ui, sans-serif",
+                  }}
+                  data-testid="button-reveal"
+                >
+                  <Eye style={{ width: 16, height: 16 }} />
+                  {revealStep === 0 ? "Reveal Name" : revealStep === 1 ? "Reveal Details" : revealStep === 2 ? "Reveal Image" : "Fully Revealed"}
+                </button>
+              )}
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={handleToggleResults}
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    padding: "10px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    background: showResults ? `${c.success}15` : c.bg,
+                    color: showResults ? c.success : c.muted,
+                    border: `1px solid ${showResults ? c.success + "40" : c.border}`,
+                    borderRadius: 10,
+                    cursor: "pointer",
+                    fontFamily: "system-ui, sans-serif",
+                  }}
+                  data-testid="button-toggle-results"
+                >
+                  <BarChart3 style={{ width: 14, height: 14 }} />
+                  {showResults ? "Results Visible" : "Results Hidden"}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 4 }}>
+              <div style={{ background: c.bg, borderRadius: 10, padding: "12px", textAlign: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 6 }}>
+                  <Users style={{ width: 14, height: 14, color: c.accent }} />
+                  <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted }}>Joined</span>
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif" }} data-testid="text-participant-count">
+                  {guestParticipants.length}
+                </div>
+                {guestParticipants.length > 0 && (
+                  <div style={{ fontSize: 11, color: c.muted, marginTop: 4, maxHeight: 60, overflow: "auto" }}>
+                    {guestParticipants.map((p) => p.participant.name).join(", ")}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ background: c.bg, borderRadius: 10, padding: "12px", textAlign: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 6 }}>
+                  <BarChart3 style={{ width: 14, height: 14, color: c.accent }} />
+                  <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted }}>Ratings</span>
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif" }} data-testid="text-rating-count">
+                  {activeRatings.length}
+                </div>
+                {avgScore !== null && showResults && (
+                  <div style={{ fontSize: 12, color: c.accent, marginTop: 4 }} data-testid="text-avg-score">
+                    Avg: {avgScore}/100
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleEndSession}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                padding: "10px",
+                fontSize: 14,
+                fontWeight: 600,
+                background: `${c.danger}15`,
+                color: c.danger,
+                border: `1px solid ${c.danger}40`,
+                borderRadius: 10,
+                cursor: "pointer",
+                fontFamily: "system-ui, sans-serif",
+                marginTop: 4,
+              }}
+              data-testid="button-end-session"
+            >
+              <Square style={{ width: 14, height: 14 }} />
+              End Session
+            </button>
+          </div>
+        )}
+
+        {!isDraft && !isOpen && (
+          <div style={{ textAlign: "center", padding: "16px 0" }}>
+            <p style={{ fontSize: 14, color: c.muted, marginBottom: 12 }}>
+              Session is <strong style={{ color: c.text }}>{tasting.status}</strong>.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate(`/legacy/tasting/${tasting.id}`)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "10px 20px",
+                fontSize: 14,
+                fontWeight: 600,
+                background: c.accent,
+                color: c.bg,
+                border: "none",
+                borderRadius: 10,
+                cursor: "pointer",
+                fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="button-view-session"
+            >
+              View in Full Dashboard
+              <ArrowRight style={{ width: 14, height: 14 }} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={onDone}
+        style={{
+          width: "100%",
+          padding: "10px",
+          fontSize: 13,
+          background: "none",
+          color: c.muted,
+          border: `1px solid ${c.border}`,
+          borderRadius: 10,
+          cursor: "pointer",
+          fontFamily: "system-ui, sans-serif",
+        }}
+        data-testid="button-done-live"
+      >
+        Back to Host
+      </button>
     </div>
   );
 }
