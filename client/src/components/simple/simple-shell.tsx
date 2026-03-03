@@ -31,11 +31,12 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
   const [showUserSheet, setShowUserSheet] = useState(false);
   const auth = getSimpleAuth();
 
+  const [, forceUpdate] = useState(0);
+
   const handleLogout = () => {
     clearSimpleAuth();
     setShowUserSheet(false);
-    navigate("/");
-    window.location.reload();
+    forceUpdate((n) => n + 1);
   };
 
   return (
@@ -142,12 +143,14 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
                 <Lock style={{ width: 18, height: 18, color: c.mutedLight, flexShrink: 0 }} />
               )}
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: c.text }}>
-                  {auth.unlocked ? (auth.name || "Guest") : "Locked"}
-                </div>
-                <div style={{ fontSize: 11, color: c.mutedLight }}>
-                  {auth.unlocked ? "Session unlocked" : "Save tastings under your name"}
-                </div>
+                {auth.unlocked ? (
+                  <>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: c.text }}>{auth.name || "Guest"}</div>
+                    <div style={{ fontSize: 11, color: c.mutedLight }}>Unlocked</div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 14, fontWeight: 500, color: c.text }}>Locked</div>
+                )}
               </div>
             </div>
 
