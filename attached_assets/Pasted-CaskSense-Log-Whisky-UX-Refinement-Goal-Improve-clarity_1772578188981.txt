@@ -1,0 +1,112 @@
+CaskSense – Log Whisky UX Refinement
+
+Goal:
+Improve clarity, structure and depth of the Log Whisky flow without overloading the interface.
+UI-focused enhancement only. No backend refactor.
+
+1️⃣ IDENTIFY SECTION – UX CLARITY
+
+- Replace the current input placeholder "Whisky Name" with:
+  "Identify by photo, description or search"
+
+- Add subtle helper text below the input field:
+  "Matches your history automatically – or add manually."
+
+Design requirements:
+- Helper text smaller (text-sm)
+- Muted color
+- Clean spacing
+- Mobile responsive
+- Preserve dark-warm design language
+
+No logic changes.
+
+2️⃣ RATE IN DETAIL – MODULAR EXPANSION
+
+Keep the default interface minimal.
+
+When user clicks "Rate in Detail", expand structured collapsible modules:
+
+- Nose
+- Taste
+- Finish
+- Balance (optional)
+
+Each module must contain:
+- Multi-select attribute chips
+- Free text field
+- Microphone icon (prepared for voice input)
+
+Use collapsible sections to avoid overload.
+Keep layout elegant and breathable.
+
+3️⃣ STRUCTURED ATTRIBUTE SETS
+
+Nose:
+Fruity, Floral, Spicy, Smoky, Woody, Sweet, Malty, Sherry, Citrus, Peaty
+
+Taste:
+Sweet, Dry, Oily, Spicy, Fruity, Nutty, Chocolate, Vanilla, Salty, Peaty
+
+Finish:
+Short, Medium, Long, Warm, Dry, Spicy, Smoky, Sweet, Bitter
+
+Balance:
+Harmonious, Complex, Rough, Elegant, Powerful, Thin
+
+Display as clean selectable chips.
+Allow multi-selection.
+No scoring logic yet.
+
+4️⃣ VOICE INPUT PREPARATION
+
+Add microphone icon inside each text field:
+- Nose
+- Taste
+- Finish
+- Balance
+- Overall Reflection
+
+On click:
+- Trigger browser SpeechRecognition API
+- Append transcript to existing text
+- Show recording indicator
+- Hide mic icon if unsupported
+
+Client-side only.
+
+5️⃣ OVERALL SCORE TRANSPARENCY
+
+If detailed ratings exist:
+- Calculate simple average as suggested overall score
+
+Display:
+"Suggested overall score based on your detailed ratings"
+
+Add subtext:
+"You can adjust this score manually."
+
+Make overall score editable.
+
+If user overrides:
+Show badge:
+"Manually adjusted"
+
+Visually distinguish:
+- Suggested score (muted hint style)
+- Manual override (active state)
+
+Keep logic simple.
+
+6️⃣ DESIGN PRINCIPLES
+
+- Minimal default surface
+- Progressive reveal
+- No visual overload
+- Mobile-first clean layout
+- Maintain CaskSense dark-warm identity
+- Preserve all existing functionality
+
+No feature removal.
+No database changes.
+No routing changes.
