@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff } from "lucide-react";
+import { Mic, MicOff, ChevronDown } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
@@ -67,6 +67,174 @@ const btnOutline: React.CSSProperties = {
   border: `1px solid ${c.border}`,
   fontWeight: 500,
 };
+
+const ATTRIBUTES = {
+  nose: ["Fruity", "Floral", "Spicy", "Smoky", "Woody", "Sweet", "Malty", "Sherry", "Citrus", "Peaty"],
+  taste: ["Sweet", "Dry", "Oily", "Spicy", "Fruity", "Nutty", "Chocolate", "Vanilla", "Salty", "Peaty"],
+  finish: ["Short", "Medium", "Long", "Warm", "Dry", "Spicy", "Smoky", "Sweet", "Bitter"],
+  balance: ["Harmonious", "Complex", "Rough", "Elegant", "Powerful", "Thin"],
+} as const;
+
+type DimKey = "nose" | "taste" | "finish" | "balance";
+
+const chipStyle = (selected: boolean): React.CSSProperties => ({
+  padding: "6px 14px",
+  fontSize: 12,
+  fontWeight: 500,
+  borderRadius: 20,
+  border: `1px solid ${selected ? c.accent : c.border}`,
+  background: selected ? `${c.accent}18` : "transparent",
+  color: selected ? c.accent : c.mutedLight,
+  cursor: "pointer",
+  fontFamily: "system-ui, sans-serif",
+  transition: "all 0.15s",
+  whiteSpace: "nowrap" as const,
+});
+
+function DetailModule({
+  dim,
+  label,
+  score,
+  onScoreChange,
+  chips,
+  onToggleChip,
+  text,
+  onTextChange,
+  expanded,
+  onToggleExpand,
+  voiceListening,
+  onToggleVoice,
+  hasSpeechAPI,
+}: {
+  dim: DimKey;
+  label: string;
+  score: number;
+  onScoreChange: (val: number) => void;
+  chips: string[];
+  onToggleChip: (dim: DimKey, chip: string) => void;
+  text: string;
+  onTextChange: (dim: DimKey, val: string) => void;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  voiceListening: boolean;
+  onToggleVoice: (dim: DimKey) => void;
+  hasSpeechAPI: boolean;
+}) {
+  const attrs = ATTRIBUTES[dim];
+  return (
+    <div style={{ borderBottom: `1px solid ${c.border}` }}>
+      <button
+        type="button"
+        onClick={onToggleExpand}
+        data-testid={`button-expand-${dim}`}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "12px 0",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontFamily: "system-ui, sans-serif",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{label}</span>
+          {chips.length > 0 && (
+            <span style={{ fontSize: 10, color: c.accent, background: `${c.accent}15`, padding: "2px 8px", borderRadius: 10 }}>
+              {chips.length}
+            </span>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: c.accent, fontVariantNumeric: "tabular-nums", width: 24, textAlign: "right" }}>{score}</span>
+          <ChevronDown style={{ width: 16, height: 16, color: c.mutedLight, transition: "transform 0.2s", transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }} />
+        </div>
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: "hidden" }}
+          >
+            <div style={{ paddingBottom: 16 }}>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={score}
+                onChange={(e) => onScoreChange(Number(e.target.value))}
+                data-testid={`input-score-${dim}`}
+                style={{ width: "100%", accentColor: c.accent, display: "block", marginBottom: 14 }}
+              />
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }} data-testid={`chips-${dim}`}>
+                {attrs.map((attr) => (
+                  <button
+                    key={attr}
+                    type="button"
+                    onClick={() => onToggleChip(dim, attr)}
+                    data-testid={`chip-${dim}-${attr.toLowerCase()}`}
+                    style={chipStyle(chips.includes(attr))}
+                  >
+                    {attr}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ position: "relative" }}>
+                <textarea
+                  value={text}
+                  onChange={(e) => onTextChange(dim, e.target.value)}
+                  placeholder={`Describe the ${label.toLowerCase()}...`}
+                  rows={2}
+                  data-testid={`input-text-${dim}`}
+                  style={{
+                    ...inputStyle,
+                    resize: "vertical",
+                    minHeight: 56,
+                    paddingRight: hasSpeechAPI ? 40 : 14,
+                    borderColor: voiceListening ? "#c44" : c.border,
+                    boxShadow: voiceListening ? "0 0 0 2px #c4444420" : "none",
+                  }}
+                />
+                {hasSpeechAPI && (
+                  <button
+                    type="button"
+                    onClick={() => onToggleVoice(dim)}
+                    data-testid={`button-voice-${dim}`}
+                    aria-label={voiceListening ? `Stop voice for ${label}` : `Voice input for ${label}`}
+                    style={{
+                      position: "absolute",
+                      right: 8,
+                      top: 8,
+                      background: voiceListening ? "#c4444420" : "transparent",
+                      border: "none",
+                      borderRadius: 6,
+                      cursor: "pointer",
+                      padding: 4,
+                      color: voiceListening ? "#c44" : c.mutedLight,
+                      display: "flex",
+                      alignItems: "center",
+                      animation: voiceListening ? "pulse-mic 1.5s ease-in-out infinite" : "none",
+                    }}
+                  >
+                    {voiceListening ? <MicOff style={{ width: 14, height: 14 }} /> : <Mic style={{ width: 14, height: 14 }} />}
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 interface Candidate {
   name: string;
@@ -653,16 +821,28 @@ export default function SimpleLogPage() {
   const [detailedScores, setDetailedScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50 });
   const [detailTouched, setDetailTouched] = useState(false);
   const [overrideActive, setOverrideActive] = useState(false);
+  const [detailChips, setDetailChips] = useState<Record<DimKey, string[]>>({ nose: [], taste: [], finish: [], balance: [] });
+  const [detailTexts, setDetailTexts] = useState<Record<DimKey, string>>({ nose: "", taste: "", finish: "", balance: "" });
+  const [expandedModules, setExpandedModules] = useState<Record<DimKey, boolean>>({ nose: false, taste: false, finish: false, balance: false });
 
   const [voiceListening, setVoiceListening] = useState(false);
+  const [voiceTarget, setVoiceTarget] = useState<DimKey | "notes" | null>(null);
   const recognitionRef = useRef<any>(null);
   const hasSpeechAPI = !!SpeechRecognitionAPI;
 
-  const toggleVoice = useCallback(() => {
-    if (voiceListening && recognitionRef.current) {
+  const stopVoice = useCallback(() => {
+    if (recognitionRef.current) {
       recognitionRef.current.stop();
-      setVoiceListening(false);
-      return;
+      recognitionRef.current = null;
+    }
+    setVoiceListening(false);
+    setVoiceTarget(null);
+  }, []);
+
+  const startVoice = useCallback((target: DimKey | "notes") => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
     }
     if (!SpeechRecognitionAPI) return;
     const recognition = new SpeechRecognitionAPI();
@@ -677,15 +857,43 @@ export default function SimpleLogPage() {
         }
       }
       if (transcript) {
-        setNotes((prev) => (prev ? prev + " " + transcript.trim() : transcript.trim()));
+        if (target === "notes") {
+          setNotes((prev) => (prev ? prev + " " + transcript.trim() : transcript.trim()));
+        } else {
+          setDetailTexts((prev) => ({ ...prev, [target]: prev[target] ? prev[target] + " " + transcript.trim() : transcript.trim() }));
+        }
       }
     };
-    recognition.onerror = () => setVoiceListening(false);
-    recognition.onend = () => setVoiceListening(false);
+    recognition.onerror = () => { setVoiceListening(false); setVoiceTarget(null); };
+    recognition.onend = () => { setVoiceListening(false); setVoiceTarget(null); };
     recognitionRef.current = recognition;
     recognition.start();
     setVoiceListening(true);
-  }, [voiceListening]);
+    setVoiceTarget(target);
+  }, []);
+
+  const toggleVoice = useCallback((target: DimKey | "notes" = "notes") => {
+    if (voiceListening && voiceTarget === target) {
+      stopVoice();
+    } else {
+      startVoice(target);
+    }
+  }, [voiceListening, voiceTarget, stopVoice, startVoice]);
+
+  const handleToggleChip = (dim: DimKey, chip: string) => {
+    setDetailChips((prev) => ({
+      ...prev,
+      [dim]: prev[dim].includes(chip) ? prev[dim].filter((c) => c !== chip) : [...prev[dim], chip],
+    }));
+  };
+
+  const handleDetailTextChange = (dim: DimKey, val: string) => {
+    setDetailTexts((prev) => ({ ...prev, [dim]: val }));
+  };
+
+  const toggleModule = (dim: DimKey) => {
+    setExpandedModules((prev) => ({ ...prev, [dim]: !prev[dim] }));
+  };
 
   const [scanning, setScanning] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -842,7 +1050,16 @@ export default function SimpleLogPage() {
 
   const buildScoresBlock = () => {
     if (!showDetailed) return "";
-    return `\n[SCORES] Nose:${detailedScores.nose} Taste:${detailedScores.taste} Finish:${detailedScores.finish} Balance:${detailedScores.balance} [/SCORES]`;
+    const parts = [`\n[SCORES] Nose:${detailedScores.nose} Taste:${detailedScores.taste} Finish:${detailedScores.finish} Balance:${detailedScores.balance} [/SCORES]`];
+    const dims: DimKey[] = ["nose", "taste", "finish", "balance"];
+    for (const d of dims) {
+      const chipStr = detailChips[d].length > 0 ? detailChips[d].join(", ") : "";
+      const textStr = detailTexts[d].trim();
+      if (chipStr || textStr) {
+        parts.push(`[${d.toUpperCase()}] ${[chipStr, textStr].filter(Boolean).join(" — ")} [/${d.toUpperCase()}]`);
+      }
+    }
+    return parts.join("\n");
   };
 
   const persistDetailedScores = () => {
@@ -971,6 +1188,10 @@ export default function SimpleLogPage() {
     setDetailedScores({ nose: 50, taste: 50, finish: 50, balance: 50 });
     setDetailTouched(false);
     setOverrideActive(false);
+    setDetailChips({ nose: [], taste: [], finish: [], balance: [] });
+    setDetailTexts({ nose: "", taste: "", finish: "", balance: "" });
+    setExpandedModules({ nose: false, taste: false, finish: false, balance: false });
+    stopVoice();
   };
 
   const handleCopyJson = () => {
