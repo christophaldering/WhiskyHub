@@ -221,7 +221,7 @@ export default function Landing() {
               }}
               data-testid="button-analyze"
             >
-              Analyze
+              Discover
             </motion.div>
           </Link>
         </div>

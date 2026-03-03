@@ -104,9 +104,14 @@ export default function SimpleHostPage() {
     <SimpleShell showBack={false}>
       <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }} data-testid="text-host-title">
-            Host
-          </h2>
+          <div>
+            <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }} data-testid="text-host-title">
+              Host
+            </h2>
+            <p style={{ fontSize: 13, color: colors.muted, marginTop: 4 }}>
+              Create & manage your tastings
+            </p>
+          </div>
           <button
             onClick={handleCreateTasting}
             style={{

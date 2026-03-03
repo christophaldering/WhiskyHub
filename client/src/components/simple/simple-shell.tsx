@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { Wine, PenLine, Crown, User, BarChart3, KeyRound } from "lucide-react";
+import { Wine, PenLine, Crown, User, Compass, KeyRound } from "lucide-react";
 import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
 import type { SessionMode } from "@/lib/session";
@@ -16,11 +16,11 @@ const c = {
 };
 
 const NAV_ITEMS = [
-  { href: "/enter", icon: Wine, label: "Join" },
-  { href: "/log-simple", icon: PenLine, label: "Log" },
-  { href: "/host", icon: Crown, label: "Host" },
-  { href: "/my-taste", icon: User, label: "My Taste" },
-  { href: "/analyze", icon: BarChart3, label: "Analyze" },
+  { href: "/enter", icon: Wine, label: "Join", match: ["/enter", "/join", "/tasting-room-simple", "/naked/"] },
+  { href: "/log-simple", icon: PenLine, label: "Log", match: ["/log-simple", "/log"] },
+  { href: "/host", icon: Crown, label: "Host", match: ["/host"] },
+  { href: "/my-taste", icon: User, label: "My Taste", match: ["/my-taste", "/taste"] },
+  { href: "/analyze", icon: Compass, label: "Discover", match: ["/analyze"] },
 ];
 
 interface SimpleShellProps {
@@ -140,7 +140,7 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
         data-testid="simple-bottom-nav"
       >
         {NAV_ITEMS.map((item) => {
-          const active = location === item.href;
+          const active = item.match.some((m) => location === m || location.startsWith(m + "/") || location.startsWith(m));
           return (
             <Link key={item.href} href={item.href}>
               <div

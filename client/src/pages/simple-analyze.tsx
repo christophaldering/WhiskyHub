@@ -125,9 +125,14 @@ export default function SimpleAnalyzePage() {
   return (
     <SimpleShell showBack={false}>
       <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
-        <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }} data-testid="text-analyze-title">
-          Analyze
-        </h2>
+        <div style={{ marginBottom: 4 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }} data-testid="text-analyze-title">
+            Discover
+          </h2>
+          <p style={{ fontSize: 13, color: colors.muted, marginTop: 4 }}>
+            Analytics · Community · Knowledge
+          </p>
+        </div>
 
         {sections.map((section) => (
           <div key={section.title}>
