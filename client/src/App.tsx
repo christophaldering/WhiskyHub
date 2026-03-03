@@ -51,6 +51,7 @@ import DiscoverDistilleries from "@/pages/discover-distilleries";
 import DiscoverCommunity from "@/pages/discover-community";
 import ProfileHelp from "@/pages/profile-help";
 import Account from "@/pages/account";
+import SimpleLegacyShell from "@/components/simple/simple-legacy-shell";
 import LabDarkLayout from "@/lab-dark/LabDarkLayout";
 import LabHome from "@/lab-dark/pages/LabHome";
 import LabSessions from "@/lab-dark/pages/LabSessions";
@@ -142,9 +143,9 @@ function Router() {
           </LabDarkLayout>
         </Route>
 
-        {/* === LEGACY UI (existing full UI) === */}
+        {/* === LEGACY UI (wrapped in Simple Mode shell for nav continuity) === */}
         <Route path="/legacy/:rest*">
-          <Layout>
+          <SimpleLegacyShell>
             <Switch>
               <Route path="/legacy/home" component={HomeDashboard} />
               <Route path="/legacy/tasting" component={TastingHub} />
@@ -194,7 +195,7 @@ function Router() {
               <Route path="/legacy">{() => <Redirect to="/legacy/home" />}</Route>
               <Route component={NotFound} />
             </Switch>
-          </Layout>
+          </SimpleLegacyShell>
         </Route>
 
         {/* === CURRENT ROUTES (keep working, redirect to legacy) === */}
