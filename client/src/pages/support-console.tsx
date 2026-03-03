@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { BuildFooter } from "@/components/build-footer";
 
 const PIN = import.meta.env.VITE_SUPPORT_PIN;
 
@@ -365,6 +366,7 @@ export default function SupportConsole() {
           )}
         </div>
       </div>
+      <BuildFooter />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSimpleAuth } from "@/lib/simple-auth";
+import { BuildFooter } from "@/components/build-footer";
 
 const c = {
   bg: "#1a1714",
@@ -170,6 +171,7 @@ Badges: High >=0.78 | Medium 0.55-0.77 | Low <0.55
 Rate limit: 5 requests / 5 minutes per IP`}
         </pre>
       </div>
+      <BuildFooter />
     </SimpleShell>
   );
 }

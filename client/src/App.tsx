@@ -62,7 +62,6 @@ import V2Discover from "@/v2/pages/V2Discover";
 import V2Cellar from "@/v2/pages/V2Cellar";
 import V2More from "@/v2/pages/V2More";
 import { getUIPref } from "@/components/view-switcher";
-import { BuildFooter } from "@/components/build-footer";
 import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
 
@@ -275,7 +274,6 @@ function App() {
         <Toaster />
         <Router />
         <StorageConsent />
-        <BuildFooter />
       </TooltipProvider>
     </QueryClientProvider>
   );
