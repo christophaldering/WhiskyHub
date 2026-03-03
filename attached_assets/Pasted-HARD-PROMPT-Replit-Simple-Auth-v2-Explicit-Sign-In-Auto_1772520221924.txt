@@ -1,0 +1,192 @@
+HARD PROMPT (Replit) — Simple Auth v2: Explicit Sign-In, Auto-Resume, Unlock-on-Action, Logout, and Anonymous Tasting Option
+
+GOAL:
+Fix the unlock/sign-in process end-to-end and make it intuitive:
+- Users can explicitly “Sign in / Unlock” anytime (not only when saving)
+- Users who were signed in last time should be automatically signed in again (auto-resume)
+- Still enforce identity confirmation at the first personalized action (e.g., first save) if not signed in
+- Provide Logout (only when signed in)
+- Support two modes:
+  A) LOG MODE = personalized saving (name optional/required configurable)
+  B) TASTING MODE = anonymous participation (PIN-only)
+
+NO DB migrations. No real accounts. Keep Simple Mode. No legacy layout.
+
+────────────────────────────────────────────────────────
+A) AUTH CONCEPT (CLEAR TERMINOLOGY)
+Use one term across UI:
+- “Sign in” (preferred) == “Unlock” (same action)
+- “Sign out” == “Logout”
+Internally keep variable name “unlocked” if you want, but UI should say “Sign in”.
+
+────────────────────────────────────────────────────────
+B) STATE + PERSISTENCE (AUTO-RESUME)
+We need BOTH session and “remember me” persistence.
+
+1) Session auth (clears when tab closes):
+- sessionStorage:
+  - simple_unlocked="1"
+  - simple_mode="log"|"tasting"
+  - simple_name="<string>" (log only, optional)
+
+2) Auto-resume auth (“stay signed in”):
+- localStorage (ONLY if user opted in OR default for Log mode):
+  - simple_remember="1"
+  - simple_resume_token="<random>" (or just store pin hash if simplest; no plaintext pin!)
+  - simple_resume_mode="log"|"tasting"
+  - simple_resume_name="<string>" (log only, optional)
+
+IMPORTANT:
+- Never store plaintext PIN in localStorage.
+- Use a lightweight token approach:
+  - On successful sign-in, server returns a resumeToken.
+  - Client stores resumeToken in localStorage.
+  - On app load, client calls /api/simple/resume with resumeToken to restore session.
+
+────────────────────────────────────────────────────────
+C) BACKEND ENDPOINTS (MUST IMPLEMENT)
+1) POST /api/simple/unlock
+Body: { pin: string, name?: string, mode:"log"|"tasting", remember?: boolean }
+Behavior:
+- Validate pin against env SIMPLE_MODE_PIN (required)
+- If mode==="log":
+  - enforce name if SIMPLE_LOG_REQUIRES_NAME==="true"
+  - else name optional
+- If mode==="tasting":
+  - ignore name; PIN-only
+- If remember===true:
+  - generate resumeToken (random, e.g. 32 bytes base64)
+  - store it server-side in memory map with TTL 14 days (no DB required)
+  - return { ok:true, resumeToken }
+- else return { ok:true }
+
+2) POST /api/simple/resume
+Body: { resumeToken: string }
+Behavior:
+- If token valid and not expired:
+  - return { ok:true, mode, name? }
+- else return 401 { ok:false }
+
+3) POST /api/simple/logout
+Body: { resumeToken?: string }
+Behavior:
+- If resumeToken provided: invalidate it server-side
+- return { ok:true }
+(Logout must still work even if token missing.)
+
+Rate limit unlock attempts: 5/5min per IP.
+Rate limit resume: 30/min per IP.
+
+NOTE:
+If server restarts, in-memory tokens disappear; handle gracefully:
+- client will fail resume → show locked.
+This is acceptable for MVP.
+
+────────────────────────────────────────────────────────
+D) FRONTEND SIMPLE AUTH LIB (SINGLE SOURCE OF TRUTH)
+Create/ensure client/src/lib/simple-auth.ts:
+
+Functions:
+- getAuth(): { unlocked:boolean, mode?:string, name?:string|null }
+- signIn({pin,name?,mode,remember}):
+  - calls /api/simple/unlock
+  - sets sessionStorage unlocked/mode/name
+  - if resumeToken returned: store in localStorage (simple_remember, simple_resume_token, simple_resume_mode, simple_resume_name)
+- tryAutoResume():
+  - if localStorage.simple_remember==="1" and resume_token exists:
+    call /api/simple/resume
+    on success: set sessionStorage unlocked/mode/name from response
+    on failure: clear localStorage resume keys
+- signOut():
+  - call /api/simple/logout with resumeToken if exists
+  - clear sessionStorage keys
+  - clear localStorage resume keys
+  - return locked state
+
+Call tryAutoResume() once on app start (e.g. in SimpleShell or top-level App mount).
+
+────────────────────────────────────────────────────────
+E) UX: WHERE USERS CAN SIGN IN (EXPLICIT OPTION)
+1) Top-right icon (SimpleShell) opens “Session” sheet.
+
+If LOCKED:
+- Status: “Signed out”
+- Primary button: “Sign in”
+- Copy: “Sign in to save tastings to your session.”
+- Checkbox: “Stay signed in on this device” (default ON for Log mode, OFF for Tasting mode)
+- When tapping “Sign in” → open Sign-In Card (below)
+
+If UNLOCKED:
+- Status: “Signed in”
+- Show name if present, else “Session active”
+- Primary button: “Sign out”
+- (Optional) small line: “Stay signed in: On/Off” with toggle to disable (sign out required to fully clear)
+
+2) Sign-In Card (bottom sheet / slide-up card)
+Fields depend on mode and config:
+- Mode selector ONLY if both flows present; otherwise infer:
+  - On /log-simple → mode="log"
+  - On tasting routes → mode="tasting"
+- For LOG mode:
+  - Name field shown if required OR optional with label “Name (optional)”
+- For TASTING mode:
+  - No name field (PIN-only)
+- PIN required always
+- Button: “Sign in”
+
+On success:
+- Close sheet
+- Update header icon state
+
+────────────────────────────────────────────────────────
+F) GATING RULE: IDENTITY REQUIRED ON FIRST PERSONALIZED ACTION
+/log-simple Save behavior:
+- User can fill everything while signed out.
+- On Save click:
+  - If signed in → save immediately
+  - If signed out → open Sign-In Card in LOG mode
+    - After successful sign-in → auto-run Save
+
+This ensures “first active activity requiring personification” triggers confirmation.
+
+Tasting participation:
+- If SIMPLE_TASTING_ANONYMOUS==="true":
+  - gate only with PIN-only sign-in (tasting mode)
+- Otherwise may require name depending on config.
+
+────────────────────────────────────────────────────────
+G) LOGOUT BEHAVIOR
+- “Sign out” is visible only when signed in.
+- Sign out clears session AND remembered token (so next visit is signed out).
+- Provide a subtle confirmation toast “Signed out”.
+
+────────────────────────────────────────────────────────
+H) COPY REFINEMENT (NO TECH WORDS)
+Replace:
+- “Locked” → “Signed out”
+- “Unlock” → “Sign in”
+- “Not signed in” → remove
+Keep tone minimal and premium.
+
+────────────────────────────────────────────────────────
+I) TEST CASES (MUST PASS)
+1) First visit:
+- Session shows Signed out + Sign in button
+- If user does nothing, can still use Identify/Score/Notes
+- On Save → sign-in required, after sign-in save proceeds
+
+2) Explicit sign-in:
+- User taps Session → Sign in, completes, returns signed in
+
+3) Auto-resume:
+- User signs in with “Stay signed in” enabled
+- Close tab/app, reopen → auto-resume signs in again
+
+4) Sign out:
+- Visible when signed in
+- Clears session and remember token; reopen → stays signed out
+
+5) Tasting anonymous:
+- Requires only PIN; no name; does not persist name anywhere
+
+IMPLEMENT NOW. DO NOT ASK QUESTIONS.

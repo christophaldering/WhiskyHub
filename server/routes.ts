@@ -1453,6 +1453,21 @@ export async function registerRoutes(
 
   // ===== SIMPLE MODE AUTH =====
   const simpleUnlockAttempts = new Map<string, { count: number; resetAt: number }>();
+  const simpleResumeTokens = new Map<string, { mode: string; name?: string; expiresAt: number }>();
+  const simpleResumeAttempts = new Map<string, { count: number; resetAt: number }>();
+
+  function generateResumeToken(): string {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  setInterval(() => {
+    const now = Date.now();
+    for (const [k, v] of simpleResumeTokens) {
+      if (now > v.expiresAt) simpleResumeTokens.delete(k);
+    }
+  }, 60 * 60 * 1000);
 
   app.post("/api/simple/unlock", (req: Request, res: Response) => {
     const clientIp = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
@@ -1467,10 +1482,12 @@ export async function registerRoutes(
       simpleUnlockAttempts.set(clientIp, { count: 1, resetAt: now + 5 * 60 * 1000 });
     }
 
-    const { name, pin } = req.body || {};
+    const { name, pin, mode, remember } = req.body || {};
     if (!pin || typeof pin !== "string") {
       return res.status(400).json({ ok: false, message: "PIN is required" });
     }
+
+    const authMode = mode === "tasting" ? "tasting" : "log";
 
     const configuredPin = process.env.SIMPLE_MODE_PIN;
     if (!configuredPin) {
@@ -1479,18 +1496,64 @@ export async function registerRoutes(
         return res.status(500).json({ ok: false, message: "PIN not configured" });
       }
       console.warn("[SIMPLE_MODE][AUTH] SIMPLE_MODE_PIN not set — allowing unlock in dev");
-      return res.json({ ok: true, name: name || "Guest" });
+      const result: any = { ok: true, name: authMode === "log" ? (name || undefined) : undefined, mode: authMode };
+      if (remember) {
+        const token = generateResumeToken();
+        simpleResumeTokens.set(token, { mode: authMode, name: result.name, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
+        result.resumeToken = token;
+      }
+      return res.json(result);
     }
 
     if (pin.trim() === configuredPin) {
-      console.log(`[SIMPLE_MODE][AUTH] unlock success for "${name || "anon"}"`);
+      const displayName = authMode === "log" ? (name || undefined) : undefined;
+      console.log(`[SIMPLE_MODE][AUTH] unlock success for "${displayName || "anon"}" mode=${authMode}`);
       const e = simpleUnlockAttempts.get(clientIp);
       if (e) e.count = 0;
-      return res.json({ ok: true, name: name || "Guest" });
+      const result: any = { ok: true, name: displayName, mode: authMode };
+      if (remember) {
+        const token = generateResumeToken();
+        simpleResumeTokens.set(token, { mode: authMode, name: displayName, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
+        result.resumeToken = token;
+      }
+      return res.json(result);
     }
 
     console.log(`[SIMPLE_MODE][AUTH] unlock failed for "${name || "anon"}"`);
     return res.status(401).json({ ok: false, message: "Invalid PIN" });
+  });
+
+  app.post("/api/simple/resume", (req: Request, res: Response) => {
+    const clientIp = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
+    const now = Date.now();
+    const rEntry = simpleResumeAttempts.get(clientIp);
+    if (rEntry && now < rEntry.resetAt) {
+      if (rEntry.count >= 30) {
+        return res.status(429).json({ ok: false, message: "Too many attempts." });
+      }
+      rEntry.count++;
+    } else {
+      simpleResumeAttempts.set(clientIp, { count: 1, resetAt: now + 60 * 1000 });
+    }
+
+    const { resumeToken } = req.body || {};
+    if (!resumeToken || typeof resumeToken !== "string") {
+      return res.status(400).json({ ok: false });
+    }
+    const stored = simpleResumeTokens.get(resumeToken);
+    if (!stored || now > stored.expiresAt) {
+      if (stored) simpleResumeTokens.delete(resumeToken);
+      return res.status(401).json({ ok: false });
+    }
+    return res.json({ ok: true, mode: stored.mode, name: stored.name });
+  });
+
+  app.post("/api/simple/logout", (req: Request, res: Response) => {
+    const { resumeToken } = req.body || {};
+    if (resumeToken && typeof resumeToken === "string") {
+      simpleResumeTokens.delete(resumeToken);
+    }
+    return res.json({ ok: true });
   });
 
   // ===== FLIGHT IMPORT =====

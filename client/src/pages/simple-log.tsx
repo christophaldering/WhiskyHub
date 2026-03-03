@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
-import { getSimpleAuth, setSimpleAuth, clearSimpleAuth } from "@/lib/simple-auth";
+import { getAuth, signIn, setSimpleAuth } from "@/lib/simple-auth";
 import SimpleShell from "@/components/simple/simple-shell";
 
 const c = {
@@ -88,9 +88,10 @@ function confidenceLabel(conf: number): { text: string; color: string } {
   return { text: "Low", color: c.low };
 }
 
-function UnlockCard({ onUnlocked, onCancel }: { onUnlocked: (name: string, pid?: string) => void; onCancel: () => void }) {
+function SignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, pid?: string) => void; onCancel: () => void }) {
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
+  const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -100,34 +101,34 @@ function UnlockCard({ onUnlocked, onCancel }: { onUnlocked: (name: string, pid?:
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/simple/unlock", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim() || undefined, pin: pin.trim() }),
+      const result = await signIn({
+        pin: pin.trim(),
+        name: name.trim() || undefined,
+        mode: "log",
+        remember,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Unlock failed");
+      if (!result.ok) {
+        const msg = result.error || "";
+        if (msg.includes("Invalid PIN")) setError("Wrong PIN.");
+        else if (msg.includes("Too many")) setError("Too many attempts. Wait a moment.");
+        else setError(msg || "Something went wrong.");
+        return;
       }
-      const displayName = data.name || name.trim() || "Guest";
-      setSimpleAuth(displayName);
+      const displayName = result.name || name.trim() || "Guest";
 
       if (name.trim() && pin.trim()) {
         try {
-          const result = await participantApi.loginOrCreate(name.trim(), pin.trim());
-          if (result?.id) {
-            setSimpleAuth(displayName, result.id);
-            onUnlocked(displayName, result.id);
+          const pResult = await participantApi.loginOrCreate(name.trim(), pin.trim());
+          if (pResult?.id) {
+            setSimpleAuth(displayName, pResult.id);
+            onSignedIn(displayName, pResult.id);
             return;
           }
         } catch {}
       }
-      onUnlocked(displayName);
+      onSignedIn(displayName);
     } catch (err: any) {
-      const msg = err?.message || "";
-      if (msg.includes("Invalid PIN")) setError("Wrong PIN.");
-      else if (msg.includes("Too many")) setError("Too many attempts. Wait a moment.");
-      else setError(msg || "Something went wrong.");
+      setError(err?.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -148,12 +149,16 @@ function UnlockCard({ onUnlocked, onCancel }: { onUnlocked: (name: string, pid?:
       }}
       data-testid="card-unlock"
     >
-      <h3 style={{ fontSize: 15, fontWeight: 600, color: c.text, margin: "0 0 12px" }}>Unlock to save</h3>
+      <h3 style={{ fontSize: 15, fontWeight: 600, color: c.text, margin: "0 0 12px" }}>Sign in to save</h3>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <input type="text" placeholder="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} style={{ ...inputStyle, fontSize: 13, padding: "10px 12px" }} data-testid="input-unlock-name" autoComplete="off" />
-        <input type="password" placeholder="PIN *" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, fontSize: 13, padding: "10px 12px", letterSpacing: 3 }} data-testid="input-unlock-pin" autoComplete="off" />
+        <input type="password" placeholder="PIN" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, fontSize: 13, padding: "10px 12px", letterSpacing: 3 }} data-testid="input-unlock-pin" autoComplete="off" />
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: c.mutedLight, cursor: "pointer", padding: "2px 0" }}>
+          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} style={{ accentColor: c.accent, width: 14, height: 14 }} data-testid="checkbox-remember-save" />
+          Stay signed in on this device
+        </label>
         <button type="submit" disabled={loading || !pin.trim()} data-testid="button-unlock-submit" style={{ ...btnPrimary, fontSize: 14, padding: 12, opacity: !pin.trim() ? 0.5 : 1, cursor: loading ? "wait" : "pointer" }}>
-          {loading ? "Unlocking…" : "Unlock"}
+          {loading ? "Signing in…" : "Sign in"}
         </button>
         {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }}>{error}</p>}
       </form>
@@ -600,12 +605,12 @@ export default function SimpleLogPage() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
-  const [unlocked, setUnlocked] = useState(() => getSimpleAuth().unlocked);
-  const [pid, setPid] = useState<string | undefined>(() => getSimpleAuth().pid || currentParticipant?.id);
+  const [unlocked, setUnlocked] = useState(() => getAuth().unlocked);
+  const [pid, setPid] = useState<string | undefined>(() => getAuth().pid || currentParticipant?.id);
   const [showUnlockPanel, setShowUnlockPanel] = useState(false);
 
   useEffect(() => {
-    const auth = getSimpleAuth();
+    const auth = getAuth();
     if (auth.unlocked) {
       setUnlocked(true);
       if (auth.pid) setPid(auth.pid);
@@ -1284,8 +1289,8 @@ export default function SimpleLogPage() {
 
               <AnimatePresence>
                 {showUnlockPanel && !unlocked && (
-                  <UnlockCard
-                    onUnlocked={(name, participantId) => {
+                  <SignInCard
+                    onSignedIn={(name, participantId) => {
                       handleUnlocked(name, participantId);
                       setTimeout(() => handleSave({ preventDefault: () => {} } as React.FormEvent), 100);
                     }}
