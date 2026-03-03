@@ -284,36 +284,32 @@ All referenced `process.env.*` names (values ***REDACTED***):
 
 ## 7) Recent Changes (git)
 
-### Last 20 Commits
+### Last 15 Commits
 ```
+3857bd9 Published your App
+cdc4db3 Update greetings to reflect user login status accurately
+99fee26 Transitioned from Plan to Build mode
+36418af Create comprehensive system status documentation
 d1380cc Published your App
 44fbcb1 Improve server startup and deployment configuration for faster response
-3601559 Transitioned from Plan to Build mode
 30a78f1 Improve application startup and health check responsiveness
 9e73347 Add error handling for server startup issues
 7c4d1d7 Improve server startup reliability by removing preload process
-fe05841 Transitioned from Plan to Build mode
 3b4fd34 Improve website reliability by fixing offline errors
-4dfc10b Transitioned from Plan to Build mode
-765d686 Transitioned from Plan to Build mode
 5d1f726 Published your App
 29bcb4e Improve application startup by implementing a preload process
-368e8b1 Transitioned from Plan to Build mode
-d7dc4dc Published your App
 b30c1a3 Improve deployment reliability by optimizing server startup and health checks
 742cce4 Add a dedicated health check endpoint and improve server startup responsiveness
-a7df4e4 Improve server startup to ensure immediate response to health checks
-392147c Saved progress at the end of the loop
-7e233d0 Published your App
 44757fd Improve application startup speed and deployment reliability
 ```
 
-### Summary of Last 5 Meaningful Commits
-1. **44fbcb1**: Rewrote server startup to use raw HTTP handler for health checks (bypasses Express), switched to `autoscale` deployment with `publicDir` for CDN-served static assets.
-2. **30a78f1**: Moved healthcheck and loading page responses to raw HTTP level before Express processes them.
-3. **9e73347**: Added EADDRINUSE error handler to prevent unhandled crashes during server startup.
-4. **7c4d1d7**: Removed the preload process entirely; server now listens on port 5000 immediately.
-5. **3b4fd34**: Fixed service worker (`sw.js`) — bumped cache to v2, removed fake "Offline" 503 fallback, stopped pre-caching `/`.
+### Summary of Last 6 Meaningful Commits
+1. **cdc4db3**: Session UX hardening — greetings in V2Home and Legacy Home now respect `session.signedIn` state instead of only `currentParticipant` from Zustand. Added `session-change` custom event to `session.ts` (dispatched on signIn/signOut/autoResume) so greeting components update reactively.
+2. **44fbcb1**: Rewrote server startup to use raw HTTP handler for health checks (bypasses Express), switched to `autoscale` deployment with `publicDir` for CDN-served static assets.
+3. **30a78f1**: Moved healthcheck and loading page responses to raw HTTP level before Express processes them.
+4. **9e73347**: Added EADDRINUSE error handler to prevent unhandled crashes during server startup.
+5. **7c4d1d7**: Removed the preload process entirely; server now listens on port 5000 immediately.
+6. **3b4fd34**: Fixed service worker (`sw.js`) — bumped cache to v2, removed fake "Offline" 503 fallback, stopped pre-caching `/`.
 
 ---
 
