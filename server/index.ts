@@ -25,6 +25,17 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+let serverReady = false;
+app.use((req, res, next) => {
+  if (!serverReady && !req.path.startsWith("/api")) {
+    if (req.path === "/__health" || req.path === "/health") {
+      return res.status(200).json({ status: "starting" });
+    }
+    return res.status(200).send("<!DOCTYPE html><html><head><meta charset='utf-8'><title>CaskSense</title><meta http-equiv='refresh' content='3'></head><body style='background:#1a1714;color:#f5f0e8;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0'><p>Starting up…</p></body></html>");
+  }
+  next();
+});
+
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -104,6 +115,7 @@ app.use((req, res, next) => {
       log(`${APP_NAME} v${v.version} (build ${v.gitSha}) [${v.env}]`);
       log(`serving on port ${port}`);
       log(`Build time: ${v.buildTime}`);
+      serverReady = true;
       warmupGmailToken();
 
       setInterval(async () => {
