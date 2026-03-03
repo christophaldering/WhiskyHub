@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
+import { getSimpleAuth, setSimpleAuth, clearSimpleAuth } from "@/lib/simple-auth";
 import SimpleShell from "@/components/simple/simple-shell";
 
 const c = {
@@ -86,7 +87,7 @@ function confidenceLabel(conf: number): { text: string; color: string } {
   return { text: "Low", color: c.low };
 }
 
-function UnlockBlock({ onUnlock }: { onUnlock: (p: { id: string; name: string; role?: string }) => void }) {
+function InlineUnlock({ onUnlocked }: { onUnlocked: (name: string, pid?: string) => void }) {
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
@@ -94,18 +95,37 @@ function UnlockBlock({ onUnlock }: { onUnlock: (p: { id: string; name: string; r
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !pin.trim()) return;
+    if (!pin.trim()) return;
     setLoading(true);
     setError("");
     try {
-      const result = await participantApi.loginOrCreate(name.trim(), pin.trim());
-      if (result?.id) {
-        onUnlock({ id: result.id, name: result.name, role: result.role });
+      const res = await fetch("/api/simple/unlock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim() || undefined, pin: pin.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Unlock failed");
       }
+      const displayName = data.name || name.trim() || "Guest";
+      setSimpleAuth(displayName);
+
+      if (name.trim() && pin.trim()) {
+        try {
+          const result = await participantApi.loginOrCreate(name.trim(), pin.trim());
+          if (result?.id) {
+            setSimpleAuth(displayName, result.id);
+            onUnlocked(displayName, result.id);
+            return;
+          }
+        } catch {}
+      }
+      onUnlocked(displayName);
     } catch (err: any) {
       const msg = err?.message || "";
       if (msg.includes("Invalid PIN")) setError("Wrong PIN.");
-      else if (msg.includes("email")) setError("No account found.");
+      else if (msg.includes("Too many")) setError("Too many attempts. Wait a moment.");
       else setError(msg || "Something went wrong.");
     } finally {
       setLoading(false);
@@ -113,17 +133,27 @@ function UnlockBlock({ onUnlock }: { onUnlock: (p: { id: string; name: string; r
   };
 
   return (
-    <div style={cardStyle} data-testid="card-log-unlock">
-      <p style={{ fontSize: 13, color: c.muted, margin: "0 0 14px" }}>Identify yourself to save your log.</p>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} data-testid="input-log-name" autoComplete="off" />
-        <input type="password" placeholder="PIN" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-log-pin" autoComplete="off" />
-        <button type="submit" disabled={loading || !name.trim() || !pin.trim()} data-testid="button-log-unlock" style={{ ...btnPrimary, opacity: (!name.trim() || !pin.trim()) ? 0.5 : 1, cursor: loading ? "wait" : "pointer" }}>
-          {loading ? "…" : "Unlock"}
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      style={{
+        borderTop: `1px solid ${c.border}`,
+        paddingTop: 14,
+        marginTop: 10,
+      }}
+      data-testid="section-inline-unlock"
+    >
+      <p style={{ fontSize: 12, color: c.muted, margin: "0 0 10px" }}>Unlock to save your log.</p>
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <input type="text" placeholder="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} style={{ ...inputStyle, fontSize: 13, padding: "10px 12px" }} data-testid="input-unlock-name" autoComplete="off" />
+        <input type="password" placeholder="PIN *" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, fontSize: 13, padding: "10px 12px", letterSpacing: 3 }} data-testid="input-unlock-pin" autoComplete="off" />
+        <button type="submit" disabled={loading || !pin.trim()} data-testid="button-inline-unlock" style={{ ...btnPrimary, fontSize: 13, padding: 10, opacity: !pin.trim() ? 0.5 : 1, cursor: loading ? "wait" : "pointer" }}>
+          {loading ? "Unlocking…" : "Unlock"}
         </button>
         {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }}>{error}</p>}
       </form>
-    </div>
+    </motion.div>
   );
 }
 
@@ -547,9 +577,30 @@ type SheetView = "none" | "picker" | "describe" | "candidates" | "identifying" |
 
 export default function SimpleLogPage() {
   const { currentParticipant, setParticipant } = useAppStore();
-  const pid = currentParticipant?.id;
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
+
+  const [unlocked, setUnlocked] = useState(() => getSimpleAuth().unlocked);
+  const [pid, setPid] = useState<string | undefined>(() => getSimpleAuth().pid || currentParticipant?.id);
+  const [showUnlockPanel, setShowUnlockPanel] = useState(false);
+
+  useEffect(() => {
+    const auth = getSimpleAuth();
+    if (auth.unlocked) {
+      setUnlocked(true);
+      if (auth.pid) setPid(auth.pid);
+    }
+    if (currentParticipant?.id) setPid(currentParticipant.id);
+  }, [currentParticipant]);
+
+  const handleUnlocked = (name: string, participantId?: string) => {
+    setUnlocked(true);
+    setShowUnlockPanel(false);
+    if (participantId) {
+      setPid(participantId);
+      setParticipant({ id: participantId, name, role: "participant" });
+    }
+  };
 
   const [whiskyName, setWhiskyName] = useState("");
   const [distillery, setDistillery] = useState("");
@@ -839,8 +890,6 @@ export default function SimpleLogPage() {
       />
 
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        {!pid && !saved && <UnlockBlock onUnlock={(p) => setParticipant(p)} />}
-
         {saved ? (
           <div style={{ ...cardStyle, textAlign: "center" }} data-testid="card-log-success">
             <div style={{ fontSize: 32, marginBottom: 12 }}>✓</div>
@@ -982,12 +1031,28 @@ export default function SimpleLogPage() {
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} style={{ ...inputStyle, resize: "vertical" }} data-testid="input-notes" placeholder="What do you taste?" />
               </div>
 
-              <button type="submit" disabled={saving || !whiskyName.trim() || (!pid)} data-testid="button-save-log" style={{ ...btnPrimary, opacity: (!whiskyName.trim() || !pid) ? 0.5 : 1, cursor: saving ? "wait" : "pointer", marginTop: 4 }}>
-                {saving ? "Saving..." : "Save"}
-              </button>
-              {!pid && whiskyName.trim() && (
-                <p style={{ fontSize: 11, color: c.muted, margin: 0, textAlign: "center" }}>Unlock above to save.</p>
+              {unlocked ? (
+                <button type="submit" disabled={saving || !whiskyName.trim()} data-testid="button-save-log" style={{ ...btnPrimary, opacity: !whiskyName.trim() ? 0.5 : 1, cursor: saving ? "wait" : "pointer", marginTop: 4 }}>
+                  {saving ? "Saving..." : "Save"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowUnlockPanel(true)}
+                  disabled={!whiskyName.trim()}
+                  data-testid="button-save-locked"
+                  style={{ ...btnPrimary, opacity: !whiskyName.trim() ? 0.5 : 1, cursor: "pointer", marginTop: 4, background: c.border, color: c.muted }}
+                >
+                  🔒 Unlock to save
+                </button>
               )}
+
+              <AnimatePresence>
+                {showUnlockPanel && !unlocked && (
+                  <InlineUnlock onUnlocked={handleUnlocked} />
+                )}
+              </AnimatePresence>
+
               {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }}>{error}</p>}
             </form>
           </div>

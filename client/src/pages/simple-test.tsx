@@ -1,5 +1,7 @@
 import { Link } from "wouter";
+import { useState, useEffect } from "react";
 import SimpleShell from "@/components/simple/simple-shell";
+import { getSimpleAuth } from "@/lib/simple-auth";
 
 const c = {
   bg: "#1a1714",
@@ -82,6 +84,21 @@ function TestSection({ title, items }: { title: string; items: CheckItem[] }) {
 export default function SimpleTestPage() {
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
   const buildEnv = import.meta.env.MODE || "unknown";
+  const auth = getSimpleAuth();
+  const [pinConfigured, setPinConfigured] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("/api/simple/unlock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin: "__probe__" }),
+    })
+      .then((res) => {
+        if (res.status === 500) setPinConfigured(false);
+        else setPinConfigured(true);
+      })
+      .catch(() => setPinConfigured(null));
+  }, []);
 
   return (
     <SimpleShell maxWidth={560}>
@@ -93,8 +110,18 @@ export default function SimpleTestPage() {
         <div style={{ fontSize: 12, color: c.muted, marginBottom: 4 }}>
           Build: <span style={{ fontFamily: "monospace", color: c.accent }}>{buildEnv}</span>
         </div>
-        <div style={{ fontSize: 12, color: c.muted }}>
+        <div style={{ fontSize: 12, color: c.muted, marginBottom: 4 }}>
           OCR Provider: <span style={{ fontFamily: "monospace", color: c.success }}>GPT-4o Vision (Replit AI Integration)</span>
+        </div>
+        <div style={{ fontSize: 12, color: c.muted, marginBottom: 4 }}>
+          SIMPLE_MODE_PIN: <span style={{ fontFamily: "monospace", color: pinConfigured === null ? c.muted : pinConfigured ? c.success : c.accent }} data-testid="text-pin-status">
+            {pinConfigured === null ? "checking..." : pinConfigured ? "configured ✓" : "not set (dev mode)"}
+          </span>
+        </div>
+        <div style={{ fontSize: 12, color: c.muted }}>
+          Session: <span style={{ fontFamily: "monospace", color: auth.unlocked ? c.success : c.muted }} data-testid="text-session-status">
+            {auth.unlocked ? `unlocked (${auth.name || "Guest"})` : "locked"}
+          </span>
         </div>
       </div>
 

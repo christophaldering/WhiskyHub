@@ -1,0 +1,112 @@
+HARD PROMPT (Replit) — Simple Mode PIN-UX Fix + Logout (NO full-screen blocker)
+Ziel: Simple Mode bleibt “frictionless”, aber Saving ist geschützt. Kein Fullscreen-Login-Overlay mehr.
+Stattdessen: “Unlock to save” inline + Session-Memoization + sichtbarer Logout.
+Keine DB-Änderungen. Kein Legacy-Layout.
+
+────────────────────────────────────────────────────────────
+A) AKZEPTANZKRITERIEN (MUSS)
+1) /log-simple zeigt NIE ein Fullscreen/Modal-Blocker-Login über dem Formular.
+2) Nutzer kann das Formular jederzeit sehen und ausfüllen (Whisky/Score/Notes).
+3) “Save” ist geschützt:
+   - Wenn nicht “unlocked”: Save Button ist disabled + Tooltip/Hint “Unlock to save”.
+   - Beim Klick auf Save (oder beim Aktivieren): Inline Unlock Section erscheint.
+4) Unlock ist “once per session”:
+   - Nach erfolgreichem Unlock wird sessionStorage gesetzt (z.B. simpleAuth=true, simpleName=...).
+   - Danach erscheint Unlock nicht mehr (bis Logout oder Session-Ende).
+5) Logout ist sichtbar in Simple Mode:
+   - oben rechts im SimpleShell: kleines “User/Key” Icon
+   - Tap öffnet Bottom Sheet mit:
+     - Display Name (falls gesetzt)
+     - Status: Unlocked / Locked
+     - Button: Logout
+6) Logout löscht nur Simple-Session (keine Legacy-Accounts anfassen):
+   - sessionStorage keys entfernen
+   - optional localStorage “simple_unknown_logs” NICHT löschen (nur Auth)
+   - redirect to landing (/)
+7) PIN/Name Eingabe:
+   - Name optional (oder required nur wenn du willst) – default: optional
+   - PIN required
+8) Serverseitige PIN-Prüfung wenn Endpoint existiert; sonst clientseitig minimal:
+   - Prefer: POST /api/simple/unlock { name, pin }
+   - Server checks pin against ENV SIMPLE_MODE_PIN (or similar) and returns ok.
+   - If ENV missing: allow unlock in dev but show warning in /simple-test.
+
+────────────────────────────────────────────────────────────
+B) IMPLEMENTATION DETAILS (MUST)
+1) Identify current “login overlay” component in /log-simple or SimpleShell.
+   - Remove it entirely.
+   - Replace with INLINE “Unlock to save” section.
+
+2) Add SimpleAuth helper (client/src/lib/simple-auth.ts)
+Functions:
+- getSimpleAuth(): { unlocked:boolean, name?:string }
+- setSimpleAuth(name:string): void
+- clearSimpleAuth(): void
+
+Storage:
+- sessionStorage keys:
+  - "simple_unlocked" = "1"
+  - "simple_name" = "<string>"
+
+3) /log-simple behavior
+- Render form always.
+- Render Save button:
+  - if unlocked: normal Save
+  - if locked: Save disabled + shows small inline hint
+- Add “Unlock to save” inline panel (collapsed by default):
+  - fields: Name (optional), PIN (required)
+  - button: Unlock
+  - on success: setSimpleAuth(name)
+  - then enable Save
+
+Trigger rules:
+- The Unlock panel appears when user taps on the disabled Save button OR taps a small “Unlock” link next to it.
+
+4) Backend endpoint (server/routes.ts)
+Add:
+POST /api/simple/unlock
+Body: { name?: string, pin: string }
+Logic:
+- Compare pin to process.env.SIMPLE_MODE_PIN (or existing env)
+- If matches: return { ok:true }
+- Else: 401 { ok:false, message:"Invalid PIN" }
+Rate limit:
+- 5 attempts / 5 minutes per IP/session
+
+If SIMPLE_MODE_PIN is not set:
+- In production: return 500 with message “PIN not configured”
+- In dev: allow { ok:true } but log warning [SIMPLE_MODE][AUTH] PIN not set
+
+5) SimpleShell: Add user icon + logout sheet
+- Top right icon always visible
+- On tap open sheet:
+  - if unlocked: show name + “Unlocked”
+  - if locked: show “Locked”
+  - Button: Logout (always shown, disabled if already locked)
+Logout:
+- clearSimpleAuth()
+- close sheet
+- navigate to landing “/”
+
+6) /simple-test update
+Show:
+- SIMPLE_MODE_PIN configured? yes/no
+- Current session: unlocked? name?
+
+────────────────────────────────────────────────────────────
+C) FILES TO CHANGE (EXPLICIT)
+Frontend:
+- client/src/components/simple/simple-shell.tsx (add user icon + sheet + logout)
+- client/src/pages/simple-log.tsx (remove overlay; add inline unlock gating; Save disabled until unlocked)
+- client/src/lib/simple-auth.ts (new)
+- client/src/pages/simple-test.tsx (show auth status + pin configured)
+
+Backend:
+- server/routes.ts (add POST /api/simple/unlock + rate limit)
+
+────────────────────────────────────────────────────────────
+D) FINAL CHECK (MUST OUTPUT AFTER IMPLEMENTATION)
+1) Confirm overlay removed (no modal blocker).
+2) Confirm Save gating works.
+3) Confirm session persistence works (refresh page stays unlocked).
+4) Confirm logout clears session and returns to landing.

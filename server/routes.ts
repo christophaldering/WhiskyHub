@@ -1451,6 +1451,48 @@ export async function registerRoutes(
     }
   });
 
+  // ===== SIMPLE MODE AUTH =====
+  const simpleUnlockAttempts = new Map<string, { count: number; resetAt: number }>();
+
+  app.post("/api/simple/unlock", (req: Request, res: Response) => {
+    const clientIp = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
+    const now = Date.now();
+    const entry = simpleUnlockAttempts.get(clientIp);
+    if (entry && now < entry.resetAt) {
+      if (entry.count >= 5) {
+        return res.status(429).json({ ok: false, message: "Too many attempts. Please wait." });
+      }
+      entry.count++;
+    } else {
+      simpleUnlockAttempts.set(clientIp, { count: 1, resetAt: now + 5 * 60 * 1000 });
+    }
+
+    const { name, pin } = req.body || {};
+    if (!pin || typeof pin !== "string") {
+      return res.status(400).json({ ok: false, message: "PIN is required" });
+    }
+
+    const configuredPin = process.env.SIMPLE_MODE_PIN;
+    if (!configuredPin) {
+      if (process.env.NODE_ENV === "production") {
+        console.warn("[SIMPLE_MODE][AUTH] SIMPLE_MODE_PIN not set in production");
+        return res.status(500).json({ ok: false, message: "PIN not configured" });
+      }
+      console.warn("[SIMPLE_MODE][AUTH] SIMPLE_MODE_PIN not set — allowing unlock in dev");
+      return res.json({ ok: true, name: name || "Guest" });
+    }
+
+    if (pin.trim() === configuredPin) {
+      console.log(`[SIMPLE_MODE][AUTH] unlock success for "${name || "anon"}"`);
+      const e = simpleUnlockAttempts.get(clientIp);
+      if (e) e.count = 0;
+      return res.json({ ok: true, name: name || "Guest" });
+    }
+
+    console.log(`[SIMPLE_MODE][AUTH] unlock failed for "${name || "anon"}"`);
+    return res.status(401).json({ ok: false, message: "Invalid PIN" });
+  });
+
   // ===== FLIGHT IMPORT =====
 
   function sanitizeForMatch(s: string): string {

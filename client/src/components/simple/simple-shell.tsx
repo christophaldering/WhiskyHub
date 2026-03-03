@@ -1,6 +1,7 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Wine, PenLine, User } from "lucide-react";
+import { Wine, PenLine, User, KeyRound, X, LogOut, Lock, Unlock } from "lucide-react";
+import { getSimpleAuth, clearSimpleAuth } from "@/lib/simple-auth";
 
 const c = {
   bg: "#1a1714",
@@ -8,6 +9,8 @@ const c = {
   accent: "#d4a256",
   muted: "#4a4540",
   mutedLight: "#8a7e6d",
+  border: "#2e281f",
+  card: "#242018",
 };
 
 const NAV_ITEMS = [
@@ -24,6 +27,16 @@ interface SimpleShellProps {
 
 export default function SimpleShell({ children, showBack = true, maxWidth = 420 }: SimpleShellProps) {
   const [location] = useLocation();
+  const [, navigate] = useLocation();
+  const [showUserSheet, setShowUserSheet] = useState(false);
+  const auth = getSimpleAuth();
+
+  const handleLogout = () => {
+    clearSimpleAuth();
+    setShowUserSheet(false);
+    navigate("/");
+    window.location.reload();
+  };
 
   return (
     <div
@@ -44,21 +57,38 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
           alignItems: "center",
         }}
       >
-        <Link href="/">
-          <span
+        <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+          <Link href="/">
+            <span
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 18,
+                color: c.accent,
+                cursor: "pointer",
+              }}
+              data-testid="link-brand-home"
+            >
+              CaskSense
+            </span>
+          </Link>
+          <button
+            onClick={() => setShowUserSheet(true)}
             style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 18,
-              color: c.accent,
+              background: "none",
+              border: "none",
               cursor: "pointer",
-              display: "block",
-              marginBottom: 32,
+              padding: 6,
+              borderRadius: 8,
+              color: auth.unlocked ? c.accent : c.mutedLight,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
             }}
-            data-testid="link-brand-home"
+            data-testid="button-user-menu"
           >
-            CaskSense
-          </span>
-        </Link>
+            <KeyRound style={{ width: 18, height: 18 }} strokeWidth={auth.unlocked ? 2.2 : 1.6} />
+          </button>
+        </div>
 
         <div style={{ width: "100%" }}>
           {children}
@@ -74,6 +104,81 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
           </Link>
         )}
       </div>
+
+      {showUserSheet && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 60 }} data-testid="user-sheet">
+          <div
+            style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)" }}
+            onClick={() => setShowUserSheet(false)}
+          />
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: c.card,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: "20px 20px 40px",
+              paddingBottom: "max(40px, env(safe-area-inset-bottom))",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: 0 }}>Session</h3>
+              <button
+                onClick={() => setShowUserSheet(false)}
+                style={{ background: c.bg, border: "none", cursor: "pointer", padding: 6, borderRadius: "50%", color: c.mutedLight, display: "flex" }}
+                data-testid="button-close-user-sheet"
+              >
+                <X style={{ width: 16, height: 16 }} />
+              </button>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: c.bg, borderRadius: 12, marginBottom: 12 }}>
+              {auth.unlocked ? (
+                <Unlock style={{ width: 18, height: 18, color: c.accent, flexShrink: 0 }} />
+              ) : (
+                <Lock style={{ width: 18, height: 18, color: c.mutedLight, flexShrink: 0 }} />
+              )}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: c.text }}>
+                  {auth.unlocked ? (auth.name || "Guest") : "Locked"}
+                </div>
+                <div style={{ fontSize: 11, color: c.mutedLight }}>
+                  {auth.unlocked ? "Session unlocked" : "Not signed in"}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              disabled={!auth.unlocked}
+              data-testid="button-logout"
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                padding: 12,
+                fontSize: 14,
+                fontWeight: 500,
+                background: auth.unlocked ? "transparent" : c.bg,
+                color: auth.unlocked ? "#c44" : c.muted,
+                border: `1px solid ${auth.unlocked ? "#c4444440" : c.border}`,
+                borderRadius: 10,
+                cursor: auth.unlocked ? "pointer" : "not-allowed",
+                fontFamily: "system-ui, sans-serif",
+                opacity: auth.unlocked ? 1 : 0.5,
+              }}
+            >
+              <LogOut style={{ width: 16, height: 16 }} />
+              Logout
+            </button>
+          </div>
+        </div>
+      )}
 
       <nav
         style={{
