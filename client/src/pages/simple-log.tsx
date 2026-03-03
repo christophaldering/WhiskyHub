@@ -1470,7 +1470,7 @@ export default function SimpleLogPage() {
                     >
                       {score}
                     </motion.div>
-                    <div style={{ fontSize: 12, color: c.mutedLight, marginTop: 4 }}>Overall</div>
+                    <div style={{ fontSize: 12, color: c.mutedLight, marginTop: 4 }}>Your Final Score</div>
                   </div>
 
                   <input
@@ -1559,22 +1559,36 @@ export default function SimpleLogPage() {
                   })}
 
                   <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 14, marginTop: 8 }}>
+                    {detailTouched && (
+                      <div style={{ marginBottom: 14 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: c.mutedLight }}>Suggested Score</span>
+                          <span style={{ fontSize: 22, fontWeight: 700, color: c.mutedLight, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif" }} data-testid="text-suggested-score">
+                            {calcOverall(detailedScores)}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 11, color: c.mutedLight, marginTop: 2 }} data-testid="text-score-suggestion">
+                          Based on your detailed ratings
+                        </div>
+                      </div>
+                    )}
+
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                       <div>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>Overall</span>
-                        {detailTouched && (
+                        <span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>Your Final Score</span>
+                        {overrideActive && (
                           <span
                             style={{
                               fontSize: 10,
-                              color: overrideActive ? c.accent : c.mutedLight,
-                              background: overrideActive ? `${c.accent}15` : `${c.border}`,
+                              color: c.accent,
+                              background: `${c.accent}15`,
                               padding: "2px 8px",
                               borderRadius: 20,
                               marginLeft: 8,
                             }}
                             data-testid="badge-score-mode"
                           >
-                            {overrideActive ? "Manually adjusted" : "Suggested"}
+                            Manually adjusted
                           </span>
                         )}
                       </div>
@@ -1588,12 +1602,6 @@ export default function SimpleLogPage() {
                       </motion.div>
                     </div>
 
-                    {detailTouched && !overrideActive && (
-                      <div style={{ fontSize: 11, color: c.mutedLight, marginBottom: 6 }} data-testid="text-score-suggestion">
-                        Suggested overall score based on your detailed ratings
-                      </div>
-                    )}
-
                     <input
                       type="range"
                       min={0}
@@ -1603,10 +1611,6 @@ export default function SimpleLogPage() {
                       data-testid="input-score"
                       style={{ width: "100%", accentColor: c.accent, display: "block" }}
                     />
-
-                    <div style={{ fontSize: 11, color: c.mutedLight, paddingTop: 4 }}>
-                      You can adjust this score manually.
-                    </div>
 
                     {overrideActive && (
                       <button
