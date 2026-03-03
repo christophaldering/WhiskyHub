@@ -77,17 +77,17 @@ function handleRequest(req: IncomingMessage, res: ServerResponse) {
     return;
   }
 
+  if (!ready) {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(LOADING_HTML);
+    return;
+  }
+
   const host = req.headers.host || "";
   if (process.env.NODE_ENV === "production" && host.includes("replit.app")) {
     const target = "https://casksense.com" + url;
     res.writeHead(301, { Location: target, "Cache-Control": "public, max-age=86400" });
     res.end();
-    return;
-  }
-
-  if (!ready) {
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(LOADING_HTML);
     return;
   }
 
