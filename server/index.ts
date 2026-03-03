@@ -17,15 +17,13 @@ declare module "http" {
 
 let serverReady = false;
 
+app.get("/__health", (_req, res) => {
+  res.status(200).json({ status: serverReady ? "ok" : "starting" });
+});
+
 app.use((req, res, next) => {
-  if (!serverReady) {
-    if (req.path === "/" || req.path === "/__health" || req.path === "/health") {
-      return res.status(200).send("<!DOCTYPE html><html><head><meta charset='utf-8'><title>CaskSense</title><meta http-equiv='refresh' content='3'></head><body style='background:#1a1714;color:#f5f0e8;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0'><p>Starting up…</p></body></html>");
-    }
-    if (!req.path.startsWith("/api")) {
-      return res.status(200).send("<!DOCTYPE html><html><head><meta charset='utf-8'><title>CaskSense</title><meta http-equiv='refresh' content='3'></head><body style='background:#1a1714;color:#f5f0e8;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0'><p>Starting up…</p></body></html>");
-    }
-    return res.status(503).json({ message: "Server is starting up" });
+  if (!serverReady && !req.path.startsWith("/api")) {
+    return res.status(200).send("<!DOCTYPE html><html><head><meta charset='utf-8'><title>CaskSense</title><meta http-equiv='refresh' content='3'></head><body style='background:#1a1714;color:#f5f0e8;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0'><p>Starting up…</p></body></html>");
   }
   next();
 });
@@ -78,6 +76,7 @@ app.use((req, res, next) => {
 });
 
 const port = parseInt(process.env.PORT || "5000", 10);
+
 httpServer.listen(
   {
     port,
