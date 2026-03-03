@@ -38,6 +38,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Knowledge Base**: Includes a Whisky Lexicon, Distillery Encyclopedia, and Independent Bottlers Encyclopedia.
 -   **AI Integration**: AI-powered bottle identification for journal entries, newsletter content generation, market price estimation, and tasting suggestions.
 -   **Collection Sync**: Whiskybase collection supports smart sync/diff via CSV re-upload.
+-   **Host Wizard (Simple Mode)**: `/host` page includes an inline create-session wizard (title, blind mode toggle, advanced accordion for date/description). On success, shows session code with copy button + "Continue to Add Whiskies" link to legacy tasting detail. Reuses `POST /api/tastings`. File: `client/src/pages/simple-host.tsx`.
 -   **Tasting Creation**: Supports multiple whisky input methods, including single entry, list import, and AI-curated suggestions.
 -   **Guest Mode**: Offers "Standard Naked" (persisted identity) and "Ultra Naked" (ephemeral identity) participation modes, controllable by the host. Naked Tasting supports Flow, Focus, and Journal UI modes.
 -   **Rating System**: Dynamic step sizing for rating sliders and auto-calculated overall scores with manual override.
