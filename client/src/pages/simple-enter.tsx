@@ -1,9 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { participantApi, tastingApi } from "@/lib/api";
 import SimpleShell from "@/components/simple/simple-shell";
+import { getSession, tryAutoResume } from "@/lib/session";
 
 const c = {
   bg: "#1a1714",
@@ -65,12 +66,20 @@ export default function SimpleEnterPage() {
   const [, navigate] = useLocation();
   const { currentParticipant, setParticipant } = useAppStore();
 
-  const [step, setStep] = useState<"name" | "code">(currentParticipant ? "code" : "name");
+  const sessionSignedIn = getSession().signedIn;
+  const [step, setStep] = useState<"name" | "code">(currentParticipant || sessionSignedIn ? "code" : "name");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    tryAutoResume().then(() => {
+      const s = getSession();
+      if (s.signedIn) setStep("code");
+    });
+  }, []);
 
   const handleIdentify = async (e: React.FormEvent) => {
     e.preventDefault();
