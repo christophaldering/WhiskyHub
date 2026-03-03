@@ -23,6 +23,21 @@ const NAV_ITEMS = [
   { href: "/analyze", icon: Compass, label: "Discover", match: ["/analyze", "/legacy/discover", "/legacy/flavor", "/legacy/news", "/legacy/badges"] },
 ];
 
+const LEGACY_ROUTE_PREFIXES = [
+  "/tasting", "/my/", "/discover", "/profile", "/admin",
+  "/flavor-wheel", "/flavor-profile", "/news", "/badges",
+  "/recap", "/photo-tasting", "/method", "/invite",
+  "/home", "/sessions", "/journal", "/collection", "/wishlist",
+  "/comparison", "/benchmark", "/analytics", "/data-export",
+  "/recommendations", "/taste-twins", "/friends", "/community-rankings",
+  "/activity", "/leaderboard", "/lexicon", "/distilleries",
+  "/distillery-map", "/bottlers", "/research", "/about",
+  "/features", "/donate", "/help", "/export-notes",
+  "/calendar", "/host-dashboard", "/my-tastings", "/my-whiskies",
+  "/whisky-database", "/account", "/reminders", "/pairings",
+  "/tasting-templates",
+];
+
 function getBackTarget(location: string): string {
   if (location.startsWith("/legacy/tasting")) return "/host";
   if (location.startsWith("/legacy/my") || location.startsWith("/legacy/profile")) return "/my-taste";
@@ -31,30 +46,17 @@ function getBackTarget(location: string): string {
   return "/";
 }
 
-function getPageLabel(location: string): string {
-  if (location.includes("/tasting/host")) return "Host Dashboard";
-  if (location.includes("/tasting/sessions")) return "Sessions";
-  if (location.includes("/tasting/calendar")) return "Calendar";
-  if (location.includes("/tasting?tab=templates")) return "Templates";
-  if (location.match(/\/tasting\/[a-f0-9-]+/i)) return "Tasting";
-  if (location.includes("/tasting")) return "Tasting Hub";
-  if (location.includes("/my/journal")) return "Journal";
-  if (location.includes("/my/collection")) return "Collection";
-  if (location.includes("/my/wishlist")) return "Wishlist";
-  if (location.includes("/discover/distilleries")) return "Distilleries";
-  if (location.includes("/discover/community")) return "Community";
-  if (location.includes("/discover/database")) return "Database";
-  if (location.includes("/discover")) return "Discover";
-  if (location.includes("/flavor-wheel")) return "Flavor Wheel";
-  if (location.includes("/flavor-profile")) return "Flavor Profile";
-  if (location.includes("/profile/account")) return "Account";
-  if (location.includes("/profile/help")) return "Help";
-  if (location.includes("/profile")) return "Profile";
-  if (location.includes("/admin")) return "Admin";
-  if (location.includes("/news")) return "News";
-  if (location.includes("/badges")) return "Badges";
-  if (location.includes("/recap")) return "Recap";
-  return "CaskSense";
+function shouldRedirectToLegacy(href: string): boolean {
+  if (href.startsWith("/legacy/") || href.startsWith("/enter") ||
+      href.startsWith("/log-simple") || href === "/log" ||
+      href === "/host" || href.startsWith("/my-taste") || href === "/analyze" ||
+      href.startsWith("/app/") || href.startsWith("/api/") || href === "/" ||
+      href.startsWith("/support") || href.startsWith("/impressum") || href.startsWith("/privacy") ||
+      href.startsWith("http") || href.startsWith("#") || href.startsWith("/naked/") ||
+      href.startsWith("/join/") || href.startsWith("/tasting-room-simple") || href === "/taste") {
+    return false;
+  }
+  return LEGACY_ROUTE_PREFIXES.some((prefix) => href === prefix || href.startsWith(prefix + "/") || href.startsWith(prefix + "?"));
 }
 
 interface SimpleLegacyShellProps {
@@ -62,7 +64,7 @@ interface SimpleLegacyShellProps {
 }
 
 export default function SimpleLegacyShell({ children }: SimpleLegacyShellProps) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [showSessionSheet, setShowSessionSheet] = useState(false);
   const [session, setSession] = useState(() => getSession());
 
@@ -72,8 +74,49 @@ export default function SimpleLegacyShell({ children }: SimpleLegacyShellProps) 
     tryAutoResume().then(() => refreshSession());
   }, [refreshSession]);
 
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      const anchor = (e.target as HTMLElement).closest("a");
+      if (!anchor) return;
+      const href = anchor.getAttribute("href");
+      if (!href) return;
+
+      if (shouldRedirectToLegacy(href)) {
+        e.preventDefault();
+        e.stopPropagation();
+        navigate("/legacy" + href);
+      }
+    }
+
+    const origPushState = history.pushState.bind(history);
+    const origReplaceState = history.replaceState.bind(history);
+
+    function patchUrl(url: string | URL | null | undefined): string | URL | null | undefined {
+      if (!url || typeof url !== "string") return url;
+      const path = url.startsWith("/") ? url : new URL(url, window.location.origin).pathname + (url.includes("?") ? "?" + url.split("?")[1] : "");
+      if (shouldRedirectToLegacy(path)) {
+        return "/legacy" + path;
+      }
+      return url;
+    }
+
+    history.pushState = function (data: any, unused: string, url?: string | URL | null) {
+      return origPushState(data, unused, patchUrl(url as string) as string);
+    };
+
+    history.replaceState = function (data: any, unused: string, url?: string | URL | null) {
+      return origReplaceState(data, unused, patchUrl(url as string) as string);
+    };
+
+    document.addEventListener("click", handleClick, true);
+    return () => {
+      document.removeEventListener("click", handleClick, true);
+      history.pushState = origPushState;
+      history.replaceState = origReplaceState;
+    };
+  }, [navigate]);
+
   const backTarget = getBackTarget(location);
-  const pageLabel = getPageLabel(location);
 
   return (
     <div
@@ -94,7 +137,7 @@ export default function SimpleLegacyShell({ children }: SimpleLegacyShellProps) 
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "12px 16px",
+          padding: "10px 16px",
           background: "rgba(26, 23, 20, 0.95)",
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
@@ -102,7 +145,7 @@ export default function SimpleLegacyShell({ children }: SimpleLegacyShellProps) 
         }}
         data-testid="simple-legacy-header"
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <Link href={backTarget}>
             <div
               style={{
@@ -120,17 +163,19 @@ export default function SimpleLegacyShell({ children }: SimpleLegacyShellProps) 
               <ArrowLeft style={{ width: 20, height: 20 }} />
             </div>
           </Link>
-          <span
-            style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 16,
-              color: c.text,
-              fontWeight: 500,
-            }}
-            data-testid="text-legacy-page-label"
-          >
-            {pageLabel}
-          </span>
+          <Link href="/">
+            <span
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 16,
+                color: c.accent,
+                cursor: "pointer",
+              }}
+              data-testid="link-legacy-brand"
+            >
+              CaskSense
+            </span>
+          </Link>
         </div>
 
         <button
@@ -162,7 +207,7 @@ export default function SimpleLegacyShell({ children }: SimpleLegacyShellProps) 
         <div
           style={{
             background: "#ffffff",
-            minHeight: "calc(100dvh - 52px - 72px)",
+            minHeight: "calc(100dvh - 48px - 72px)",
           }}
         >
           {children}
