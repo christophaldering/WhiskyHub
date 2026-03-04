@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, Timer, BarChart3 } from "lucide-react";
+import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, BarChart3, Star } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -983,21 +983,6 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
   const revealStep = tasting.guidedRevealStep ?? 0;
   const showResults = !!tasting.showGroupAvg;
 
-  const [timerRunning, setTimerRunning] = useState(false);
-  const [timerSeconds, setTimerSeconds] = useState(0);
-
-  useEffect(() => {
-    if (!timerRunning) return;
-    const interval = setInterval(() => setTimerSeconds((s) => s + 1), 1000);
-    return () => clearInterval(interval);
-  }, [timerRunning]);
-
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}:${sec.toString().padStart(2, "0")}`;
-  };
-
   const patchTasting = async (body: Record<string, any>) => {
     await fetch(`/api/tastings/${tasting.id}/details`, {
       method: "PATCH",
@@ -1028,8 +1013,6 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ hostId: pid, whiskyIndex: index, revealStep: 0 }),
     });
-    setTimerSeconds(0);
-    setTimerRunning(false);
   };
 
   const handleStartSession = async () => {
@@ -1037,12 +1020,15 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
     if (whiskies.length > 0) {
       await updateGuided({ guidedMode: true, guidedWhiskyIndex: 0, guidedRevealStep: 0 });
     }
-    setTimerSeconds(0);
+    await fetch(`/api/tastings/${tasting.id}/join`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ participantId: pid }),
+    });
   };
 
   const handleEndSession = async () => {
     await updateStatus("closed");
-    setTimerRunning(false);
   };
 
   const handleReveal = async () => {
@@ -1326,43 +1312,6 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
           })}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-          <button
-            type="button"
-            onClick={() => { setTimerRunning(!timerRunning); }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              background: timerRunning ? `${c.accent}20` : c.bg,
-              border: `1px solid ${timerRunning ? c.accent + "50" : c.border}`,
-              borderRadius: 10,
-              padding: "10px 16px",
-              color: c.accent,
-              fontSize: 18,
-              fontWeight: 700,
-              cursor: "pointer",
-              fontFamily: "monospace",
-            }}
-            data-testid="button-timer"
-          >
-            <Timer style={{ width: 16, height: 16 }} />
-            {formatTime(timerSeconds)}
-            <span style={{ fontSize: 12, fontWeight: 400, marginLeft: 4 }}>{timerRunning ? "⏸" : "▶"}</span>
-          </button>
-
-          {timerSeconds > 0 && (
-            <button
-              type="button"
-              onClick={() => { setTimerSeconds(0); setTimerRunning(false); }}
-              style={{ background: "none", border: "none", color: c.muted, fontSize: 12, cursor: "pointer", fontFamily: "system-ui, sans-serif", textDecoration: "underline" }}
-              data-testid="button-timer-reset"
-            >
-              Reset
-            </button>
-          )}
-        </div>
-
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {isBlind && activeWhisky && (
             <button
@@ -1416,6 +1365,32 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
             <BarChart3 style={{ width: 16, height: 16 }} />
             {showResults ? "Results Visible" : "Show Results"}
           </button>
+          {tasting.status === "open" && (
+            <button
+              type="button"
+              onClick={() => navigate(`/tasting-room-simple/${tasting.id}`)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                padding: "14px",
+                fontSize: 15,
+                fontWeight: 700,
+                background: `${c.accent}15`,
+                color: c.accent,
+                border: `1.5px solid ${c.accent}50`,
+                borderRadius: 12,
+                cursor: "pointer",
+                fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="button-host-rate"
+            >
+              <Star style={{ width: 18, height: 18 }} />
+              Rate this Whisky
+            </button>
+          )}
         </div>
       </div>
 
