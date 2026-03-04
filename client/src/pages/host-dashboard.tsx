@@ -451,7 +451,7 @@ function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE:
               </div>
             ) : (
               <p style={{ fontSize: 12, color: c.muted, fontStyle: "italic" }}>
-                {isDE ? "Kein Session-Code verfügbar" : "No session code available"}
+                {isDE ? "Kein Tasting-Code verfügbar" : "No tasting code available"}
               </p>
             )}
           </div>
@@ -795,7 +795,7 @@ export default function HostDashboard() {
                     </button>
                   </div>
                   <p style={{ fontSize: 11, color: c.muted, marginTop: 12, fontStyle: "italic" }}>
-                    {isDE ? "Session-spezifische Menüs im Live-Tasting-Raum" : "Session-specific menus in the live tasting room"}
+                    {isDE ? "Tasting-spezifische Menüs im Live-Tasting-Raum" : "Tasting-specific menus in the live tasting room"}
                   </p>
                 </div>
               </motion.div>

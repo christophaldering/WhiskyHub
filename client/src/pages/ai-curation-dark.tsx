@@ -182,7 +182,7 @@ export default function AICurationDark() {
                   style={selectStyle}
                   data-testid="select-tasting-trigger"
                 >
-                  <option value="" disabled>{isDE ? "Wähle ein Tasting..." : "Choose a tasting session..."}</option>
+                  <option value="" disabled>{isDE ? "Wähle ein Tasting..." : "Choose a tasting..."}</option>
                   {tastingsLoading ? (
                     <option value="" disabled>{isDE ? "Laden..." : "Loading..."}</option>
                   ) : filteredTastings.length === 0 ? (

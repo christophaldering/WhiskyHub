@@ -1,7 +1,15 @@
 # CaskSense - Whisky Tasting Application
 
 ## Overview
-CaskSense is a web application for hosting and participating in collaborative whisky tasting sessions. It provides tools for event creation, participant management, and structured whisky evaluation, including session progression, multi-act reveals with analytics, and personalized features like a whisky journal. The project aims to be a leading platform for structured whisky tasting, fostering a global community and providing sophisticated tools for enthusiasts.
+CaskSense is a web application for hosting and participating in collaborative whisky tastings. It provides tools for event creation, participant management, and structured whisky evaluation, including tasting progression, multi-act reveals with analytics, and personalized features like a whisky journal. The project aims to be a leading platform for structured whisky tasting, fostering a global community and providing sophisticated tools for enthusiasts.
+
+### Terminology (enforced across the app)
+- **Tasting** = an event/evening with multiple whiskies (replaces "Session" everywhere)
+- **Line-up** = the ordered set of whiskies in a tasting
+- **Dram** = a single whisky within a tasting ("Dram 3 von 7")
+- **Eintrag** = a personal journal entry
+- **Meine Whiskys / Meine Sammlung** = bottles you own/owned (Whiskybase CSV import)
+- **Meine Drams** = everything you've ever tasted (from tastings, journal, personal notes)
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

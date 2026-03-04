@@ -109,7 +109,7 @@ function WaitingForHost({ tasting }: { tasting: TastingState }) {
       </h3>
       <p style={{ fontSize: 13, color: c.muted, margin: 0 }}>
         {tasting.status === "draft"
-          ? "The session hasn't started yet. Hang tight!"
+          ? "The tasting hasn't started yet. Hang tight!"
           : "The host will select the next whisky shortly."}
       </p>
       <div style={{

@@ -50,7 +50,7 @@ export default function EnterPage() {
     try {
       const tasting = await tastingApi.getByCode(trimmed);
       if (!tasting?.id) {
-        setError("Session not found. Check the code.");
+        setError("Tasting not found. Check the code.");
         return;
       }
       if (currentParticipant) {
@@ -60,7 +60,7 @@ export default function EnterPage() {
     } catch (err: any) {
       const msg = err?.message || "";
       if (msg.includes("not found") || msg.includes("Not found") || msg.includes("404")) {
-        setError("Session not found. Check the code.");
+        setError("Tasting not found. Check the code.");
       } else {
         setError(msg || "Could not join. Try again.");
       }

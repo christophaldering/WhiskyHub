@@ -52,7 +52,7 @@ export default function HomeDashboard() {
       }
       navigate(`/tasting/${tasting.id}`);
     } catch (e: any) {
-      setJoinError(e.message || "Session nicht gefunden");
+      setJoinError(e.message || "Tasting nicht gefunden");
     } finally {
       setJoining(false);
     }

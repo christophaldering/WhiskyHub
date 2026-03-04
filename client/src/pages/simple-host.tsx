@@ -262,7 +262,7 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to create session");
+        throw new Error(data.message || "Failed to create tasting");
       }
 
       const tasting = await res.json();
@@ -359,7 +359,7 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional notes about the session"
+                placeholder="Optional notes about the tasting"
                 rows={2}
                 style={{ ...inputStyle, resize: "vertical", minHeight: 48 }}
                 data-testid="input-tasting-description"
@@ -393,7 +393,7 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
           }}
           data-testid="button-create-session"
         >
-          {submitting ? "Creating…" : "Create Session"}
+          {submitting ? "Creating…" : "Create Tasting"}
         </button>
       </div>
     </div>
@@ -1103,7 +1103,7 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={sectionCard}>
-          {sectionTitle("Session Overview")}
+          {sectionTitle("Tasting Overview")}
           <div style={{ fontSize: 20, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif", marginBottom: 6 }}>{tasting.title}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: c.muted }}>
             <span>Code: <strong style={{ color: c.accent, letterSpacing: "0.08em" }}>{tasting.code}</strong></span>
@@ -1125,14 +1125,14 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
           {bigButton({
             onClick: handleStartSession,
             icon: Play,
-            label: "Start Session",
+            label: "Start Tasting",
             bg: whiskies.length > 0 ? c.success : c.border,
             color: whiskies.length > 0 ? "#fff" : c.muted,
             disabled: whiskies.length === 0,
             testId: "button-start-session",
           })}
           {whiskies.length === 0 && (
-            <p style={{ fontSize: 12, color: c.muted, textAlign: "center", marginTop: 8 }}>Add whiskies first to start the session.</p>
+            <p style={{ fontSize: 12, color: c.muted, textAlign: "center", marginTop: 8 }}>Add whiskies first to start the tasting.</p>
           )}
         </div>
 
@@ -1147,10 +1147,10 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={sectionCard}>
-          {sectionTitle("Session Overview")}
+          {sectionTitle("Tasting Overview")}
           <div style={{ fontSize: 20, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif", marginBottom: 6 }}>{tasting.title}</div>
           <div style={{ fontSize: 13, color: c.muted }}>
-            Session is <strong style={{ color: c.text }}>{tasting.status}</strong>
+            Tasting is <strong style={{ color: c.text }}>{tasting.status}</strong>
           </div>
         </div>
 
@@ -1196,7 +1196,7 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
       <div style={sectionCard} data-testid="section-overview">
-        {sectionTitle("Session Overview")}
+        {sectionTitle("Tasting Overview")}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif", marginBottom: 4 }} data-testid="text-tasting-title">
@@ -1462,7 +1462,7 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
         {bigButton({
           onClick: handleEndSession,
           icon: Square,
-          label: "End Session",
+          label: "End Tasting",
           bg: `${c.danger}15`,
           color: c.danger,
           borderColor: `${c.danger}40`,

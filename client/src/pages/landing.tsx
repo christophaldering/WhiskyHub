@@ -59,7 +59,7 @@ export default function Landing() {
           borderRadius: 8,
         }}
         data-testid="button-session-key"
-        aria-label="Session"
+        aria-label="Tasting"
       >
         {session.signedIn ? (
           <>
