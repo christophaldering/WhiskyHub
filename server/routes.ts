@@ -1951,8 +1951,8 @@ export async function registerRoutes(
 
       const avg = (arr: number[]) => arr.length ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10 : null;
 
-      const results = Object.entries(grouped).map(([whiskyId, rats]) => {
-        const w = whiskyMap.get(whiskyId);
+      const results = allWhiskies.map((w) => {
+        const rats = grouped[w.id] || [];
         const overalls = rats.map((r) => r.overall).filter((v): v is number => v != null);
         const noses = rats.map((r) => r.nose).filter((v): v is number => v != null);
         const tastes = rats.map((r) => r.taste).filter((v): v is number => v != null);
@@ -1960,13 +1960,13 @@ export async function registerRoutes(
         const balances = rats.map((r) => r.balance).filter((v): v is number => v != null);
 
         return {
-          whiskyId,
-          name: w?.name ?? "Unknown",
-          distillery: w?.distillery ?? null,
-          age: w?.age ?? null,
-          abv: w?.abv ?? null,
-          region: w?.region ?? null,
-          sortOrder: w?.sortOrder ?? 0,
+          whiskyId: w.id,
+          name: w.name ?? "Unknown",
+          distillery: w.distillery ?? null,
+          age: w.age ?? null,
+          abv: w.abv ?? null,
+          region: w.region ?? null,
+          sortOrder: w.sortOrder ?? 0,
           ratingCount: rats.length,
           avgOverall: avg(overalls),
           avgNose: avg(noses),
