@@ -4,7 +4,7 @@ import { useAppStore } from "@/lib/store";
 import { participantApi, journalApi, statsApi, flavorProfileApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { CircleDot, GitCompareArrows, BarChart3, BookOpen, ChevronRight } from "lucide-react";
+import { CircleDot, GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock } from "lucide-react";
 
 const c = {
   bg: "#1a1714",
@@ -162,26 +162,38 @@ function FlavorPreviewCard({ pid }: { pid: string | undefined }) {
   );
 }
 
+const ANALYTICS_THRESHOLD = 10;
+
 function AnalyticsPreviewCard({ pid, stats }: { pid: string | undefined; stats: any }) {
-  const totalRatings = stats?.totalRatings ?? stats?.ratingCount ?? null;
+  const totalRatings = stats?.totalRatings ?? stats?.ratingCount ?? 0;
+  const totalJournal = stats?.totalJournalEntries ?? 0;
+  const whiskyCount = totalRatings + totalJournal;
+  const isLocked = whiskyCount < ANALYTICS_THRESHOLD;
   const avgOverall = stats?.avgOverall ?? stats?.averageOverall ?? null;
 
   return (
     <Link href="/my-taste/analytics">
-      <div style={{ ...cardStyle, padding: "16px 20px", cursor: "pointer" }} data-testid="card-analytics">
+      <div style={{ ...cardStyle, padding: "16px 20px", cursor: "pointer", opacity: isLocked ? 0.85 : 1 }} data-testid="card-analytics">
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c.accent}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <BarChart3 style={{ width: 18, height: 18, color: c.accent }} />
+            {isLocked ? <Lock style={{ width: 16, height: 16, color: c.mutedLight }} /> : <BarChart3 style={{ width: 18, height: 18, color: c.accent }} />}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>My Analytics</div>
-            <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>Your rating statistics & trends</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: isLocked ? c.mutedLight : c.text }}>My Analytics</div>
+            <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>
+              {isLocked ? `${whiskyCount} / ${ANALYTICS_THRESHOLD} whiskies to unlock` : "Your rating statistics & trends"}
+            </div>
           </div>
-          <ChevronRight style={{ width: 14, height: 14, color: c.muted, flexShrink: 0 }} />
+          {isLocked && (
+            <div style={{ height: 4, width: 40, background: c.bg, borderRadius: 2, overflow: "hidden", flexShrink: 0 }}>
+              <div style={{ height: "100%", width: `${(whiskyCount / ANALYTICS_THRESHOLD) * 100}%`, background: c.accent, borderRadius: 2 }} />
+            </div>
+          )}
+          {!isLocked && <ChevronRight style={{ width: 14, height: 14, color: c.muted, flexShrink: 0 }} />}
         </div>
-        {pid && (totalRatings != null || avgOverall != null) && (
+        {pid && !isLocked && (totalRatings > 0 || avgOverall != null) && (
           <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
-            {totalRatings != null && (
+            {totalRatings > 0 && (
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif" }}>{totalRatings}</div>
                 <div style={{ fontSize: 10, color: c.muted }}>Ratings</div>

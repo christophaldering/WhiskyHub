@@ -3,8 +3,8 @@ import { useAppStore } from "@/lib/store";
 import { participantApi, statsApi, flavorProfileApi, ratingNotesApi, journalApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { ArrowLeft } from "lucide-react";
-import { Link } from "wouter";
+import { ArrowLeft, Lock, PenLine } from "lucide-react";
+import { Link, useLocation } from "wouter";
 
 const c = {
   bg: "#1a1714",
@@ -452,6 +452,85 @@ function RatingConsistencyCard({ pid }: { pid: string }) {
   );
 }
 
+const THRESHOLD = 10;
+
+function LockedState({ count }: { count: number }) {
+  const [, navigate] = useLocation();
+  const pct = Math.min((count / THRESHOLD) * 100, 100);
+
+  return (
+    <div style={cardStyle} data-testid="card-analytics-locked">
+      <div style={{ textAlign: "center", padding: "20px 0" }}>
+        <div style={{
+          width: 48, height: 48, borderRadius: "50%",
+          background: `${c.accent}15`, display: "inline-flex",
+          alignItems: "center", justifyContent: "center", marginBottom: 16,
+        }}>
+          <Lock style={{ width: 22, height: 22, color: c.accentDim }} />
+        </div>
+
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 8px" }}>
+          Your Taste Profile will appear after you log {THRESHOLD} whiskies.
+        </h3>
+
+        <p style={{ fontSize: 14, color: c.muted, margin: "0 0 20px" }}>
+          Build your tasting history to unlock deeper insights.
+        </p>
+
+        <div style={{ maxWidth: 220, margin: "0 auto 8px" }}>
+          <div style={{ height: 8, background: c.bg, borderRadius: 4, overflow: "hidden" }}>
+            <div style={{
+              height: "100%", width: `${pct}%`,
+              background: `linear-gradient(90deg, ${c.accentDim}, ${c.accent})`,
+              borderRadius: 4, transition: "width 0.5s ease",
+            }} />
+          </div>
+          <div style={{ fontSize: 13, color: c.accent, fontWeight: 600, marginTop: 6 }} data-testid="text-progress">
+            {count} / {THRESHOLD} whiskies logged
+          </div>
+        </div>
+
+        <button
+          onClick={() => navigate("/log-simple")}
+          data-testid="button-log-whisky"
+          style={{
+            marginTop: 20, display: "inline-flex", alignItems: "center", gap: 6,
+            background: c.accent, color: c.bg, border: "none", borderRadius: 8,
+            padding: "10px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer",
+          }}
+        >
+          <PenLine style={{ width: 14, height: 14 }} />
+          Log another whisky
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function UnlockBanner() {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(false), 6000);
+    return () => clearTimeout(t);
+  }, []);
+  if (!visible) return null;
+  return (
+    <div
+      data-testid="banner-unlocked"
+      style={{
+        background: `linear-gradient(135deg, ${c.accent}25, ${c.accent}10)`,
+        border: `1px solid ${c.accent}40`,
+        borderRadius: 10, padding: "12px 16px",
+        textAlign: "center", animation: "fadeIn 0.4s ease",
+      }}
+    >
+      <span style={{ fontSize: 14, fontWeight: 600, color: c.accent }}>
+        Your Taste Profile is ready.
+      </span>
+    </div>
+  );
+}
+
 export default function MyTasteAnalyticsPage() {
   const { currentParticipant, setParticipant } = useAppStore();
   const pid = currentParticipant?.id;
@@ -466,6 +545,17 @@ export default function MyTasteAnalyticsPage() {
       }
     }
   }, [pid, setParticipant]);
+
+  const { data: stats } = useQuery({
+    queryKey: ["participant-stats-threshold", pid],
+    queryFn: () => statsApi.get(pid!),
+    enabled: !!pid,
+    staleTime: 60000,
+  });
+
+  const totalRatings = (stats?.totalRatings ?? 0) + (stats?.totalJournalEntries ?? 0);
+  const isUnlocked = totalRatings >= THRESHOLD;
+  const justUnlocked = isUnlocked && totalRatings < THRESHOLD + 3;
 
   return (
     <SimpleShell>
@@ -492,8 +582,11 @@ export default function MyTasteAnalyticsPage() {
               Sign in from My Taste to see your analytics.
             </p>
           </div>
+        ) : !isUnlocked ? (
+          <LockedState count={totalRatings} />
         ) : (
           <>
+            {justUnlocked && <UnlockBanner />}
             <TasteProfileCard pid={pid} />
             <TasteMapCard pid={pid} />
             <TasteEvolutionCard pid={pid} />
