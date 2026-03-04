@@ -55,6 +55,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
   const [editLoading, setEditLoading] = useState(false);
   const [editMsg, setEditMsg] = useState("");
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
+  const { setParticipant: clearStoreParticipant } = useAppStore();
 
   useEffect(() => {
     if (open) {
@@ -226,8 +227,6 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     onSessionChange();
     onClose();
   };
-
-  const { setParticipant: clearStoreParticipant } = useAppStore();
 
   const handleSignOut = async () => {
     await signOut();
