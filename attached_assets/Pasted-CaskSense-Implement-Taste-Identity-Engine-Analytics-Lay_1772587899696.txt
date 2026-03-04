@@ -1,0 +1,150 @@
+CaskSense – Implement Taste Identity Engine (Analytics Layer)
+
+Goal:
+Build an analytics layer that derives a user's whisky taste profile from their historical ratings.
+
+This layer should remain invisible to the main interface and power insights in the "My Taste → Analytics" section.
+
+Data Source:
+Use the existing ratings table.
+
+Fields used:
+- score_overall_final
+- nose_tags
+- taste_tags
+- finish_tags
+- balance_tags
+- created_at
+- participant_id / user_id
+
+Minimum Data Requirement:
+Analytics should activate only when a user has logged at least 10 whiskies.
+
+Core Analytics to Implement:
+
+1. Taste Profile
+
+Aggregate attribute frequencies across all ratings of a user.
+
+Compute normalized preference scores for categories such as:
+
+smoke
+sweet
+fruit
+spice
+oak
+peat
+sherry
+
+Output example:
+
+{
+  smoke: 0.82,
+  sweet: 0.35,
+  fruit: 0.21,
+  spice: 0.54,
+  oak: 0.47
+}
+
+This forms the user's taste vector.
+
+2. Taste Map
+
+Compute distribution of flavour attributes based on nose_tags, taste_tags, finish_tags.
+
+Return simple counts and percentages.
+
+Example:
+
+{
+  smoky: 23,
+  fruity: 8,
+  spicy: 15,
+  sweet: 10
+}
+
+3. Taste Evolution
+
+Group ratings by time period (month or quarter).
+
+Compute average score and attribute distribution over time.
+
+Return data suitable for a simple line chart.
+
+Example:
+
+[
+ {month:"2025-01", avg_score:82},
+ {month:"2025-02", avg_score:84}
+]
+
+4. Rating Consistency
+
+Compute standard deviation of overall scores.
+
+Return:
+
+{
+ average_score: 83,
+ score_std_dev: 3.4,
+ consistency: "high"
+}
+
+Define consistency thresholds:
+
+std < 4 → high
+std 4–8 → medium
+std > 8 → low
+
+5. Taste Identity Label
+
+Generate a simple descriptive label based on dominant attributes.
+
+Example labels:
+
+Peat Explorer
+Sherry Lover
+Balanced Taster
+Fruit Driven
+Spice Enthusiast
+
+Use simple rule-based classification for V1.
+
+6. API Endpoint
+
+Create endpoint:
+
+GET /api/analytics/taste-profile/:userId
+
+Return:
+
+{
+ tasteProfile,
+ tasteMap,
+ tasteEvolution,
+ ratingConsistency,
+ tasteIdentity
+}
+
+7. Performance
+
+Compute analytics on demand for now.
+
+Optional later improvement:
+cache results after recalculation.
+
+Design Principle:
+
+Keep analytics understandable.
+
+Avoid technical terms like:
+
+cluster analysis
+factor loadings
+regression
+
+Instead return user-facing concepts such as:
+
+Your Taste Profile
+Your Taste Evolution
+Your Taste Identity
