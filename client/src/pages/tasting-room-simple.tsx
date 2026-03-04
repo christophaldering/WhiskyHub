@@ -280,14 +280,14 @@ export default function TastingRoomSimple() {
     queryKey: ["tasting-simple", tastingId],
     queryFn: () => tastingApi.get(tastingId!),
     enabled: !!tastingId,
-    refetchInterval: 3000,
+    refetchInterval: tasting?.guidedMode ? 800 : 3000,
   });
 
   const { data: whiskies = [], isLoading: whiskiesLoading } = useQuery<WhiskyItem[]>({
     queryKey: ["tasting-whiskies-simple", tastingId],
     queryFn: () => fetch(`/api/tastings/${tastingId}/whiskies`).then((r) => r.json()),
     enabled: !!tastingId,
-    refetchInterval: 10000,
+    refetchInterval: tasting?.guidedMode ? 3000 : 10000,
   });
 
   const sortedWhiskies = useMemo(() =>

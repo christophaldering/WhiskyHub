@@ -684,18 +684,16 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       <div
         style={{
           position: "absolute",
-          bottom: 0,
-          left: "50%",
-          transform: "translateX(-50%)",
+          top: 0,
+          right: 0,
           width: "100%",
           maxWidth: 420,
           maxHeight: "85vh",
           overflowY: "auto",
           background: c.card,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          padding: "20px 20px 40px",
-          paddingBottom: "max(40px, env(safe-area-inset-bottom))",
+          borderBottomLeftRadius: 20,
+          borderBottomRightRadius: 20,
+          padding: "20px 20px 32px",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>

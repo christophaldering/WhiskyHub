@@ -8,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import {
   GlassWater, Users, Wine, Star, Calendar, Trophy, LayoutDashboard, Eye,
   Plus, FileText, Printer, ClipboardList, Download, Sparkles, ChevronLeft,
-  ChevronRight, Copy, Mail, QrCode, BarChart3, BookOpen, Zap,
+  ChevronRight, Copy, Mail, QrCode, BarChart3, Zap,
   Check, Send, Loader2, Link as LinkIcon, ChevronDown,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -698,12 +698,11 @@ export default function HostDashboard() {
             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.4 }}>
               <div style={sectionCard} data-testid="section-quick-actions">
                 <SectionTitle icon={Zap} title={isDE ? "Schnellzugriff" : "Quick Actions"} />
-                <div className="hd-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+                <div className="hd-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
                   {[
                     { href: "/host", icon: Plus, label: isDE ? "Neues Tasting" : "New Tasting", accent: true },
                     { href: "/sessions", icon: FileText, label: "Sessions", accent: false },
                     { href: "/data-export", icon: Download, label: isDE ? "Datenexport" : "Data Export", accent: false },
-                    { href: "/vocabulary", icon: BookOpen, label: isDE ? "Vokabular" : "Vocabulary", accent: false },
                   ].map(item => (
                     <Link key={item.href} href={item.href}>
                       <div
@@ -887,7 +886,6 @@ export default function HostDashboard() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <ToolLink href="/data-export" icon={Download} label={isDE ? "Datenexport" : "Data Export"} desc={isDE ? "CSV, Excel, kompletter Export" : "CSV, Excel, full export"} />
                     <ToolLink href="/sessions" icon={Copy} label={isDE ? "Sessions verwalten" : "Manage Sessions"} desc={isDE ? "Duplizieren, archivieren, bearbeiten" : "Duplicate, archive, edit"} />
-                    <ToolLink href="/vocabulary" icon={BookOpen} label={isDE ? "Tasting-Vokabular" : "Tasting Vocabulary"} desc={isDE ? "Beschreibungshilfen für jede Stilrichtung" : "Descriptors for every whisky style"} />
                     <ToolLink href="/ai-curation" icon={Sparkles} label={isDE ? "KI-Kuratierung" : "AI Curation"} desc={isDE ? "KI-gestützte Whisky-Vorschläge" : "AI-powered whisky suggestions"} />
                   </div>
                 </div>
@@ -969,7 +967,6 @@ export default function HostDashboard() {
           .hd-grid-3 { grid-template-columns: 1fr !important; }
           .hd-grid-2 { grid-template-columns: 1fr !important; }
           .hd-grid-2-1 { grid-template-columns: 1fr !important; }
-          .hd-grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
           .hd-invite-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
