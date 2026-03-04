@@ -156,9 +156,11 @@ export default function SimpleEnterPage() {
           <div style={cardStyle} data-testid="card-identify">
             <h1 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 4px", color: c.text }}>Who are you?</h1>
             <p style={{ fontSize: 13, color: c.muted, margin: "0 0 20px" }}>Enter your name and password.</p>
-            <form onSubmit={handleIdentify} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} data-testid="input-enter-name" autoFocus autoComplete="off" />
-              <input type="password" placeholder="Password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-enter-pin" autoComplete="off" />
+            <form onSubmit={handleIdentify} style={{ display: "flex", flexDirection: "column", gap: 10 }} autoComplete="off">
+              <input type="text" name="cs_trap_user" autoComplete="username" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
+              <input type="password" name="cs_trap_pw" autoComplete="current-password" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
+              <input type="text" placeholder="Name" name="cs_display_name" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} data-testid="input-enter-name" autoFocus autoComplete="off" autoCapitalize="none" spellCheck={false} data-form-type="other" />
+              <input type="password" placeholder="Password" name="cs_password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-enter-pin" autoComplete="new-password" autoCapitalize="none" spellCheck={false} data-form-type="other" />
               <button type="submit" disabled={loading || !name.trim() || !pin.trim()} data-testid="button-identify" style={{ width: "100%", padding: 12, fontSize: 15, fontWeight: 600, background: c.accent, color: c.bg, border: "none", borderRadius: 8, cursor: loading ? "wait" : "pointer", opacity: (!name.trim() || !pin.trim()) ? 0.5 : 1 }}>
                 {loading ? "…" : "Continue"}
               </button>

@@ -196,27 +196,35 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
             </div>
           </>
         ) : showForm ? (
-          <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 8 }} autoComplete="off">
+            <input type="text" name="cs_trap_user" autoComplete="username" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
+            <input type="password" name="cs_trap_pw" autoComplete="current-password" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
             {defaultMode === "log" && (
               <input
                 type="text"
                 placeholder="Name (optional)"
+                name="cs_display_name"
                 value={siName}
                 onChange={(e) => setSiName(e.target.value)}
                 style={inputStyle}
                 data-testid="input-session-name"
                 autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 data-form-type="other"
               />
             )}
             <input
               type="password"
               placeholder="Password"
+              name="cs_password"
               value={siPin}
               onChange={(e) => setSiPin(e.target.value)}
               style={{ ...inputStyle, letterSpacing: 3 }}
               data-testid="input-session-pin"
               autoComplete="new-password"
+              autoCapitalize="none"
+              spellCheck={false}
               data-form-type="other"
               autoFocus
             />
