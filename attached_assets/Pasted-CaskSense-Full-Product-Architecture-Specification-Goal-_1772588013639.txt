@@ -1,0 +1,369 @@
+CaskSense – Full Product Architecture Specification
+
+Goal:
+Implement a clean, scalable architecture for CaskSense that supports
+whisky logging, hosted tastings, participant ratings and analytics-driven taste insights.
+
+The system must remain simple on the surface while enabling deeper analytics
+under the "My Taste → Analytics" section.
+
+--------------------------------
+1. Core Product Navigation
+--------------------------------
+
+Main navigation must remain minimal:
+
+Join a Tasting
+Log a Whisky
+Host a Tasting
+My Taste
+
+Login should be optional and triggered only when necessary.
+
+Landing page must NOT contain login input fields to avoid browser password manager popups.
+
+Instead show:
+
+Join a Tasting
+Log a Whisky
+Host a Tasting
+My Taste
+Sign in (top-right icon)
+
+--------------------------------
+2. User Flows
+--------------------------------
+
+Join a Tasting
+
+User enters session code
+User joins session
+User rates current dram
+
+No account required.
+
+--------------------------------
+
+Log a Whisky
+
+Flow:
+
+Identify Whisky
+Add Reflection
+Optional Detail Rating
+
+Detail rating categories:
+
+Nose
+Taste
+Finish
+Balance
+
+User sets Overall Score (0–100)
+
+Suggested score may be calculated from detail ratings
+but the user can override it.
+
+--------------------------------
+
+Host a Tasting
+
+Host creates session
+Host adds whiskies
+Host controls rounds
+
+Controls:
+
+Start Round
+End Round
+Reveal Whisky
+Show Results
+
+Blind Mode support:
+
+Participants see:
+Whisky A
+Whisky B
+
+Host sees:
+A — Lagavulin 16
+
+--------------------------------
+3. Data Model (PostgreSQL / Drizzle)
+--------------------------------
+
+Tables required:
+
+users
+tastings
+tasting_whiskies
+participants
+ratings
+
+--------------------------------
+
+users
+
+id
+email
+created_at
+
+--------------------------------
+
+tastings
+
+id
+title
+description
+session_code
+host_user_id
+blind_mode
+status
+current_whisky_id
+round_status
+results_visible
+reveal_done
+created_at
+
+--------------------------------
+
+tasting_whiskies
+
+id
+tasting_id
+order_index
+display_label
+whisky_name_snapshot
+distillery_snapshot
+abv_snapshot
+
+--------------------------------
+
+participants
+
+id
+tasting_id
+user_id
+display_name
+joined_at
+
+--------------------------------
+
+ratings
+
+id
+tasting_id
+tasting_whisky_id
+participant_id
+
+score_overall_final
+score_overall_suggested
+
+nose_tags text[]
+taste_tags text[]
+finish_tags text[]
+balance_tags text[]
+
+notes_text
+locked
+created_at
+
+Unique constraint:
+
+(participant_id, tasting_whisky_id)
+
+--------------------------------
+4. Host Session State
+--------------------------------
+
+Tasting session must support runtime state:
+
+waiting
+active
+closed
+
+Host actions update:
+
+round_status
+current_whisky_id
+reveal_done
+results_visible
+
+Participants may submit ratings only when:
+
+round_status = active
+
+--------------------------------
+5. Analytics Layer (Under the Cover)
+--------------------------------
+
+Analytics must live inside:
+
+My Taste → Analytics
+
+Do NOT expose analytics on the landing page.
+
+Analytics unlock only after:
+
+10 logged whiskies
+
+Before threshold display:
+
+"Your Taste Profile will appear after you log 10 whiskies."
+
+--------------------------------
+6. Taste Identity Engine
+--------------------------------
+
+Implement backend analytics service that derives a taste profile from rating history.
+
+Data source:
+
+ratings table
+
+Use fields:
+
+score_overall_final
+nose_tags
+taste_tags
+finish_tags
+balance_tags
+created_at
+
+--------------------------------
+
+Analytics modules:
+
+Taste Profile
+
+Aggregate attribute frequencies and compute preference vector.
+
+Example output:
+
+smoke: 0.82
+sweet: 0.35
+fruit: 0.21
+spice: 0.54
+oak: 0.47
+
+--------------------------------
+
+Taste Map
+
+Distribution of flavor attributes across all ratings.
+
+--------------------------------
+
+Taste Evolution
+
+Group ratings by month or quarter.
+
+Return time series:
+
+month
+avg_score
+
+--------------------------------
+
+Rating Consistency
+
+Compute standard deviation of scores.
+
+Return:
+
+average_score
+score_std_dev
+consistency
+
+Thresholds:
+
+std < 4 → high
+std 4–8 → medium
+std > 8 → low
+
+--------------------------------
+
+Taste Identity Label
+
+Generate descriptive label based on dominant attributes.
+
+Examples:
+
+Peat Explorer
+Sherry Lover
+Balanced Taster
+Fruit Driven
+Spice Enthusiast
+
+--------------------------------
+7. Analytics API
+--------------------------------
+
+Endpoint:
+
+GET /api/analytics/taste-profile/:userId
+
+Return:
+
+tasteProfile
+tasteMap
+tasteEvolution
+ratingConsistency
+tasteIdentity
+
+--------------------------------
+8. Technology Stack
+--------------------------------
+
+Frontend:
+
+React
+Vite
+TanStack Query
+Zustand
+
+Backend:
+
+Node / Express
+
+Database:
+
+PostgreSQL
+Drizzle ORM
+
+--------------------------------
+9. Design Principles
+--------------------------------
+
+Surface must remain minimal.
+
+Core interface:
+
+Join
+Log
+Host
+My Taste
+
+Analytics must remain secondary and appear only when meaningful data exists.
+
+Avoid scientific terminology in UI.
+
+Use language such as:
+
+Your Taste Profile
+Your Taste Map
+Your Taste Evolution
+Your Taste Identity
+
+--------------------------------
+10. Long-Term Extensions
+--------------------------------
+
+Future analytics may include:
+
+Taste Twins
+Recommendation Engine
+Group Polarisation
+Cluster-based Taste Types
+
+Architecture should allow these features without changing core tables.
