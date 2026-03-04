@@ -1556,6 +1556,15 @@ export async function registerRoutes(
       const valid = await verifyPassword(credential.trim(), participant.pin);
       console.log(`[SESSION][AUTH] bcrypt result: ${valid}`);
       if (valid) {
+        if (!participant.pin.startsWith("$2b$") && !participant.pin.startsWith("$2a$")) {
+          try {
+            const hashed = await hashPassword(credential.trim());
+            await storage.updateParticipantPin(participant.id, hashed);
+            console.log(`[SESSION][AUTH] auto-rehashed plaintext pin for pid=${participant.id}`);
+          } catch (rehashErr) {
+            console.warn(`[SESSION][AUTH] rehash failed:`, rehashErr);
+          }
+        }
         let displayName = participant.name;
         if (name && typeof name === "string" && name.trim() && name.trim() !== participant.name) {
           try {
