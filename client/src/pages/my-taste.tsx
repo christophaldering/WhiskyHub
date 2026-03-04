@@ -5,11 +5,10 @@ import { useAppStore } from "@/lib/store";
 import { participantApi, journalApi, statsApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, Download, PenLine } from "lucide-react";
+import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, Download, PenLine, Library, Building2, Package, Map, FileText, Users, Trophy, Activity, Info, HandHeart } from "lucide-react";
 import { c, cardStyle, inputStyle, sectionHeadingStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
-import { NAV_VERSION, MY_TASTE_STRUCTURE } from "@/lib/config";
+import { NAV_VERSION, MY_TASTE_STRUCTURE, UI_SKIN } from "@/lib/config";
 import { ApplePage, AppleSection, AppleRow, AppleButton, AppleCard } from "@/components/apple";
-import { UI_SKIN } from "@/lib/config";
 
 const LS_KEY = "casksense_participant_id";
 const isApple = UI_SKIN === "apple_dark_warm";
@@ -349,6 +348,89 @@ export default function MyTastePage() {
                   testId="link-wishlist"
                 />
               </AppleSection>
+
+              {isTwoTab && (
+                <>
+                  <AppleSection title={t("myTastePage.sectionKnowledge")}>
+                    <NavCard
+                      icon={Library}
+                      label={t("myTastePage.lexicon")}
+                      description={t("myTastePage.lexiconDesc")}
+                      href="/discover/lexicon"
+                      testId="link-knowledge-lexicon"
+                    />
+                    <NavCard
+                      icon={Building2}
+                      label={t("myTastePage.distilleries")}
+                      description={t("myTastePage.distilleriesDesc")}
+                      href="/discover/distilleries"
+                      testId="link-knowledge-distilleries"
+                    />
+                    <NavCard
+                      icon={Package}
+                      label={t("myTastePage.independentBottlers")}
+                      description={t("myTastePage.independentBottlersDesc")}
+                      href="/discover/bottlers"
+                      testId="link-knowledge-bottlers"
+                    />
+                    <NavCard
+                      icon={Map}
+                      label={t("myTastePage.tastingGuide")}
+                      description={t("myTastePage.tastingGuideDesc")}
+                      href="/discover/guide"
+                      testId="link-knowledge-guide"
+                    />
+                    <NavCard
+                      icon={FileText}
+                      label={t("myTastePage.tastingTemplates")}
+                      description={t("myTastePage.tastingTemplatesDesc")}
+                      href="/discover/templates"
+                      testId="link-knowledge-templates"
+                    />
+                  </AppleSection>
+
+                  <AppleSection title={t("myTastePage.sectionCommunity")}>
+                    <NavCard
+                      icon={Users}
+                      label={t("myTastePage.tasteTwins")}
+                      description={t("myTastePage.tasteTwinsDesc")}
+                      href="/discover/community?tab=twins"
+                      testId="link-community-twins"
+                    />
+                    <NavCard
+                      icon={Trophy}
+                      label={t("myTastePage.communityRankings")}
+                      description={t("myTastePage.communityRankingsDesc")}
+                      href="/discover/community?tab=rankings"
+                      testId="link-community-rankings"
+                    />
+                    <NavCard
+                      icon={Activity}
+                      label={t("myTastePage.activityFeed")}
+                      description={t("myTastePage.activityFeedDesc")}
+                      href="/discover/activity"
+                      testId="link-community-activity"
+                    />
+                  </AppleSection>
+
+                  <AppleSection title={t("myTastePage.sectionAbout")}>
+                    <NavCard
+                      icon={Info}
+                      label={t("myTastePage.about")}
+                      description={t("myTastePage.aboutDesc")}
+                      href="/discover/about"
+                      testId="link-about"
+                    />
+                    <NavCard
+                      icon={HandHeart}
+                      label={t("myTastePage.donate")}
+                      description={t("myTastePage.donateDesc")}
+                      href="/discover/donate"
+                      testId="link-donate"
+                    />
+                  </AppleSection>
+                </>
+              )}
             </>
           )}
 
@@ -667,6 +749,44 @@ export default function MyTastePage() {
                 />
               </div>
             </div>
+
+            {isTwoTab && (
+              <>
+                <div>
+                  <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
+                    {t("myTastePage.sectionKnowledge")}
+                  </h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <NavCard icon={Library} label={t("myTastePage.lexicon")} description={t("myTastePage.lexiconDesc")} href="/discover/lexicon" testId="link-knowledge-lexicon" />
+                    <NavCard icon={Building2} label={t("myTastePage.distilleries")} description={t("myTastePage.distilleriesDesc")} href="/discover/distilleries" testId="link-knowledge-distilleries" />
+                    <NavCard icon={Package} label={t("myTastePage.independentBottlers")} description={t("myTastePage.independentBottlersDesc")} href="/discover/bottlers" testId="link-knowledge-bottlers" />
+                    <NavCard icon={Map} label={t("myTastePage.tastingGuide")} description={t("myTastePage.tastingGuideDesc")} href="/discover/guide" testId="link-knowledge-guide" />
+                    <NavCard icon={FileText} label={t("myTastePage.tastingTemplates")} description={t("myTastePage.tastingTemplatesDesc")} href="/discover/templates" testId="link-knowledge-templates" />
+                  </div>
+                </div>
+
+                <div>
+                  <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
+                    {t("myTastePage.sectionCommunity")}
+                  </h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <NavCard icon={Users} label={t("myTastePage.tasteTwins")} description={t("myTastePage.tasteTwinsDesc")} href="/discover/community?tab=twins" testId="link-community-twins" />
+                    <NavCard icon={Trophy} label={t("myTastePage.communityRankings")} description={t("myTastePage.communityRankingsDesc")} href="/discover/community?tab=rankings" testId="link-community-rankings" />
+                    <NavCard icon={Activity} label={t("myTastePage.activityFeed")} description={t("myTastePage.activityFeedDesc")} href="/discover/activity" testId="link-community-activity" />
+                  </div>
+                </div>
+
+                <div>
+                  <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
+                    {t("myTastePage.sectionAbout")}
+                  </h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <NavCard icon={Info} label={t("myTastePage.about")} description={t("myTastePage.aboutDesc")} href="/discover/about" testId="link-about" />
+                    <NavCard icon={HandHeart} label={t("myTastePage.donate")} description={t("myTastePage.donateDesc")} href="/discover/donate" testId="link-donate" />
+                  </div>
+                </div>
+              </>
+            )}
           </>
         )}
 

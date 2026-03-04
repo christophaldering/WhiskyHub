@@ -139,8 +139,10 @@ function Router() {
         <Route path="/background" component={Background} />
         <Route path="/join/:code" component={QuickTasting} />
         <Route path="/tasting" component={TastingHubSimple} />
+        <Route path="/tasting/join">{() => <Redirect to="/enter" />}</Route>
         <Route path="/enter" component={SimpleEnterPage} />
         <Route path="/join">{() => <Redirect to="/enter" />}</Route>
+        <Route path="/my-taste/log" component={SimpleLogPage} />
         <Route path="/log-simple" component={SimpleLogPage} />
         <Route path="/log">{() => <Redirect to="/log-simple" />}</Route>
         <Route path="/simple-test" component={SimpleTestPage} />
@@ -157,9 +159,13 @@ function Router() {
         <Route path="/discover/templates" component={DiscoverTemplates} />
         <Route path="/discover/about" component={AboutDark} />
         <Route path="/host-dashboard" component={HostDashboard} />
+        <Route path="/tasting-calendar" component={TastingCalendar} />
         <Route path="/support" component={SupportConsole} />
         <Route path="/host" component={SimpleHostPage} />
         <Route path="/analyze" component={SimpleAnalyzePage} />
+        <Route path="/discover-hub">{() => <Redirect to="/my-taste" />}</Route>
+        <Route path="/my-taste/knowledge">{() => <Redirect to="/my-taste" />}</Route>
+        <Route path="/my-taste/community">{() => <Redirect to="/my-taste" />}</Route>
         <Route path="/my-taste" component={MyTastePage} />
         <Route path="/my-taste/flavors">{() => <Redirect to="/my-taste/profile" />}</Route>
         <Route path="/my-taste/compare" component={MyTasteCompare} />

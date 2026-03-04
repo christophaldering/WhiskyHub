@@ -21,7 +21,12 @@ const NAV_ITEMS_V2 = [
   { href: "/analyze", icon: Compass, label: "Explore", match: ["/analyze", "/discover"] },
 ];
 
-const NAV_ITEMS = NAV_VERSION === "v2_simplified" ? NAV_ITEMS_V2 : NAV_ITEMS_V1;
+const NAV_ITEMS_TWO_TAB = [
+  { href: "/tasting", icon: Wine, label: "Tasting", match: ["/tasting", "/enter", "/join", "/tasting-room-simple", "/naked/", "/host", "/host-dashboard", "/sessions", "/tasting-calendar"] },
+  { href: "/my-taste", icon: User, label: "My Taste", match: ["/my-taste", "/taste", "/log-simple", "/log", "/analyze", "/discover", "/data-export"] },
+];
+
+const NAV_ITEMS = NAV_VERSION === "v2_two_tab" ? NAV_ITEMS_TWO_TAB : NAV_VERSION === "v2_simplified" ? NAV_ITEMS_V2 : NAV_ITEMS_V1;
 
 interface SimpleShellProps {
   children: ReactNode;

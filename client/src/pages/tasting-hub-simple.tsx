@@ -1,10 +1,50 @@
 import { useTranslation } from "react-i18next";
+import { Link } from "wouter";
 import SimpleShell from "@/components/simple/simple-shell";
-import { Wine, Crown } from "lucide-react";
-import { ApplePage, AppleActionCard } from "@/components/apple";
+import { Wine, Crown, ClipboardList, Calendar, LayoutDashboard, ChevronRight } from "lucide-react";
+import { ApplePage, AppleSection, AppleActionCard } from "@/components/apple";
+import { c, cardStyle } from "@/lib/theme";
+import { NAV_VERSION } from "@/lib/config";
+
+interface NavCardProps {
+  icon: React.ElementType;
+  label: string;
+  description: string;
+  href: string;
+  testId: string;
+}
+
+function NavCard({ icon: Icon, label, description, href, testId }: NavCardProps) {
+  return (
+    <Link href={href}>
+      <div
+        style={{
+          ...cardStyle,
+          padding: "14px 18px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          transition: "all 0.2s ease",
+        }}
+        data-testid={testId}
+      >
+        <div style={{ width: 38, height: 38, borderRadius: 12, background: `${c.accent}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon style={{ width: 18, height: 18, color: c.accent }} strokeWidth={1.8} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: c.text, letterSpacing: "-0.01em" }}>{label}</div>
+          <div style={{ fontSize: 12, color: c.muted, marginTop: 3, lineHeight: 1.4 }}>{description}</div>
+        </div>
+        <ChevronRight style={{ width: 16, height: 16, color: `${c.muted}80`, flexShrink: 0 }} strokeWidth={1.8} />
+      </div>
+    </Link>
+  );
+}
 
 export default function TastingHubSimple() {
   const { t } = useTranslation();
+  const isTwoTab = NAV_VERSION === "v2_two_tab";
 
   return (
     <SimpleShell showBack={false}>
@@ -24,6 +64,32 @@ export default function TastingHubSimple() {
             href="/host"
             testId="card-host-tasting"
           />
+
+          {isTwoTab && (
+            <AppleSection title={t("tastingHub.sectionMore")}>
+              <NavCard
+                icon={ClipboardList}
+                label={t("tastingHub.recentTastings")}
+                description={t("tastingHub.recentTastingsDesc")}
+                href="/sessions"
+                testId="link-recent-tastings"
+              />
+              <NavCard
+                icon={LayoutDashboard}
+                label={t("tastingHub.hostDashboard")}
+                description={t("tastingHub.hostDashboardDesc")}
+                href="/host-dashboard"
+                testId="link-host-dashboard"
+              />
+              <NavCard
+                icon={Calendar}
+                label={t("tastingHub.tastingCalendar")}
+                description={t("tastingHub.tastingCalendarDesc")}
+                href="/tasting-calendar"
+                testId="link-tasting-calendar"
+              />
+            </AppleSection>
+          )}
         </ApplePage>
       </div>
     </SimpleShell>
