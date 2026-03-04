@@ -413,8 +413,8 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         </div>
       </a>
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
-        {(["name", "email", "password"] as const).map((key) => {
-          const labels = { name: "Change Name", email: "Change Email", password: "Change Password" };
+        {(["name", "email"] as const).map((key) => {
+          const labels = { name: "Change Name", email: "Change Email" };
           const isOpen = accountSection === key;
           return (
             <div key={key} style={{ background: c.bg, borderRadius: 10, overflow: "hidden" }}>
@@ -424,7 +424,6 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
                   setEditMsg("");
                   if (key === "name") setEditName(session.name || "");
                   if (key === "email") setEditEmail("");
-                  if (key === "password") { setEditCurPw(""); setEditNewPw(""); setShowEditCurPw(false); setShowEditNewPw(false); }
                 }}
                 style={{
                   width: "100%",
@@ -466,15 +465,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
                       </button>
                     </>
                   )}
-                  {key === "password" && (
-                    <>
-                      {renderPasswordInput(editCurPw, setEditCurPw, showEditCurPw, () => setShowEditCurPw(!showEditCurPw), "Current password", "input-edit-cur-pw")}
-                      {renderPasswordInput(editNewPw, setEditNewPw, showEditNewPw, () => setShowEditNewPw(!showEditNewPw), "New password", "input-edit-new-pw")}
-                      <button onClick={() => handleAccountSave("password")} disabled={editLoading} style={{ ...btnPrimary, padding: 8, fontSize: 13 }} data-testid="button-save-password">
-                        {editLoading ? "Saving…" : "Save"}
-                      </button>
-                    </>
-                  )}
+
                   {editMsg && <p style={{ fontSize: 12, color: editMsg.includes("updated") ? c.success : c.error, margin: 0, textAlign: "center" }}>{editMsg}</p>}
                 </div>
               )}
