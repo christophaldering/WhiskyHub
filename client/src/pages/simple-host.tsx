@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronLeft, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, BarChart3, Star, BookOpen } from "lucide-react";
+import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronLeft, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, BarChart3, Star, BookOpen, ClipboardList } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1162,6 +1162,14 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
             color: c.bg,
             testId: "button-view-results",
           })}
+          {bigButton({
+            onClick: () => navigate(`/legacy/recap/${tasting.id}`),
+            icon: ClipboardList,
+            label: "View Recap",
+            bg: c.card,
+            color: c.accent,
+            testId: "button-view-recap",
+          })}
           <button
             type="button"
             onClick={() => navigate(`/legacy/tasting/${tasting.id}`)}
@@ -1773,30 +1781,50 @@ function HistoryAccordion({ tastings }: { tastings: TastingFull[] }) {
         {groups.map(group => (
           <CollapsibleSection key={group.key} label={group.label} count={group.tastings.length} defaultOpen={groups[0]?.key === group.key} testId={`history-group-${group.key}`}>
             {group.tastings.map(t => (
-              <Link key={t.id} href={`/tasting-results/${t.id}`}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "10px 12px",
-                    borderRadius: 8,
-                    background: c.bg,
-                    border: `1px solid ${c.border}`,
-                    cursor: "pointer",
-                  }}
-                  data-testid={`card-tasting-${t.id}`}
-                >
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{t.title}</div>
-                    {t.date && <div style={{ fontSize: 11, color: c.muted, marginTop: 3 }}>{t.date}</div>}
+              <div
+                key={t.id}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  background: c.bg,
+                  border: `1px solid ${c.border}`,
+                }}
+                data-testid={`card-tasting-${t.id}`}
+              >
+                <Link href={`/tasting-results/${t.id}`}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{t.title}</div>
+                      {t.date && <div style={{ fontSize: 11, color: c.muted, marginTop: 3 }}>{t.date}</div>}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <StatusBadge status={t.status} />
+                      <ChevronRight style={{ width: 14, height: 14, color: c.muted }} />
+                    </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <StatusBadge status={t.status} />
-                    <ChevronRight style={{ width: 14, height: 14, color: c.muted }} />
+                </Link>
+                {(t.status === "closed" || t.status === "archived" || t.status === "reveal") && (
+                  <div style={{ display: "flex", gap: 12, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${c.border}` }}>
+                    <Link href={`/tasting-results/${t.id}`}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: c.accent, cursor: "pointer" }} data-testid={`results-link-${t.id}`}>
+                        <BarChart3 style={{ width: 12, height: 12 }} /> Results
+                      </span>
+                    </Link>
+                    <Link href={`/legacy/recap/${t.id}`}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: c.mutedLight, cursor: "pointer" }} data-testid={`recap-link-${t.id}`}>
+                        <ClipboardList style={{ width: 12, height: 12 }} /> Recap
+                      </span>
+                    </Link>
                   </div>
-                </div>
-              </Link>
+                )}
+              </div>
             ))}
           </CollapsibleSection>
         ))}

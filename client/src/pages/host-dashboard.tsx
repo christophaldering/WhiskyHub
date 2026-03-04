@@ -934,11 +934,18 @@ export default function HostDashboard() {
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                           {(tasting.status === "closed" || tasting.status === "archived" || tasting.status === "reveal") && (
-                            <Link href={`/tasting-results/${tasting.id}`}>
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: c.accent, cursor: "pointer" }} data-testid={`results-link-${tasting.id}`}>
-                                <Trophy style={{ width: 12, height: 12 }} /> {isDE ? "Ergebnisse" : "Results"}
-                              </span>
-                            </Link>
+                            <>
+                              <Link href={`/tasting-results/${tasting.id}`}>
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: c.accent, cursor: "pointer" }} data-testid={`results-link-${tasting.id}`}>
+                                  <Trophy style={{ width: 12, height: 12 }} /> {isDE ? "Ergebnisse" : "Results"}
+                                </span>
+                              </Link>
+                              <Link href={`/legacy/recap/${tasting.id}`}>
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: c.accentDim, cursor: "pointer" }} data-testid={`recap-link-${tasting.id}`}>
+                                  <ClipboardList style={{ width: 12, height: 12 }} /> Recap
+                                </span>
+                              </Link>
+                            </>
                           )}
                           {(tasting.status === "open" || tasting.status === "closed") && (
                             <Link href={`/join/${tasting.id}?preview=true`}>

@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import {
-  Users, TrendingUp, Award, BookOpen, Map, Compass,
+  Users, UserCheck, TrendingUp, Award, BookOpen, Map, Sparkles,
   ChevronRight, Database, Activity
 } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
@@ -19,14 +19,21 @@ interface NavItem {
 
 const sections: { title: string; items: NavItem[] }[] = [
   {
-    title: "Community",
+    title: "Sozial",
     items: [
       {
         icon: Users,
-        label: "Friends & Taste Twins",
-        description: "Find people who taste like you",
+        label: "Taste Twins",
+        description: "Find people with a similar palate",
+        href: "/discover/community?tab=twins",
+        testId: "link-taste-twins",
+      },
+      {
+        icon: UserCheck,
+        label: "Whisky Friends",
+        description: "Your connections on the platform",
         href: "/discover/community",
-        testId: "link-community",
+        testId: "link-whisky-friends",
       },
       {
         icon: TrendingUp,
@@ -38,7 +45,7 @@ const sections: { title: string; items: NavItem[] }[] = [
       {
         icon: Award,
         label: "Leaderboard",
-        description: "Most active tasters",
+        description: "Most active, detailed & consistent tasters",
         href: "/discover/community?tab=leaderboard",
         testId: "link-leaderboard",
       },
@@ -52,19 +59,19 @@ const sections: { title: string; items: NavItem[] }[] = [
     ],
   },
   {
-    title: "Recommendations",
+    title: "Empfehlungen",
     items: [
       {
-        icon: Compass,
-        label: "For You",
-        description: "Whisky suggestions based on your profile",
+        icon: Sparkles,
+        label: "Recommendations",
+        description: "Personalized whisky suggestions based on your taste",
         href: "/legacy/discover",
         testId: "link-recommendations",
       },
     ],
   },
   {
-    title: "Knowledge",
+    title: "Wissen",
     items: [
       {
         icon: BookOpen,
@@ -109,7 +116,7 @@ export default function SimpleAnalyzePage() {
             Discover
           </h2>
           <p style={{ fontSize: 13, color: c.muted, marginTop: 4 }}>
-            Community · Recommendations · Knowledge
+            Sozial · Empfehlungen · Wissen
           </p>
         </div>
 

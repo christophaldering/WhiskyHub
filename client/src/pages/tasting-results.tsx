@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { Trophy, ChevronDown, Download, ArrowLeft, FileSpreadsheet, FileText } from "lucide-react";
+import { Trophy, ChevronDown, Download, ArrowLeft, FileSpreadsheet, FileText, ClipboardList } from "lucide-react";
 import { c, cardStyle } from "@/lib/theme";
 import jsPDF from "jspdf";
 
@@ -496,6 +496,26 @@ export default function TastingResultsPage() {
             ))}
           </div>
         )}
+
+        <Link href={`/legacy/recap/${tastingId}`} style={{ textDecoration: "none" }}>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            padding: "10px",
+            fontSize: 13,
+            fontWeight: 600,
+            color: c.accent,
+            background: c.card,
+            border: `1px solid ${c.border}`,
+            borderRadius: 10,
+            cursor: "pointer",
+          }} data-testid="button-view-recap">
+            <ClipboardList style={{ width: 14, height: 14 }} />
+            View Recap
+          </div>
+        </Link>
 
         <div style={{ display: "flex", gap: 8 }}>
           {data.results.length > 0 && (
