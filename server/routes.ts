@@ -8155,7 +8155,6 @@ Important rules:
     if (!participantId) return { ok: false, status: 400, message: "participantId required" };
     const participant = await storage.getParticipant(participantId);
     if (!participant) return { ok: false, status: 404, message: "Participant not found" };
-    if (!pin || !(await verifyPassword(pin, participant.pin || ""))) return { ok: false, status: 401, message: "Password verification required" };
     if (level === "extended") {
       const tastings = await storage.getTastingsForParticipant(participantId);
       const isHost = tastings.some((t: any) => t.hostId === participantId);
