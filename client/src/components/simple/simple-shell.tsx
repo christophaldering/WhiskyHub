@@ -5,14 +5,23 @@ import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
 import type { SessionMode } from "@/lib/session";
 import { c } from "@/lib/theme";
+import { NAV_VERSION } from "@/lib/config";
 
-const NAV_ITEMS = [
+const NAV_ITEMS_V1 = [
   { href: "/enter", icon: Wine, label: "Join", match: ["/enter", "/join", "/tasting-room-simple", "/naked/"] },
   { href: "/log-simple", icon: PenLine, label: "Log", match: ["/log-simple", "/log"] },
   { href: "/host", icon: Crown, label: "Host", match: ["/host"] },
   { href: "/my-taste", icon: User, label: "My Taste", match: ["/my-taste", "/taste", "/my-taste/analytics"] },
   { href: "/analyze", icon: Compass, label: "Discover", match: ["/analyze", "/discover"] },
 ];
+
+const NAV_ITEMS_V2 = [
+  { href: "/tasting", icon: Wine, label: "Tasting", match: ["/tasting", "/enter", "/join", "/tasting-room-simple", "/naked/", "/host"] },
+  { href: "/my-taste", icon: User, label: "My Taste", match: ["/my-taste", "/taste", "/log-simple", "/log"] },
+  { href: "/analyze", icon: Compass, label: "Explore", match: ["/analyze", "/discover"] },
+];
+
+const NAV_ITEMS = NAV_VERSION === "v2_simplified" ? NAV_ITEMS_V2 : NAV_ITEMS_V1;
 
 interface SimpleShellProps {
   children: ReactNode;

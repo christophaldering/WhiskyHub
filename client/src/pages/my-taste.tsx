@@ -5,8 +5,9 @@ import { useAppStore } from "@/lib/store";
 import { participantApi, journalApi, statsApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, Download } from "lucide-react";
+import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, Download, PenLine } from "lucide-react";
 import { c, cardStyle, inputStyle, sectionHeadingStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
+import { NAV_VERSION } from "@/lib/config";
 
 const LS_KEY = "casksense_participant_id";
 
@@ -213,6 +214,31 @@ export default function MyTastePage() {
             {t("myTastePage.subtitle")}
           </p>
         </div>
+
+        {pid && NAV_VERSION === "v2_simplified" && (
+          <Link href="/log-simple">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                padding: "14px 20px",
+                background: c.accent,
+                color: c.bg,
+                borderRadius: 12,
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="button-log-dram"
+            >
+              <PenLine style={{ width: 18, height: 18 }} strokeWidth={2} />
+              {t("myTastePage.logDram")}
+            </div>
+          </Link>
+        )}
 
         {pid && (
           <div style={cardStyle} data-testid="card-taste-snapshot">

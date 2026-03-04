@@ -1,0 +1,181 @@
+CaskSense v2.1 – Radical Navigation Simplification (Reversible Refactor)
+
+CONTEXT
+You are working inside the CaskSense v2.0.0 codebase.
+
+Current system:
+- React 18 + Vite + TypeScript
+- Wouter routing
+- Zustand store
+- 97 page components
+- Simple Mode Bottom Nav currently: Join | Log | Host | My Taste | Discover
+- Dark Warm Theme
+- i18n via react-i18next
+
+GOAL
+Refactor the primary navigation to a simplified 3-tab structure:
+
+BOTTOM NAV MUST BECOME:
+1. Tasting
+2. My Taste
+3. Explore
+
+This is a structural UX simplification. 
+No backend logic may be removed.
+All changes must be reversible.
+
+-------------------------------------
+STEP 1 – CREATE NAVIGATION FEATURE FLAG
+-------------------------------------
+
+Introduce a temporary feature flag:
+
+const NAV_VERSION = "v2_simplified";
+
+Place in:
+client/src/lib/config.ts
+
+All navigation logic must respect this flag so we can revert easily.
+
+-------------------------------------
+STEP 2 – RESTRUCTURE BOTTOM NAV
+-------------------------------------
+
+Modify SimpleMode Bottom Navigation component:
+
+OLD:
+Join | Log | Host | My Taste | Discover
+
+NEW:
+Tasting | My Taste | Explore
+
+ROUTING MAPPING:
+
+Tasting → "/tasting"
+My Taste → "/my-taste"
+Explore → "/discover-hub"
+
+Create new route:
+"/tasting"
+
+This route becomes a hub page with two clear actions:
+
+- Join Tasting → "/enter"
+- Host Tasting → "/host-simple"
+
+Remove "/log-simple" from bottom nav.
+Do NOT delete the page.
+It must be accessible via button inside My Taste.
+
+-------------------------------------
+STEP 3 – MOVE LOG INTO MY TASTE
+-------------------------------------
+
+Inside "/my-taste" page:
+
+Add a prominent "+ Log Dram" button.
+This routes to "/log-simple".
+
+Remove any standalone references to Log in global navigation.
+
+-------------------------------------
+STEP 4 – GROUP HOST UNDER TASTING
+-------------------------------------
+
+Ensure all host-related flows are only reachable from:
+
+"/tasting" → Host Tasting
+
+Remove any direct bottom-nav reference to "/simple-host".
+
+-------------------------------------
+STEP 5 – RESTRUCTURE DISCOVER
+-------------------------------------
+
+Ensure Explore contains:
+
+- Lexicon
+- Distilleries
+- Independent Bottlers
+- Templates
+- Guide
+
+Move community-related features under a collapsible section:
+"Community (Optional)"
+
+Do not delete:
+- taste-twins
+- community-rankings
+- activity-feed
+- badges
+- tasting-calendar
+
+Just remove direct exposure from top-level navigation.
+
+-------------------------------------
+STEP 6 – HIDE LEGACY & V2 UI
+-------------------------------------
+
+Disable navigation access to:
+- /legacy/*
+- /app/*
+
+Do not delete code.
+Add comment:
+"Legacy UI disabled in NAV_VERSION v2_simplified"
+
+-------------------------------------
+STEP 7 – PRESERVE STATE INTEGRITY
+-------------------------------------
+
+Ensure:
+- No changes to backend routes
+- No changes to API contracts
+- No DB schema changes
+- No auth changes
+
+This is a frontend navigation refactor only.
+
+-------------------------------------
+STEP 8 – UX CLEANUP
+-------------------------------------
+
+In new "/tasting" hub page:
+
+Display two large centered cards:
+- Join a Tasting
+- Host a Tasting
+
+Minimal text.
+Clear action.
+Dark Warm styling.
+
+-------------------------------------
+STEP 9 – TEST SCENARIOS
+-------------------------------------
+
+After implementation verify:
+
+1. Join flow works
+2. Host flow works
+3. Log Dram from My Taste works
+4. Explore pages load
+5. Admin console accessible via dropdown
+6. No broken routes
+
+-------------------------------------
+IMPORTANT
+-------------------------------------
+
+This refactor must:
+- Compile without TypeScript errors
+- Not remove any functionality
+- Be reversible by switching NAV_VERSION
+
+Do not refactor unrelated components.
+Do not redesign theme.
+Do not touch backend.
+
+Focus strictly on navigation architecture.
+
+Return a summary of modified files after implementation.

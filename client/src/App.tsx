@@ -86,6 +86,7 @@ import V2SessionDetail from "@/v2/pages/V2SessionDetail";
 import V2Discover from "@/v2/pages/V2Discover";
 import V2Cellar from "@/v2/pages/V2Cellar";
 import V2More from "@/v2/pages/V2More";
+import TastingHubSimple from "@/pages/tasting-hub-simple";
 import { getUIPref } from "@/components/view-switcher";
 import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
@@ -135,6 +136,7 @@ function Router() {
         <Route path="/tour" component={Tour} />
         <Route path="/background" component={Background} />
         <Route path="/join/:code" component={QuickTasting} />
+        <Route path="/tasting" component={TastingHubSimple} />
         <Route path="/enter" component={SimpleEnterPage} />
         <Route path="/join">{() => <Redirect to="/enter" />}</Route>
         <Route path="/log-simple" component={SimpleLogPage} />

@@ -56,7 +56,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Guest Mode**: Offers "Standard Naked" (persisted identity) and "Ultra Naked" (ephemeral identity) participation.
 -   **Rating System**: Dynamic step sizing for rating sliders and auto-calculated overall scores with manual override.
 -   **Context Level**: Three-tier data visibility control within active tasting sessions: Naked (0), Self (1), and Full (2).
--   **Navigation Structure (Simple Mode)**: 5-tab bottom navigation for Join, Log, Host, My Taste, and Discover.
+-   **Navigation Structure (Simple Mode)**: 3-tab bottom navigation (v2_simplified): Tasting, My Taste, Explore. Controlled by `NAV_VERSION` in `client/src/lib/config.ts`. Previous 5-tab nav (Join, Log, Host, My Taste, Discover) restorable by changing the flag.
 -   **My Taste (Personal Dashboard)**: Personal whisky profile hub requiring email+password sign-in, showing taste snapshot, AI insights, flavor profiles, analytics, recommendations, journal, and collection management. Sections: Mein Profil (Flavor Profile, Aroma Wheel `/my-taste/wheel`, Settings `/my-taste/settings`), Auswertungen (Analytics, Compare, Benchmark, Food Pairings `/my-taste/pairings`, Recommendations), Meine Daten (Journal, Achievements), Meine Sammlung (Collection, Wishlist).
 -   **Discover (External World Hub)**: Hub for social features (Taste Twins, Whisky Friends, Rankings), knowledge (Lexicon, Distilleries, Tasting Guide, Tasting Templates `/discover/templates`, Independent Bottlers `/discover/bottlers`), and Über CaskSense (About `/discover/about`, Donate `/discover/donate`).
 -   **V2 Dark Warm UI (`/app`)**: Redesigned UI with an Apple-clean aesthetic and a whisky-warm dark color palette, featuring a 5-tab navigation.

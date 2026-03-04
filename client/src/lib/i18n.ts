@@ -3022,6 +3022,14 @@ const resources = {
           feedback: "CaskSense is a community project — it's built for whisky enthusiasts, by a whisky enthusiast. Right now, the platform is in active development, and your feedback is the most important ingredient for making it better.\n\nWhat we need from you:\n• Tell us what works well — so we know what to keep and build on\n• Tell us what feels confusing or broken — so we can fix it\n• Tell us what's missing — features you wish existed, workflows that feel incomplete\n• Tell us about your tasting experience — how did CaskSense work in a real session?\n\nHow to give feedback:\n• Use the 'Ask a Question' tab on this Help page\n• Talk to your tasting host — they can relay feedback too\n• Any format is welcome: a short note, a detailed suggestion, or just 'this felt wrong'\n\nWhat happens with your feedback:\nEvery message is read. Feedback is collected, categorized, and used to prioritize development. Some features already in CaskSense started as user suggestions. Your input directly shapes what gets built next.\n\nThis is not a finished product being served to you — it's a living project being built with you. Thank you for being part of it.",
         },
       },
+      tastingHub: {
+        title: "Tasting",
+        subtitle: "Join or host a whisky tasting",
+        joinTitle: "Join a Tasting",
+        joinDesc: "Enter a tasting code to join a live session",
+        hostTitle: "Host a Tasting",
+        hostDesc: "Create and manage your own whisky tastings",
+      },
       myTastePage: {
         title: "My Taste",
         subtitle: "Your personal whisky profile",
@@ -3069,6 +3077,7 @@ const resources = {
         collectionDesc: "Whiskybase import — your bottles with sync & tracking",
         wishlist: "Wishlist",
         wishlistDesc: "Whiskies you'd still like to try",
+        logDram: "+ Log Dram",
         advancedSupport: "Advanced (Support)",
       },
       myJournalPage: {
@@ -6630,6 +6639,14 @@ const resources = {
           feedback: "CaskSense ist ein Community-Projekt — gebaut für Whisky-Enthusiasten, von einem Whisky-Enthusiasten. Gerade befindet sich die Plattform in aktiver Entwicklung, und dein Feedback ist die wichtigste Zutat, um sie besser zu machen.\n\nWas wir von dir brauchen:\n• Sag uns, was gut funktioniert — damit wir wissen, was wir beibehalten und ausbauen sollen\n• Sag uns, was verwirrend oder kaputt wirkt — damit wir es reparieren können\n• Sag uns, was fehlt — Funktionen, die du dir wünschst, Abläufe, die sich unvollständig anfühlen\n• Erzähl uns von deinem Tasting-Erlebnis — wie hat CaskSense in einer echten Tasting funktioniert?\n\nWie du Feedback geben kannst:\n• Nutze den Tab 'Frage stellen' auf dieser Hilfe-Seite\n• Sprich deinen Tasting-Host an — der kann Feedback auch weiterleiten\n• Jedes Format ist willkommen: eine kurze Notiz, ein ausführlicher Vorschlag oder einfach 'das hat sich falsch angefühlt'\n\nWas mit deinem Feedback passiert:\nJede Nachricht wird gelesen. Feedback wird gesammelt, kategorisiert und zur Priorisierung der Entwicklung verwendet. Einige Funktionen, die bereits in CaskSense stecken, sind als Nutzervorschläge entstanden. Dein Input bestimmt direkt, was als Nächstes gebaut wird.\n\nDas ist kein fertiges Produkt, das dir serviert wird — es ist ein lebendiges Projekt, das mit dir gebaut wird. Danke, dass du Teil davon bist.",
         },
       },
+      tastingHub: {
+        title: "Tasting",
+        subtitle: "An einem Whisky-Tasting teilnehmen oder selbst hosten",
+        joinTitle: "Tasting beitreten",
+        joinDesc: "Gib einen Tasting-Code ein, um an einer Live-Session teilzunehmen",
+        hostTitle: "Tasting hosten",
+        hostDesc: "Erstelle und verwalte deine eigenen Whisky-Tastings",
+      },
       myTastePage: {
         title: "My Taste",
         subtitle: "Dein persönliches Whisky-Profil",
@@ -6677,6 +6694,7 @@ const resources = {
         collectionDesc: "Whiskybase-Import — deine Flaschen mit Sync & Tracking",
         wishlist: "Wunschliste",
         wishlistDesc: "Whiskys, die du noch probieren möchtest",
+        logDram: "+ Dram eintragen",
         advancedSupport: "Erweitert (Support)",
       },
       myJournalPage: {

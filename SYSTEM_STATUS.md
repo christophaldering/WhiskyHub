@@ -34,15 +34,27 @@
 
 ## 3. UI-Schichten & Navigation
 
-### Aktive UI: Dark Warm (Simple Mode) — 5-Tab Bottom-Nav
+### Feature Flag: `NAV_VERSION` in `client/src/lib/config.ts`
+- `"v2_simplified"` = neue 3-Tab-Navigation (aktiv)
+- Zurücksetzen auf alten Wert stellt 5-Tab-Nav wieder her
+
+### Aktive UI: Dark Warm (Simple Mode) — 3-Tab Bottom-Nav (v2_simplified)
 
 | Tab | Route | Datei | Beschreibung |
 |---|---|---|---|
-| Join | `/enter` | simple-enter.tsx | Tasting beitreten (Name + PIN + Code) |
-| Log | `/log-simple` | simple-log.tsx | Whisky eintragen (Foto-AI, Barcode, manuell) |
-| Host | `/host-simple` | simple-host.tsx | Tastings erstellen/verwalten, Wizard, Live-Steuerung |
-| My Taste | `/my-taste` | my-taste.tsx | Persönliches Dashboard, Flavor-Profil, Analytics |
-| Discover | `/discover-hub` | simple-analyze.tsx | Social, Wissensbasis, Empfehlungen |
+| Tasting | `/tasting` | tasting-hub-simple.tsx | Hub: Join oder Host auswählen |
+| My Taste | `/my-taste` | my-taste.tsx | Persönliches Dashboard + "Dram eintragen" Button |
+| Explore | `/analyze` | simple-analyze.tsx | Wissensbasis, Social, Empfehlungen |
+
+### Vorherige 5-Tab-Nav (v1, deaktiviert)
+
+| Tab | Route | Datei |
+|---|---|---|
+| Join | `/enter` | simple-enter.tsx |
+| Log | `/log-simple` | simple-log.tsx |
+| Host | `/host` | simple-host.tsx |
+| My Taste | `/my-taste` | my-taste.tsx |
+| Discover | `/analyze` | simple-analyze.tsx |
 
 ### Wichtige Unterseiten
 
