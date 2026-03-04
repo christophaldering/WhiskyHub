@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { KeyRound, LogOut, Lock, Unlock, X, Eye, EyeOff, Pencil, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { getSession, signIn, signOut } from "@/lib/session";
 import type { SessionMode } from "@/lib/session";
+import { useAppStore } from "@/lib/store";
 
 interface SessionSheetProps {
   open: boolean;
@@ -226,8 +227,12 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     onClose();
   };
 
+  const { setParticipant: clearStoreParticipant } = useAppStore();
+
   const handleSignOut = async () => {
     await signOut();
+    clearStoreParticipant(null);
+    try { localStorage.removeItem("casksense_participant_id"); } catch {}
     setSession(getSession());
     onSessionChange();
     onClose();

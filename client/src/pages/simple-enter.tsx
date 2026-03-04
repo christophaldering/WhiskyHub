@@ -169,7 +169,7 @@ export default function SimpleEnterPage() {
           </div>
         ) : (
           <div style={cardStyle} data-testid="card-join">
-            {currentParticipant && (
+            {currentParticipant && sessionSignedIn && (
               <p style={{ fontSize: 12, color: c.muted, margin: "0 0 16px", textAlign: "center" }}>
                 Hi, {currentParticipant.name}
               </p>
