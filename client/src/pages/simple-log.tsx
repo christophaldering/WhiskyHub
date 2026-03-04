@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, ChevronDown } from "lucide-react";
+import { Mic, MicOff, ChevronDown, Camera, Search } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
@@ -1287,6 +1287,11 @@ export default function SimpleLogPage() {
         ) : (
           <form onSubmit={handleSave} data-testid="form-log">
 
+            <div style={{ marginBottom: 28, textAlign: "center" }} data-testid="section-intro">
+              <h1 style={{ fontSize: 24, fontWeight: 700, color: c.text, margin: 0, fontFamily: "'Playfair Display', serif" }}>Log a Whisky</h1>
+              <p style={{ fontSize: 13, color: c.mutedLight, margin: "6px 0 0", lineHeight: 1.4 }}>Snap a photo, rate it, save your notes.</p>
+            </div>
+
             {/* ── SECTION 1: IDENTIFY ── */}
             <div style={{ marginBottom: 36 }} data-testid="section-identify">
               <SectionLabel>Whisky</SectionLabel>
@@ -1390,7 +1395,12 @@ export default function SimpleLogPage() {
                             <span style={{ display: "inline-block", width: 14, height: 14, border: `2px solid ${c.muted}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                             Identifying...
                           </>
-                        ) : "Identify"}
+                        ) : (
+                          <>
+                            <Camera style={{ width: 16, height: 16 }} />
+                            Identify Whisky
+                          </>
+                        )}
                       </button>
                       <button
                         type="button"
@@ -1456,6 +1466,9 @@ export default function SimpleLogPage() {
               )}
               </AnimatePresence>
             </div>
+
+            {(hasWhisky || showManual || whiskyName.trim()) ? (
+            <>
 
             {/* ── SECTION 2: SCORE ── */}
             <div style={{ marginBottom: 36 }} data-testid="section-score">
@@ -1710,7 +1723,7 @@ export default function SimpleLogPage() {
                   transition: "background 0.2s, color 0.2s",
                 }}
               >
-                {saving ? "Saving..." : "Save tasting"}
+                {saving ? "Saving..." : "Save to Journal"}
               </button>
 
               <AnimatePresence>
@@ -1731,6 +1744,14 @@ export default function SimpleLogPage() {
 
               {error && <p style={{ fontSize: 12, color: c.error, margin: "10px 0 0", textAlign: "center" }}>{error}</p>}
             </div>
+
+            </>
+            ) : (
+              <div style={{ textAlign: "center", padding: "24px 0 8px", color: c.mutedLight, fontSize: 13 }} data-testid="text-select-hint">
+                <Search style={{ width: 20, height: 20, margin: "0 auto 8px", display: "block", opacity: 0.5 }} />
+                Select a whisky above to start rating
+              </div>
+            )}
 
           </form>
         )}
