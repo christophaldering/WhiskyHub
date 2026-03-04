@@ -1,0 +1,164 @@
+CaskSense – My Taste Refactor: Drams Primary, Collection Secondary (Reversible)
+
+CONTEXT
+Repo: CaskSense v2.0.0
+Frontend: React + Vite + TypeScript + Wouter + Zustand + i18next
+Dark Warm Theme
+Goal: Clarify UX distinction between:
+- Drams (experiences)
+- Collection (owned bottles)
+
+NO backend changes.
+NO DB changes.
+NO feature removal.
+Navigation & UI hierarchy refactor only.
+
+------------------------------------------------------------
+OBJECTIVE
+------------------------------------------------------------
+
+Restructure "My Taste" to make:
+
+PRIMARY:
+- Meine Drams (Erlebnisse)
+
+SECONDARY:
+- Meine Sammlung (Besitz)
+
+Clarify semantic difference visually and structurally.
+
+------------------------------------------------------------
+STEP 0 – Add Feature Flag (Reversible)
+------------------------------------------------------------
+
+Extend client/src/lib/config.ts:
+
+export const MY_TASTE_STRUCTURE: "legacy" | "v2_experience_first" = "v2_experience_first";
+
+All layout changes must depend on this flag.
+Rollback = set to "legacy".
+
+------------------------------------------------------------
+STEP 1 – Rename for Clarity
+------------------------------------------------------------
+
+In UI only (not DB, not API):
+
+Change visible labels:
+
+OLD:
+"Meine Whiskys"
+"My Collection"
+
+NEW:
+"Meine Sammlung"
+
+Keep:
+"Meine Drams"
+
+Ensure i18n updated consistently.
+Do NOT change route names.
+Do NOT change API endpoints.
+
+------------------------------------------------------------
+STEP 2 – Reorder My Taste Landing Page
+------------------------------------------------------------
+
+When MY_TASTE_STRUCTURE === "v2_experience_first":
+
+Rebuild /my-taste layout:
+
+TOP SECTION:
+--------------------------------
+Heading: "Meine Drams"
+Short subtitle: "Alles, was du bisher verkostet hast"
+Primary CTA:
++ Dram hinzufügen  → /log-simple
+
+Below:
+- Dram list preview
+- Last tastings
+- Flavor profile snapshot (optional small card)
+
+--------------------------------
+SECOND SECTION:
+--------------------------------
+Heading: "Meine Sammlung"
+Subtitle: "Whiskys, die dir gehören"
+Secondary CTA:
+Sammlung ansehen  → existing collection route
+
+Below:
+- Collection preview grid/list
+- CSV sync button remains here
+- Whiskybase integration remains unchanged
+
+------------------------------------------------------------
+STEP 3 – Visual Hierarchy Adjustment
+------------------------------------------------------------
+
+- Drams section uses larger typography.
+- Primary button only in Drams section.
+- Sammlung section slightly reduced visual weight.
+- Do NOT remove collection features.
+
+------------------------------------------------------------
+STEP 4 – Remove Parallel Prominence
+------------------------------------------------------------
+
+Ensure:
+- Collection is no longer displayed as equal top-level block.
+- No separate primary navigation entry for Collection.
+- Collection remains accessible via My Taste only.
+
+------------------------------------------------------------
+STEP 5 – Clarify Concept in Microcopy
+------------------------------------------------------------
+
+Add short explanation text (subtle, 1 line):
+
+Under "Meine Drams":
+"Ein Dram ist eine einzelne Verkostung – unabhängig davon, ob dir die Flasche gehört."
+
+Under "Meine Sammlung":
+"Hier verwaltest du Flaschen, die dir gehören."
+
+Keep tone premium and minimal.
+
+------------------------------------------------------------
+STEP 6 – Do NOT Touch
+------------------------------------------------------------
+
+Do NOT:
+- Modify DB schema
+- Merge drams & whiskies data models
+- Remove CSV import
+- Remove Whiskybase sync
+- Change analytics logic
+- Change comparison features
+
+------------------------------------------------------------
+STEP 7 – Quality Check
+------------------------------------------------------------
+
+Verify:
+- Log flow still works
+- Collection sync still works
+- Analytics still aggregates drams correctly
+- No route breaks
+- No console errors
+- TypeScript compiles clean
+
+------------------------------------------------------------
+DELIVERABLE
+------------------------------------------------------------
+
+After implementation provide:
+
+1) Modified files
+2) Updated visible labels
+3) Confirmation no functionality removed
+4) Location of MY_TASTE_STRUCTURE flag
+5) Visual summary of structural change
+
+EXECUTE NOW.

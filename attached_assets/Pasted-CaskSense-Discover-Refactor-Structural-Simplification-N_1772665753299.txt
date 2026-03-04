@@ -1,0 +1,195 @@
+CaskSense – Discover Refactor: Structural Simplification (No Feature Loss, Reversible)
+
+CONTEXT
+Repo: CaskSense v2.0.0
+Frontend: React + Vite + TypeScript + Wouter + Zustand + i18next
+Current Discover structure is over-segmented:
+
+Sections:
+- Sozial
+- Empfehlungen
+- Wissen
+- Über CaskSense
+
+Goal:
+Reduce redundancy, group by user motivation, simplify mental model.
+No backend changes.
+No feature removal.
+Only navigation & structural refactor.
+
+--------------------------------------------
+OBJECTIVE
+--------------------------------------------
+
+Restructure Discover into exactly 4 high-level sections:
+
+1) Community
+2) Wissen
+3) Planen
+4) Über
+
+Remove redundant or misleading groupings.
+
+--------------------------------------------
+STEP 0 – Create Reversible Flag
+--------------------------------------------
+
+Extend client/src/lib/config.ts:
+
+export const DISCOVER_STRUCTURE: "legacy" | "v2_simplified" = "v2_simplified";
+
+All new grouping logic must depend on this flag.
+Rollback = set to "legacy".
+
+--------------------------------------------
+STEP 1 – NEW DISCOVER STRUCTURE (v2_simplified)
+--------------------------------------------
+
+When DISCOVER_STRUCTURE === "v2_simplified":
+
+Replace existing Discover layout with:
+
+--------------------------------------------
+SECTION: Community
+--------------------------------------------
+- Taste Twins
+- Whisky-Freunde
+- Community Rankings (single entry)
+    -> Sub-view: Beste Whiskys
+    -> Sub-view: Beste Verkoster
+- Aktivitäts-Feed
+
+Move:
+- Rankings + Rangliste under one unified "Community Rankings"
+
+Remove separate display of:
+- Rankings
+- Rangliste
+
+--------------------------------------------
+SECTION: Wissen
+--------------------------------------------
+- Lexikon
+- Destillerien
+- Unabhängige Abfüller
+- Whisky-Datenbank
+
+Move Whisky-Datenbank here (remove from Sozial).
+
+--------------------------------------------
+SECTION: Planen
+--------------------------------------------
+- Tasting-Guide
+- Vorlagen
+
+Unify:
+- tasting-templates
+- discover-templates
+- tasting-vorlagen
+
+Create one canonical route:
+"/tasting-templates"
+
+Other template routes must redirect internally to canonical one.
+Do not delete pages.
+
+--------------------------------------------
+SECTION: Über
+--------------------------------------------
+- Über CaskSense
+- Spende / Hospiz
+
+--------------------------------------------
+STEP 2 – REMOVE SECTION “Empfehlungen”
+--------------------------------------------
+
+Current structure:
+EMPFEHLUNGEN
+- Empfehlungen
+
+Change:
+
+Remove entire “Empfehlungen” section from Discover.
+
+Recommendation logic stays intact.
+The route remains available.
+Access path should be:
+- via My Taste (preferred long-term)
+OR
+- optionally as a secondary link inside Community (if necessary)
+
+But it must no longer have a standalone Discover section header.
+
+--------------------------------------------
+STEP 3 – REMOVE REDUNDANT VISUAL SEGMENTATION
+--------------------------------------------
+
+Simplify visual hierarchy:
+
+- Maximum 4 section headers.
+- No nested micro-sections.
+- No repeated “Sozial / Wissen / Empfehlungen” in header subtitle.
+- Subtitle under Discover should become:
+  "Community · Wissen · Planen"
+
+--------------------------------------------
+STEP 4 – ROUTE SAFETY
+--------------------------------------------
+
+Do NOT:
+- Change route names.
+- Delete any page components.
+- Modify backend.
+- Break deep links.
+
+If pages are merged visually:
+Keep routes alive.
+Only remove menu exposure.
+
+--------------------------------------------
+STEP 5 – COMMUNITY RANKINGS MERGE
+--------------------------------------------
+
+Create new wrapper route:
+"/community-rankings"
+
+Inside it:
+Tabs or segmented control:
+- Whiskys
+- Verkoster
+
+Existing routes:
+- /rankings
+- /rangliste
+
+Redirect internally to:
+"/community-rankings?tab=whiskys"
+"/community-rankings?tab=verkoster"
+
+Do not delete underlying logic.
+
+--------------------------------------------
+STEP 6 – OUTPUT REQUIRED
+--------------------------------------------
+
+After implementation provide:
+
+1) List of modified files
+2) Which routes were merged
+3) Which routes are now hidden from menu
+4) Confirmation no routes were deleted
+5) Note where DISCOVER_STRUCTURE flag is located
+
+--------------------------------------------
+QUALITY CHECK
+--------------------------------------------
+
+Verify:
+- Discover feels shorter.
+- No duplicate semantic entries.
+- No broken links.
+- All features still reachable.
+- No console errors.
+- No TypeScript errors.
+
+EXECUTE NOW.
