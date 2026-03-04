@@ -1,0 +1,372 @@
+CaskSense – Replit Build Instruction (Full System Integration)
+
+Goal:
+Analyze the existing CaskSense codebase and extend it to support
+hosted tastings, participant ratings and analytics-driven taste insights.
+
+Important:
+Do NOT overwrite existing working features.
+First inspect the current project structure and reuse existing logic where possible.
+
+--------------------------------
+1. Analyze Current Codebase
+--------------------------------
+
+Inspect:
+
+client/
+server/
+db/
+routes/
+schema.ts
+existing API endpoints
+
+Identify existing features for:
+
+Join a Tasting
+Log a Whisky
+My Taste
+
+Reuse existing components and database tables whenever possible.
+
+Only extend missing functionality.
+
+--------------------------------
+2. Database Schema
+--------------------------------
+
+Using Drizzle ORM with PostgreSQL.
+
+Ensure the following tables exist:
+
+users
+tastings
+tasting_whiskies
+participants
+ratings
+
+If tables already exist:
+extend them safely.
+
+Create migrations if needed.
+
+--------------------------------
+users
+
+id
+email
+created_at
+
+--------------------------------
+tastings
+
+id
+title
+description
+session_code
+host_user_id
+blind_mode
+status
+
+current_whisky_id
+round_status
+results_visible
+reveal_done
+
+created_at
+
+--------------------------------
+tasting_whiskies
+
+id
+tasting_id
+order_index
+display_label
+whisky_name_snapshot
+distillery_snapshot
+abv_snapshot
+
+--------------------------------
+participants
+
+id
+tasting_id
+user_id
+display_name
+joined_at
+
+--------------------------------
+ratings
+
+id
+tasting_id
+tasting_whisky_id
+participant_id
+
+score_overall_final
+score_overall_suggested
+
+nose_tags text[]
+taste_tags text[]
+finish_tags text[]
+balance_tags text[]
+
+notes_text
+locked
+created_at
+
+Constraint:
+
+unique(participant_id, tasting_whisky_id)
+
+--------------------------------
+3. API Endpoints
+--------------------------------
+
+Create or extend REST endpoints.
+
+--------------------------------
+
+Tasting management
+
+POST /api/tastings/create
+GET /api/tastings/:id
+GET /api/tastings/code/:sessionCode
+
+--------------------------------
+
+Whisky lineup
+
+POST /api/tastings/:id/whiskies
+GET /api/tastings/:id/whiskies
+
+--------------------------------
+
+Participants
+
+POST /api/tastings/:id/join
+GET /api/tastings/:id/participants
+
+--------------------------------
+
+Ratings
+
+POST /api/ratings/submit
+GET /api/ratings/tasting/:id
+
+--------------------------------
+
+Session state
+
+GET /api/tastings/:id/state
+POST /api/tastings/:id/state
+
+--------------------------------
+4. Host Control Logic
+--------------------------------
+
+Implement tasting state transitions:
+
+waiting
+active
+closed
+
+Host actions:
+
+Start Round
+End Round
+Reveal Whisky
+Show Results
+
+Update fields:
+
+round_status
+current_whisky_id
+reveal_done
+results_visible
+
+Participants may submit ratings only when:
+
+round_status = active
+
+--------------------------------
+5. Frontend Pages
+--------------------------------
+
+Use React + TanStack Query.
+
+Ensure following pages exist:
+
+Landing
+Join Tasting
+Log Whisky
+Host Dashboard
+My Taste
+Analytics
+
+--------------------------------
+
+Landing Page
+
+Display actions:
+
+Join a Tasting
+Log a Whisky
+Host a Tasting
+My Taste
+
+Login only via small icon in top-right.
+
+Avoid password input fields on landing.
+
+--------------------------------
+
+Join Tasting
+
+User enters session code.
+
+Load tasting session and current dram.
+
+--------------------------------
+
+Host Dashboard
+
+Sections:
+
+Session Overview
+Dram Control
+Participant Status
+
+Controls:
+
+Start Round
+End Round
+Reveal Whisky
+Show Results
+
+--------------------------------
+
+Log Whisky
+
+Steps:
+
+Identify whisky
+Add reflection
+Optional detail rating
+
+Detail rating categories:
+
+Nose
+Taste
+Finish
+Balance
+
+--------------------------------
+6. Analytics Layer
+--------------------------------
+
+Analytics must live inside:
+
+My Taste → Analytics
+
+Analytics unlock after:
+
+10 logged whiskies.
+
+Before threshold show progress.
+
+--------------------------------
+
+Analytics modules:
+
+Taste Profile
+Taste Map
+Taste Evolution
+Rating Consistency
+Taste Identity
+
+--------------------------------
+7. Taste Identity Engine
+--------------------------------
+
+Create backend service:
+
+/server/analytics/tasteEngine.ts
+
+Compute analytics using ratings table.
+
+Modules:
+
+Taste Profile
+Attribute frequency aggregation.
+
+Taste Map
+Flavor distribution.
+
+Taste Evolution
+Score trends by month.
+
+Rating Consistency
+Standard deviation of ratings.
+
+Taste Identity
+Rule-based classification.
+
+Example labels:
+
+Peat Explorer
+Sherry Lover
+Balanced Taster
+Fruit Driven
+Spice Enthusiast
+
+--------------------------------
+8. Analytics API
+--------------------------------
+
+Create endpoint:
+
+GET /api/analytics/taste-profile/:userId
+
+Return:
+
+tasteProfile
+tasteMap
+tasteEvolution
+ratingConsistency
+tasteIdentity
+
+--------------------------------
+9. Frontend Analytics Dashboard
+--------------------------------
+
+Add inside "My Taste".
+
+Cards:
+
+Your Taste Profile
+Your Taste Map
+Your Taste Evolution
+Your Rating Consistency
+Your Taste Identity
+
+Avoid technical statistical terminology.
+
+--------------------------------
+10. Design Principles
+--------------------------------
+
+Surface must remain minimal.
+
+Main navigation:
+
+Join
+Log
+Host
+My Taste
+
+Analytics appears only after enough tasting data exists.
+
+Maintain dark warm CaskSense theme.
+
+Focus on clarity, calm UI and mobile usability.
