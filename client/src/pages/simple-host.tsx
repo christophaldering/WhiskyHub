@@ -1697,109 +1697,102 @@ function groupByTimePeriod(tastings: TastingFull[]): TimeGroup[] {
   return groups.filter(g => g.tastings.length > 0);
 }
 
-function HistoryAccordion({ tastings }: { tastings: TastingFull[] }) {
-  const groups = useMemo(() => groupByTimePeriod(tastings), [tastings]);
-  const [expanded, setExpanded] = useState<Set<string>>(() => {
-    const first = groups[0]?.key;
-    return first ? new Set([first]) : new Set();
-  });
-
-  const toggle = (key: string) => {
-    setExpanded(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
+function CollapsibleSection({ label, count, labelColor, defaultOpen, children, testId }: {
+  label: string;
+  count: number;
+  labelColor?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+  testId: string;
+}) {
+  const [open, setOpen] = useState(defaultOpen ?? false);
   return (
-    <div>
-      <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 10 }}>
-        History
-      </h3>
-      {tastings.length === 0 ? (
-        <div style={{ ...cardStyle, textAlign: "center" }}>
-          <p style={{ color: c.muted, fontSize: 13, margin: "4px 0" }} data-testid="text-no-history">
-            No past tastings yet.
-          </p>
+    <div style={{ ...cardStyle, padding: 0, overflow: "hidden" }} data-testid={testId}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "14px 16px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: c.text,
+          fontFamily: "system-ui, sans-serif",
+        }}
+        data-testid={`button-toggle-${testId}`}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: labelColor || c.muted }}>
+            {label}
+          </span>
+          <span style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: c.accent,
+            background: `${c.accent}18`,
+            padding: "2px 8px",
+            borderRadius: 10,
+          }}>
+            {count}
+          </span>
         </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {groups.map(group => {
-            const isOpen = expanded.has(group.key);
-            return (
-              <div key={group.key} style={{ ...cardStyle, padding: 0, overflow: "hidden" }} data-testid={`history-group-${group.key}`}>
-                <button
-                  onClick={() => toggle(group.key)}
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "14px 16px",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: c.text,
-                    fontFamily: "system-ui, sans-serif",
-                  }}
-                  data-testid={`button-toggle-${group.key}`}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>{group.label}</span>
-                    <span style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: c.accent,
-                      background: `${c.accent}18`,
-                      padding: "2px 8px",
-                      borderRadius: 10,
-                    }}>
-                      {group.tastings.length}
-                    </span>
-                  </div>
-                  {isOpen
-                    ? <ChevronUp style={{ width: 16, height: 16, color: c.muted }} />
-                    : <ChevronDown style={{ width: 16, height: 16, color: c.muted }} />
-                  }
-                </button>
-                {isOpen && (
-                  <div style={{ padding: "0 12px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
-                    {group.tastings.map(t => (
-                      <Link key={t.id} href={`/tasting-results/${t.id}`}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            padding: "10px 12px",
-                            borderRadius: 8,
-                            background: c.bg,
-                            border: `1px solid ${c.border}`,
-                            cursor: "pointer",
-                          }}
-                          data-testid={`card-tasting-${t.id}`}
-                        >
-                          <div>
-                            <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{t.title}</div>
-                            {t.date && <div style={{ fontSize: 11, color: c.muted, marginTop: 3 }}>{t.date}</div>}
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <StatusBadge status={t.status} />
-                            <ChevronRight style={{ width: 14, height: 14, color: c.muted }} />
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        {open
+          ? <ChevronUp style={{ width: 16, height: 16, color: c.muted }} />
+          : <ChevronDown style={{ width: 16, height: 16, color: c.muted }} />
+        }
+      </button>
+      {open && (
+        <div style={{ padding: "0 12px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+          {children}
         </div>
       )}
     </div>
+  );
+}
+
+function HistoryAccordion({ tastings }: { tastings: TastingFull[] }) {
+  const groups = useMemo(() => groupByTimePeriod(tastings), [tastings]);
+
+  if (tastings.length === 0) return null;
+
+  return (
+    <CollapsibleSection label="History" count={tastings.length} defaultOpen={false} testId="section-history">
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {groups.map(group => (
+          <CollapsibleSection key={group.key} label={group.label} count={group.tastings.length} defaultOpen={groups[0]?.key === group.key} testId={`history-group-${group.key}`}>
+            {group.tastings.map(t => (
+              <Link key={t.id} href={`/tasting-results/${t.id}`}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    background: c.bg,
+                    border: `1px solid ${c.border}`,
+                    cursor: "pointer",
+                  }}
+                  data-testid={`card-tasting-${t.id}`}
+                >
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{t.title}</div>
+                    {t.date && <div style={{ fontSize: 11, color: c.muted, marginTop: 3 }}>{t.date}</div>}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <StatusBadge status={t.status} />
+                    <ChevronRight style={{ width: 14, height: 14, color: c.muted }} />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </CollapsibleSection>
+        ))}
+      </div>
+    </CollapsibleSection>
   );
 }
 
@@ -1938,57 +1931,65 @@ export default function SimpleHostPage() {
             ) : (
               <>
                 {activeTastings.length > 0 && (
-                  <div>
-                    <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.accent, marginBottom: 10 }}>
-                      Live
-                    </h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {activeTastings.map((t) => (
-                        <div
-                          key={t.id}
-                          onClick={() => { setCreatedTasting(t); setWizardStep("step4"); }}
-                          style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                          data-testid={`card-tasting-${t.id}`}
-                        >
-                          <div>
-                            <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
-                            <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>Code: {t.code}</div>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <StatusBadge status={t.status} />
-                            <ChevronRight style={{ width: 16, height: 16, color: c.muted }} />
-                          </div>
+                  <CollapsibleSection label="Live" count={activeTastings.length} labelColor={c.accent} defaultOpen={true} testId="section-live">
+                    {activeTastings.map((t) => (
+                      <div
+                        key={t.id}
+                        onClick={() => { setCreatedTasting(t); setWizardStep("step4"); }}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "10px 12px",
+                          borderRadius: 8,
+                          background: c.bg,
+                          border: `1px solid ${c.border}`,
+                          cursor: "pointer",
+                        }}
+                        data-testid={`card-tasting-${t.id}`}
+                      >
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{t.title}</div>
+                          <div style={{ fontSize: 11, color: c.muted, marginTop: 3 }}>Code: {t.code}</div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <StatusBadge status={t.status} />
+                          <ChevronRight style={{ width: 14, height: 14, color: c.muted }} />
+                        </div>
+                      </div>
+                    ))}
+                  </CollapsibleSection>
                 )}
 
                 {draftTastings.length > 0 && (
-                  <div>
-                    <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 10 }}>
-                      Drafts
-                    </h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {draftTastings.map((t) => (
-                        <div
-                          key={t.id}
-                          onClick={() => { setCreatedTasting(t); setWizardStep("step2"); }}
-                          style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                          data-testid={`card-tasting-${t.id}`}
-                        >
-                          <div>
-                            <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
-                            {t.date && <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>{t.date}</div>}
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <StatusBadge status={t.status} />
-                            <ChevronRight style={{ width: 16, height: 16, color: c.muted }} />
-                          </div>
+                  <CollapsibleSection label="Drafts" count={draftTastings.length} defaultOpen={activeTastings.length === 0} testId="section-drafts">
+                    {draftTastings.map((t) => (
+                      <div
+                        key={t.id}
+                        onClick={() => { setCreatedTasting(t); setWizardStep("step2"); }}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "10px 12px",
+                          borderRadius: 8,
+                          background: c.bg,
+                          border: `1px solid ${c.border}`,
+                          cursor: "pointer",
+                        }}
+                        data-testid={`card-tasting-${t.id}`}
+                      >
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{t.title}</div>
+                          {t.date && <div style={{ fontSize: 11, color: c.muted, marginTop: 3 }}>{t.date}</div>}
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <StatusBadge status={t.status} />
+                          <ChevronRight style={{ width: 14, height: 14, color: c.muted }} />
+                        </div>
+                      </div>
+                    ))}
+                  </CollapsibleSection>
                 )}
 
                 <HistoryAccordion tastings={pastTastings} />
