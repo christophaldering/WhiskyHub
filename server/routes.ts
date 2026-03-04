@@ -837,6 +837,35 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/participants/recover-email", async (req, res) => {
+    try {
+      const { name, password } = req.body;
+      if (!name || !password) return res.status(400).json({ message: "Name and password are required" });
+      const participant = await storage.getParticipantByName(name.trim());
+      if (!participant || !participant.pin) {
+        return res.status(404).json({ message: "No account found with that name" });
+      }
+      const valid = await verifyPassword(password.trim(), participant.pin);
+      if (!valid) {
+        return res.status(401).json({ message: "Wrong password" });
+      }
+      if (!participant.email) {
+        return res.status(404).json({ message: "No email address on file for this account" });
+      }
+      const email = participant.email;
+      const parts = email.split("@");
+      const local = parts[0];
+      const domain = parts[1] || "";
+      const maskedLocal = local.length <= 2 ? local[0] + "***" : local[0] + "***" + local[local.length - 1];
+      const domParts = domain.split(".");
+      const maskedDomain = domParts[0].length <= 2 ? domParts[0][0] + "***" : domParts[0][0] + "***" + domParts[0][domParts[0].length - 1];
+      const maskedEmail = maskedLocal + "@" + maskedDomain + (domParts.length > 1 ? "." + domParts.slice(1).join(".") : "");
+      res.json({ maskedEmail });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== TASTINGS =====
 
   app.get("/api/tastings", async (req, res) => {
@@ -1521,7 +1550,16 @@ export async function registerRoutes(
     if (participant && participant.pin) {
       const valid = await verifyPassword(credential.trim(), participant.pin);
       if (valid) {
-        const displayName = participant.name;
+        let displayName = participant.name;
+        if (name && typeof name === "string" && name.trim() && name.trim() !== participant.name) {
+          try {
+            await storage.updateParticipant(participant.id, { name: name.trim() });
+            displayName = name.trim();
+            console.log(`[SESSION][AUTH] updated name for pid=${participant.id} to "${displayName}"`);
+          } catch (nameErr) {
+            console.warn(`[SESSION][AUTH] failed to update name:`, nameErr);
+          }
+        }
         console.log(`[SESSION][AUTH] signin success for "${displayName}" mode=${authMode} (DB match via ${email ? "email" : "name"})`);
         const e = sessionSigninAttempts.get(clientIp);
         if (e) e.count = 0;
