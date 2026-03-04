@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { KeyRound, User } from "lucide-react";
 import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
+import { NAV_VERSION } from "@/lib/config";
 
 const HERO_BG_ENABLED = false;
 const HERO_BG_URL = "/images/landing-hero.jpg";
@@ -129,120 +130,195 @@ export default function Landing() {
             width: "100%",
           }}
         >
-          <Link href="/enter">
-            <motion.div
-              whileTap={{ scale: 0.97 }}
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "0.875rem",
-                textAlign: "center",
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                fontFamily: "system-ui, sans-serif",
-                background: "#d4a256",
-                color: "#1a1714",
-                borderRadius: "12px",
-                cursor: "pointer",
-                border: "none",
-              }}
-              data-testid="button-join-tasting"
-            >
-              {t("landingPage.joinTasting")}
-            </motion.div>
-          </Link>
+          {NAV_VERSION === "v2_simplified" ? (
+            <>
+              <Link href="/tasting">
+                <motion.div
+                  whileTap={{ scale: 0.97 }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "0.875rem",
+                    textAlign: "center",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    fontFamily: "system-ui, sans-serif",
+                    background: "#d4a256",
+                    color: "#1a1714",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    border: "none",
+                  }}
+                  data-testid="button-tasting"
+                >
+                  {t("landingPage.tasting")}
+                </motion.div>
+              </Link>
 
-          <Link href="/log-simple">
-            <motion.div
-              whileTap={{ scale: 0.97 }}
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "0.875rem",
-                textAlign: "center",
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                fontFamily: "system-ui, sans-serif",
-                background: "transparent",
-                color: "#d4a256",
-                borderRadius: "12px",
-                cursor: "pointer",
-                border: "1px solid #d4a256",
-              }}
-              data-testid="button-log-whisky"
-            >
-              {t("landingPage.logWhisky")}
-            </motion.div>
-          </Link>
+              <Link href="/my-taste">
+                <motion.div
+                  whileTap={{ scale: 0.97 }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "0.875rem",
+                    textAlign: "center",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    fontFamily: "system-ui, sans-serif",
+                    background: "transparent",
+                    color: "#d4a256",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    border: "1px solid #d4a256",
+                  }}
+                  data-testid="button-my-taste"
+                >
+                  {t("landingPage.myTaste")}
+                </motion.div>
+              </Link>
 
-          <Link href="/host">
-            <motion.div
-              whileTap={{ scale: 0.97 }}
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "0.875rem",
-                textAlign: "center",
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                fontFamily: "system-ui, sans-serif",
-                background: "transparent",
-                color: "#d4a256",
-                borderRadius: "12px",
-                cursor: "pointer",
-                border: "1px solid #d4a256",
-              }}
-              data-testid="button-host-tasting"
-            >
-              {t("landingPage.hostTasting")}
-            </motion.div>
-          </Link>
+              <Link href="/analyze">
+                <motion.div
+                  whileTap={{ scale: 0.97 }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "0.875rem",
+                    textAlign: "center",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    fontFamily: "system-ui, sans-serif",
+                    background: "transparent",
+                    color: "#d4a256",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    border: "1px solid #d4a256",
+                  }}
+                  data-testid="button-explore"
+                >
+                  {t("landingPage.explore")}
+                </motion.div>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/enter">
+                <motion.div
+                  whileTap={{ scale: 0.97 }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "0.875rem",
+                    textAlign: "center",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    fontFamily: "system-ui, sans-serif",
+                    background: "#d4a256",
+                    color: "#1a1714",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    border: "none",
+                  }}
+                  data-testid="button-join-tasting"
+                >
+                  {t("landingPage.joinTasting")}
+                </motion.div>
+              </Link>
 
-          <Link href="/my-taste">
-            <motion.div
-              whileTap={{ scale: 0.97 }}
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "0.875rem",
-                textAlign: "center",
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                fontFamily: "system-ui, sans-serif",
-                background: "transparent",
-                color: "#d4a256",
-                borderRadius: "12px",
-                cursor: "pointer",
-                border: "1px solid #d4a256",
-              }}
-              data-testid="button-my-taste"
-            >
-              {t("landingPage.myTaste")}
-            </motion.div>
-          </Link>
+              <Link href="/log-simple">
+                <motion.div
+                  whileTap={{ scale: 0.97 }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "0.875rem",
+                    textAlign: "center",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    fontFamily: "system-ui, sans-serif",
+                    background: "transparent",
+                    color: "#d4a256",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    border: "1px solid #d4a256",
+                  }}
+                  data-testid="button-log-whisky"
+                >
+                  {t("landingPage.logWhisky")}
+                </motion.div>
+              </Link>
 
-          <Link href="/discover">
-            <motion.div
-              whileTap={{ scale: 0.97 }}
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "0.875rem",
-                textAlign: "center",
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                fontFamily: "system-ui, sans-serif",
-                background: "transparent",
-                color: "#d4a256",
-                borderRadius: "12px",
-                cursor: "pointer",
-                border: "1px solid #d4a256",
-              }}
-              data-testid="button-discover"
-            >
-              {t("landingPage.discover")}
-            </motion.div>
-          </Link>
+              <Link href="/host">
+                <motion.div
+                  whileTap={{ scale: 0.97 }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "0.875rem",
+                    textAlign: "center",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    fontFamily: "system-ui, sans-serif",
+                    background: "transparent",
+                    color: "#d4a256",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    border: "1px solid #d4a256",
+                  }}
+                  data-testid="button-host-tasting"
+                >
+                  {t("landingPage.hostTasting")}
+                </motion.div>
+              </Link>
+
+              <Link href="/my-taste">
+                <motion.div
+                  whileTap={{ scale: 0.97 }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "0.875rem",
+                    textAlign: "center",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    fontFamily: "system-ui, sans-serif",
+                    background: "transparent",
+                    color: "#d4a256",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    border: "1px solid #d4a256",
+                  }}
+                  data-testid="button-my-taste"
+                >
+                  {t("landingPage.myTaste")}
+                </motion.div>
+              </Link>
+
+              <Link href="/discover">
+                <motion.div
+                  whileTap={{ scale: 0.97 }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "0.875rem",
+                    textAlign: "center",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    fontFamily: "system-ui, sans-serif",
+                    background: "transparent",
+                    color: "#d4a256",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    border: "1px solid #d4a256",
+                  }}
+                  data-testid="button-discover"
+                >
+                  {t("landingPage.discover")}
+                </motion.div>
+              </Link>
+            </>
+          )}
         </div>
       </motion.div>
 
