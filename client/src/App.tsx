@@ -44,6 +44,7 @@ import MyTasteCompare from "@/pages/my-taste-compare";
 import DiscoverLexicon from "@/pages/discover-lexicon";
 import DiscoverCommunityNative from "@/pages/discover-community-native";
 import DiscoverDistilleriesNative from "@/pages/discover-distilleries-native";
+import MyTasteAnalytics from "@/pages/my-taste-analytics";
 import TastingRoomSimple from "@/pages/tasting-room-simple";
 import TastingResultsPage from "@/pages/tasting-results";
 import Impressum from "@/pages/impressum";
@@ -112,6 +113,7 @@ function Router() {
         <Route path="/my-taste" component={MyTastePage} />
         <Route path="/my-taste/flavors" component={MyTasteFlavors} />
         <Route path="/my-taste/compare" component={MyTasteCompare} />
+        <Route path="/my-taste/analytics" component={MyTasteAnalytics} />
         <Route path="/taste" component={MyTastePage} />
         <Route path="/discover/lexicon" component={DiscoverLexicon} />
         <Route path="/discover/community" component={DiscoverCommunityNative} />

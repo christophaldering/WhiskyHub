@@ -1,0 +1,506 @@
+import { useState, useEffect } from "react";
+import { useAppStore } from "@/lib/store";
+import { participantApi, statsApi, flavorProfileApi, ratingNotesApi, journalApi } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import SimpleShell from "@/components/simple/simple-shell";
+import { ArrowLeft } from "lucide-react";
+import { Link } from "wouter";
+
+const c = {
+  bg: "#1a1714",
+  card: "#242018",
+  border: "#2e2a24",
+  text: "#f5f0e8",
+  muted: "#888",
+  mutedLight: "#8a7e6d",
+  accent: "#d4a256",
+  accentDim: "#a8834a",
+};
+
+const cardStyle: React.CSSProperties = {
+  background: c.card,
+  border: `1px solid ${c.border}`,
+  borderRadius: 12,
+  padding: "20px",
+};
+
+const LS_KEY = "casksense_participant_id";
+
+const PROFILE_COLORS = ["#c8a864", "#7ea87e", "#d97c5a", "#6b9bd2", "#b07ab0", "#cc9966", "#8ab4a0", "#d4a256"];
+
+function BarRow({ label, value, maxValue, color }: { label: string; value: number; maxValue: number; color: string }) {
+  const pct = maxValue > 0 ? Math.min((value / maxValue) * 100, 100) : 0;
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+        <span style={{ fontSize: 13, color: c.text }}>{label}</span>
+        <span style={{ fontSize: 12, color: c.muted, fontFamily: "monospace" }}>{value.toFixed(1)}</span>
+      </div>
+      <div style={{ height: 6, background: c.bg, borderRadius: 3, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 3, transition: "width 0.4s ease" }} />
+      </div>
+    </div>
+  );
+}
+
+function TasteProfileCard({ pid }: { pid: string }) {
+  const { data: profile } = useQuery({
+    queryKey: ["whisky-profile-analytics", pid],
+    queryFn: () => flavorProfileApi.getWhiskyProfile(pid, "all_incl_imported"),
+    enabled: !!pid,
+    staleTime: 120000,
+  });
+
+  const { data: participant } = useQuery({
+    queryKey: ["participant-detail-analytics", pid],
+    queryFn: () => participantApi.get(pid),
+    enabled: !!pid,
+  });
+
+  const { data: flavorData } = useQuery({
+    queryKey: ["flavor-profile-analytics", pid],
+    queryFn: () => flavorProfileApi.get(pid),
+    enabled: !!pid,
+    staleTime: 120000,
+  });
+
+  const smoke = participant?.smokeAffinityIndex ?? null;
+  const topCategories = flavorData?.topCategories?.slice(0, 6) ?? [];
+
+  const structure = profile?.tasteStructure;
+  const dims = structure ? [
+    { label: "Nose", value: structure.nose?.mean ?? 0 },
+    { label: "Taste", value: structure.taste?.mean ?? 0 },
+    { label: "Finish", value: structure.finish?.mean ?? 0 },
+    { label: "Balance", value: structure.balance?.mean ?? 0 },
+  ] : [];
+
+  const hasDims = dims.some(d => d.value > 0);
+
+  return (
+    <div style={cardStyle} data-testid="card-taste-profile">
+      <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 16px" }}>
+        Your Taste Profile
+      </h2>
+
+      {hasDims ? (
+        <div style={{ marginBottom: 16 }}>
+          {dims.map((d, i) => (
+            <BarRow key={d.label} label={d.label} value={d.value} maxValue={100} color={PROFILE_COLORS[i % PROFILE_COLORS.length]} />
+          ))}
+        </div>
+      ) : (
+        <p style={{ fontSize: 13, color: c.muted, margin: "0 0 12px" }}>Rate more whiskies to see your taste structure.</p>
+      )}
+
+      {smoke != null && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderTop: `1px solid ${c.border}` }}>
+          <span style={{ fontSize: 13, color: c.text }}>Smoke Affinity</span>
+          <div style={{ flex: 1, height: 6, background: c.bg, borderRadius: 3, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${Math.min(smoke * 10, 100)}%`, background: "#cc9966", borderRadius: 3 }} />
+          </div>
+          <span style={{ fontSize: 12, color: c.muted, fontFamily: "monospace", minWidth: 28, textAlign: "right" }}>{smoke.toFixed(1)}</span>
+        </div>
+      )}
+
+      {topCategories.length > 0 && (
+        <div style={{ paddingTop: 12, borderTop: `1px solid ${c.border}` }}>
+          <div style={{ fontSize: 12, color: c.muted, marginBottom: 8 }}>Top Flavors</div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {topCategories.map((f: any, i: number) => (
+              <span
+                key={f.category || i}
+                style={{
+                  fontSize: 11,
+                  padding: "3px 10px",
+                  borderRadius: 20,
+                  background: `${PROFILE_COLORS[i % PROFILE_COLORS.length]}20`,
+                  color: PROFILE_COLORS[i % PROFILE_COLORS.length],
+                  fontWeight: 500,
+                }}
+              >
+                {f.category}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TasteMapCard({ pid }: { pid: string }) {
+  const { data: profile } = useQuery({
+    queryKey: ["whisky-profile-analytics", pid],
+    queryFn: () => flavorProfileApi.getWhiskyProfile(pid, "all_incl_imported"),
+    enabled: !!pid,
+    staleTime: 120000,
+  });
+
+  const structure = profile?.tasteStructure;
+  if (!structure) {
+    return (
+      <div style={cardStyle} data-testid="card-taste-map">
+        <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+          Your Taste Map
+        </h2>
+        <p style={{ fontSize: 13, color: c.muted, margin: 0 }}>Not enough data yet to show your taste map.</p>
+      </div>
+    );
+  }
+
+  const dims = [
+    { label: "Nose", value: structure.nose?.mean ?? 0 },
+    { label: "Taste", value: structure.taste?.mean ?? 0 },
+    { label: "Finish", value: structure.finish?.mean ?? 0 },
+    { label: "Balance", value: structure.balance?.mean ?? 0 },
+    { label: "Overall", value: structure.overall?.mean ?? 0 },
+  ];
+
+  const maxVal = 100;
+  const cx = 130, cy = 110, r = 80;
+  const angleStep = (2 * Math.PI) / dims.length;
+  const startAngle = -Math.PI / 2;
+
+  const points = dims.map((d, i) => {
+    const angle = startAngle + i * angleStep;
+    const ratio = d.value / maxVal;
+    return {
+      x: cx + r * ratio * Math.cos(angle),
+      y: cy + r * ratio * Math.sin(angle),
+      lx: cx + (r + 18) * Math.cos(angle),
+      ly: cy + (r + 18) * Math.sin(angle),
+      label: d.label,
+      value: d.value,
+    };
+  });
+
+  const polygon = points.map(p => `${p.x},${p.y}`).join(" ");
+
+  const gridLines = [0.25, 0.5, 0.75, 1].map(ratio => {
+    const gPoints = dims.map((_, i) => {
+      const angle = startAngle + i * angleStep;
+      return `${cx + r * ratio * Math.cos(angle)},${cy + r * ratio * Math.sin(angle)}`;
+    });
+    return gPoints.join(" ");
+  });
+
+  return (
+    <div style={cardStyle} data-testid="card-taste-map">
+      <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+        Your Taste Map
+      </h2>
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <svg width="260" height="230" viewBox="0 0 260 230" style={{ maxWidth: "100%" }}>
+          {gridLines.map((g, i) => (
+            <polygon key={i} points={g} fill="none" stroke={c.border} strokeWidth={0.5} opacity={0.6} />
+          ))}
+          {dims.map((_, i) => {
+            const angle = startAngle + i * angleStep;
+            return (
+              <line key={i} x1={cx} y1={cy} x2={cx + r * Math.cos(angle)} y2={cy + r * Math.sin(angle)} stroke={c.border} strokeWidth={0.5} opacity={0.4} />
+            );
+          })}
+          <polygon points={polygon} fill={`${c.accent}30`} stroke={c.accent} strokeWidth={1.5} />
+          {points.map((p, i) => (
+            <g key={i}>
+              <circle cx={p.x} cy={p.y} r={3} fill={c.accent} />
+              <text x={p.lx} y={p.ly} textAnchor="middle" dominantBaseline="middle" fill={c.muted} fontSize={10} fontFamily="sans-serif">
+                {p.label}
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 8 }}>
+        {dims.map((d, i) => (
+          <div key={i} style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: c.accent }}>{d.value.toFixed(0)}</div>
+            <div style={{ fontSize: 10, color: c.muted }}>{d.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TasteEvolutionCard({ pid }: { pid: string }) {
+  const { data: journal } = useQuery({
+    queryKey: ["journal-evolution", pid],
+    queryFn: () => journalApi.getAll(pid),
+    enabled: !!pid,
+    staleTime: 120000,
+  });
+
+  const { data: notes } = useQuery({
+    queryKey: ["rating-notes-evolution", pid],
+    queryFn: () => ratingNotesApi.get(pid),
+    enabled: !!pid,
+    staleTime: 120000,
+  });
+
+  const dataPoints: { date: string; score: number }[] = [];
+
+  if (Array.isArray(notes)) {
+    for (const n of notes) {
+      if (n.overall && n.createdAt) {
+        dataPoints.push({ date: n.createdAt, score: Number(n.overall) });
+      }
+    }
+  }
+
+  if (Array.isArray(journal)) {
+    for (const j of journal) {
+      if (j.personalScore && j.createdAt) {
+        dataPoints.push({ date: j.createdAt, score: Number(j.personalScore) });
+      }
+    }
+  }
+
+  dataPoints.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const grouped: { label: string; avg: number; count: number }[] = [];
+  if (dataPoints.length > 0) {
+    const monthMap = new Map<string, number[]>();
+    for (const dp of dataPoints) {
+      const d = new Date(dp.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      if (!monthMap.has(key)) monthMap.set(key, []);
+      monthMap.get(key)!.push(dp.score);
+    }
+    const sortedKeys = [...monthMap.keys()].sort();
+    for (const key of sortedKeys) {
+      const scores = monthMap.get(key)!;
+      const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+      const [y, m] = key.split("-");
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      grouped.push({ label: `${monthNames[parseInt(m) - 1]} ${y.slice(2)}`, avg, count: scores.length });
+    }
+  }
+
+  if (grouped.length < 2) {
+    return (
+      <div style={cardStyle} data-testid="card-taste-evolution">
+        <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+          Your Taste Evolution
+        </h2>
+        <p style={{ fontSize: 13, color: c.muted, margin: 0 }}>
+          {dataPoints.length === 0
+            ? "Start rating whiskies to see how your taste evolves."
+            : "Keep tasting — your evolution chart appears after 2+ months of data."}
+        </p>
+      </div>
+    );
+  }
+
+  const minScore = Math.max(0, Math.min(...grouped.map(g => g.avg)) - 10);
+  const maxScore = Math.min(100, Math.max(...grouped.map(g => g.avg)) + 10);
+  const range = maxScore - minScore || 1;
+
+  const chartW = 280, chartH = 120, padL = 0, padR = 10, padT = 10, padB = 24;
+  const plotW = chartW - padL - padR;
+  const plotH = chartH - padT - padB;
+
+  const linePoints = grouped.map((g, i) => {
+    const x = padL + (i / (grouped.length - 1)) * plotW;
+    const y = padT + plotH - ((g.avg - minScore) / range) * plotH;
+    return { x, y, ...g };
+  });
+
+  const pathD = linePoints.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+
+  return (
+    <div style={cardStyle} data-testid="card-taste-evolution">
+      <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+        Your Taste Evolution
+      </h2>
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <svg width={chartW} height={chartH} viewBox={`0 0 ${chartW} ${chartH}`} style={{ maxWidth: "100%" }}>
+          <path d={pathD} fill="none" stroke={c.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          {linePoints.map((p, i) => (
+            <g key={i}>
+              <circle cx={p.x} cy={p.y} r={3} fill={c.accent} />
+              <text x={p.x} y={chartH - 4} textAnchor="middle" fill={c.muted} fontSize={9} fontFamily="sans-serif">
+                {p.label}
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+        <span style={{ fontSize: 11, color: c.muted }}>
+          {grouped[0].label}: avg {grouped[0].avg.toFixed(1)}
+        </span>
+        <span style={{ fontSize: 11, color: c.muted }}>
+          {grouped[grouped.length - 1].label}: avg {grouped[grouped.length - 1].avg.toFixed(1)}
+        </span>
+      </div>
+      {grouped.length >= 2 && (
+        <div style={{ fontSize: 12, color: c.text, marginTop: 8, textAlign: "center" }}>
+          {grouped[grouped.length - 1].avg > grouped[0].avg
+            ? `Your average score has risen by ${(grouped[grouped.length - 1].avg - grouped[0].avg).toFixed(1)} points.`
+            : grouped[grouped.length - 1].avg < grouped[0].avg
+            ? `Your average score has shifted down by ${(grouped[0].avg - grouped[grouped.length - 1].avg).toFixed(1)} points.`
+            : "Your average score has stayed consistent."}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RatingConsistencyCard({ pid }: { pid: string }) {
+  const { data: profile } = useQuery({
+    queryKey: ["whisky-profile-analytics", pid],
+    queryFn: () => flavorProfileApi.getWhiskyProfile(pid, "all_incl_imported"),
+    enabled: !!pid,
+    staleTime: 120000,
+  });
+
+  const { data: participant } = useQuery({
+    queryKey: ["participant-detail-analytics", pid],
+    queryFn: () => participantApi.get(pid),
+    enabled: !!pid,
+  });
+
+  const stability = participant?.ratingStabilityScore ?? null;
+  const ratingStyle = profile?.ratingStyle;
+  const stdDev = ratingStyle?.stdDev ?? null;
+  const mean = ratingStyle?.mean ?? null;
+  const min = ratingStyle?.min ?? null;
+  const max = ratingStyle?.max ?? null;
+  const n = ratingStyle?.n ?? profile?.confidence?.overall?.n ?? null;
+
+  const hasData = stability != null || stdDev != null;
+
+  let consistencyLabel = "—";
+  let consistencyColor = c.muted;
+  if (stability != null) {
+    if (stability >= 8) { consistencyLabel = "Very Consistent"; consistencyColor = "#7ea87e"; }
+    else if (stability >= 6) { consistencyLabel = "Consistent"; consistencyColor = "#c8a864"; }
+    else if (stability >= 4) { consistencyLabel = "Variable"; consistencyColor = "#d97c5a"; }
+    else { consistencyLabel = "Highly Variable"; consistencyColor = "#c44"; }
+  }
+
+  return (
+    <div style={cardStyle} data-testid="card-rating-consistency">
+      <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 16px" }}>
+        Your Rating Consistency
+      </h2>
+
+      {!hasData ? (
+        <p style={{ fontSize: 13, color: c.muted, margin: 0 }}>Rate more whiskies to see your consistency score.</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {stability != null && (
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: "50%",
+                border: `3px solid ${consistencyColor}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                <span style={{ fontSize: 18, fontWeight: 700, color: consistencyColor, fontFamily: "'Playfair Display', serif" }}>
+                  {stability.toFixed(1)}
+                </span>
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: consistencyColor }}>{consistencyLabel}</div>
+                <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>Your scoring pattern is {consistencyLabel.toLowerCase()}</div>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            {mean != null && (
+              <div style={{ background: c.bg, borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: c.accent }}>{mean.toFixed(1)}</div>
+                <div style={{ fontSize: 10, color: c.muted }}>Avg Score</div>
+              </div>
+            )}
+            {stdDev != null && (
+              <div style={{ background: c.bg, borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: c.accent }}>{stdDev.toFixed(1)}</div>
+                <div style={{ fontSize: 10, color: c.muted }}>Spread</div>
+              </div>
+            )}
+            {min != null && max != null && (
+              <div style={{ background: c.bg, borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: c.accent }}>{min.toFixed(0)}–{max.toFixed(0)}</div>
+                <div style={{ fontSize: 10, color: c.muted }}>Range</div>
+              </div>
+            )}
+            {n != null && (
+              <div style={{ background: c.bg, borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: c.accent }}>{n}</div>
+                <div style={{ fontSize: 10, color: c.muted }}>Ratings</div>
+              </div>
+            )}
+          </div>
+
+          {stdDev != null && (
+            <div style={{ fontSize: 12, color: c.muted, lineHeight: 1.5 }}>
+              {stdDev < 8
+                ? "You tend to rate quite consistently — your scores stay close together."
+                : stdDev < 15
+                ? "You have a healthy spread in your ratings, showing nuanced preferences."
+                : "Your ratings vary a lot — you clearly distinguish between whiskies you love and those you don't."}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function MyTasteAnalyticsPage() {
+  const { currentParticipant, setParticipant } = useAppStore();
+  const pid = currentParticipant?.id;
+
+  useEffect(() => {
+    if (!pid) {
+      const storedId = localStorage.getItem(LS_KEY);
+      if (storedId) {
+        participantApi.get(storedId).then((p: any) => {
+          if (p?.id) setParticipant({ id: p.id, name: p.name, role: p.role });
+        }).catch(() => localStorage.removeItem(LS_KEY));
+      }
+    }
+  }, [pid, setParticipant]);
+
+  return (
+    <SimpleShell>
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+          <Link href="/my-taste">
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: `${c.accent}15`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }} data-testid="button-back-my-taste">
+              <ArrowLeft style={{ width: 16, height: 16, color: c.accent }} />
+            </div>
+          </Link>
+          <div>
+            <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 22, fontWeight: 700, color: c.accent, margin: 0 }} data-testid="text-analytics-title">
+              Analytics
+            </h1>
+            <p style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>
+              Your personal tasting insights
+            </p>
+          </div>
+        </div>
+
+        {!pid ? (
+          <div style={cardStyle}>
+            <p style={{ fontSize: 14, color: c.muted, margin: 0, textAlign: "center" }} data-testid="text-analytics-login">
+              Sign in from My Taste to see your analytics.
+            </p>
+          </div>
+        ) : (
+          <>
+            <TasteProfileCard pid={pid} />
+            <TasteMapCard pid={pid} />
+            <TasteEvolutionCard pid={pid} />
+            <RatingConsistencyCard pid={pid} />
+          </>
+        )}
+      </div>
+    </SimpleShell>
+  );
+}

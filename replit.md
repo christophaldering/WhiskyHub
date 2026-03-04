@@ -27,7 +27,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Asynchronous Updates**: React Query polling provides near real-time updates for session data.
 -   **Data Import & Management**: Hosts can import whisky data and upload bottle photos.
 -   **Tasting Features**: Includes whisky management, flight board, PDF export, blind mode, discussion panel, tasting note generator, and host-uploadable cover images.
--   **Personalization & Analytics**: Features participant profiles, a whisky journal, achievement badges, personal flavor profiles (radar charts), whisky recommendations, side-by-side comparisons, and a flavor wheel. Privacy-respecting per-tasting analytics are provided.
+-   **Personalization & Analytics**: Features participant profiles, a whisky journal, achievement badges, personal flavor profiles (radar charts), whisky recommendations, side-by-side comparisons, and a flavor wheel. Privacy-respecting per-tasting analytics are provided. Native Dark Warm analytics page at `/my-taste/analytics` with four insight cards: Taste Profile (dimension bars + smoke affinity + top flavors), Taste Map (SVG radar chart), Taste Evolution (monthly average line chart), Rating Consistency (stability score + stats grid).
 -   **Data Access Model**: Participants see their own ratings and anonymized group analytics. Hosts see all individual ratings for their hosted tastings.
 -   **Internationalization**: Supports German (DE) and English (EN).
 -   **Host Tools**: Host briefing notes, tasting curation wizard, calendar view, and dashboard summary.

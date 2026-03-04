@@ -167,7 +167,7 @@ function AnalyticsPreviewCard({ pid, stats }: { pid: string | undefined; stats: 
   const avgOverall = stats?.avgOverall ?? stats?.averageOverall ?? null;
 
   return (
-    <Link href="/legacy/my/journal?tab=analytics">
+    <Link href="/my-taste/analytics">
       <div style={{ ...cardStyle, padding: "16px 20px", cursor: "pointer" }} data-testid="card-analytics">
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c.accent}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

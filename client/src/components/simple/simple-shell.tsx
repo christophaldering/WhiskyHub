@@ -19,7 +19,7 @@ const NAV_ITEMS = [
   { href: "/enter", icon: Wine, label: "Join", match: ["/enter", "/join", "/tasting-room-simple", "/naked/"] },
   { href: "/log-simple", icon: PenLine, label: "Log", match: ["/log-simple", "/log"] },
   { href: "/host", icon: Crown, label: "Host", match: ["/host"] },
-  { href: "/my-taste", icon: User, label: "My Taste", match: ["/my-taste", "/taste"] },
+  { href: "/my-taste", icon: User, label: "My Taste", match: ["/my-taste", "/taste", "/my-taste/analytics"] },
   { href: "/analyze", icon: Compass, label: "Discover", match: ["/analyze", "/discover"] },
 ];
 
