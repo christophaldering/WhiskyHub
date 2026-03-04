@@ -1077,340 +1077,426 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
     : null;
 
   const guestParticipants = participants.filter((p) => p.participantId !== pid);
+  const ratedParticipantIds = new Set(activeRatings.map((r) => r.participantId));
+
+  const sectionCard: React.CSSProperties = {
+    background: c.card,
+    border: `1px solid ${c.border}`,
+    borderRadius: 14,
+    padding: "20px",
+  };
+
+  const sectionTitle = (label: string) => (
+    <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: c.muted, marginBottom: 14 }}>
+      {label}
+    </div>
+  );
+
+  const bigButton = (opts: { onClick: () => void; icon: React.ElementType; label: string; bg: string; color: string; borderColor?: string; disabled?: boolean; testId: string }) => {
+    const Icon = opts.icon;
+    return (
+      <button
+        type="button"
+        onClick={opts.onClick}
+        disabled={opts.disabled}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 10,
+          padding: "14px",
+          fontSize: 16,
+          fontWeight: 700,
+          background: opts.bg,
+          color: opts.color,
+          border: opts.borderColor ? `1px solid ${opts.borderColor}` : "none",
+          borderRadius: 12,
+          cursor: opts.disabled ? "not-allowed" : "pointer",
+          fontFamily: "system-ui, sans-serif",
+          opacity: opts.disabled ? 0.5 : 1,
+          transition: "opacity 0.2s",
+        }}
+        data-testid={opts.testId}
+      >
+        <Icon style={{ width: 20, height: 20 }} />
+        {opts.label}
+      </button>
+    );
+  };
+
+  if (isDraft) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={sectionCard}>
+          {sectionTitle("Session Overview")}
+          <div style={{ fontSize: 20, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif", marginBottom: 6 }}>{tasting.title}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: c.muted }}>
+            <span>Code: <strong style={{ color: c.accent, letterSpacing: "0.08em" }}>{tasting.code}</strong></span>
+            {isBlind && (
+              <span style={{ fontSize: 10, color: c.accent, background: `${c.accent}20`, padding: "2px 6px", borderRadius: 6 }}>
+                <EyeOff style={{ width: 10, height: 10, display: "inline", verticalAlign: "middle", marginRight: 3 }} />
+                Blind
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 13, color: c.muted, marginTop: 8 }}>
+            {whiskies.length === 0
+              ? "No whiskies added yet."
+              : `${whiskies.length} ${whiskies.length === 1 ? "whisky" : "whiskies"} ready`}
+          </div>
+        </div>
+
+        <div style={{ padding: "8px 0" }}>
+          {bigButton({
+            onClick: handleStartSession,
+            icon: Play,
+            label: "Start Session",
+            bg: whiskies.length > 0 ? c.success : c.border,
+            color: whiskies.length > 0 ? "#fff" : c.muted,
+            disabled: whiskies.length === 0,
+            testId: "button-start-session",
+          })}
+          {whiskies.length === 0 && (
+            <p style={{ fontSize: 12, color: c.muted, textAlign: "center", marginTop: 8 }}>Add whiskies first to start the session.</p>
+          )}
+        </div>
+
+        <button type="button" onClick={onDone} style={{ width: "100%", padding: "10px", fontSize: 13, background: "none", color: c.muted, border: `1px solid ${c.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-done-live">
+          Back to Host
+        </button>
+      </div>
+    );
+  }
+
+  if (!isDraft && !isOpen) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={sectionCard}>
+          {sectionTitle("Session Overview")}
+          <div style={{ fontSize: 20, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif", marginBottom: 6 }}>{tasting.title}</div>
+          <div style={{ fontSize: 13, color: c.muted }}>
+            Session is <strong style={{ color: c.text }}>{tasting.status}</strong>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {bigButton({
+            onClick: () => navigate(`/tasting-results/${tasting.id}`),
+            icon: BarChart3,
+            label: "View Results",
+            bg: c.accent,
+            color: c.bg,
+            testId: "button-view-results",
+          })}
+          <button
+            type="button"
+            onClick={() => navigate(`/legacy/tasting/${tasting.id}`)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "10px", fontSize: 13, fontWeight: 500, background: "none", color: c.muted,
+              border: `1px solid ${c.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif",
+            }}
+            data-testid="button-view-session"
+          >
+            Full Dashboard
+          </button>
+        </div>
+
+        <button type="button" onClick={onDone} style={{ width: "100%", padding: "10px", fontSize: 13, background: "none", color: c.muted, border: `1px solid ${c.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-done-live">
+          Back to Host
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <TastingHeader tasting={tasting} />
 
-      <div style={cardStyle}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-          <StepBadge step={4} />
-          <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: c.text }} data-testid="text-step4-title">
-            Run Live
-          </h3>
-          <span style={{
-            fontSize: 10,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: isOpen ? c.success : isDraft ? c.muted : c.accent,
-            background: isOpen ? `${c.success}20` : isDraft ? `${c.muted}20` : `${c.accent}20`,
-            padding: "2px 8px",
-            borderRadius: 6,
-            marginLeft: "auto",
-          }} data-testid="badge-session-status">
-            {tasting.status}
-          </span>
+      <div style={sectionCard} data-testid="section-overview">
+        {sectionTitle("Session Overview")}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif", marginBottom: 4 }} data-testid="text-tasting-title">
+              {tasting.title}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 13, color: c.muted }}>
+                Code: <strong style={{ color: c.accent, letterSpacing: "0.08em", fontSize: 15 }}>{tasting.code}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={async () => { try { await navigator.clipboard.writeText(tasting.code); } catch {} }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: c.muted, padding: 2 }}
+                data-testid="button-copy-code"
+              >
+                <Copy style={{ width: 14, height: 14 }} />
+              </button>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {isBlind && (
+              <span style={{ fontSize: 10, fontWeight: 600, color: c.accent, background: `${c.accent}20`, padding: "3px 8px", borderRadius: 6 }}>
+                <EyeOff style={{ width: 10, height: 10, display: "inline", verticalAlign: "middle", marginRight: 3 }} />
+                Blind
+              </span>
+            )}
+            <span style={{
+              fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
+              color: c.success, background: `${c.success}20`, padding: "3px 8px", borderRadius: 6,
+            }} data-testid="badge-session-status">
+              Live
+            </span>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 20, marginTop: 14 }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif" }} data-testid="text-participant-count">
+              {guestParticipants.length}
+            </div>
+            <div style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Participants</div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif" }}>
+              {whiskies.length}
+            </div>
+            <div style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Whiskies</div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif" }} data-testid="text-rating-count">
+              {activeRatings.length}
+            </div>
+            <div style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Ratings</div>
+          </div>
+          {avgScore !== null && showResults && (
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 24, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif" }} data-testid="text-avg-score">
+                {avgScore}
+              </div>
+              <div style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Avg Score</div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={sectionCard} data-testid="section-dram-control">
+        {sectionTitle("Dram Control")}
+
+        <div style={{ background: c.bg, borderRadius: 12, padding: "18px", marginBottom: 14 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: c.muted, marginBottom: 6 }}>
+            Current Dram
+          </div>
+          {activeWhisky ? (
+            <div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif", marginBottom: 2 }} data-testid="text-active-whisky">
+                {isBlind ? `Whisky ${blindLabel(activeIndex)}` : activeWhisky.name}
+              </div>
+              {isBlind && (
+                <div style={{ fontSize: 13, color: c.muted, display: "flex", alignItems: "center", gap: 6 }} data-testid="text-active-whisky-real">
+                  <EyeOff style={{ width: 12, height: 12 }} />
+                  {activeWhisky.name}
+                  {activeWhisky.distillery && ` · ${activeWhisky.distillery}`}
+                </div>
+              )}
+              {!isBlind && activeWhisky.distillery && (
+                <div style={{ fontSize: 13, color: c.muted, marginTop: 2 }}>
+                  {[activeWhisky.distillery, activeWhisky.abv ? `${activeWhisky.abv}%` : null].filter(Boolean).join(" · ")}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ fontSize: 14, color: c.muted }}>No whisky selected</div>
+          )}
         </div>
 
-        {isDraft && (
-          <div style={{ textAlign: "center", padding: "16px 0" }}>
-            <p style={{ color: c.muted, fontSize: 13, marginBottom: 16 }}>
-              {whiskies.length === 0
-                ? "Add whiskies first, then start the session."
-                : `Ready to go with ${whiskies.length} ${whiskies.length === 1 ? "whisky" : "whiskies"}.`}
-            </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+          {whiskies.map((w, i) => {
+            const isActive = i === activeIndex;
+            const whiskyRatings = ratings.filter((r) => r.whiskyId === w.id);
+            const done = whiskyRatings.length >= guestParticipants.length && guestParticipants.length > 0;
+            return (
+              <button
+                key={w.id}
+                type="button"
+                onClick={() => goToWhisky(i)}
+                style={{
+                  padding: "8px 16px",
+                  fontSize: 14,
+                  fontWeight: isActive ? 700 : 500,
+                  background: isActive ? c.accent : done ? `${c.success}15` : c.bg,
+                  color: isActive ? c.bg : done ? c.success : c.text,
+                  border: `1.5px solid ${isActive ? c.accent : done ? c.success + "40" : c.border}`,
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  fontFamily: "system-ui, sans-serif",
+                  transition: "all 0.15s",
+                  position: "relative",
+                }}
+                data-testid={`button-select-whisky-${w.id}`}
+              >
+                {isBlind ? blindLabel(i) : `${i + 1}`}
+                {done && !isActive && (
+                  <Check style={{ width: 10, height: 10, position: "absolute", top: -3, right: -3, color: c.success }} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+          <button
+            type="button"
+            onClick={() => { setTimerRunning(!timerRunning); }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: timerRunning ? `${c.accent}20` : c.bg,
+              border: `1px solid ${timerRunning ? c.accent + "50" : c.border}`,
+              borderRadius: 10,
+              padding: "10px 16px",
+              color: c.accent,
+              fontSize: 18,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: "monospace",
+            }}
+            data-testid="button-timer"
+          >
+            <Timer style={{ width: 16, height: 16 }} />
+            {formatTime(timerSeconds)}
+            <span style={{ fontSize: 12, fontWeight: 400, marginLeft: 4 }}>{timerRunning ? "⏸" : "▶"}</span>
+          </button>
+
+          {timerSeconds > 0 && (
             <button
               type="button"
-              onClick={handleStartSession}
-              disabled={whiskies.length === 0}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "12px 32px",
-                fontSize: 16,
-                fontWeight: 700,
-                background: whiskies.length > 0 ? c.success : c.border,
-                color: whiskies.length > 0 ? "#fff" : c.muted,
-                border: "none",
-                borderRadius: 12,
-                cursor: whiskies.length > 0 ? "pointer" : "not-allowed",
-                fontFamily: "system-ui, sans-serif",
-              }}
-              data-testid="button-start-session"
+              onClick={() => { setTimerSeconds(0); setTimerRunning(false); }}
+              style={{ background: "none", border: "none", color: c.muted, fontSize: 12, cursor: "pointer", fontFamily: "system-ui, sans-serif", textDecoration: "underline" }}
+              data-testid="button-timer-reset"
             >
-              <Play style={{ width: 18, height: 18 }} />
-              Start Session
+              Reset
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
-        {isOpen && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ background: c.bg, borderRadius: 10, padding: "16px" }}>
-              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: c.muted, marginBottom: 8 }}>
-                Current Whisky
-              </div>
-              {activeWhisky ? (
-                <div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif", marginBottom: 4 }} data-testid="text-active-whisky">
-                    {isBlind ? `Whisky ${blindLabel(activeIndex)}` : activeWhisky.name}
-                  </div>
-                  {isBlind && (
-                    <div style={{ fontSize: 13, color: c.muted }} data-testid="text-active-whisky-real">
-                      Host view: {activeWhisky.name}
-                    </div>
-                  )}
-                  {activeWhisky.distillery && (
-                    <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>
-                      {[activeWhisky.distillery, activeWhisky.abv ? `${activeWhisky.abv}%` : null].filter(Boolean).join(" · ")}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ fontSize: 14, color: c.muted }}>No whisky selected</div>
-              )}
-
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
-                <button
-                  type="button"
-                  onClick={() => { setTimerRunning(!timerRunning); }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    background: `${c.accent}15`,
-                    border: `1px solid ${c.accent}30`,
-                    borderRadius: 8,
-                    padding: "6px 12px",
-                    color: c.accent,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    fontFamily: "monospace",
-                  }}
-                  data-testid="button-timer"
-                >
-                  <Timer style={{ width: 14, height: 14 }} />
-                  {formatTime(timerSeconds)}
-                  <span style={{ fontSize: 10, fontWeight: 400, marginLeft: 4 }}>{timerRunning ? "⏸" : "▶"}</span>
-                </button>
-
-                {timerSeconds > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => { setTimerSeconds(0); setTimerRunning(false); }}
-                    style={{ background: "none", border: "none", color: c.muted, fontSize: 11, cursor: "pointer", fontFamily: "system-ui, sans-serif", textDecoration: "underline" }}
-                    data-testid="button-timer-reset"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {whiskies.map((w, i) => (
-                <button
-                  key={w.id}
-                  type="button"
-                  onClick={() => goToWhisky(i)}
-                  style={{
-                    padding: "6px 12px",
-                    fontSize: 13,
-                    fontWeight: i === activeIndex ? 700 : 500,
-                    background: i === activeIndex ? c.accent : c.bg,
-                    color: i === activeIndex ? c.bg : c.text,
-                    border: `1px solid ${i === activeIndex ? c.accent : c.border}`,
-                    borderRadius: 8,
-                    cursor: "pointer",
-                    fontFamily: "system-ui, sans-serif",
-                  }}
-                  data-testid={`button-select-whisky-${w.id}`}
-                >
-                  {isBlind ? blindLabel(i) : `${i + 1}`}
-                </button>
-              ))}
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {isBlind && activeWhisky && (
-                <button
-                  type="button"
-                  onClick={handleReveal}
-                  disabled={revealStep >= 3}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    padding: "10px",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    background: revealStep < 3 ? `${c.accent}15` : c.border,
-                    color: revealStep < 3 ? c.accent : c.muted,
-                    border: `1px solid ${revealStep < 3 ? c.accent + "40" : c.border}`,
-                    borderRadius: 10,
-                    cursor: revealStep < 3 ? "pointer" : "not-allowed",
-                    fontFamily: "system-ui, sans-serif",
-                  }}
-                  data-testid="button-reveal"
-                >
-                  <Eye style={{ width: 16, height: 16 }} />
-                  {revealStep === 0 ? "Reveal Name" : revealStep === 1 ? "Reveal Details" : revealStep === 2 ? "Reveal Image" : "Fully Revealed"}
-                </button>
-              )}
-
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={handleToggleResults}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                    padding: "10px",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    background: showResults ? `${c.success}15` : c.bg,
-                    color: showResults ? c.success : c.muted,
-                    border: `1px solid ${showResults ? c.success + "40" : c.border}`,
-                    borderRadius: 10,
-                    cursor: "pointer",
-                    fontFamily: "system-ui, sans-serif",
-                  }}
-                  data-testid="button-toggle-results"
-                >
-                  <BarChart3 style={{ width: 14, height: 14 }} />
-                  {showResults ? "Results Visible" : "Results Hidden"}
-                </button>
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 4 }}>
-              <div style={{ background: c.bg, borderRadius: 10, padding: "12px", textAlign: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 6 }}>
-                  <Users style={{ width: 14, height: 14, color: c.accent }} />
-                  <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted }}>Joined</span>
-                </div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif" }} data-testid="text-participant-count">
-                  {guestParticipants.length}
-                </div>
-                {guestParticipants.length > 0 && (
-                  <div style={{ fontSize: 11, color: c.muted, marginTop: 4, maxHeight: 60, overflow: "auto" }}>
-                    {guestParticipants.map((p) => p.participant.name).join(", ")}
-                  </div>
-                )}
-              </div>
-
-              <div style={{ background: c.bg, borderRadius: 10, padding: "12px", textAlign: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 6 }}>
-                  <BarChart3 style={{ width: 14, height: 14, color: c.accent }} />
-                  <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted }}>Ratings</span>
-                </div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif" }} data-testid="text-rating-count">
-                  {activeRatings.length}
-                </div>
-                {avgScore !== null && showResults && (
-                  <div style={{ fontSize: 12, color: c.accent, marginTop: 4 }} data-testid="text-avg-score">
-                    Avg: {avgScore}/100
-                  </div>
-                )}
-              </div>
-            </div>
-
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {isBlind && activeWhisky && (
             <button
               type="button"
-              onClick={handleEndSession}
+              onClick={handleReveal}
+              disabled={revealStep >= 3}
               style={{
+                width: "100%",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
-                padding: "10px",
-                fontSize: 14,
-                fontWeight: 600,
-                background: `${c.danger}15`,
-                color: c.danger,
-                border: `1px solid ${c.danger}40`,
-                borderRadius: 10,
-                cursor: "pointer",
+                padding: "14px",
+                fontSize: 15,
+                fontWeight: 700,
+                background: revealStep < 3 ? `${c.accent}15` : c.border,
+                color: revealStep < 3 ? c.accent : c.muted,
+                border: `1.5px solid ${revealStep < 3 ? c.accent + "50" : c.border}`,
+                borderRadius: 12,
+                cursor: revealStep < 3 ? "pointer" : "not-allowed",
                 fontFamily: "system-ui, sans-serif",
-                marginTop: 4,
               }}
-              data-testid="button-end-session"
+              data-testid="button-reveal"
             >
-              <Square style={{ width: 14, height: 14 }} />
-              End Session
+              <Eye style={{ width: 18, height: 18 }} />
+              {revealStep === 0 ? "Reveal Name" : revealStep === 1 ? "Reveal Details" : revealStep === 2 ? "Reveal Image" : "Fully Revealed"}
             </button>
-          </div>
-        )}
+          )}
 
-        {!isDraft && !isOpen && (
-          <div style={{ textAlign: "center", padding: "16px 0" }}>
-            <p style={{ fontSize: 14, color: c.muted, marginBottom: 12 }}>
-              Session is <strong style={{ color: c.text }}>{tasting.status}</strong>.
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
-              <button
-                type="button"
-                onClick={() => navigate(`/tasting-results/${tasting.id}`)}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "10px 20px",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  background: c.accent,
-                  color: c.bg,
-                  border: "none",
-                  borderRadius: 10,
-                  cursor: "pointer",
-                  fontFamily: "system-ui, sans-serif",
-                }}
-                data-testid="button-view-results"
-              >
-                View Results
-                <ArrowRight style={{ width: 14, height: 14 }} />
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate(`/legacy/tasting/${tasting.id}`)}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "8px 16px",
-                  fontSize: 12,
-                  fontWeight: 500,
-                  background: "none",
-                  color: c.muted,
-                  border: `1px solid ${c.border}`,
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  fontFamily: "system-ui, sans-serif",
-                }}
-                data-testid="button-view-session"
-              >
-                Full Dashboard
-              </button>
-            </div>
+          <button
+            type="button"
+            onClick={handleToggleResults}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              padding: "12px",
+              fontSize: 14,
+              fontWeight: 600,
+              background: showResults ? `${c.success}15` : c.bg,
+              color: showResults ? c.success : c.muted,
+              border: `1.5px solid ${showResults ? c.success + "50" : c.border}`,
+              borderRadius: 12,
+              cursor: "pointer",
+              fontFamily: "system-ui, sans-serif",
+            }}
+            data-testid="button-toggle-results"
+          >
+            <BarChart3 style={{ width: 16, height: 16 }} />
+            {showResults ? "Results Visible" : "Show Results"}
+          </button>
+        </div>
+      </div>
+
+      <div style={sectionCard} data-testid="section-participants">
+        {sectionTitle(`Participants (${guestParticipants.length})`)}
+
+        {guestParticipants.length === 0 ? (
+          <div style={{ fontSize: 13, color: c.muted, textAlign: "center", padding: "12px 0" }}>
+            No participants yet. Share the session code to invite people.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {guestParticipants.map((p) => {
+              const hasRated = ratedParticipantIds.has(p.participantId);
+              return (
+                <div
+                  key={p.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 12px",
+                    background: c.bg,
+                    borderRadius: 8,
+                  }}
+                  data-testid={`participant-row-${p.participantId}`}
+                >
+                  <span style={{ fontSize: 14, fontWeight: 500, color: c.text }}>
+                    {p.participant.name}
+                  </span>
+                  {activeWhisky ? (
+                    hasRated ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: c.success, fontWeight: 600 }}>
+                        <Check style={{ width: 14, height: 14 }} />
+                        rated
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 12, color: c.muted }}>...</span>
+                    )
+                  ) : (
+                    <span style={{ fontSize: 12, color: c.muted }}>joined</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={onDone}
-        style={{
-          width: "100%",
-          padding: "10px",
-          fontSize: 13,
-          background: "none",
-          color: c.muted,
-          border: `1px solid ${c.border}`,
-          borderRadius: 10,
-          cursor: "pointer",
-          fontFamily: "system-ui, sans-serif",
-        }}
-        data-testid="button-done-live"
-      >
-        Back to Host
-      </button>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {bigButton({
+          onClick: handleEndSession,
+          icon: Square,
+          label: "End Session",
+          bg: `${c.danger}15`,
+          color: c.danger,
+          borderColor: `${c.danger}40`,
+          testId: "button-end-session",
+        })}
+
+        <button type="button" onClick={onDone} style={{ width: "100%", padding: "10px", fontSize: 13, background: "none", color: c.muted, border: `1px solid ${c.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-done-live">
+          Back to Host
+        </button>
+      </div>
     </div>
   );
 }
@@ -1517,7 +1603,11 @@ export default function SimpleHostPage() {
         )}
 
         {wizardStep === "step3" && createdTasting && (
-          <InviteStep tasting={createdTasting} onDone={handleDismiss} />
+          <InviteStep tasting={createdTasting} onDone={handleDismiss} onNext={() => setWizardStep("step4")} />
+        )}
+
+        {wizardStep === "step4" && createdTasting && pid && (
+          <RunLiveStep tasting={createdTasting} pid={pid} onDone={handleDismiss} />
         )}
 
         {!showingWizard && (
@@ -1541,18 +1631,21 @@ export default function SimpleHostPage() {
                     </h3>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {activeTastings.map((t) => (
-                        <Link key={t.id} href={`/legacy/tasting/${t.id}`}>
-                          <div style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }} data-testid={`card-tasting-${t.id}`}>
-                            <div>
-                              <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
-                              <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>Code: {t.code}</div>
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <StatusBadge status={t.status} />
-                              <ChevronRight style={{ width: 16, height: 16, color: c.muted }} />
-                            </div>
+                        <div
+                          key={t.id}
+                          onClick={() => { setCreatedTasting(t); setWizardStep("step4"); }}
+                          style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                          data-testid={`card-tasting-${t.id}`}
+                        >
+                          <div>
+                            <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
+                            <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>Code: {t.code}</div>
                           </div>
-                        </Link>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <StatusBadge status={t.status} />
+                            <ChevronRight style={{ width: 16, height: 16, color: c.muted }} />
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -1565,18 +1658,21 @@ export default function SimpleHostPage() {
                     </h3>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {draftTastings.map((t) => (
-                        <Link key={t.id} href={`/legacy/tasting/${t.id}`}>
-                          <div style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }} data-testid={`card-tasting-${t.id}`}>
-                            <div>
-                              <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
-                              {t.date && <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>{t.date}</div>}
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <StatusBadge status={t.status} />
-                              <ChevronRight style={{ width: 16, height: 16, color: c.muted }} />
-                            </div>
+                        <div
+                          key={t.id}
+                          onClick={() => { setCreatedTasting(t); setWizardStep("step4"); }}
+                          style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                          data-testid={`card-tasting-${t.id}`}
+                        >
+                          <div>
+                            <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
+                            {t.date && <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>{t.date}</div>}
                           </div>
-                        </Link>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <StatusBadge status={t.status} />
+                            <ChevronRight style={{ width: 16, height: 16, color: c.muted }} />
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
