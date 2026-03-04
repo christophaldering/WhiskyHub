@@ -109,7 +109,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       return;
     }
     setSession(getSession());
-    setShowForm(false);
+    setView("idle");
     setSiPin("");
     setSiEmail("");
     setSiError("");
@@ -206,7 +206,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
               <br />Your saved tastings remain safe.
             </div>
           </>
-        ) : showForm ? (
+        ) : view === "login" ? (
           <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 8 }} autoComplete="off">
             <input type="text" name="cs_trap_user" autoComplete="username" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
             <input type="password" name="cs_trap_pw" autoComplete="current-password" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
@@ -268,7 +268,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
             {siError && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }}>{siError}</p>}
             <button
               type="button"
-              onClick={() => { setShowForm(false); setSiError(""); }}
+              onClick={() => { setView("idle"); setSiError(""); }}
               style={{ background: "none", border: "none", cursor: "pointer", color: c.mutedLight, fontSize: 12, fontFamily: "system-ui, sans-serif", textAlign: "center", marginTop: 2 }}
               data-testid="button-session-signin-cancel"
             >
@@ -278,7 +278,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         ) : (
           <>
             <button
-              onClick={() => setShowForm(true)}
+              onClick={() => setView("login")}
               data-testid="button-session-signin"
               style={{
                 width: "100%",
