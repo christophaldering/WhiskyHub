@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { participantApi, journalApi, statsApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
@@ -21,6 +22,7 @@ function StatRow({ label, value }: { label: string; value: number | null | undef
 }
 
 function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; role?: string }) => void }) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,16 +39,16 @@ function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; ro
         localStorage.setItem(LS_KEY, result.id);
         onUnlock({ id: result.id, name: result.name, role: result.role });
       } else {
-        setError("Unexpected response. Please try again.");
+        setError(t("myTastePage.errorUnexpected"));
       }
     } catch (err: any) {
       const msg = err?.message || "";
       if (msg.includes("Invalid p") || msg.includes("Invalid P") || msg.includes("Wrong")) {
-        setError("Wrong password. Please try again.");
+        setError(t("myTastePage.errorWrongPassword"));
       } else if (msg.includes("not found") || msg.includes("No account")) {
-        setError("No account found with this email.");
+        setError(t("myTastePage.errorNoAccount"));
       } else {
-        setError(msg || "Could not sign in. Check email and password.");
+        setError(msg || t("myTastePage.errorSignIn"));
       }
     } finally {
       setLoading(false);
@@ -56,16 +58,16 @@ function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; ro
   return (
     <div style={cardStyle} data-testid="card-unlock">
       <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 6px" }}>
-        Sign in
+        {t("myTastePage.signIn")}
       </h2>
       <p style={{ fontSize: 12, color: c.mutedLight, margin: "0 0 14px" }}>
-        Sign in with your registered email to access your personal taste profile.
+        {t("myTastePage.signInDesc")}
       </p>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }} autoComplete="off">
         <input type="text" name="cs_trap_user" autoComplete="username" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
         <input type="password" name="cs_trap_pw" autoComplete="current-password" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
-        <input type="email" placeholder="Email" name="cs_email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} data-testid="input-unlock-email" autoComplete="off" autoCapitalize="none" spellCheck={false} data-form-type="other" />
-        <input type="password" placeholder="Password" name="cs_password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-unlock-pin" autoComplete="new-password" autoCapitalize="none" spellCheck={false} data-form-type="other" />
+        <input type="email" placeholder={t("myTastePage.emailPlaceholder")} name="cs_email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} data-testid="input-unlock-email" autoComplete="off" autoCapitalize="none" spellCheck={false} data-form-type="other" />
+        <input type="password" placeholder={t("myTastePage.passwordPlaceholder")} name="cs_password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-unlock-pin" autoComplete="new-password" autoCapitalize="none" spellCheck={false} data-form-type="other" />
         <button
           type="submit"
           disabled={loading || !email.trim() || !pin.trim()}
@@ -76,7 +78,7 @@ function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; ro
             cursor: loading ? "wait" : "pointer", opacity: (!email.trim() || !pin.trim()) ? 0.5 : 1, transition: "opacity 0.2s",
           }}
         >
-          {loading ? "…" : "Sign In"}
+          {loading ? "…" : t("myTastePage.signInButton")}
         </button>
         {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }} data-testid="text-unlock-error">{error}</p>}
       </form>
@@ -87,6 +89,7 @@ function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; ro
 const ANALYTICS_THRESHOLD = 10;
 
 function AnalyticsPreviewCard({ pid, stats }: { pid: string | undefined; stats: any }) {
+  const { t } = useTranslation();
   const totalRatings = stats?.totalRatings ?? stats?.ratingCount ?? 0;
   const totalJournal = stats?.totalJournalEntries ?? 0;
   const whiskyCount = totalRatings + totalJournal;
@@ -101,9 +104,9 @@ function AnalyticsPreviewCard({ pid, stats }: { pid: string | undefined; stats: 
             {isLocked ? <Lock style={{ width: 16, height: 16, color: c.mutedLight }} /> : <BarChart3 style={{ width: 18, height: 18, color: c.accent }} />}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: isLocked ? c.mutedLight : c.text }}>My Analytics</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: isLocked ? c.mutedLight : c.text }}>{t("myTastePage.myAnalytics")}</div>
             <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>
-              {isLocked ? `${whiskyCount} / ${ANALYTICS_THRESHOLD} whiskies to unlock` : "Your rating statistics & trends"}
+              {isLocked ? t("myTastePage.analyticsLocked", { count: whiskyCount, threshold: ANALYTICS_THRESHOLD }) : t("myTastePage.analyticsUnlocked")}
             </div>
           </div>
           {isLocked && (
@@ -159,6 +162,7 @@ function NavCard({ icon: Icon, label, description, href, testId, badge }: NavCar
 }
 
 export default function MyTastePage() {
+  const { t } = useTranslation();
   const { currentParticipant, setParticipant } = useAppStore();
   const pid = currentParticipant?.id;
 
@@ -203,27 +207,27 @@ export default function MyTastePage() {
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ marginBottom: 8 }}>
           <h1 style={{ ...pageTitleStyle, textAlign: "center" }} data-testid="text-my-taste-title">
-            My Taste
+            {t("myTastePage.title")}
           </h1>
           <p style={{ ...pageSubtitleStyle, textAlign: "center" }}>
-            Your personal whisky profile
+            {t("myTastePage.subtitle")}
           </p>
         </div>
 
         {pid && (
           <div style={cardStyle} data-testid="card-taste-snapshot">
             <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
-              Taste Snapshot
+              {t("myTastePage.tasteSnapshot")}
             </h2>
             {hasStats ? (
               <div>
-                <StatRow label="Stability" value={stability} />
-                <StatRow label="Exploration" value={exploration} />
-                <StatRow label="Smoke Affinity" value={smoke} />
-                {tastingCount != null && <StatRow label="Tastings" value={tastingCount} />}
+                <StatRow label={t("myTastePage.stability")} value={stability} />
+                <StatRow label={t("myTastePage.exploration")} value={exploration} />
+                <StatRow label={t("myTastePage.smokeAffinity")} value={smoke} />
+                {tastingCount != null && <StatRow label={t("myTastePage.tastings")} value={tastingCount} />}
               </div>
             ) : (
-              <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">Building your profile… (needs more tastings)</p>
+              <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
             )}
           </div>
         )}
@@ -231,12 +235,12 @@ export default function MyTastePage() {
         {pid && (
           <div style={cardStyle} data-testid="card-taste-insight">
             <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
-              Taste Insight
+              {t("myTastePage.tasteInsight")}
             </h2>
             {insight ? (
               <p style={{ fontSize: 14, lineHeight: 1.6, color: c.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
             ) : (
-              <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-insight-empty">No insight yet — log a few whiskies.</p>
+              <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-insight-empty">{t("myTastePage.insightEmpty")}</p>
             )}
           </div>
         )}
@@ -245,13 +249,13 @@ export default function MyTastePage() {
           <>
             <div>
               <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
-                Mein Profil
+                {t("myTastePage.sectionProfile")}
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <NavCard
                   icon={Radar}
-                  label="Flavor Profile"
-                  description="Aroma wheel, taste structure, region & cask preferences"
+                  label={t("myTastePage.flavorProfile")}
+                  description={t("myTastePage.flavorProfileDesc")}
                   href="/my-taste/profile"
                   testId="link-flavor-profile"
                 />
@@ -260,28 +264,28 @@ export default function MyTastePage() {
 
             <div>
               <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
-                Auswertungen
+                {t("myTastePage.sectionAnalytics")}
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <AnalyticsPreviewCard pid={pid} stats={stats} />
                 <NavCard
                   icon={GitCompareArrows}
-                  label="Comparison"
-                  description="Compare your personal ratings side by side"
+                  label={t("myTastePage.comparison")}
+                  description={t("myTastePage.comparisonDesc")}
                   href="/my-taste/compare"
                   testId="link-comparison"
                 />
                 <NavCard
                   icon={Sparkles}
-                  label="Empfehlungen"
-                  description="Personalized whisky recommendations based on your taste"
+                  label={t("myTastePage.recommendations")}
+                  description={t("myTastePage.recommendationsDesc")}
                   href="/my-taste/recommendations"
                   testId="link-recommendations"
                 />
                 <NavCard
                   icon={FlaskConical}
-                  label="Benchmark Analyzer"
-                  description="Import external notes & compare with your profile"
+                  label={t("myTastePage.benchmarkAnalyzer")}
+                  description={t("myTastePage.benchmarkDesc")}
                   href="/my-taste/benchmark"
                   testId="link-benchmark"
                 />
@@ -290,32 +294,32 @@ export default function MyTastePage() {
 
             <div>
               <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
-                Getastete Whiskys
+                {t("myTastePage.sectionTasted")}
               </h3>
               <p style={{ fontSize: 11, color: c.muted, marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
-                Whiskys, die du probiert und bewertet hast — aus Tastings, Journal-Einträgen oder persönlichen Notizen.
+                {t("myTastePage.tastedDesc")}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <NavCard
                   icon={BookOpen}
-                  label="Journal"
-                  description="Dein Tasting-Tagebuch — probierte & bewertete Whiskys"
+                  label={t("myTastePage.journal")}
+                  description={t("myTastePage.journalDesc")}
                   href="/my-taste/journal"
                   testId="link-journal"
                   badge={journalCount > 0 ? journalCount : null}
                 />
                 <NavCard
                   icon={ClipboardList}
-                  label="Tasting Recap"
-                  description="Ergebnisse & Highlights vergangener Tastings"
+                  label={t("myTastePage.tastingRecap")}
+                  description={t("myTastePage.tastingRecapDesc")}
                   href="/sessions"
                   testId="link-tasting-recap"
                   badge={tastingCount != null && tastingCount > 0 ? tastingCount : null}
                 />
                 <NavCard
                   icon={Download}
-                  label="Data Export"
-                  description="Export your data as CSV or Excel"
+                  label={t("myTastePage.dataExport")}
+                  description={t("myTastePage.dataExportDesc")}
                   href="/data-export"
                   testId="link-data-export"
                 />
@@ -324,23 +328,23 @@ export default function MyTastePage() {
 
             <div>
               <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
-                Meine Whisky-Bibliothek
+                {t("myTastePage.sectionLibrary")}
               </h3>
               <p style={{ fontSize: 11, color: c.muted, marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
-                Flaschen, die du besitzt oder besessen hast — importiert aus deiner Whiskybase-Sammlung.
+                {t("myTastePage.libraryDesc")}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <NavCard
                   icon={Archive}
-                  label="Meine Sammlung"
-                  description="Whiskybase-Import — deine Flaschen mit Sync & Tracking"
+                  label={t("myTastePage.myCollection")}
+                  description={t("myTastePage.collectionDesc")}
                   href="/my-taste/collection"
                   testId="link-collection"
                 />
                 <NavCard
                   icon={Heart}
-                  label="Wishlist"
-                  description="Whiskys, die du noch probieren möchtest"
+                  label={t("myTastePage.wishlist")}
+                  description={t("myTastePage.wishlistDesc")}
                   href="/my-taste/wishlist"
                   testId="link-wishlist"
                 />
@@ -353,7 +357,7 @@ export default function MyTastePage() {
 
         <div style={{ textAlign: "center", marginTop: 8 }}>
           <Link href="/support" style={{ fontSize: 11, color: "#4a4540", textDecoration: "none" }} data-testid="link-support">
-            Advanced (Support)
+            {t("myTastePage.advancedSupport")}
           </Link>
         </div>
       </div>

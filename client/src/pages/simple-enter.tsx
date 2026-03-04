@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { participantApi, tastingApi } from "@/lib/api";
@@ -36,6 +37,7 @@ function recordAttempt() {
 export default function SimpleEnterPage() {
   const [, navigate] = useLocation();
   const { currentParticipant, setParticipant } = useAppStore();
+  const { t } = useTranslation();
 
   const sessionSignedIn = getSession().signedIn;
   const [step, setStep] = useState<"name" | "code">(currentParticipant || sessionSignedIn ? "code" : "name");
@@ -69,9 +71,9 @@ export default function SimpleEnterPage() {
     } catch (err: any) {
       const msg = err?.message || "";
       console.error("[SIMPLE_MODE] identify error", msg);
-      if (msg.includes("Invalid p") || msg.includes("Invalid P")) setError("Wrong password.");
-      else if (msg.includes("email")) setError("No account found.");
-      else setError(msg || "Something went wrong.");
+      if (msg.includes("Invalid p") || msg.includes("Invalid P")) setError(t("simpleEnter.errorWrongPassword"));
+      else if (msg.includes("email")) setError(t("simpleEnter.errorNoAccount"));
+      else setError(msg || t("simpleEnter.errorGeneric"));
     } finally {
       setLoading(false);
     }
@@ -83,7 +85,7 @@ export default function SimpleEnterPage() {
     if (!trimmed) return;
 
     if (isRateLimited()) {
-      setError("Too many attempts. Please wait a few minutes.");
+      setError(t("simpleEnter.rateLimited"));
       console.warn("[SIMPLE_MODE] join rate limited");
       return;
     }
@@ -96,7 +98,7 @@ export default function SimpleEnterPage() {
       console.log("[SIMPLE_MODE] join attempt code:", trimmed);
       const tasting = await tastingApi.getByCode(trimmed);
       if (!tasting?.id) {
-        setError("Code not found or expired.");
+        setError(t("simpleEnter.codeNotFound"));
         console.warn("[SIMPLE_MODE] join code not found");
         return;
       }
@@ -111,9 +113,9 @@ export default function SimpleEnterPage() {
       const msg = err?.message || "";
       console.error("[SIMPLE_MODE] join error", msg);
       if (msg.includes("not found") || msg.includes("Not found")) {
-        setError("Code not found or expired.");
+        setError(t("simpleEnter.codeNotFound"));
       } else {
-        setError(msg || "Could not join. Try again.");
+        setError(msg || t("simpleEnter.joinFailed"));
       }
     } finally {
       setLoading(false);
@@ -125,17 +127,17 @@ export default function SimpleEnterPage() {
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         {step === "name" ? (
           <div style={cardStyle} data-testid="card-identify">
-            <h1 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 4px", color: c.text }}>Join a Tasting</h1>
-            <p style={{ fontSize: 13, color: c.muted, margin: "0 0 20px" }}>Choose a name and a short PIN to save your tasting notes. No email required.</p>
+            <h1 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 4px", color: c.text }}>{t("simpleEnter.joinTitle")}</h1>
+            <p style={{ fontSize: 13, color: c.muted, margin: "0 0 20px" }}>{t("simpleEnter.joinDesc")}</p>
             <form style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" tabIndex={-1}>
               <input type="text" name="cs_trap_user" autoComplete="username" tabIndex={-1} />
               <input type="password" name="cs_trap_pw" autoComplete="current-password" tabIndex={-1} />
             </form>
             <form onSubmit={handleIdentify} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <input type="text" placeholder="Your name or alias" name="cs_display_name" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} data-testid="input-enter-name" autoFocus autoComplete="name" autoCapitalize="words" spellCheck={false} />
-              <input type="password" placeholder="PIN (min. 4 characters)" name="cs_password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-enter-pin" autoComplete="new-password" autoCapitalize="none" spellCheck={false} />
+              <input type="text" placeholder={t("simpleEnter.namePlaceholder")} name="cs_display_name" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} data-testid="input-enter-name" autoFocus autoComplete="name" autoCapitalize="words" spellCheck={false} />
+              <input type="password" placeholder={t("simpleEnter.pinPlaceholder")} name="cs_password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-enter-pin" autoComplete="new-password" autoCapitalize="none" spellCheck={false} />
               <button type="submit" disabled={loading || !name.trim() || !pin.trim()} data-testid="button-identify" style={{ width: "100%", padding: 12, fontSize: 15, fontWeight: 600, background: c.accent, color: c.bg, border: "none", borderRadius: 8, cursor: loading ? "wait" : "pointer", opacity: (!name.trim() || !pin.trim()) ? 0.5 : 1 }}>
-                {loading ? "…" : "Continue"}
+                {loading ? "…" : t("simpleEnter.continue")}
               </button>
               {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }} data-testid="text-enter-error">{error}</p>}
             </form>
@@ -144,15 +146,15 @@ export default function SimpleEnterPage() {
           <div style={cardStyle} data-testid="card-join">
             {currentParticipant && sessionSignedIn && (
               <p style={{ fontSize: 12, color: c.muted, margin: "0 0 16px", textAlign: "center" }}>
-                Hi, {currentParticipant.name}
+                {t("simpleEnter.greeting", { name: currentParticipant.name })}
               </p>
             )}
-            <h1 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 4px", color: c.text }}>Enter session code</h1>
-            <p style={{ fontSize: 13, color: c.muted, margin: "0 0 20px" }}>Ask your host for the code.</p>
+            <h1 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 4px", color: c.text }}>{t("simpleEnter.codeTitle")}</h1>
+            <p style={{ fontSize: 13, color: c.muted, margin: "0 0 20px" }}>{t("simpleEnter.codeDesc")}</p>
             <form onSubmit={handleJoin} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <input type="text" placeholder="e.g. ABC123" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} style={{ ...inputStyle, textAlign: "center", fontSize: 20, letterSpacing: 4, fontFamily: "monospace" }} data-testid="input-session-code" autoFocus autoComplete="off" maxLength={12} />
+              <input type="text" placeholder={t("simpleEnter.codePlaceholder")} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} style={{ ...inputStyle, textAlign: "center", fontSize: 20, letterSpacing: 4, fontFamily: "monospace" }} data-testid="input-session-code" autoFocus autoComplete="off" maxLength={12} />
               <button type="submit" disabled={loading || !code.trim()} data-testid="button-join" style={{ width: "100%", padding: 12, fontSize: 15, fontWeight: 600, background: c.accent, color: c.bg, border: "none", borderRadius: 8, cursor: loading ? "wait" : "pointer", opacity: !code.trim() ? 0.5 : 1 }}>
-                {loading ? "…" : "Join"}
+                {loading ? "…" : t("simpleEnter.join")}
               </button>
               {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }} data-testid="text-join-error">{error}</p>}
             </form>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSearch } from "wouter";
+import { useTranslation } from "react-i18next";
 import { NotebookPen } from "lucide-react";
 import Journal from "@/pages/journal";
 import MyWhiskies from "@/pages/my-whiskies";
@@ -11,13 +12,14 @@ import { c, pageTitleStyle } from "@/lib/theme";
 const VALID_TABS = ["journal", "tasted", "export"] as const;
 type TabValue = (typeof VALID_TABS)[number];
 
-const TAB_LABELS: Record<TabValue, string> = {
-  journal: "Journal",
-  tasted: "Verkostet",
-  export: "Export",
+const TAB_KEYS: Record<TabValue, string> = {
+  journal: "myJournalPage.tabJournal",
+  tasted: "myJournalPage.tabTasted",
+  export: "myJournalPage.tabExport",
 };
 
 export default function MyJournal() {
+  const { t } = useTranslation();
   const searchStr = useSearch();
   const params = new URLSearchParams(searchStr);
   const tabParam = params.get("tab") as TabValue | null;
@@ -38,7 +40,7 @@ export default function MyJournal() {
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
           <NotebookPen style={{ width: 28, height: 28, color: c.accent }} />
           <h1 style={pageTitleStyle} data-testid="text-my-journal-title">
-            Mein Whisky
+            {t("myJournalPage.title")}
           </h1>
         </div>
 
@@ -70,7 +72,7 @@ export default function MyJournal() {
               }}
               data-testid={`tab-${tab}`}
             >
-              {TAB_LABELS[tab]}
+              {t(TAB_KEYS[tab])}
             </button>
           ))}
         </div>

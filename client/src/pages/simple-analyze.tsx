@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import {
   Users, UserCheck, TrendingUp, Award, BookOpen, Map, Sparkles,
   ChevronRight, Database, Activity, GraduationCap, Info, Heart, Package, FileText
@@ -17,128 +18,8 @@ interface NavItem {
   badge?: string | number | null;
 }
 
-const sections: { title: string; items: NavItem[] }[] = [
-  {
-    title: "Sozial",
-    items: [
-      {
-        icon: Users,
-        label: "Taste Twins",
-        description: "Find people with a similar palate",
-        href: "/discover/community?tab=twins",
-        testId: "link-taste-twins",
-      },
-      {
-        icon: UserCheck,
-        label: "Whisky Friends",
-        description: "Your connections on the platform",
-        href: "/discover/community",
-        testId: "link-whisky-friends",
-      },
-      {
-        icon: TrendingUp,
-        label: "Rankings",
-        description: "Top-rated whiskies across the community",
-        href: "/discover/community?tab=rankings",
-        testId: "link-rankings",
-      },
-      {
-        icon: Award,
-        label: "Leaderboard",
-        description: "Most active, detailed & consistent tasters",
-        href: "/discover/community?tab=leaderboard",
-        testId: "link-leaderboard",
-      },
-      {
-        icon: Activity,
-        label: "Activity Feed",
-        description: "See what others are tasting",
-        href: "/discover/activity",
-        testId: "link-activity",
-      },
-      {
-        icon: Database,
-        label: "Whisky Database",
-        description: "Search all whiskies across tastings",
-        href: "/discover/database",
-        testId: "link-database",
-      },
-    ],
-  },
-  {
-    title: "Empfehlungen",
-    items: [
-      {
-        icon: Sparkles,
-        label: "Recommendations",
-        description: "Personalized whisky suggestions based on your taste",
-        href: "/discover/recommendations",
-        testId: "link-recommendations",
-      },
-    ],
-  },
-  {
-    title: "Wissen",
-    items: [
-      {
-        icon: BookOpen,
-        label: "Lexicon",
-        description: "Whisky terms & glossary",
-        href: "/discover/lexicon",
-        testId: "link-lexicon",
-      },
-      {
-        icon: Map,
-        label: "Distilleries",
-        description: "Distillery encyclopedia & regions",
-        href: "/discover/distilleries",
-        testId: "link-distilleries",
-      },
-      {
-        icon: Package,
-        label: "Independent Bottlers",
-        description: "Encyclopedia with search & country filter",
-        href: "/discover/bottlers",
-        testId: "link-bottlers",
-      },
-      {
-        icon: FileText,
-        label: "Tasting Templates",
-        description: "Style-specific vocabulary & sensory guides",
-        href: "/discover/templates",
-        testId: "link-tasting-templates",
-      },
-      {
-        icon: GraduationCap,
-        label: "Tasting Guide",
-        description: "Illustrated assessment methodology",
-        href: "/guide",
-        testId: "link-tasting-guide",
-      },
-    ],
-  },
-  {
-    title: "Über CaskSense",
-    items: [
-      {
-        icon: Info,
-        label: "About CaskSense",
-        description: "The story behind CaskSense",
-        href: "/discover/about",
-        testId: "link-about-casksense",
-      },
-      {
-        icon: Heart,
-        label: "Spende / Hospiz",
-        description: "Support the Christina-Kleintjes-Hospiz-Stiftung",
-        href: "/discover/donate",
-        testId: "link-donate-hospiz",
-      },
-    ],
-  },
-];
-
 export default function SimpleAnalyzePage() {
+  const { t } = useTranslation();
   const { data: platformStats } = useQuery({
     queryKey: ["platform-stats"],
     queryFn: () => platformStatsApi.get(),
@@ -148,15 +29,136 @@ export default function SimpleAnalyzePage() {
   const totalWhiskies = platformStats?.totalWhiskies ?? platformStats?.uniqueWhiskies ?? null;
   const totalParticipants = platformStats?.totalParticipants ?? null;
 
+  const sections: { title: string; items: NavItem[] }[] = [
+    {
+      title: t("discoverPage.sectionSocial"),
+      items: [
+        {
+          icon: Users,
+          label: t("discoverPage.tasteTwins"),
+          description: t("discoverPage.tasteTwinsDesc"),
+          href: "/discover/community?tab=twins",
+          testId: "link-taste-twins",
+        },
+        {
+          icon: UserCheck,
+          label: t("discoverPage.whiskyFriends"),
+          description: t("discoverPage.whiskyFriendsDesc"),
+          href: "/discover/community",
+          testId: "link-whisky-friends",
+        },
+        {
+          icon: TrendingUp,
+          label: t("discoverPage.rankings"),
+          description: t("discoverPage.rankingsDesc"),
+          href: "/discover/community?tab=rankings",
+          testId: "link-rankings",
+        },
+        {
+          icon: Award,
+          label: t("discoverPage.leaderboard"),
+          description: t("discoverPage.leaderboardDesc"),
+          href: "/discover/community?tab=leaderboard",
+          testId: "link-leaderboard",
+        },
+        {
+          icon: Activity,
+          label: t("discoverPage.activityFeed"),
+          description: t("discoverPage.activityFeedDesc"),
+          href: "/discover/activity",
+          testId: "link-activity",
+        },
+        {
+          icon: Database,
+          label: t("discoverPage.whiskyDatabase"),
+          description: t("discoverPage.whiskyDatabaseDesc"),
+          href: "/discover/database",
+          testId: "link-database",
+        },
+      ],
+    },
+    {
+      title: t("discoverPage.sectionRecommendations"),
+      items: [
+        {
+          icon: Sparkles,
+          label: t("discoverPage.recommendations"),
+          description: t("discoverPage.recommendationsDesc"),
+          href: "/discover/recommendations",
+          testId: "link-recommendations",
+        },
+      ],
+    },
+    {
+      title: t("discoverPage.sectionKnowledge"),
+      items: [
+        {
+          icon: BookOpen,
+          label: t("discoverPage.lexicon"),
+          description: t("discoverPage.lexiconDesc"),
+          href: "/discover/lexicon",
+          testId: "link-lexicon",
+        },
+        {
+          icon: Map,
+          label: t("discoverPage.distilleries"),
+          description: t("discoverPage.distilleriesDesc"),
+          href: "/discover/distilleries",
+          testId: "link-distilleries",
+        },
+        {
+          icon: Package,
+          label: t("discoverPage.independentBottlers"),
+          description: t("discoverPage.independentBottlersDesc"),
+          href: "/discover/bottlers",
+          testId: "link-bottlers",
+        },
+        {
+          icon: FileText,
+          label: t("discoverPage.tastingTemplates"),
+          description: t("discoverPage.tastingTemplatesDesc"),
+          href: "/discover/templates",
+          testId: "link-tasting-templates",
+        },
+        {
+          icon: GraduationCap,
+          label: t("discoverPage.tastingGuide"),
+          description: t("discoverPage.tastingGuideDesc"),
+          href: "/guide",
+          testId: "link-tasting-guide",
+        },
+      ],
+    },
+    {
+      title: t("discoverPage.sectionAbout"),
+      items: [
+        {
+          icon: Info,
+          label: t("discoverPage.aboutCaskSense"),
+          description: t("discoverPage.aboutDesc"),
+          href: "/discover/about",
+          testId: "link-about-casksense",
+        },
+        {
+          icon: Heart,
+          label: t("discoverPage.donate"),
+          description: t("discoverPage.donateDesc"),
+          href: "/discover/donate",
+          testId: "link-donate-hospiz",
+        },
+      ],
+    },
+  ];
+
   return (
     <SimpleShell showBack={false}>
       <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
         <div style={{ marginBottom: 8 }}>
           <h2 style={pageTitleStyle} data-testid="text-analyze-title">
-            Discover
+            {t("discoverPage.title")}
           </h2>
           <p style={pageSubtitleStyle}>
-            Sozial · Empfehlungen · Wissen
+            {t("discoverPage.subtitle")}
           </p>
         </div>
 
@@ -165,13 +167,13 @@ export default function SimpleAnalyzePage() {
             {totalParticipants != null && (
               <div style={{ ...cardStyle, flex: 1, padding: "16px 18px", textAlign: "center" }} data-testid="stat-participants">
                 <div style={{ fontSize: 24, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }}>{totalParticipants}</div>
-                <div style={{ fontSize: 11, color: c.muted, marginTop: 4 }}>Tasters</div>
+                <div style={{ fontSize: 11, color: c.muted, marginTop: 4 }}>{t("discoverPage.statTasters")}</div>
               </div>
             )}
             {totalWhiskies != null && (
               <div style={{ ...cardStyle, flex: 1, padding: "16px 18px", textAlign: "center" }} data-testid="stat-whiskies">
                 <div style={{ fontSize: 24, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }}>{totalWhiskies}</div>
-                <div style={{ fontSize: 11, color: c.muted, marginTop: 4 }}>Whiskies</div>
+                <div style={{ fontSize: 11, color: c.muted, marginTop: 4 }}>{t("discoverPage.statWhiskies")}</div>
               </div>
             )}
           </div>

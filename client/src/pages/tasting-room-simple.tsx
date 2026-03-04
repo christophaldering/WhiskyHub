@@ -8,6 +8,7 @@ import SimpleShell from "@/components/simple/simple-shell";
 import { Lock, Eye, EyeOff, Clock, Users, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 import { c, cardStyle, inputStyle, sliderCSS } from "@/lib/theme";
+import { useTranslation } from "react-i18next";
 
 interface WhiskyItem {
   id: string;
@@ -79,8 +80,9 @@ function RatingSlider({ label, value, onChange, disabled, scale = 100 }: { label
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const color = status === "open" ? c.success : status === "draft" ? c.muted : c.accent;
-  const label = status === "open" ? "Live" : status === "draft" ? "Not Started" : status === "closed" ? "Ended" : status;
+  const label = status === "open" ? t("tastingRoomSimple.statusLive") : status === "draft" ? t("tastingRoomSimple.statusNotStarted") : status === "closed" ? t("tastingRoomSimple.statusEnded") : status;
   return (
     <span
       style={{
@@ -101,16 +103,17 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function WaitingForHost({ tasting }: { tasting: TastingState }) {
+  const { t } = useTranslation();
   return (
     <div style={{ textAlign: "center", padding: "32px 0" }} data-testid="waiting-for-host">
       <Clock style={{ width: 40, height: 40, color: c.accent, opacity: 0.5, marginBottom: 12 }} />
       <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 8px", fontFamily: "'Playfair Display', serif" }}>
-        Waiting for Host
+        {t("tastingRoomSimple.waitingForHost")}
       </h3>
       <p style={{ fontSize: 13, color: c.muted, margin: 0 }}>
         {tasting.status === "draft"
-          ? "The tasting hasn't started yet. Hang tight!"
-          : "The host will select the next whisky shortly."}
+          ? t("tastingRoomSimple.waitingDraft")
+          : t("tastingRoomSimple.waitingNext")}
       </p>
       <div style={{
         marginTop: 20,
@@ -125,13 +128,14 @@ function WaitingForHost({ tasting }: { tasting: TastingState }) {
         color: c.accent,
       }}>
         <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.accent, animation: "pulse 2s infinite" }} />
-        Listening for updates…
+        {t("tastingRoomSimple.listening")}
       </div>
     </div>
   );
 }
 
 function AccountUpgradePrompt({ participantId }: { participantId: string }) {
+  const { t } = useTranslation();
   const DISMISS_KEY = `upgrade_dismissed_${participantId}`;
   const [dismissed, setDismissed] = useState(() => {
     try { return localStorage.getItem(DISMISS_KEY) === "1"; } catch { return false; }
@@ -158,7 +162,7 @@ function AccountUpgradePrompt({ participantId }: { participantId: string }) {
       });
       if (!emailRes.ok) {
         const err = await emailRes.json().catch(() => ({}));
-        throw new Error(err.message || "Could not save email");
+        throw new Error(err.message || t("tastingRoomSimple.couldNotSaveEmail"));
       }
       const pinRes = await fetch(`/api/participants/${participantId}/pin`, {
         method: "PATCH",
@@ -167,7 +171,7 @@ function AccountUpgradePrompt({ participantId }: { participantId: string }) {
       });
       if (!pinRes.ok) {
         const err = await pinRes.json().catch(() => ({}));
-        throw new Error(err.message || "Could not save password");
+        throw new Error(err.message || t("tastingRoomSimple.couldNotSavePassword"));
       }
       setDone(true);
     } catch (err: any) {
@@ -198,32 +202,33 @@ function AccountUpgradePrompt({ participantId }: { participantId: string }) {
   return (
     <div style={{ marginTop: 24, padding: 20, background: `${c.accent}10`, border: `1px solid ${c.accent}30`, borderRadius: 12 }} data-testid="upgrade-prompt">
       <p style={{ fontSize: 14, fontWeight: 600, color: c.text, margin: "0 0 4px" }}>
-        Keep your tasting notes safe?
+        {t("tastingRoomSimple.keepSafe")}
       </p>
       <p style={{ fontSize: 12, color: c.muted, margin: "0 0 16px" }}>
-        Add your email and a password so you can access your data anytime — even from another device.
+        {t("tastingRoomSimple.upgradeDesc")}
       </p>
       <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputS} autoComplete="email" data-testid="input-upgrade-email" />
+        <input type="email" placeholder={t("tastingRoomSimple.emailPlaceholder")} value={email} onChange={(e) => setEmail(e.target.value)} style={inputS} autoComplete="email" data-testid="input-upgrade-email" />
         <div style={{ position: "relative" }}>
-          <input type={showPw ? "text" : "password"} placeholder="Password (min. 4 characters)" value={password} onChange={(e) => setPassword(e.target.value)} style={{ ...inputS, paddingRight: 36, letterSpacing: showPw ? 0 : 3 }} autoComplete="new-password" data-testid="input-upgrade-password" />
+          <input type={showPw ? "text" : "password"} placeholder={t("tastingRoomSimple.passwordPlaceholder")} value={password} onChange={(e) => setPassword(e.target.value)} style={{ ...inputS, paddingRight: 36, letterSpacing: showPw ? 0 : 3 }} autoComplete="new-password" data-testid="input-upgrade-password" />
           <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: c.muted, cursor: "pointer", padding: 2 }} tabIndex={-1}>
             {showPw ? <EyeOff style={{ width: 16, height: 16 }} /> : <Eye style={{ width: 16, height: 16 }} />}
           </button>
         </div>
         <button type="submit" disabled={saving || !email.trim() || password.length < 4} style={{ padding: 10, fontSize: 14, fontWeight: 600, background: c.accent, color: c.bg, border: "none", borderRadius: 8, cursor: saving ? "wait" : "pointer", opacity: (!email.trim() || password.length < 4) ? 0.5 : 1 }} data-testid="button-upgrade-save">
-          {saving ? "Saving…" : "Save"}
+          {saving ? t("tastingRoomSimple.saving") : t("tastingRoomSimple.save")}
         </button>
         {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }}>{error}</p>}
       </form>
       <button onClick={handleDismiss} style={{ marginTop: 8, width: "100%", padding: 8, fontSize: 12, color: c.muted, background: "none", border: "none", cursor: "pointer" }} data-testid="button-upgrade-dismiss">
-        Maybe later
+        {t("tastingRoomSimple.maybeLater")}
       </button>
     </div>
   );
 }
 
 function SessionEndedView({ tasting }: { tasting: TastingState }) {
+  const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const [hasEmail, setHasEmail] = useState(true);
 
@@ -239,20 +244,20 @@ function SessionEndedView({ tasting }: { tasting: TastingState }) {
     <div style={{ textAlign: "center", padding: "32px 0" }} data-testid="session-ended">
       <div style={{ fontSize: 32, marginBottom: 12 }}>🥃</div>
       <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 8px", fontFamily: "'Playfair Display', serif" }}>
-        Session Ended
+        {t("tastingRoomSimple.sessionEnded")}
       </h3>
       <p style={{ fontSize: 13, color: c.muted, margin: "0 0 24px" }}>
-        "{tasting.title}" has been closed by the host. Your ratings are saved.
+        {t("tastingRoomSimple.sessionEndedDesc", { title: tasting.title })}
       </p>
       <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
         <Link href="/my-taste" style={{ textDecoration: "none" }}>
           <div style={{ padding: "10px 20px", fontSize: 14, fontWeight: 600, background: c.accent, color: c.bg, borderRadius: 8, cursor: "pointer" }} data-testid="button-goto-taste">
-            My Taste
+            {t("tastingRoomSimple.myTaste")}
           </div>
         </Link>
         <Link href="/" style={{ textDecoration: "none" }}>
           <div style={{ padding: "10px 20px", fontSize: 14, fontWeight: 500, background: "transparent", color: c.text, border: `1px solid ${c.border}`, borderRadius: 8, cursor: "pointer" }} data-testid="button-done-home">
-            Home
+            {t("tastingRoomSimple.home")}
           </div>
         </Link>
       </div>
@@ -264,6 +269,7 @@ function SessionEndedView({ tasting }: { tasting: TastingState }) {
 }
 
 export default function TastingRoomSimple() {
+  const { t } = useTranslation();
   const params = useParams<{ id: string }>();
   const tastingId = params.id;
   const { currentParticipant } = useAppStore();
@@ -408,7 +414,7 @@ export default function TastingRoomSimple() {
     return (
       <SimpleShell>
         <div style={{ ...cardStyle, textAlign: "center" }}>
-          <p style={{ color: c.muted }}>Loading…</p>
+          <p style={{ color: c.muted }}>{t("tastingRoomSimple.loading")}</p>
         </div>
       </SimpleShell>
     );
@@ -418,8 +424,8 @@ export default function TastingRoomSimple() {
     return (
       <SimpleShell>
         <div style={{ ...cardStyle, textAlign: "center" }}>
-          <p style={{ color: c.error }}>Tasting not found.</p>
-          <Link href="/enter" style={{ color: c.accent, fontSize: 13, marginTop: 12, display: "inline-block" }}>Try another code</Link>
+          <p style={{ color: c.error }}>{t("tastingRoomSimple.notFound")}</p>
+          <Link href="/enter" style={{ color: c.accent, fontSize: 13, marginTop: 12, display: "inline-block" }}>{t("tastingRoomSimple.tryAnother")}</Link>
         </div>
       </SimpleShell>
     );
@@ -440,14 +446,14 @@ export default function TastingRoomSimple() {
       <SimpleShell>
         <div style={{ ...cardStyle, textAlign: "center" }} data-testid="card-finished">
           <div style={{ fontSize: 32, marginBottom: 12 }}>🥃</div>
-          <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, margin: "0 0 8px" }}>Done!</h2>
-          <p style={{ fontSize: 13, color: c.muted, margin: "0 0 24px" }}>Your ratings have been saved.</p>
+          <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, margin: "0 0 8px" }}>{t("tastingRoomSimple.done")}</h2>
+          <p style={{ fontSize: 13, color: c.muted, margin: "0 0 24px" }}>{t("tastingRoomSimple.ratingsSaved")}</p>
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
             <Link href="/my-taste" style={{ textDecoration: "none" }}>
-              <div style={{ padding: "10px 20px", fontSize: 14, fontWeight: 600, background: c.accent, color: c.bg, borderRadius: 8, cursor: "pointer" }} data-testid="button-goto-taste">My Taste</div>
+              <div style={{ padding: "10px 20px", fontSize: 14, fontWeight: 600, background: c.accent, color: c.bg, borderRadius: 8, cursor: "pointer" }} data-testid="button-goto-taste">{t("tastingRoomSimple.myTaste")}</div>
             </Link>
             <Link href="/" style={{ textDecoration: "none" }}>
-              <div style={{ padding: "10px 20px", fontSize: 14, fontWeight: 500, background: "transparent", color: c.text, border: `1px solid ${c.border}`, borderRadius: 8, cursor: "pointer" }} data-testid="button-done-home">Home</div>
+              <div style={{ padding: "10px 20px", fontSize: 14, fontWeight: 500, background: "transparent", color: c.text, border: `1px solid ${c.border}`, borderRadius: 8, cursor: "pointer" }} data-testid="button-done-home">{t("tastingRoomSimple.home")}</div>
             </Link>
           </div>
         </div>
@@ -505,7 +511,7 @@ export default function TastingRoomSimple() {
     return (
       <SimpleShell>
         <div style={{ ...cardStyle, textAlign: "center" }}>
-          <p style={{ color: c.muted }}>Loading whisky…</p>
+          <p style={{ color: c.muted }}>{t("tastingRoomSimple.loadingWhisky")}</p>
         </div>
       </SimpleShell>
     );
@@ -513,8 +519,8 @@ export default function TastingRoomSimple() {
 
   const display = getWhiskyDisplay(currentWhisky, currentIndex);
   const showProgress = isGuided
-    ? `Whisky ${currentIndex + 1} of ${sortedWhiskies.length}`
-    : `${currentIndex + 1} of ${sortedWhiskies.length}`;
+    ? t("tastingRoomSimple.whiskyOf", { current: currentIndex + 1, total: sortedWhiskies.length })
+    : t("tastingRoomSimple.of", { current: currentIndex + 1, total: sortedWhiskies.length });
 
   return (
     <SimpleShell maxWidth={480}>
@@ -526,8 +532,8 @@ export default function TastingRoomSimple() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <p style={{ fontSize: 12, color: c.muted, margin: 0 }}>
             {showProgress}
-            {saving && " · saving…"}
-            {isGuided && <span style={{ marginLeft: 8, fontSize: 10, color: c.accent, fontWeight: 600 }}>GUIDED</span>}
+            {saving && ` · ${t("tastingRoomSimple.savingInline")}`}
+            {isGuided && <span style={{ marginLeft: 8, fontSize: 10, color: c.accent, fontWeight: 600 }}>{t("tastingRoomSimple.guided")}</span>}
           </p>
           {isHost && isOpen && (
             <button
@@ -550,7 +556,7 @@ export default function TastingRoomSimple() {
               data-testid="button-back-dram-control"
             >
               <ArrowLeft style={{ width: 13, height: 13 }} />
-              Dram Control
+              {t("tastingRoomSimple.dramControl")}
             </button>
           )}
         </div>
@@ -671,14 +677,14 @@ export default function TastingRoomSimple() {
           </div>
         )}
 
-        <RatingSlider label="Nose" value={currentRating.nose} onChange={(v) => updateField("nose", v)} disabled={!canRate} scale={scale} />
-        <RatingSlider label="Taste" value={currentRating.taste} onChange={(v) => updateField("taste", v)} disabled={!canRate} scale={scale} />
-        <RatingSlider label="Finish" value={currentRating.finish} onChange={(v) => updateField("finish", v)} disabled={!canRate} scale={scale} />
-        <RatingSlider label="Balance" value={currentRating.balance} onChange={(v) => updateField("balance", v)} disabled={!canRate} scale={scale} />
+        <RatingSlider label={t("tastingRoomSimple.nose")} value={currentRating.nose} onChange={(v) => updateField("nose", v)} disabled={!canRate} scale={scale} />
+        <RatingSlider label={t("tastingRoomSimple.taste")} value={currentRating.taste} onChange={(v) => updateField("taste", v)} disabled={!canRate} scale={scale} />
+        <RatingSlider label={t("tastingRoomSimple.finish")} value={currentRating.finish} onChange={(v) => updateField("finish", v)} disabled={!canRate} scale={scale} />
+        <RatingSlider label={t("tastingRoomSimple.balance")} value={currentRating.balance} onChange={(v) => updateField("balance", v)} disabled={!canRate} scale={scale} />
 
         <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 12, marginTop: 8 }}>
           <RatingSlider
-            label={`Overall${whiskyId && !overallManual.current.has(whiskyId) ? " (auto)" : ""}`}
+            label={`${t("tastingRoomSimple.overall")}${whiskyId && !overallManual.current.has(whiskyId) ? " (auto)" : ""}`}
             value={currentRating.overall}
             onChange={(v) => updateField("overall", v)}
             disabled={!canRate}
@@ -695,7 +701,7 @@ export default function TastingRoomSimple() {
             disabled={!canRate}
             style={{ ...inputStyle, resize: "vertical", opacity: canRate ? 1 : 0.5 }}
             data-testid="input-rating-notes"
-            placeholder="Optional notes…"
+            placeholder={t("tastingRoomSimple.notesPlaceholder")}
           />
         </div>
 
@@ -711,14 +717,14 @@ export default function TastingRoomSimple() {
           }} data-testid="group-stats">
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <Users style={{ width: 14, height: 14, color: c.accent }} />
-              <span style={{ fontSize: 12, color: c.muted }}>Group Average</span>
+              <span style={{ fontSize: 12, color: c.muted }}>{t("tastingRoomSimple.groupAvg")}</span>
             </div>
             <div style={{ textAlign: "right" }}>
               <span style={{ fontSize: 16, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif" }}>
                 {groupStats.avgOverall}
               </span>
               <span style={{ fontSize: 11, color: c.muted, marginLeft: 4 }}>
-                ({groupStats.ratingCount} {groupStats.ratingCount === 1 ? "rating" : "ratings"})
+                ({groupStats.ratingCount} {t("tastingRoomSimple.ratings")})
               </span>
             </div>
           </div>
@@ -747,7 +753,7 @@ export default function TastingRoomSimple() {
             data-testid="button-prev"
             style={{ flex: 1, padding: 10, fontSize: 14, fontWeight: 500, background: "transparent", color: currentIndex === 0 ? c.muted : c.text, border: `1px solid ${c.border}`, borderRadius: 8, cursor: currentIndex === 0 ? "default" : "pointer", opacity: currentIndex === 0 ? 0.4 : 1 }}
           >
-            ← Prev
+            ← {t("tastingRoomSimple.previous")}
           </button>
           {currentIndex < sortedWhiskies.length - 1 ? (
             <button
@@ -755,7 +761,7 @@ export default function TastingRoomSimple() {
               data-testid="button-next"
               style={{ flex: 1, padding: 10, fontSize: 14, fontWeight: 600, background: c.accent, color: c.bg, border: "none", borderRadius: 8, cursor: "pointer" }}
             >
-              Next →
+              {t("tastingRoomSimple.next")} →
             </button>
           ) : (
             <button
@@ -763,7 +769,7 @@ export default function TastingRoomSimple() {
               data-testid="button-finish"
               style={{ flex: 1, padding: 10, fontSize: 14, fontWeight: 600, background: c.accent, color: c.bg, border: "none", borderRadius: 8, cursor: "pointer" }}
             >
-              Finish
+              {t("tastingRoomSimple.finishButton")}
             </button>
           )}
         </div>

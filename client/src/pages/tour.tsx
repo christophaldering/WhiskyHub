@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,209 +44,7 @@ type SlideData = {
   layout?: "left" | "right" | "center";
 };
 
-const slides: SlideData[] = [
-  {
-    type: "cover",
-    title: "CaskSense",
-    subtitle: "Whisky gemeinsam erleben. Ohne Technik-Stress — der Moment am Tisch zählt.",
-    image: slideCover,
-    badge: "Rundgang",
-    layout: "center",
-  },
-  {
-    type: "content",
-    title: "Erst mal verkosten",
-    subtitle: "CaskSense ist kein Tech-Spielzeug. Es geht ums Schmecken, Riechen, Diskutieren — um den Moment, wenn sechs Leute am Tisch sitzen und jeder etwas anderes wahrnimmt. Die Technik bleibt im Hintergrund.",
-    image: slideTasting,
-    badge: "Das Wichtigste zuerst",
-    layout: "right",
-    features: [
-      { icon: Wine, title: "Verkosten steht im Fokus", desc: "Kein Feature-Overload — nur das, was ein gutes Tasting besser macht" },
-      { icon: QrCode, title: "Kein Konto nötig", desc: "QR-Code scannen, Name eingeben, mitmachen. Das war's." },
-      { icon: HandHeart, title: "Kein Vorwissen nötig", desc: "Ob Neuling oder Kenner — jeder ist willkommen am Tisch" },
-      { icon: GlassWater, title: "Whisky first", desc: "Die App soll helfen, nicht im Weg stehen. Versprochen." },
-    ],
-  },
-  {
-    type: "content",
-    title: "Dein Tempo, dein Erlebnis",
-    subtitle: "CaskSense wächst mit deiner Neugier. Manche wollen nur verkosten — andere wollen alles wissen. Beides ist richtig. Du entscheidest, wie tief du eintauchst.",
-    image: slideCommunity,
-    badge: "Von Einfach bis Analytisch",
-    layout: "left",
-    features: [
-      { icon: Wine, title: "Just Tasting", desc: "Kommen, trinken, bewerten, gehen. Null Technik-Stress." },
-      { icon: Compass, title: "Explorer", desc: "Dein Journal starten, Aromen entdecken, Favoriten merken." },
-      { icon: Star, title: "Connoisseur", desc: "Geschmacksprofil aufbauen, Whiskys vergleichen, Empfehlungen bekommen." },
-      { icon: BarChart3, title: "Analyst", desc: "Benchmarks, Statistiken, Muster — für alle, die Daten lieben." },
-    ],
-  },
-  {
-    type: "content",
-    title: "Tastings",
-    subtitle: "Ein Gastgeber erstellt das Tasting, lädt per QR-Code oder Link ein — und alle bewerten gemeinsam, von der Nase bis zum Abgang.",
-    image: slideTasting,
-    badge: "Kernfunktion",
-    layout: "right",
-    features: [
-      { icon: Wine, title: "Tasting erstellen", desc: "Name, Datum, Line-up — in Sekunden startklar" },
-      { icon: QrCode, title: "QR-Code Einladungen", desc: "Scannen und sofort dabei — kein Konto nötig" },
-      { icon: Star, title: "Strukturierte Bewertung", desc: "Nase, Geschmack, Abgang, Balance — auf deiner Wunschskala" },
-      { icon: MessageSquare, title: "Live-Diskussion", desc: "Austausch in Echtzeit während des Tastings" },
-    ],
-  },
-  {
-    type: "content",
-    title: "Geführtes Tasting & Präsentation",
-    subtitle: "Für den großen Auftritt: geteilter Bildschirm für den Gastgeber, Vollbild-Ansicht für alle — perfekt mit Beamer oder Fernseher.",
-    image: slideGuided,
-    badge: "Showtime",
-    layout: "left",
-    features: [
-      { icon: LayoutDashboard, title: "Geteilter Bildschirm", desc: "Steuerung links, Präsentation rechts — alles unter Kontrolle" },
-      { icon: Eye, title: "Vollbild-Ansicht", desc: "Große, klare Darstellung — auch auf dem Fernseher" },
-      { icon: Sparkles, title: "Schrittweise Enthüllung", desc: "Jede Flasche ein eigener Moment — mit Animationen" },
-      { icon: Star, title: "Startet automatisch", desc: "Präsentationsmodus aktiviert sich mit der Enthüllungsphase" },
-    ],
-  },
-  {
-    type: "content",
-    title: "Verkostungsbrett & Präsentation",
-    subtitle: "Alle Whiskys auf einen Blick — nummeriert, mit Fotos und Notizen. Das visuelle Herzstück für jeden Tisch.",
-    image: slideFlightboard,
-    badge: "Visuell",
-    layout: "right",
-    features: [
-      { icon: LayoutDashboard, title: "Verkostungsbrett", desc: "Überblick über alle Flaschen — klar nummeriert und sortiert" },
-      { icon: Camera, title: "Flaschenfotos", desc: "Bilder hochladen — auch direkt vom Handy" },
-      { icon: FileDown, title: "PDF Tasting-Menü", desc: "Professionelles Menü zum Ausdrucken oder Teilen" },
-      { icon: Sparkles, title: "Tasting-Notiz Generator", desc: "Aromen auswählen statt formulieren — interaktiv und schnell" },
-    ],
-  },
-  {
-    type: "content",
-    title: "Blind Tasting & Enthüllung",
-    subtitle: "Ein beliebtes Extra: Whiskys ohne Vorurteile verkosten. Der Gastgeber enthüllt — dramatisch, Flasche für Flasche, mit Überraschungsgarantie.",
-    image: slideBlind,
-    badge: "Beliebtes Extra",
-    layout: "left",
-    features: [
-      { icon: EyeOff, title: "Blind-Modus", desc: "Etiketten weg, Namen verborgen — nur dein Gaumen zählt" },
-      { icon: Eye, title: "Schrittweise Enthüllung", desc: "Der Gastgeber bestimmt den Moment — mit Diagrammen und Wow-Effekt" },
-      { icon: Sparkles, title: "ABV & Alter raten", desc: "Zusätzlicher Spaß für alle, die sich trauen" },
-      { icon: Camera, title: "Cover-Bild Enthüllung", desc: "Gruppenfoto oder Flaschenbild als krönender Abschluss" },
-    ],
-  },
-  {
-    type: "content",
-    title: "Clevere Helfer im Hintergrund",
-    subtitle: "Niemand muss Daten eintippen. Die KI liest Etiketten, erkennt Flaschen und füllt Felder aus — damit du dich aufs Wesentliche konzentrieren kannst.",
-    image: slideAi,
-    badge: "Optional & hilfreich",
-    layout: "right",
-    features: [
-      { icon: Camera, title: "Foto-Erkennung", desc: "Flasche fotografieren — KI erledigt die Dateneingabe" },
-      { icon: FileSpreadsheet, title: "Excel/CSV Import", desc: "Tabellen hochladen, Spalten werden automatisch zugeordnet" },
-      { icon: Brain, title: "Benchmark-Datenbank", desc: "Professionelle Bewertungen als Referenz — zum Vergleichen" },
-      { icon: Download, title: "Whiskybase-Import", desc: "Bestehende Sammlung importieren — inklusive Links und Preise" },
-    ],
-  },
-  {
-    type: "content",
-    title: "Mehr als Bauchgefühl",
-    subtitle: "CaskSense kennt Methoden aus Psychometrie und Persönlichkeitsforschung — und macht sie zugänglich. Wer tiefer eintauchen will, findet hier Werkzeuge, die über Hobby hinausgehen.",
-    image: slideAnalytics,
-    badge: "Für Wissbegierige",
-    layout: "left",
-    features: [
-      { icon: FlaskConical, title: "Psychometrische Skalen", desc: "Bewertungsskalen, die auf erprobten Methoden aufbauen — nicht zusammengewürfelt" },
-      { icon: BarChart3, title: "Benchmark-Datenbank", desc: "Eigene Bewertungen im Kontext professioneller Referenzen einordnen" },
-      { icon: TrendingUp, title: "Messqualität & Konsistenz", desc: "Wie zuverlässig bewertest du? CaskSense zeigt es — und hilft, präziser zu werden" },
-      { icon: Brain, title: "KI-gestützte Mustererkennung", desc: "Zusammenhänge in deinen Bewertungen, die dir selbst nicht auffallen" },
-      { icon: GraduationCap, title: "Forschung & Sensorik", desc: "Ansätze aus Datenanalyse und prädiktiver Validität — bis hin zu wissenschaftlichen Publikationen" },
-    ],
-  },
-  {
-    type: "content",
-    title: "Gemeinschaft & Austausch",
-    subtitle: "Whisky trinkt man nicht allein. Finde Gleichgesinnte, teile Einträge und entdecke, was die anderen am Tisch anders schmecken.",
-    image: slideCommunity,
-    badge: "Gemeinsam",
-    layout: "right",
-    features: [
-      { icon: Users, title: "Freunde", desc: "Whisky-Freunde hinzufügen und deren Einträge sehen" },
-      { icon: Rss, title: "Aktivitäts-Feed", desc: "Was trinken die anderen? Timeline deiner Tasting-Runde" },
-      { icon: Trophy, title: "Rangliste", desc: "Wer war am aktivsten? Wer hat die detailliertesten Notizen?" },
-      { icon: Calendar, title: "Tasting-Kalender", desc: "Alle Tastings im Überblick — nie wieder ein Tasting verpassen" },
-      { icon: Bell, title: "Erinnerungen", desc: "Freundlicher Reminder per E-Mail — flexibel einstellbar" },
-    ],
-  },
-  {
-    type: "content",
-    title: "Gastgeber-Werkzeuge",
-    subtitle: "Du organisierst das Tasting? CaskSense gibt dir alles an die Hand: Übersicht, Briefing, Zusammenfassung — und sogar dezente Hintergrundklänge.",
-    image: slideHost,
-    badge: "Für Gastgeber",
-    layout: "left",
-    features: [
-      { icon: LayoutDashboard, title: "Dashboard", desc: "Teilnehmer, Bewertungen, Top-Whiskys — alles im Blick" },
-      { icon: FileDown, title: "Zusammenfassung", desc: "Rückblick nach dem Tasting: Top-Whisky, Überraschungen, Kontroversen" },
-      { icon: Users, title: "Gastgeber-Delegation", desc: "Rolle an jemand anderen übergeben — flexibel und unkompliziert" },
-      { icon: Volume2, title: "Ambiente", desc: "Kaminfeuer, Regen oder Jazz — dezente Klänge für die richtige Stimmung" },
-    ],
-  },
-  {
-    type: "content",
-    title: "Wissensdatenbank",
-    subtitle: "Was ist ein Finish? Wo liegt Islay? Was macht Gordon & MacPhail besonders? Hintergrundwissen, wenn du es brauchst — nicht, wenn du es nicht brauchst.",
-    image: slideKnowledge,
-    badge: "Zum Stöbern",
-    layout: "right",
-    features: [
-      { icon: BookOpen, title: "Whisky-Lexikon", desc: "53 Begriffe in 5 Kategorien — verständlich erklärt" },
-      { icon: Landmark, title: "Destillerien", desc: "~100 Destillerien weltweit mit Geschichte und Charakter" },
-      { icon: Map, title: "Interaktive Karte", desc: "Weltkarte mit Destillerie-Pins — zoomen und entdecken" },
-      { icon: Heart, title: "Abfüller-Lexikon", desc: "Unabhängige Abfüller und was sie besonders macht" },
-    ],
-  },
-  {
-    type: "content",
-    title: "Überall dabei",
-    subtitle: "Auf dem Handy, am Tablet, am Laptop — CaskSense funktioniert überall. Installierbar wie eine App, nutzbar in Deutsch und Englisch.",
-    image: slideMobile,
-    badge: "Flexibel",
-    layout: "left",
-    features: [
-      { icon: Smartphone, title: "Wie eine App", desc: "Auf dem Home-Screen installieren — kein App Store nötig" },
-      { icon: Sparkles, title: "Auch offline nutzbar", desc: "Bewertungen gehen nicht verloren, auch wenn das WLAN streikt" },
-      { icon: BookOpen, title: "Deutsch & Englisch", desc: "Komplett zweisprachig — jederzeit umschaltbar" },
-      { icon: Eye, title: "Hell oder Dunkel", desc: "Warmes Whisky-Dunkel oder helles Creme-Amber — du wählst" },
-    ],
-  },
-  {
-    type: "content",
-    title: "Deine Daten gehören dir",
-    subtitle: "Kein Tracking, kein Verkauf, kein Kleingedrucktes. CaskSense ist DSGVO-konform, transparent bei KI-Nutzung und gibt dir volle Kontrolle über deine Daten.",
-    image: slideMobile,
-    badge: "Vertrauen",
-    layout: "right",
-    features: [
-      { icon: Shield, title: "DSGVO-konform", desc: "Datenschutz nach europäischem Standard — ohne Kompromisse" },
-      { icon: Brain, title: "Transparente KI", desc: "Du siehst immer, wenn KI im Spiel ist — und kannst selbst entscheiden" },
-      { icon: Download, title: "Datenexport jederzeit", desc: "Alle deine Daten als JSON herunterladen — gehört alles dir" },
-      { icon: Layers, title: "Speicher-Kontrolle", desc: "Du entscheidest, was gespeichert wird. Löschung auf Knopfdruck." },
-    ],
-  },
-  {
-    type: "cta",
-    title: "Probier's beim nächsten Tasting",
-    subtitle: "Lade ein paar Freunde ein, öffne eine gute Flasche und lass CaskSense den Rest machen. Kostenlos — ohne Konto, ohne Hürden.",
-    image: slideCta,
-    layout: "center",
-  },
-];
-
-function TOCPanel({ currentSlide, onSelect, onClose }: { currentSlide: number; onSelect: (i: number) => void; onClose: () => void }) {
+function TOCPanel({ currentSlide, onSelect, onClose, slides, t }: { currentSlide: number; onSelect: (i: number) => void; onClose: () => void; slides: SlideData[]; t: (key: string) => string }) {
   return (
     <motion.div
       initial={{ x: -320, opacity: 0 }}
@@ -255,7 +54,7 @@ function TOCPanel({ currentSlide, onSelect, onClose }: { currentSlide: number; o
       className="fixed left-0 top-0 bottom-0 w-80 bg-card/95 backdrop-blur-lg border-r border-border/30 z-[60] overflow-y-auto shadow-2xl"
     >
       <div className="flex items-center justify-between p-4 border-b border-border/20 sticky top-0 bg-card/95 backdrop-blur-lg">
-        <h3 className="font-serif font-bold text-primary text-sm">Inhaltsverzeichnis</h3>
+        <h3 className="font-serif font-bold text-primary text-sm">{t("tourPage.tocLabel")}</h3>
         <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-accent/20 flex items-center justify-center" data-testid="button-toc-close">
           <X className="w-4 h-4" />
         </button>
@@ -275,7 +74,7 @@ function TOCPanel({ currentSlide, onSelect, onClose }: { currentSlide: number; o
           >
             <span className="font-mono text-xs w-6 text-right opacity-50">{i + 1}</span>
             <span className="truncate">
-              {s.type === "cover" ? "Willkommen" : s.type === "cta" ? "Loslegen" : s.title}
+              {s.type === "cover" ? t("tourPage.welcome") : s.type === "cta" ? t("tourPage.getStarted") : s.title}
             </span>
             {s.badge && s.type === "content" && (
               <span className="ml-auto text-[10px] bg-primary/5 text-primary/60 px-1.5 py-0.5 rounded-full whitespace-nowrap">{s.badge}</span>
@@ -287,7 +86,7 @@ function TOCPanel({ currentSlide, onSelect, onClose }: { currentSlide: number; o
   );
 }
 
-function SlideContent({ slide, direction }: { slide: SlideData; direction: number }) {
+function SlideContent({ slide, direction, slides, t }: { slide: SlideData; direction: number; slides: SlideData[]; t: (key: string) => string }) {
   if (slide.type === "cover") {
     return (
       <div className="w-full h-full relative overflow-hidden">
@@ -327,9 +126,9 @@ function SlideContent({ slide, direction }: { slide: SlideData; direction: numbe
             transition={{ delay: 0.5, duration: 0.6 }}
             className="flex items-center gap-2 text-sm text-muted-foreground/50 pt-4"
           >
-            <span className="font-mono">{slides.filter(s => s.type === "content").length} Themen</span>
+            <span className="font-mono">{slides.filter(s => s.type === "content").length} {t("tourPage.topics")}</span>
             <span>·</span>
-            <span className="font-mono">{slides.flatMap(s => s.features || []).length}+ Funktionen</span>
+            <span className="font-mono">{slides.flatMap(s => s.features || []).length}+ {t("tourPage.functions")}</span>
           </motion.div>
           <motion.p
             initial={{ opacity: 0 }}
@@ -337,7 +136,7 @@ function SlideContent({ slide, direction }: { slide: SlideData; direction: numbe
             transition={{ delay: 0.7, duration: 0.6 }}
             className="text-xs text-muted-foreground/30 pt-2"
           >
-            Pfeiltasten oder Klick zum Navigieren
+            {t("tourPage.navHint")}
           </motion.p>
         </div>
       </div>
@@ -441,6 +240,7 @@ function SlideContent({ slide, direction }: { slide: SlideData; direction: numbe
 
 export default function Tour() {
   const [, navigate] = useLocation();
+  const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const isAdmin = currentParticipant?.role === "admin";
   const [current, setCurrent] = useState(0);
@@ -449,6 +249,209 @@ export default function Tour() {
   const [direction, setDirection] = useState(0);
   const [downloading, setDownloading] = useState(false);
   const [downloadingPptx, setDownloadingPptx] = useState(false);
+
+  const slides: SlideData[] = [
+    {
+      type: "cover",
+      title: t("tourPage.cover.title"),
+      subtitle: t("tourPage.cover.subtitle"),
+      image: slideCover,
+      badge: t("tourPage.cover.badge"),
+      layout: "center",
+    },
+    {
+      type: "content",
+      title: t("tourPage.tasting.title"),
+      subtitle: t("tourPage.tasting.subtitle"),
+      image: slideTasting,
+      badge: t("tourPage.tasting.badge"),
+      layout: "right",
+      features: [
+        { icon: Wine, title: t("tourPage.tasting.f1Title"), desc: t("tourPage.tasting.f1Desc") },
+        { icon: QrCode, title: t("tourPage.tasting.f2Title"), desc: t("tourPage.tasting.f2Desc") },
+        { icon: HandHeart, title: t("tourPage.tasting.f3Title"), desc: t("tourPage.tasting.f3Desc") },
+        { icon: GlassWater, title: t("tourPage.tasting.f4Title"), desc: t("tourPage.tasting.f4Desc") },
+      ],
+    },
+    {
+      type: "content",
+      title: t("tourPage.levels.title"),
+      subtitle: t("tourPage.levels.subtitle"),
+      image: slideCommunity,
+      badge: t("tourPage.levels.badge"),
+      layout: "left",
+      features: [
+        { icon: Wine, title: t("tourPage.levels.f1Title"), desc: t("tourPage.levels.f1Desc") },
+        { icon: Compass, title: t("tourPage.levels.f2Title"), desc: t("tourPage.levels.f2Desc") },
+        { icon: Star, title: t("tourPage.levels.f3Title"), desc: t("tourPage.levels.f3Desc") },
+        { icon: BarChart3, title: t("tourPage.levels.f4Title"), desc: t("tourPage.levels.f4Desc") },
+      ],
+    },
+    {
+      type: "content",
+      title: t("tourPage.sessions.title"),
+      subtitle: t("tourPage.sessions.subtitle"),
+      image: slideTasting,
+      badge: t("tourPage.sessions.badge"),
+      layout: "right",
+      features: [
+        { icon: Wine, title: t("tourPage.sessions.f1Title"), desc: t("tourPage.sessions.f1Desc") },
+        { icon: QrCode, title: t("tourPage.sessions.f2Title"), desc: t("tourPage.sessions.f2Desc") },
+        { icon: Star, title: t("tourPage.sessions.f3Title"), desc: t("tourPage.sessions.f3Desc") },
+        { icon: MessageSquare, title: t("tourPage.sessions.f4Title"), desc: t("tourPage.sessions.f4Desc") },
+      ],
+    },
+    {
+      type: "content",
+      title: t("tourPage.guided.title"),
+      subtitle: t("tourPage.guided.subtitle"),
+      image: slideGuided,
+      badge: t("tourPage.guided.badge"),
+      layout: "left",
+      features: [
+        { icon: LayoutDashboard, title: t("tourPage.guided.f1Title"), desc: t("tourPage.guided.f1Desc") },
+        { icon: Eye, title: t("tourPage.guided.f2Title"), desc: t("tourPage.guided.f2Desc") },
+        { icon: Sparkles, title: t("tourPage.guided.f3Title"), desc: t("tourPage.guided.f3Desc") },
+        { icon: Star, title: t("tourPage.guided.f4Title"), desc: t("tourPage.guided.f4Desc") },
+      ],
+    },
+    {
+      type: "content",
+      title: t("tourPage.flightboard.title"),
+      subtitle: t("tourPage.flightboard.subtitle"),
+      image: slideFlightboard,
+      badge: t("tourPage.flightboard.badge"),
+      layout: "right",
+      features: [
+        { icon: LayoutDashboard, title: t("tourPage.flightboard.f1Title"), desc: t("tourPage.flightboard.f1Desc") },
+        { icon: Camera, title: t("tourPage.flightboard.f2Title"), desc: t("tourPage.flightboard.f2Desc") },
+        { icon: FileDown, title: t("tourPage.flightboard.f3Title"), desc: t("tourPage.flightboard.f3Desc") },
+        { icon: Sparkles, title: t("tourPage.flightboard.f4Title"), desc: t("tourPage.flightboard.f4Desc") },
+      ],
+    },
+    {
+      type: "content",
+      title: t("tourPage.blind.title"),
+      subtitle: t("tourPage.blind.subtitle"),
+      image: slideBlind,
+      badge: t("tourPage.blind.badge"),
+      layout: "left",
+      features: [
+        { icon: EyeOff, title: t("tourPage.blind.f1Title"), desc: t("tourPage.blind.f1Desc") },
+        { icon: Eye, title: t("tourPage.blind.f2Title"), desc: t("tourPage.blind.f2Desc") },
+        { icon: Sparkles, title: t("tourPage.blind.f3Title"), desc: t("tourPage.blind.f3Desc") },
+        { icon: Camera, title: t("tourPage.blind.f4Title"), desc: t("tourPage.blind.f4Desc") },
+      ],
+    },
+    {
+      type: "content",
+      title: t("tourPage.ai.title"),
+      subtitle: t("tourPage.ai.subtitle"),
+      image: slideAi,
+      badge: t("tourPage.ai.badge"),
+      layout: "right",
+      features: [
+        { icon: Camera, title: t("tourPage.ai.f1Title"), desc: t("tourPage.ai.f1Desc") },
+        { icon: FileSpreadsheet, title: t("tourPage.ai.f2Title"), desc: t("tourPage.ai.f2Desc") },
+        { icon: Brain, title: t("tourPage.ai.f3Title"), desc: t("tourPage.ai.f3Desc") },
+        { icon: Download, title: t("tourPage.ai.f4Title"), desc: t("tourPage.ai.f4Desc") },
+      ],
+    },
+    {
+      type: "content",
+      title: t("tourPage.science.title"),
+      subtitle: t("tourPage.science.subtitle"),
+      image: slideAnalytics,
+      badge: t("tourPage.science.badge"),
+      layout: "left",
+      features: [
+        { icon: FlaskConical, title: t("tourPage.science.f1Title"), desc: t("tourPage.science.f1Desc") },
+        { icon: BarChart3, title: t("tourPage.science.f2Title"), desc: t("tourPage.science.f2Desc") },
+        { icon: TrendingUp, title: t("tourPage.science.f3Title"), desc: t("tourPage.science.f3Desc") },
+        { icon: Brain, title: t("tourPage.science.f4Title"), desc: t("tourPage.science.f4Desc") },
+        { icon: GraduationCap, title: t("tourPage.science.f5Title"), desc: t("tourPage.science.f5Desc") },
+      ],
+    },
+    {
+      type: "content",
+      title: t("tourPage.community.title"),
+      subtitle: t("tourPage.community.subtitle"),
+      image: slideCommunity,
+      badge: t("tourPage.community.badge"),
+      layout: "right",
+      features: [
+        { icon: Users, title: t("tourPage.community.f1Title"), desc: t("tourPage.community.f1Desc") },
+        { icon: Rss, title: t("tourPage.community.f2Title"), desc: t("tourPage.community.f2Desc") },
+        { icon: Trophy, title: t("tourPage.community.f3Title"), desc: t("tourPage.community.f3Desc") },
+        { icon: Calendar, title: t("tourPage.community.f4Title"), desc: t("tourPage.community.f4Desc") },
+        { icon: Bell, title: t("tourPage.community.f5Title"), desc: t("tourPage.community.f5Desc") },
+      ],
+    },
+    {
+      type: "content",
+      title: t("tourPage.host.title"),
+      subtitle: t("tourPage.host.subtitle"),
+      image: slideHost,
+      badge: t("tourPage.host.badge"),
+      layout: "left",
+      features: [
+        { icon: LayoutDashboard, title: t("tourPage.host.f1Title"), desc: t("tourPage.host.f1Desc") },
+        { icon: FileDown, title: t("tourPage.host.f2Title"), desc: t("tourPage.host.f2Desc") },
+        { icon: Users, title: t("tourPage.host.f3Title"), desc: t("tourPage.host.f3Desc") },
+        { icon: Volume2, title: t("tourPage.host.f4Title"), desc: t("tourPage.host.f4Desc") },
+      ],
+    },
+    {
+      type: "content",
+      title: t("tourPage.knowledge.title"),
+      subtitle: t("tourPage.knowledge.subtitle"),
+      image: slideKnowledge,
+      badge: t("tourPage.knowledge.badge"),
+      layout: "right",
+      features: [
+        { icon: BookOpen, title: t("tourPage.knowledge.f1Title"), desc: t("tourPage.knowledge.f1Desc") },
+        { icon: Landmark, title: t("tourPage.knowledge.f2Title"), desc: t("tourPage.knowledge.f2Desc") },
+        { icon: Map, title: t("tourPage.knowledge.f3Title"), desc: t("tourPage.knowledge.f3Desc") },
+        { icon: Heart, title: t("tourPage.knowledge.f4Title"), desc: t("tourPage.knowledge.f4Desc") },
+      ],
+    },
+    {
+      type: "content",
+      title: t("tourPage.mobile.title"),
+      subtitle: t("tourPage.mobile.subtitle"),
+      image: slideMobile,
+      badge: t("tourPage.mobile.badge"),
+      layout: "left",
+      features: [
+        { icon: Smartphone, title: t("tourPage.mobile.f1Title"), desc: t("tourPage.mobile.f1Desc") },
+        { icon: Sparkles, title: t("tourPage.mobile.f2Title"), desc: t("tourPage.mobile.f2Desc") },
+        { icon: BookOpen, title: t("tourPage.mobile.f3Title"), desc: t("tourPage.mobile.f3Desc") },
+        { icon: Eye, title: t("tourPage.mobile.f4Title"), desc: t("tourPage.mobile.f4Desc") },
+      ],
+    },
+    {
+      type: "content",
+      title: t("tourPage.dataPrivacy.title"),
+      subtitle: t("tourPage.dataPrivacy.subtitle"),
+      image: slideMobile,
+      badge: t("tourPage.dataPrivacy.badge"),
+      layout: "right",
+      features: [
+        { icon: Shield, title: t("tourPage.dataPrivacy.f1Title"), desc: t("tourPage.dataPrivacy.f1Desc") },
+        { icon: Brain, title: t("tourPage.dataPrivacy.f2Title"), desc: t("tourPage.dataPrivacy.f2Desc") },
+        { icon: Download, title: t("tourPage.dataPrivacy.f3Title"), desc: t("tourPage.dataPrivacy.f3Desc") },
+        { icon: Layers, title: t("tourPage.dataPrivacy.f4Title"), desc: t("tourPage.dataPrivacy.f4Desc") },
+      ],
+    },
+    {
+      type: "cta",
+      title: t("tourPage.cta.title"),
+      subtitle: t("tourPage.cta.subtitle"),
+      image: slideCta,
+      layout: "center",
+    },
+  ];
+
   const total = slides.length;
 
   const next = useCallback(() => {
@@ -535,11 +538,11 @@ export default function Tour() {
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="font-serif text-xs gap-1 px-2" data-testid="button-tour-back">
             <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Zurück</span>
+            <span className="hidden sm:inline">{t("tourPage.back")}</span>
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setShowTOC(!showTOC)} className="text-xs gap-1 px-2" data-testid="button-tour-toc">
             <List className="w-4 h-4" />
-            <span className="hidden sm:inline">Inhalt</span>
+            <span className="hidden sm:inline">{t("tourPage.contentLabel")}</span>
           </Button>
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
@@ -601,7 +604,7 @@ export default function Tour() {
             transition={{ duration: 0.35, ease: "easeOut" }}
             className="absolute inset-0"
           >
-            <SlideContent slide={slide} direction={direction} />
+            <SlideContent slide={slide} direction={direction} slides={slides} t={t} />
           </motion.div>
         </AnimatePresence>
 
@@ -632,7 +635,7 @@ export default function Tour() {
                 className="fixed inset-0 bg-background/50 backdrop-blur-sm z-[55]"
                 onClick={() => setShowTOC(false)}
               />
-              <TOCPanel currentSlide={current} onSelect={goTo} onClose={() => setShowTOC(false)} />
+              <TOCPanel currentSlide={current} onSelect={goTo} onClose={() => setShowTOC(false)} slides={slides} t={t} />
             </>
           )}
         </AnimatePresence>
@@ -643,22 +646,22 @@ export default function Tour() {
           <div className="flex flex-wrap justify-center gap-3">
             <Button onClick={() => navigate("/")} className="font-serif gap-2" size="lg" data-testid="button-tour-back-landing">
               <ArrowLeft className="w-4 h-4" />
-              Zurück zur Übersicht
+              {t("tourPage.backToOverview")}
             </Button>
             <Button variant="outline" onClick={() => navigate("/tasting")} className="font-serif gap-2" size="lg" data-testid="button-tour-start">
-              Direkt zum Tool
+              {t("tourPage.directToTool")}
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
           <div className="flex flex-wrap justify-center gap-2">
             <Button variant="ghost" onClick={handleDownloadPdf} disabled={downloading} className="font-serif gap-2 text-sm" size="sm" data-testid="button-tour-download-pdf-cta">
               <FileText className="w-4 h-4" />
-              {downloading ? "Wird erstellt..." : "PDF herunterladen"}
+              {downloading ? t("tourPage.creating") : t("tourPage.downloadPdf")}
             </Button>
             {isAdmin && (
               <Button variant="ghost" onClick={handleDownloadPptx} disabled={downloadingPptx} className="font-serif gap-2 text-sm" size="sm" data-testid="button-tour-download-pptx-cta">
                 <FileDown className="w-4 h-4" />
-                {downloadingPptx ? "Wird erstellt..." : "PPTX herunterladen"}
+                {downloadingPptx ? t("tourPage.creating") : t("tourPage.downloadPptx")}
               </Button>
             )}
           </div>

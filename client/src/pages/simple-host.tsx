@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCodeLib from "qrcode";
 import { c, cardStyle } from "@/lib/theme";
 import { AiTastingImportDialog } from "@/components/ai-tasting-import";
+import { useTranslation } from "react-i18next";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -148,15 +149,17 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
 }
 
 function StepBadge({ step }: { step: number }) {
+  const { t } = useTranslation();
   return (
     <span style={{ fontSize: 11, fontWeight: 700, color: c.accent, background: `${c.accent}20`, padding: "2px 8px", borderRadius: 10 }}>
-      Step {step}
+      {t("simpleHost.step", { n: step })}
     </span>
   );
 }
 
 function CopyButton({ text, label, fullWidth }: { text: string; label: string; fullWidth?: boolean }) {
   const [copied, setCopied] = useState(false);
+  const { t } = useTranslation();
 
   const handleCopy = async () => {
     try {
@@ -189,13 +192,14 @@ function CopyButton({ text, label, fullWidth }: { text: string; label: string; f
       data-testid={`button-copy-${label.toLowerCase().replace(/\s+/g, "-")}`}
     >
       {copied ? <Check style={{ width: 14, height: 14 }} /> : <Copy style={{ width: 14, height: 14 }} />}
-      {copied ? "Copied!" : label}
+      {copied ? t("simpleHost.copied") : label}
     </button>
   );
 }
 
 function TastingHeader({ tasting }: { tasting: TastingFull }) {
   const [copied, setCopied] = useState(false);
+  const { t } = useTranslation();
   const isBlind = !!tasting.blindMode;
 
   return (
@@ -204,11 +208,11 @@ function TastingHeader({ tasting }: { tasting: TastingFull }) {
         <div>
           <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{tasting.title}</div>
           <div style={{ fontSize: 12, color: c.muted, marginTop: 2, display: "flex", alignItems: "center", gap: 8 }}>
-            <span>Code: <strong style={{ color: c.accent, letterSpacing: "0.08em" }}>{tasting.code}</strong></span>
+            <span>{t("simpleHost.code")}: <strong style={{ color: c.accent, letterSpacing: "0.08em" }}>{tasting.code}</strong></span>
             {isBlind && (
               <span style={{ fontSize: 10, color: c.accent, background: `${c.accent}20`, padding: "1px 6px", borderRadius: 6 }}>
                 <EyeOff style={{ width: 10, height: 10, display: "inline", verticalAlign: "middle", marginRight: 3 }} />
-                Blind
+                {t("simpleHost.blind")}
               </span>
             )}
           </div>
@@ -222,7 +226,7 @@ function TastingHeader({ tasting }: { tasting: TastingFull }) {
           data-testid="button-copy-code"
         >
           {copied ? <Check style={{ width: 12, height: 12 }} /> : <Copy style={{ width: 12, height: 12 }} />}
-          {copied ? "Copied" : "Copy"}
+          {copied ? t("simpleHost.copiedShort") : t("simpleHost.copy")}
         </button>
       </div>
     </div>
@@ -230,6 +234,7 @@ function TastingHeader({ tasting }: { tasting: TastingFull }) {
 }
 
 function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () => void; onCreated: (tasting: TastingFull) => void }) {
+  const { t } = useTranslation();
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
@@ -262,13 +267,13 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to create tasting");
+        throw new Error(data.message || t("simpleHost.failedCreate"));
       }
 
       const tasting = await res.json();
       onCreated(tasting);
     } catch (e: any) {
-      setError(e.message || "Something went wrong");
+      setError(e.message || t("simpleHost.somethingWrong"));
       setSubmitting(false);
     }
   };
@@ -287,20 +292,20 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
         <StepBadge step={1} />
         <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: c.text }} data-testid="text-wizard-title">
-          Create a Tasting Session
+          {t("simpleHost.createTitle")}
         </h3>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div>
           <label style={{ fontSize: 12, fontWeight: 600, color: c.muted, display: "block", marginBottom: 6 }}>
-            Tasting Title *
+            {t("simpleHost.tastingTitleLabel")}
           </label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Islay Night, Highland Classics"
+            placeholder={t("simpleHost.tastingTitlePlaceholder")}
             style={inputStyle}
             autoFocus
             maxLength={200}
@@ -308,7 +313,7 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
           />
         </div>
 
-        <Toggle checked={blindMode} onChange={setBlindMode} label="Blind Mode" />
+        <Toggle checked={blindMode} onChange={setBlindMode} label={t("simpleHost.blindMode")} />
 
         <button
           type="button"
@@ -335,14 +340,14 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
               transition: "transform 0.2s",
             }}
           />
-          Advanced options
+          {t("simpleHost.advancedOptions")}
         </button>
 
         {showAdvanced && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingLeft: 4 }}>
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: c.muted, display: "block", marginBottom: 6 }}>
-                Date
+                {t("simpleHost.dateLabel")}
               </label>
               <input
                 type="date"
@@ -354,12 +359,12 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
             </div>
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: c.muted, display: "block", marginBottom: 6 }}>
-                Description / Location
+                {t("simpleHost.descriptionLabel")}
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional notes about the tasting"
+                placeholder={t("simpleHost.descriptionPlaceholder")}
                 rows={2}
                 style={{ ...inputStyle, resize: "vertical", minHeight: 48 }}
                 data-testid="input-tasting-description"
@@ -393,7 +398,7 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
           }}
           data-testid="button-create-session"
         >
-          {submitting ? "Creating…" : "Create Tasting"}
+          {submitting ? t("simpleHost.creating") : t("simpleHost.createTasting")}
         </button>
       </div>
     </div>
@@ -401,6 +406,7 @@ function CreateWizard({ pid, onClose, onCreated }: { pid: string; onClose: () =>
 }
 
 function AddWhiskiesStep({ tasting, onDone, onNext }: { tasting: TastingFull; onDone: () => void; onNext: () => void }) {
+  const { t } = useTranslation();
   const [whiskies, setWhiskies] = useState<Whisky[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -449,7 +455,7 @@ function AddWhiskiesStep({ tasting, onDone, onNext }: { tasting: TastingFull; on
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to add whisky");
+        throw new Error(data.message || t("simpleHost.failedAddWhisky"));
       }
 
       setName("");
@@ -460,7 +466,7 @@ function AddWhiskiesStep({ tasting, onDone, onNext }: { tasting: TastingFull; on
       setShowDetails(false);
       await fetchWhiskies();
     } catch (e: any) {
-      setError(e.message || "Something went wrong");
+      setError(e.message || t("simpleHost.somethingWrong"));
     }
     setAdding(false);
   };
@@ -499,7 +505,7 @@ function AddWhiskiesStep({ tasting, onDone, onNext }: { tasting: TastingFull; on
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
           <StepBadge step={2} />
           <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: c.text }} data-testid="text-step2-title">
-            Add Whiskies
+            {t("simpleHost.addWhiskiesTitle")}
           </h3>
         </div>
 
@@ -512,7 +518,7 @@ function AddWhiskiesStep({ tasting, onDone, onNext }: { tasting: TastingFull; on
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Lagavulin 16"
+              placeholder={t("simpleHost.whiskyNamePlaceholder")}
               style={inputStyle}
               maxLength={200}
               onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
@@ -593,7 +599,7 @@ function AddWhiskiesStep({ tasting, onDone, onNext }: { tasting: TastingFull; on
             data-testid="button-add-whisky"
           >
             <Plus style={{ width: 16, height: 16 }} />
-            {adding ? "Adding…" : "Add Whisky"}
+            {adding ? t("simpleHost.adding") : t("simpleHost.addWhisky")}
           </button>
         </div>
 
@@ -602,7 +608,7 @@ function AddWhiskiesStep({ tasting, onDone, onNext }: { tasting: TastingFull; on
         ) : whiskies.length > 0 ? (
           <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: c.muted, marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
-              <span>{whiskies.length} {whiskies.length === 1 ? "whisky" : "whiskies"} added</span>
+              <span>{whiskies.length === 1 ? t("simpleHost.whiskyAdded", { count: whiskies.length }) : t("simpleHost.whiskiesAdded", { count: whiskies.length })}</span>
               {isBlind && <span style={{ color: c.accent, fontSize: 11 }}><EyeOff style={{ width: 11, height: 11, display: "inline", verticalAlign: "middle", marginRight: 3 }} />Blind labels active</span>}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -683,7 +689,7 @@ function AddWhiskiesStep({ tasting, onDone, onNext }: { tasting: TastingFull; on
           }}
           data-testid="button-next-to-invite"
         >
-          Next: Invite Participants
+          {t("simpleHost.doneButton")}
           <ArrowRight style={{ width: 16, height: 16 }} />
         </button>
         <button
@@ -702,7 +708,7 @@ function AddWhiskiesStep({ tasting, onDone, onNext }: { tasting: TastingFull; on
           }}
           data-testid="button-done-whiskies"
         >
-          Back to Host
+          {t("simpleHost.backToHost")}
         </button>
       </div>
     </div>
@@ -710,6 +716,7 @@ function AddWhiskiesStep({ tasting, onDone, onNext }: { tasting: TastingFull; on
 }
 
 function InviteStep({ tasting, onDone, onNext }: { tasting: TastingFull; onDone: () => void; onNext: () => void }) {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
@@ -741,7 +748,7 @@ function InviteStep({ tasting, onDone, onNext }: { tasting: TastingFull; onDone:
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
           <StepBadge step={3} />
           <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: c.text }} data-testid="text-step3-title">
-            Invite Participants
+            {t("simpleHost.inviteTitle")}
           </h3>
         </div>
 
@@ -767,7 +774,7 @@ function InviteStep({ tasting, onDone, onNext }: { tasting: TastingFull; onDone:
             >
               {tasting.code}
             </div>
-            <CopyButton text={tasting.code} label="Copy Code" />
+            <CopyButton text={tasting.code} label={t("simpleHost.copyCode")} />
           </div>
 
           <div style={{ background: c.bg, borderRadius: 10, padding: "16px" }}>
@@ -790,7 +797,7 @@ function InviteStep({ tasting, onDone, onNext }: { tasting: TastingFull; onDone:
             >
               {joinUrl}
             </div>
-            <CopyButton text={joinUrl} label="Copy Link" fullWidth />
+            <CopyButton text={joinUrl} label={t("simpleHost.copyLink")} fullWidth />
           </div>
 
           <div style={{ background: c.bg, borderRadius: 10, padding: "16px" }}>
@@ -814,7 +821,7 @@ function InviteStep({ tasting, onDone, onNext }: { tasting: TastingFull; onDone:
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <QrCode style={{ width: 18, height: 18, color: c.accent }} />
-                <span style={{ fontWeight: 600 }}>QR Code</span>
+                <span style={{ fontWeight: 600 }}>{t("simpleHost.shareQR")}</span>
               </div>
               <ChevronDown style={{ width: 14, height: 14, color: c.muted, transform: showQr ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
             </button>
@@ -846,7 +853,7 @@ function InviteStep({ tasting, onDone, onNext }: { tasting: TastingFull; onDone:
                     <Download style={{ width: 14, height: 14 }} />
                     Save
                   </button>
-                  <CopyButton text={joinUrl} label="Copy Link" />
+                  <CopyButton text={joinUrl} label={t("simpleHost.copyLink")} />
                 </div>
               </div>
             )}
@@ -857,7 +864,7 @@ function InviteStep({ tasting, onDone, onNext }: { tasting: TastingFull; onDone:
               type="button"
               onClick={() => {
                 navigator.share({
-                  title: `Join: ${tasting.title}`,
+                  title: t("simpleHost.joinPrefix", { title: tasting.title }),
                   text: `Join my whisky tasting "${tasting.title}" on CaskSense!\nSession Code: ${tasting.code}`,
                   url: joinUrl,
                 }).catch(() => {});
@@ -908,7 +915,7 @@ function InviteStep({ tasting, onDone, onNext }: { tasting: TastingFull; onDone:
           }}
           data-testid="button-next-to-live"
         >
-          Next: Go Live
+          {t("simpleHost.goLive")}
           <ArrowRight style={{ width: 16, height: 16 }} />
         </button>
         <button
@@ -927,7 +934,7 @@ function InviteStep({ tasting, onDone, onNext }: { tasting: TastingFull; onDone:
           }}
           data-testid="button-done-invite"
         >
-          Back to Host
+          {t("simpleHost.backToHost")}
         </button>
       </div>
     </div>
@@ -935,6 +942,7 @@ function InviteStep({ tasting, onDone, onNext }: { tasting: TastingFull; onDone:
 }
 
 function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: TastingFull; pid: string; onDone: () => void }) {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
 
   const { data: liveTasting } = useQuery<TastingFull>({
@@ -1103,21 +1111,21 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={sectionCard}>
-          {sectionTitle("Tasting Overview")}
+          {sectionTitle(t("simpleHost.tastingOverview"))}
           <div style={{ fontSize: 20, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif", marginBottom: 6 }}>{tasting.title}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: c.muted }}>
-            <span>Code: <strong style={{ color: c.accent, letterSpacing: "0.08em" }}>{tasting.code}</strong></span>
+            <span>{t("simpleHost.code")}: <strong style={{ color: c.accent, letterSpacing: "0.08em" }}>{tasting.code}</strong></span>
             {isBlind && (
               <span style={{ fontSize: 10, color: c.accent, background: `${c.accent}20`, padding: "2px 6px", borderRadius: 6 }}>
                 <EyeOff style={{ width: 10, height: 10, display: "inline", verticalAlign: "middle", marginRight: 3 }} />
-                Blind
+                {t("simpleHost.blind")}
               </span>
             )}
           </div>
           <div style={{ fontSize: 13, color: c.muted, marginTop: 8 }}>
             {whiskies.length === 0
-              ? "No whiskies added yet."
-              : `${whiskies.length} ${whiskies.length === 1 ? "whisky" : "whiskies"} ready`}
+              ? t("simpleHost.noWhiskiesYet")
+              : t("simpleHost.whiskiesReady", { count: whiskies.length, unit: whiskies.length === 1 ? t("simpleHost.whisky") : t("simpleHost.whiskies") })}
           </div>
         </div>
 
@@ -1125,19 +1133,19 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
           {bigButton({
             onClick: handleStartSession,
             icon: Play,
-            label: "Start Tasting",
+            label: t("simpleHost.startTasting"),
             bg: whiskies.length > 0 ? c.success : c.border,
             color: whiskies.length > 0 ? "#fff" : c.muted,
             disabled: whiskies.length === 0,
             testId: "button-start-session",
           })}
           {whiskies.length === 0 && (
-            <p style={{ fontSize: 12, color: c.muted, textAlign: "center", marginTop: 8 }}>Add whiskies first to start the tasting.</p>
+            <p style={{ fontSize: 12, color: c.muted, textAlign: "center", marginTop: 8 }}>{t("simpleHost.addWhiskiesFirst")}</p>
           )}
         </div>
 
         <button type="button" onClick={onDone} style={{ width: "100%", padding: "10px", fontSize: 13, background: "none", color: c.muted, border: `1px solid ${c.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-done-live">
-          Back to Host
+          {t("simpleHost.backToHost")}
         </button>
       </div>
     );
@@ -1147,10 +1155,10 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={sectionCard}>
-          {sectionTitle("Tasting Overview")}
+          {sectionTitle(t("simpleHost.tastingOverview"))}
           <div style={{ fontSize: 20, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif", marginBottom: 6 }}>{tasting.title}</div>
           <div style={{ fontSize: 13, color: c.muted }}>
-            Tasting is <strong style={{ color: c.text }}>{tasting.status}</strong>
+            {t("simpleHost.tastingIs")} <strong style={{ color: c.text }}>{tasting.status}</strong>
           </div>
         </div>
 
@@ -1158,7 +1166,7 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
           {bigButton({
             onClick: () => navigate(`/tasting-results/${tasting.id}`),
             icon: BarChart3,
-            label: "View Results",
+            label: t("simpleHost.viewResults"),
             bg: c.accent,
             color: c.bg,
             testId: "button-view-results",
@@ -1166,7 +1174,7 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
           {bigButton({
             onClick: () => navigate(`/recap/${tasting.id}`),
             icon: ClipboardList,
-            label: "View Recap",
+            label: t("simpleHost.viewRecap"),
             bg: c.card,
             color: c.accent,
             testId: "button-view-recap",
@@ -1181,12 +1189,12 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
             }}
             data-testid="button-view-session"
           >
-            Full Dashboard
+            {t("simpleHost.fullDashboard")}
           </button>
         </div>
 
         <button type="button" onClick={onDone} style={{ width: "100%", padding: "10px", fontSize: 13, background: "none", color: c.muted, border: `1px solid ${c.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-done-live">
-          Back to Host
+          {t("simpleHost.backToHost")}
         </button>
       </div>
     );
@@ -1196,7 +1204,7 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
       <div style={sectionCard} data-testid="section-overview">
-        {sectionTitle("Tasting Overview")}
+        {sectionTitle(t("simpleHost.tastingOverview"))}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif", marginBottom: 4 }} data-testid="text-tasting-title">
@@ -1204,7 +1212,7 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 13, color: c.muted }}>
-                Code: <strong style={{ color: c.accent, letterSpacing: "0.08em", fontSize: 15 }}>{tasting.code}</strong>
+                {t("simpleHost.code")}: <strong style={{ color: c.accent, letterSpacing: "0.08em", fontSize: 15 }}>{tasting.code}</strong>
               </span>
               <button
                 type="button"
@@ -1220,14 +1228,14 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
             {isBlind && (
               <span style={{ fontSize: 10, fontWeight: 600, color: c.accent, background: `${c.accent}20`, padding: "3px 8px", borderRadius: 6 }}>
                 <EyeOff style={{ width: 10, height: 10, display: "inline", verticalAlign: "middle", marginRight: 3 }} />
-                Blind
+                {t("simpleHost.blind")}
               </span>
             )}
             <span style={{
               fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
               color: c.success, background: `${c.success}20`, padding: "3px 8px", borderRadius: 6,
             }} data-testid="badge-session-status">
-              Live
+              {t("simpleHost.live")}
             </span>
           </div>
         </div>
@@ -1236,37 +1244,37 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
             <div style={{ fontSize: 24, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif" }} data-testid="text-participant-count">
               {guestParticipants.length}
             </div>
-            <div style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Participants</div>
+            <div style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("simpleHost.participants")}</div>
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 24, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif" }}>
               {whiskies.length}
             </div>
-            <div style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Whiskies</div>
+            <div style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("simpleHost.whiskies")}</div>
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 24, fontWeight: 700, color: c.text, fontFamily: "'Playfair Display', serif" }} data-testid="text-rating-count">
               {activeRatings.length}
             </div>
-            <div style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Ratings</div>
+            <div style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("simpleHost.ratingsLabel")}</div>
           </div>
           {avgScore !== null && showResults && (
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 24, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif" }} data-testid="text-avg-score">
                 {avgScore}
               </div>
-              <div style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Avg Score</div>
+              <div style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("simpleHost.avgScore")}</div>
             </div>
           )}
         </div>
       </div>
 
       <div style={sectionCard} data-testid="section-dram-control">
-        {sectionTitle("Dram Control")}
+        {sectionTitle(t("simpleHost.dramControl"))}
 
         <div style={{ background: c.bg, borderRadius: 12, padding: "18px", marginBottom: 14 }}>
           <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: c.muted, marginBottom: 6 }}>
-            Current Dram
+            {t("simpleHost.currentDram")}
           </div>
           {activeWhisky ? (
             <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
@@ -1292,7 +1300,7 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
               </div>
             </div>
           ) : (
-            <div style={{ fontSize: 14, color: c.muted }}>No whisky selected</div>
+            <div style={{ fontSize: 14, color: c.muted }}>{t("simpleHost.noWhiskySelected")}</div>
           )}
         </div>
 
@@ -1355,7 +1363,7 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
               data-testid="button-reveal"
             >
               <Eye style={{ width: 18, height: 18 }} />
-              {revealStep === 0 ? "Reveal Name" : revealStep === 1 ? "Reveal Details" : revealStep === 2 ? "Reveal Image" : "Fully Revealed"}
+              {revealStep === 0 ? t("simpleHost.revealName") : revealStep === 1 ? t("simpleHost.revealDetails") : revealStep === 2 ? t("simpleHost.revealImage") : t("simpleHost.fullyRevealed")}
             </button>
           )}
 
@@ -1381,7 +1389,7 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
             data-testid="button-toggle-results"
           >
             <BarChart3 style={{ width: 16, height: 16 }} />
-            {showResults ? "Results Visible" : "Show Results"}
+            {showResults ? t("simpleHost.resultsVisible") : t("simpleHost.showResults")}
           </button>
           {tasting.status === "open" && (
             <button
@@ -1406,18 +1414,18 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
               data-testid="button-host-rate"
             >
               <Star style={{ width: 18, height: 18 }} />
-              Rate this Whisky
+              {t("simpleHost.rateThisWhisky")}
             </button>
           )}
         </div>
       </div>
 
       <div style={sectionCard} data-testid="section-participants">
-        {sectionTitle(`Participants (${guestParticipants.length})`)}
+        {sectionTitle(t("simpleHost.participantsCount", { count: guestParticipants.length }))}
 
         {guestParticipants.length === 0 ? (
           <div style={{ fontSize: 13, color: c.muted, textAlign: "center", padding: "12px 0" }}>
-            No participants yet. Share the session code to invite people.
+            {t("simpleHost.noParticipants")}
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -1443,13 +1451,13 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
                     hasRated ? (
                       <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: c.success, fontWeight: 600 }}>
                         <Check style={{ width: 14, height: 14 }} />
-                        rated
+                        {t("simpleHost.rated")}
                       </span>
                     ) : (
                       <span style={{ fontSize: 12, color: c.muted }}>...</span>
                     )
                   ) : (
-                    <span style={{ fontSize: 12, color: c.muted }}>joined</span>
+                    <span style={{ fontSize: 12, color: c.muted }}>{t("simpleHost.joined")}</span>
                   )}
                 </div>
               );
@@ -1462,7 +1470,7 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
         {bigButton({
           onClick: handleEndSession,
           icon: Square,
-          label: "End Tasting",
+          label: t("simpleHost.endTasting"),
           bg: `${c.danger}15`,
           color: c.danger,
           borderColor: `${c.danger}40`,
@@ -1470,7 +1478,7 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
         })}
 
         <button type="button" onClick={onDone} style={{ width: "100%", padding: "10px", fontSize: 13, background: "none", color: c.muted, border: `1px solid ${c.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-done-live">
-          Back to Host
+          {t("simpleHost.backToHost")}
         </button>
       </div>
     </div>
@@ -1689,10 +1697,10 @@ function groupByTimePeriod(tastings: TastingFull[]): TimeGroup[] {
   const yearStart = new Date(now.getFullYear(), 0, 1);
 
   const groups: TimeGroup[] = [
-    { key: "30d", label: "Last 30 days", tastings: [] },
-    { key: "90d", label: "Last 3 months", tastings: [] },
-    { key: "year", label: "This year", tastings: [] },
-    { key: "older", label: "Older", tastings: [] },
+    { key: "30d", label: "last30", tastings: [] },
+    { key: "90d", label: "last90", tastings: [] },
+    { key: "year", label: "thisYear", tastings: [] },
+    { key: "older", label: "older", tastings: [] },
   ];
 
   const sorted = [...tastings].sort((a, b) => {
@@ -1772,27 +1780,28 @@ function CollapsibleSection({ label, count, labelColor, defaultOpen, children, t
 }
 
 function HistoryAccordion({ tastings }: { tastings: TastingFull[] }) {
+  const { t } = useTranslation();
   const groups = useMemo(() => groupByTimePeriod(tastings), [tastings]);
 
   if (tastings.length === 0) return null;
 
   return (
-    <CollapsibleSection label="History" count={tastings.length} defaultOpen={false} testId="section-history">
+    <CollapsibleSection label={t("simpleHost.history")} count={tastings.length} defaultOpen={false} testId="section-history">
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {groups.map(group => (
-          <CollapsibleSection key={group.key} label={group.label} count={group.tastings.length} defaultOpen={groups[0]?.key === group.key} testId={`history-group-${group.key}`}>
-            {group.tastings.map(t => (
+          <CollapsibleSection key={group.key} label={t(`simpleHost.${group.label}`)} count={group.tastings.length} defaultOpen={groups[0]?.key === group.key} testId={`history-group-${group.key}`}>
+            {group.tastings.map(ts => (
               <div
-                key={t.id}
+                key={ts.id}
                 style={{
                   padding: "10px 12px",
                   borderRadius: 8,
                   background: c.bg,
                   border: `1px solid ${c.border}`,
                 }}
-                data-testid={`card-tasting-${t.id}`}
+                data-testid={`card-tasting-${ts.id}`}
               >
-                <Link href={`/tasting-results/${t.id}`}>
+                <Link href={`/tasting-results/${ts.id}`}>
                   <div
                     style={{
                       display: "flex",
@@ -1802,24 +1811,24 @@ function HistoryAccordion({ tastings }: { tastings: TastingFull[] }) {
                     }}
                   >
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{t.title}</div>
-                      {t.date && <div style={{ fontSize: 11, color: c.muted, marginTop: 3 }}>{t.date}</div>}
+                      <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{ts.title}</div>
+                      {ts.date && <div style={{ fontSize: 11, color: c.muted, marginTop: 3 }}>{ts.date}</div>}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <StatusBadge status={t.status} />
+                      <StatusBadge status={ts.status} />
                       <ChevronRight style={{ width: 14, height: 14, color: c.muted }} />
                     </div>
                   </div>
                 </Link>
-                {(t.status === "closed" || t.status === "archived" || t.status === "reveal") && (
+                {(ts.status === "closed" || ts.status === "archived" || ts.status === "reveal") && (
                   <div style={{ display: "flex", gap: 12, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${c.border}` }}>
-                    <Link href={`/tasting-results/${t.id}`}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: c.accent, cursor: "pointer" }} data-testid={`results-link-${t.id}`}>
+                    <Link href={`/tasting-results/${ts.id}`}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: c.accent, cursor: "pointer" }} data-testid={`results-link-${ts.id}`}>
                         <BarChart3 style={{ width: 12, height: 12 }} /> Results
                       </span>
                     </Link>
-                    <Link href={`/recap/${t.id}`}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: c.mutedLight, cursor: "pointer" }} data-testid={`recap-link-${t.id}`}>
+                    <Link href={`/recap/${ts.id}`}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: c.mutedLight, cursor: "pointer" }} data-testid={`recap-link-${ts.id}`}>
                         <ClipboardList style={{ width: 12, height: 12 }} /> Recap
                       </span>
                     </Link>
@@ -1835,6 +1844,7 @@ function HistoryAccordion({ tastings }: { tastings: TastingFull[] }) {
 }
 
 export default function SimpleHostPage() {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [sessionState, setSessionState] = useState(getSession());
@@ -1888,7 +1898,7 @@ export default function SimpleHostPage() {
       <SimpleShell showBack={false}>
         <div style={{ textAlign: "center", padding: "40px 0" }}>
           <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 12 }} data-testid="text-host-title">
-            Host a Tasting
+            {t("simpleHost.pageTitle")}
           </h2>
           <p style={{ color: c.muted, fontSize: 14, marginBottom: 24 }} data-testid="text-sign-in-prompt">
             Sign in to create and manage your tastings.
@@ -1909,10 +1919,10 @@ export default function SimpleHostPage() {
         {!showingWizard && (
           <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }} data-testid="text-host-title">
-              Host a Tasting
+              {t("simpleHost.pageTitle")}
             </h2>
             <p style={{ fontSize: 13, color: c.muted, marginTop: 4 }}>
-              Create a session, add whiskies, and run the tasting live.
+              {t("simpleHost.pageSubtitle")}
             </p>
           </div>
         )}
@@ -1975,10 +1985,10 @@ export default function SimpleHostPage() {
                   data-testid="menu-create-options"
                 >
                   {[
-                    { label: "Manual Entry", desc: "Step by step", icon: Plus, color: c.accent, bg: `${c.accent}18`, action: () => { setWizardStep("step1"); setCreateMenuOpen(false); }, testId: "card-create-manual" },
+                    { label: t("simpleHost.manualEntry"), desc: t("simpleHost.manualEntryDesc"), icon: Plus, color: c.accent, bg: `${c.accent}18`, action: () => { setWizardStep("step1"); setCreateMenuOpen(false); }, testId: "card-create-manual" },
                     { label: "Photo / AI", desc: "Snap & identify bottles", icon: Camera, color: "#60a5fa", bg: "rgba(96,165,250,0.15)", href: "/photo-tasting", testId: "card-create-photo" },
                     { label: "Excel / CSV Import", desc: "From spreadsheet or text", icon: FileSpreadsheet, color: "#4ade80", bg: "rgba(74,222,128,0.15)", action: () => { setImportDialogOpen(true); setCreateMenuOpen(false); }, testId: "card-create-import" },
-                    { label: "AI Lineup Suggestions", desc: "AI-powered recommendations", icon: Sparkles, color: c.accent, bg: `${c.accent}15`, href: "/ai-curation", testId: "card-ai-curation" },
+                    { label: t("simpleHost.aiLineup"), desc: t("simpleHost.aiLineupDesc"), icon: Sparkles, color: c.accent, bg: `${c.accent}15`, href: "/ai-curation", testId: "card-ai-curation" },
                   ].map((item) => {
                     const IconComp = item.icon;
                     const content = (
@@ -2027,11 +2037,11 @@ export default function SimpleHostPage() {
             ) : (
               <>
                 {activeTastings.length > 0 && (
-                  <CollapsibleSection label="Live" count={activeTastings.length} labelColor={c.accent} defaultOpen={true} testId="section-live">
-                    {activeTastings.map((t) => (
+                  <CollapsibleSection label={t("simpleHost.live")} count={activeTastings.length} labelColor={c.accent} defaultOpen={true} testId="section-live">
+                    {activeTastings.map((ts) => (
                       <div
-                        key={t.id}
-                        onClick={() => { setCreatedTasting(t); setWizardStep("step4"); }}
+                        key={ts.id}
+                        onClick={() => { setCreatedTasting(ts); setWizardStep("step4"); }}
                         style={{
                           display: "flex",
                           justifyContent: "space-between",
@@ -2042,14 +2052,14 @@ export default function SimpleHostPage() {
                           border: `1px solid ${c.border}`,
                           cursor: "pointer",
                         }}
-                        data-testid={`card-tasting-${t.id}`}
+                        data-testid={`card-tasting-${ts.id}`}
                       >
                         <div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{t.title}</div>
-                          <div style={{ fontSize: 11, color: c.muted, marginTop: 3 }}>Code: {t.code}</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{ts.title}</div>
+                          <div style={{ fontSize: 11, color: c.muted, marginTop: 3 }}>{t("simpleHost.code")}: {ts.code}</div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <StatusBadge status={t.status} />
+                          <StatusBadge status={ts.status} />
                           <ChevronRight style={{ width: 14, height: 14, color: c.muted }} />
                         </div>
                       </div>
