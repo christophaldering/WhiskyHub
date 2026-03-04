@@ -24,21 +24,29 @@ const darkColors = {
 
 export default function SessionSheet({ open, onClose, onSessionChange, defaultMode = "log", variant = "dark" }: SessionSheetProps) {
   const [session, setSession] = useState(() => getSession());
-  const [showForm, setShowForm] = useState(false);
+  const [view, setView] = useState<"idle" | "login" | "forgot" | "reset">("idle");
   const [siEmail, setSiEmail] = useState("");
   const [siPin, setSiPin] = useState("");
   const [siRemember, setSiRemember] = useState(true);
   const [siLoading, setSiLoading] = useState(false);
   const [siError, setSiError] = useState("");
+  const [resetPid, setResetPid] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [resetNewPw, setResetNewPw] = useState("");
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   useEffect(() => {
     if (open) {
       setSession(getSession());
-      setShowForm(false);
+      setView("idle");
       setSiPin("");
       setSiEmail("");
       setSiError("");
       setSiRemember(true);
+      setResetPid("");
+      setResetCode("");
+      setResetNewPw("");
+      setResetSuccess(false);
     }
   }, [open, defaultMode]);
 
