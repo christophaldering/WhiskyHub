@@ -6,3 +6,5 @@ export const DISCOVER_STRUCTURE: "legacy" | "v2_simplified" = "v2_simplified";
 
 export const MY_TASTE_STRUCTURE: "legacy" | "v2_experience_first" = "v2_experience_first";
 
+export const LANDING_VERSION: "legacy_menu" | "two_screen_start" = "two_screen_start";
+

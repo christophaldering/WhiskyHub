@@ -2,13 +2,50 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { KeyRound, User } from "lucide-react";
+import { KeyRound, User, Wine, PenLine, Crown, Settings } from "lucide-react";
 import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
-import { NAV_VERSION } from "@/lib/config";
+import { NAV_VERSION, LANDING_VERSION } from "@/lib/config";
 
 const HERO_BG_ENABLED = false;
 const HERO_BG_URL = "/images/landing-hero.jpg";
+
+const btnPrimary = {
+  display: "block" as const,
+  width: "100%",
+  padding: "0.875rem",
+  textAlign: "center" as const,
+  fontSize: "0.95rem",
+  fontWeight: 600,
+  fontFamily: "system-ui, sans-serif",
+  background: "#d4a256",
+  color: "#1a1714",
+  borderRadius: "12px",
+  cursor: "pointer",
+  border: "none",
+};
+
+const btnOutline = {
+  ...btnPrimary,
+  background: "transparent",
+  color: "#d4a256",
+  border: "1px solid #d4a256",
+};
+
+const btnSubtle = {
+  display: "block" as const,
+  width: "100%",
+  padding: "0.625rem",
+  textAlign: "center" as const,
+  fontSize: "0.8rem",
+  fontWeight: 500,
+  fontFamily: "system-ui, sans-serif",
+  background: "transparent",
+  color: "#8a8070",
+  borderRadius: "10px",
+  cursor: "pointer",
+  border: "1px solid #2e281f",
+};
 
 export default function Landing() {
   const { t } = useTranslation();
@@ -22,6 +59,8 @@ export default function Landing() {
     window.addEventListener("session-change", refreshSession);
     return () => window.removeEventListener("session-change", refreshSession);
   }, [refreshSession]);
+
+  const isTwoScreen = LANDING_VERSION === "two_screen_start";
 
   return (
     <div
@@ -130,73 +169,59 @@ export default function Landing() {
             width: "100%",
           }}
         >
-          {NAV_VERSION === "v2_simplified" ? (
+          {isTwoScreen ? (
+            <>
+              <Link href="/enter">
+                <motion.div whileTap={{ scale: 0.97 }} style={{ ...btnPrimary, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} data-testid="button-join-tasting">
+                  <Wine style={{ width: 18, height: 18 }} strokeWidth={2} />
+                  {t("landingPage.joinTasting")}
+                </motion.div>
+              </Link>
+
+              <Link href="/my-taste/log">
+                <motion.div whileTap={{ scale: 0.97 }} style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} data-testid="button-add-dram">
+                  <PenLine style={{ width: 18, height: 18 }} strokeWidth={2} />
+                  {t("landingPage.addDram")}
+                </motion.div>
+              </Link>
+
+              <Link href="/host">
+                <motion.div whileTap={{ scale: 0.97 }} style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} data-testid="button-host-tasting">
+                  <Crown style={{ width: 18, height: 18 }} strokeWidth={2} />
+                  {t("landingPage.hostTasting")}
+                </motion.div>
+              </Link>
+
+              <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.25rem" }}>
+                <Link href="/my-taste" style={{ flex: 1 }}>
+                  <motion.div whileTap={{ scale: 0.97 }} style={btnSubtle} data-testid="button-my-taste">
+                    {t("landingPage.myTaste")}
+                  </motion.div>
+                </Link>
+                <Link href="/my-taste/settings" style={{ flex: 1 }}>
+                  <motion.div whileTap={{ scale: 0.97 }} style={{ ...btnSubtle, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }} data-testid="button-settings">
+                    <Settings style={{ width: 14, height: 14 }} strokeWidth={1.6} />
+                    {t("landingPage.profileSettings")}
+                  </motion.div>
+                </Link>
+              </div>
+            </>
+          ) : NAV_VERSION === "v2_simplified" ? (
             <>
               <Link href="/tasting">
-                <motion.div
-                  whileTap={{ scale: 0.97 }}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    padding: "0.875rem",
-                    textAlign: "center",
-                    fontSize: "0.95rem",
-                    fontWeight: 600,
-                    fontFamily: "system-ui, sans-serif",
-                    background: "#d4a256",
-                    color: "#1a1714",
-                    borderRadius: "12px",
-                    cursor: "pointer",
-                    border: "none",
-                  }}
-                  data-testid="button-tasting"
-                >
+                <motion.div whileTap={{ scale: 0.97 }} style={btnPrimary} data-testid="button-tasting">
                   {t("landingPage.tasting")}
                 </motion.div>
               </Link>
 
               <Link href="/my-taste">
-                <motion.div
-                  whileTap={{ scale: 0.97 }}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    padding: "0.875rem",
-                    textAlign: "center",
-                    fontSize: "0.95rem",
-                    fontWeight: 600,
-                    fontFamily: "system-ui, sans-serif",
-                    background: "transparent",
-                    color: "#d4a256",
-                    borderRadius: "12px",
-                    cursor: "pointer",
-                    border: "1px solid #d4a256",
-                  }}
-                  data-testid="button-my-taste"
-                >
+                <motion.div whileTap={{ scale: 0.97 }} style={btnOutline} data-testid="button-my-taste">
                   {t("landingPage.myTaste")}
                 </motion.div>
               </Link>
 
               <Link href="/analyze">
-                <motion.div
-                  whileTap={{ scale: 0.97 }}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    padding: "0.875rem",
-                    textAlign: "center",
-                    fontSize: "0.95rem",
-                    fontWeight: 600,
-                    fontFamily: "system-ui, sans-serif",
-                    background: "transparent",
-                    color: "#d4a256",
-                    borderRadius: "12px",
-                    cursor: "pointer",
-                    border: "1px solid #d4a256",
-                  }}
-                  data-testid="button-explore"
-                >
+                <motion.div whileTap={{ scale: 0.97 }} style={btnOutline} data-testid="button-explore">
                   {t("landingPage.explore")}
                 </motion.div>
               </Link>
@@ -204,116 +229,31 @@ export default function Landing() {
           ) : (
             <>
               <Link href="/enter">
-                <motion.div
-                  whileTap={{ scale: 0.97 }}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    padding: "0.875rem",
-                    textAlign: "center",
-                    fontSize: "0.95rem",
-                    fontWeight: 600,
-                    fontFamily: "system-ui, sans-serif",
-                    background: "#d4a256",
-                    color: "#1a1714",
-                    borderRadius: "12px",
-                    cursor: "pointer",
-                    border: "none",
-                  }}
-                  data-testid="button-join-tasting"
-                >
+                <motion.div whileTap={{ scale: 0.97 }} style={btnPrimary} data-testid="button-join-tasting">
                   {t("landingPage.joinTasting")}
                 </motion.div>
               </Link>
 
               <Link href="/log-simple">
-                <motion.div
-                  whileTap={{ scale: 0.97 }}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    padding: "0.875rem",
-                    textAlign: "center",
-                    fontSize: "0.95rem",
-                    fontWeight: 600,
-                    fontFamily: "system-ui, sans-serif",
-                    background: "transparent",
-                    color: "#d4a256",
-                    borderRadius: "12px",
-                    cursor: "pointer",
-                    border: "1px solid #d4a256",
-                  }}
-                  data-testid="button-log-whisky"
-                >
+                <motion.div whileTap={{ scale: 0.97 }} style={btnOutline} data-testid="button-log-whisky">
                   {t("landingPage.logWhisky")}
                 </motion.div>
               </Link>
 
               <Link href="/host">
-                <motion.div
-                  whileTap={{ scale: 0.97 }}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    padding: "0.875rem",
-                    textAlign: "center",
-                    fontSize: "0.95rem",
-                    fontWeight: 600,
-                    fontFamily: "system-ui, sans-serif",
-                    background: "transparent",
-                    color: "#d4a256",
-                    borderRadius: "12px",
-                    cursor: "pointer",
-                    border: "1px solid #d4a256",
-                  }}
-                  data-testid="button-host-tasting"
-                >
+                <motion.div whileTap={{ scale: 0.97 }} style={btnOutline} data-testid="button-host-tasting">
                   {t("landingPage.hostTasting")}
                 </motion.div>
               </Link>
 
               <Link href="/my-taste">
-                <motion.div
-                  whileTap={{ scale: 0.97 }}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    padding: "0.875rem",
-                    textAlign: "center",
-                    fontSize: "0.95rem",
-                    fontWeight: 600,
-                    fontFamily: "system-ui, sans-serif",
-                    background: "transparent",
-                    color: "#d4a256",
-                    borderRadius: "12px",
-                    cursor: "pointer",
-                    border: "1px solid #d4a256",
-                  }}
-                  data-testid="button-my-taste"
-                >
+                <motion.div whileTap={{ scale: 0.97 }} style={btnOutline} data-testid="button-my-taste">
                   {t("landingPage.myTaste")}
                 </motion.div>
               </Link>
 
               <Link href="/discover">
-                <motion.div
-                  whileTap={{ scale: 0.97 }}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    padding: "0.875rem",
-                    textAlign: "center",
-                    fontSize: "0.95rem",
-                    fontWeight: 600,
-                    fontFamily: "system-ui, sans-serif",
-                    background: "transparent",
-                    color: "#d4a256",
-                    borderRadius: "12px",
-                    cursor: "pointer",
-                    border: "1px solid #d4a256",
-                  }}
-                  data-testid="button-discover"
-                >
+                <motion.div whileTap={{ scale: 0.97 }} style={btnOutline} data-testid="button-discover">
                   {t("landingPage.discover")}
                 </motion.div>
               </Link>

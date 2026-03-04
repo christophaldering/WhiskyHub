@@ -3635,9 +3635,11 @@ const resources = {
         explore: "Explore",
         joinTasting: "Join a Tasting",
         logWhisky: "Log a Whisky",
+        addDram: "Add Dram",
         hostTasting: "Host a Tasting",
         myTaste: "My Taste",
         discover: "Discover",
+        profileSettings: "Profile & Settings",
       },
       myTasteFlavors: {
         title: "Flavor Wheel",
@@ -7547,9 +7549,11 @@ const resources = {
         explore: "Entdecken",
         joinTasting: "Tasting beitreten",
         logWhisky: "Whisky eintragen",
+        addDram: "Dram hinzufügen",
         hostTasting: "Tasting erstellen",
         myTaste: "My Taste",
         discover: "Entdecken",
+        profileSettings: "Profil & Einstellungen",
       },
       myTasteFlavors: {
         title: "Aromarad",

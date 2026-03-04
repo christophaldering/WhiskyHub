@@ -1,0 +1,197 @@
+CaskSense v2.2 — Two-Screen Architecture + Correct Landing (No Feature Loss, Reversible)
+
+CONTEXT
+Repo: CaskSense v2.0.0 (React/Vite/TS, Wouter, Zustand, i18next, Dark Warm theme).
+Current state is inconsistent: Landing page still shows legacy entries (e.g., "Entdecken") and/or 5-entry thinking.
+We want a strict product model: "Tasting tool with intelligence".
+
+GOAL (NON-NEGOTIABLE)
+Implement a consistent TWO-SCREEN product architecture:
+BOTTOM NAV shows ONLY:
+1) Tasting
+2) My Taste
+
+No essential features may disappear.
+We are allowed to:
+- move entry points
+- hide items from primary navigation
+- create hubs
+- add redirects
+We are NOT allowed to:
+- delete pages
+- remove backend routes
+- change DB schema
+- reduce functionality
+
+Everything must remain reachable (direct route, deep link, or via My Taste sub-sections).
+
+--------------------------------------------
+STEP 0 — Feature Flags for Instant Rollback
+--------------------------------------------
+Create/extend: client/src/lib/config.ts
+export const NAV_VERSION: "legacy_5tab" | "two_screen" = "two_screen";
+export const LANDING_VERSION: "legacy_menu" | "two_screen_start" = "two_screen_start";
+
+All changes below must depend on these flags.
+Rollback should be possible by switching to legacy_*.
+
+--------------------------------------------
+STEP 1 — Bottom Nav: 2 Tabs Only
+--------------------------------------------
+Locate Simple Mode bottom nav (client/src/components/simple/*).
+When NAV_VERSION === "two_screen":
+- render exactly two tabs:
+  - "Tasting" -> /tasting
+  - "My Taste" -> /my-taste
+No third tab. No "Explore/Discover/Entdecken". No "Log". No "Host".
+When NAV_VERSION === "legacy_5tab":
+- keep old behavior unchanged.
+
+--------------------------------------------
+STEP 2 — Canonical Hubs
+--------------------------------------------
+Ensure these canonical top-level hubs exist and are used:
+
+/tasting  (Tasting Hub)
+/my-taste (My Taste Hub)
+
+If /tasting does not exist, create:
+client/src/pages/tasting-hub.tsx
+Add to router.
+
+Tasting Hub must show exactly two primary actions:
+- "Tasting beitreten" -> /tasting/join (or /enter via redirect)
+- "Tasting erstellen" -> /tasting/host (or /host-simple via redirect)
+
+Plus an optional small area:
+- "Aktives Tasting fortsetzen" (if session state indicates one; optional)
+Keep UI minimal.
+
+--------------------------------------------
+STEP 3 — Move Solo Logging explicitly to My Taste
+--------------------------------------------
+Solo logging is NOT an event. It belongs to My Taste.
+
+Add on /my-taste (top area):
+Primary CTA:
+- "+ Dram hinzufügen" (or "+ Dram loggen" if you insist) -> /my-taste/log
+
+Create alias route:
+- /my-taste/log renders the existing log page (currently /log-simple).
+Do not delete /log-simple, just make it an alias/redirect.
+
+IMPORTANT: Rename label everywhere (UI only):
+- "Whisky eintragen" -> "Dram hinzufügen"
+Keep translations in i18n.
+
+--------------------------------------------
+STEP 4 — Fix Landing Page (Start Screen)
+--------------------------------------------
+The user asked: "Ist das die richtige Landingpage?"
+We need a landing/start screen that matches the two-screen model.
+
+When LANDING_VERSION === "two_screen_start":
+The start screen must show:
+
+PRIMARY ACTIONS (3):
+1) "Tasting beitreten" -> /tasting/join
+2) "Dram hinzufügen" -> /my-taste/log
+3) "Tasting erstellen" -> /tasting/host
+
+SECONDARY (2) — small buttons/links:
+4) "Mein Geschmack" -> /my-taste
+5) "Profil & Einstellungen" -> existing settings route (/my-taste/settings)
+
+REMOVE from landing:
+- "Entdecken"
+- any separate "Explore"
+- any direct "Discover Hub" entry
+Do not remove features, just remove this entry point.
+
+Keep Dark Warm aesthetic. Keep typography (Playfair headline ok).
+The landing should NOT look like a giant menu of all features.
+
+If "/" currently routes to something else, set:
+- "/" -> landing start screen (recommended)
+or
+- "/" -> /tasting (acceptable)
+Pick one and be consistent.
+
+--------------------------------------------
+STEP 5 — Where does “Discover” content go?
+--------------------------------------------
+Discover must not exist as a primary top-level area, BUT content must remain reachable.
+
+Create within My Taste:
+
+/my-taste/knowledge (Knowledge hub)
+/my-taste/community (Community hub)
+
+Knowledge hub contains links to existing pages (no deletion):
+- Lexikon
+- Destillerien
+- Unabhängige Abfüller
+- Whisky-Datenbank
+- Tasting Guide (can live here OR also be reachable from Host flow)
+
+Community hub contains:
+- Taste Twins
+- Whisky-Freunde
+- Rankings / Rangliste (ideally merged; optional in this prompt)
+- Aktivitäts-Feed
+- Badges/Leaderboard (optional, but reachable)
+
+IMPORTANT:
+- Remove any bottom nav entry to /discover-hub
+- /discover-hub may remain as an alias redirecting to /my-taste/knowledge
+
+--------------------------------------------
+STEP 6 — Redirect Map (No Broken Links)
+--------------------------------------------
+Implement a client-side redirect layer near router root (or within routing logic),
+active only when NAV_VERSION === "two_screen".
+
+Mandatory redirects:
+- /enter -> /tasting/join
+- /host-simple and /simple-host -> /tasting/host
+- /log-simple -> /my-taste/log
+- /discover-hub -> /my-taste/knowledge
+- /vocabulary-dark -> /my-taste/knowledge (or /lexicon canonical)
+- /tasting-templates and /discover-templates -> one canonical (choose /tasting-templates) and keep aliases
+
+Legacy roots:
+- /legacy/* -> /tasting (or /my-taste) but do NOT crash
+- /app/* -> /tasting (or /my-taste)
+
+DO NOT redirect:
+- /admin, /support-console, /platform-analytics
+- deep tasting links: /tasting-room-simple/:id, /tasting-recap/:id
+
+--------------------------------------------
+STEP 7 — Admin & Session Dropdown
+--------------------------------------------
+Admin remains accessible via the existing session dropdown only (no bottom nav).
+Do not change auth logic.
+
+--------------------------------------------
+STEP 8 — Deliverables & Validation
+--------------------------------------------
+After implementation:
+1) List all modified/added files
+2) Print the final navigation tree (2 tabs + hubs + sub-hubs)
+3) Print redirect map
+4) Confirm no pages were deleted
+
+Run manual smoke checks (at least):
+- App loads and bottom nav has ONLY Tasting + My Taste
+- Landing page has 3 primary + 2 secondary entries (no Entdecken)
+- /tasting hub works (join + host)
+- /my-taste shows "+ Dram hinzufügen" leading to log
+- /discover-hub redirects to /my-taste/knowledge
+- /log-simple redirects to /my-taste/log
+- /tasting-room-simple/:id still works (no redirect)
+- No console errors, no TS errors
+
+EXECUTE NOW.
+Focus only on navigation, landing, hubs, redirects, and labels.
+Do not refactor unrelated code.
