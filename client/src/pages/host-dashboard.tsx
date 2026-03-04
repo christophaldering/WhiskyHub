@@ -15,7 +15,7 @@ import { Link } from "wouter";
 import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
 import QRCodeLib from "qrcode";
 import SimpleShell from "@/components/simple/simple-shell";
-import { c, cardStyle, inputStyle } from "@/lib/theme";
+import { c, cardStyle, inputStyle, pageTitleStyle } from "@/lib/theme";
 
 interface HostSummary {
   totalTastings: number;
@@ -541,7 +541,7 @@ export default function HostDashboard() {
 
   if ((isLoading && currentParticipant) || (currentParticipant && !summary)) {
     return (
-      <SimpleShell>
+      <SimpleShell maxWidth={600}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "20px 0" }} data-testid="host-dashboard-loading">
           <div style={{ height: 32, width: 220, background: `${c.card}80`, borderRadius: 8, animation: "pulse 2s infinite" }} />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
@@ -585,12 +585,12 @@ export default function HostDashboard() {
   );
 
   return (
-    <SimpleShell>
+    <SimpleShell maxWidth={600}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <LayoutDashboard style={{ width: 24, height: 24, color: c.accent }} />
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: c.accent, margin: 0, fontFamily: "'Playfair Display', serif" }} data-testid="text-host-dashboard-title">
+            <LayoutDashboard style={{ width: 22, height: 22, color: c.accent }} strokeWidth={1.8} />
+            <h1 style={pageTitleStyle} data-testid="text-host-dashboard-title">
               {t("hostDashboard.title")}
             </h1>
           </div>
@@ -636,16 +636,14 @@ export default function HostDashboard() {
               {statCards.map((card, i) => (
                 <motion.div key={card.key} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08, duration: 0.4 }}>
                   <div
-                    style={{ ...sectionCard, display: "flex", alignItems: "center", gap: 12, padding: "16px 14px" }}
+                    style={{ ...sectionCard, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "16px 10px", textAlign: "center" }}
                     data-testid={`stat-card-${card.key}`}
                   >
-                    <card.icon style={{ width: 28, height: 28, color: card.color, flexShrink: 0 }} />
-                    <div>
-                      <p style={{ fontSize: 22, fontWeight: 700, color: c.text, margin: 0, fontFamily: "'Playfair Display', serif" }} data-testid={`stat-value-${card.key}`}>
-                        {card.value}
-                      </p>
-                      <p style={{ fontSize: 11, color: c.muted, margin: 0 }}>{t(`hostDashboard.${card.key}`)}</p>
-                    </div>
+                    <card.icon style={{ width: 22, height: 22, color: card.color, flexShrink: 0 }} strokeWidth={1.8} />
+                    <p style={{ fontSize: 24, fontWeight: 700, color: c.text, margin: 0, fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }} data-testid={`stat-value-${card.key}`}>
+                      {card.value}
+                    </p>
+                    <p style={{ fontSize: 10, color: c.muted, margin: 0, lineHeight: 1.3 }}>{t(`hostDashboard.${card.key}`)}</p>
                   </div>
                 </motion.div>
               ))}
@@ -973,11 +971,14 @@ export default function HostDashboard() {
         )}
       </motion.div>
       <style>{`
-        @media (max-width: 640px) {
-          .hd-grid-3 { grid-template-columns: 1fr !important; }
-          .hd-grid-2 { grid-template-columns: 1fr !important; }
-          .hd-grid-2-1 { grid-template-columns: 1fr !important; }
-          .hd-invite-grid { grid-template-columns: 1fr !important; }
+        .hd-grid-3 { grid-template-columns: repeat(3, 1fr) !important; }
+        .hd-grid-2 { grid-template-columns: 1fr !important; }
+        .hd-grid-2-1 { grid-template-columns: 1fr !important; }
+        .hd-invite-grid { grid-template-columns: 1fr !important; }
+        @media (min-width: 768px) {
+          .hd-grid-2 { grid-template-columns: 1fr 1fr !important; }
+          .hd-grid-2-1 { grid-template-columns: 2fr 1fr !important; }
+          .hd-invite-grid { grid-template-columns: 1fr 1fr !important; }
         }
       `}</style>
     </SimpleShell>
