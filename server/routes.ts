@@ -5754,8 +5754,26 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         };
       });
 
-      const suggestions = scored.sort((a, b) => b.score - a.score).slice(0, 5);
-      res.json(suggestions);
+      const maxScore = Math.max(...scored.map(s => s.score), 1);
+      const top = scored.sort((a, b) => b.score - a.score).slice(0, 5);
+      const suggestions = top.map(s => ({
+        name: s.name,
+        distillery: s.distillery || "",
+        region: s.region || "",
+        caskInfluence: s.caskInfluence || "",
+        peatLevel: s.peatLevel || "",
+        score: Math.round((s.score / maxScore) * 100),
+        reason: s.reasons.join(". "),
+      }));
+
+      res.json({
+        lineup: {
+          regions: Array.from(lineupRegions),
+          caskTypes: Array.from(lineupCasks),
+          peatLevels: Array.from(lineupPeats),
+        },
+        suggestions,
+      });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
