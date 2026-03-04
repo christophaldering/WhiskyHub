@@ -28,9 +28,8 @@ interface CommunityWhisky {
 }
 
 export default function CommunityRankings() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const isDE = i18n.language === "de";
   const [filter, setFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -84,13 +83,11 @@ export default function CommunityRankings() {
         <div className="flex items-center gap-3 mb-2">
           <Trophy className="w-7 h-7 text-primary" />
           <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-rankings-title">
-            {isDE ? "Community Rankings" : "Community Rankings"}
+            {t("communityRankings.title")}
           </h1>
         </div>
         <p className="text-sm text-muted-foreground mb-6">
-          {isDE
-            ? "Die am besten bewerteten Whiskys aller CaskSense-Nutzer – basierend auf echten Verkostungen."
-            : "Top-rated whiskies across all CaskSense users – based on real tastings."}
+          {t("communityRankings.subtitle")}
         </p>
 
         <div className="mb-6">
@@ -100,7 +97,7 @@ export default function CommunityRankings() {
             data-testid="button-toggle-filters"
           >
             <Filter className="w-4 h-4" />
-            {isDE ? "Filter" : "Filters"}
+            {t("communityRankings.filters")}
             <ChevronDown className={`w-3 h-3 transition-transform ${showFilters ? "rotate-180" : ""}`} />
           </button>
           {showFilters && (
@@ -110,7 +107,7 @@ export default function CommunityRankings() {
                 className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${filter === "all" ? "bg-primary text-white border-primary" : "border-border hover:border-primary/50"}`}
                 data-testid="button-filter-all"
               >
-                {isDE ? "Alle" : "All"}
+                {t("communityRankings.filterAll")}
               </button>
               {regions.map(r => (
                 <button
@@ -145,8 +142,8 @@ export default function CommunityRankings() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <Trophy className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <p className="font-serif">{isDE ? "Noch nicht genug Bewertungen für ein Ranking." : "Not enough ratings for a ranking yet."}</p>
-            <p className="text-xs mt-2">{isDE ? "Es werden mindestens 2 Bewertungen pro Whisky benötigt." : "At least 2 ratings per whisky are required."}</p>
+            <p className="font-serif">{t("communityRankings.emptyTitle")}</p>
+            <p className="text-xs mt-2">{t("communityRankings.emptyHint")}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -197,11 +194,11 @@ export default function CommunityRankings() {
                       <div className="flex items-center gap-3 mt-1.5">
                         <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                           <Users className="w-3 h-3" />
-                          {whisky.totalRaters} {isDE ? "Verkoster" : "tasters"}
+                          {whisky.totalRaters} {t("communityRankings.tasters")}
                         </div>
                         <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                           <Star className="w-3 h-3" />
-                          {whisky.totalRatings} {isDE ? "Bewertungen" : "ratings"}
+                          {whisky.totalRatings} {t("communityRankings.ratings")}
                         </div>
                         {whisky.caskInfluence && (
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary/80">{whisky.caskInfluence}</span>
@@ -219,7 +216,7 @@ export default function CommunityRankings() {
                       </div>
                       {myScore !== undefined && (
                         <div className="text-[10px] mt-0.5">
-                          <span className="text-muted-foreground">{isDE ? "Du" : "You"}: </span>
+                          <span className="text-muted-foreground">{t("communityRankings.you")}: </span>
                           <span className={`font-semibold ${myScore > whisky.avgOverall ? "text-green-600" : myScore < whisky.avgOverall ? "text-red-500" : "text-muted-foreground"}`}>
                             {myScore}
                           </span>
@@ -230,9 +227,9 @@ export default function CommunityRankings() {
 
                   <div className="mt-3 grid grid-cols-4 gap-2">
                     {[
-                      { label: isDE ? "Nase" : "Nose", value: whisky.avgNose },
-                      { label: isDE ? "Geschmack" : "Taste", value: whisky.avgTaste },
-                      { label: isDE ? "Abgang" : "Finish", value: whisky.avgFinish },
+                      { label: t("communityRankings.nose"), value: whisky.avgNose },
+                      { label: t("communityRankings.taste"), value: whisky.avgTaste },
+                      { label: t("communityRankings.finish"), value: whisky.avgFinish },
                       { label: "Balance", value: whisky.avgBalance },
                     ].map(d => (
                       <div key={d.label} className="text-center">
@@ -246,9 +243,7 @@ export default function CommunityRankings() {
             })}
 
             <p className="text-xs text-muted-foreground text-center mt-6 italic">
-              {isDE
-                ? `Basierend auf ${filtered.reduce((s, w) => s + w.totalRatings, 0)} Bewertungen von ${new Set(filtered.flatMap(w => Array.from({ length: w.totalRaters }))).size || "mehreren"} Verkostern.`
-                : `Based on ${filtered.reduce((s, w) => s + w.totalRatings, 0)} ratings across all tasters.`}
+              {t("communityRankings.footerNote", { count: filtered.reduce((s, w) => s + w.totalRatings, 0) })}
             </p>
           </div>
         )}

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { journalApi, ratingNotesApi } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
@@ -128,7 +129,7 @@ interface JournalEntry {
   body?: string | null;
 }
 
-function computeFlavorFrequencies(entries: JournalEntry[], _isDE: boolean) {
+function computeFlavorFrequencies(entries: JournalEntry[]) {
   const allText = entries
     .map((e) => [e.noseNotes, e.tasteNotes, e.finishNotes, e.body].filter(Boolean).join(" "))
     .join(" ")
@@ -157,6 +158,7 @@ function computeFlavorFrequencies(entries: JournalEntry[], _isDE: boolean) {
 
 export default function MyTasteFlavors() {
   const { currentParticipant } = useAppStore();
+  const { t } = useTranslation();
 
   if (!currentParticipant) {
     return (
@@ -164,10 +166,10 @@ export default function MyTasteFlavors() {
         <div style={{ textAlign: "center", padding: "60px 20px" }} data-testid="flavor-wheel-signin">
           <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}>◎</div>
           <p style={{ color: C.text, fontSize: 16, fontFamily: "'Playfair Display', serif", marginBottom: 8 }}>
-            Flavor Wheel
+            {t("myTasteFlavors.title")}
           </p>
           <p style={{ color: C.muted, fontSize: 14, marginBottom: 24 }}>
-            Sign in to see your personal flavor profile.
+            {t("myTasteFlavors.signInDesc")}
           </p>
           <Link href="/my-taste">
             <span
@@ -184,7 +186,7 @@ export default function MyTasteFlavors() {
               }}
               data-testid="link-goto-mytaste"
             >
-              Go to My Taste
+              {t("myTasteFlavors.goToMyTaste")}
             </span>
           </Link>
         </div>
@@ -200,7 +202,8 @@ export default function MyTasteFlavors() {
 }
 
 function FlavorWheelInner({ participantId }: { participantId: string }) {
-  const isDE = false;
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language?.startsWith("de") ? "de" : "en";
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const { data: journalEntries, isLoading } = useQuery<JournalEntry[]>({
@@ -229,7 +232,7 @@ function FlavorWheelInner({ participantId }: { participantId: string }) {
       return { categoryFreqs: {}, subFreqs: {}, totalMentions: 0, topCategory: null, mostUniqueFlavor: null, innerData: [], outerData: [] };
     }
 
-    const { categoryFreqs, subFreqs } = computeFlavorFrequencies(combinedEntries, isDE);
+    const { categoryFreqs, subFreqs } = computeFlavorFrequencies(combinedEntries);
     const totalMentions = Object.values(categoryFreqs).reduce((s, v) => s + v, 0);
 
     let topCategory: FlavorCategory | null = null;
@@ -254,7 +257,7 @@ function FlavorWheelInner({ participantId }: { participantId: string }) {
     }
 
     const innerData = FLAVOR_WHEEL_DATA.map((cat) => ({
-      name: isDE ? cat.de : cat.en,
+      name: cat[lang],
       value: Math.max(categoryFreqs[cat.id], 1),
       actualValue: categoryFreqs[cat.id],
       color: cat.color,
@@ -265,7 +268,7 @@ function FlavorWheelInner({ participantId }: { participantId: string }) {
     for (const cat of FLAVOR_WHEEL_DATA) {
       for (const sub of cat.subcategories) {
         outerData.push({
-          name: isDE ? sub.de : sub.en,
+          name: sub[lang],
           value: Math.max(subFreqs[cat.id][sub.id], 0.3),
           actualValue: subFreqs[cat.id][sub.id],
           color: cat.color,
@@ -276,7 +279,7 @@ function FlavorWheelInner({ participantId }: { participantId: string }) {
     }
 
     return { categoryFreqs, subFreqs, totalMentions, topCategory, mostUniqueFlavor, innerData, outerData };
-  }, [journalEntries, ratingNotes, isDE]);
+  }, [journalEntries, ratingNotes, lang]);
 
   if (isLoading) {
     return (
@@ -301,17 +304,17 @@ function FlavorWheelInner({ participantId }: { participantId: string }) {
         }}
         data-testid="text-flavor-wheel-title"
       >
-        Flavor Wheel
+        {t("myTasteFlavors.title")}
       </h1>
       <p style={{ color: C.muted, fontSize: 13, marginBottom: 24 }}>
-        Your personal aroma profile based on journal entries and tasting notes.
+        {t("myTasteFlavors.subtitle")}
       </p>
 
       {!hasData ? (
         <div style={{ textAlign: "center", padding: "48px 0", color: C.muted }}>
           <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}>◎</div>
           <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 16 }}>
-            No flavor data yet. Add journal entries or tasting notes to build your wheel.
+            {t("myTasteFlavors.noData")}
           </p>
         </div>
       ) : (
@@ -337,7 +340,7 @@ function FlavorWheelInner({ participantId }: { participantId: string }) {
               <p style={{ fontSize: 22, fontFamily: "'Playfair Display', serif", fontWeight: 700, color: C.accent }}>
                 {totalMentions}
               </p>
-              <p style={{ fontSize: 11, color: C.muted }}>Total Mentions</p>
+              <p style={{ fontSize: 11, color: C.muted }}>{t("myTasteFlavors.totalMentions")}</p>
             </div>
             <div
               style={{
@@ -357,9 +360,9 @@ function FlavorWheelInner({ participantId }: { participantId: string }) {
                   color: topCategory?.color || C.text,
                 }}
               >
-                {topCategory ? (isDE ? topCategory.de : topCategory.en) : "—"}
+                {topCategory ? topCategory[lang] : "—"}
               </p>
-              <p style={{ fontSize: 11, color: C.muted }}>Top Category</p>
+              <p style={{ fontSize: 11, color: C.muted }}>{t("myTasteFlavors.topCategory")}</p>
             </div>
             <div
               style={{
@@ -380,9 +383,9 @@ function FlavorWheelInner({ participantId }: { participantId: string }) {
                   opacity: 0.8,
                 }}
               >
-                {mostUniqueFlavor ? (isDE ? mostUniqueFlavor.sub.de : mostUniqueFlavor.sub.en) : "—"}
+                {mostUniqueFlavor ? mostUniqueFlavor.sub[lang] : "—"}
               </p>
-              <p style={{ fontSize: 11, color: C.muted }}>Most Unique</p>
+              <p style={{ fontSize: 11, color: C.muted }}>{t("myTasteFlavors.mostUnique")}</p>
             </div>
           </div>
 
@@ -403,10 +406,10 @@ function FlavorWheelInner({ participantId }: { participantId: string }) {
                 marginBottom: 4,
               }}
             >
-              Your Aroma Wheel
+              {t("myTasteFlavors.aromaWheel")}
             </h2>
             <p style={{ fontSize: 12, color: C.muted, marginBottom: 16 }}>
-              Inner ring = categories, outer ring = subcategories. Click to explore.
+              {t("myTasteFlavors.aromaWheelHint")}
             </p>
             <div style={{ height: 400 }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -483,7 +486,7 @@ function FlavorWheelInner({ participantId }: { participantId: string }) {
                             {data.name}
                           </p>
                           <p style={{ fontSize: 11, color: C.muted }}>
-                            {data.actualValue} mentions
+                            {t("myTasteFlavors.mentions", { count: data.actualValue })}
                           </p>
                         </div>
                       );
@@ -531,7 +534,7 @@ function FlavorWheelInner({ participantId }: { participantId: string }) {
                       display: "inline-block",
                     }}
                   />
-                  <span>{isDE ? cat.de : cat.en}</span>
+                  <span>{cat[lang]}</span>
                   <span style={{ color: C.muted }}>({categoryFreqs[cat.id] || 0})</span>
                 </button>
               ))}
@@ -575,10 +578,10 @@ function FlavorWheelInner({ participantId }: { participantId: string }) {
                       color: C.text,
                     }}
                   >
-                    {isDE ? selectedCatData.de : selectedCatData.en}
+                    {selectedCatData[lang]}
                   </span>
                   <span style={{ fontSize: 13, color: C.muted, marginLeft: 4 }}>
-                    ({categoryFreqs[selectedCatData.id]} mentions)
+                    ({t("myTasteFlavors.mentions", { count: categoryFreqs[selectedCatData.id] })})
                   </span>
                 </div>
                 <button
@@ -641,7 +644,7 @@ function FlavorWheelInner({ participantId }: { participantId: string }) {
                         }}
                       >
                         <span style={{ fontSize: 13, fontWeight: 500, color: C.text }}>
-                          {isDE ? sub.de : sub.en}
+                          {sub[lang]}
                         </span>
                         <span
                           style={{

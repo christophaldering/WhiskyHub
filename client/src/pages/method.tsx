@@ -18,8 +18,7 @@ function Section({ title, children, defaultOpen = true }: { title: string; child
 }
 
 export default function Method() {
-  const { i18n } = useTranslation();
-  const isDE = i18n.language === "de";
+  const { t } = useTranslation();
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8" data-testid="method-page">
@@ -27,139 +26,117 @@ export default function Method() {
         <div className="flex items-center gap-3 mb-2">
           <BookOpen className="w-7 h-7 text-primary" />
           <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary">
-            {isDE ? "So wird dein Profil erstellt" : "How Your Profile Is Built"}
+            {t("methodPage.title")}
           </h1>
         </div>
         <p className="text-sm text-muted-foreground mb-8">
-          {isDE
-            ? "Transparenz ist uns wichtig. Hier erklären wir genau, wie dein Whisky-Profil berechnet wird."
-            : "Transparency matters to us. Here we explain exactly how your whisky profile is calculated."}
+          {t("methodPage.subtitle")}
         </p>
 
         <div className="space-y-6">
-          <Section title={isDE ? "Für Enthusiasten" : "For Enthusiasts"}>
+          <Section title={t("methodPage.forEnthusiasts")}>
             <div className="prose prose-sm max-w-none text-muted-foreground space-y-3">
               <p>
-                {isDE
-                  ? "Dein Whisky-Profil basiert ausschließlich auf deinem Bewertungsverhalten — nicht auf Persönlichkeitstests, Fragebögen oder Annahmen über dich als Person."
-                  : "Your whisky profile is based exclusively on your rating behavior — not on personality tests, questionnaires, or assumptions about you as a person."}
+                {t("methodPage.introText")}
               </p>
               <p className="font-medium text-foreground">
-                {isDE ? "Was das Profil zeigt:" : "What the profile shows:"}
+                {t("methodPage.whatProfileShows")}
               </p>
               <ul className="list-disc pl-5 space-y-1">
-                <li>{isDE ? "Keine Typologien oder Kategorien — du wirst nicht als \"Explorer\" oder \"Kenner\" eingestuft." : "No typologies or categories — you are not classified as an \"Explorer\" or \"Connoisseur\"."}</li>
-                <li>{isDE ? "Dein Geschmack wird als mehrdimensionale, sich verändernde Struktur abgebildet." : "Your taste is mapped as a multidimensional, evolving structure."}</li>
-                <li>{isDE ? "Alle Aussagen beschreiben dein Verhalten, nie deine Persönlichkeit." : "All statements describe your behavior, never your personality."}</li>
-                <li>{isDE ? "Vergleiche mit der Plattform oder Freunden musst du aktiv einschalten." : "Comparisons with the platform or friends must be actively enabled by you."}</li>
-                <li>{isDE ? "Jede Zahl wird mit Stichprobengröße und Streuungsmaß angezeigt." : "Every number is shown with sample size and dispersion measure."}</li>
+                <li>{t("methodPage.noTypologies")}</li>
+                <li>{t("methodPage.multidimensional")}</li>
+                <li>{t("methodPage.behaviorOnly")}</li>
+                <li>{t("methodPage.comparisonsOptIn")}</li>
+                <li>{t("methodPage.sampleSize")}</li>
               </ul>
               <p>
-                {isDE
-                  ? "Dein Profil verändert sich mit jeder neuen Bewertung. Es ist ein lebendiges Dokument deiner Geschmacksentwicklung."
-                  : "Your profile changes with every new rating. It is a living document of your taste evolution."}
+                {t("methodPage.livingDocument")}
               </p>
             </div>
           </Section>
 
-          <Section title={isDE ? "Für Experten" : "For Experts"} defaultOpen={false}>
+          <Section title={t("methodPage.forExperts")} defaultOpen={false}>
             <div className="prose prose-sm max-w-none text-muted-foreground space-y-4">
               <div>
                 <h3 className="text-sm font-serif font-semibold text-foreground mb-1">
-                  {isDE ? "Dimensionales Modell" : "Dimensional Model"}
+                  {t("methodPage.dimensionalModel")}
                 </h3>
                 <p>
-                  {isDE
-                    ? "Geschmack wird als kontinuierlicher, mehrdimensionaler Präferenzraum modelliert (revealed preferences). Jede Dimension (Nase, Geschmack, Abgang, Balance, Gesamt) wird unabhängig berechnet."
-                    : "Taste is modeled as a continuous, multidimensional preference space (revealed preferences). Each dimension (Nose, Taste, Finish, Balance, Overall) is computed independently."}
+                  {t("methodPage.dimensionalModelText")}
                 </p>
               </div>
 
               <div>
                 <h3 className="text-sm font-serif font-semibold text-foreground mb-1">
-                  {isDE ? "Plattform-Basis: Median statt Mittelwert" : "Platform Basis: Median Over Mean"}
+                  {t("methodPage.platformBasis")}
                 </h3>
                 <p>
-                  {isDE
-                    ? "Für alle Plattform-Vergleiche wird der Median verwendet, nicht der arithmetische Mittelwert. Der Median ist robust gegenüber Ausreißern und bildet die zentrale Tendenz der Bewertungen besser ab."
-                    : "For all platform comparisons, the median is used, not the arithmetic mean. The median is robust against outliers and better represents the central tendency of ratings."}
+                  {t("methodPage.platformBasisText")}
                 </p>
               </div>
 
               <div>
                 <h3 className="text-sm font-serif font-semibold text-foreground mb-1">
-                  {isDE ? "Interquartilsabstand (IQR)" : "Interquartile Range (IQR)"}
+                  {t("methodPage.iqr")}
                 </h3>
                 <p>
-                  {isDE
-                    ? "Wo verfügbar (N ≥ 4), wird der IQR (Q3 − Q1) als Streuungsmaß angezeigt. Er zeigt, wie einig sich die Plattform bei einem Whisky ist."
-                    : "Where available (N ≥ 4), the IQR (Q3 − Q1) is shown as a dispersion measure. It indicates how much agreement exists on the platform for a whisky."}
+                  {t("methodPage.iqrText")}
                 </p>
               </div>
 
               <div>
                 <h3 className="text-sm font-serif font-semibold text-foreground mb-1">
-                  {isDE ? "Systematische Abweichung" : "Systematic Deviation"}
+                  {t("methodPage.systematicDeviation")}
                 </h3>
                 <p className="font-mono text-xs bg-muted/30 p-2 rounded">
-                  avg_delta = mean(UserScore_i − PlatformMedian_i) {isDE ? "für alle Whiskys i mit Plattform-Daten" : "for all whiskies i with platform data"}
+                  avg_delta = mean(UserScore_i − PlatformMedian_i) {t("methodPage.systematicDeviationFormula")}
                 </p>
                 <p>
-                  {isDE
-                    ? "Misst, ob du systematisch höher oder niedriger bewertest als der Plattform-Median. Ein positiver Wert bedeutet nicht \"großzügiger\" — er beschreibt lediglich eine strukturelle Tendenz im Bewertungsverhalten."
-                    : "Measures whether you systematically rate higher or lower than the platform median. A positive value does not mean \"more generous\" — it merely describes a structural tendency in rating behavior."}
+                  {t("methodPage.systematicDeviationText")}
                 </p>
               </div>
 
               <div>
                 <h3 className="text-sm font-serif font-semibold text-foreground mb-1">
-                  {isDE ? "Stabilitätslogik" : "Stability Logic"}
+                  {t("methodPage.stabilityLogic")}
                 </h3>
                 <p>
-                  {isDE
-                    ? "Die Konfidenz einer Dimension basiert auf der Anzahl der Beobachtungen:"
-                    : "The confidence of a dimension is based on the number of observations:"}
+                  {t("methodPage.stabilityLogicText")}
                 </p>
                 <ul className="list-disc pl-5 space-y-1 font-mono text-xs">
-                  <li>{isDE ? "Vorläufig" : "Preliminary"}: N &lt; 5</li>
-                  <li>{isDE ? "Tendenz" : "Tendency"}: 5 ≤ N &lt; 15</li>
-                  <li>{isDE ? "Stabil" : "Stable"}: N ≥ 15</li>
+                  <li>{t("methodPage.preliminary")}: N &lt; 5</li>
+                  <li>{t("methodPage.tendency")}: 5 ≤ N &lt; 15</li>
+                  <li>{t("methodPage.stable")}: N ≥ 15</li>
                 </ul>
                 <p className="font-mono text-xs bg-muted/30 p-2 rounded mt-2">
-                  {isDE ? "Stabilität %" : "Stability %"} = min(100, N × 6.67)
+                  {t("methodPage.stabilityPercent")} = min(100, N × 6.67)
                 </p>
               </div>
 
               <div>
                 <h3 className="text-sm font-serif font-semibold text-foreground mb-1">
-                  {isDE ? "Normalisierung" : "Normalization"}
+                  {t("methodPage.normalization")}
                 </h3>
                 <p>
-                  {isDE
-                    ? "Alle Bewertungen werden auf eine 0-100-Skala normalisiert (score × 100/scale), um Vergleiche über verschiedene Bewertungsskalen (5/10/20/100 Punkte) hinweg fair zu gestalten."
-                    : "All ratings are normalized to a 0-100 scale (score × 100/scale), ensuring fair comparisons across different rating scales (5/10/20/100 points)."}
+                  {t("methodPage.normalizationText")}
                 </p>
               </div>
 
               <div>
                 <h3 className="text-sm font-serif font-semibold text-foreground mb-1">
-                  {isDE ? "Plattform-Grundgesamtheit" : "Platform Population"}
+                  {t("methodPage.platformPopulation")}
                 </h3>
                 <p>
-                  {isDE
-                    ? "Die Plattform-Basis umfasst alle aktiven Profile und deren Bewertungen. Die Stichprobengröße (N) wird bei jeder Vergleichsmetrik transparent angezeigt."
-                    : "The platform basis includes all active profiles and their ratings. The sample size (N) is transparently displayed alongside every comparison metric."}
+                  {t("methodPage.platformPopulationText")}
                 </p>
               </div>
 
               <div>
                 <h3 className="text-sm font-serif font-semibold text-foreground mb-1">
-                  {isDE ? "Keine normative Bewertung" : "No Normative Evaluation"}
+                  {t("methodPage.noNormativeEvaluation")}
                 </h3>
                 <p>
-                  {isDE
-                    ? "Abweichungen werden strukturell beschrieben, nie als besser oder schlechter bewertet. Es gibt keine Perzentil-Ränge und kein Ranking im Profilkontext."
-                    : "Deviations are described structurally, never evaluated as better or worse. There are no percentile ranks and no ranking in the profile context."}
+                  {t("methodPage.noNormativeEvaluationText")}
                 </p>
               </div>
             </div>
@@ -168,7 +145,7 @@ export default function Method() {
 
         <div className="mt-8 text-center">
           <Link href="/flavor-profile" className="text-xs text-primary/70 hover:text-primary transition-colors" data-testid="link-back-profile">
-            ← {isDE ? "Zurück zum Geschmacksprofil" : "Back to Flavor Profile"}
+            ← {t("methodPage.backToProfile")}
           </Link>
         </div>
       </motion.div>

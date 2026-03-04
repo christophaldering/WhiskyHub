@@ -8,6 +8,7 @@ import { Link } from "wouter";
 import { GuestPreview } from "@/components/guest-preview";
 import SimpleShell from "@/components/simple/simple-shell";
 import { c, cardStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
+import type { TFunction } from "i18next";
 
 interface ActivityItem {
   type: "journal" | "tasting";
@@ -17,7 +18,7 @@ interface ActivityItem {
   details: Record<string, any>;
 }
 
-function formatRelativeTime(timestamp: string, isDE: boolean): string {
+function formatRelativeTime(timestamp: string, t: TFunction, language: string): string {
   const now = Date.now();
   const then = new Date(timestamp).getTime();
   const diffMs = now - then;
@@ -25,17 +26,16 @@ function formatRelativeTime(timestamp: string, isDE: boolean): string {
   const diffHrs = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMin < 1) return isDE ? "Gerade eben" : "Just now";
-  if (diffMin < 60) return isDE ? `vor ${diffMin} Min.` : `${diffMin}m ago`;
-  if (diffHrs < 24) return isDE ? `vor ${diffHrs} Std.` : `${diffHrs}h ago`;
-  if (diffDays < 7) return isDE ? `vor ${diffDays} Tagen` : `${diffDays}d ago`;
-  return new Date(timestamp).toLocaleDateString(isDE ? "de-DE" : "en-US", { month: "short", day: "numeric" });
+  if (diffMin < 1) return t("activityFeed.justNow");
+  if (diffMin < 60) return t("activityFeed.minutesAgo", { count: diffMin });
+  if (diffHrs < 24) return t("activityFeed.hoursAgo", { count: diffHrs });
+  if (diffDays < 7) return t("activityFeed.daysAgo", { count: diffDays });
+  return new Date(timestamp).toLocaleDateString(language === "de" ? "de-DE" : "en-US", { month: "short", day: "numeric" });
 }
 
 export default function ActivityFeed() {
   const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const isDE = i18n.language === "de";
 
   const { data, isLoading } = useQuery<{ activities: ActivityItem[] }>({
     queryKey: ["friend-activity", currentParticipant?.id],
@@ -116,12 +116,12 @@ export default function ActivityFeed() {
                     <div style={{ background: c.card, borderRadius: 8, border: `1px solid ${c.border}66`, padding: 16, transition: "border-color 0.2s" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                         <span style={{ fontSize: 14, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text }}>{activity.participantName}</span>
-                        <span style={{ fontSize: 10, color: `${c.muted}99` }}>{formatRelativeTime(activity.timestamp, isDE)}</span>
+                        <span style={{ fontSize: 10, color: `${c.muted}99` }}>{formatRelativeTime(activity.timestamp, t, i18n.language)}</span>
                       </div>
                       {activity.type === "journal" ? (
                         <div>
                           <p style={{ fontSize: 12, color: c.muted }}>
-                            {isDE ? "Hat einen Tagebucheintrag geschrieben" : "Wrote a journal entry"}
+                            {t("activityFeed.wroteJournalEntry")}
                           </p>
                           <p style={{ fontSize: 14, fontWeight: 500, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: c.text }}>{activity.details.title}</p>
                           {activity.details.whiskyName && (
@@ -140,7 +140,7 @@ export default function ActivityFeed() {
                       ) : (
                         <div>
                           <p style={{ fontSize: 12, color: c.muted }}>
-                            {isDE ? "Nimmt an einem Tasting teil" : "Joined a tasting"}
+                            {t("activityFeed.joinedTasting")}
                           </p>
                           <Link href={`/tasting/${activity.details.tastingId}`}>
                             <p style={{ fontSize: 14, fontWeight: 500, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: c.text, cursor: "pointer", transition: "color 0.2s" }}>

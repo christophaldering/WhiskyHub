@@ -14,9 +14,8 @@ interface TasteTwin {
 }
 
 export default function TasteTwins() {
-  const { i18n } = useTranslation();
+  const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const isDE = i18n.language === "de";
 
   const { data: twins, isLoading } = useQuery<TasteTwin[]>({
     queryKey: ["taste-twins", currentParticipant?.id],
@@ -27,19 +26,19 @@ export default function TasteTwins() {
   if (!currentParticipant) {
     return (
       <GuestPreview
-        featureTitle={isDE ? "Geschmackszwillinge" : "Taste Twins"}
-        featureDescription={isDE ? "Finde Verkoster mit ähnlichem Geschmack." : "Find tasters who share your palate."}
+        featureTitle={t("tasteTwins.title")}
+        featureDescription={t("tasteTwins.featureDescription")}
       >
         <div className="space-y-4">
-          <h1 className="text-2xl font-serif font-bold">{isDE ? "Geschmackszwillinge" : "Taste Twins"}</h1>
+          <h1 className="text-2xl font-serif font-bold">{t("tasteTwins.title")}</h1>
           <div className="grid gap-3">
-            {[{ name: "Rudi M.", match: "94%", shared: 12 }, { name: "Anna K.", match: "87%", shared: 8 }, { name: "Thomas B.", match: "82%", shared: 6 }].map(t => (
-              <div key={t.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
+            {[{ name: "Rudi M.", match: "94%", shared: 12 }, { name: "Anna K.", match: "87%", shared: 8 }, { name: "Thomas B.", match: "82%", shared: 6 }].map(t_item => (
+              <div key={t_item.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
                 <div>
-                  <div className="font-serif font-semibold">{t.name}</div>
-                  <div className="text-sm text-muted-foreground">{t.shared} {isDE ? "gemeinsame Whiskys" : "shared whiskies"}</div>
+                  <div className="font-serif font-semibold">{t_item.name}</div>
+                  <div className="text-sm text-muted-foreground">{t_item.shared} {t("tasteTwins.sharedWhiskies")}</div>
                 </div>
-                <div className="text-primary font-serif font-bold">{t.match}</div>
+                <div className="text-primary font-serif font-bold">{t_item.match}</div>
               </div>
             ))}
           </div>
@@ -56,10 +55,10 @@ export default function TasteTwins() {
   };
 
   const getMatchLabel = (correlation: number) => {
-    if (correlation >= 0.8) return isDE ? "Zwilling" : "Twin";
-    if (correlation >= 0.5) return isDE ? "Ähnlich" : "Similar";
-    if (correlation >= 0.3) return isDE ? "Verwandt" : "Related";
-    return isDE ? "Verschieden" : "Different";
+    if (correlation >= 0.8) return t("tasteTwins.matchTwin");
+    if (correlation >= 0.5) return t("tasteTwins.matchSimilar");
+    if (correlation >= 0.3) return t("tasteTwins.matchRelated");
+    return t("tasteTwins.matchDifferent");
   };
 
   return (
@@ -68,13 +67,11 @@ export default function TasteTwins() {
         <div className="flex items-center gap-3 mb-2">
           <HeartHandshake className="w-7 h-7 text-primary" />
           <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-twins-title">
-            {isDE ? "Geschmackszwillinge" : "Taste Twins"}
+            {t("tasteTwins.title")}
           </h1>
         </div>
         <p className="text-sm text-muted-foreground mb-8">
-          {isDE
-            ? "Wer bewertet Whiskys ähnlich wie du? Basierend auf gemeinsam verkosteten Abfüllungen."
-            : "Who rates whiskies like you do? Based on shared tasting experiences."}
+          {t("tasteTwins.subtitle")}
         </p>
 
         {isLoading ? (
@@ -86,11 +83,9 @@ export default function TasteTwins() {
         ) : !twins || twins.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <HeartHandshake className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <p className="font-serif">{isDE ? "Noch keine Geschmackszwillinge gefunden." : "No taste twins found yet."}</p>
+            <p className="font-serif">{t("tasteTwins.emptyTitle")}</p>
             <p className="text-xs mt-2">
-              {isDE
-                ? "Du brauchst mindestens 3 gemeinsam bewertete Whiskys mit anderen Teilnehmern."
-                : "You need at least 3 commonly rated whiskies with other participants."}
+              {t("tasteTwins.emptyHint")}
             </p>
           </div>
         ) : (
@@ -116,7 +111,7 @@ export default function TasteTwins() {
                     <div className="flex items-center gap-3 mt-1">
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Wine className="w-3 h-3" />
-                        {twin.sharedWhiskies} {isDE ? "gemeinsame Whiskys" : "shared whiskies"}
+                        {twin.sharedWhiskies} {t("tasteTwins.sharedWhiskies")}
                       </div>
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                         twin.correlation >= 0.8 ? "bg-green-100 text-green-700" :
@@ -130,7 +125,7 @@ export default function TasteTwins() {
 
                   <div className="text-right shrink-0">
                     <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                      {isDE ? "Übereinstimmung" : "Match"}
+                      {t("tasteTwins.matchLabel")}
                     </div>
                     <div className={`text-2xl font-serif font-bold ${getMatchColor(twin.correlation)}`}>
                       {Math.round(twin.correlation * 100)}%
@@ -141,9 +136,7 @@ export default function TasteTwins() {
             ))}
 
             <p className="text-xs text-muted-foreground text-center mt-6 italic">
-              {isDE
-                ? "Die Übereinstimmung basiert auf der Korrelation eurer Bewertungen bei gemeinsam verkosteten Whiskys."
-                : "Match is based on the correlation of your ratings for commonly tasted whiskies."}
+              {t("tasteTwins.footerNote")}
             </p>
           </div>
         )}

@@ -50,9 +50,8 @@ interface FlavorProfileData {
 }
 
 export default function Comparison() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const isDE = i18n.language === "de";
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -95,11 +94,11 @@ export default function Comparison() {
   const selected = selectedIds.map(id => ratedWhiskies.find(r => r.whisky.id === id)).filter(Boolean) as typeof ratedWhiskies;
 
   const dimensions = [
-    { key: "nose", label: isDE ? "Nase" : "Nose" },
-    { key: "taste", label: isDE ? "Geschmack" : "Taste" },
-    { key: "finish", label: isDE ? "Abgang" : "Finish" },
-    { key: "balance", label: isDE ? "Balance" : "Balance" },
-    { key: "overall", label: isDE ? "Gesamt" : "Overall" },
+    { key: "nose", label: t("evaluation.nose") },
+    { key: "taste", label: t("evaluation.taste") },
+    { key: "finish", label: t("evaluation.finish") },
+    { key: "balance", label: t("evaluation.balance") },
+    { key: "overall", label: t("evaluation.overall") },
   ];
 
   const radarData = dimensions.map(dim => {
@@ -284,7 +283,7 @@ export default function Comparison() {
                         <div key={item.whisky.id} className="space-y-1">
                           <h3 className="text-sm font-semibold" style={{ color: CHART_COLORS[i] }}>{item.whisky.name}</h3>
                           <p className="text-xs text-muted-foreground leading-relaxed">
-                            {item.rating.notes || (isDE ? "Keine Notizen" : "No notes")}
+                            {item.rating.notes || t("comparison.noNotes")}
                           </p>
                         </div>
                       ))}
@@ -299,12 +298,12 @@ export default function Comparison() {
                       <div key={item.whisky.id} className="space-y-2">
                         <h3 className="text-sm font-serif font-semibold" style={{ color: CHART_COLORS[i] }}>{item.whisky.name}</h3>
                         <div className="space-y-1 text-xs text-muted-foreground">
-                          {item.whisky.distillery && <p>{isDE ? "Brennerei" : "Distillery"}: {item.whisky.distillery}</p>}
-                          {item.whisky.region && <p>{isDE ? "Region" : "Region"}: {item.whisky.region}</p>}
-                          {item.whisky.age && <p>{isDE ? "Alter" : "Age"}: {item.whisky.age}</p>}
+                          {item.whisky.distillery && <p>{t("comparison.distillery")}: {item.whisky.distillery}</p>}
+                          {item.whisky.region && <p>{t("comparison.region")}: {item.whisky.region}</p>}
+                          {item.whisky.age && <p>{t("comparison.age")}: {item.whisky.age}</p>}
                           {item.whisky.abv && <p>ABV: {item.whisky.abv}%</p>}
-                          {item.whisky.caskInfluence && <p>{isDE ? "Fass" : "Cask"}: {item.whisky.caskInfluence}</p>}
-                          {item.whisky.peatLevel && <p>{isDE ? "Torf" : "Peat"}: {item.whisky.peatLevel}</p>}
+                          {item.whisky.caskInfluence && <p>{t("comparison.cask")}: {item.whisky.caskInfluence}</p>}
+                          {item.whisky.peatLevel && <p>{t("comparison.peat")}: {item.whisky.peatLevel}</p>}
                         </div>
                       </div>
                     ))}

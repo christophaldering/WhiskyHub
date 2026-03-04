@@ -105,9 +105,8 @@ function computeRecommendations(
 type FactorKey = "region" | "cask" | "peat" | "community";
 
 export default function Recommendations() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const isDE = i18n.language === "de";
 
   const [infoOpen, setInfoOpen] = useState(false);
   const [activeFactors, setActiveFactors] = useState<Record<FactorKey, boolean>>({
@@ -306,7 +305,7 @@ export default function Recommendations() {
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="text-xs text-muted-foreground">{isDE ? "Match" : "Match"}</div>
+                  <div className="text-xs text-muted-foreground">{t("comparison.match")}</div>
                   <div className="text-lg font-serif font-bold text-primary">{Math.round(rec.score)}</div>
                   {rec.communityScore && rec.communityRaters && rec.communityRaters >= 2 && (
                     <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5 justify-end">

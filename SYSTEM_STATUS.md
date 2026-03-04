@@ -133,28 +133,13 @@ Font: Playfair Display (Überschriften), system-ui (Body)
 
 ## 7. i18n-Migrationsstatus
 
-**System:** react-i18next | **Sprachen:** DE (Fallback), EN | **Datei:** ~7.250 Zeilen
+**System:** react-i18next | **Sprachen:** DE (Fallback), EN | **Datei:** ~7.800+ Zeilen
 
-### Abgeschlossene Migration (nutzen `t()`, kein `isDE`):
-simple-enter, simple-host, simple-log, simple-analyze, my-taste, my-journal, tasting-room-simple, tour, landing, flavor-profile, analytics, host-dashboard, flavor-wheel, ai-curation-dark, + ~60 weitere Seiten
+### Migration: KOMPLETT ✓
+Alle 97 Seiten nutzen `t()` / `useTranslation()`. Keine `isDE`-Ternaries mehr im Projekt.
 
-### Noch ausstehend (13 Seiten mit `isDE`-Ternaries):
-
-| Datei | isDE-Stellen | Priorität |
-|---|---|---|
-| method.tsx | 35 | Hoch |
-| taste-twins.tsx | 16 | Mittel |
-| community-rankings.tsx | 14 | Mittel |
-| vocabulary-dark.tsx | 13 | Mittel |
-| comparison.tsx | 12 | Mittel |
-| discover-templates.tsx | 12 | Mittel |
-| tasting-templates.tsx | 11 | Mittel |
-| my-taste-flavors.tsx | 11 | Mittel |
-| activity-feed.tsx | 10 | Niedrig |
-| tasting-calendar.tsx | 8 | Niedrig |
-| badges.tsx | 3 | Niedrig |
-| tasting-recap.tsx | 2 | Niedrig |
-| recommendations.tsx | 2 | Niedrig |
+### Neue i18n-Sections (hinzugefügt in dieser Session):
+tastingHub, tasteTwins, communityRankings, vocabularyPage, vocabCategories, discoverTemplates, tastingTemplates, methodPage, activityFeed, comparisonPage, myTasteFlavors, aiCuration
 
 ---
 
@@ -232,7 +217,7 @@ shared/
 
 ## 13. Offene Aufgaben
 
-1. **i18n-Migration:** 13 Seiten haben noch `isDE`-Ternaries (siehe Abschnitt 7)
+1. ~~**i18n-Migration:**~~ **KOMPLETT** — alle Seiten nutzen `t()`, keine `isDE` mehr
 2. **Legacy UI** (`/legacy/*`): Noch zugänglich, nicht aktiv gepflegt
 3. **V2 UI** (`/app/*`): Experimentell, nicht voll angebunden
 

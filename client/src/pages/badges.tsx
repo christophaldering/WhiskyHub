@@ -425,7 +425,7 @@ const BADGES: BadgeDef[] = [
 export default function Badges() {
   const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const isDE = i18n.language === "de";
+  const lang = i18n.language?.startsWith("de") ? "de" : "en";
 
   const { data: stats, isLoading } = useQuery<ParticipantStats>({
     queryKey: ["participant-stats", currentParticipant?.id],
@@ -494,8 +494,8 @@ export default function Badges() {
             {BADGES.map((badge, index) => {
               const earned = badge.check(s);
               const prog = badge.progress(s);
-              const name = isDE ? badge.nameDE : badge.nameEN;
-              const desc = isDE ? badge.descDE : badge.descEN;
+              const name = lang === "de" ? badge.nameDE : badge.nameEN;
+              const desc = lang === "de" ? badge.descDE : badge.descEN;
 
               return (
                 <motion.div

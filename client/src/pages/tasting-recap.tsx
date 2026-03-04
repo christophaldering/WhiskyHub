@@ -39,7 +39,6 @@ export default function TastingRecap() {
   const params = useParams<{ id: string }>();
   const [selectedTastingId, setSelectedTastingId] = useState<string | null>(null);
   const { toast } = useToast();
-  const isDE = i18n.language === "de";
 
   const tastingId = params.id || selectedTastingId;
 
@@ -57,7 +56,7 @@ export default function TastingRecap() {
 
   const formatDate = (dateStr: string) => {
     try {
-      return new Date(dateStr).toLocaleDateString(isDE ? "de-DE" : "en-US", {
+      return new Date(dateStr).toLocaleDateString(i18n.language === "de" ? "de-DE" : "en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",

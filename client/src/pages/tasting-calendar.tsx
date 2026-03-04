@@ -68,7 +68,6 @@ const OFFSET_OPTIONS = [
 
 export default function TastingCalendar() {
   const { t, i18n } = useTranslation();
-  const isDE = i18n.language === "de";
   const now = new Date();
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
@@ -180,10 +179,12 @@ export default function TastingCalendar() {
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-  const monthNames = isDE
-    ? ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
-    : ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const dayLabels = isDE ? ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const locale = i18n.language === "de" ? "de-DE" : "en-US";
+  const monthName = new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(currentYear, currentMonth));
+  const dayLabels = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(2024, 0, i + 1);
+    return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(d);
+  });
 
   const prevMonth = () => {
     if (currentMonth === 0) { setCurrentYear(y => y - 1); setCurrentMonth(11); }
@@ -254,10 +255,10 @@ export default function TastingCalendar() {
                 </Button>
                 <div className="flex items-center gap-3">
                   <h2 className="text-lg font-serif font-semibold">
-                    {monthNames[currentMonth]} {currentYear}
+                    {monthName} {currentYear}
                   </h2>
                   <Button variant="outline" size="sm" className="text-xs font-serif h-7" onClick={goToday} data-testid="button-today">
-                    {isDE ? "Heute" : "Today"}
+                    {t("calendar.today")}
                   </Button>
                 </div>
                 <Button variant="ghost" size="sm" onClick={nextMonth} data-testid="button-next-month">
@@ -317,7 +318,7 @@ export default function TastingCalendar() {
                   ) : (
                     <div className="space-y-2">
                       {selectedEvents.map(ev => (
-                        <EventCard key={ev.id} event={ev} isDE={isDE} />
+                        <EventCard key={ev.id} event={ev} />
                       ))}
                     </div>
                   )}
@@ -421,7 +422,7 @@ export default function TastingCalendar() {
                       data-testid="button-add-calendar-reminder"
                     >
                       <Plus className="w-3 h-3 mr-1" />
-                      {isDE ? "Hinzufügen" : "Add"}
+                      {t("calendar.add")}
                     </Button>
                   </div>
 
@@ -462,7 +463,8 @@ export default function TastingCalendar() {
   );
 }
 
-function EventCard({ event, isDE }: { event: CalendarEvent; isDE: boolean }) {
+function EventCard({ event }: { event: CalendarEvent }) {
+  const { t } = useTranslation();
   return (
     <Link href={`/tasting/${event.id}`}>
       <div className="bg-secondary/30 rounded-md p-3 hover:bg-secondary/50 transition-colors cursor-pointer" data-testid={`card-event-${event.id}`}>
@@ -478,7 +480,7 @@ function EventCard({ event, isDE }: { event: CalendarEvent; isDE: boolean }) {
           <span className="flex items-center gap-1"><Wine className="w-3 h-3" /> {event.whiskyCount}</span>
         </div>
         <p className="text-[10px] text-muted-foreground/60 mt-1">
-          {isDE ? "Gastgeber" : "Host"}: {event.hostName}
+          {t("calendar.host")}: {event.hostName}
         </p>
       </div>
     </Link>
