@@ -40,6 +40,7 @@ interface TastingState {
   showGroupAvg?: boolean;
   showRanking?: boolean;
   ratingPrompt?: string | null;
+  ratingScale?: number;
 }
 
 interface GroupStats {
@@ -49,19 +50,21 @@ interface GroupStats {
 
 const blindLabel = (index: number) => String.fromCharCode(65 + index);
 
-function RatingSlider({ label, value, onChange, disabled }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean }) {
+function RatingSlider({ label, value, onChange, disabled, scale = 100 }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean; scale?: number }) {
+  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
+  const display = Number.isInteger(value) ? value : value.toFixed(1);
   return (
     <div style={{ marginBottom: 12, opacity: disabled ? 0.5 : 1 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
         <span style={{ fontSize: 13, color: c.muted }}>{label}</span>
-        <span style={{ fontSize: 13, color: c.accent, fontWeight: 600, fontFamily: "monospace" }}>{value}</span>
+        <span style={{ fontSize: 13, color: c.accent, fontWeight: 600, fontFamily: "monospace" }}>{display}</span>
       </div>
       <input
         type="range"
         min={0}
-        max={10}
-        step={0.5}
-        value={value}
+        max={scale}
+        step={step}
+        value={Math.min(value, scale)}
         onChange={(e) => onChange(Number(e.target.value))}
         disabled={disabled}
         className="warm-slider"
@@ -323,14 +326,15 @@ export default function TastingRoomSimple() {
       .then((r) => (r.ok ? r.json() : null))
       .then((existing) => {
         if (existing && !ratings[whiskyId]) {
+          const fallback = Math.round((tasting?.ratingScale || 100) / 2);
           setRatings((prev) => ({
             ...prev,
             [whiskyId]: {
-              nose: existing.nose ?? 5,
-              taste: existing.taste ?? 5,
-              finish: existing.finish ?? 5,
-              balance: existing.balance ?? 5,
-              overall: existing.overall ?? 5,
+              nose: existing.nose ?? fallback,
+              taste: existing.taste ?? fallback,
+              finish: existing.finish ?? fallback,
+              balance: existing.balance ?? fallback,
+              overall: existing.overall ?? fallback,
               notes: existing.notes ?? "",
             },
           }));
@@ -339,8 +343,11 @@ export default function TastingRoomSimple() {
       .catch((err) => console.error("[TASTING_ROOM] load rating error", err));
   }, [pid, whiskyId]);
 
+  const scale = tasting?.ratingScale || 100;
+  const mid = Math.round(scale / 2);
+
   const currentRating: RatingData = ratings[whiskyId || ""] || {
-    nose: 5, taste: 5, finish: 5, balance: 5, overall: 5, notes: "",
+    nose: mid, taste: mid, finish: mid, balance: mid, overall: mid, notes: "",
   };
 
   const updateField = useCallback((field: keyof RatingData, value: number | string) => {
@@ -602,13 +609,13 @@ export default function TastingRoomSimple() {
           </div>
         )}
 
-        <RatingSlider label="Nose" value={currentRating.nose} onChange={(v) => updateField("nose", v)} disabled={!canRate} />
-        <RatingSlider label="Taste" value={currentRating.taste} onChange={(v) => updateField("taste", v)} disabled={!canRate} />
-        <RatingSlider label="Finish" value={currentRating.finish} onChange={(v) => updateField("finish", v)} disabled={!canRate} />
-        <RatingSlider label="Balance" value={currentRating.balance} onChange={(v) => updateField("balance", v)} disabled={!canRate} />
+        <RatingSlider label="Nose" value={currentRating.nose} onChange={(v) => updateField("nose", v)} disabled={!canRate} scale={scale} />
+        <RatingSlider label="Taste" value={currentRating.taste} onChange={(v) => updateField("taste", v)} disabled={!canRate} scale={scale} />
+        <RatingSlider label="Finish" value={currentRating.finish} onChange={(v) => updateField("finish", v)} disabled={!canRate} scale={scale} />
+        <RatingSlider label="Balance" value={currentRating.balance} onChange={(v) => updateField("balance", v)} disabled={!canRate} scale={scale} />
 
         <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 12, marginTop: 8 }}>
-          <RatingSlider label="Overall" value={currentRating.overall} onChange={(v) => updateField("overall", v)} disabled={!canRate} />
+          <RatingSlider label="Overall" value={currentRating.overall} onChange={(v) => updateField("overall", v)} disabled={!canRate} scale={scale} />
         </div>
 
         <div style={{ marginTop: 8 }}>
