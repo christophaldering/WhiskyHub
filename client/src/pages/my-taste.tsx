@@ -4,7 +4,7 @@ import { useAppStore } from "@/lib/store";
 import { participantApi, journalApi, statsApi, flavorProfileApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { CircleDot, GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock } from "lucide-react";
+import { CircleDot, GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, ListChecks, Archive, Heart, FlaskConical, Sparkles, Users, UserCheck, History, FileDown } from "lucide-react";
 import { c, cardStyle, inputStyle } from "@/lib/theme";
 
 const LS_KEY = "casksense_participant_id";
@@ -317,6 +317,13 @@ export default function MyTastePage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <FlavorPreviewCard pid={pid} />
               <NavCard
+                icon={Radar}
+                label="Flavor Profile"
+                description="Radar chart vs. platform average by region, cask & peat"
+                href="/legacy/flavor-profile"
+                testId="link-flavor-profile"
+              />
+              <NavCard
                 icon={GitCompareArrows}
                 label="Comparison"
                 description="Compare your whiskies side by side"
@@ -331,6 +338,69 @@ export default function MyTastePage() {
                 href="/legacy/my/journal"
                 testId="link-journal"
                 badge={journalCount > 0 ? journalCount : null}
+              />
+              <NavCard
+                icon={ListChecks}
+                label="My Whiskies"
+                description="All your rated whiskies, filterable & sortable"
+                href="/legacy/my/journal?tab=tasted"
+                testId="link-my-whiskies"
+              />
+              <NavCard
+                icon={Archive}
+                label="Collection"
+                description="Your Whiskybase collection with sync & tracking"
+                href="/legacy/my/collection"
+                testId="link-collection"
+              />
+              <NavCard
+                icon={Heart}
+                label="Wishlist"
+                description="Whiskies you want to try next"
+                href="/legacy/my/wishlist"
+                testId="link-wishlist"
+              />
+              <NavCard
+                icon={FlaskConical}
+                label="Benchmark Analyzer"
+                description="Import external notes & compare with your profile"
+                href="/legacy/my/journal?tab=benchmark"
+                testId="link-benchmark"
+              />
+              <NavCard
+                icon={Sparkles}
+                label="Recommendations"
+                description="Personalized whisky suggestions based on your taste"
+                href="/legacy/discover"
+                testId="link-recommendations"
+              />
+              <NavCard
+                icon={Users}
+                label="Taste Twins"
+                description="Find people with a similar palate"
+                href="/legacy/discover/community?tab=twins"
+                testId="link-taste-twins"
+              />
+              <NavCard
+                icon={UserCheck}
+                label="Whisky Friends"
+                description="Your connections on the platform"
+                href="/legacy/discover/community"
+                testId="link-whisky-friends"
+              />
+              <NavCard
+                icon={History}
+                label="Tasting Recap"
+                description="Review your past tasting sessions"
+                href="/legacy/my/journal?tab=recap"
+                testId="link-tasting-recap"
+              />
+              <NavCard
+                icon={FileDown}
+                label="Export Notes"
+                description="Download your ratings & notes"
+                href="/legacy/my/journal?tab=export"
+                testId="link-export-notes"
               />
             </div>
           </div>
