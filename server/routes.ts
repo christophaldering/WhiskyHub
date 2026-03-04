@@ -3401,7 +3401,12 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
           return result;
         };
         
-        const headers = parseCSVLine(headerLine, delimiter);
+        const rawHeaders = parseCSVLine(headerLine, delimiter);
+        const headerCount: Record<string, number> = {};
+        const headers = rawHeaders.map(h => {
+          headerCount[h] = (headerCount[h] || 0) + 1;
+          return headerCount[h] > 1 ? `${h}_${headerCount[h]}` : h;
+        });
         for (let i = 1; i < lines.length; i++) {
           if (!lines[i].trim()) continue;
           const values = parseCSVLine(lines[i], delimiter);
@@ -3463,21 +3468,13 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
           pricePaid: parseFloat2(colMap(row, "Bezahlter Preis", "Price paid")),
           currency: colMap(row, "Währung", "Currency") || null,
           avgPrice: parseFloat2(colMap(row, "Mittlerer preis", "Mittlerer Preis", "Average price")),
-          avgPriceCurrency: (() => {
-            const keys = Object.keys(row);
-            const currencyKeys = keys.filter(k => k.toLowerCase().includes("währung") || k.toLowerCase().includes("currency"));
-            return currencyKeys.length > 1 ? String(row[currencyKeys[1]] || "").trim() : colMap(row, "Währung Whisky", "Currency Whisky") || null;
-          })(),
+          avgPriceCurrency: colMap(row, "Währung Whisky", "Currency Whisky") || null,
           distillery: colMap(row, "Destillerien", "Distilleries") || null,
           vintage: colMap(row, "Jahrgang", "Vintage") || null,
           addedAt: colMap(row, "Hinzugefügt am", "Added on") || null,
           imageUrl: colMap(row, "Bild", "Image") || null,
           auctionPrice: parseFloat2(colMap(row, "Auktionspreis:", "Auction price:", "Auktionspreis", "Auction price")),
-          auctionCurrency: (() => {
-            const keys = Object.keys(row);
-            const currencyKeys = keys.filter(k => k.toLowerCase().includes("währung") || k.toLowerCase().includes("currency"));
-            return currencyKeys.length > 2 ? String(row[currencyKeys[2]] || "").trim() : null;
-          })(),
+          auctionCurrency: colMap(row, "Währung Whisky_2", "Currency Whisky_2") || null,
           notes: colMap(row, "Notizen", "Notes") || null,
           purchaseLocation: colMap(row, "Kaufort", "Purchase location") || null,
         });
@@ -3569,7 +3566,12 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
         result.push(current.trim());
         return result;
       };
-      const headers = parseCSVLine(headerLine, delimiter);
+      const rawHeaders = parseCSVLine(headerLine, delimiter);
+      const headerCount2: Record<string, number> = {};
+      const headers = rawHeaders.map(h => {
+        headerCount2[h] = (headerCount2[h] || 0) + 1;
+        return headerCount2[h] > 1 ? `${h}_${headerCount2[h]}` : h;
+      });
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         const values = parseCSVLine(lines[i], delimiter);
@@ -3618,21 +3620,13 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
       pricePaid: parseFloat2(colMap(row, "Bezahlter Preis", "Price paid")),
       currency: colMap(row, "Währung", "Currency") || null,
       avgPrice: parseFloat2(colMap(row, "Mittlerer preis", "Mittlerer Preis", "Average price")),
-      avgPriceCurrency: (() => {
-        const keys = Object.keys(row);
-        const currencyKeys = keys.filter(k => k.toLowerCase().includes("währung") || k.toLowerCase().includes("currency"));
-        return currencyKeys.length > 1 ? String(row[currencyKeys[1]] || "").trim() : colMap(row, "Währung Whisky", "Currency Whisky") || null;
-      })(),
+      avgPriceCurrency: colMap(row, "Währung Whisky", "Currency Whisky") || null,
       distillery: colMap(row, "Destillerien", "Distilleries") || null,
       vintage: colMap(row, "Jahrgang", "Vintage") || null,
       addedAt: colMap(row, "Hinzugefügt am", "Added on") || null,
       imageUrl: colMap(row, "Bild", "Image") || null,
       auctionPrice: parseFloat2(colMap(row, "Auktionspreis:", "Auction price:", "Auktionspreis", "Auction price")),
-      auctionCurrency: (() => {
-        const keys = Object.keys(row);
-        const currencyKeys = keys.filter(k => k.toLowerCase().includes("währung") || k.toLowerCase().includes("currency"));
-        return currencyKeys.length > 2 ? String(row[currencyKeys[2]] || "").trim() : null;
-      })(),
+      auctionCurrency: colMap(row, "Währung Whisky_2", "Currency Whisky_2") || null,
       notes: colMap(row, "Notizen", "Notes") || null,
       purchaseLocation: colMap(row, "Kaufort", "Purchase location") || null,
     };
