@@ -21,18 +21,18 @@ function StatRow({ label, value }: { label: string; value: number | null | undef
 }
 
 function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; role?: string }) => void }) {
-  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !pin.trim()) return;
+    if (!email.trim() || !pin.trim()) return;
     setLoading(true);
     setError("");
     try {
-      const result = await participantApi.loginOrCreate(name.trim(), pin.trim());
+      const result = await participantApi.loginByEmail(email.trim(), pin.trim());
       if (result?.id) {
         localStorage.setItem(LS_KEY, result.id);
         onUnlock({ id: result.id, name: result.name, role: result.role });
@@ -41,12 +41,12 @@ function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; ro
       }
     } catch (err: any) {
       const msg = err?.message || "";
-      if (msg.includes("Invalid p") || msg.includes("Invalid P")) {
+      if (msg.includes("Invalid p") || msg.includes("Invalid P") || msg.includes("Wrong")) {
         setError("Wrong password. Please try again.");
-      } else if (msg.includes("email")) {
-        setError("No account found. Use the same name and PIN from your tasting.");
+      } else if (msg.includes("not found") || msg.includes("No account")) {
+        setError("No account found with this email.");
       } else {
-        setError(msg || "Could not unlock. Check name and PIN.");
+        setError(msg || "Could not sign in. Check email and password.");
       }
     } finally {
       setLoading(false);
@@ -55,25 +55,28 @@ function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; ro
 
   return (
     <div style={cardStyle} data-testid="card-unlock">
-      <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 16px" }}>
-        Unlock your taste profile
+      <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 6px" }}>
+        Sign in
       </h2>
+      <p style={{ fontSize: 12, color: c.mutedLight, margin: "0 0 14px" }}>
+        Sign in with your registered email to access your personal taste profile.
+      </p>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }} autoComplete="off">
         <input type="text" name="cs_trap_user" autoComplete="username" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
         <input type="password" name="cs_trap_pw" autoComplete="current-password" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
-        <input type="text" placeholder="Name" name="cs_display_name" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} data-testid="input-unlock-name" autoComplete="off" autoCapitalize="none" spellCheck={false} data-form-type="other" />
+        <input type="email" placeholder="Email" name="cs_email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} data-testid="input-unlock-email" autoComplete="off" autoCapitalize="none" spellCheck={false} data-form-type="other" />
         <input type="password" placeholder="Password" name="cs_password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-unlock-pin" autoComplete="new-password" autoCapitalize="none" spellCheck={false} data-form-type="other" />
         <button
           type="submit"
-          disabled={loading || !name.trim() || !pin.trim()}
+          disabled={loading || !email.trim() || !pin.trim()}
           data-testid="button-unlock"
           style={{
             width: "100%", padding: "10px", fontSize: 15, fontWeight: 600,
             background: loading ? c.border : c.accent, color: c.bg, border: "none", borderRadius: 8,
-            cursor: loading ? "wait" : "pointer", opacity: (!name.trim() || !pin.trim()) ? 0.5 : 1, transition: "opacity 0.2s",
+            cursor: loading ? "wait" : "pointer", opacity: (!email.trim() || !pin.trim()) ? 0.5 : 1, transition: "opacity 0.2s",
           }}
         >
-          {loading ? "…" : "Unlock"}
+          {loading ? "…" : "Sign In"}
         </button>
         {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }} data-testid="text-unlock-error">{error}</p>}
       </form>
