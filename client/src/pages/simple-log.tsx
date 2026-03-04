@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, ChevronDown, Camera, Search } from "lucide-react";
+import { Mic, MicOff, ChevronDown, Camera } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
@@ -1467,8 +1467,13 @@ export default function SimpleLogPage() {
               </AnimatePresence>
             </div>
 
-            {(hasWhisky || showManual || whiskyName.trim()) ? (
-            <>
+            {!(hasWhisky || showManual || whiskyName.trim()) && (
+              <div style={{ textAlign: "center", padding: "12px 0 4px", color: c.mutedLight, fontSize: 12 }} data-testid="text-unlock-hint">
+                Add a whisky above to start
+              </div>
+            )}
+
+            <div style={{ opacity: (hasWhisky || showManual || whiskyName.trim()) ? 1 : 0.3, pointerEvents: (hasWhisky || showManual || whiskyName.trim()) ? "auto" : "none", transition: "opacity 0.3s ease" }}>
 
             {/* ── SECTION 2: SCORE ── */}
             <div style={{ marginBottom: 36 }} data-testid="section-score">
@@ -1571,8 +1576,11 @@ export default function SimpleLogPage() {
                   </div>
                 )}
 
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                  <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, gap: 10 }}>
+                  {photoUrl && (
+                    <img src={photoUrl} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: `1px solid ${c.border}`, flexShrink: 0 }} data-testid="img-score-thumb" />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>Your Final Score</span>
                     {overrideActive && (
                       <span
@@ -1734,13 +1742,7 @@ export default function SimpleLogPage() {
               {error && <p style={{ fontSize: 12, color: c.error, margin: "10px 0 0", textAlign: "center" }}>{error}</p>}
             </div>
 
-            </>
-            ) : (
-              <div style={{ textAlign: "center", padding: "24px 0 8px", color: c.mutedLight, fontSize: 13 }} data-testid="text-select-hint">
-                <Search style={{ width: 20, height: 20, margin: "0 auto 8px", display: "block", opacity: 0.5 }} />
-                Select a whisky above to start rating
-              </div>
-            )}
+            </div>
 
           </form>
         )}
