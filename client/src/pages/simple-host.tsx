@@ -2130,13 +2130,6 @@ export default function SimpleHostPage() {
                 </div>
                 {pid && <HostCalendar pid={pid} />}
               </div>
-              <Link href="/data-export">
-                <div style={{ ...cardStyle, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} data-testid="link-data-export">
-                  <Download style={{ width: 18, height: 18, color: c.accent }} />
-                  <span style={{ fontSize: 14 }}>Data Export</span>
-                  <ChevronRight style={{ width: 14, height: 14, color: c.muted, marginLeft: "auto" }} />
-                </div>
-              </Link>
               <Link href="/host-dashboard">
                 <div style={{ ...cardStyle, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} data-testid="link-host-dashboard">
                   <Settings style={{ width: 18, height: 18, color: c.accent }} />

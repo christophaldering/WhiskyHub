@@ -4,7 +4,7 @@ import { useAppStore } from "@/lib/store";
 import { participantApi, journalApi, statsApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, CircleDot, Settings } from "lucide-react";
+import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, CircleDot, Settings, Download } from "lucide-react";
 import { c, cardStyle, inputStyle, sectionHeadingStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 
 const LS_KEY = "casksense_participant_id";
@@ -345,6 +345,13 @@ export default function MyTastePage() {
                   href="/sessions"
                   testId="link-tasting-recap"
                   badge={tastingCount != null && tastingCount > 0 ? tastingCount : null}
+                />
+                <NavCard
+                  icon={Download}
+                  label="Data Export"
+                  description="Export your data as CSV or Excel"
+                  href="/data-export"
+                  testId="link-data-export"
                 />
               </div>
             </div>
