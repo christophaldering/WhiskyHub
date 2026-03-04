@@ -428,7 +428,7 @@ function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE:
       </div>
 
       {selectedTasting && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className="hd-invite-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
               <QrCode style={{ width: 14, height: 14, color: c.accent }} />
@@ -632,7 +632,7 @@ export default function HostDashboard() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }} data-testid="host-dashboard-page">
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+            <div className="hd-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
               {statCards.map((card, i) => (
                 <motion.div key={card.key} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08, duration: 0.4 }}>
                   <div
@@ -651,7 +651,7 @@ export default function HostDashboard() {
               ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
+            <div className="hd-grid-2-1" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.4 }}>
                 <div style={sectionCard} data-testid="section-dashboard-calendar">
                   <SectionTitle icon={Calendar} title={isDE ? "Kalender" : "Calendar"} />
@@ -698,7 +698,7 @@ export default function HostDashboard() {
             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.4 }}>
               <div style={sectionCard} data-testid="section-quick-actions">
                 <SectionTitle icon={Zap} title={isDE ? "Schnellzugriff" : "Quick Actions"} />
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+                <div className="hd-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
                   {[
                     { href: "/host", icon: Plus, label: isDE ? "Neues Tasting" : "New Tasting", accent: true },
                     { href: "/sessions", icon: FileText, label: "Sessions", accent: false },
@@ -760,7 +760,7 @@ export default function HostDashboard() {
               </div>
             </motion.div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
+            <div className="hd-grid-2-1" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
               {chartData.length > 0 && (
                 <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}>
                   <div style={sectionCard} data-testid="host-dashboard-scores-chart">
@@ -848,7 +848,7 @@ export default function HostDashboard() {
               </motion.div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="hd-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {effectiveSummary.topWhiskies.length > 0 && (
                 <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }}>
                   <div style={{ ...sectionCard, height: "100%" }} data-testid="host-dashboard-top-whiskies">
@@ -964,6 +964,15 @@ export default function HostDashboard() {
           </div>
         )}
       </motion.div>
+      <style>{`
+        @media (max-width: 640px) {
+          .hd-grid-3 { grid-template-columns: 1fr !important; }
+          .hd-grid-2 { grid-template-columns: 1fr !important; }
+          .hd-grid-2-1 { grid-template-columns: 1fr !important; }
+          .hd-grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
+          .hd-invite-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </SimpleShell>
   );
 }
