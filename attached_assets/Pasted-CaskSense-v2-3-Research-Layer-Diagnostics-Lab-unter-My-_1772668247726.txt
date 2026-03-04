@@ -1,0 +1,267 @@
+CaskSense v2.3 — “Research Layer / Diagnostics Lab” unter My Taste (Pro Mode, ohne Feature-Verlust)
+
+KONTEXT
+Repo: CaskSense v2.0.0 (React 18 + Vite + TS, Wouter, Zustand, React Query, i18next, Dark Warm Theme, shadcn/ui)
+Backend/DB: Express + Drizzle + Postgres (28 Tabellen: participants, tastings, whiskies, ratings, journal_entries, whiskybase_collection, wishlist_entries, tasting_participants, etc.)
+Bewertungen: 5 Dimensionen (Nose, Taste, Finish, Balance, Overall), Context-Level (Naked/Self/Full)
+Ziel: CaskSense als “Tasting-Tool mit Intelligenz” (2 Screens) bleibt klar – aber wir wollen einen tiefen Research/Methodik-Bereich für Entdecker, inkl. Benchmarks, multivariate Analysen, Messtheorie, Diagnostik-Notizen.
+WICHTIG: Keine Funktionalität entfernen. Keine DB-Schema-Änderungen. Kein Backend-API Entfernen.
+
+ZIEL (NON-NEGOTIABLE)
+1) Unter “My Taste” einen “Research / Diagnostics Lab” Bereich anlegen.
+2) Dieser Bereich ist standardmäßig NICHT prominent, sondern “Advanced / Research” (tief im Menü).
+3) Inhalte dürfen überraschend/beeindruckend sein (für Psychologie/Methodik-affine Nutzer).
+4) Inhalte sollen mit existierender Datenstruktur arbeiten (ratings, tastings, participants etc.).
+5) Pro Mode Toggle, reversibel, ohne DB-Änderung (LocalStorage).
+
+SCOPE
+- Frontend-only: neue Seiten/Komponenten, Routing, Navigation-Hooks, i18n-Strings.
+- Datenabruf nur über existierende API(s) – falls Daten fehlen: graceful empty states + “needs more data” Hinweis, KEIN Backend-Bau.
+- Visuals: Dark Warm + Apple-Style Komponenten (leise, premium). Kein Redesign des Gesamtsystems nötig.
+
+------------------------------------------------------------
+STEP 0 — Feature Flags + Pro Mode Toggle (reversibel, ohne DB)
+------------------------------------------------------------
+Create/extend: client/src/lib/config.ts
+export const RESEARCH_LAYER: "off" | "on" = "on";
+
+Create: client/src/lib/researchMode.ts
+- readResearchMode(): boolean  // localStorage key "cs_research_mode" === "1"
+- setResearchMode(on: boolean)
+- useResearchMode(): hook (optional) or simple utility
+
+Default: off (false), so normal users see nothing außer einem dezenten “Advanced” Link.
+If RESEARCH_LAYER === "off", hide all research entry points completely.
+
+Add to My Taste Settings (/my-taste/settings):
+- A toggle “Research Mode (Advanced)”
+- Short explanation: “Benchmarks, Methodik, multivariate Analysen. Für Nerds & Forscher.”
+- When toggled on: set localStorage, show a small toast.
+
+NO DB writes.
+
+------------------------------------------------------------
+STEP 1 — Routing: Research Hub + Subpages
+------------------------------------------------------------
+Add routes under My Taste:
+- /my-taste/research                (hub)
+- /my-taste/research/benchmarks     (benchmarks + norms)
+- /my-taste/research/models         (multivariate analyses)
+- /my-taste/research/quality        (data quality, reliability, bias, drift)
+- /my-taste/research/methodology    (messtheorie, skalen, validität)
+- /my-taste/research/export         (export + research-friendly formats)
+- /my-taste/research/glossary       (“Kersting Corner” mini-glossary)
+
+Routing behavior:
+- If Research Mode is OFF and user navigates directly to research routes:
+  show a friendly “Research Mode is disabled” screen with button “Enable Research Mode” (toggles localStorage).
+- If ON: show content.
+
+------------------------------------------------------------
+STEP 2 — Navigation Placement (tief, aber vorhanden)
+------------------------------------------------------------
+In /my-taste landing page:
+- At the very bottom (after Collection/Wishlist/Export etc.), add a subtle “Advanced” section (small heading).
+- Single entry: “Diagnostics Lab” (or “Research”) -> /my-taste/research
+This is only visible when Research Mode ON.
+
+In Settings page:
+- Toggle + deep link “Open Diagnostics Lab”.
+
+No top-level tab, no landing-page button, no “Discover” exposure. Zwei-Screen-Philosophie bleibt intakt.
+
+------------------------------------------------------------
+STEP 3 — Apple-Style Research UI Shell
+------------------------------------------------------------
+Create minimal shared UI components (if not already):
+client/src/components/apple/ (or reuse existing if present)
+- ApplePage (title/subtitle)
+- AppleCard
+- AppleSection
+- AppleRow/ListRow
+- ApplePill (chips)
+Use existing Dark Warm tokens from theme.ts, no palette change.
+Use extremely calm typography:
+- Big title (Playfair)
+- Subtitles small + muted
+- Cards with subtle border/shadow
+
+------------------------------------------------------------
+STEP 4 — Data Access (use existing APIs only)
+------------------------------------------------------------
+Goal: derive insights from existing data without backend changes.
+Implement data loaders in:
+client/src/lib/researchData.ts
+
+Try to fetch:
+- user’s ratings history (“drams”) including timestamps, whisky ids, tasting ids, context-level, 5 dimensions
+- tasting participation history
+- (optional) global/aggregate community data if endpoint exists
+
+If endpoints are unknown, search in server/routes.ts for:
+- ratings list
+- my taste analytics
+- export endpoints
+- benchmark endpoints
+
+Then implement React Query hooks:
+- useMyRatings()
+- useMyTastings()
+- useMyCollection()
+- useMyWishlist()
+
+If any are missing, gracefully degrade:
+- show informative empty states with “Need at least N drams for this analysis.”
+
+NO new backend endpoints in this task.
+
+------------------------------------------------------------
+STEP 5 — CONTENT: Fill with impressive, professor-friendly material
+------------------------------------------------------------
+We want real substance, not fluff.
+Implement rich text content (DE + EN) either:
+A) in i18n.ts as long strings (ok)
+or
+B) as local markdown constants in the page files
+
+Preferred: local markdown constants to keep i18n manageable; only titles/navigation in i18n.
+
+Include these “wow” modules:
+
+A) /my-taste/research (Hub)
+Show 6 cards with short descriptions:
+1) Benchmarks & Norms
+2) Multivariate Models
+3) Data Quality & Bias
+4) Methodology & Measurement Theory
+5) Research Export
+6) Kersting Corner (Glossary)
+
+Each card shows:
+- “Your data: X drams, Y tastings, Z whiskies”
+- readiness indicator:
+  - “Ready” if enough data
+  - “Needs more data” if not
+
+B) Benchmarks & Norms page
+Goal: make the “uncopiable value” visible.
+Sections:
+- “Personal Norms” (your mean/SD per dimension, per context-level)
+- “Stability Over Time” (month-by-month mean drift)
+- “Context Sensitivity” (Naked vs Full deltas)
+- “Panel Positioning” (if community aggregates exist: your percentile; else show placeholder + “coming soon”)
+- “Benchmark Builder” (conceptual explanation: how norms are built, what’s included/excluded)
+Charts:
+- simple line chart (overall over time)
+- box-like summary (mean ± sd) per dimension
+No seaborn; use existing chart libs (Recharts if already used).
+
+C) Multivariate Models page (the fun “Sozialforschung”-wow)
+Provide 4 modules (even if some are “preview” depending on data):
+1) “Flavor Space (PCA-lite)”:
+   - If enough data: compute a simple PCA client-side on standardized 5-dim ratings (Nose/Taste/Finish/Balance/Overall)
+   - Show 2D scatter of drams, color-coded by whisky type if available (or by context-level)
+   - If PCA library not present, implement a lightweight PCA via small JS (or fallback to “correlation heatmap”).
+2) “Clustering (Taste Archetypes)”:
+   - k-means lite on standardized ratings; show 3–5 clusters “The Smoke-Lover”, “The Sweet Balancer”, etc.
+   - Important: present as playful labels + neutral academic disclaimer.
+3) “Predictive heuristics”:
+   - simple regression-like explanation: “Which dimension best predicts Overall for you?”
+   - compute correlations between dimensions and Overall; show ranking.
+4) “Palate Drift Detector”:
+   - detect whether your mean Overall changes over time (simple trend).
+All computations client-side using fetched data.
+
+D) Data Quality & Bias page
+Make it academically satisfying:
+- “Reliability signals”:
+   - internal consistency proxy: inter-dimension coherence (e.g., correlation structure)
+   - test–retest proxy: repeated whisky ratings variability (if same whisky appears multiple times)
+- “Rater bias & scale usage”:
+   - do you use full scale or central tendency? (histogram of Overall)
+   - “leniency/severity” over time
+- “Context effects”:
+   - compare Naked vs Full mean shifts
+- “Missingness & coverage”:
+   - which dimensions are often left at default?
+- “Outlier review”:
+   - highest/lowest residual drams with notes
+
+E) Methodology & Measurement Theory page (the Martin-Kersting bait)
+Write an elegant, structured mini-handbook with:
+1) Construct definition: “What is ‘Overall’ here?”
+2) Scale level & interpretation: ordinal vs interval; why sliders are practical
+3) Measurement error & uncertainty:
+   - why single ratings are noisy
+   - how aggregation stabilizes
+4) Reliability:
+   - test–retest (same whisky different day)
+   - inter-rater (panel variance, if available)
+5) Validity:
+   - content validity (dimensions cover the construct)
+   - criterion validity (links to preference/repurchase)
+   - construct validity (expected patterns: Nose→Taste→Overall)
+6) Norming & benchmarking:
+   - reference groups, selection bias, comparability
+7) Ethics & data:
+   - anonymization, consent, transparency
+Include “Kersting Notes” callouts:
+- short, witty but serious boxes (“Wenn man’s ganz streng sieht…”)
+
+F) Export page (Research-friendly)
+Keep existing export features; add:
+- “Export for Research (CSV/JSON)” explanation
+- “Variable dictionary” (what each column means)
+- “Recommended analysis pipeline” (R/Python pseudo-steps as text, not actual code required)
+- “Reproducibility checklist” (date, filters, inclusion criteria)
+
+G) Kersting Corner / Glossary
+A delightfully nerdy glossary of ~25 terms:
+- Likert vs slider
+- Reliabilität/Validität
+- Messinvarianz (als “Coming later”)
+- Regression to the mean
+- Halo effect
+- Common method bias
+- Panel composition
+- Range restriction
+- Simpson’s paradox (with a whisky-themed mini-example)
+Keep it short and charming.
+
+IMPORTANT: Provide all this content in German; English optional if easy.
+Keep tone: premium + witty academic, not meme-y.
+
+------------------------------------------------------------
+STEP 6 — “Don’t break anything” contract
+------------------------------------------------------------
+Do NOT:
+- touch backend
+- change DB schema
+- change existing analytics/business logic
+- remove Discover pages (they can remain; research pages are additional)
+- change auth flows
+
+Just add new pages and entry points.
+
+------------------------------------------------------------
+STEP 7 — Final Checklist
+------------------------------------------------------------
+- Research Mode toggle works (localStorage)
+- When OFF: no research entry in My Taste; direct research URL shows enable screen
+- When ON: hub + subpages render and show data-driven content where possible
+- All pages compile; no TS errors; no console errors
+- Dark Warm consistent
+
+------------------------------------------------------------
+DELIVERABLE
+------------------------------------------------------------
+After implementation output:
+1) List of added/modified files
+2) Routes added
+3) Where toggle is located
+4) What data endpoints were used
+5) Any modules that fall back to “needs more data” and why
+
+EXECUTE NOW.
+Be bold with content, but conservative with code changes.
+No backend edits. No schema changes. No feature removals.

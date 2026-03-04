@@ -214,7 +214,7 @@ const categoryLabels: Record<string, Record<string, string>> = {
 };
 
 export default function DiscoverLexicon() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [expandedTerms, setExpandedTerms] = useState<Record<string, boolean>>({});
@@ -267,13 +267,11 @@ export default function DiscoverLexicon() {
               }}
               data-testid="text-lexicon-title"
             >
-              {lang === "de" ? "Whisky-Lexikon" : "Whisky Lexicon"}
+              {t("lexicon.title")}
             </h1>
           </div>
           <p style={{ fontSize: 13, color: colors.muted, margin: 0 }} data-testid="text-lexicon-subtitle">
-            {lang === "de"
-              ? "Begriffe, Aromen, Regionen und mehr"
-              : "Terms, flavors, regions and more"}
+            {t("lexicon.subtitle")}
           </p>
         </div>
 
@@ -292,7 +290,7 @@ export default function DiscoverLexicon() {
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={lang === "de" ? "Begriffe durchsuchen…" : "Search terms…"}
+            placeholder={t("lexicon.searchPlaceholder")}
             style={{
               width: "100%",
               padding: "10px 12px 10px 36px",
@@ -312,7 +310,7 @@ export default function DiscoverLexicon() {
           <div style={{ textAlign: "center", padding: "60px 0" }}>
             <BookOpen style={{ width: 48, height: 48, color: colors.muted, opacity: 0.4, margin: "0 auto 16px" }} />
             <p style={{ color: colors.muted, fontFamily: "'Playfair Display', serif" }} data-testid="text-lexicon-no-results">
-              {lang === "de" ? "Keine Ergebnisse gefunden" : "No results found"}
+              {t("lexicon.noResults")}
             </p>
           </div>
         ) : (

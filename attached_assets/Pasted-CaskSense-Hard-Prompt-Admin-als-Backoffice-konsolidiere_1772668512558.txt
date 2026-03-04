@@ -1,0 +1,65 @@
+CaskSense — Hard Prompt: Admin als Backoffice konsolidieren (ohne Features zu verlieren)
+
+CONTEXT
+We moved the product UI to a two-screen model (Tasting | My Taste).
+Admin (/admin) currently renders inside a different shell/area with its own sidebar (“Genuss/Home/Tastings …”).
+This feels like a third product area and breaks the mental model.
+
+GOAL
+Keep /admin as a separate backoffice, but make it:
+- visually consistent (Dark Warm tokens)
+- clearly marked as “Admin / Backoffice”
+- NOT using the consumer/participant sidebar (no “Genuss/Home/Tastings” in admin)
+- reachable only via session dropdown (no bottom nav entry)
+
+STRICT CONSTRAINTS
+- Do NOT remove any admin functionality or pages
+- Do NOT change backend or DB schema
+- Only refactor frontend layout/shell usage for /admin and related admin subroutes
+
+TASKS
+1) Identify why /admin uses a different shell:
+   - find which layout/wrapper is used for /admin vs the Simple Mode pages
+   - locate sidebar component that shows “Genuss/Home/Tastings/Profil”
+
+2) Create an AdminLayout wrapper:
+   File: client/src/components/admin/AdminLayout.tsx (or similar)
+   Requirements:
+   - uses Dark Warm theme tokens (theme.ts)
+   - top header: “Admin-Bereich” + optional subtitle
+   - left sidebar ONLY with admin items:
+     - Teilnehmer
+     - Gastgeber
+     - Tastings
+     - Rollen/Permissions (if exists)
+     - Platform Analytics / Support Console (if exists, optional)
+   - main content area renders current admin page content unchanged
+   - responsive: on mobile sidebar collapses into a sheet/drawer
+
+3) Route-level layout switch:
+   - Ensure all routes under /admin/* use AdminLayout
+   - Ensure consumer simple-shell/bottom-nav is NOT rendered on /admin routes
+   - Ensure the old “Genuss/Home/Tastings” sidebar is never shown on /admin routes
+
+4) Navigation cleanup:
+   - Remove any “Home” link inside admin that points to consumer home unless explicitly labeled “Back to App”
+   - If needed add a subtle link: “Zur App” -> /tasting (or /)
+
+5) Visual consistency:
+   - Keep typography and spacing aligned with Apple-style decisions
+   - Do not change color palette; only reuse existing tokens
+
+6) Verification:
+   - /admin renders with AdminLayout
+   - no consumer sidebar items appear
+   - no bottom nav appears
+   - all admin functions still work (list/search, role dropdown, etc.)
+   - no TS errors, no console errors
+
+DELIVERABLE
+At the end report:
+- modified/added files
+- what layout previously wrapped /admin
+- confirmation: all admin features preserved
+
+EXECUTE NOW.
