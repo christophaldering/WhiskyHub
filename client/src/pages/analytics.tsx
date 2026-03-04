@@ -55,9 +55,8 @@ function StatCard({ icon: Icon, label, value, sub }: { icon: any; label: string;
 }
 
 export default function Analytics() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const isDE = i18n.language === "de";
   const [activeTab, setActiveTab] = useState<Tab>("quality");
   const [expandedProperty, setExpandedProperty] = useState<string | null>(null);
 
@@ -74,7 +73,7 @@ export default function Analytics() {
   if (!currentParticipant) {
     return (
       <div className="max-w-4xl mx-auto p-6 text-center">
-        <p className="text-muted-foreground">{isDE ? "Bitte melde dich an." : "Please sign in."}</p>
+        <p className="text-muted-foreground">{t("analyticsPage.signInRequired")}</p>
       </div>
     );
   }
@@ -82,7 +81,7 @@ export default function Analytics() {
   if (currentParticipant.role !== "admin") {
     return (
       <div className="max-w-4xl mx-auto p-6 text-center">
-        <p className="text-muted-foreground">{isDE ? "Diese Seite ist nur für Administratoren verfügbar." : "This page is only available to administrators."}</p>
+        <p className="text-muted-foreground">{t("analyticsPage.adminOnly")}</p>
       </div>
     );
   }
@@ -99,10 +98,17 @@ export default function Analytics() {
   const pv = data?.predictiveValidity;
   const summary = data?.summary;
 
+  const dimLabels: Record<string, string> = {
+    nose: t("analyticsPage.dimNose"),
+    taste: t("analyticsPage.dimTaste"),
+    finish: t("analyticsPage.dimFinish"),
+    balance: t("analyticsPage.dimBalance"),
+  };
+
   const tabs: { id: Tab; icon: any; label: string }[] = [
-    { id: "quality", icon: Target, label: isDE ? "Messqualität" : "Measurement Quality" },
-    { id: "validity", icon: TrendingUp, label: isDE ? "Prädiktive Validität" : "Predictive Validity" },
-    { id: "ai", icon: Brain, label: isDE ? "KI-Auswertung" : "AI Analysis" },
+    { id: "quality", icon: Target, label: t("analyticsPage.tabQuality") },
+    { id: "validity", icon: TrendingUp, label: t("analyticsPage.tabValidity") },
+    { id: "ai", icon: Brain, label: t("analyticsPage.tabAi") },
   ];
 
   return (
@@ -110,21 +116,19 @@ export default function Analytics() {
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-serif font-bold text-primary flex items-center gap-2" data-testid="text-analytics-title">
           <BarChart3 className="w-7 h-7" />
-          {isDE ? "Plattform-Analytics" : "Platform Analytics"}
+          {t("analyticsPage.title")}
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          {isDE
-            ? "Statistische Analyse aller abgeschlossenen Tastings — Messqualität, Muster und KI-Erkenntnisse."
-            : "Statistical analysis of all completed tastings — measurement quality, patterns, and AI insights."}
+          {t("analyticsPage.subtitle")}
         </p>
       </motion.div>
 
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard icon={Wine} label={isDE ? "Tastings" : "Tastings"} value={summary.totalTastings} />
-          <StatCard icon={BarChart3} label={isDE ? "Bewertungen" : "Ratings"} value={summary.totalRatings} />
-          <StatCard icon={Users} label={isDE ? "Teilnehmer" : "Participants"} value={summary.totalParticipants} />
-          <StatCard icon={Wine} label={isDE ? "Whiskys" : "Whiskies"} value={summary.totalWhiskies} />
+          <StatCard icon={Wine} label={t("analyticsPage.tastings")} value={summary.totalTastings} />
+          <StatCard icon={BarChart3} label={t("analyticsPage.ratings")} value={summary.totalRatings} />
+          <StatCard icon={Users} label={t("analyticsPage.participants")} value={summary.totalParticipants} />
+          <StatCard icon={Wine} label={t("analyticsPage.whiskies")} value={summary.totalWhiskies} />
         </div>
       )}
 
@@ -132,7 +136,7 @@ export default function Analytics() {
         <div className="bg-card border border-border/40 rounded-lg p-8 text-center">
           <Wine className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
           <p className="text-muted-foreground font-serif">
-            {isDE ? "Noch keine abgeschlossenen Tastings für die Analyse." : "No completed tastings available for analysis yet."}
+            {t("analyticsPage.noTastings")}
           </p>
         </div>
       ) : (
@@ -161,14 +165,11 @@ export default function Analytics() {
               <section className="bg-card border border-border/40 rounded-lg p-5">
                 <h2 className="text-lg font-serif font-bold text-primary flex items-center gap-2 mb-1" data-testid="text-ira-title">
                   <Users className="w-5 h-5" />
-                  {isDE ? "Inter-Rater-Übereinstimmung" : "Inter-Rater Agreement"}
-                  <InfoTip text={isDE
-                    ? "Kendalls W misst, wie einig sich die Teilnehmer in der Rangfolge der Whiskys sind. 1.0 = perfekte Übereinstimmung, 0.0 = zufällig."
-                    : "Kendall's W measures how much raters agree on the ranking of whiskies. 1.0 = perfect agreement, 0.0 = random."
-                  } />
+                  {t("analyticsPage.iraTitle")}
+                  <InfoTip text={t("analyticsPage.iraTip")} />
                 </h2>
                 <p className="text-xs text-muted-foreground mb-4">
-                  {isDE ? "Wie einig sind sich die Teilnehmer bei der Rangfolge?" : "How much do participants agree on whisky rankings?"}
+                  {t("analyticsPage.iraSubtitle")}
                 </p>
                 <div className="space-y-2">
                   {mq.interRaterAgreement.map((ira: any) => (
@@ -178,7 +179,7 @@ export default function Analytics() {
                         <span className="text-xs text-muted-foreground ml-2">{ira.date}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-muted-foreground">{ira.raterCount} {isDE ? "Bewerter" : "raters"} · {ira.whiskyCount} {isDE ? "Whiskys" : "whiskies"}</span>
+                        <span className="text-xs text-muted-foreground">{ira.raterCount} {t("analyticsPage.raters")} · {ira.whiskyCount} {t("analyticsPage.whiskies")}</span>
                         <AgreementBadge value={ira.agreement} />
                       </div>
                     </div>
@@ -190,23 +191,20 @@ export default function Analytics() {
               <section className="bg-card border border-border/40 rounded-lg p-5">
                 <h2 className="text-lg font-serif font-bold text-primary flex items-center gap-2 mb-1" data-testid="text-consistency-title">
                   <ArrowUpDown className="w-5 h-5" />
-                  {isDE ? "Bewerter-Konsistenz" : "Rater Consistency"}
-                  <InfoTip text={isDE
-                    ? "Standardabweichung: Wie stark schwanken die Bewertungen eines Teilnehmers? Niedriger = konsistenter. Bias = Abweichung vom Gesamtdurchschnitt."
-                    : "Standard deviation: How much do a participant's ratings vary? Lower = more consistent. Bias = deviation from the global average."
-                  } />
+                  {t("analyticsPage.consistencyTitle")}
+                  <InfoTip text={t("analyticsPage.consistencyTip")} />
                 </h2>
                 <p className="text-xs text-muted-foreground mb-4">
-                  {isDE ? "Wie konsistent bewertet jeder Teilnehmer?" : "How consistently does each participant rate?"}
+                  {t("analyticsPage.consistencySubtitle")}
                 </p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border/40 text-muted-foreground text-xs">
-                        <th className="text-left py-2 px-2">{isDE ? "Teilnehmer" : "Participant"}</th>
-                        <th className="text-center py-2 px-2">{isDE ? "Bewertungen" : "Ratings"}</th>
-                        <th className="text-center py-2 px-2">{isDE ? "Ø Wertung" : "Avg Score"}</th>
-                        <th className="text-center py-2 px-2">{isDE ? "Streuung (σ)" : "Spread (σ)"}</th>
+                        <th className="text-left py-2 px-2">{t("analyticsPage.thParticipant")}</th>
+                        <th className="text-center py-2 px-2">{t("analyticsPage.thRatings")}</th>
+                        <th className="text-center py-2 px-2">{t("analyticsPage.thAvgScore")}</th>
+                        <th className="text-center py-2 px-2">{t("analyticsPage.thSpread")}</th>
                         <th className="text-center py-2 px-2">Bias</th>
                       </tr>
                     </thead>
@@ -241,28 +239,25 @@ export default function Analytics() {
                 <section className="bg-card border border-border/40 rounded-lg p-5">
                   <h2 className="text-lg font-serif font-bold text-primary flex items-center gap-2 mb-1" data-testid="text-distribution-title">
                     <BarChart3 className="w-5 h-5" />
-                    {isDE ? "Verteilungsanalyse" : "Distribution Analysis"}
-                    <InfoTip text={isDE
-                      ? "Verteilung aller normalisierten Gesamtbewertungen. Schiefe > 0 = rechtslastig (eher hohe Werte), < 0 = linkslastig."
-                      : "Distribution of all normalized overall scores. Skewness > 0 = right-skewed (tendency toward high scores), < 0 = left-skewed."
-                    } />
+                    {t("analyticsPage.distributionTitle")}
+                    <InfoTip text={t("analyticsPage.distributionTip")} />
                   </h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                     <div className="text-center">
                       <div className="text-lg font-bold text-primary">{mq.distributionAnalysis.mean}</div>
-                      <div className="text-xs text-muted-foreground">{isDE ? "Mittelwert" : "Mean"}</div>
+                      <div className="text-xs text-muted-foreground">{t("analyticsPage.mean")}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-lg font-bold text-primary">{mq.distributionAnalysis.median}</div>
-                      <div className="text-xs text-muted-foreground">{isDE ? "Median" : "Median"}</div>
+                      <div className="text-xs text-muted-foreground">{t("analyticsPage.median")}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-lg font-bold text-primary">{mq.distributionAnalysis.stdDev}</div>
-                      <div className="text-xs text-muted-foreground">{isDE ? "Std.abw." : "Std Dev"}</div>
+                      <div className="text-xs text-muted-foreground">{t("analyticsPage.stdDev")}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-lg font-bold text-primary">{mq.distributionAnalysis.skewness}</div>
-                      <div className="text-xs text-muted-foreground">{isDE ? "Schiefe" : "Skewness"}</div>
+                      <div className="text-xs text-muted-foreground">{t("analyticsPage.skewness")}</div>
                     </div>
                   </div>
                   <ResponsiveContainer width="100%" height={220}>
@@ -271,7 +266,7 @@ export default function Analytics() {
                       <XAxis dataKey="range" tick={{ fontSize: 10 }} interval={1} />
                       <YAxis tick={{ fontSize: 11 }} />
                       <RechartsTooltip />
-                      <Bar dataKey="count" fill="#8b5e3c" radius={[3, 3, 0, 0]} name={isDE ? "Anzahl" : "Count"} />
+                      <Bar dataKey="count" fill="#8b5e3c" radius={[3, 3, 0, 0]} name={t("analyticsPage.count")} />
                     </BarChart>
                   </ResponsiveContainer>
                 </section>
@@ -286,14 +281,11 @@ export default function Analytics() {
                 <section className="bg-card border border-border/40 rounded-lg p-5">
                   <h2 className="text-lg font-serif font-bold text-primary flex items-center gap-2 mb-1" data-testid="text-correlations-title">
                     <TrendingUp className="w-5 h-5" />
-                    {isDE ? "Kategorie-Korrelationen" : "Category Correlations"}
-                    <InfoTip text={isDE
-                      ? "Pearson-Korrelation: Wie stark hängt jede Teilkategorie mit der Gesamtbewertung zusammen? 1.0 = perfekt, 0.0 = kein Zusammenhang."
-                      : "Pearson correlation: How strongly does each sub-category relate to the overall score? 1.0 = perfect, 0.0 = no relationship."
-                    } />
+                    {t("analyticsPage.correlationsTitle")}
+                    <InfoTip text={t("analyticsPage.correlationsTip")} />
                   </h2>
                   <p className="text-xs text-muted-foreground mb-4">
-                    {isDE ? "Welche Kategorie beeinflusst die Gesamtbewertung am stärksten?" : "Which category influences the overall score the most?"}
+                    {t("analyticsPage.correlationsSubtitle")}
                   </p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {(["nose", "taste", "finish", "balance"] as const).map(cat => {
@@ -304,7 +296,7 @@ export default function Analytics() {
                         <div key={cat} className="text-center bg-secondary/30 rounded-lg p-4" data-testid={`correlation-${cat}`}>
                           <div className={`text-2xl font-bold ${color}`}>{val.toFixed(2)}</div>
                           <div className="text-sm font-medium capitalize mt-1">
-                            {isDE ? ({ nose: "Nase", taste: "Geschmack", finish: "Abgang", balance: "Balance" }[cat]) : cat}
+                            {dimLabels[cat]}
                           </div>
                           <div className="w-full bg-border/30 rounded-full h-1.5 mt-2">
                             <div className={`h-1.5 rounded-full ${val >= 0.8 ? "bg-green-500" : val >= 0.5 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${Math.abs(pct)}%` }} />
@@ -321,22 +313,19 @@ export default function Analytics() {
                 <section className="bg-card border border-border/40 rounded-lg p-5">
                   <h2 className="text-lg font-serif font-bold text-primary flex items-center gap-2 mb-1" data-testid="text-properties-title">
                     <Wine className="w-5 h-5" />
-                    {isDE ? "Eigenschafts-Rankings" : "Property Rankings"}
-                    <InfoTip text={isDE
-                      ? "Durchschnittliche Bewertung nach Whisky-Eigenschaft. Zeigt, welche Regionen, Fasstypen etc. am besten abschneiden."
-                      : "Average rating by whisky property. Shows which regions, cask types, etc. score highest."
-                    } />
+                    {t("analyticsPage.propertyTitle")}
+                    <InfoTip text={t("analyticsPage.propertyTip")} />
                   </h2>
                   <div className="space-y-3 mt-4">
                     {pv.propertyRankings.map((pg: any) => {
-                      const propLabel: Record<string, { en: string; de: string }> = {
-                        region: { en: "Region", de: "Region" },
-                        category: { en: "Category", de: "Kategorie" },
-                        caskInfluence: { en: "Cask Type", de: "Fasstyp" },
-                        peatLevel: { en: "Peat Level", de: "Torfgehalt" },
-                        ageBand: { en: "Age Band", de: "Altersgruppe" },
+                      const propLabelMap: Record<string, string> = {
+                        region: t("analyticsPage.propRegion"),
+                        category: t("analyticsPage.propCategory"),
+                        caskInfluence: t("analyticsPage.propCask"),
+                        peatLevel: t("analyticsPage.propPeat"),
+                        ageBand: t("analyticsPage.propAge"),
                       };
-                      const label = propLabel[pg.property]?.[isDE ? "de" : "en"] ?? pg.property;
+                      const label = propLabelMap[pg.property] ?? pg.property;
                       const isExpanded = expandedProperty === pg.property;
                       const displayValues = isExpanded ? pg.values : pg.values.slice(0, 5);
                       return (
@@ -348,7 +337,7 @@ export default function Analytics() {
                           >
                             <span className="font-medium text-sm">{label}</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">{pg.values.length} {isDE ? "Werte" : "values"}</span>
+                              <span className="text-xs text-muted-foreground">{pg.values.length} {t("analyticsPage.values")}</span>
                               <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                             </div>
                           </button>
@@ -358,7 +347,7 @@ export default function Analytics() {
                                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} horizontal={false} />
                                 <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} />
                                 <YAxis dataKey="value" type="category" tick={{ fontSize: 11 }} width={75} />
-                                <RechartsTooltip formatter={(v: number) => [v.toFixed(1), isDE ? "Ø Wertung" : "Avg Score"]} />
+                                <RechartsTooltip formatter={(v: number) => [v.toFixed(1), t("analyticsPage.avgScore")]} />
                                 <Bar dataKey="avgScore" radius={[0, 3, 3, 0]}>
                                   {displayValues.map((_: any, i: number) => (
                                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
@@ -379,19 +368,16 @@ export default function Analytics() {
                 <section className="bg-card border border-border/40 rounded-lg p-5">
                   <h2 className="text-lg font-serif font-bold text-primary flex items-center gap-2 mb-1" data-testid="text-clusters-title">
                     <Users className="w-5 h-5" />
-                    {isDE ? "Geschmacksprofile der Bewerter" : "Rater Taste Profiles"}
-                    <InfoTip text={isDE
-                      ? "Jeder Punkt zeigt die durchschnittlichen Bewertungen eines Teilnehmers. Die dominante Dimension zeigt, worauf der Bewerter am meisten achtet."
-                      : "Each point shows a participant's average scores. The dominant dimension shows what the rater values most."
-                    } />
+                    {t("analyticsPage.clustersTitle")}
+                    <InfoTip text={t("analyticsPage.clustersTip")} />
                   </h2>
                   <div className="mt-4">
                     <ResponsiveContainer width="100%" height={300}>
                       <RadarChart data={[
-                        { dim: isDE ? "Nase" : "Nose", ...Object.fromEntries(pv.raterClusters.map((rc: any) => [rc.name, rc.nose])) },
-                        { dim: isDE ? "Geschmack" : "Taste", ...Object.fromEntries(pv.raterClusters.map((rc: any) => [rc.name, rc.taste])) },
-                        { dim: isDE ? "Abgang" : "Finish", ...Object.fromEntries(pv.raterClusters.map((rc: any) => [rc.name, rc.finish])) },
-                        { dim: "Balance", ...Object.fromEntries(pv.raterClusters.map((rc: any) => [rc.name, rc.balance])) },
+                        { dim: t("analyticsPage.dimNose"), ...Object.fromEntries(pv.raterClusters.map((rc: any) => [rc.name, rc.nose])) },
+                        { dim: t("analyticsPage.dimTaste"), ...Object.fromEntries(pv.raterClusters.map((rc: any) => [rc.name, rc.taste])) },
+                        { dim: t("analyticsPage.dimFinish"), ...Object.fromEntries(pv.raterClusters.map((rc: any) => [rc.name, rc.finish])) },
+                        { dim: t("analyticsPage.dimBalance"), ...Object.fromEntries(pv.raterClusters.map((rc: any) => [rc.name, rc.balance])) },
                       ]}>
                         <PolarGrid />
                         <PolarAngleAxis dataKey="dim" tick={{ fontSize: 12 }} />
@@ -416,7 +402,7 @@ export default function Analytics() {
                         <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                         <span className="font-medium">{rc.name}</span>
                         <span className="text-xs text-muted-foreground ml-auto">
-                          {isDE ? "Fokus:" : "Focus:"} {isDE ? ({ nose: "Nase", taste: "Geschmack", finish: "Abgang", balance: "Balance" }[rc.dominantDimension as string] ?? rc.dominantDimension) : rc.dominantDimension}
+                          {t("analyticsPage.focus")} {dimLabels[rc.dominantDimension as string] ?? rc.dominantDimension}
                         </span>
                         <span className="text-xs text-muted-foreground">({rc.ratingCount})</span>
                       </div>
@@ -432,12 +418,10 @@ export default function Analytics() {
               <section className="bg-card border border-border/40 rounded-lg p-5">
                 <h2 className="text-lg font-serif font-bold text-primary flex items-center gap-2 mb-3" data-testid="text-ai-title">
                   <Brain className="w-5 h-5" />
-                  {isDE ? "KI-gestützte Analyse" : "AI-Powered Analysis"}
+                  {t("analyticsPage.aiTitle")}
                 </h2>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {isDE
-                    ? "Lass GPT-4o die Bewertungsdaten analysieren und Muster, Ausreißer und Empfehlungen erkennen."
-                    : "Let GPT-4o analyze the rating data to identify patterns, outliers, and recommendations."}
+                  {t("analyticsPage.aiSubtitle")}
                 </p>
 
                 {!aiMutation.data && (
@@ -453,14 +437,14 @@ export default function Analytics() {
                       <Sparkles className="w-4 h-4" />
                     )}
                     {aiMutation.isPending
-                      ? (isDE ? "Analyse läuft…" : "Analyzing…")
-                      : (isDE ? "Analyse starten" : "Start Analysis")}
+                      ? t("analyticsPage.aiAnalyzing")
+                      : t("analyticsPage.aiStart")}
                   </Button>
                 )}
 
                 {aiMutation.isError && (
                   <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded text-sm text-destructive" data-testid="text-ai-error">
-                    {isDE ? "Fehler bei der KI-Analyse. Bitte versuche es erneut." : "Error during AI analysis. Please try again."}
+                    {t("analyticsPage.aiError")}
                   </div>
                 )}
 

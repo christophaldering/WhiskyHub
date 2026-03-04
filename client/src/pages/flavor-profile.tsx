@@ -113,7 +113,7 @@ function DetailsPanel({ children, label, t }: { children: React.ReactNode; label
   );
 }
 
-function MethodologySection({ isDE }: { isDE: boolean }) {
+function MethodologySection({ t }: { t: any }) {
   const [open, setOpen] = useState(false);
   const [expertOpen, setExpertOpen] = useState(false);
 
@@ -131,7 +131,7 @@ function MethodologySection({ isDE }: { isDE: boolean }) {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <BookOpen style={{ width: 20, height: 20, color: c.accent }} />
           <h2 style={{ fontSize: 16, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, margin: 0 }}>
-            {isDE ? "So wird dein Profil erstellt" : "How Your Profile Is Built"}
+            {t("flavorProfile.methodology.title")}
           </h2>
         </div>
         {open ? <ChevronUp style={{ width: 16, height: 16, color: c.muted }} /> : <ChevronDown style={{ width: 16, height: 16, color: c.muted }} />}
@@ -141,31 +141,25 @@ function MethodologySection({ isDE }: { isDE: boolean }) {
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
             <div style={{ padding: "0 20px 20px", display: "flex", flexDirection: "column", gap: 20 }}>
               <p style={{ fontSize: 14, color: c.muted, margin: 0 }}>
-                {isDE
-                  ? "Transparenz ist uns wichtig. Hier erklären wir, wie dein Whisky-Profil berechnet wird."
-                  : "Transparency matters. Here we explain how your whisky profile is calculated."}
+                {t("flavorProfile.methodology.transparencyIntro")}
               </p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12, fontSize: 14, color: c.muted }}>
                 <p style={{ margin: 0 }}>
-                  {isDE
-                    ? "Dein Whisky-Profil basiert ausschließlich auf deinem Bewertungsverhalten — nicht auf Persönlichkeitstests, Fragebögen oder Annahmen über dich als Person."
-                    : "Your whisky profile is based exclusively on your rating behavior — not on personality tests, questionnaires, or assumptions about you as a person."}
+                  {t("flavorProfile.methodology.behaviorBased")}
                 </p>
                 <p style={{ margin: 0, fontWeight: 500, color: c.text }}>
-                  {isDE ? "Was das Profil zeigt:" : "What the profile shows:"}
+                  {t("flavorProfile.methodology.whatItShows")}
                 </p>
                 <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-                  <li>{isDE ? "Keine Typologien oder Kategorien — du wirst nicht als \"Explorer\" oder \"Kenner\" eingestuft." : "No typologies or categories — you are not classified as an \"Explorer\" or \"Connoisseur\"."}</li>
-                  <li>{isDE ? "Dein Geschmack wird als mehrdimensionale, sich verändernde Struktur abgebildet." : "Your taste is mapped as a multidimensional, evolving structure."}</li>
-                  <li>{isDE ? "Alle Aussagen beschreiben dein Verhalten, nie deine Persönlichkeit." : "All statements describe your behavior, never your personality."}</li>
-                  <li>{isDE ? "Vergleiche mit der Plattform oder Freunden musst du aktiv einschalten." : "Comparisons with the platform or friends must be actively enabled by you."}</li>
-                  <li>{isDE ? "Jede Zahl wird mit Stichprobengröße und Streuungsmaß angezeigt." : "Every number is shown with sample size and dispersion measure."}</li>
+                  <li>{t("flavorProfile.methodology.bullet1")}</li>
+                  <li>{t("flavorProfile.methodology.bullet2")}</li>
+                  <li>{t("flavorProfile.methodology.bullet3")}</li>
+                  <li>{t("flavorProfile.methodology.bullet4")}</li>
+                  <li>{t("flavorProfile.methodology.bullet5")}</li>
                 </ul>
                 <p style={{ margin: 0 }}>
-                  {isDE
-                    ? "Dein Profil verändert sich mit jeder neuen Bewertung. Es ist ein lebendiges Dokument deiner Geschmacksentwicklung."
-                    : "Your profile changes with every new rating. It is a living document of your taste evolution."}
+                  {t("flavorProfile.methodology.evolution")}
                 </p>
               </div>
 
@@ -180,7 +174,7 @@ function MethodologySection({ isDE }: { isDE: boolean }) {
                   data-testid="button-toggle-expert"
                 >
                   <h3 style={{ fontSize: 16, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, margin: 0 }}>
-                    {isDE ? "Für Experten" : "For Experts"}
+                    {t("flavorProfile.methodology.forExperts")}
                   </h3>
                   {expertOpen ? <ChevronUp style={{ width: 16, height: 16, color: c.muted }} /> : <ChevronDown style={{ width: 16, height: 16, color: c.muted }} />}
                 </button>
@@ -189,26 +183,26 @@ function MethodologySection({ isDE }: { isDE: boolean }) {
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
                       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 16, fontSize: 14, color: c.muted }}>
                         <div>
-                          <h4 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, marginBottom: 4 }}>{isDE ? "Dimensionales Modell" : "Dimensional Model"}</h4>
-                          <p style={{ margin: 0 }}>{isDE ? "Geschmack wird als kontinuierlicher, mehrdimensionaler Präferenzraum modelliert. Jede Dimension (Nase, Geschmack, Abgang, Balance, Gesamt) wird unabhängig berechnet." : "Taste is modeled as a continuous, multidimensional preference space. Each dimension (Nose, Taste, Finish, Balance, Overall) is computed independently."}</p>
+                          <h4 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, marginBottom: 4 }}>{t("flavorProfile.methodology.dimensionalModel")}</h4>
+                          <p style={{ margin: 0 }}>{t("flavorProfile.methodology.dimensionalModelDesc")}</p>
                         </div>
                         <div>
-                          <h4 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, marginBottom: 4 }}>{isDE ? "Plattform-Basis: Median statt Mittelwert" : "Platform Basis: Median Over Mean"}</h4>
-                          <p style={{ margin: 0 }}>{isDE ? "Für alle Plattform-Vergleiche wird der Median verwendet, nicht der arithmetische Mittelwert. Der Median ist robust gegenüber Ausreißern." : "For all platform comparisons, the median is used, not the arithmetic mean. The median is robust against outliers."}</p>
+                          <h4 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, marginBottom: 4 }}>{t("flavorProfile.methodology.platformMedianTitle")}</h4>
+                          <p style={{ margin: 0 }}>{t("flavorProfile.methodology.platformMedianDesc")}</p>
                         </div>
                         <div>
-                          <h4 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, marginBottom: 4 }}>{isDE ? "Systematische Abweichung" : "Systematic Deviation"}</h4>
+                          <h4 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, marginBottom: 4 }}>{t("flavorProfile.methodology.systematicDeviationTitle")}</h4>
                           <p style={{ fontFamily: "monospace", fontSize: 12, background: c.inputBg, padding: 8, borderRadius: 4, margin: 0, marginBottom: 8 }}>avg_delta = mean(UserScore_i - PlatformMedian_i)</p>
-                          <p style={{ margin: 0 }}>{isDE ? "Misst, ob du systematisch höher oder niedriger bewertest als der Plattform-Median." : "Measures whether you systematically rate higher or lower than the platform median."}</p>
+                          <p style={{ margin: 0 }}>{t("flavorProfile.methodology.systematicDeviationDesc")}</p>
                         </div>
                         <div>
-                          <h4 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, marginBottom: 4 }}>{isDE ? "Stabilitätslogik" : "Stability Logic"}</h4>
+                          <h4 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, marginBottom: 4 }}>{t("flavorProfile.methodology.stabilityLogic")}</h4>
                           <ul style={{ paddingLeft: 20, margin: 0, fontFamily: "monospace", fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-                            <li>{isDE ? "Vorläufig" : "Preliminary"}: N &lt; 5</li>
-                            <li>{isDE ? "Tendenz" : "Tendency"}: 5 ≤ N &lt; 15</li>
-                            <li>{isDE ? "Stabil" : "Stable"}: N ≥ 15</li>
+                            <li>{t("flavorProfile.methodology.stabilityPreliminary")}: N &lt; 5</li>
+                            <li>{t("flavorProfile.methodology.stabilityTendency")}: 5 ≤ N &lt; 15</li>
+                            <li>{t("flavorProfile.methodology.stabilityStable")}: N ≥ 15</li>
                           </ul>
-                          <p style={{ fontFamily: "monospace", fontSize: 12, background: c.inputBg, padding: 8, borderRadius: 4, margin: 0, marginTop: 8 }}>{isDE ? "Stabilität %" : "Stability %"} = min(100, N × 6.67)</p>
+                          <p style={{ fontFamily: "monospace", fontSize: 12, background: c.inputBg, padding: 8, borderRadius: 4, margin: 0, marginTop: 8 }}>{t("flavorProfile.methodology.stabilityFormula")} = min(100, N × 6.67)</p>
                         </div>
                       </div>
                     </motion.div>
@@ -223,7 +217,7 @@ function MethodologySection({ isDE }: { isDE: boolean }) {
   );
 }
 
-function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t: any; isDE: boolean }) {
+function WhiskyProfileTab({ participantId, t }: { participantId: string; t: any }) {
   const [source, setSource] = useState<"all" | "journal" | "imported" | "all_incl_imported">("all");
   const [compareMode, setCompareMode] = useState<"none" | "friends" | "platform">("none");
   const [showWhiskyComparison, setShowWhiskyComparison] = useState(false);
@@ -255,8 +249,8 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
   const { ratingStyle, tasteStructure, whiskyComparison, confidence, comparisonData } = profile;
   const dims = ["nose", "taste", "finish", "balance", "overall"];
   const dimLabels: Record<string, string> = {
-    nose: isDE ? "Nase" : "Nose", taste: isDE ? "Geschmack" : "Taste",
-    finish: isDE ? "Abgang" : "Finish", balance: "Balance", overall: isDE ? "Gesamt" : "Overall",
+    nose: t("flavorProfile.dimNose"), taste: t("flavorProfile.dimTaste"),
+    finish: t("flavorProfile.dimFinish"), balance: t("flavorProfile.dimBalance"), overall: t("flavorProfile.dimOverall"),
   };
 
   const radarData = tasteStructure ? dims.map(d => ({
@@ -457,7 +451,7 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
         </div>
         <DetailsPanel t={t}>
           <p>{t("flavorProfile.formulaStability")}</p>
-          <p>{isDE ? "Stabilität % = min(100, N × 6.67)" : "Stability % = min(100, N × 6.67)"}</p>
+          <p>{t("flavorProfile.stabilityFormulaText")}</p>
         </DetailsPanel>
       </div>
 
@@ -512,24 +506,23 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
                 </table>
               </div>
               <DetailsPanel t={t}>
-                <p>{isDE ? "Jede Zeile vergleicht deine Bewertung mit dem Plattform-Median für denselben Whisky." : "Each row compares your score to the platform median for the same whisky."}</p>
-                <p>{isDE ? "IQR = Interquartilsabstand (Q3 − Q1), zeigt die Streuung der Plattform-Bewertungen." : "IQR = Interquartile Range (Q3 − Q1), shows spread of platform ratings."}</p>
-                <p>{isDE ? "N = Anzahl Plattform-Bewertungen für diesen Whisky." : "N = Number of platform ratings for this whisky."}</p>
+                <p>{t("flavorProfile.comparisonRowDesc")}</p>
+                <p>{t("flavorProfile.comparisonIqrDesc")}</p>
+                <p>{t("flavorProfile.comparisonNDesc")}</p>
               </DetailsPanel>
             </motion.div>
           )}
         </div>
       )}
 
-      <MethodologySection isDE={isDE} />
+      <MethodologySection t={t} />
     </div>
   );
 }
 
 export default function FlavorProfile() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const isDE = i18n.language === "de";
   const { data: profile, isLoading } = useQuery<FlavorProfileData>({
     queryKey: ["flavor-profile", currentParticipant?.id],
     queryFn: () => flavorProfileApi.get(currentParticipant!.id),
@@ -581,11 +574,11 @@ export default function FlavorProfile() {
   }
 
   const radarData = profile?.avgScores ? [
-    { dimension: isDE ? "Nase" : "Nose", value: profile.avgScores.nose, global: globalAvg?.nose ?? 0, fullMark: 100 },
-    { dimension: isDE ? "Geschmack" : "Taste", value: profile.avgScores.taste, global: globalAvg?.taste ?? 0, fullMark: 100 },
-    { dimension: isDE ? "Abgang" : "Finish", value: profile.avgScores.finish, global: globalAvg?.finish ?? 0, fullMark: 100 },
-    { dimension: isDE ? "Balance" : "Balance", value: profile.avgScores.balance, global: globalAvg?.balance ?? 0, fullMark: 100 },
-    { dimension: isDE ? "Gesamt" : "Overall", value: profile.avgScores.overall, global: globalAvg?.overall ?? 0, fullMark: 100 },
+    { dimension: t("flavorProfile.dimNose"), value: profile.avgScores.nose, global: globalAvg?.nose ?? 0, fullMark: 100 },
+    { dimension: t("flavorProfile.dimTaste"), value: profile.avgScores.taste, global: globalAvg?.taste ?? 0, fullMark: 100 },
+    { dimension: t("flavorProfile.dimFinish"), value: profile.avgScores.finish, global: globalAvg?.finish ?? 0, fullMark: 100 },
+    { dimension: t("flavorProfile.dimBalance"), value: profile.avgScores.balance, global: globalAvg?.balance ?? 0, fullMark: 100 },
+    { dimension: t("flavorProfile.dimOverall"), value: profile.avgScores.overall, global: globalAvg?.overall ?? 0, fullMark: 100 },
   ] : [];
 
   const regionData = profile?.regionBreakdown
@@ -632,9 +625,10 @@ export default function FlavorProfile() {
 
         {profile?.sources && (profile.sources.tastingRatings > 0 || profile.sources.journalEntries > 0) && (
               <p style={{ fontSize: 14, color: `${c.muted}cc`, margin: 0, marginBottom: 32 }} data-testid="text-flavor-sources">
-                {isDE
-                  ? `Basierend auf ${profile.sources.tastingRatings} Tasting-Bewertung${profile.sources.tastingRatings !== 1 ? "en" : ""} und ${profile.sources.journalEntries} Journal-Eintr${profile.sources.journalEntries !== 1 ? "ägen" : "ag"}`
-                  : `Based on ${profile.sources.tastingRatings} tasting rating${profile.sources.tastingRatings !== 1 ? "s" : ""} and ${profile.sources.journalEntries} journal entr${profile.sources.journalEntries !== 1 ? "ies" : "y"}`}
+                {t("flavorProfile.sourcesBasedOn", {
+                  ratings: t("flavorProfile.sourcesRatings", { count: profile.sources.tastingRatings }),
+                  entries: t("flavorProfile.sourcesEntries", { count: profile.sources.journalEntries }),
+                })}
               </p>
             )}
 
@@ -655,7 +649,7 @@ export default function FlavorProfile() {
                         <PolarGrid stroke={c.border} />
                         <PolarAngleAxis dataKey="dimension" tick={{ fill: c.muted, fontSize: 12, fontFamily: "serif" }} />
                         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: c.muted, fontSize: 10 }} />
-                        <Radar name={isDE ? "Alle" : "Everyone"} dataKey="global" stroke="#9ca3af" fill="#9ca3af" fillOpacity={0.1} strokeDasharray="4 4" />
+                        <Radar name={t("flavorProfile.everyone")} dataKey="global" stroke="#9ca3af" fill="#9ca3af" fillOpacity={0.1} strokeDasharray="4 4" />
                         <Radar name="Profile" dataKey="value" stroke="#c8a864" fill="#c8a864" fillOpacity={0.3} strokeWidth={2} />
                       </RadarChart>
                     </ResponsiveContainer>
@@ -667,11 +661,11 @@ export default function FlavorProfile() {
                       <div style={{ fontSize: 14, color: c.muted, marginBottom: 12 }}>{t("flavorProfile.globalBasedOn", { ratings: globalAvg.totalRatings, participants: globalAvg.totalParticipants })}</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {[
-                          { key: "nose", label: isDE ? "Nase" : "Nose", personal: profile.avgScores.nose, global: globalAvg.nose },
-                          { key: "taste", label: isDE ? "Geschmack" : "Taste", personal: profile.avgScores.taste, global: globalAvg.taste },
-                          { key: "finish", label: isDE ? "Abgang" : "Finish", personal: profile.avgScores.finish, global: globalAvg.finish },
-                          { key: "balance", label: "Balance", personal: profile.avgScores.balance, global: globalAvg.balance },
-                          { key: "overall", label: isDE ? "Gesamt" : "Overall", personal: profile.avgScores.overall, global: globalAvg.overall },
+                          { key: "nose", label: t("flavorProfile.dimNose"), personal: profile.avgScores.nose, global: globalAvg.nose },
+                          { key: "taste", label: t("flavorProfile.dimTaste"), personal: profile.avgScores.taste, global: globalAvg.taste },
+                          { key: "finish", label: t("flavorProfile.dimFinish"), personal: profile.avgScores.finish, global: globalAvg.finish },
+                          { key: "balance", label: t("flavorProfile.dimBalance"), personal: profile.avgScores.balance, global: globalAvg.balance },
+                          { key: "overall", label: t("flavorProfile.dimOverall"), personal: profile.avgScores.overall, global: globalAvg.overall },
                         ].map(({ key, label, personal, global }) => {
                           const diff = Math.round((personal - global) * 10) / 10;
                           return (
@@ -709,7 +703,7 @@ export default function FlavorProfile() {
                           <Tooltip
                             contentStyle={{ backgroundColor: c.card, border: `1px solid ${c.border}`, borderRadius: 8 }}
                             labelStyle={{ color: c.text }}
-                            formatter={(value: number, name: string) => [value.toFixed(1), name === "avgScore" ? (isDE ? "Ø Bewertung" : "Avg Score") : (isDE ? "Anzahl" : "Count")]}
+                            formatter={(value: number, name: string) => [value.toFixed(1), name === "avgScore" ? t("flavorProfile.tooltipAvgScore") : t("flavorProfile.tooltipCount")]}
                           />
                           <Bar dataKey="avgScore" radius={[0, 4, 4, 0]}>
                             {regionData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
@@ -794,7 +788,7 @@ export default function FlavorProfile() {
             )}
 
         {currentParticipant && (
-          <WhiskyProfileTab participantId={currentParticipant.id} t={t} isDE={isDE} />
+          <WhiskyProfileTab participantId={currentParticipant.id} t={t} />
         )}
 
         </div>

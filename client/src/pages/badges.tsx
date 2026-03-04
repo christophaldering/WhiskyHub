@@ -435,9 +435,9 @@ export default function Badges() {
 
   if (!currentParticipant) {
     return (
-      <GuestPreview featureTitle={t("badges.title")} featureDescription={t("guestPreview.badges")}>
+      <GuestPreview featureTitle={t("badgesPage.title")} featureDescription={t("guestPreview.badges")}>
         <div className="space-y-4">
-          <h1 className="text-2xl font-serif font-bold">{t("badges.title")}</h1>
+          <h1 className="text-2xl font-serif font-bold">{t("badgesPage.title")}</h1>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[{emoji: "🥃", name: "First Dram", desc: "Rate your first whisky"}, {emoji: "🏆", name: "Connoisseur", desc: "Rate 50 whiskies"}, {emoji: "🌍", name: "Globe Trotter", desc: "Taste whiskies from 10 countries"}, {emoji: "🔥", name: "Peat Lover", desc: "Rate 10 peated whiskies"}, {emoji: "📝", name: "Wordsmith", desc: "Write 25 tasting notes"}, {emoji: "🎯", name: "Sharp Palate", desc: "Match the group average within 0.5"}].map(b => (
               <div key={b.name} className="bg-card rounded-xl border p-4 text-center space-y-2">
@@ -475,12 +475,12 @@ export default function Badges() {
         <div className="flex items-center gap-3 mb-2">
           <Trophy className="w-7 h-7 text-primary" />
           <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-badges-title">
-            {t("badges.title")}
+            {t("badgesPage.title")}
           </h1>
         </div>
-        <p className="text-sm text-muted-foreground mb-2">{t("badges.subtitle")}</p>
+        <p className="text-sm text-muted-foreground mb-2">{t("badgesPage.subtitle")}</p>
         <p className="text-sm font-medium text-primary/80 mb-8" data-testid="text-badges-count">
-          {earnedCount} / {BADGES.length} {t("badges.earned")}
+          {earnedCount} / {BADGES.length} {t("badgesPage.unlocked")}
         </p>
 
         {isLoading ? (
@@ -531,7 +531,7 @@ export default function Badges() {
                   {!earned && (
                     <div className="w-full mt-auto">
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
-                        <span>{t("badges.progress")}</span>
+                        <span>{t("badgesPage.locked")}</span>
                         <span>{prog.current}/{prog.target}</span>
                       </div>
                       <div className="w-full h-1.5 bg-secondary/50 rounded-full overflow-hidden">
@@ -544,7 +544,7 @@ export default function Badges() {
                   )}
                   {earned && (
                     <span className="text-[10px] text-primary/70 font-medium uppercase tracking-wider mt-auto">
-                      ✓ {t("badges.earned")}
+                      ✓ {t("badgesPage.unlocked")}
                     </span>
                   )}
                 </motion.div>

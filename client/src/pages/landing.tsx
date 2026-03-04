@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { KeyRound, User } from "lucide-react";
 import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
@@ -9,6 +10,7 @@ const HERO_BG_ENABLED = false;
 const HERO_BG_URL = "/images/landing-hero.jpg";
 
 export default function Landing() {
+  const { t } = useTranslation();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [session, setSession] = useState(() => getSession());
 
@@ -64,12 +66,12 @@ export default function Landing() {
         {session.signedIn ? (
           <>
             <User style={{ width: 16, height: 16 }} strokeWidth={2} />
-            <span>{session.name || "Signed in"}</span>
+            <span>{session.name || t("landingPage.signedIn")}</span>
           </>
         ) : (
           <>
             <KeyRound style={{ width: 16, height: 16 }} strokeWidth={1.6} />
-            <span>Sign in</span>
+            <span>{t("landingPage.signIn")}</span>
           </>
         )}
       </button>
@@ -115,7 +117,7 @@ export default function Landing() {
               fontFamily: "system-ui, sans-serif",
             }}
           >
-            Where tasting becomes reflection
+            {t("landingPage.tagline")}
           </p>
         </div>
 
@@ -146,7 +148,7 @@ export default function Landing() {
               }}
               data-testid="button-join-tasting"
             >
-              Join a Tasting
+              {t("landingPage.joinTasting")}
             </motion.div>
           </Link>
 
@@ -169,7 +171,7 @@ export default function Landing() {
               }}
               data-testid="button-log-whisky"
             >
-              Log a Whisky
+              {t("landingPage.logWhisky")}
             </motion.div>
           </Link>
 
@@ -192,7 +194,7 @@ export default function Landing() {
               }}
               data-testid="button-host-tasting"
             >
-              Host a Tasting
+              {t("landingPage.hostTasting")}
             </motion.div>
           </Link>
 
@@ -215,7 +217,7 @@ export default function Landing() {
               }}
               data-testid="button-my-taste"
             >
-              My Taste
+              {t("landingPage.myTaste")}
             </motion.div>
           </Link>
 
@@ -238,7 +240,7 @@ export default function Landing() {
               }}
               data-testid="button-discover"
             >
-              Discover
+              {t("landingPage.discover")}
             </motion.div>
           </Link>
         </div>
