@@ -56,6 +56,13 @@ const sections: { title: string; items: NavItem[] }[] = [
         href: "/discover/activity",
         testId: "link-activity",
       },
+      {
+        icon: Database,
+        label: "Whisky Database",
+        description: "Search all whiskies across tastings",
+        href: "/discover/database",
+        testId: "link-database",
+      },
     ],
   },
   {
@@ -86,13 +93,6 @@ const sections: { title: string; items: NavItem[] }[] = [
         description: "Distillery encyclopedia & regions",
         href: "/discover/distilleries",
         testId: "link-distilleries",
-      },
-      {
-        icon: Database,
-        label: "Whisky Database",
-        description: "Search all whiskies",
-        href: "/discover/database",
-        testId: "link-database",
       },
       {
         icon: GraduationCap,

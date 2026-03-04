@@ -364,6 +364,18 @@ export default function WhiskybaseCollection() {
     return result;
   }, [items, statusFilter, search, sortBy]);
 
+  const duplicateCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    (items as WhiskybaseCollectionItem[]).forEach((item) => {
+      counts[item.whiskybaseId] = (counts[item.whiskybaseId] || 0) + 1;
+    });
+    return counts;
+  }, [items]);
+
+  const uniqueExpressions = useMemo(() => {
+    return new Set((items as WhiskybaseCollectionItem[]).map(i => i.whiskybaseId)).size;
+  }, [items]);
+
   const stats = useMemo(() => {
     const all = items as WhiskybaseCollectionItem[];
     const open = all.filter((i) => i.status === "open").length;
@@ -694,6 +706,9 @@ export default function WhiskybaseCollection() {
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
             {filtered.length} / {items.length} {t("collection.totalBottles", { count: items.length }).split(" ").slice(1).join(" ")}
+            {uniqueExpressions < items.length && (
+              <span className="text-muted-foreground/60"> · {uniqueExpressions} {uniqueExpressions === 1 ? "expression" : "expressions"}</span>
+            )}
           </p>
           {filtered.map((item: WhiskybaseCollectionItem) => (
             <motion.div
@@ -736,6 +751,11 @@ export default function WhiskybaseCollection() {
                       {item.brand && item.brand !== item.name ? `${item.brand} ` : ""}
                       {item.name}
                     </span>
+                    {duplicateCounts[item.whiskybaseId] > 1 && (
+                      <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+                        ×{duplicateCounts[item.whiskybaseId]}
+                      </Badge>
+                    )}
                     {item.status && (
                       <Badge variant="outline" className={`text-[10px] ${statusColor(item.status)}`}>
                         {statusLabel(item.status)}
