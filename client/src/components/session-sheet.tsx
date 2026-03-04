@@ -374,6 +374,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     placeholder: string,
     testId: string,
     extraStyle?: React.CSSProperties,
+    acOverride?: string,
   ) => (
     <div style={pwFieldWrap}>
       <input
@@ -384,10 +385,9 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         onChange={(e) => onChange(e.target.value)}
         style={{ ...inputStyle, paddingRight: 36, letterSpacing: show ? 0 : 3, ...extraStyle }}
         data-testid={testId}
-        autoComplete="new-password"
+        autoComplete={acOverride || "new-password"}
         autoCapitalize="none"
         spellCheck={false}
-        data-form-type="other"
       />
       <button type="button" onClick={onToggle} style={eyeBtn} data-testid={`${testId}-toggle`} tabIndex={-1}>
         {show ? <EyeOff style={{ width: 16, height: 16 }} /> : <Eye style={{ width: 16, height: 16 }} />}
@@ -499,21 +499,23 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
   );
 
   const renderLoginForm = () => (
-    <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 8 }} autoComplete="off">
-      <input type="text" name="cs_trap_user" autoComplete="username" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
-      <input type="password" name="cs_trap_pw" autoComplete="current-password" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
+    <>
+      <form style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" tabIndex={-1}>
+        <input type="text" name="cs_trap_user" autoComplete="username" tabIndex={-1} />
+        <input type="password" name="cs_trap_pw" autoComplete="current-password" tabIndex={-1} />
+      </form>
+      <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <input
         type="text"
-        placeholder="Name (optional)"
+        placeholder="Display name (optional)"
         name="cs_display_name"
         value={siName}
         onChange={(e) => setSiName(e.target.value)}
         style={inputStyle}
         data-testid="input-session-name"
-        autoComplete="off"
+        autoComplete="name"
         autoCapitalize="words"
         spellCheck={false}
-        data-form-type="other"
       />
       <input
         type="email"
@@ -523,12 +525,11 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         onChange={(e) => setSiEmail(e.target.value)}
         style={inputStyle}
         data-testid="input-session-email"
-        autoComplete="off"
+        autoComplete="email"
         autoCapitalize="none"
         spellCheck={false}
-        data-form-type="other"
       />
-      {renderPasswordInput(siPin, setSiPin, showPassword, () => setShowPassword(!showPassword), "Password", "input-session-pin")}
+      {renderPasswordInput(siPin, setSiPin, showPassword, () => setShowPassword(!showPassword), "Password", "input-session-pin", undefined, "current-password")}
       <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: c.mutedLight, cursor: "pointer", padding: "2px 0" }}>
         <input
           type="checkbox"
@@ -565,6 +566,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         Cancel
       </button>
     </form>
+    </>
   );
 
   const renderForgotPassword = () => (
