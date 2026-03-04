@@ -1474,32 +1474,6 @@ export default function SimpleLogPage() {
             <div style={{ marginBottom: 36 }} data-testid="section-score">
               <SectionLabel>Score</SectionLabel>
 
-              {!showDetailed && (
-                <>
-                  <div style={{ textAlign: "center", marginBottom: 8 }}>
-                    <motion.div
-                      animate={{ scale: scoreAnimating ? 1.03 : 1 }}
-                      transition={{ duration: 0.12 }}
-                      style={{ fontSize: 60, fontWeight: 700, color: c.text, lineHeight: 1, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif" }}
-                      data-testid="text-score-value"
-                    >
-                      {score}
-                    </motion.div>
-                    <div style={{ fontSize: 12, color: c.mutedLight, marginTop: 4 }}>Your Final Score</div>
-                  </div>
-
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={score}
-                    onChange={(e) => handleScoreChange(Number(e.target.value))}
-                    data-testid="input-score"
-                    style={{ width: "100%", accentColor: c.accent, display: "block" }}
-                  />
-                </>
-              )}
-
               <button
                 type="button"
                 onClick={() => setShowDetailed(!showDetailed)}
@@ -1514,7 +1488,6 @@ export default function SimpleLogPage() {
                   fontSize: 13,
                   fontFamily: "system-ui, sans-serif",
                   padding: "10px 14px",
-                  marginTop: showDetailed ? 0 : 12,
                   display: "flex",
                   flexDirection: "column",
                   gap: 6,
@@ -1527,17 +1500,24 @@ export default function SimpleLogPage() {
                   <span style={{ fontSize: 16, color: c.accent, transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)" }}>▾</span>
                 </span>
                 {!showDetailed && (
-                  <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {(["Nose", "Taste", "Finish", "Balance"] as const).map((dim) => {
-                      const key = dim.toLowerCase() as DimKey;
-                      const chipCount = detailChips[key].length;
-                      return (
-                        <span key={dim} style={{ fontSize: 10, color: chipCount > 0 ? c.accent : c.mutedLight, background: chipCount > 0 ? `${c.accent}15` : c.border, padding: "2px 8px", borderRadius: 20, letterSpacing: 0.3 }}>
-                          {dim}{chipCount > 0 ? ` (${chipCount})` : ""}
-                        </span>
-                      );
-                    })}
-                  </span>
+                  <>
+                    <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {(["Nose", "Taste", "Finish", "Balance"] as const).map((dim) => {
+                        const key = dim.toLowerCase() as DimKey;
+                        const chipCount = detailChips[key].length;
+                        return (
+                          <span key={dim} style={{ fontSize: 10, color: chipCount > 0 ? c.accent : c.mutedLight, background: chipCount > 0 ? `${c.accent}15` : c.border, padding: "2px 8px", borderRadius: 20, letterSpacing: 0.3 }}>
+                            {dim}{chipCount > 0 ? ` (${chipCount})` : ""}
+                          </span>
+                        );
+                      })}
+                    </span>
+                    {!detailTouched && (
+                      <span style={{ fontSize: 11, color: c.mutedLight, lineHeight: 1.3 }}>
+                        Rate Nose, Taste, Finish &amp; Balance individually
+                      </span>
+                    )}
+                  </>
                 )}
               </button>
 
@@ -1572,85 +1552,94 @@ export default function SimpleLogPage() {
                       />
                     );
                   })}
-
-                  <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 14, marginTop: 8 }}>
-                    {detailTouched && (
-                      <div style={{ marginBottom: 14 }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: c.mutedLight }}>Suggested Score</span>
-                          <span style={{ fontSize: 22, fontWeight: 700, color: c.mutedLight, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif" }} data-testid="text-suggested-score">
-                            {calcOverall(detailedScores)}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: 11, color: c.mutedLight, marginTop: 2 }} data-testid="text-score-suggestion">
-                          Based on your detailed ratings
-                        </div>
-                      </div>
-                    )}
-
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                      <div>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>Your Final Score</span>
-                        {overrideActive && (
-                          <span
-                            style={{
-                              fontSize: 10,
-                              color: c.accent,
-                              background: `${c.accent}15`,
-                              padding: "2px 8px",
-                              borderRadius: 20,
-                              marginLeft: 8,
-                            }}
-                            data-testid="badge-score-mode"
-                          >
-                            Manually adjusted
-                          </span>
-                        )}
-                      </div>
-                      <motion.div
-                        animate={{ scale: scoreAnimating ? 1.05 : 1 }}
-                        transition={{ duration: 0.12 }}
-                        style={{ fontSize: 28, fontWeight: 700, color: c.text, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif", lineHeight: 1 }}
-                        data-testid="text-score-value"
-                      >
-                        {score}
-                      </motion.div>
-                    </div>
-
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={score}
-                      onChange={(e) => handleScoreChange(Number(e.target.value))}
-                      data-testid="input-score"
-                      style={{ width: "100%", accentColor: c.accent, display: "block" }}
-                    />
-
-                    {overrideActive && (
-                      <button
-                        type="button"
-                        onClick={resetOverride}
-                        data-testid="button-reset-override"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          color: c.accent,
-                          fontSize: 11,
-                          fontFamily: "system-ui, sans-serif",
-                          padding: "6px 0 0",
-                          textDecoration: "underline",
-                          textUnderlineOffset: 2,
-                        }}
-                      >
-                        Reset to calculated
-                      </button>
-                    )}
-                  </div>
                 </motion.div>
               )}
               </AnimatePresence>
+
+              <div style={{ marginTop: showDetailed ? 8 : 16, borderTop: detailTouched ? `1px solid ${c.border}` : "none", paddingTop: detailTouched ? 14 : 0 }}>
+                {detailTouched && (
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: c.mutedLight }}>Suggested Score</span>
+                      <span style={{ fontSize: 22, fontWeight: 700, color: c.mutedLight, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif" }} data-testid="text-suggested-score">
+                        {calcOverall(detailedScores)}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 11, color: c.mutedLight, marginTop: 2 }} data-testid="text-score-suggestion">
+                      Based on your detailed ratings
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                  <div>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>Your Final Score</span>
+                    {overrideActive && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: c.accent,
+                          background: `${c.accent}15`,
+                          padding: "2px 8px",
+                          borderRadius: 20,
+                          marginLeft: 8,
+                        }}
+                        data-testid="badge-score-mode"
+                      >
+                        Manually adjusted
+                      </span>
+                    )}
+                  </div>
+                  <motion.div
+                    animate={{ scale: scoreAnimating ? 1.05 : 1 }}
+                    transition={{ duration: 0.12 }}
+                    style={{ fontSize: 28, fontWeight: 700, color: c.text, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif", lineHeight: 1 }}
+                    data-testid="text-score-value"
+                  >
+                    {score}
+                  </motion.div>
+                </div>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={score}
+                  onChange={(e) => handleScoreChange(Number(e.target.value))}
+                  data-testid="input-score"
+                  style={{ width: "100%", accentColor: c.accent, display: "block" }}
+                />
+
+                <div style={{ fontSize: 11, color: c.mutedLight, marginTop: 6, textAlign: "center" }}>
+                  {detailTouched
+                    ? (overrideActive ? "You've adjusted the score manually" : "Calculated from your detail ratings — slide to override")
+                    : "Slide to set your score — or rate in detail above"
+                  }
+                </div>
+
+                {overrideActive && (
+                  <button
+                    type="button"
+                    onClick={resetOverride}
+                    data-testid="button-reset-override"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: c.accent,
+                      fontSize: 11,
+                      fontFamily: "system-ui, sans-serif",
+                      padding: "6px 0 0",
+                      textDecoration: "underline",
+                      textUnderlineOffset: 2,
+                      display: "block",
+                      margin: "0 auto",
+                    }}
+                  >
+                    Reset to calculated
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* ── SECTION 3: REFLECTION ── */}
