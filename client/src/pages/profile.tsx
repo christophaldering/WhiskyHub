@@ -52,6 +52,7 @@ export default function Profile() {
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
+  const [confirmEmail, setConfirmEmail] = useState("");
   const [openaiApiKey, setOpenaiApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
 
@@ -377,12 +378,31 @@ export default function Profile() {
                 <Input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setConfirmEmail(""); }}
                   placeholder={t("profile.emailPlaceholder")}
                   className="bg-secondary/20"
                   data-testid="input-email"
                 />
               </div>
+
+              {email !== (participant?.email || "") && (
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                    Confirm Email
+                  </Label>
+                  <Input
+                    type="email"
+                    value={confirmEmail}
+                    onChange={(e) => setConfirmEmail(e.target.value)}
+                    placeholder="Repeat new email"
+                    className={cn("bg-secondary/20", confirmEmail && confirmEmail !== email && "border-destructive")}
+                    data-testid="input-confirm-email"
+                  />
+                  {confirmEmail && confirmEmail !== email && (
+                    <p className="text-xs text-destructive">Emails don't match</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
