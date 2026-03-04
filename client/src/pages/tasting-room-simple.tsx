@@ -274,7 +274,7 @@ export default function TastingRoomSimple() {
   const [ratings, setRatings] = useState<Record<string, RatingData>>({});
   const [saving, setSaving] = useState(false);
   const [finished, setFinished] = useState(false);
-  const saveTimerRef = { current: null as ReturnType<typeof setTimeout> | null };
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const overallManual = useRef<Set<string>>(new Set());
 
   const { data: tasting, isLoading: tastingLoading, error: tastingError } = useQuery<TastingState>({
@@ -501,7 +501,15 @@ export default function TastingRoomSimple() {
     );
   }
 
-  if (!currentWhisky) return null;
+  if (!currentWhisky) {
+    return (
+      <SimpleShell>
+        <div style={{ ...cardStyle, textAlign: "center" }}>
+          <p style={{ color: c.muted }}>Loading whisky…</p>
+        </div>
+      </SimpleShell>
+    );
+  }
 
   const display = getWhiskyDisplay(currentWhisky, currentIndex);
   const showProgress = isGuided
