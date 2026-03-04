@@ -127,8 +127,10 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         style={{
           position: "absolute",
           bottom: 0,
-          left: 0,
-          right: 0,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "100%",
+          maxWidth: 420,
           background: c.card,
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
