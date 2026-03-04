@@ -1,0 +1,230 @@
+You are working inside the existing CaskSense v2.0.0 codebase.
+
+Goal:
+Refactor the application navigation to a **two-screen architecture** while preserving ALL existing functionality.
+
+The two primary navigation screens must become:
+
+1. Tasting
+2. My Taste
+
+NO existing features may be removed.
+Only navigation hierarchy and entry points may change.
+
+The objective is to simplify usability and mental models.
+
+---
+
+MENTAL MODEL
+
+The application must be structured around two user contexts:
+
+Tasting → Event-based whisky tastings with other participants
+My Taste → Personal whisky experience, data, and development
+
+Everything must belong clearly to one of these two contexts.
+
+---
+
+NEW TOP-LEVEL ROUTES
+
+Create exactly two primary routes:
+
+/tasting
+/my-taste
+
+These must replace the current bottom navigation.
+
+---
+
+BOTTOM NAVIGATION
+
+Replace the current 5-tab navigation with:
+
+[Tasting]   [My Taste]
+
+Update the simple shell navigation component accordingly.
+
+Files likely affected:
+
+client/src/components/simple/*
+simple-shell.tsx
+bottom-nav.tsx
+simple-layout.tsx
+
+---
+
+TASTING SECTION
+
+The Tasting section must include ALL event-related functionality.
+
+Routes to group under /tasting:
+
+/tasting
+/tasting/join
+/tasting/host
+/tasting-room-simple/:id
+/tasting-recap
+/tasting-calendar
+
+Entry points:
+
+Join Tasting
+Host Tasting
+Active Tasting Room
+Recent Tastings
+Tasting Recap
+
+Existing pages that belong here:
+
+simple-enter.tsx
+simple-host.tsx
+tasting-room-simple.tsx
+tasting-recap.tsx
+tasting-calendar.tsx
+host-dashboard.tsx
+
+If routes currently exist elsewhere, create redirects.
+
+---
+
+MY TASTE SECTION
+
+The My Taste section must contain ALL personal whisky data and tools.
+
+Routes under /my-taste:
+
+/my-taste
+/my-taste/drams
+/my-taste/log
+/my-taste/profile
+/my-taste/analytics
+/my-taste/flavors
+/my-taste/journal
+/my-taste/collection
+/my-taste/wishlist
+/my-taste/compare
+/my-taste/recommendations
+/my-taste/export
+
+Relevant existing pages:
+
+my-taste.tsx
+simple-log.tsx
+my-journal.tsx
+flavor-profile.tsx
+analytics.tsx
+comparison.tsx
+recommendations.tsx
+collection.tsx
+wishlist.tsx
+
+The "Log Dram" page must move under:
+
+/my-taste/log
+
+Rename visible label to:
+
+"Add Dram"
+
+---
+
+DISCOVER CONTENT
+
+All Discover content must remain accessible but move under My Taste.
+
+Create sub-section:
+
+/my-taste/knowledge
+
+Move these pages here:
+
+lexicon
+distilleries
+independent-bottlers
+tasting-guide
+tasting-templates
+
+Do NOT delete them.
+
+---
+
+COMMUNITY FEATURES
+
+Community features should remain but move under:
+
+/my-taste/community
+
+Examples:
+
+taste-twins
+community-rankings
+activity-feed
+leaderboards
+
+---
+
+ADMIN FEATURES
+
+Admin Console and Support Console remain unchanged.
+
+Routes:
+
+/admin
+/support-console
+
+But remove them from bottom navigation.
+
+---
+
+REDIRECTS
+
+Implement automatic redirects:
+
+/enter → /tasting/join
+/log-simple → /my-taste/log
+/discover-hub → /my-taste/knowledge
+
+Legacy routes must continue to function.
+
+---
+
+UI REQUIREMENTS
+
+Preserve the Dark Warm theme defined in:
+
+client/src/lib/theme.ts
+
+Do not change color tokens.
+
+Maintain current design system.
+
+---
+
+SAFETY RULE
+
+No database schema changes allowed.
+
+No backend API removals.
+
+No page deletions.
+
+Only navigation, routing, and grouping may change.
+
+---
+
+OUTPUT
+
+1. Implement navigation refactor
+2. Ensure all pages still compile
+3. Run a link integrity check across all routes
+4. Report:
+
+* updated navigation tree
+* redirect map
+* pages relocated
+* pages untouched
+
+---
+
+END OF TASK

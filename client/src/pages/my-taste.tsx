@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
 import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, Download, PenLine } from "lucide-react";
 import { c, cardStyle, inputStyle, sectionHeadingStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
-import { NAV_VERSION } from "@/lib/config";
+import { NAV_VERSION, MY_TASTE_STRUCTURE } from "@/lib/config";
 import { ApplePage, AppleSection, AppleRow, AppleButton, AppleCard } from "@/components/apple";
 import { UI_SKIN } from "@/lib/config";
 
@@ -206,69 +206,206 @@ export default function MyTastePage() {
     setParticipant(p);
   };
 
+  const isV2 = MY_TASTE_STRUCTURE === "v2_experience_first";
+
   if (isApple) {
     return (
       <SimpleShell>
         <ApplePage title={t("myTastePage.title")} subtitle={t("myTastePage.subtitle")} center>
 
-          {pid && NAV_VERSION === "v2_simplified" && (
-            <Link href="/log-simple">
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  padding: "14px 20px",
-                  background: c.accent,
-                  color: c.bg,
-                  borderRadius: 14,
-                  fontSize: 15,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  fontFamily: "system-ui, sans-serif",
-                }}
-                data-testid="button-log-dram"
-              >
-                <PenLine style={{ width: 18, height: 18 }} strokeWidth={2} />
-                {t("myTastePage.logDram")}
-              </div>
-            </Link>
-          )}
-
-          {pid && (
-            <div style={cardStyle} data-testid="card-taste-snapshot">
-              <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
-                {t("myTastePage.tasteSnapshot")}
-              </h2>
-              {hasStats ? (
-                <div>
-                  <StatRow label={t("myTastePage.stability")} value={stability} />
-                  <StatRow label={t("myTastePage.exploration")} value={exploration} />
-                  <StatRow label={t("myTastePage.smokeAffinity")} value={smoke} />
-                  {tastingCount != null && <StatRow label={t("myTastePage.tastings")} value={tastingCount} />}
-                </div>
-              ) : (
-                <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
-              )}
-            </div>
-          )}
-
-          {pid && (
-            <div style={cardStyle} data-testid="card-taste-insight">
-              <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
-                {t("myTastePage.tasteInsight")}
-              </h2>
-              {insight ? (
-                <p style={{ fontSize: 14, lineHeight: 1.6, color: c.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
-              ) : (
-                <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-insight-empty">{t("myTastePage.insightEmpty")}</p>
-              )}
-            </div>
-          )}
-
-          {pid && (
+          {pid && isV2 && (
             <>
+              <AppleSection title={t("myTastePage.sectionDrams")}>
+                <p style={{ fontSize: 13, color: c.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
+                  {t("myTastePage.dramsSubtitle")}
+                </p>
+                <p style={{ fontSize: 11, color: c.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
+                  {t("myTastePage.dramsExplainer")}
+                </p>
+                <Link href="/log-simple">
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      padding: "14px 20px",
+                      background: c.accent,
+                      color: c.bg,
+                      borderRadius: 14,
+                      fontSize: 15,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "system-ui, sans-serif",
+                      marginBottom: 12,
+                    }}
+                    data-testid="button-add-dram"
+                  >
+                    <PenLine style={{ width: 18, height: 18 }} strokeWidth={2} />
+                    {t("myTastePage.addDram")}
+                  </div>
+                </Link>
+                <NavCard
+                  icon={BookOpen}
+                  label={t("myTastePage.journal")}
+                  description={t("myTastePage.journalDesc")}
+                  href="/my-taste/journal"
+                  testId="link-journal"
+                  badge={journalCount > 0 ? journalCount : null}
+                />
+                <NavCard
+                  icon={ClipboardList}
+                  label={t("myTastePage.tastingRecap")}
+                  description={t("myTastePage.tastingRecapDesc")}
+                  href="/sessions"
+                  testId="link-tasting-recap"
+                  badge={tastingCount != null && tastingCount > 0 ? tastingCount : null}
+                />
+                <NavCard
+                  icon={Radar}
+                  label={t("myTastePage.flavorProfile")}
+                  description={t("myTastePage.flavorProfileDesc")}
+                  href="/my-taste/profile"
+                  testId="link-flavor-profile"
+                />
+              </AppleSection>
+
+              <div style={cardStyle} data-testid="card-taste-snapshot">
+                <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                  {t("myTastePage.tasteSnapshot")}
+                </h2>
+                {hasStats ? (
+                  <div>
+                    <StatRow label={t("myTastePage.stability")} value={stability} />
+                    <StatRow label={t("myTastePage.exploration")} value={exploration} />
+                    <StatRow label={t("myTastePage.smokeAffinity")} value={smoke} />
+                    {tastingCount != null && <StatRow label={t("myTastePage.tastings")} value={tastingCount} />}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
+                )}
+              </div>
+
+              {insight && (
+                <div style={cardStyle} data-testid="card-taste-insight">
+                  <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                    {t("myTastePage.tasteInsight")}
+                  </h2>
+                  <p style={{ fontSize: 14, lineHeight: 1.6, color: c.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
+                </div>
+              )}
+
+              <AppleSection title={t("myTastePage.sectionAnalytics")}>
+                <AnalyticsPreviewCard pid={pid} stats={stats} />
+                <NavCard
+                  icon={GitCompareArrows}
+                  label={t("myTastePage.comparison")}
+                  description={t("myTastePage.comparisonDesc")}
+                  href="/my-taste/compare"
+                  testId="link-comparison"
+                />
+                <NavCard
+                  icon={Sparkles}
+                  label={t("myTastePage.recommendations")}
+                  description={t("myTastePage.recommendationsDesc")}
+                  href="/my-taste/recommendations"
+                  testId="link-recommendations"
+                />
+                <NavCard
+                  icon={FlaskConical}
+                  label={t("myTastePage.benchmarkAnalyzer")}
+                  description={t("myTastePage.benchmarkDesc")}
+                  href="/my-taste/benchmark"
+                  testId="link-benchmark"
+                />
+                <NavCard
+                  icon={Download}
+                  label={t("myTastePage.dataExport")}
+                  description={t("myTastePage.dataExportDesc")}
+                  href="/data-export"
+                  testId="link-data-export"
+                />
+              </AppleSection>
+
+              <AppleSection title={t("myTastePage.sectionCollection")}>
+                <p style={{ fontSize: 13, color: c.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
+                  {t("myTastePage.collectionSubtitle")}
+                </p>
+                <p style={{ fontSize: 11, color: c.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
+                  {t("myTastePage.collectionExplainer")}
+                </p>
+                <NavCard
+                  icon={Archive}
+                  label={t("myTastePage.myCollection")}
+                  description={t("myTastePage.collectionDesc")}
+                  href="/my-taste/collection"
+                  testId="link-collection"
+                />
+                <NavCard
+                  icon={Heart}
+                  label={t("myTastePage.wishlist")}
+                  description={t("myTastePage.wishlistDesc")}
+                  href="/my-taste/wishlist"
+                  testId="link-wishlist"
+                />
+              </AppleSection>
+            </>
+          )}
+
+          {pid && !isV2 && (
+            <>
+              {NAV_VERSION === "v2_simplified" && (
+                <Link href="/log-simple">
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      padding: "14px 20px",
+                      background: c.accent,
+                      color: c.bg,
+                      borderRadius: 14,
+                      fontSize: 15,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "system-ui, sans-serif",
+                    }}
+                    data-testid="button-log-dram"
+                  >
+                    <PenLine style={{ width: 18, height: 18 }} strokeWidth={2} />
+                    {t("myTastePage.logDram")}
+                  </div>
+                </Link>
+              )}
+
+              <div style={cardStyle} data-testid="card-taste-snapshot">
+                <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                  {t("myTastePage.tasteSnapshot")}
+                </h2>
+                {hasStats ? (
+                  <div>
+                    <StatRow label={t("myTastePage.stability")} value={stability} />
+                    <StatRow label={t("myTastePage.exploration")} value={exploration} />
+                    <StatRow label={t("myTastePage.smokeAffinity")} value={smoke} />
+                    {tastingCount != null && <StatRow label={t("myTastePage.tastings")} value={tastingCount} />}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
+                )}
+              </div>
+
+              <div style={cardStyle} data-testid="card-taste-insight">
+                <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                  {t("myTastePage.tasteInsight")}
+                </h2>
+                {insight ? (
+                  <p style={{ fontSize: 14, lineHeight: 1.6, color: c.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
+                ) : (
+                  <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-insight-empty">{t("myTastePage.insightEmpty")}</p>
+                )}
+              </div>
+
               <AppleSection title={t("myTastePage.sectionProfile")}>
                 <NavCard
                   icon={Radar}
@@ -379,64 +516,214 @@ export default function MyTastePage() {
           </p>
         </div>
 
-        {pid && NAV_VERSION === "v2_simplified" && (
-          <Link href="/log-simple">
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                padding: "14px 20px",
-                background: c.accent,
-                color: c.bg,
-                borderRadius: 12,
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: "pointer",
-                fontFamily: "system-ui, sans-serif",
-              }}
-              data-testid="button-log-dram"
-            >
-              <PenLine style={{ width: 18, height: 18 }} strokeWidth={2} />
-              {t("myTastePage.logDram")}
-            </div>
-          </Link>
-        )}
-
-        {pid && (
-          <div style={cardStyle} data-testid="card-taste-snapshot">
-            <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
-              {t("myTastePage.tasteSnapshot")}
-            </h2>
-            {hasStats ? (
-              <div>
-                <StatRow label={t("myTastePage.stability")} value={stability} />
-                <StatRow label={t("myTastePage.exploration")} value={exploration} />
-                <StatRow label={t("myTastePage.smokeAffinity")} value={smoke} />
-                {tastingCount != null && <StatRow label={t("myTastePage.tastings")} value={tastingCount} />}
-              </div>
-            ) : (
-              <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
-            )}
-          </div>
-        )}
-
-        {pid && (
-          <div style={cardStyle} data-testid="card-taste-insight">
-            <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
-              {t("myTastePage.tasteInsight")}
-            </h2>
-            {insight ? (
-              <p style={{ fontSize: 14, lineHeight: 1.6, color: c.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
-            ) : (
-              <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-insight-empty">{t("myTastePage.insightEmpty")}</p>
-            )}
-          </div>
-        )}
-
-        {pid && (
+        {pid && isV2 && (
           <>
+            <div>
+              <h3 style={{ ...sectionHeadingStyle, color: c.accent, fontSize: 18 }}>
+                {t("myTastePage.sectionDrams")}
+              </h3>
+              <p style={{ fontSize: 13, color: c.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
+                {t("myTastePage.dramsSubtitle")}
+              </p>
+              <p style={{ fontSize: 11, color: c.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
+                {t("myTastePage.dramsExplainer")}
+              </p>
+              <Link href="/log-simple">
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    padding: "14px 20px",
+                    background: c.accent,
+                    color: c.bg,
+                    borderRadius: 12,
+                    fontSize: 15,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: "system-ui, sans-serif",
+                    marginBottom: 12,
+                  }}
+                  data-testid="button-add-dram"
+                >
+                  <PenLine style={{ width: 18, height: 18 }} strokeWidth={2} />
+                  {t("myTastePage.addDram")}
+                </div>
+              </Link>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <NavCard
+                  icon={BookOpen}
+                  label={t("myTastePage.journal")}
+                  description={t("myTastePage.journalDesc")}
+                  href="/my-taste/journal"
+                  testId="link-journal"
+                  badge={journalCount > 0 ? journalCount : null}
+                />
+                <NavCard
+                  icon={ClipboardList}
+                  label={t("myTastePage.tastingRecap")}
+                  description={t("myTastePage.tastingRecapDesc")}
+                  href="/sessions"
+                  testId="link-tasting-recap"
+                  badge={tastingCount != null && tastingCount > 0 ? tastingCount : null}
+                />
+                <NavCard
+                  icon={Radar}
+                  label={t("myTastePage.flavorProfile")}
+                  description={t("myTastePage.flavorProfileDesc")}
+                  href="/my-taste/profile"
+                  testId="link-flavor-profile"
+                />
+              </div>
+            </div>
+
+            <div style={cardStyle} data-testid="card-taste-snapshot">
+              <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                {t("myTastePage.tasteSnapshot")}
+              </h2>
+              {hasStats ? (
+                <div>
+                  <StatRow label={t("myTastePage.stability")} value={stability} />
+                  <StatRow label={t("myTastePage.exploration")} value={exploration} />
+                  <StatRow label={t("myTastePage.smokeAffinity")} value={smoke} />
+                  {tastingCount != null && <StatRow label={t("myTastePage.tastings")} value={tastingCount} />}
+                </div>
+              ) : (
+                <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
+              )}
+            </div>
+
+            {insight && (
+              <div style={cardStyle} data-testid="card-taste-insight">
+                <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                  {t("myTastePage.tasteInsight")}
+                </h2>
+                <p style={{ fontSize: 14, lineHeight: 1.6, color: c.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
+              </div>
+            )}
+
+            <div>
+              <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
+                {t("myTastePage.sectionAnalytics")}
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <AnalyticsPreviewCard pid={pid} stats={stats} />
+                <NavCard
+                  icon={GitCompareArrows}
+                  label={t("myTastePage.comparison")}
+                  description={t("myTastePage.comparisonDesc")}
+                  href="/my-taste/compare"
+                  testId="link-comparison"
+                />
+                <NavCard
+                  icon={Sparkles}
+                  label={t("myTastePage.recommendations")}
+                  description={t("myTastePage.recommendationsDesc")}
+                  href="/my-taste/recommendations"
+                  testId="link-recommendations"
+                />
+                <NavCard
+                  icon={FlaskConical}
+                  label={t("myTastePage.benchmarkAnalyzer")}
+                  description={t("myTastePage.benchmarkDesc")}
+                  href="/my-taste/benchmark"
+                  testId="link-benchmark"
+                />
+                <NavCard
+                  icon={Download}
+                  label={t("myTastePage.dataExport")}
+                  description={t("myTastePage.dataExportDesc")}
+                  href="/data-export"
+                  testId="link-data-export"
+                />
+              </div>
+            </div>
+
+            <div>
+              <h3 style={{ ...sectionHeadingStyle, color: c.accent, fontSize: 15 }}>
+                {t("myTastePage.sectionCollection")}
+              </h3>
+              <p style={{ fontSize: 13, color: c.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
+                {t("myTastePage.collectionSubtitle")}
+              </p>
+              <p style={{ fontSize: 11, color: c.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
+                {t("myTastePage.collectionExplainer")}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <NavCard
+                  icon={Archive}
+                  label={t("myTastePage.myCollection")}
+                  description={t("myTastePage.collectionDesc")}
+                  href="/my-taste/collection"
+                  testId="link-collection"
+                />
+                <NavCard
+                  icon={Heart}
+                  label={t("myTastePage.wishlist")}
+                  description={t("myTastePage.wishlistDesc")}
+                  href="/my-taste/wishlist"
+                  testId="link-wishlist"
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {pid && !isV2 && (
+          <>
+            {NAV_VERSION === "v2_simplified" && (
+              <Link href="/log-simple">
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    padding: "14px 20px",
+                    background: c.accent,
+                    color: c.bg,
+                    borderRadius: 12,
+                    fontSize: 15,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: "system-ui, sans-serif",
+                  }}
+                  data-testid="button-log-dram"
+                >
+                  <PenLine style={{ width: 18, height: 18 }} strokeWidth={2} />
+                  {t("myTastePage.logDram")}
+                </div>
+              </Link>
+            )}
+
+            <div style={cardStyle} data-testid="card-taste-snapshot">
+              <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                {t("myTastePage.tasteSnapshot")}
+              </h2>
+              {hasStats ? (
+                <div>
+                  <StatRow label={t("myTastePage.stability")} value={stability} />
+                  <StatRow label={t("myTastePage.exploration")} value={exploration} />
+                  <StatRow label={t("myTastePage.smokeAffinity")} value={smoke} />
+                  {tastingCount != null && <StatRow label={t("myTastePage.tastings")} value={tastingCount} />}
+                </div>
+              ) : (
+                <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
+              )}
+            </div>
+
+            <div style={cardStyle} data-testid="card-taste-insight">
+              <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                {t("myTastePage.tasteInsight")}
+              </h2>
+              {insight ? (
+                <p style={{ fontSize: 14, lineHeight: 1.6, color: c.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
+              ) : (
+                <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-insight-empty">{t("myTastePage.insightEmpty")}</p>
+              )}
+            </div>
+
             <div>
               <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
                 {t("myTastePage.sectionProfile")}
