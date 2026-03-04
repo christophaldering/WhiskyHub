@@ -118,12 +118,14 @@ const docUpload = multer({
   fileFilter: (_req: any, file: any, cb: any) => {
     const allowed = [
       "application/pdf",
-      "text/plain", "text/csv",
+      "text/plain", "text/csv", "text/comma-separated-values",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "application/vnd.ms-excel",
       "image/jpeg", "image/png", "image/webp",
     ];
-    if (allowed.includes(file.mimetype)) cb(null, true);
+    const ext = (file.originalname || "").toLowerCase().split(".").pop();
+    const allowedExts = ["pdf", "txt", "csv", "xlsx", "xls", "jpg", "jpeg", "png", "webp"];
+    if (allowed.includes(file.mimetype) || allowedExts.includes(ext || "")) cb(null, true);
     else cb(new Error("Unsupported file type. Allowed: PDF, TXT, CSV, Excel, JPG, PNG, WebP"));
   },
 });

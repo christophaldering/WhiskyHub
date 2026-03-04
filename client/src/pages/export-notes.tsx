@@ -149,12 +149,12 @@ export default function ExportNotes() {
               <SelectTrigger className="w-full max-w-md bg-card border-2 border-primary/30 hover:border-primary/60 focus:border-primary transition-colors shadow-sm" data-testid="select-tasting-trigger">
                 <SelectValue placeholder={t("exportNotes.selectPlaceholder")} />
               </SelectTrigger>
-              <SelectContent position="popper" className="z-[200]">
+              <SelectContent position="popper" className="z-[200] bg-card border-border text-card-foreground max-h-60">
                 {(!tastings || tastings.length === 0) ? (
                   <div className="px-3 py-2 text-sm text-muted-foreground">{t("exportNotes.noTastings")}</div>
                 ) : (
                   tastings.map((tasting: any) => (
-                    <SelectItem key={tasting.id} value={String(tasting.id)} data-testid={`select-tasting-item-${tasting.id}`}>
+                    <SelectItem key={tasting.id} value={String(tasting.id)} className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground cursor-pointer" data-testid={`select-tasting-item-${tasting.id}`}>
                       {tasting.name}
                     </SelectItem>
                   ))
