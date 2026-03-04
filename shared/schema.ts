@@ -67,12 +67,6 @@ export const tastings = pgTable("tastings", {
   showGroupAvg: boolean("show_group_avg").default(true),
   showReveal: boolean("show_reveal").default(true),
   isTestData: boolean("is_test_data").default(false),
-  roundStatus: text("round_status").default("waiting"),
-  currentWhiskyId: varchar("current_whisky_id"),
-  resultsVisible: boolean("results_visible").default(false),
-  revealDone: boolean("reveal_done").default(false),
-  scheduledAt: timestamp("scheduled_at"),
-  finishedAt: timestamp("finished_at"),
   createdAt: timestamp("created_at").defaultNow(),
   openedAt: timestamp("opened_at"),
   closedAt: timestamp("closed_at"),
@@ -80,7 +74,7 @@ export const tastings = pgTable("tastings", {
   archivedAt: timestamp("archived_at"),
 });
 
-export const insertTastingSchema = createInsertSchema(tastings).omit({ id: true, createdAt: true, openedAt: true, closedAt: true, revealedAt: true, archivedAt: true, finishedAt: true });
+export const insertTastingSchema = createInsertSchema(tastings).omit({ id: true, createdAt: true, openedAt: true, closedAt: true, revealedAt: true, archivedAt: true });
 export type InsertTasting = z.infer<typeof insertTastingSchema>;
 export type Tasting = typeof tastings.$inferSelect;
 
