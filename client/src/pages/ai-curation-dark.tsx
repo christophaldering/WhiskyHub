@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
@@ -68,12 +68,30 @@ export default function AICurationDark() {
   const { currentParticipant } = useAppStore();
   const isDE = i18n.language === "de";
   const [selectedTastingId, setSelectedTastingId] = useState<string>("");
+  const [timeFilter, setTimeFilter] = useState<string>("all");
 
   const { data: tastings, isLoading: tastingsLoading } = useQuery({
     queryKey: ["tastings", currentParticipant?.id],
     queryFn: () => tastingApi.getAll(currentParticipant?.id),
     enabled: !!currentParticipant,
   });
+
+  const filteredTastings = useMemo(() => {
+    if (!tastings) return [];
+    if (timeFilter === "all") return tastings;
+    const now = Date.now();
+    const cutoffs: Record<string, number> = {
+      "30": 30 * 86400000,
+      "90": 90 * 86400000,
+      "365": 365 * 86400000,
+    };
+    const ms = cutoffs[timeFilter];
+    if (!ms) return tastings;
+    return tastings.filter((t: any) => {
+      const d = t.date ? new Date(t.date).getTime() : 0;
+      return d >= now - ms;
+    });
+  }, [tastings, timeFilter]);
 
   const { data: pairingData, isLoading: pairingsLoading } = useQuery<PairingData>({
     queryKey: ["pairings", selectedTastingId],
@@ -140,10 +158,36 @@ export default function AICurationDark() {
           </div>
         ) : (
           <>
-            <div style={{ marginBottom: 32, position: "relative" }} data-testid="select-tasting">
+            <div style={{ marginBottom: 32 }} data-testid="select-tasting">
               <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 8, color: c.text }}>
                 {isDE ? "Tasting auswählen" : "Select Tasting"}
               </label>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                {([
+                  { value: "30", labelEn: "Last 30 days", labelDe: "Letzte 30 Tage" },
+                  { value: "90", labelEn: "Last 3 months", labelDe: "Letzte 3 Monate" },
+                  { value: "365", labelEn: "This year", labelDe: "Dieses Jahr" },
+                  { value: "all", labelEn: "All", labelDe: "Alle" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => { setTimeFilter(opt.value); setSelectedTastingId(""); }}
+                    style={{
+                      padding: "5px 12px",
+                      fontSize: 12,
+                      fontWeight: 500,
+                      borderRadius: 8,
+                      border: `1px solid ${timeFilter === opt.value ? c.accent : c.border}`,
+                      background: timeFilter === opt.value ? `${c.accent}20` : "transparent",
+                      color: timeFilter === opt.value ? c.accent : c.muted,
+                      cursor: "pointer",
+                    }}
+                    data-testid={`time-filter-${opt.value}`}
+                  >
+                    {isDE ? opt.labelDe : opt.labelEn}
+                  </button>
+                ))}
+              </div>
               <div style={{ position: "relative", maxWidth: 400 }}>
                 <select
                   value={selectedTastingId}
@@ -154,14 +198,20 @@ export default function AICurationDark() {
                   <option value="" disabled>{isDE ? "Wähle ein Tasting..." : "Choose a tasting session..."}</option>
                   {tastingsLoading ? (
                     <option value="" disabled>{isDE ? "Laden..." : "Loading..."}</option>
-                  ) : !tastings || tastings.length === 0 ? (
-                    <option value="" disabled>{isDE ? "Keine Tastings verfügbar" : "No tastings available"}</option>
+                  ) : filteredTastings.length === 0 ? (
+                    <option value="" disabled>{isDE ? "Keine Tastings in diesem Zeitraum" : "No tastings in this period"}</option>
                   ) : (
-                    tastings.map((tasting: any) => (
-                      <option key={tasting.id} value={tasting.id} data-testid={`select-tasting-${tasting.id}`}>
-                        {tasting.title || tasting.name || tasting.id}
-                      </option>
-                    ))
+                    filteredTastings.map((tasting: any) => {
+                      const dateStr = tasting.date
+                        ? new Date(tasting.date).toLocaleDateString(isDE ? "de-DE" : "en-US", { year: "numeric", month: "short", day: "numeric" })
+                        : "";
+                      const title = tasting.title || tasting.name || tasting.id;
+                      return (
+                        <option key={tasting.id} value={tasting.id} data-testid={`select-tasting-${tasting.id}`}>
+                          {dateStr ? `${title} — ${dateStr}` : title}
+                        </option>
+                      );
+                    })
                   )}
                 </select>
                 <ChevronDown style={{

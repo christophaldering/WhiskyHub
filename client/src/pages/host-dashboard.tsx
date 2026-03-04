@@ -727,9 +727,16 @@ export default function HostDashboard() {
                       <div key={tasting.id} className="flex items-center gap-4 py-3 px-3 rounded-lg hover:bg-primary/5 transition-colors border-b border-border/10 last:border-0" data-testid={`recent-tasting-${tasting.id}`}>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold truncate" data-testid={`recent-tasting-title-${tasting.id}`}>{tasting.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(tasting.date).toLocaleDateString(isDE ? "de-DE" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(tasting.date).toLocaleDateString(isDE ? "de-DE" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
+                            </p>
+                            {tasting.code && (
+                              <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded" data-testid={`recent-tasting-code-${tasting.id}`}>
+                                {tasting.code}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <Badge variant="outline" className={`text-[10px] shrink-0 ${statusColors[tasting.status] ?? ""}`} data-testid={`recent-tasting-status-${tasting.id}`}>
                           {t(`session.status.${tasting.status}`)}

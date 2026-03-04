@@ -1,5 +1,5 @@
 import { useParams } from "wouter";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link } from "wouter";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
@@ -271,6 +271,7 @@ export default function TastingRoomSimple() {
   const [saving, setSaving] = useState(false);
   const [finished, setFinished] = useState(false);
   const saveTimerRef = { current: null as ReturnType<typeof setTimeout> | null };
+  const overallManual = useRef<Set<string>>(new Set());
 
   const { data: tasting, isLoading: tastingLoading, error: tastingError } = useQuery<TastingState>({
     queryKey: ["tasting-simple", tastingId],
@@ -352,27 +353,39 @@ export default function TastingRoomSimple() {
 
   const updateField = useCallback((field: keyof RatingData, value: number | string) => {
     if (!whiskyId || !canRate) return;
-    setRatings((prev) => ({
-      ...prev,
-      [whiskyId]: { ...prev[whiskyId] || currentRating, [field]: value },
-    }));
+
+    if (field === "overall") {
+      overallManual.current.add(whiskyId);
+    }
+
+    setRatings((prev) => {
+      const base = { ...(prev[whiskyId] || currentRating), [field]: value };
+      if (field !== "overall" && field !== "notes" && !overallManual.current.has(whiskyId)) {
+        const avg = Math.round(((base.nose as number) + (base.taste as number) + (base.finish as number) + (base.balance as number)) / 4);
+        base.overall = avg;
+      }
+      return { ...prev, [whiskyId]: base };
+    });
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       if (!pid || !tastingId || !whiskyId) return;
-      const r = { ...currentRating, [field]: value };
-      setSaving(true);
-      fetch("/api/ratings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tastingId, whiskyId, participantId: pid,
-          nose: r.nose, taste: r.taste, finish: r.finish, balance: r.balance, overall: r.overall, notes: r.notes,
-        }),
-      })
-        .then(() => console.log("[TASTING_ROOM] rating saved"))
-        .catch((err) => console.error("[TASTING_ROOM] rating save error", err))
-        .finally(() => setSaving(false));
+      setRatings((latest) => {
+        const r = latest[whiskyId] || currentRating;
+        setSaving(true);
+        fetch("/api/ratings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tastingId, whiskyId, participantId: pid,
+            nose: r.nose, taste: r.taste, finish: r.finish, balance: r.balance, overall: r.overall, notes: r.notes,
+          }),
+        })
+          .then(() => console.log("[TASTING_ROOM] rating saved"))
+          .catch((err) => console.error("[TASTING_ROOM] rating save error", err))
+          .finally(() => setSaving(false));
+        return latest;
+      });
     }, 800);
   }, [whiskyId, pid, tastingId, currentRating, canRate]);
 
@@ -615,7 +628,13 @@ export default function TastingRoomSimple() {
         <RatingSlider label="Balance" value={currentRating.balance} onChange={(v) => updateField("balance", v)} disabled={!canRate} scale={scale} />
 
         <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 12, marginTop: 8 }}>
-          <RatingSlider label="Overall" value={currentRating.overall} onChange={(v) => updateField("overall", v)} disabled={!canRate} scale={scale} />
+          <RatingSlider
+            label={`Overall${whiskyId && !overallManual.current.has(whiskyId) ? " (auto)" : ""}`}
+            value={currentRating.overall}
+            onChange={(v) => updateField("overall", v)}
+            disabled={!canRate}
+            scale={scale}
+          />
         </div>
 
         <div style={{ marginTop: 8 }}>
