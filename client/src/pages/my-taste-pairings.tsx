@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
 import { pairingsApi, tastingApi } from "@/lib/api";
 import SimpleShell from "@/components/simple/simple-shell";
-import { c, cardStyle } from "@/lib/theme";
+import { c, cardStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 import { Wine, MapPin, Flame, Package } from "lucide-react";
 
 interface Suggestion {

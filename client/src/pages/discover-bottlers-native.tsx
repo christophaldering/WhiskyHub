@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { bottlers, type Bottler } from "@/data/bottlers";
 import { Package, MapPin, Calendar, Star, ChevronDown, ExternalLink } from "lucide-react";
-import { c } from "@/lib/theme";
+import { c, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 
 const COUNTRY_FILTERS = ["All", ...Array.from(new Set(bottlers.map(b => b.country))).sort()];
 

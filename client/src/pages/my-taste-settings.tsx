@@ -6,7 +6,7 @@ import { profileApi, participantApi, participantUpdateApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import SimpleShell from "@/components/simple/simple-shell";
-import { c, cardStyle, inputStyle } from "@/lib/theme";
+import { c, cardStyle, inputStyle, pageTitleStyle } from "@/lib/theme";
 
 const REGIONS = [
   "Speyside", "Highlands", "Islay", "Lowlands", "Campbeltown",

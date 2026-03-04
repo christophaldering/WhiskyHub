@@ -5,7 +5,7 @@ import { journalApi, ratingNotesApi } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { CircleDot, X } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
-import { c, cardStyle } from "@/lib/theme";
+import { c, cardStyle, pageTitleStyle } from "@/lib/theme";
 
 interface FlavorCategory {
   id: string;
