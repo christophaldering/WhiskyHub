@@ -1572,7 +1572,7 @@ export async function registerRoutes(
       if (stored) sessionResumeTokens.delete(resumeToken);
       return res.status(401).json({ ok: false });
     }
-    return res.json({ ok: true, mode: stored.mode, name: stored.name });
+    return res.json({ ok: true, mode: stored.mode, name: stored.name, pid: stored.pid || undefined });
   };
 
   const handleSignout = (req: Request, res: Response) => {

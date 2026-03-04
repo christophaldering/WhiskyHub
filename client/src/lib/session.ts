@@ -97,7 +97,11 @@ export async function signIn(opts: {
     return { ok: false, error: data.message || "Sign in failed" };
   }
   const displayName = data.name || opts.name || null;
-  setSessionStorage(opts.mode, displayName);
+  const pid = data.pid || undefined;
+  setSessionStorage(opts.mode, displayName, pid);
+  if (pid) {
+    try { localStorage.setItem("casksense_participant_id", pid); } catch {}
+  }
   if (data.resumeToken) {
     setRemember(data.resumeToken, opts.mode, displayName);
   }
@@ -131,7 +135,11 @@ export async function tryAutoResume(): Promise<boolean> {
     }
     const mode = (data.mode || localStorage.getItem(LK_MODE) || "log") as SessionMode;
     const name = data.name || localStorage.getItem(LK_NAME) || null;
-    setSessionStorage(mode, name);
+    const pid = data.pid || undefined;
+    setSessionStorage(mode, name, pid);
+    if (pid) {
+      try { localStorage.setItem("casksense_participant_id", pid); } catch {}
+    }
     window.dispatchEvent(new Event("session-change"));
     return true;
   } catch {
