@@ -1524,7 +1524,9 @@ export async function registerRoutes(
     const entry = sessionSigninAttempts.get(clientIp);
     if (entry && now < entry.resetAt) {
       if (entry.count >= 5) {
-        return res.status(429).json({ ok: false, message: "Too many attempts. Please wait." });
+        const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+        res.set("Retry-After", String(retryAfter));
+        return res.status(429).json({ ok: false, message: "Too many attempts.", retryAfter });
       }
       entry.count++;
     } else {

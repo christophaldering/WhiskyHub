@@ -82,7 +82,7 @@ export async function signIn(opts: {
   email?: string;
   mode: SessionMode;
   remember?: boolean;
-}): Promise<{ ok: boolean; name?: string; resumeToken?: string; error?: string }> {
+}): Promise<{ ok: boolean; name?: string; resumeToken?: string; error?: string; retryAfter?: number }> {
   const res = await fetch("/api/session/signin", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -96,7 +96,7 @@ export async function signIn(opts: {
   });
   const data = await res.json();
   if (!res.ok) {
-    return { ok: false, error: data.message || "Sign in failed" };
+    return { ok: false, error: data.message || "Sign in failed", retryAfter: data.retryAfter };
   }
   const displayName = data.name || opts.name || null;
   const pid = data.pid || undefined;

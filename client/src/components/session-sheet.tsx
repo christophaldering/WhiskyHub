@@ -53,6 +53,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
   const [showEditNewPw, setShowEditNewPw] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editMsg, setEditMsg] = useState("");
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
 
   useEffect(() => {
     if (open) {
@@ -80,8 +81,27 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       setEditNewPw("");
       setShowEditCurPw(false);
       setShowEditNewPw(false);
+      setLockoutSeconds(0);
     }
   }, [open, defaultMode]);
+
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutSeconds((prev) => {
+        const next = prev - 1;
+        if (next <= 0) {
+          setSiError("");
+          return 0;
+        }
+        const mins = Math.floor(next / 60);
+        const secs = next % 60;
+        setSiError(`Too many attempts. Try again in ${mins}:${String(secs).padStart(2, "0")}.`);
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutSeconds > 0]);
 
   if (!open) return null;
 
@@ -185,7 +205,12 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     setSiLoading(false);
     if (!result.ok) {
       const msg = result.error || "";
-      if (msg.includes("Invalid p") || msg.includes("Invalid P")) setSiError("Wrong password.");
+      if (result.retryAfter && result.retryAfter > 0) {
+        setLockoutSeconds(result.retryAfter);
+        const mins = Math.floor(result.retryAfter / 60);
+        const secs = result.retryAfter % 60;
+        setSiError(`Too many attempts. Try again in ${mins}:${String(secs).padStart(2, "0")}.`);
+      } else if (msg.includes("Invalid p") || msg.includes("Invalid P")) setSiError("Wrong password.");
       else if (msg.includes("Too many")) setSiError("Too many attempts. Wait a moment.");
       else if (msg.includes("No account")) setSiError("No account found for this email.");
       else setSiError(msg || "Something went wrong.");
@@ -512,13 +537,13 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       </label>
       <button
         type="submit"
-        disabled={siLoading || !siPin.trim() || !siEmail.trim()}
+        disabled={siLoading || lockoutSeconds > 0 || !siPin.trim() || !siEmail.trim()}
         data-testid="button-session-signin-submit"
         style={{
           ...btnPrimary,
-          background: (!siPin.trim() || !siEmail.trim()) ? c.muted : c.accent,
-          color: (!siPin.trim() || !siEmail.trim()) ? c.mutedLight : (isDark ? darkColors.bg : "#fff"),
-          cursor: siLoading ? "wait" : (!siPin.trim() || !siEmail.trim()) ? "not-allowed" : "pointer",
+          background: (lockoutSeconds > 0 || !siPin.trim() || !siEmail.trim()) ? c.muted : c.accent,
+          color: (lockoutSeconds > 0 || !siPin.trim() || !siEmail.trim()) ? c.mutedLight : (isDark ? darkColors.bg : "#fff"),
+          cursor: siLoading ? "wait" : (lockoutSeconds > 0 || !siPin.trim() || !siEmail.trim()) ? "not-allowed" : "pointer",
         }}
       >
         {siLoading ? "Signing in…" : "Sign in"}
