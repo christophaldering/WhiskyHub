@@ -278,63 +278,65 @@ export default function MyTastePage() {
           </p>
         </div>
 
-        {!pid && <UnlockCard onUnlock={handleUnlock} />}
-
-        <div style={cardStyle} data-testid="card-taste-snapshot">
-          <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
-            Taste Snapshot
-          </h2>
-          {!pid ? (
-            <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-login">Unlock to see your taste profile.</p>
-          ) : hasStats ? (
-            <div>
-              <StatRow label="Stability" value={stability} />
-              <StatRow label="Exploration" value={exploration} />
-              <StatRow label="Smoke Affinity" value={smoke} />
-              {tastingCount != null && <StatRow label="Tastings" value={tastingCount} />}
-            </div>
-          ) : (
-            <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">Building your profile… (needs more tastings)</p>
-          )}
-        </div>
-
-        <div style={cardStyle} data-testid="card-taste-insight">
-          <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
-            Taste Insight
-          </h2>
-          {!pid ? (
-            <p style={{ fontSize: 13, color: c.muted, margin: 0 }}>Unlock to see your insights.</p>
-          ) : insight ? (
-            <p style={{ fontSize: 14, lineHeight: 1.6, color: c.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
-          ) : (
-            <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-insight-empty">No insight yet — log a few whiskies.</p>
-          )}
-        </div>
-
-        <div>
-          <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.accent, marginBottom: 10 }}>
-            Explore Your Taste
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <FlavorPreviewCard pid={pid} />
-            <NavCard
-              icon={GitCompareArrows}
-              label="Comparison"
-              description="Compare your whiskies side by side"
-              href="/my-taste/compare"
-              testId="link-comparison"
-            />
-            <AnalyticsPreviewCard pid={pid} stats={stats} />
-            <NavCard
-              icon={BookOpen}
-              label="Journal"
-              description="Your tasting history"
-              href="/legacy/my/journal"
-              testId="link-journal"
-              badge={journalCount > 0 ? journalCount : null}
-            />
+        {pid && (
+          <div style={cardStyle} data-testid="card-taste-snapshot">
+            <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+              Taste Snapshot
+            </h2>
+            {hasStats ? (
+              <div>
+                <StatRow label="Stability" value={stability} />
+                <StatRow label="Exploration" value={exploration} />
+                <StatRow label="Smoke Affinity" value={smoke} />
+                {tastingCount != null && <StatRow label="Tastings" value={tastingCount} />}
+              </div>
+            ) : (
+              <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">Building your profile… (needs more tastings)</p>
+            )}
           </div>
-        </div>
+        )}
+
+        {pid && (
+          <div style={cardStyle} data-testid="card-taste-insight">
+            <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+              Taste Insight
+            </h2>
+            {insight ? (
+              <p style={{ fontSize: 14, lineHeight: 1.6, color: c.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
+            ) : (
+              <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-insight-empty">No insight yet — log a few whiskies.</p>
+            )}
+          </div>
+        )}
+
+        {pid && (
+          <div>
+            <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.accent, marginBottom: 10 }}>
+              Explore Your Taste
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <FlavorPreviewCard pid={pid} />
+              <NavCard
+                icon={GitCompareArrows}
+                label="Comparison"
+                description="Compare your whiskies side by side"
+                href="/my-taste/compare"
+                testId="link-comparison"
+              />
+              <AnalyticsPreviewCard pid={pid} stats={stats} />
+              <NavCard
+                icon={BookOpen}
+                label="Journal"
+                description="Your tasting history"
+                href="/legacy/my/journal"
+                testId="link-journal"
+                badge={journalCount > 0 ? journalCount : null}
+              />
+            </div>
+          </div>
+        )}
+
+        {!pid && <UnlockCard onUnlock={handleUnlock} />}
 
         <div style={{ textAlign: "center", marginTop: 8 }}>
           <Link href="/support" style={{ fontSize: 11, color: "#4a4540", textDecoration: "none" }} data-testid="link-support">
