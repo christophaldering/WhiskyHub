@@ -9,6 +9,7 @@ import { Activity, ChevronDown, ChevronUp, Users, Globe, User, BookOpen, Info } 
 import { GuestPreview } from "@/components/guest-preview";
 import { FlavorWheelContent } from "./flavor-wheel";
 import SimpleShell from "@/components/simple/simple-shell";
+import { c } from "@/lib/theme";
 
 const COLORS = ["#c8a864", "#a8845c", "#8b6f47", "#d4a853", "#b8934a", "#9e7d3f", "#c4956c", "#d9b87c"];
 
@@ -239,31 +240,57 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-2 items-center" data-testid="profile-controls">
-        <div className="flex rounded-lg border border-border overflow-hidden text-xs">
-          <button onClick={() => setSource("all")} className={`px-3 py-1.5 transition-colors border-r border-border ${source === "all" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"}`} data-testid="button-source-all">
-            {t("flavorProfile.sourceAll")}
-          </button>
-          <button onClick={() => setSource("journal")} className={`px-3 py-1.5 transition-colors border-r border-border ${source === "journal" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"}`} data-testid="button-source-journal">
-            {t("flavorProfile.sourceJournal")}
-          </button>
-          <button onClick={() => setSource("imported")} className={`px-3 py-1.5 transition-colors border-r border-border ${source === "imported" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"}`} data-testid="button-source-imported">
-            {t("flavorProfile.sourceImported")}
-          </button>
-          <button onClick={() => setSource("all_incl_imported")} className={`px-3 py-1.5 transition-colors ${source === "all_incl_imported" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"}`} data-testid="button-source-all-incl-imported">
-            {t("flavorProfile.sourceAllInclImported")}
-          </button>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }} data-testid="profile-controls">
+        <div style={{ display: "flex", borderRadius: 8, border: `1px solid ${c.border}`, overflow: "hidden", fontSize: 12 }}>
+          {(["all", "journal", "imported", "all_incl_imported"] as const).map((key) => (
+            <button
+              key={key}
+              onClick={() => setSource(key)}
+              style={{
+                padding: "6px 12px",
+                background: source === key ? c.accent : c.inputBg,
+                color: source === key ? c.bg : c.muted,
+                border: "none",
+                borderRight: key !== "all_incl_imported" ? `1px solid ${c.border}` : "none",
+                cursor: "pointer",
+                fontWeight: source === key ? 600 : 400,
+                fontFamily: "system-ui, sans-serif",
+                transition: "all 0.15s",
+              }}
+              data-testid={`button-source-${key.replace(/_/g, "-")}`}
+            >
+              {t(`flavorProfile.source${key === "all" ? "All" : key === "journal" ? "Journal" : key === "imported" ? "Imported" : "AllInclImported"}`)}
+            </button>
+          ))}
         </div>
-        <div className="flex rounded-lg border border-border overflow-hidden text-xs ml-auto">
-          <button onClick={() => setCompareMode("none")} className={`px-3 py-1.5 flex items-center gap-1 transition-colors border-r border-border ${compareMode === "none" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"}`} data-testid="button-compare-none">
-            <User className="w-3 h-3" /> {t("flavorProfile.compareNone")}
-          </button>
-          <button onClick={() => setCompareMode("friends")} className={`px-3 py-1.5 flex items-center gap-1 transition-colors border-r border-border ${compareMode === "friends" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"}`} data-testid="button-compare-friends">
-            <Users className="w-3 h-3" /> {t("flavorProfile.compareFriends")}
-          </button>
-          <button onClick={() => setCompareMode("platform")} className={`px-3 py-1.5 flex items-center gap-1 transition-colors ${compareMode === "platform" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"}`} data-testid="button-compare-platform">
-            <Globe className="w-3 h-3" /> {t("flavorProfile.comparePlatform")}
-          </button>
+        <div style={{ display: "flex", borderRadius: 8, border: `1px solid ${c.border}`, overflow: "hidden", fontSize: 12, marginLeft: "auto" }}>
+          {([
+            { key: "none" as const, icon: <User style={{ width: 12, height: 12 }} />, label: t("flavorProfile.compareNone") },
+            { key: "friends" as const, icon: <Users style={{ width: 12, height: 12 }} />, label: t("flavorProfile.compareFriends") },
+            { key: "platform" as const, icon: <Globe style={{ width: 12, height: 12 }} />, label: t("flavorProfile.comparePlatform") },
+          ]).map(({ key, icon, label }, i) => (
+            <button
+              key={key}
+              onClick={() => setCompareMode(key)}
+              style={{
+                padding: "6px 12px",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                background: compareMode === key ? c.accent : c.inputBg,
+                color: compareMode === key ? c.bg : c.muted,
+                border: "none",
+                borderRight: i < 2 ? `1px solid ${c.border}` : "none",
+                cursor: "pointer",
+                fontWeight: compareMode === key ? 600 : 400,
+                fontFamily: "system-ui, sans-serif",
+                transition: "all 0.15s",
+              }}
+              data-testid={`button-compare-${key}`}
+            >
+              {icon} {label}
+            </button>
+          ))}
         </div>
       </div>
 

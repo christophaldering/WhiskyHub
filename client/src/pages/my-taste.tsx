@@ -4,7 +4,7 @@ import { useAppStore } from "@/lib/store";
 import { participantApi, journalApi, statsApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, CircleDot, Download } from "lucide-react";
+import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, Download } from "lucide-react";
 import { c, cardStyle, inputStyle, sectionHeadingStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 
 const LS_KEY = "casksense_participant_id";
@@ -254,13 +254,6 @@ export default function MyTastePage() {
                   description="Aroma wheel, taste structure, region & cask preferences"
                   href="/my-taste/profile"
                   testId="link-flavor-profile"
-                />
-                <NavCard
-                  icon={CircleDot}
-                  label="Aroma Wheel"
-                  description="Interactive visualization of your sensory history"
-                  href="/my-taste/wheel"
-                  testId="link-aroma-wheel"
                 />
               </div>
             </div>
