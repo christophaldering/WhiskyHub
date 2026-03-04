@@ -5,24 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
 import { ArrowLeft, Lock, PenLine } from "lucide-react";
 import { Link, useLocation } from "wouter";
-
-const c = {
-  bg: "#1a1714",
-  card: "#242018",
-  border: "#2e2a24",
-  text: "#f5f0e8",
-  muted: "#888",
-  mutedLight: "#8a7e6d",
-  accent: "#d4a256",
-  accentDim: "#a8834a",
-};
-
-const cardStyle: React.CSSProperties = {
-  background: c.card,
-  border: `1px solid ${c.border}`,
-  borderRadius: 12,
-  padding: "20px",
-};
+import { c, cardStyle } from "@/lib/theme";
 
 const LS_KEY = "casksense_participant_id";
 

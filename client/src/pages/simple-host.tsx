@@ -5,32 +5,15 @@ import SimpleShell from "@/components/simple/simple-shell";
 import { getSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCodeLib from "qrcode";
-
-const c = {
-  bg: "#1a1714",
-  card: "#242018",
-  border: "#2e2a24",
-  text: "#f5f0e8",
-  muted: "#888",
-  accent: "#d4a256",
-  success: "#6ec177",
-  danger: "#e57373",
-};
-
-const cardStyle: React.CSSProperties = {
-  background: c.card,
-  border: `1px solid ${c.border}`,
-  borderRadius: 12,
-  padding: "20px",
-};
+import { c, cardStyle } from "@/lib/theme";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "10px 12px",
   fontSize: 14,
-  background: c.bg,
-  border: `1px solid ${c.border}`,
-  borderRadius: 8,
+  background: c.inputBg,
+  border: `1px solid ${c.inputBorder}`,
+  borderRadius: 10,
   color: c.text,
   outline: "none",
   fontFamily: "system-ui, sans-serif",

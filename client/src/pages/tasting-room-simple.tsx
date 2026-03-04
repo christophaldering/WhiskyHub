@@ -6,37 +6,7 @@ import { tastingApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
 import { Lock, Eye, EyeOff, Clock, Users } from "lucide-react";
-
-const c = {
-  bg: "#1a1714",
-  card: "#242018",
-  border: "#2e2a24",
-  text: "#f5f0e8",
-  muted: "#888",
-  accent: "#d4a256",
-  error: "#c44",
-  success: "#6a9a5b",
-};
-
-const cardStyle: React.CSSProperties = {
-  background: c.card,
-  border: `1px solid ${c.border}`,
-  borderRadius: 12,
-  padding: 24,
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  background: c.bg,
-  border: `1px solid ${c.border}`,
-  borderRadius: 8,
-  color: c.text,
-  padding: "12px 14px",
-  fontSize: 15,
-  outline: "none",
-  boxSizing: "border-box",
-  fontFamily: "system-ui, sans-serif",
-};
+import { c, cardStyle, inputStyle, sliderCSS } from "@/lib/theme";
 
 interface WhiskyItem {
   id: string;
@@ -94,6 +64,7 @@ function RatingSlider({ label, value, onChange, disabled }: { label: string; val
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         disabled={disabled}
+        className="warm-slider"
         style={{ width: "100%", accentColor: c.accent, cursor: disabled ? "not-allowed" : "pointer" }}
         data-testid={`slider-${label.toLowerCase()}`}
       />
@@ -723,7 +694,8 @@ export default function TastingRoomSimple() {
         </div>
       )}
 
-      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }`}</style>
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        ${sliderCSS}`}</style>
     </SimpleShell>
   );
 }

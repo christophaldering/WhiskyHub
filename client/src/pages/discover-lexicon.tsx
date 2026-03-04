@@ -2,15 +2,7 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import SimpleShell from "@/components/simple/simple-shell";
 import { Search, BookOpen, Wine, FlameKindling, MapPin, Factory, Package, ChevronDown, ChevronRight } from "lucide-react";
-
-const colors = {
-  bg: "#1a1714",
-  card: "#242018",
-  border: "#2e2a24",
-  text: "#f5f0e8",
-  accent: "#d4a256",
-  muted: "#888",
-};
+import { c as colors } from "@/lib/theme";
 
 interface LexiconEntry {
   term: string;

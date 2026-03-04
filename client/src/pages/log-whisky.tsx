@@ -3,30 +3,7 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
-
-const c = {
-  bg: "#1a1714",
-  card: "#242018",
-  border: "#2e2a24",
-  text: "#f5f0e8",
-  muted: "#888",
-  accent: "#d4a256",
-  error: "#c44",
-  success: "#6a9a5b",
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  background: c.bg,
-  border: `1px solid ${c.border}`,
-  borderRadius: 8,
-  color: c.text,
-  padding: "12px 14px",
-  fontSize: 15,
-  outline: "none",
-  boxSizing: "border-box",
-  fontFamily: "system-ui, sans-serif",
-};
+import { c, inputStyle, sliderCSS } from "@/lib/theme";
 
 function UnlockBlock({ onUnlock }: { onUnlock: (p: { id: string; name: string; role?: string }) => void }) {
   const [name, setName] = useState("");
@@ -210,6 +187,7 @@ export default function LogWhiskyPage() {
                     value={score}
                     onChange={(e) => setScore(Number(e.target.value))}
                     data-testid="input-score"
+                    className="warm-slider"
                     style={{ width: "100%", accentColor: c.accent }}
                   />
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: c.muted }}>
@@ -257,6 +235,7 @@ export default function LogWhiskyPage() {
           ← Back
         </Link>
       </div>
+      <style>{sliderCSS}</style>
     </div>
   );
 }

@@ -12,7 +12,7 @@ Preferred communication style: Simple, everyday language.
 The application uses a monorepo with client, server, and shared code, all in TypeScript with ESM modules. A shared `schema.ts` defines Drizzle ORM and Zod validation schemas.
 
 ### Frontend (`client/`)
-The frontend is a React application built with Vite, using Wouter for routing, TanStack React Query for server state, and Zustand for client-side state. The UI is built with shadcn/ui (new-york style) based on Radix UI and Tailwind CSS, featuring a muted slate blue theme and light mode. Framer Motion is used for animations, Recharts for data visualizations, and react-i18next for internationalization (English and German). It includes PWA support.
+The frontend is a React application built with Vite, using Wouter for routing, TanStack React Query for server state, and Zustand for client-side state. The UI is built with shadcn/ui (new-york style) based on Radix UI and Tailwind CSS, featuring a muted slate blue theme and light mode. Framer Motion is used for animations, Recharts for data visualizations, and react-i18next for internationalization (English and German). It includes PWA support. The Dark Warm theme (`client/src/lib/theme.ts`) centralizes all color tokens, shared styles (inputStyle, cardStyle), slider CSS, and spacing constants for the ~20 dark-themed pages/components.
 
 ### Backend (`server/`)
 The backend is an Express 5 HTTP server providing RESTful API endpoints and serving frontend assets in production. It supports an immediate listen startup for health checks and a loading page, with a `ready` flag indicating full application availability.

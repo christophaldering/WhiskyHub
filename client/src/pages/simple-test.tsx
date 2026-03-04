@@ -3,23 +3,7 @@ import { useState, useEffect } from "react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSimpleAuth } from "@/lib/simple-auth";
 import { BuildFooter } from "@/components/build-footer";
-
-const c = {
-  bg: "#1a1714",
-  card: "#242018",
-  border: "#2e2a24",
-  text: "#f5f0e8",
-  muted: "#888",
-  accent: "#d4a256",
-  success: "#6a9a5b",
-};
-
-const cardStyle: React.CSSProperties = {
-  background: c.card,
-  border: `1px solid ${c.border}`,
-  borderRadius: 12,
-  padding: 24,
-};
+import { c, cardStyle } from "@/lib/theme";
 
 interface CheckItem {
   label: string;

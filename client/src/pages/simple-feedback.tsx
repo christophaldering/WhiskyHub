@@ -1,35 +1,6 @@
 import { useState } from "react";
 import SimpleShell from "@/components/simple/simple-shell";
-
-const c = {
-  bg: "#1a1714",
-  card: "#242018",
-  border: "#2e2a24",
-  text: "#f5f0e8",
-  muted: "#888",
-  accent: "#d4a256",
-  success: "#6a9a5b",
-};
-
-const cardStyle: React.CSSProperties = {
-  background: c.card,
-  border: `1px solid ${c.border}`,
-  borderRadius: 12,
-  padding: 24,
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  background: c.bg,
-  border: `1px solid ${c.border}`,
-  borderRadius: 8,
-  color: c.text,
-  padding: "12px 14px",
-  fontSize: 15,
-  outline: "none",
-  boxSizing: "border-box",
-  fontFamily: "system-ui, sans-serif",
-};
+import { c, cardStyle, inputStyle } from "@/lib/theme";
 
 function StarRow({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
   return (

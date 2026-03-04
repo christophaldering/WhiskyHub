@@ -6,46 +6,12 @@ import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
 import SimpleShell from "@/components/simple/simple-shell";
+import { c, inputStyle, cardStyle, sliderCSS, sectionSpacing } from "@/lib/theme";
 
 const SpeechRecognitionAPI =
   typeof window !== "undefined"
     ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     : null;
-
-const c = {
-  bg: "#1a1714",
-  card: "#242018",
-  border: "#2e2a24",
-  text: "#f5f0e8",
-  muted: "#888",
-  mutedLight: "#8a7e6d",
-  accent: "#d4a256",
-  error: "#c44",
-  success: "#6a9a5b",
-  high: "#6a9a5b",
-  medium: "#d4a256",
-  low: "#c44",
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  background: c.bg,
-  border: `1px solid ${c.border}`,
-  borderRadius: 8,
-  color: c.text,
-  padding: "12px 14px",
-  fontSize: 15,
-  outline: "none",
-  boxSizing: "border-box",
-  fontFamily: "system-ui, sans-serif",
-};
-
-const cardStyle: React.CSSProperties = {
-  background: c.card,
-  border: `1px solid ${c.border}`,
-  borderRadius: 12,
-  padding: 24,
-};
 
 const btnPrimary: React.CSSProperties = {
   width: "100%",
@@ -170,6 +136,7 @@ function DetailModule({
                 value={score}
                 onChange={(e) => onScoreChange(Number(e.target.value))}
                 data-testid={`input-score-${dim}`}
+                className="warm-slider"
                 style={{ width: "100%", accentColor: c.accent, display: "block", marginBottom: 14 }}
               />
 
@@ -352,7 +319,7 @@ function SignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, pid?:
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.2, textTransform: "uppercase", color: c.mutedLight, marginBottom: 10 }}>
+    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: c.mutedLight, marginBottom: 12 }}>
       {children}
     </div>
   );
@@ -1293,7 +1260,7 @@ export default function SimpleLogPage() {
             </div>
 
             {/* ── SECTION 1: IDENTIFY ── */}
-            <div style={{ marginBottom: 36 }} data-testid="section-identify">
+            <div style={{ marginBottom: sectionSpacing }} data-testid="section-identify">
               <SectionLabel>Whisky</SectionLabel>
 
               <AnimatePresence mode="wait">
@@ -1476,7 +1443,7 @@ export default function SimpleLogPage() {
             <div style={{ opacity: (hasWhisky || showManual || whiskyName.trim()) ? 1 : 0.3, pointerEvents: (hasWhisky || showManual || whiskyName.trim()) ? "auto" : "none", transition: "opacity 0.3s ease" }}>
 
             {/* ── SECTION 2: SCORE ── */}
-            <div style={{ marginBottom: 36 }} data-testid="section-score">
+            <div style={{ marginBottom: sectionSpacing }} data-testid="section-score">
               <SectionLabel>Score</SectionLabel>
 
               <button
@@ -1485,9 +1452,9 @@ export default function SimpleLogPage() {
                 data-testid="button-toggle-detailed"
                 style={{
                   width: "100%",
-                  background: showDetailed ? `${c.accent}10` : "transparent",
-                  border: `1px solid ${showDetailed ? c.accent : c.border}`,
-                  borderRadius: 10,
+                  background: showDetailed ? `${c.accent}10` : c.inputBg,
+                  border: `1px solid ${showDetailed ? c.accent : c.inputBorder}`,
+                  borderRadius: 12,
                   cursor: "pointer",
                   color: c.text,
                   fontSize: 13,
@@ -1615,6 +1582,7 @@ export default function SimpleLogPage() {
                   value={score}
                   onChange={(e) => handleScoreChange(Number(e.target.value))}
                   data-testid="input-score"
+                  className="warm-slider"
                   style={{ width: "100%", accentColor: c.accent, display: "block" }}
                 />
 
@@ -1651,7 +1619,7 @@ export default function SimpleLogPage() {
             </div>
 
             {/* ── SECTION 3: REFLECTION ── */}
-            <div style={{ marginBottom: 36 }} data-testid="section-reflection">
+            <div style={{ marginBottom: sectionSpacing }} data-testid="section-reflection">
               <SectionLabel>Reflection</SectionLabel>
               <div style={{ position: "relative" }}>
                 <textarea
@@ -1808,6 +1776,7 @@ export default function SimpleLogPage() {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse-mic { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        ${sliderCSS}
       `}</style>
     </SimpleShell>
   );

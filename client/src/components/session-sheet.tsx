@@ -3,6 +3,7 @@ import { KeyRound, LogOut, Lock, Unlock, X, Eye, EyeOff, Pencil, Check, ChevronD
 import { getSession, signIn, signOut } from "@/lib/session";
 import type { SessionMode } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
+import { c as darkColors } from "@/lib/theme";
 
 interface SessionSheetProps {
   open: boolean;
@@ -11,18 +12,6 @@ interface SessionSheetProps {
   defaultMode?: SessionMode;
   variant?: "dark" | "light";
 }
-
-const darkColors = {
-  bg: "#1a1714",
-  text: "#f5f0e8",
-  accent: "#d4a256",
-  muted: "#4a4540",
-  mutedLight: "#8a7e6d",
-  border: "#2e281f",
-  card: "#242018",
-  error: "#cc4444",
-  success: "#4a9e4a",
-};
 
 type View = "idle" | "login" | "forgot" | "reset" | "recoverEmail";
 
@@ -122,9 +111,9 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
-    background: isDark ? darkColors.bg : "transparent",
-    border: `1px solid ${isDark ? darkColors.border : "hsl(var(--border))"}`,
-    borderRadius: 8,
+    background: isDark ? darkColors.inputBg : "transparent",
+    border: `1px solid ${isDark ? darkColors.inputBorder : "hsl(var(--border))"}`,
+    borderRadius: 10,
     color: isDark ? darkColors.text : "hsl(var(--foreground))",
     fontSize: 13,
     padding: "10px 12px",

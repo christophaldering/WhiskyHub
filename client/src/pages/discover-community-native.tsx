@@ -3,15 +3,7 @@ import { useSearch } from "wouter";
 import SimpleShell from "@/components/simple/simple-shell";
 import { communityApi, leaderboardApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
-
-const c = {
-  bg: "#1a1714",
-  card: "#242018",
-  border: "#2e2a24",
-  text: "#f5f0e8",
-  accent: "#d4a256",
-  muted: "#888",
-};
+import { c } from "@/lib/theme";
 
 type Tab = "twins" | "rankings" | "leaderboard";
 

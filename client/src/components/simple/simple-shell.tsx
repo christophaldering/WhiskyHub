@@ -4,16 +4,7 @@ import { Wine, PenLine, Crown, User, Compass, KeyRound, ChevronDown } from "luci
 import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
 import type { SessionMode } from "@/lib/session";
-
-const c = {
-  bg: "#1a1714",
-  text: "#f5f0e8",
-  accent: "#d4a256",
-  muted: "#4a4540",
-  mutedLight: "#8a7e6d",
-  border: "#2e281f",
-  card: "#242018",
-};
+import { c } from "@/lib/theme";
 
 const NAV_ITEMS = [
   { href: "/enter", icon: Wine, label: "Join", match: ["/enter", "/join", "/tasting-room-simple", "/naked/"] },

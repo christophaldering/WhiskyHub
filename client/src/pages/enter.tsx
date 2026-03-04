@@ -3,29 +3,7 @@ import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { participantApi, tastingApi } from "@/lib/api";
-
-const c = {
-  bg: "#1a1714",
-  card: "#242018",
-  border: "#2e2a24",
-  text: "#f5f0e8",
-  muted: "#888",
-  accent: "#d4a256",
-  error: "#c44",
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  background: c.bg,
-  border: `1px solid ${c.border}`,
-  borderRadius: 8,
-  color: c.text,
-  padding: "12px 14px",
-  fontSize: 15,
-  outline: "none",
-  boxSizing: "border-box",
-  fontFamily: "system-ui, sans-serif",
-};
+import { c, inputStyle } from "@/lib/theme";
 
 export default function EnterPage() {
   const [, navigate] = useLocation();

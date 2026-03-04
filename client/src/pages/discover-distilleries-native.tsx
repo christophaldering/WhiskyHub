@@ -2,15 +2,7 @@ import { useState, useMemo } from "react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { distilleries, type Distillery } from "@/data/distilleries";
 import { Building2, MapPin, Calendar, ChevronDown } from "lucide-react";
-
-const c = {
-  bg: "#1a1714",
-  card: "#242018",
-  border: "#2e2a24",
-  text: "#f5f0e8",
-  accent: "#d4a256",
-  muted: "#888",
-};
+import { c } from "@/lib/theme";
 
 const COUNTRY_FILTERS = ["All", "Scotland", "Ireland", "Japan", "USA"];
 

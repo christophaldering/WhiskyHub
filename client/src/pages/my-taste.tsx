@@ -5,36 +5,7 @@ import { participantApi, journalApi, statsApi, flavorProfileApi } from "@/lib/ap
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
 import { CircleDot, GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock } from "lucide-react";
-
-const c = {
-  bg: "#1a1714",
-  card: "#242018",
-  border: "#2e2a24",
-  text: "#f5f0e8",
-  muted: "#888",
-  mutedLight: "#8a7e6d",
-  accent: "#d4a256",
-  error: "#c44",
-};
-
-const cardStyle: React.CSSProperties = {
-  background: c.card,
-  border: `1px solid ${c.border}`,
-  borderRadius: 12,
-  padding: "20px",
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  background: c.bg,
-  border: `1px solid ${c.border}`,
-  borderRadius: 8,
-  color: c.text,
-  padding: "10px 14px",
-  fontSize: 14,
-  outline: "none",
-  boxSizing: "border-box",
-};
+import { c, cardStyle, inputStyle } from "@/lib/theme";
 
 const LS_KEY = "casksense_participant_id";
 

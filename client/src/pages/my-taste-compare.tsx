@@ -5,16 +5,9 @@ import SimpleShell from "@/components/simple/simple-shell";
 import { flavorProfileApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 
-const CHART_COLORS = ["#c8a864", "#6b9bd2", "#d97c5a"];
+import { c } from "@/lib/theme";
 
-const c = {
-  bg: "#1a1714",
-  card: "#242018",
-  border: "#2e2a24",
-  text: "#f5f0e8",
-  accent: "#d4a256",
-  muted: "#888",
-};
+const CHART_COLORS = ["#c8a864", "#6b9bd2", "#d97c5a"];
 
 interface RatedWhiskyItem {
   whisky: { id: string; name: string; distillery: string | null; region: string | null };
