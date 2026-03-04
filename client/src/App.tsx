@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation, useSearch } from "wouter";
-import { useEffect } from "react";
+import { useEffect, Component, type ReactNode, type ErrorInfo } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -80,6 +80,28 @@ import V2More from "@/v2/pages/V2More";
 import { getUIPref } from "@/components/view-switcher";
 import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("[ErrorBoundary]", error, info.componentStack);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 32, fontFamily: "system-ui", color: "#e8dcc8", background: "#1a1714", minHeight: "100dvh" }}>
+          <h2 style={{ color: "#d4a574", marginBottom: 12 }}>Something went wrong</h2>
+          <pre style={{ fontSize: 13, whiteSpace: "pre-wrap", color: "#ff6b6b", marginBottom: 16 }}>{this.state.error.message}</pre>
+          <pre style={{ fontSize: 11, whiteSpace: "pre-wrap", color: "#8a8070", marginBottom: 24, maxHeight: 200, overflow: "auto" }}>{this.state.error.stack}</pre>
+          <button onClick={() => { this.setState({ error: null }); window.history.back(); }} style={{ padding: "10px 20px", background: "#d4a574", color: "#1a1714", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 600, marginRight: 10 }}>Go Back</button>
+          <button onClick={() => { this.setState({ error: null }); window.location.href = "/"; }} style={{ padding: "10px 20px", background: "transparent", color: "#d4a574", border: "1px solid #3a3228", borderRadius: 8, cursor: "pointer" }}>Home</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function Redirect({ to }: { to: string }) {
   const [, navigate] = useLocation();
@@ -304,9 +326,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
-        <StorageConsent />
+        <ErrorBoundary>
+          <Toaster />
+          <Router />
+          <StorageConsent />
+        </ErrorBoundary>
       </TooltipProvider>
     </QueryClientProvider>
   );
