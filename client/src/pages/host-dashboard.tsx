@@ -302,9 +302,54 @@ export default function HostDashboard() {
               ))}
             </div>
 
-            {/* Row 2: Quick Actions + Next Tasting */}
+            {/* Row 2: Calendar + Next Tasting */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <motion.div custom={3} variants={cardVariants} initial="hidden" animate="visible" className="lg:col-span-2">
+                <SectionCard testId="section-dashboard-calendar">
+                  <SectionTitle icon={Calendar} title={isDE ? "Kalender" : "Calendar"} />
+                  <DashboardCalendar />
+                </SectionCard>
+              </motion.div>
+
+              <motion.div custom={4} variants={cardVariants} initial="hidden" animate="visible">
+                <SectionCard className="h-full" testId="section-next-tasting">
+                  <SectionTitle icon={Calendar} title={isDE ? "Nächstes Tasting" : "Next Tasting"} />
+                  {upcomingTasting ? (
+                    <div className="flex flex-col items-center text-center gap-3 py-4">
+                      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Wine className="w-7 h-7 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-serif font-bold text-lg" data-testid="next-tasting-title">{upcomingTasting.title}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(upcomingTasting.date).toLocaleDateString(isDE ? "de-DE" : "en-US", { weekday: "long", day: "numeric", month: "long" })}
+                        </p>
+                        <div className="flex items-center justify-center gap-1 mt-2 text-xs text-muted-foreground">
+                          <Users className="w-3 h-3" /> {upcomingTasting.participantCount} {isDE ? "Teilnehmer" : "participants"}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className={`text-[10px] ${statusColors[upcomingTasting.status] ?? ""}`}>
+                        {t(`session.status.${upcomingTasting.status}`)}
+                      </Badge>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center text-center gap-3 py-6 text-muted-foreground">
+                      <Calendar className="w-10 h-10 opacity-20" />
+                      <p className="text-sm">{isDE ? "Kein anstehendes Tasting" : "No upcoming tasting"}</p>
+                      <Link href="/host">
+                        <span className="text-xs text-primary cursor-pointer hover:underline" data-testid="link-plan-next">
+                          {isDE ? "Jetzt planen" : "Plan one now"} →
+                        </span>
+                      </Link>
+                    </div>
+                  )}
+                </SectionCard>
+              </motion.div>
+            </div>
+
+            {/* Row 3: Quick Actions */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.5 }} className="lg:col-span-2">
                 <SectionCard testId="section-quick-actions">
                   <SectionTitle icon={Zap} title={isDE ? "Schnellzugriff" : "Quick Actions"} />
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
