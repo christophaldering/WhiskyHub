@@ -1,0 +1,151 @@
+CaskSense v2.1 – NAV Simplification + Redirect Safety Net (Reversible)
+
+CONTEXT
+Repo: CaskSense v2.0.0
+Frontend: React 18 + Vite + TS, Wouter, Zustand, react-query, i18next
+Simple Mode has bottom nav and top-right session dropdown.
+Goal is UX simplification for real-world tasting-night testing.
+Many existing links still point to legacy routes; we must not break them.
+
+GOAL
+Ship a reversible navigation refactor with a one-line rollback switch.
+Introduce a new 3-tab bottom nav:
+- Tasting
+- My Taste
+- Explore
+
+And a new /tasting hub.
+Additionally add safe redirects (client-side) so old links don’t break.
+
+ABSOLUTE CONSTRAINTS
+- Do NOT change backend, DB schema, AI, email, storage.
+- Do NOT delete legacy pages; only hide/redirect.
+- Must compile with zero TS errors.
+- Must provide a list of changed files.
+- Must include a quick smoke-test checklist at the end.
+
+------------------------------------------------------------
+STEP 0 – CREATE A REAL ROLLBACK SWITCH (single source of truth)
+------------------------------------------------------------
+Create: client/src/lib/config.ts (or extend if exists)
+export const NAV_VERSION: "v2_simplified" | "v2_legacy" = "v2_simplified";
+
+All navigation and redirects must read this constant.
+Rollback = change to "v2_legacy".
+
+------------------------------------------------------------
+STEP 1 – NEW ROUTE: /tasting (Tasting Hub)
+------------------------------------------------------------
+Add a new page component:
+client/src/pages/tasting-hub.tsx (name can differ but be consistent)
+
+Design (Dark Warm):
+- page title “Tasting”
+- two big action cards/buttons:
+  1) “Join a Tasting” -> /enter
+  2) “Host a Tasting” -> /host-simple
+Keep copy minimal. Use i18next: t("...") with DE fallback.
+
+Add route in router:
+"/tasting" -> TastingHubPage
+
+------------------------------------------------------------
+STEP 2 – BOTTOM NAV: 5 tabs -> 3 tabs
+------------------------------------------------------------
+Locate Simple Mode bottom navigation component (likely in client/src/components/simple/*).
+Implement:
+
+If NAV_VERSION === "v2_simplified":
+Tabs:
+- Tasting -> /tasting
+- My Taste -> /my-taste
+- Explore -> /discover-hub
+
+If NAV_VERSION === "v2_legacy":
+Keep existing tabs unchanged.
+
+------------------------------------------------------------
+STEP 3 – MOVE “LOG” ENTRY INTO MY TASTE
+------------------------------------------------------------
+In /my-taste page add a prominent primary button near the top:
+“+ Log Dram” -> /log-simple
+
+If there is already an entry point, ensure it’s visually primary and discoverable.
+
+Remove "Log" from bottom nav ONLY (do not remove the page).
+
+------------------------------------------------------------
+STEP 4 – SAFE REDIRECTS FOR OLD LINKS (critical)
+------------------------------------------------------------
+Create a small redirect component (no backend):
+client/src/components/nav-redirects.tsx
+
+Behavior when NAV_VERSION === "v2_simplified":
+- If user navigates to old top-level routes, redirect them:
+
+/enter            -> keep (no redirect)
+/host-simple      -> keep
+/log-simple       -> keep
+/discover-hub     -> keep
+/my-taste         -> keep
+
+Redirect legacy-ish entrypoints:
+- "/" should go to "/tasting" (or keep landing if required, but make it consistent)
+- any old “Host tab route” (e.g. "/simple-host") -> "/host-simple"
+- any old “Join tab route” (if existed) -> "/enter"
+- any legacy UI roots "/legacy/*" -> "/tasting" (with a toast/note optional)
+- any v2 UI roots "/app/*" -> "/tasting"
+
+Important:
+- Do NOT break deep links like /tasting-room-simple/:id
+- Do NOT redirect admin routes (/admin etc.)
+
+Mount this redirect component near the router root so it runs before pages render.
+
+When NAV_VERSION === "v2_legacy":
+No redirects; behave as before.
+
+------------------------------------------------------------
+STEP 5 – UPDATE TOP RIGHT SESSION DROPDOWN (optional polish)
+------------------------------------------------------------
+No major changes, but ensure links inside dropdown still work.
+Admin stays accessible only via dropdown and server-side protection must remain untouched.
+
+------------------------------------------------------------
+STEP 6 – MINIMAL UX CLEANUP
+------------------------------------------------------------
+Ensure /tasting hub is the main “start” in the new nav.
+Avoid exposing community/gamification prominently.
+
+Optional:
+Inside Explore page, group community pages under a collapsible “Community (optional)” section.
+Do not remove pages.
+
+------------------------------------------------------------
+STEP 7 – SMOKE TESTS (MUST RUN)
+------------------------------------------------------------
+After code changes, run and verify:
+
+1) App loads -> shows 3-tab nav (Tasting/My/Explore)
+2) Tasting hub:
+   - Join button opens /enter
+   - Host button opens /host-simple
+3) My Taste:
+   - “+ Log Dram” opens /log-simple
+4) Explore opens /discover-hub
+5) Direct link tests:
+   - /simple-host redirects to /host-simple
+   - /legacy/anything redirects to /tasting
+   - /app/anything redirects to /tasting
+   - /tasting-room-simple/<id> still works (no redirect)
+6) Admin:
+   - /admin reachable via dropdown (no redirect)
+7) No console errors, no TS errors.
+
+------------------------------------------------------------
+DELIVERABLE
+------------------------------------------------------------
+Implement now. Then output:
+- bullet list of modified/added files
+- short note on where NAV_VERSION switch is located
+- confirmation that smoke tests were run (or at least instructions to run them)

@@ -87,6 +87,7 @@ import V2Discover from "@/v2/pages/V2Discover";
 import V2Cellar from "@/v2/pages/V2Cellar";
 import V2More from "@/v2/pages/V2More";
 import TastingHubSimple from "@/pages/tasting-hub-simple";
+import NavRedirects from "@/components/nav-redirects";
 import { getUIPref } from "@/components/view-switcher";
 import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
@@ -129,6 +130,7 @@ function RedirectWithQuery({ to, query }: { to: string; query?: string }) {
 function Router() {
   return (
     <>
+      <NavRedirects />
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/landing" component={Landing} />
