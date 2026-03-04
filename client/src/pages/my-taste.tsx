@@ -4,7 +4,7 @@ import { useAppStore } from "@/lib/store";
 import { participantApi, journalApi, statsApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles } from "lucide-react";
+import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, CircleDot, Settings } from "lucide-react";
 import { c, cardStyle, inputStyle } from "@/lib/theme";
 
 const LS_KEY = "casksense_participant_id";
@@ -271,6 +271,20 @@ export default function MyTastePage() {
                   href="/my-taste/profile"
                   testId="link-flavor-profile"
                 />
+                <NavCard
+                  icon={Settings}
+                  label="Settings & Profile"
+                  description="Name, bio, favourite whisky, password, API key"
+                  href="/my-taste/settings"
+                  testId="link-settings-profile"
+                />
+                <NavCard
+                  icon={CircleDot}
+                  label="Aroma Wheel"
+                  description="Interactive visualization of your sensory history"
+                  href="/my-taste/wheel"
+                  testId="link-aroma-wheel"
+                />
               </div>
             </div>
 
@@ -293,6 +307,13 @@ export default function MyTastePage() {
                   description="Personalized whisky recommendations based on your taste"
                   href="/my-taste/recommendations"
                   testId="link-recommendations"
+                />
+                <NavCard
+                  icon={Wine}
+                  label="Food Pairings"
+                  description="AI-driven food pairing suggestions"
+                  href="/my-taste/pairings"
+                  testId="link-pairings"
                 />
                 <NavCard
                   icon={FlaskConical}

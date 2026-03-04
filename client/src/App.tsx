@@ -39,16 +39,20 @@ import SimpleFeedbackPage from "@/pages/simple-feedback";
 import SimpleTestPage from "@/pages/simple-test";
 import SimpleHostPage from "@/pages/simple-host";
 import SimpleAnalyzePage from "@/pages/simple-analyze";
+import MyTasteWheel from "@/pages/my-taste-wheel";
 import MyTasteCompare from "@/pages/my-taste-compare";
 import MyTasteBenchmark from "@/pages/my-taste-benchmark";
 import DiscoverLexicon from "@/pages/discover-lexicon";
 import DiscoverCommunityNative from "@/pages/discover-community-native";
 import DiscoverDistilleriesNative from "@/pages/discover-distilleries-native";
+import DiscoverBottlersNative from "@/pages/discover-bottlers-native";
 import MyTasteAnalytics from "@/pages/my-taste-analytics";
 import TastingRoomSimple from "@/pages/tasting-room-simple";
 import TastingResultsPage from "@/pages/tasting-results";
 import Recommendations from "@/pages/recommendations";
 import MyTasteRecommendations from "@/pages/my-taste-recommendations";
+import MyTasteSettings from "@/pages/my-taste-settings";
+import MyTastePairings from "@/pages/my-taste-pairings";
 import ActivityFeed from "@/pages/activity-feed";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
@@ -65,7 +69,10 @@ import SessionsDark from "@/pages/sessions-dark";
 import DataExportDark from "@/pages/data-export-dark";
 import VocabularyDark from "@/pages/vocabulary-dark";
 import AICurationDark from "@/pages/ai-curation-dark";
+import DonateDark from "@/pages/donate-dark";
 import TastingGuide from "@/pages/tasting-guide";
+import DiscoverTemplates from "@/pages/discover-templates";
+import AboutDark from "@/pages/about-dark";
 import SimpleLegacyShell from "@/components/simple/simple-legacy-shell";
 import LabDarkLayout from "@/lab-dark/LabDarkLayout";
 import LabHome from "@/lab-dark/pages/LabHome";
@@ -143,6 +150,8 @@ function Router() {
         <Route path="/ai-curation" component={AICurationDark} />
         <Route path="/guide" component={TastingGuide} />
         <Route path="/discover/guide" component={TastingGuide} />
+        <Route path="/discover/templates" component={DiscoverTemplates} />
+        <Route path="/discover/about" component={AboutDark} />
         <Route path="/host-dashboard" component={HostDashboard} />
         <Route path="/support" component={SupportConsole} />
         <Route path="/host" component={SimpleHostPage} />
@@ -152,7 +161,10 @@ function Router() {
         <Route path="/my-taste/compare" component={MyTasteCompare} />
         <Route path="/my-taste/analytics" component={MyTasteAnalytics} />
         <Route path="/my-taste/recommendations" component={MyTasteRecommendations} />
+        <Route path="/my-taste/pairings" component={MyTastePairings} />
+        <Route path="/my-taste/settings" component={MyTasteSettings} />
         <Route path="/my-taste/benchmark" component={MyTasteBenchmark} />
+        <Route path="/my-taste/wheel" component={MyTasteWheel} />
         <Route path="/my-taste/profile" component={FlavorProfile} />
         <Route path="/my-taste/journal" component={MyJournal} />
         <Route path="/my-taste/collection" component={WhiskybaseCollection} />
@@ -161,7 +173,9 @@ function Router() {
         <Route path="/discover/lexicon" component={DiscoverLexicon} />
         <Route path="/discover/community" component={DiscoverCommunityNative} />
         <Route path="/discover/distilleries" component={DiscoverDistilleriesNative} />
+        <Route path="/discover/bottlers" component={DiscoverBottlersNative} />
         <Route path="/discover/recommendations">{() => <Redirect to="/my-taste/recommendations" />}</Route>
+        <Route path="/discover/donate" component={DonateDark} />
         <Route path="/discover/activity" component={ActivityFeed} />
         <Route path="/impressum" component={Impressum} />
         <Route path="/privacy" component={Privacy} />

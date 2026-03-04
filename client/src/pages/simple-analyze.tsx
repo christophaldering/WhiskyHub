@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import {
   Users, UserCheck, TrendingUp, Award, BookOpen, Map, Sparkles,
-  ChevronRight, Database, Activity, GraduationCap
+  ChevronRight, Database, Activity, GraduationCap, Info, Heart, Package, FileText
 } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { useQuery } from "@tanstack/react-query";
@@ -95,11 +95,44 @@ const sections: { title: string; items: NavItem[] }[] = [
         testId: "link-distilleries",
       },
       {
+        icon: Package,
+        label: "Independent Bottlers",
+        description: "Encyclopedia with search & country filter",
+        href: "/discover/bottlers",
+        testId: "link-bottlers",
+      },
+      {
+        icon: FileText,
+        label: "Tasting Templates",
+        description: "Style-specific vocabulary & sensory guides",
+        href: "/discover/templates",
+        testId: "link-tasting-templates",
+      },
+      {
         icon: GraduationCap,
         label: "Tasting Guide",
         description: "Illustrated assessment methodology",
         href: "/guide",
         testId: "link-tasting-guide",
+      },
+    ],
+  },
+  {
+    title: "Über CaskSense",
+    items: [
+      {
+        icon: Info,
+        label: "About CaskSense",
+        description: "The story behind CaskSense",
+        href: "/discover/about",
+        testId: "link-about-casksense",
+      },
+      {
+        icon: Heart,
+        label: "Spende / Hospiz",
+        description: "Support the Christina-Kleintjes-Hospiz-Stiftung",
+        href: "/discover/donate",
+        testId: "link-donate-hospiz",
       },
     ],
   },
