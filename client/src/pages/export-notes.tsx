@@ -1,14 +1,12 @@
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { exportApi, tastingApi } from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Printer, Copy, FileText, Wine, FileDown, ClipboardList, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { GuestPreview } from "@/components/guest-preview";
+import { c, cardStyle, inputStyle, sectionHeadingStyle } from "@/lib/theme";
 
 interface WhiskyNote {
   whisky: {
@@ -34,6 +32,22 @@ interface NotesData {
   participant: { id: string; name: string };
   notes: WhiskyNote[];
 }
+
+const actionBtnStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "6px 12px",
+  fontSize: 12,
+  fontWeight: 500,
+  color: c.muted,
+  background: c.inputBg,
+  border: `1px solid ${c.border}`,
+  borderRadius: 8,
+  cursor: "pointer",
+  fontFamily: "system-ui, sans-serif",
+  transition: "background 0.2s",
+};
 
 export default function ExportNotes() {
   const { t } = useTranslation();
@@ -118,173 +132,163 @@ export default function ExportNotes() {
   if (!currentParticipant) {
     return (
       <GuestPreview featureTitle={t("exportNotes.title")} featureDescription={t("guestPreview.exportNotes")}>
-        <div className="space-y-4">
-          <h1 className="text-2xl font-serif font-bold">{t("exportNotes.title")}</h1>
-          <div className="bg-card rounded-xl border p-6 space-y-4">
-            <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">📄</div><div><div className="font-serif font-semibold">Highland Evening Notes</div><div className="text-sm text-muted-foreground">6 whiskies · Jan 15, 2026</div></div></div>
-            <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">📄</div><div><div className="font-serif font-semibold">Islay Exploration Notes</div><div className="text-sm text-muted-foreground">5 whiskies · Dec 8, 2025</div></div></div>
-          </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <h1 style={{ ...sectionHeadingStyle, color: c.accent }}>{t("exportNotes.title")}</h1>
         </div>
       </GuestPreview>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="export-notes-page">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="flex items-center gap-3 mb-2">
-          <FileText className="w-7 h-7 text-primary" />
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-export-title">
-            {t("exportNotes.title")}
-          </h1>
-        </div>
-        <p className="text-sm text-muted-foreground mb-8">{t("exportNotes.subtitle")}</p>
+    <div data-testid="export-notes-page">
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+        <FileText style={{ width: 24, height: 24, color: c.accent }} />
+        <h2 style={{ ...sectionHeadingStyle, color: c.accent, margin: 0 }}>
+          {t("exportNotes.title")}
+        </h2>
+      </div>
+      <p style={{ fontSize: 12, color: c.muted, marginBottom: 24, lineHeight: 1.5 }}>{t("exportNotes.subtitle")}</p>
 
-        <div className="mb-8 print:hidden">
-          <label className="block text-sm font-medium text-foreground mb-2">{t("exportNotes.selectTasting")}</label>
-          {tastingsLoading ? (
-            <div className="h-10 w-64 bg-card/50 rounded animate-pulse" />
-          ) : (
-            <Select value={selectedTastingId} onValueChange={setSelectedTastingId} data-testid="select-tasting">
-              <SelectTrigger className="w-full max-w-md bg-card border-2 border-primary/30 hover:border-primary/60 focus:border-primary transition-colors shadow-sm" data-testid="select-tasting-trigger">
-                <SelectValue placeholder={t("exportNotes.selectPlaceholder")} />
-              </SelectTrigger>
-              <SelectContent position="popper" className="z-[200] bg-card border-border text-card-foreground max-h-60">
-                {(!tastings || tastings.length === 0) ? (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">{t("exportNotes.noTastings")}</div>
-                ) : (
-                  tastings.map((tasting: any) => (
-                    <SelectItem key={tasting.id} value={String(tasting.id)} className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground cursor-pointer" data-testid={`select-tasting-item-${tasting.id}`}>
-                      {tasting.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-
-        {selectedTastingId && notesLoading && (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-40 bg-card/50 rounded-lg animate-pulse" />
+      <div style={{ marginBottom: 24 }} className="print:hidden">
+        <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: c.text, marginBottom: 8 }}>
+          {t("exportNotes.selectTasting")}
+        </label>
+        {tastingsLoading ? (
+          <div style={{ height: 40, width: 256, background: c.inputBg, borderRadius: 8 }} />
+        ) : (
+          <select
+            value={selectedTastingId || ""}
+            onChange={(e) => setSelectedTastingId(e.target.value || undefined)}
+            style={{ ...inputStyle, width: "100%", maxWidth: 400 }}
+            data-testid="select-tasting-trigger"
+          >
+            <option value="">{t("exportNotes.selectPlaceholder")}</option>
+            {tastings?.map((tasting: any) => (
+              <option key={tasting.id} value={String(tasting.id)} data-testid={`select-tasting-item-${tasting.id}`}>
+                {tasting.name}
+              </option>
             ))}
-          </div>
+          </select>
         )}
+      </div>
 
-        {notesData && (
-          <>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6 print:hidden">
-              <p className="text-sm text-muted-foreground">
-                {t("exportNotes.notesCount", { count: notesData.notes?.length || 0 })}
-              </p>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                <Button variant="outline" size="sm" onClick={handleCopyText} data-testid="button-copy-text" title={t("exportNotes.copyText")}>
-                  <Copy className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">{t("exportNotes.copyText")}</span>
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleDownloadWord} disabled={downloading} data-testid="button-download-word" title={t("exportNotes.downloadWord")}>
-                  <FileDown className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">{t("exportNotes.downloadWord")}</span>
-                </Button>
-                <Button variant="outline" size="sm" onClick={handlePrint} data-testid="button-print" title={t("exportNotes.print")}>
-                  <Printer className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">{t("exportNotes.print")}</span>
-                </Button>
-              </div>
+      {selectedTastingId && notesLoading && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} style={{ height: 140, background: c.inputBg, borderRadius: 12 }} />
+          ))}
+        </div>
+      )}
+
+      {notesData && (
+        <>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 20 }} className="print:hidden">
+            <p style={{ fontSize: 12, color: c.muted }}>
+              {t("exportNotes.notesCount", { count: notesData.notes?.length || 0 })}
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <button type="button" onClick={handleCopyText} style={actionBtnStyle} data-testid="button-copy-text" title={t("exportNotes.copyText")}>
+                <Copy style={{ width: 14, height: 14 }} />
+                <span>{t("exportNotes.copyText")}</span>
+              </button>
+              <button type="button" onClick={handleDownloadWord} disabled={downloading} style={{ ...actionBtnStyle, opacity: downloading ? 0.5 : 1 }} data-testid="button-download-word" title={t("exportNotes.downloadWord")}>
+                <FileDown style={{ width: 14, height: 14 }} />
+                <span>{t("exportNotes.downloadWord")}</span>
+              </button>
+              <button type="button" onClick={handlePrint} style={actionBtnStyle} data-testid="button-print" title={t("exportNotes.print")}>
+                <Printer style={{ width: 14, height: 14 }} />
+                <span>{t("exportNotes.print")}</span>
+              </button>
             </div>
+          </div>
 
-            <div className="hidden print:block mb-6 text-center border-b border-border/40 pb-4">
-              <h2 className="text-xl font-serif font-bold">{notesData.tasting.name}</h2>
-              <p className="text-sm text-muted-foreground">{notesData.tasting.date}</p>
-              <p className="text-sm text-muted-foreground">{notesData.participant.name}</p>
-            </div>
+          <div className="hidden print:block" style={{ marginBottom: 24, textAlign: "center", borderBottom: `1px solid ${c.border}`, paddingBottom: 16 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Playfair Display', serif" }}>{notesData.tasting.name}</h2>
+            <p style={{ fontSize: 12, color: c.muted }}>{notesData.tasting.date}</p>
+            <p style={{ fontSize: 12, color: c.muted }}>{notesData.participant.name}</p>
+          </div>
 
-            {notesData.notes?.length === 0 ? (
-              <div className="flex flex-col items-center py-12" data-testid="empty-state-no-notes">
-                <div className="bg-card border border-border/40 rounded-xl p-8 max-w-md w-full text-center shadow-sm">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/10 flex items-center justify-center">
-                    <Wine className="w-8 h-8 text-amber-500/60" />
-                  </div>
-                  <h3 className="text-lg font-serif font-semibold text-foreground mb-2">{t("exportNotes.empty")}</h3>
-                  <p className="text-sm text-muted-foreground">{t("exportNotes.emptyHint")}</p>
+          {notesData.notes?.length === 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 0" }} data-testid="empty-state-no-notes">
+              <div style={{ ...cardStyle, maxWidth: 400, width: "100%", textAlign: "center" }}>
+                <div style={{ width: 56, height: 56, margin: "0 auto 16px", borderRadius: "50%", background: `${c.accent}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Wine style={{ width: 28, height: 28, color: `${c.accent}90` }} />
                 </div>
+                <h3 style={{ fontSize: 16, fontWeight: 600, fontFamily: "'Playfair Display', serif", color: c.text, marginBottom: 8 }}>{t("exportNotes.empty")}</h3>
+                <p style={{ fontSize: 12, color: c.muted }}>{t("exportNotes.emptyHint")}</p>
               </div>
-            ) : (
-              <div className="space-y-4 print:space-y-6">
-                {notesData.notes?.map((item, index) => (
-                  <motion.div
-                    key={item.whisky.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="bg-card rounded-xl border border-border/40 p-5 shadow-sm hover:shadow-md transition-shadow print:break-inside-avoid print:border print:border-gray-300 print:shadow-none"
-                    data-testid={`card-whisky-note-${item.whisky.id}`}
-                  >
-                    <div className="flex gap-4">
-                      {item.whisky.imageUrl && (
-                        <div className="w-16 h-24 rounded-lg bg-secondary/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                          <img
-                            src={item.whisky.imageUrl}
-                            alt={item.whisky.name}
-                            className="w-full h-full object-contain p-1"
-                            data-testid={`img-whisky-${item.whisky.id}`}
-                          />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-serif font-semibold text-foreground" data-testid={`text-whisky-name-${item.whisky.id}`}>
-                          {item.whisky.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mb-3">
-                          {[item.whisky.distillery, item.whisky.age ? `${item.whisky.age}y` : null, item.whisky.abv ? `${item.whisky.abv}% ABV` : null]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {notesData.notes?.map((item) => (
+                <div
+                  key={item.whisky.id}
+                  style={cardStyle}
+                  data-testid={`card-whisky-note-${item.whisky.id}`}
+                >
+                  <div style={{ display: "flex", gap: 16 }}>
+                    {item.whisky.imageUrl && (
+                      <div style={{ width: 56, height: 80, borderRadius: 8, background: c.inputBg, flexShrink: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <img
+                          src={item.whisky.imageUrl}
+                          alt={item.whisky.name}
+                          style={{ width: "100%", height: "100%", objectFit: "contain", padding: 4 }}
+                          data-testid={`img-whisky-${item.whisky.id}`}
+                        />
+                      </div>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3 style={{ fontSize: 16, fontWeight: 600, fontFamily: "'Playfair Display', serif", color: c.text }} data-testid={`text-whisky-name-${item.whisky.id}`}>
+                        {item.whisky.name}
+                      </h3>
+                      <p style={{ fontSize: 11, color: c.muted, marginBottom: 12 }}>
+                        {[item.whisky.distillery, item.whisky.age ? `${item.whisky.age}y` : null, item.whisky.abv ? `${item.whisky.abv}% ABV` : null]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
 
-                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3">
-                          {(["nose", "taste", "finish", "balance", "overall"] as const).map((dim) => (
-                            <div key={dim} className="text-center">
-                              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t(`evaluation.${dim}`)}</p>
-                              <p className="text-lg font-serif font-bold text-primary" data-testid={`text-score-${dim}-${item.whisky.id}`}>
-                                {item.rating[dim]?.toFixed?.(1) ?? item.rating[dim]}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-
-                        {item.rating.notes && (
-                          <div className="bg-secondary/20 rounded p-3">
-                            <p className="text-xs text-muted-foreground mb-1 font-medium">{t("evaluation.notes")}</p>
-                            <p className="text-sm text-foreground leading-relaxed" data-testid={`text-notes-${item.whisky.id}`}>
-                              {item.rating.notes}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
+                        {(["nose", "taste", "finish", "balance", "overall"] as const).map((dim) => (
+                          <div key={dim} style={{ textAlign: "center" }}>
+                            <p style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted }}>{t(`evaluation.${dim}`)}</p>
+                            <p style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: c.accent }} data-testid={`text-score-${dim}-${item.whisky.id}`}>
+                              {item.rating[dim]?.toFixed?.(1) ?? item.rating[dim]}
                             </p>
                           </div>
-                        )}
+                        ))}
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
 
-        {!selectedTastingId && !tastingsLoading && (
-          <div className="flex flex-col items-center py-12" data-testid="empty-state-select">
-            <div className="bg-card border border-border/40 rounded-xl p-8 max-w-md w-full text-center shadow-sm">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                <ClipboardList className="w-8 h-8 text-primary/60" />
-              </div>
-              <h3 className="text-lg font-serif font-semibold text-foreground mb-2">{t("exportNotes.selectPrompt")}</h3>
-              <p className="text-sm text-muted-foreground mb-4">{t("exportNotes.selectHint")}</p>
-              <div className="flex justify-center">
-                <ChevronUp className="w-5 h-5 text-muted-foreground/50 animate-bounce" />
-              </div>
+                      {item.rating.notes && (
+                        <div style={{ background: c.inputBg, borderRadius: 8, padding: 12 }}>
+                          <p style={{ fontSize: 10, color: c.muted, marginBottom: 4, fontWeight: 500 }}>{t("evaluation.notes")}</p>
+                          <p style={{ fontSize: 13, color: c.text, lineHeight: 1.6 }} data-testid={`text-notes-${item.whisky.id}`}>
+                            {item.rating.notes}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {!selectedTastingId && !tastingsLoading && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 0" }} data-testid="empty-state-select">
+          <div style={{ ...cardStyle, maxWidth: 400, width: "100%", textAlign: "center" }}>
+            <div style={{ width: 56, height: 56, margin: "0 auto 16px", borderRadius: "50%", background: `${c.accent}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <ClipboardList style={{ width: 28, height: 28, color: `${c.accent}60` }} />
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, fontFamily: "'Playfair Display', serif", color: c.text, marginBottom: 8 }}>{t("exportNotes.selectPrompt")}</h3>
+            <p style={{ fontSize: 12, color: c.muted, marginBottom: 16 }}>{t("exportNotes.selectHint")}</p>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <ChevronUp style={{ width: 20, height: 20, color: `${c.muted}50` }} />
             </div>
           </div>
-        )}
-      </motion.div>
+        </div>
+      )}
     </div>
   );
 }
