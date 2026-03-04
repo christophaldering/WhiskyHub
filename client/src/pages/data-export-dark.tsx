@@ -189,20 +189,7 @@ export default function DataExportDark() {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       <div data-testid="data-export-dark-page">
-        <div style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-          background: c.bg,
-          paddingTop: 4,
-          paddingBottom: 16,
-          marginLeft: -20,
-          marginRight: -20,
-          paddingLeft: 20,
-          paddingRight: 20,
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-        }}>
+        <div style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
             <HardDriveDownload style={{ width: 24, height: 24, color: c.accent }} />
             <h1

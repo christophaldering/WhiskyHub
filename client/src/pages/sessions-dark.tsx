@@ -147,22 +147,7 @@ export default function SessionsDark() {
 
   const content = (
     <div style={{ width: "100%" }}>
-      <div
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-          background: c.bg,
-          paddingTop: 4,
-          paddingBottom: 16,
-          marginLeft: -20,
-          marginRight: -20,
-          paddingLeft: 20,
-          paddingRight: 20,
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-        }}
-      >
+      <div>
         <h1
           style={{
             fontFamily: "'Playfair Display', serif",
@@ -176,7 +161,7 @@ export default function SessionsDark() {
         >
           Sessions
         </h1>
-        <p style={{ fontSize: 13, color: c.muted, margin: 0 }}>
+        <p style={{ fontSize: 13, color: c.muted, margin: 0, marginBottom: 16 }}>
           All your tastings at a glance
         </p>
       </div>

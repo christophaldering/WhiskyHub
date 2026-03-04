@@ -121,20 +121,7 @@ export default function AICurationDark() {
   return (
     <SimpleShell maxWidth={700}>
       <div data-testid="ai-curation-page">
-        <div style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-          background: c.bg,
-          paddingTop: 4,
-          paddingBottom: 16,
-          marginLeft: -20,
-          marginRight: -20,
-          paddingLeft: 20,
-          paddingRight: 20,
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-        }}>
+        <div style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Sparkles style={{ width: 28, height: 28, color: c.accent }} />
             <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: c.accent, margin: 0 }}

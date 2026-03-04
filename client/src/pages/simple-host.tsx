@@ -1874,51 +1874,36 @@ export default function SimpleHostPage() {
     <SimpleShell showBack={false}>
       <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
         {!showingWizard && (
-          <div style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
-            background: c.bg,
-            paddingTop: 4,
-            paddingBottom: 16,
-            marginLeft: -20,
-            marginRight: -20,
-            paddingLeft: 20,
-            paddingRight: 20,
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }} data-testid="text-host-title">
-                  Host a Tasting
-                </h2>
-                <p style={{ fontSize: 13, color: c.muted, marginTop: 4 }}>
-                  Create a session, add whiskies, and run the tasting live.
-                </p>
-              </div>
-              <button
-                onClick={() => setWizardStep("step1")}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  background: c.accent,
-                  color: c.bg,
-                  border: "none",
-                  borderRadius: 10,
-                  padding: "8px 16px",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  flexShrink: 0,
-                }}
-                data-testid="button-create-tasting"
-              >
-                <Plus style={{ width: 16, height: 16 }} />
-                New
-              </button>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }} data-testid="text-host-title">
+                Host a Tasting
+              </h2>
+              <p style={{ fontSize: 13, color: c.muted, marginTop: 4 }}>
+                Create a session, add whiskies, and run the tasting live.
+              </p>
             </div>
+            <button
+              onClick={() => setWizardStep("step1")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                background: c.accent,
+                color: c.bg,
+                border: "none",
+                borderRadius: 10,
+                padding: "8px 16px",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+              data-testid="button-create-tasting"
+            >
+              <Plus style={{ width: 16, height: 16 }} />
+              New
+            </button>
           </div>
         )}
 

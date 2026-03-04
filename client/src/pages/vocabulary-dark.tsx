@@ -185,20 +185,7 @@ export default function VocabularyDark() {
   return (
     <SimpleShell maxWidth={600}>
       <div data-testid="vocabulary-page">
-        <div style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-          background: c.bg,
-          paddingTop: 4,
-          paddingBottom: 16,
-          marginLeft: -20,
-          marginRight: -20,
-          paddingLeft: 20,
-          paddingRight: 20,
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-        }}>
+        <div style={{ marginBottom: 16 }}>
           <h1
             style={{
               fontFamily: "'Playfair Display', serif",
