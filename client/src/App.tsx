@@ -39,7 +39,6 @@ import SimpleFeedbackPage from "@/pages/simple-feedback";
 import SimpleTestPage from "@/pages/simple-test";
 import SimpleHostPage from "@/pages/simple-host";
 import SimpleAnalyzePage from "@/pages/simple-analyze";
-import MyTasteFlavors from "@/pages/my-taste-flavors";
 import MyTasteCompare from "@/pages/my-taste-compare";
 import DiscoverLexicon from "@/pages/discover-lexicon";
 import DiscoverCommunityNative from "@/pages/discover-community-native";
@@ -144,7 +143,7 @@ function Router() {
         <Route path="/host" component={SimpleHostPage} />
         <Route path="/analyze" component={SimpleAnalyzePage} />
         <Route path="/my-taste" component={MyTastePage} />
-        <Route path="/my-taste/flavors" component={MyTasteFlavors} />
+        <Route path="/my-taste/flavors">{() => <Redirect to="/my-taste/profile" />}</Route>
         <Route path="/my-taste/compare" component={MyTasteCompare} />
         <Route path="/my-taste/analytics" component={MyTasteAnalytics} />
         <Route path="/my-taste/profile" component={FlavorProfile} />

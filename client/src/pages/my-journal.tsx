@@ -4,15 +4,11 @@ import { useSearch } from "wouter";
 import { NotebookPen } from "lucide-react";
 import Journal from "@/pages/journal";
 import MyWhiskies from "@/pages/my-whiskies";
-import Comparison from "@/pages/comparison";
-import TastingRecap from "@/pages/tasting-recap";
-import Analytics from "@/pages/analytics";
-import BenchmarkAnalyzer from "@/pages/benchmark-analyzer";
 import ExportNotes from "@/pages/export-notes";
 import DataExport from "@/pages/data-export";
 import SimpleShell from "@/components/simple/simple-shell";
 
-const VALID_TABS = ["journal", "tasted", "compare", "recap", "analytics", "benchmark", "export"] as const;
+const VALID_TABS = ["journal", "tasted", "export"] as const;
 type TabValue = (typeof VALID_TABS)[number];
 
 export default function MyJournal() {
@@ -49,20 +45,6 @@ export default function MyJournal() {
             <TabsTrigger value="tasted" data-testid="tab-tasted">
               Verkostet
             </TabsTrigger>
-            <TabsTrigger value="compare" data-testid="tab-compare">
-              Vergleich
-            </TabsTrigger>
-            <TabsTrigger value="recap" data-testid="tab-recap">
-              Recap
-            </TabsTrigger>
-            <TabsTrigger value="analytics" data-testid="tab-analytics">
-              Analytik
-              <span className="ml-1 text-[9px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full font-semibold">PRO</span>
-            </TabsTrigger>
-            <TabsTrigger value="benchmark" data-testid="tab-benchmark">
-              Benchmark
-              <span className="ml-1 text-[9px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full font-semibold">PRO</span>
-            </TabsTrigger>
             <TabsTrigger value="export" data-testid="tab-export">
               Export
             </TabsTrigger>
@@ -74,18 +56,6 @@ export default function MyJournal() {
         </TabsContent>
         <TabsContent value="tasted">
           <MyWhiskies />
-        </TabsContent>
-        <TabsContent value="compare">
-          <Comparison />
-        </TabsContent>
-        <TabsContent value="recap">
-          <TastingRecap />
-        </TabsContent>
-        <TabsContent value="analytics">
-          <Analytics />
-        </TabsContent>
-        <TabsContent value="benchmark">
-          <BenchmarkAnalyzer />
         </TabsContent>
         <TabsContent value="export">
           <div className="space-y-8">

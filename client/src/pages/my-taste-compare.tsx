@@ -75,12 +75,15 @@ export default function MyTasteCompare() {
             fontFamily: "'Playfair Display', serif",
             fontSize: 24,
             color: c.accent,
-            marginBottom: 20,
+            marginBottom: 6,
           }}
           data-testid="text-compare-title"
         >
           Compare Whiskies
         </h1>
+        <p style={{ fontSize: 13, color: c.muted, marginBottom: 20 }}>
+          Compare your personal ratings of different whiskies side by side
+        </p>
 
         {isLoading ? (
           <div style={{ height: 200, background: c.card, borderRadius: 12, opacity: 0.5 }} />

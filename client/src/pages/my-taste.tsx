@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useAppStore } from "@/lib/store";
-import { participantApi, journalApi, statsApi, flavorProfileApi } from "@/lib/api";
+import { participantApi, journalApi, statsApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { CircleDot, GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, ListChecks, Archive, Heart, FlaskConical, History, FileDown } from "lucide-react";
+import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical } from "lucide-react";
 import { c, cardStyle, inputStyle } from "@/lib/theme";
 
 const LS_KEY = "casksense_participant_id";
@@ -81,58 +81,6 @@ function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; ro
         {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }} data-testid="text-unlock-error">{error}</p>}
       </form>
     </div>
-  );
-}
-
-const FLAVOR_COLORS = ["#c8a864", "#7ea87e", "#d97c5a", "#6b9bd2", "#b07ab0", "#cc9966", "#8ab4a0", "#d4a256"];
-
-function FlavorPreviewCard({ pid }: { pid: string | undefined }) {
-  const { data: profile } = useQuery({
-    queryKey: ["flavor-profile-preview", pid],
-    queryFn: () => flavorProfileApi.get(pid!),
-    enabled: !!pid,
-    staleTime: 120000,
-  });
-
-  const topFlavors = profile?.topCategories?.slice(0, 4) ?? [];
-
-  return (
-    <Link href="/my-taste/flavors">
-      <div style={{ ...cardStyle, padding: "16px 20px", cursor: "pointer" }} data-testid="card-flavor-wheel">
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c.accent}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <CircleDot style={{ width: 18, height: 18, color: c.accent }} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Flavor Wheel</div>
-            <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>Your personal aroma profile</div>
-          </div>
-          <ChevronRight style={{ width: 14, height: 14, color: c.muted, flexShrink: 0 }} />
-        </div>
-        {pid && topFlavors.length > 0 && (
-          <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
-            {topFlavors.map((f: any, i: number) => (
-              <span
-                key={f.category || i}
-                style={{
-                  fontSize: 11,
-                  padding: "3px 10px",
-                  borderRadius: 20,
-                  background: `${FLAVOR_COLORS[i % FLAVOR_COLORS.length]}20`,
-                  color: FLAVOR_COLORS[i % FLAVOR_COLORS.length],
-                  fontWeight: 500,
-                }}
-              >
-                {f.category}
-              </span>
-            ))}
-          </div>
-        )}
-        {pid && topFlavors.length === 0 && (
-          <div style={{ fontSize: 11, color: c.muted, marginTop: 10 }}>Rate more whiskies to build your flavor profile</div>
-        )}
-      </div>
-    </Link>
   );
 }
 
@@ -316,11 +264,10 @@ export default function MyTastePage() {
                 Mein Profil
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <FlavorPreviewCard pid={pid} />
                 <NavCard
                   icon={Radar}
                   label="Flavor Profile"
-                  description="Radar chart vs. platform average by region, cask & peat"
+                  description="Aroma wheel, taste structure, region & cask preferences"
                   href="/my-taste/profile"
                   testId="link-flavor-profile"
                 />
@@ -336,7 +283,7 @@ export default function MyTastePage() {
                 <NavCard
                   icon={GitCompareArrows}
                   label="Comparison"
-                  description="Compare your whiskies side by side"
+                  description="Compare your personal ratings side by side"
                   href="/my-taste/compare"
                   testId="link-comparison"
                 />
@@ -358,31 +305,10 @@ export default function MyTastePage() {
                 <NavCard
                   icon={BookOpen}
                   label="Journal"
-                  description="Your tasting history"
+                  description="Your tasting notes & rated whiskies"
                   href="/my-taste/journal"
                   testId="link-journal"
                   badge={journalCount > 0 ? journalCount : null}
-                />
-                <NavCard
-                  icon={ListChecks}
-                  label="My Whiskies"
-                  description="All your rated whiskies, filterable & sortable"
-                  href="/my-taste/journal?tab=tasted"
-                  testId="link-my-whiskies"
-                />
-                <NavCard
-                  icon={History}
-                  label="Tasting Recap"
-                  description="Review your past tasting sessions"
-                  href="/my-taste/journal?tab=recap"
-                  testId="link-tasting-recap"
-                />
-                <NavCard
-                  icon={FileDown}
-                  label="Export Notes"
-                  description="Download your ratings & notes"
-                  href="/my-taste/journal?tab=export"
-                  testId="link-export-notes"
                 />
               </div>
             </div>

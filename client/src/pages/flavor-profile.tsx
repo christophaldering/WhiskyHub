@@ -367,8 +367,6 @@ export default function FlavorProfile() {
   const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
   const isDE = i18n.language === "de";
-  const [activeTab, setActiveTab] = useState<"taste" | "profile" | "wheel">("taste");
-
   const { data: profile, isLoading } = useQuery<FlavorProfileData>({
     queryKey: ["flavor-profile", currentParticipant?.id],
     queryFn: () => flavorProfileApi.get(currentParticipant!.id),
@@ -460,35 +458,13 @@ export default function FlavorProfile() {
             {t("flavorProfile.title")}
           </h1>
         </div>
-        <p className="text-sm text-muted-foreground mb-4">{t("flavorProfile.subtitle")}</p>
+        <p className="text-sm text-muted-foreground mb-6">{t("flavorProfile.subtitle")}</p>
 
-        <div className="flex border-b border-border/40 mb-6">
-          <button
-            onClick={() => setActiveTab("taste")}
-            className={`px-4 py-2.5 text-sm font-serif font-medium transition-colors border-b-2 -mb-px ${activeTab === "taste" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-            data-testid="tab-taste"
-          >
-            {t("flavorProfile.tabTaste")}
-          </button>
-          <button
-            onClick={() => setActiveTab("profile")}
-            className={`px-4 py-2.5 text-sm font-serif font-medium transition-colors border-b-2 -mb-px ${activeTab === "profile" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-            data-testid="tab-profile"
-          >
-            {t("flavorProfile.tabProfile")}
-          </button>
-          <button
-            onClick={() => setActiveTab("wheel")}
-            className={`px-4 py-2.5 text-sm font-serif font-medium transition-colors border-b-2 -mb-px ${activeTab === "wheel" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-            data-testid="tab-wheel"
-          >
-            {t("flavorProfile.tabWheel")}
-          </button>
-        </div>
+        <div className="space-y-10">
 
-        {activeTab === "taste" && (
-          <>
-            {profile?.sources && (profile.sources.tastingRatings > 0 || profile.sources.journalEntries > 0) && (
+        <FlavorWheelContent />
+
+        {profile?.sources && (profile.sources.tastingRatings > 0 || profile.sources.journalEntries > 0) && (
               <p className="text-xs text-muted-foreground/70 mb-8" data-testid="text-flavor-sources">
                 {isDE
                   ? `Basierend auf ${profile.sources.tastingRatings} Tasting-Bewertung${profile.sources.tastingRatings !== 1 ? "en" : ""} und ${profile.sources.journalEntries} Journal-Eintr${profile.sources.journalEntries !== 1 ? "ägen" : "ag"}`
@@ -646,16 +622,12 @@ export default function FlavorProfile() {
                 )}
               </div>
             )}
-          </>
-        )}
 
-        {activeTab === "profile" && currentParticipant && (
+        {currentParticipant && (
           <WhiskyProfileTab participantId={currentParticipant.id} t={t} isDE={isDE} />
         )}
 
-        {activeTab === "wheel" && currentParticipant && (
-          <FlavorWheelContent />
-        )}
+        </div>
       </motion.div>
     </div>
     </SimpleShell>
