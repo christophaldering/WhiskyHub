@@ -118,13 +118,22 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
         </div>
 
         {showBack && (
-          <Link
-            href="/"
-            style={{ fontSize: 12, color: c.muted, textDecoration: "none", marginTop: 40 }}
+          <button
+            onClick={() => window.history.back()}
+            style={{
+              fontSize: 12,
+              color: c.muted,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+              marginTop: 40,
+              fontFamily: "system-ui, sans-serif",
+            }}
             data-testid="link-back"
           >
             ← Back
-          </Link>
+          </button>
         )}
       </div>
 
