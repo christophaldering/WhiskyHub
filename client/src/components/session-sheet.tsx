@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { KeyRound, LogOut, Lock, Unlock, X, Eye, EyeOff, Pencil, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { KeyRound, LogOut, Lock, Unlock, X, Eye, EyeOff, Pencil, Check, ChevronDown, ChevronUp, Settings } from "lucide-react";
 import { getSession, signIn, signOut } from "@/lib/session";
 import type { SessionMode } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
@@ -386,6 +386,32 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
 
   const renderSignedIn = () => (
     <>
+      <a
+        href="/my-taste/settings"
+        onClick={(e) => { e.preventDefault(); onClose(); window.location.href = "/my-taste/settings"; }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "12px 14px",
+          background: c.bg,
+          borderRadius: 10,
+          marginBottom: 10,
+          textDecoration: "none",
+          color: c.text,
+          fontSize: 13,
+          fontWeight: 500,
+          fontFamily: "system-ui, sans-serif",
+          cursor: "pointer",
+        }}
+        data-testid="link-settings-profile"
+      >
+        <Settings style={{ width: 16, height: 16, color: c.accent }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: c.text }}>Settings & Profile</div>
+          <div style={{ fontSize: 11, color: c.mutedLight, marginTop: 1 }}>Photo, bio, preferences, API key</div>
+        </div>
+      </a>
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
         {(["name", "email", "password"] as const).map((key) => {
           const labels = { name: "Change Name", email: "Change Email", password: "Change Password" };

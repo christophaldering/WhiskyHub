@@ -2057,38 +2057,6 @@ export default function SimpleHostPage() {
                   </CollapsibleSection>
                 )}
 
-                {draftTastings.length > 0 && (
-                  <CollapsibleSection label="Drafts" count={draftTastings.length} defaultOpen={activeTastings.length === 0} testId="section-drafts">
-                    {draftTastings.map((t) => (
-                      <div
-                        key={t.id}
-                        onClick={() => { setCreatedTasting(t); setWizardStep("step2"); }}
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "10px 12px",
-                          borderRadius: 8,
-                          background: c.bg,
-                          border: `1px solid ${c.border}`,
-                          cursor: "pointer",
-                        }}
-                        data-testid={`card-tasting-${t.id}`}
-                      >
-                        <div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{t.title}</div>
-                          {t.date && <div style={{ fontSize: 11, color: c.muted, marginTop: 3 }}>{t.date}</div>}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <StatusBadge status={t.status} />
-                          <ChevronRight style={{ width: 14, height: 14, color: c.muted }} />
-                        </div>
-                      </div>
-                    ))}
-                  </CollapsibleSection>
-                )}
-
-                <HistoryAccordion tastings={pastTastings} />
               </>
             )}
 

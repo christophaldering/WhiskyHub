@@ -240,28 +240,28 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2 items-center" data-testid="profile-controls">
-        <div className="flex rounded-lg border border-border/40 overflow-hidden text-xs">
-          <button onClick={() => setSource("all")} className={`px-3 py-1.5 transition-colors ${source === "all" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`} data-testid="button-source-all">
+        <div className="flex rounded-lg border border-border overflow-hidden text-xs">
+          <button onClick={() => setSource("all")} className={`px-3 py-1.5 transition-colors border-r border-border ${source === "all" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"}`} data-testid="button-source-all">
             {t("flavorProfile.sourceAll")}
           </button>
-          <button onClick={() => setSource("journal")} className={`px-3 py-1.5 transition-colors ${source === "journal" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`} data-testid="button-source-journal">
+          <button onClick={() => setSource("journal")} className={`px-3 py-1.5 transition-colors border-r border-border ${source === "journal" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"}`} data-testid="button-source-journal">
             {t("flavorProfile.sourceJournal")}
           </button>
-          <button onClick={() => setSource("imported")} className={`px-3 py-1.5 transition-colors ${source === "imported" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`} data-testid="button-source-imported">
+          <button onClick={() => setSource("imported")} className={`px-3 py-1.5 transition-colors border-r border-border ${source === "imported" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"}`} data-testid="button-source-imported">
             {t("flavorProfile.sourceImported")}
           </button>
-          <button onClick={() => setSource("all_incl_imported")} className={`px-3 py-1.5 transition-colors ${source === "all_incl_imported" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`} data-testid="button-source-all-incl-imported">
+          <button onClick={() => setSource("all_incl_imported")} className={`px-3 py-1.5 transition-colors ${source === "all_incl_imported" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"}`} data-testid="button-source-all-incl-imported">
             {t("flavorProfile.sourceAllInclImported")}
           </button>
         </div>
-        <div className="flex rounded-lg border border-border/40 overflow-hidden text-xs ml-auto">
-          <button onClick={() => setCompareMode("none")} className={`px-3 py-1.5 flex items-center gap-1 transition-colors ${compareMode === "none" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`} data-testid="button-compare-none">
+        <div className="flex rounded-lg border border-border overflow-hidden text-xs ml-auto">
+          <button onClick={() => setCompareMode("none")} className={`px-3 py-1.5 flex items-center gap-1 transition-colors border-r border-border ${compareMode === "none" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"}`} data-testid="button-compare-none">
             <User className="w-3 h-3" /> {t("flavorProfile.compareNone")}
           </button>
-          <button onClick={() => setCompareMode("friends")} className={`px-3 py-1.5 flex items-center gap-1 transition-colors ${compareMode === "friends" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`} data-testid="button-compare-friends">
+          <button onClick={() => setCompareMode("friends")} className={`px-3 py-1.5 flex items-center gap-1 transition-colors border-r border-border ${compareMode === "friends" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"}`} data-testid="button-compare-friends">
             <Users className="w-3 h-3" /> {t("flavorProfile.compareFriends")}
           </button>
-          <button onClick={() => setCompareMode("platform")} className={`px-3 py-1.5 flex items-center gap-1 transition-colors ${compareMode === "platform" ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`} data-testid="button-compare-platform">
+          <button onClick={() => setCompareMode("platform")} className={`px-3 py-1.5 flex items-center gap-1 transition-colors ${compareMode === "platform" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"}`} data-testid="button-compare-platform">
             <Globe className="w-3 h-3" /> {t("flavorProfile.comparePlatform")}
           </button>
         </div>
@@ -652,19 +652,18 @@ export default function FlavorProfile() {
                     <div className="bg-card rounded-lg border border-border/40 p-6">
                       <h2 className="text-base font-serif font-semibold mb-1">{t("flavorProfile.peatTitle")}</h2>
                       <p className="text-sm text-muted-foreground/80 mb-3" data-testid="text-peat-desc">{t("flavorProfile.peatDesc")}</p>
-                      <div className="space-y-3">
-                        {peatData.map((d) => (
-                          <div key={d.name} className="flex items-center justify-between">
-                            <span className="text-sm text-foreground">{d.name}</span>
-                            <div className="flex items-center gap-3">
-                              <div className="w-24 h-2 bg-secondary/50 rounded-full overflow-hidden">
-                                <div className="h-full bg-primary/60 rounded-full" style={{ width: `${d.avgScore}%` }} />
-                              </div>
-                              <span className="text-xs text-muted-foreground w-10 text-right">{d.avgScore}</span>
-                              <span className="text-xs text-muted-foreground/70">({d.count})</span>
+                      <div className="space-y-4">
+                        {(() => { const maxPeat = Math.max(...peatData.map(d => d.avgScore), 1); return peatData.map((d) => (
+                          <div key={d.name}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm text-foreground">{d.name}</span>
+                              <span className="text-xs text-muted-foreground">{d.avgScore} <span className="text-muted-foreground/60">({d.count})</span></span>
+                            </div>
+                            <div className="w-full h-2 bg-secondary/50 rounded-full overflow-hidden">
+                              <div className="h-full bg-primary/60 rounded-full" style={{ width: `${(d.avgScore / maxPeat) * 100}%` }} />
                             </div>
                           </div>
-                        ))}
+                        )); })()}
                       </div>
                     </div>
                   )}
@@ -673,19 +672,18 @@ export default function FlavorProfile() {
                     <div className="bg-card rounded-lg border border-border/40 p-6">
                       <h2 className="text-base font-serif font-semibold mb-1">{t("flavorProfile.caskTitle")}</h2>
                       <p className="text-sm text-muted-foreground/80 mb-3" data-testid="text-cask-desc">{t("flavorProfile.caskDesc")}</p>
-                      <div className="space-y-3">
-                        {caskData.map((d) => (
-                          <div key={d.name} className="flex items-center justify-between">
-                            <span className="text-sm text-foreground">{d.name}</span>
-                            <div className="flex items-center gap-3">
-                              <div className="w-24 h-2 bg-secondary/50 rounded-full overflow-hidden">
-                                <div className="h-full bg-primary/60 rounded-full" style={{ width: `${d.avgScore}%` }} />
-                              </div>
-                              <span className="text-xs text-muted-foreground w-10 text-right">{d.avgScore}</span>
-                              <span className="text-xs text-muted-foreground/70">({d.count})</span>
+                      <div className="space-y-4">
+                        {(() => { const maxCask = Math.max(...caskData.map(d => d.avgScore), 1); return caskData.map((d) => (
+                          <div key={d.name}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm text-foreground">{d.name}</span>
+                              <span className="text-xs text-muted-foreground">{d.avgScore} <span className="text-muted-foreground/60">({d.count})</span></span>
+                            </div>
+                            <div className="w-full h-2 bg-secondary/50 rounded-full overflow-hidden">
+                              <div className="h-full bg-primary/60 rounded-full" style={{ width: `${(d.avgScore / maxCask) * 100}%` }} />
                             </div>
                           </div>
-                        ))}
+                        )); })()}
                       </div>
                     </div>
                   )}

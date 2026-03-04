@@ -113,22 +113,6 @@ function AnalyticsPreviewCard({ pid, stats }: { pid: string | undefined; stats: 
           )}
           {!isLocked && <ChevronRight style={{ width: 14, height: 14, color: c.muted, flexShrink: 0 }} />}
         </div>
-        {pid && !isLocked && (totalRatings > 0 || avgOverall != null) && (
-          <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
-            {totalRatings > 0 && (
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif" }}>{totalRatings}</div>
-                <div style={{ fontSize: 10, color: c.muted }}>Ratings</div>
-              </div>
-            )}
-            {avgOverall != null && (
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif" }}>{Number(avgOverall).toFixed(1)}</div>
-                <div style={{ fontSize: 10, color: c.muted }}>Avg Score</div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </Link>
   );
@@ -270,13 +254,6 @@ export default function MyTastePage() {
                   description="Aroma wheel, taste structure, region & cask preferences"
                   href="/my-taste/profile"
                   testId="link-flavor-profile"
-                />
-                <NavCard
-                  icon={Settings}
-                  label="Settings & Profile"
-                  description="Name, bio, favourite whisky, password, API key"
-                  href="/my-taste/settings"
-                  testId="link-settings-profile"
                 />
                 <NavCard
                   icon={CircleDot}
