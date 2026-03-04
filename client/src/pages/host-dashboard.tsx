@@ -8,13 +8,14 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import {
   GlassWater, Users, Wine, Star, Calendar, Trophy, LayoutDashboard, Eye,
   Plus, FileText, Printer, ClipboardList, Download, Sparkles, ChevronLeft,
-  ChevronRight, Copy, Mail, QrCode, Archive, BarChart3, BookOpen, Zap,
+  ChevronRight, Copy, Mail, QrCode, BarChart3, BookOpen, Zap,
   Check, Send, Loader2, Link as LinkIcon, ChevronDown,
 } from "lucide-react";
 import { Link } from "wouter";
-import { Badge } from "@/components/ui/badge";
 import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
 import QRCodeLib from "qrcode";
+import SimpleShell from "@/components/simple/simple-shell";
+import { c, cardStyle, inputStyle } from "@/lib/theme";
 
 interface HostSummary {
   totalTastings: number;
@@ -45,38 +46,46 @@ function parseCalendarDate(dateStr: string): Date | null {
   return null;
 }
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.08, duration: 0.4 } }),
+const sectionCard: React.CSSProperties = {
+  ...cardStyle,
+  marginBottom: 0,
 };
 
-const statusColors: Record<string, string> = {
-  draft: "bg-yellow-600/20 text-yellow-400 border-yellow-600/30",
-  open: "bg-green-600/20 text-green-400 border-green-600/30",
-  closed: "bg-red-600/20 text-red-400 border-red-600/30",
-  reveal: "bg-purple-600/20 text-purple-400 border-purple-600/30",
-  archived: "bg-muted text-muted-foreground border-border",
+const statusColor = (status: string) => {
+  if (status === "open" || status === "reveal") return c.success;
+  if (status === "draft") return "#b8a040";
+  if (status === "closed") return c.error;
+  if (status === "archived") return c.muted;
+  return c.muted;
 };
 
-const calStatusColor = (status: string) => {
-  if (status === "open" || status === "reveal") return "#4ade80";
-  if (status === "draft") return "#888";
-  return "#c8a864";
-};
-
-function SectionCard({ children, className = "", testId }: { children: React.ReactNode; className?: string; testId?: string }) {
+function StatusBadge({ status, label }: { status: string; label: string }) {
+  const col = statusColor(status);
   return (
-    <div className={`bg-card rounded-lg border border-border/40 p-5 ${className}`} data-testid={testId}>
-      {children}
-    </div>
+    <span
+      style={{
+        fontSize: 10,
+        fontWeight: 700,
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        color: col,
+        background: `${col}20`,
+        padding: "3px 8px",
+        borderRadius: 6,
+        border: `1px solid ${col}30`,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}
+    </span>
   );
 }
 
 function SectionTitle({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
   return (
-    <div className="flex items-center gap-2 mb-4">
-      <Icon className="w-5 h-5 text-primary" />
-      <h2 className="text-base font-serif font-semibold">{title}</h2>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+      <Icon style={{ width: 18, height: 18, color: c.accent }} />
+      <h2 style={{ fontSize: 15, fontWeight: 600, color: c.text, margin: 0, fontFamily: "'Playfair Display', serif" }}>{title}</h2>
     </div>
   );
 }
@@ -84,26 +93,43 @@ function SectionTitle({ icon: Icon, title }: { icon: React.ElementType; title: s
 function ToolLink({ href, icon: Icon, label, desc }: { href: string; icon: React.ElementType; label: string; desc: string }) {
   return (
     <Link href={href}>
-      <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-primary/5 transition-colors cursor-pointer group" data-testid={`tool-link-${label.toLowerCase().replace(/\s+/g, "-")}`}>
-        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-          <Icon className="w-4.5 h-4.5 text-primary" />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "10px 12px",
+          borderRadius: 10,
+          cursor: "pointer",
+          transition: "background 0.15s",
+        }}
+        onMouseEnter={e => (e.currentTarget.style.background = `${c.accent}08`)}
+        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+        data-testid={`tool-link-${label.toLowerCase().replace(/\s+/g, "-")}`}
+      >
+        <div style={{
+          width: 36, height: 36, borderRadius: 10, background: `${c.accent}15`,
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+        }}>
+          <Icon style={{ width: 16, height: 16, color: c.accent }} />
         </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold truncate">{label}</p>
-          <p className="text-[11px] text-muted-foreground truncate">{desc}</p>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: c.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</p>
+          <p style={{ fontSize: 11, color: c.muted, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{desc}</p>
         </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto shrink-0" />
+        <ChevronRight style={{ width: 14, height: 14, color: c.muted, flexShrink: 0 }} />
       </div>
     </Link>
   );
 }
 
-function DashboardCalendar() {
+function DashboardCalendar({ isDE }: { isDE: boolean }) {
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const { data: events = [] } = useQuery<CalendarEvent[]>({
     queryKey: ["/api/calendar"],
@@ -132,27 +158,31 @@ function DashboardCalendar() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startOffset = (firstDay + 6) % 7;
 
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const dayNames = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+  const monthNames = isDE
+    ? ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
+    : ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const dayNames = isDE ? ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] : ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const selectedEvents = selectedDay ? (eventsByDate.get(selectedDay) || []) : [];
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <button type="button" onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} className="p-1 text-foreground hover:text-primary transition-colors" data-testid="button-cal-prev">
-          <ChevronLeft className="w-5 h-5" />
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <button type="button" onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}
+          style={{ background: "none", border: "none", cursor: "pointer", color: c.text, padding: 4 }} data-testid="button-cal-prev">
+          <ChevronLeft style={{ width: 18, height: 18 }} />
         </button>
-        <span className="text-base font-bold">{monthNames[month]} {year}</span>
-        <button type="button" onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} className="p-1 text-foreground hover:text-primary transition-colors" data-testid="button-cal-next">
-          <ChevronRight className="w-5 h-5" />
+        <span style={{ fontSize: 15, fontWeight: 700, color: c.text }}>{monthNames[month]} {year}</span>
+        <button type="button" onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}
+          style={{ background: "none", border: "none", cursor: "pointer", color: c.text, padding: 4 }} data-testid="button-cal-next">
+          <ChevronRight style={{ width: 18, height: 18 }} />
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 3, textAlign: "center" }}>
         {dayNames.map((d) => (
-          <div key={d} className="text-[11px] font-semibold text-muted-foreground py-1 uppercase">{d}</div>
+          <div key={d} style={{ fontSize: 11, fontWeight: 600, color: c.muted, padding: "4px 0", textTransform: "uppercase" }}>{d}</div>
         ))}
         {Array.from({ length: startOffset }).map((_, i) => <div key={`e-${i}`} />)}
         {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -167,17 +197,29 @@ function DashboardCalendar() {
               key={day}
               type="button"
               onClick={() => setSelectedDay(isSelected ? null : dateKey)}
-              className={`rounded-lg flex flex-col items-center gap-0.5 py-1.5 text-sm transition-colors ${
-                isSelected ? "bg-primary text-primary-foreground font-bold" :
-                isToday ? "bg-primary/15 font-bold" : "hover:bg-primary/5"
-              }`}
+              style={{
+                borderRadius: 8,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 2,
+                padding: "6px 0",
+                fontSize: 13,
+                fontWeight: isToday || isSelected ? 700 : 400,
+                color: isSelected ? c.bg : c.text,
+                background: isSelected ? c.accent : isToday ? `${c.accent}20` : "transparent",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "system-ui, sans-serif",
+                transition: "background 0.15s",
+              }}
               data-testid={`cal-day-${dateKey}`}
             >
               {day}
               {dayEvents.length > 0 && (
-                <div className="flex gap-0.5">
+                <div style={{ display: "flex", gap: 2 }}>
                   {dayEvents.slice(0, 3).map((ev, idx) => (
-                    <div key={idx} className="w-[5px] h-[5px] rounded-full" style={{ background: isSelected ? "currentColor" : calStatusColor(ev.status) }} />
+                    <div key={idx} style={{ width: 5, height: 5, borderRadius: "50%", background: isSelected ? c.bg : statusColor(ev.status) }} />
                   ))}
                 </div>
               )}
@@ -187,22 +229,37 @@ function DashboardCalendar() {
       </div>
 
       {selectedDay && selectedEvents.length > 0 && (
-        <div className="flex flex-col gap-2 mt-1">
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
           {selectedEvents.map((ev) => (
             <Link key={ev.id} href={ev.status === "closed" || ev.status === "archived" ? `/tasting-results/${ev.id}` : `/host`}>
-              <div className="flex items-center justify-between p-3 rounded-lg border border-border/30 hover:bg-primary/5 transition-colors cursor-pointer" style={{ borderLeft: `3px solid ${calStatusColor(ev.status)}` }} data-testid={`cal-event-${ev.id}`}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  border: `1px solid ${c.border}`,
+                  borderLeft: `3px solid ${statusColor(ev.status)}`,
+                  cursor: "pointer",
+                  background: c.bg,
+                }}
+                data-testid={`cal-event-${ev.id}`}
+              >
                 <div>
-                  <p className="text-sm font-semibold">{ev.title}</p>
-                  <p className="text-[11px] text-muted-foreground">{ev.whiskyCount} whiskies · {ev.participantCount} participants</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: c.text, margin: 0 }}>{ev.title}</p>
+                  <p style={{ fontSize: 11, color: c.muted, margin: "2px 0 0" }}>{ev.whiskyCount} whiskies · {ev.participantCount} {isDE ? "Teilnehmer" : "participants"}</p>
                 </div>
-                <Badge variant="outline" className={`text-[10px] shrink-0 ${statusColors[ev.status] ?? ""}`}>{ev.status}</Badge>
+                <StatusBadge status={ev.status} label={t(`session.status.${ev.status}`)} />
               </div>
             </Link>
           ))}
         </div>
       )}
       {selectedDay && selectedEvents.length === 0 && (
-        <p className="text-xs text-muted-foreground text-center py-2">No tastings on this day.</p>
+        <p style={{ fontSize: 12, color: c.muted, textAlign: "center", padding: "8px 0" }}>
+          {isDE ? "Keine Tastings an diesem Tag." : "No tastings on this day."}
+        </p>
       )}
     </div>
   );
@@ -231,6 +288,7 @@ function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE:
   const [results, setResults] = useState<InviteResult[] | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { t } = useTranslation();
 
   const activeTastings = tastings.filter(t => t.status !== "archived");
   const selectedTasting = activeTastings.find(t => t.id === selectedTastingId);
@@ -246,7 +304,7 @@ function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE:
     QRCodeLib.toDataURL(joinUrl, {
       width: 280,
       margin: 2,
-      color: { dark: "#1a1a2e", light: "#f5f0e8" },
+      color: { dark: "#1a1714", light: "#f5f0e8" },
     }).then(setQrDataUrl).catch(() => setQrDataUrl(null));
   }, [joinUrl]);
 
@@ -283,38 +341,86 @@ function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE:
     }
   }, [selectedTastingId, emails, personalNote]);
 
+  const btnSmall: React.CSSProperties = {
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    padding: "8px 12px",
+    borderRadius: 8,
+    background: `${c.accent}15`,
+    color: c.accent,
+    fontSize: 12,
+    fontWeight: 600,
+    border: "none",
+    cursor: "pointer",
+    fontFamily: "system-ui, sans-serif",
+  };
+
   return (
-    <div className="space-y-4">
-      <p className="text-xs text-muted-foreground">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <p style={{ fontSize: 12, color: c.muted }}>
         {isDE ? "Wähle ein Tasting und lade Teilnehmer per QR-Code oder Email ein." : "Select a tasting and invite participants via QR code or email."}
       </p>
 
-      {/* Tasting selector */}
-      <div className="relative">
+      <div style={{ position: "relative" }}>
         <button
           onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="w-full flex items-center justify-between gap-2 p-3 rounded-lg border border-border/40 bg-background text-sm hover:border-primary/40 transition-colors"
+          style={{
+            ...inputStyle,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+            cursor: "pointer",
+            color: selectedTasting ? c.text : c.muted,
+          }}
           data-testid="invite-tasting-selector"
         >
-          <span className={selectedTasting ? "text-foreground" : "text-muted-foreground"}>
-            {selectedTasting ? selectedTasting.title : (isDE ? "Tasting auswählen..." : "Select a tasting...")}
-          </span>
-          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+          <span>{selectedTasting ? selectedTasting.title : (isDE ? "Tasting auswählen..." : "Select a tasting...")}</span>
+          <ChevronDown style={{ width: 14, height: 14, color: c.muted, transition: "transform 0.15s", transform: dropdownOpen ? "rotate(180deg)" : "none" }} />
         </button>
         {dropdownOpen && (
-          <div className="absolute z-20 top-full left-0 right-0 mt-1 rounded-lg border border-border/40 bg-card shadow-xl max-h-48 overflow-y-auto">
+          <div style={{
+            position: "absolute",
+            zIndex: 20,
+            top: "100%",
+            left: 0,
+            right: 0,
+            marginTop: 4,
+            borderRadius: 10,
+            border: `1px solid ${c.border}`,
+            background: c.card,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+            maxHeight: 200,
+            overflowY: "auto",
+          }}>
             {activeTastings.length === 0 && (
-              <p className="p-3 text-xs text-muted-foreground">{isDE ? "Keine aktiven Tastings" : "No active tastings"}</p>
+              <p style={{ padding: 12, fontSize: 12, color: c.muted }}>{isDE ? "Keine aktiven Tastings" : "No active tastings"}</p>
             )}
             {activeTastings.map(t => (
               <button
                 key={t.id}
                 onClick={() => { setSelectedTastingId(t.id); setDropdownOpen(false); setResults(null); }}
-                className={`w-full text-left p-3 text-sm hover:bg-primary/5 transition-colors flex items-center justify-between ${t.id === selectedTastingId ? "bg-primary/10" : ""}`}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "10px 14px",
+                  fontSize: 13,
+                  background: t.id === selectedTastingId ? `${c.accent}15` : "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: c.text,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  fontFamily: "system-ui, sans-serif",
+                }}
                 data-testid={`invite-tasting-option-${t.id}`}
               >
-                <span className="truncate">{t.title}</span>
-                <Badge variant="outline" className={`text-[10px] ml-2 shrink-0 ${statusColors[t.status] || ""}`}>{t.status}</Badge>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</span>
+                <StatusBadge status={t.status} label={t.status} />
               </button>
             ))}
           </div>
@@ -322,95 +428,96 @@ function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE:
       </div>
 
       {selectedTasting && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* QR Code section */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-2">
-              <QrCode className="w-4 h-4 text-primary" />
-              <span className="text-sm font-semibold">{isDE ? "QR-Code" : "QR Code"}</span>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <QrCode style={{ width: 14, height: 14, color: c.accent }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{isDE ? "QR-Code" : "QR Code"}</span>
             </div>
             {qrDataUrl ? (
-              <div className="flex flex-col items-center gap-3">
-                <div className="bg-[#f5f0e8] rounded-lg p-2 inline-block">
-                  <img src={qrDataUrl} alt="QR Code" className="w-40 h-40" data-testid="invite-qr-image" />
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                <div style={{ background: "#f5f0e8", borderRadius: 10, padding: 8, display: "inline-block" }}>
+                  <img src={qrDataUrl} alt="QR Code" style={{ width: 160, height: 160 }} data-testid="invite-qr-image" />
                 </div>
-                <div className="flex gap-2 w-full">
-                  <button
-                    onClick={handleDownloadQr}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
-                    data-testid="invite-download-qr"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    {isDE ? "Speichern" : "Save"}
+                <div style={{ display: "flex", gap: 8, width: "100%" }}>
+                  <button onClick={handleDownloadQr} style={btnSmall} data-testid="invite-download-qr">
+                    <Download style={{ width: 13, height: 13 }} /> {isDE ? "Speichern" : "Save"}
                   </button>
-                  <button
-                    onClick={handleCopyLink}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
-                    data-testid="invite-copy-link"
-                  >
-                    {copiedLink ? <Check className="w-3.5 h-3.5" /> : <LinkIcon className="w-3.5 h-3.5" />}
-                    {copiedLink ? (isDE ? "Kopiert!" : "Copied!") : (isDE ? "Link kopieren" : "Copy Link")}
+                  <button onClick={handleCopyLink} style={btnSmall} data-testid="invite-copy-link">
+                    {copiedLink ? <Check style={{ width: 13, height: 13 }} /> : <LinkIcon style={{ width: 13, height: 13 }} />}
+                    {copiedLink ? (isDE ? "Kopiert!" : "Copied!") : (isDE ? "Link" : "Link")}
                   </button>
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground italic">
+              <p style={{ fontSize: 12, color: c.muted, fontStyle: "italic" }}>
                 {isDE ? "Kein Session-Code verfügbar" : "No session code available"}
               </p>
             )}
           </div>
 
-          {/* Email section */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Mail className="w-4 h-4 text-primary" />
-              <span className="text-sm font-semibold">{isDE ? "Email-Einladung" : "Email Invite"}</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <Mail style={{ width: 14, height: 14, color: c.accent }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{isDE ? "Email-Einladung" : "Email Invite"}</span>
             </div>
-            <div>
-              <input
-                type="text"
-                value={emails}
-                onChange={e => setEmails(e.target.value)}
-                placeholder={isDE ? "Emails (kommagetrennt)" : "Emails (comma separated)"}
-                className="w-full px-3 py-2 rounded-lg border border-border/40 bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
-                data-testid="invite-email-input"
-              />
-            </div>
-            <div>
-              <textarea
-                value={personalNote}
-                onChange={e => setPersonalNote(e.target.value)}
-                placeholder={isDE ? "Persönliche Nachricht (optional)" : "Personal note (optional)"}
-                rows={2}
-                className="w-full px-3 py-2 rounded-lg border border-border/40 bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 resize-none"
-                data-testid="invite-personal-note"
-              />
-            </div>
+            <input
+              type="text"
+              value={emails}
+              onChange={e => setEmails(e.target.value)}
+              placeholder={isDE ? "Emails (kommagetrennt)" : "Emails (comma separated)"}
+              style={{ ...inputStyle, fontSize: 13, padding: "10px 12px" }}
+              data-testid="invite-email-input"
+            />
+            <textarea
+              value={personalNote}
+              onChange={e => setPersonalNote(e.target.value)}
+              placeholder={isDE ? "Persönliche Nachricht (optional)" : "Personal note (optional)"}
+              rows={2}
+              style={{ ...inputStyle, fontSize: 13, padding: "10px 12px", resize: "none" } as React.CSSProperties}
+              data-testid="invite-personal-note"
+            />
             <button
               onClick={handleSendEmails}
               disabled={sending || !emails.trim()}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                padding: "10px 14px",
+                borderRadius: 10,
+                background: c.accent,
+                color: c.bg,
+                fontSize: 13,
+                fontWeight: 600,
+                border: "none",
+                cursor: sending || !emails.trim() ? "not-allowed" : "pointer",
+                opacity: sending || !emails.trim() ? 0.5 : 1,
+                fontFamily: "system-ui, sans-serif",
+              }}
               data-testid="invite-send-button"
             >
-              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {sending ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Send style={{ width: 14, height: 14 }} />}
               {sending ? (isDE ? "Wird gesendet..." : "Sending...") : (isDE ? "Einladungen senden" : "Send Invitations")}
             </button>
 
             {results && (
-              <div className="space-y-1 mt-2" data-testid="invite-results">
-                {results.map((r, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs">
-                    {r.status === "sent" || r.status === "success" ? (
-                      <Check className="w-3.5 h-3.5 text-green-400 shrink-0" />
-                    ) : (
-                      <Mail className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                    )}
-                    <span className="truncate text-muted-foreground">{r.email}</span>
-                    <Badge variant="outline" className={`text-[10px] ml-auto shrink-0 ${r.status === "sent" || r.status === "success" ? "text-green-400 border-green-600/30" : "text-red-400 border-red-600/30"}`}>
-                      {r.status}
-                    </Badge>
-                  </div>
-                ))}
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 4 }} data-testid="invite-results">
+                {results.map((r, i) => {
+                  const ok = r.status === "sent" || r.status === "success";
+                  return (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                      {ok
+                        ? <Check style={{ width: 13, height: 13, color: c.success, flexShrink: 0 }} />
+                        : <Mail style={{ width: 13, height: 13, color: c.error, flexShrink: 0 }} />
+                      }
+                      <span style={{ color: c.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{r.email}</span>
+                      <StatusBadge status={ok ? "open" : "closed"} label={r.status} />
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -434,13 +541,16 @@ export default function HostDashboard() {
 
   if ((isLoading && currentParticipant) || (currentParticipant && !summary)) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-8" data-testid="host-dashboard-loading">
-        <div className="h-8 w-56 bg-card/50 rounded animate-pulse mb-6" />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          {[1, 2, 3].map((i) => <div key={i} className="h-28 bg-card/50 rounded-lg animate-pulse" />)}
+      <SimpleShell>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "20px 0" }} data-testid="host-dashboard-loading">
+          <div style={{ height: 32, width: 220, background: `${c.card}80`, borderRadius: 8, animation: "pulse 2s infinite" }} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+            {[1, 2, 3].map(i => <div key={i} style={{ height: 90, background: `${c.card}80`, borderRadius: 12, animation: "pulse 2s infinite" }} />)}
+          </div>
+          <div style={{ height: 240, background: `${c.card}80`, borderRadius: 12, animation: "pulse 2s infinite" }} />
         </div>
-        <div className="h-64 bg-card/50 rounded-lg animate-pulse" />
-      </div>
+        <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
+      </SimpleShell>
     );
   }
 
@@ -464,9 +574,9 @@ export default function HostDashboard() {
   ];
 
   const statCards = [
-    { key: "totalTastings", value: effectiveSummary.totalTastings, icon: Calendar, color: "text-amber-400" },
-    { key: "totalParticipants", value: effectiveSummary.totalParticipants, icon: Users, color: "text-blue-400" },
-    { key: "totalWhiskies", value: effectiveSummary.totalWhiskies, icon: Wine, color: "text-rose-400" },
+    { key: "totalTastings", value: effectiveSummary.totalTastings, icon: Calendar, color: c.accent },
+    { key: "totalParticipants", value: effectiveSummary.totalParticipants, icon: Users, color: "#6aa4d4" },
+    { key: "totalWhiskies", value: effectiveSummary.totalWhiskies, icon: Wine, color: "#d46a6a" },
   ];
 
   const draftTastings = effectiveSummary.recentTastings.filter((t) => t.status === "draft");
@@ -475,287 +585,364 @@ export default function HostDashboard() {
   );
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="host-dashboard-page">
+    <SimpleShell>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm -mx-4 px-4 pt-1 pb-4">
-          <div className="flex items-center gap-3 mb-2">
-            <LayoutDashboard className="w-7 h-7 text-primary" />
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-host-dashboard-title">
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            <LayoutDashboard style={{ width: 24, height: 24, color: c.accent }} />
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: c.accent, margin: 0, fontFamily: "'Playfair Display', serif" }} data-testid="text-host-dashboard-title">
               {t("hostDashboard.title")}
             </h1>
           </div>
-          <p className="text-sm text-muted-foreground" data-testid="text-host-dashboard-subtitle">
+          <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-host-dashboard-subtitle">
             {t("hostDashboard.subtitle")}
           </p>
         </div>
-        <div className="h-4" />
 
         {!hasData ? (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16 text-muted-foreground" data-testid="host-dashboard-empty">
-            <GlassWater className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <p className="font-serif text-lg mb-2">{t("hostDashboard.emptyTitle")}</p>
-            <p className="text-sm mb-6">{t("hostDashboard.emptyMessage")}</p>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            style={{ textAlign: "center", padding: "48px 0" }} data-testid="host-dashboard-empty">
+            <GlassWater style={{ width: 48, height: 48, color: c.muted, opacity: 0.3, margin: "0 auto 16px" }} />
+            <p style={{ fontSize: 18, fontWeight: 600, color: c.text, fontFamily: "'Playfair Display', serif", marginBottom: 8 }}>
+              {t("hostDashboard.emptyTitle")}
+            </p>
+            <p style={{ fontSize: 13, color: c.muted, marginBottom: 24 }}>
+              {t("hostDashboard.emptyMessage")}
+            </p>
             <Link href="/host">
-              <span className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold text-sm cursor-pointer hover:bg-primary/90 transition-colors" data-testid="button-create-first">
-                <Plus className="w-4 h-4" /> {isDE ? "Erstes Tasting erstellen" : "Create your first tasting"}
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 20px",
+                  background: c.accent,
+                  color: c.bg,
+                  borderRadius: 10,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+                data-testid="button-create-first"
+              >
+                <Plus style={{ width: 16, height: 16 }} /> {isDE ? "Erstes Tasting erstellen" : "Create your first tasting"}
               </span>
             </Link>
           </motion.div>
         ) : (
-          <div className="space-y-6">
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }} data-testid="host-dashboard-page">
 
-            {/* Row 1: Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
               {statCards.map((card, i) => (
-                <motion.div key={card.key} custom={i} variants={cardVariants} initial="hidden" animate="visible"
-                  className="bg-card rounded-lg border border-border/40 p-5 flex items-center gap-4" data-testid={`stat-card-${card.key}`}>
-                  <card.icon className={`w-10 h-10 ${card.color} shrink-0`} />
-                  <div>
-                    <p className="text-2xl font-serif font-bold text-foreground" data-testid={`stat-value-${card.key}`}>{card.value}</p>
-                    <p className="text-xs text-muted-foreground">{t(`hostDashboard.${card.key}`)}</p>
+                <motion.div key={card.key} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08, duration: 0.4 }}>
+                  <div
+                    style={{ ...sectionCard, display: "flex", alignItems: "center", gap: 12, padding: "16px 14px" }}
+                    data-testid={`stat-card-${card.key}`}
+                  >
+                    <card.icon style={{ width: 28, height: 28, color: card.color, flexShrink: 0 }} />
+                    <div>
+                      <p style={{ fontSize: 22, fontWeight: 700, color: c.text, margin: 0, fontFamily: "'Playfair Display', serif" }} data-testid={`stat-value-${card.key}`}>
+                        {card.value}
+                      </p>
+                      <p style={{ fontSize: 11, color: c.muted, margin: 0 }}>{t(`hostDashboard.${card.key}`)}</p>
+                    </div>
                   </div>
                 </motion.div>
               ))}
             </div>
 
-            {/* Row 2: Calendar + Next Tasting */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <motion.div custom={3} variants={cardVariants} initial="hidden" animate="visible" className="lg:col-span-2">
-                <SectionCard testId="section-dashboard-calendar">
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
+              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.4 }}>
+                <div style={sectionCard} data-testid="section-dashboard-calendar">
                   <SectionTitle icon={Calendar} title={isDE ? "Kalender" : "Calendar"} />
-                  <DashboardCalendar />
-                </SectionCard>
+                  <DashboardCalendar isDE={isDE} />
+                </div>
               </motion.div>
 
-              <motion.div custom={4} variants={cardVariants} initial="hidden" animate="visible">
-                <SectionCard className="h-full" testId="section-next-tasting">
+              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}>
+                <div style={{ ...sectionCard, height: "100%", display: "flex", flexDirection: "column" }} data-testid="section-next-tasting">
                   <SectionTitle icon={Calendar} title={isDE ? "Nächstes Tasting" : "Next Tasting"} />
                   {upcomingTasting ? (
-                    <div className="flex flex-col items-center text-center gap-3 py-4">
-                      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Wine className="w-7 h-7 text-primary" />
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 10, padding: "16px 0", flex: 1, justifyContent: "center" }}>
+                      <div style={{ width: 48, height: 48, borderRadius: "50%", background: `${c.accent}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Wine style={{ width: 24, height: 24, color: c.accent }} />
                       </div>
                       <div>
-                        <p className="font-serif font-bold text-lg" data-testid="next-tasting-title">{upcomingTasting.title}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p style={{ fontSize: 16, fontWeight: 700, color: c.text, margin: 0, fontFamily: "'Playfair Display', serif" }} data-testid="next-tasting-title">
+                          {upcomingTasting.title}
+                        </p>
+                        <p style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>
                           {new Date(upcomingTasting.date).toLocaleDateString(isDE ? "de-DE" : "en-US", { weekday: "long", day: "numeric", month: "long" })}
                         </p>
-                        <div className="flex items-center justify-center gap-1 mt-2 text-xs text-muted-foreground">
-                          <Users className="w-3 h-3" /> {upcomingTasting.participantCount} {isDE ? "Teilnehmer" : "participants"}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 6, fontSize: 12, color: c.muted }}>
+                          <Users style={{ width: 12, height: 12 }} /> {upcomingTasting.participantCount} {isDE ? "Teilnehmer" : "participants"}
                         </div>
                       </div>
-                      <Badge variant="outline" className={`text-[10px] ${statusColors[upcomingTasting.status] ?? ""}`}>
-                        {t(`session.status.${upcomingTasting.status}`)}
-                      </Badge>
+                      <StatusBadge status={upcomingTasting.status} label={t(`session.status.${upcomingTasting.status}`)} />
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center text-center gap-3 py-6 text-muted-foreground">
-                      <Calendar className="w-10 h-10 opacity-20" />
-                      <p className="text-sm">{isDE ? "Kein anstehendes Tasting" : "No upcoming tasting"}</p>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 10, padding: "24px 0", flex: 1, justifyContent: "center" }}>
+                      <Calendar style={{ width: 36, height: 36, color: c.muted, opacity: 0.3 }} />
+                      <p style={{ fontSize: 13, color: c.muted }}>{isDE ? "Kein anstehendes Tasting" : "No upcoming tasting"}</p>
                       <Link href="/host">
-                        <span className="text-xs text-primary cursor-pointer hover:underline" data-testid="link-plan-next">
+                        <span style={{ fontSize: 12, color: c.accent, cursor: "pointer" }} data-testid="link-plan-next">
                           {isDE ? "Jetzt planen" : "Plan one now"} →
                         </span>
                       </Link>
                     </div>
                   )}
-                </SectionCard>
+                </div>
               </motion.div>
             </div>
 
-            {/* Row 3: Quick Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.5 }} className="lg:col-span-2">
-                <SectionCard testId="section-quick-actions">
-                  <SectionTitle icon={Zap} title={isDE ? "Schnellzugriff" : "Quick Actions"} />
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <Link href="/host">
-                      <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors cursor-pointer text-center" data-testid="action-new-tasting">
-                        <Plus className="w-6 h-6 text-primary" />
-                        <span className="text-xs font-semibold">{isDE ? "Neues Tasting" : "New Tasting"}</span>
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.4 }}>
+              <div style={sectionCard} data-testid="section-quick-actions">
+                <SectionTitle icon={Zap} title={isDE ? "Schnellzugriff" : "Quick Actions"} />
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+                  {[
+                    { href: "/host", icon: Plus, label: isDE ? "Neues Tasting" : "New Tasting", accent: true },
+                    { href: "/sessions", icon: FileText, label: "Sessions", accent: false },
+                    { href: "/data-export", icon: Download, label: isDE ? "Datenexport" : "Data Export", accent: false },
+                    { href: "/vocabulary", icon: BookOpen, label: isDE ? "Vokabular" : "Vocabulary", accent: false },
+                  ].map(item => (
+                    <Link key={item.href} href={item.href}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 8,
+                          padding: 16,
+                          borderRadius: 12,
+                          background: item.accent ? `${c.accent}15` : c.bg,
+                          border: item.accent ? "none" : `1px solid ${c.border}`,
+                          cursor: "pointer",
+                          textAlign: "center",
+                        }}
+                        data-testid={`action-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
+                      >
+                        <item.icon style={{ width: 22, height: 22, color: item.accent ? c.accent : c.muted }} />
+                        <span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>{item.label}</span>
                       </div>
                     </Link>
-                    <Link href="/sessions">
-                      <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-card hover:bg-primary/5 transition-colors cursor-pointer border border-border/30 text-center" data-testid="action-manage-sessions">
-                        <FileText className="w-6 h-6 text-muted-foreground" />
-                        <span className="text-xs font-semibold">{isDE ? "Sessions" : "Sessions"}</span>
-                      </div>
-                    </Link>
-                    <Link href="/data-export">
-                      <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-card hover:bg-primary/5 transition-colors cursor-pointer border border-border/30 text-center" data-testid="action-export">
-                        <Download className="w-6 h-6 text-muted-foreground" />
-                        <span className="text-xs font-semibold">{isDE ? "Datenexport" : "Data Export"}</span>
-                      </div>
-                    </Link>
-                    <Link href="/vocabulary">
-                      <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-card hover:bg-primary/5 transition-colors cursor-pointer border border-border/30 text-center" data-testid="action-templates">
-                        <BookOpen className="w-6 h-6 text-muted-foreground" />
-                        <span className="text-xs font-semibold">{isDE ? "Vokabular" : "Vocabulary"}</span>
-                      </div>
-                    </Link>
-                  </div>
-                  {draftTastings.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-border/20">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                        {isDE ? "Entwürfe fortsetzen" : "Resume Drafts"}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {draftTastings.slice(0, 4).map((dt) => (
-                          <Link key={dt.id} href="/host">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-600/10 text-yellow-400 text-xs font-medium cursor-pointer hover:bg-yellow-600/20 transition-colors" data-testid={`draft-resume-${dt.id}`}>
-                              <FileText className="w-3 h-3" /> {dt.title}
-                            </span>
-                          </Link>
-                        ))}
-                      </div>
+                  ))}
+                </div>
+                {draftTastings.length > 0 && (
+                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${c.border}` }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+                      {isDE ? "Entwürfe fortsetzen" : "Resume Drafts"}
+                    </p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {draftTastings.slice(0, 4).map((dt) => (
+                        <Link key={dt.id} href="/host">
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                              padding: "5px 12px",
+                              borderRadius: 20,
+                              background: "#b8a04015",
+                              color: "#b8a040",
+                              fontSize: 12,
+                              fontWeight: 500,
+                              cursor: "pointer",
+                            }}
+                            data-testid={`draft-resume-${dt.id}`}
+                          >
+                            <FileText style={{ width: 12, height: 12 }} /> {dt.title}
+                          </span>
+                        </Link>
+                      ))}
                     </div>
-                  )}
-                </SectionCard>
-              </motion.div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
 
-            </div>
-
-            {/* Row 4: Average Scores + Documents */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
               {chartData.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="lg:col-span-2">
-                  <SectionCard testId="host-dashboard-scores-chart">
-                    <h2 className="text-base font-serif font-semibold mb-1">{t("hostDashboard.averageScores")}</h2>
-                    <p className="text-xs text-muted-foreground mb-4">{t("hostDashboard.averageScoresSubtitle")}</p>
-                    <div className="h-[260px]">
+                <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}>
+                  <div style={sectionCard} data-testid="host-dashboard-scores-chart">
+                    <h2 style={{ fontSize: 15, fontWeight: 600, color: c.text, margin: "0 0 4px", fontFamily: "'Playfair Display', serif" }}>
+                      {t("hostDashboard.averageScores")}
+                    </h2>
+                    <p style={{ fontSize: 12, color: c.muted, marginBottom: 16 }}>{t("hostDashboard.averageScoresSubtitle")}</p>
+                    <div style={{ height: 250 }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                          <XAxis dataKey="dimension" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12, fontFamily: "serif" }} axisLine={{ stroke: "hsl(var(--border))" }} />
-                          <YAxis domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={{ stroke: "hsl(var(--border))" }} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={c.border} opacity={0.4} />
+                          <XAxis dataKey="dimension" tick={{ fill: c.muted, fontSize: 12, fontFamily: "'Playfair Display', serif" }} axisLine={{ stroke: c.border }} />
+                          <YAxis domain={[0, 100]} tick={{ fill: c.muted, fontSize: 10 }} axisLine={{ stroke: c.border }} />
                           <Tooltip
-                            contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontFamily: "serif" }}
-                            labelStyle={{ color: "hsl(var(--foreground))" }}
+                            contentStyle={{ backgroundColor: c.card, border: `1px solid ${c.border}`, borderRadius: 8, color: c.text }}
+                            labelStyle={{ color: c.text }}
                             formatter={(value: number) => [value.toFixed(1), isDE ? "Durchschnitt" : "Average"]}
                           />
-                          <Bar dataKey="value" fill="#c8a864" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="value" fill={c.accent} radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-                  </SectionCard>
+                  </div>
                 </motion.div>
               )}
 
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.5 }}>
-                <SectionCard className="h-full" testId="section-documents">
+              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.4 }}>
+                <div style={{ ...sectionCard, height: "100%", display: "flex", flexDirection: "column" }} data-testid="section-documents">
                   <SectionTitle icon={Printer} title={isDE ? "Dokumente" : "Documents"} />
-                  <p className="text-xs text-muted-foreground mb-4">
+                  <p style={{ fontSize: 12, color: c.muted, marginBottom: 14 }}>
                     {isDE ? "Blanko-Vorlagen als PDF herunterladen" : "Download blank printable templates (PDF)"}
                   </p>
-                  <div className="flex flex-col gap-2">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     <button
                       onClick={() => generateBlankTastingSheet(lang)}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors text-left cursor-pointer border border-primary/10"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "12px",
+                        borderRadius: 10,
+                        background: `${c.accent}08`,
+                        border: `1px solid ${c.accent}15`,
+                        cursor: "pointer",
+                        textAlign: "left",
+                        fontFamily: "system-ui, sans-serif",
+                        color: c.text,
+                      }}
                       data-testid="button-dl-scoresheet"
                     >
-                      <ClipboardList className="w-5 h-5 text-primary shrink-0" />
+                      <ClipboardList style={{ width: 18, height: 18, color: c.accent, flexShrink: 0 }} />
                       <div>
-                        <p className="text-sm font-semibold">{isDE ? "Verkostungsbogen" : "Score Sheet"}</p>
-                        <p className="text-[11px] text-muted-foreground">{isDE ? "A4 Hochformat · 6 Whiskies" : "A4 Portrait · 6 whiskies"}</p>
+                        <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{isDE ? "Verkostungsbogen" : "Score Sheet"}</p>
+                        <p style={{ fontSize: 11, color: c.muted, margin: "2px 0 0" }}>{isDE ? "A4 Hochformat · 6 Whiskies" : "A4 Portrait · 6 whiskies"}</p>
                       </div>
                     </button>
                     <button
                       onClick={() => generateBlankTastingMat(lang)}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors text-left cursor-pointer border border-primary/10"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "12px",
+                        borderRadius: 10,
+                        background: `${c.accent}08`,
+                        border: `1px solid ${c.accent}15`,
+                        cursor: "pointer",
+                        textAlign: "left",
+                        fontFamily: "system-ui, sans-serif",
+                        color: c.text,
+                      }}
                       data-testid="button-dl-tasting-mat"
                     >
-                      <Printer className="w-5 h-5 text-primary shrink-0" />
+                      <Printer style={{ width: 18, height: 18, color: c.accent, flexShrink: 0 }} />
                       <div>
-                        <p className="text-sm font-semibold">{isDE ? "Tasting-Matte" : "Tasting Mat"}</p>
-                        <p className="text-[11px] text-muted-foreground">{isDE ? "A4 Querformat · Glaskreise" : "A4 Landscape · Glass circles"}</p>
+                        <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{isDE ? "Tasting-Matte" : "Tasting Mat"}</p>
+                        <p style={{ fontSize: 11, color: c.muted, margin: "2px 0 0" }}>{isDE ? "A4 Querformat · Glaskreise" : "A4 Landscape · Glass circles"}</p>
                       </div>
                     </button>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-3 italic">
+                  <p style={{ fontSize: 11, color: c.muted, marginTop: 12, fontStyle: "italic" }}>
                     {isDE ? "Session-spezifische Menüs im Live-Tasting-Raum" : "Session-specific menus in the live tasting room"}
                   </p>
-                </SectionCard>
+                </div>
               </motion.div>
             </div>
 
-            {/* Row 4: Top Whiskies + Tools */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {effectiveSummary.topWhiskies.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.5 }}>
-                  <SectionCard className="h-full" testId="host-dashboard-top-whiskies">
+                <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }}>
+                  <div style={{ ...sectionCard, height: "100%" }} data-testid="host-dashboard-top-whiskies">
                     <SectionTitle icon={Trophy} title={t("hostDashboard.topWhiskies")} />
-                    <div className="space-y-3">
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {effectiveSummary.topWhiskies.map((whisky, i) => (
-                        <div key={`${whisky.name}-${i}`} className="flex items-center gap-4 py-2 border-b border-border/20 last:border-0" data-testid={`top-whisky-${i}`}>
-                          <span className="text-lg font-serif font-bold text-primary/60 w-8">{i + 1}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate" data-testid={`top-whisky-name-${i}`}>{whisky.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{[whisky.distillery, whisky.tastingTitle].filter(Boolean).join(" · ")}</p>
+                        <div key={`${whisky.name}-${i}`}
+                          style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: i < effectiveSummary.topWhiskies.length - 1 ? `1px solid ${c.border}` : "none" }}
+                          data-testid={`top-whisky-${i}`}
+                        >
+                          <span style={{ fontSize: 16, fontWeight: 700, color: `${c.accent}60`, width: 28, fontFamily: "'Playfair Display', serif" }}>{i + 1}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: c.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} data-testid={`top-whisky-name-${i}`}>
+                              {whisky.name}
+                            </p>
+                            <p style={{ fontSize: 11, color: c.muted, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {[whisky.distillery, whisky.tastingTitle].filter(Boolean).join(" · ")}
+                            </p>
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                            <span className="text-lg font-serif font-bold text-primary" data-testid={`top-whisky-score-${i}`}>{whisky.averageScore.toFixed(1)}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            <Star style={{ width: 14, height: 14, color: c.accent, fill: c.accent }} />
+                            <span style={{ fontSize: 16, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif" }} data-testid={`top-whisky-score-${i}`}>
+                              {whisky.averageScore.toFixed(1)}
+                            </span>
                           </div>
                         </div>
                       ))}
                     </div>
-                  </SectionCard>
+                  </div>
                 </motion.div>
               )}
 
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.5 }}>
-                <SectionCard className="h-full" testId="section-tools">
+              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.4 }}>
+                <div style={{ ...sectionCard, height: "100%" }} data-testid="section-tools">
                   <SectionTitle icon={BarChart3} title={isDE ? "Tools & Analyse" : "Tools & Analytics"} />
-                  <div className="flex flex-col gap-1">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <ToolLink href="/data-export" icon={Download} label={isDE ? "Datenexport" : "Data Export"} desc={isDE ? "CSV, Excel, kompletter Export" : "CSV, Excel, full export"} />
                     <ToolLink href="/sessions" icon={Copy} label={isDE ? "Sessions verwalten" : "Manage Sessions"} desc={isDE ? "Duplizieren, archivieren, bearbeiten" : "Duplicate, archive, edit"} />
                     <ToolLink href="/vocabulary" icon={BookOpen} label={isDE ? "Tasting-Vokabular" : "Tasting Vocabulary"} desc={isDE ? "Beschreibungshilfen für jede Stilrichtung" : "Descriptors for every whisky style"} />
                     <ToolLink href="/ai-curation" icon={Sparkles} label={isDE ? "KI-Kuratierung" : "AI Curation"} desc={isDE ? "KI-gestützte Whisky-Vorschläge" : "AI-powered whisky suggestions"} />
                   </div>
-                </SectionCard>
+                </div>
               </motion.div>
             </div>
 
-            {/* Row 5: Recent Tastings (full-width) */}
             {effectiveSummary.recentTastings.length > 0 && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5 }}>
-                <SectionCard testId="host-dashboard-recent-tastings">
+              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.4 }}>
+                <div style={sectionCard} data-testid="host-dashboard-recent-tastings">
                   <SectionTitle icon={Calendar} title={t("hostDashboard.recentTastings")} />
-                  <div className="space-y-2">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {effectiveSummary.recentTastings.map((tasting) => (
-                      <div key={tasting.id} className="flex items-center gap-4 py-3 px-3 rounded-lg hover:bg-primary/5 transition-colors border-b border-border/10 last:border-0" data-testid={`recent-tasting-${tasting.id}`}>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate" data-testid={`recent-tasting-title-${tasting.id}`}>{tasting.title}</p>
-                          <div className="flex items-center gap-2">
-                            <p className="text-xs text-muted-foreground">
+                      <div key={tasting.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          padding: "10px 12px",
+                          borderRadius: 8,
+                          borderBottom: `1px solid ${c.border}`,
+                        }}
+                        data-testid={`recent-tasting-${tasting.id}`}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: c.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} data-testid={`recent-tasting-title-${tasting.id}`}>
+                            {tasting.title}
+                          </p>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                            <p style={{ fontSize: 11, color: c.muted, margin: 0 }}>
                               {new Date(tasting.date).toLocaleDateString(isDE ? "de-DE" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
                             </p>
                             {tasting.code && (
-                              <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded" data-testid={`recent-tasting-code-${tasting.id}`}>
+                              <span style={{ fontSize: 10, fontFamily: "monospace", background: `${c.accent}15`, color: c.accent, padding: "2px 6px", borderRadius: 4 }} data-testid={`recent-tasting-code-${tasting.id}`}>
                                 {tasting.code}
                               </span>
                             )}
                           </div>
                         </div>
-                        <Badge variant="outline" className={`text-[10px] shrink-0 ${statusColors[tasting.status] ?? ""}`} data-testid={`recent-tasting-status-${tasting.id}`}>
-                          {t(`session.status.${tasting.status}`)}
-                        </Badge>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                          <Users className="w-3.5 h-3.5" />
+                        <StatusBadge status={tasting.status} label={t(`session.status.${tasting.status}`)} />
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: c.muted, flexShrink: 0 }}>
+                          <Users style={{ width: 13, height: 13 }} />
                           <span data-testid={`recent-tasting-participants-${tasting.id}`}>{tasting.participantCount}</span>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                           {(tasting.status === "closed" || tasting.status === "archived" || tasting.status === "reveal") && (
                             <Link href={`/tasting-results/${tasting.id}`}>
-                              <span className="inline-flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors cursor-pointer" data-testid={`results-link-${tasting.id}`}>
-                                <Trophy className="w-3 h-3" /> {isDE ? "Ergebnisse" : "Results"}
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: c.accent, cursor: "pointer" }} data-testid={`results-link-${tasting.id}`}>
+                                <Trophy style={{ width: 12, height: 12 }} /> {isDE ? "Ergebnisse" : "Results"}
                               </span>
                             </Link>
                           )}
                           {(tasting.status === "open" || tasting.status === "closed") && (
                             <Link href={`/join/${tasting.id}?preview=true`}>
-                              <span className="inline-flex items-center gap-1 text-[11px] text-amber-600 hover:text-amber-500 transition-colors cursor-pointer" data-testid={`preview-guest-${tasting.id}`}>
-                                <Eye className="w-3 h-3" /> {t("hostDashboard.previewGuest")}
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: c.accentDim, cursor: "pointer" }} data-testid={`preview-guest-${tasting.id}`}>
+                                <Eye style={{ width: 12, height: 12 }} /> {t("hostDashboard.previewGuest")}
                               </span>
                             </Link>
                           )}
@@ -763,21 +950,20 @@ export default function HostDashboard() {
                       </div>
                     ))}
                   </div>
-                </SectionCard>
+                </div>
               </motion.div>
             )}
 
-            {/* Row 6: Invitations */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55, duration: 0.5 }}>
-              <SectionCard testId="section-invitations">
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55, duration: 0.4 }}>
+              <div style={sectionCard} data-testid="section-invitations">
                 <SectionTitle icon={Mail} title={isDE ? "Einladungen" : "Invitations"} />
                 <InvitationsPanel tastings={effectiveSummary.recentTastings} isDE={isDE} />
-              </SectionCard>
+              </div>
             </motion.div>
 
           </div>
         )}
       </motion.div>
-    </div>
+    </SimpleShell>
   );
 }
