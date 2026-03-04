@@ -87,7 +87,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     setSiError("");
     const result = await signIn({
       pin: siPin.trim(),
-      name: defaultMode === "log" ? (siName.trim() || undefined) : undefined,
+      name: siName.trim() || undefined,
       mode: defaultMode,
       remember: siRemember,
     });
@@ -199,21 +199,19 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
           <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 8 }} autoComplete="off">
             <input type="text" name="cs_trap_user" autoComplete="username" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
             <input type="password" name="cs_trap_pw" autoComplete="current-password" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
-            {defaultMode === "log" && (
-              <input
-                type="text"
-                placeholder="Name (optional)"
-                name="cs_display_name"
-                value={siName}
-                onChange={(e) => setSiName(e.target.value)}
-                style={inputStyle}
-                data-testid="input-session-name"
-                autoComplete="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                data-form-type="other"
-              />
-            )}
+            <input
+              type="text"
+              placeholder="Name"
+              name="cs_display_name"
+              value={siName}
+              onChange={(e) => setSiName(e.target.value)}
+              style={inputStyle}
+              data-testid="input-session-name"
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              data-form-type="other"
+            />
             <input
               type="password"
               placeholder="Password"
@@ -240,7 +238,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
             </label>
             <button
               type="submit"
-              disabled={siLoading || !siPin.trim()}
+              disabled={siLoading || !siPin.trim() || !siName.trim()}
               data-testid="button-session-signin-submit"
               style={{
                 width: "100%",
