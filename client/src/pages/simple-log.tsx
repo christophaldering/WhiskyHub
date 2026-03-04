@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, ChevronDown, Camera } from "lucide-react";
+import { Mic, ChevronDown, Camera } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
@@ -128,7 +128,7 @@ function DetailModule({
             transition={{ duration: 0.2 }}
             style={{ overflow: "hidden" }}
           >
-            <div style={{ paddingBottom: 16 }}>
+            <div style={{ paddingTop: 12, paddingBottom: 16 }}>
               <input
                 type="range"
                 min={0}
@@ -180,18 +180,22 @@ function DetailModule({
                       position: "absolute",
                       right: 8,
                       top: 8,
-                      background: voiceListening ? "#c4444420" : "transparent",
+                      background: voiceListening ? "#c44" : "transparent",
                       border: "none",
-                      borderRadius: 6,
+                      borderRadius: "50%",
                       cursor: "pointer",
-                      padding: 4,
-                      color: voiceListening ? "#c44" : c.mutedLight,
+                      width: 28,
+                      height: 28,
+                      padding: 0,
+                      color: voiceListening ? "#fff" : c.mutedLight,
                       display: "flex",
                       alignItems: "center",
+                      justifyContent: "center",
                       animation: voiceListening ? "pulse-mic 1.5s ease-in-out infinite" : "none",
+                      transition: "background 0.2s, color 0.2s",
                     }}
                   >
-                    {voiceListening ? <MicOff style={{ width: 14, height: 14 }} /> : <Mic style={{ width: 14, height: 14 }} />}
+                    <Mic style={{ width: 14, height: 14 }} />
                   </button>
                 )}
               </div>
@@ -1628,18 +1632,22 @@ export default function SimpleLogPage() {
                       position: "absolute",
                       right: 10,
                       top: 10,
-                      background: (voiceListening && voiceTarget === "notes") ? "#c4444420" : "transparent",
+                      background: (voiceListening && voiceTarget === "notes") ? "#c44" : "transparent",
                       border: "none",
-                      borderRadius: 6,
+                      borderRadius: "50%",
                       cursor: "pointer",
-                      padding: 6,
-                      color: (voiceListening && voiceTarget === "notes") ? "#c44" : c.mutedLight,
+                      width: 32,
+                      height: 32,
+                      padding: 0,
+                      color: (voiceListening && voiceTarget === "notes") ? "#fff" : c.mutedLight,
                       display: "flex",
                       alignItems: "center",
+                      justifyContent: "center",
                       animation: (voiceListening && voiceTarget === "notes") ? "pulse-mic 1.5s ease-in-out infinite" : "none",
+                      transition: "background 0.2s, color 0.2s",
                     }}
                   >
-                    {(voiceListening && voiceTarget === "notes") ? <MicOff style={{ width: 16, height: 16 }} /> : <Mic style={{ width: 16, height: 16 }} />}
+                    <Mic style={{ width: 16, height: 16 }} />
                   </button>
                 )}
               </div>
@@ -1751,7 +1759,7 @@ export default function SimpleLogPage() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse-mic { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes pulse-mic { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(204,68,68,0.4); } 50% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(204,68,68,0); } }
         ${sliderCSS}
       `}</style>
     </SimpleShell>
