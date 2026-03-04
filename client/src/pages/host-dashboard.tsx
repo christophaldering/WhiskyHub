@@ -432,15 +432,7 @@ export default function HostDashboard() {
     enabled: !!currentParticipant,
   });
 
-  if (!currentParticipant) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]" data-testid="host-dashboard-login-required">
-        <p className="text-muted-foreground font-serif">{t("hostDashboard.loginRequired")}</p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
+  if (isLoading && currentParticipant) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8" data-testid="host-dashboard-loading">
         <div className="h-8 w-56 bg-card/50 rounded animate-pulse mb-6" />
@@ -452,26 +444,33 @@ export default function HostDashboard() {
     );
   }
 
-  const hasData = summary && summary.totalTastings > 0;
+  const emptySummary: HostSummary = {
+    totalTastings: 0,
+    totalParticipants: 0,
+    totalWhiskies: 0,
+    averageScores: { nose: 0, taste: 0, finish: 0, balance: 0, overall: 0 },
+    topWhiskies: [],
+    recentTastings: [],
+  };
+  const effectiveSummary = summary ?? emptySummary;
+  const hasData = effectiveSummary.totalTastings > 0;
 
-  const chartData = summary?.averageScores
-    ? [
-        { dimension: isDE ? "Nase" : "Nose", value: summary.averageScores.nose },
-        { dimension: isDE ? "Geschmack" : "Taste", value: summary.averageScores.taste },
-        { dimension: isDE ? "Abgang" : "Finish", value: summary.averageScores.finish },
-        { dimension: "Balance", value: summary.averageScores.balance },
-        { dimension: isDE ? "Gesamt" : "Overall", value: summary.averageScores.overall },
-      ]
-    : [];
-
-  const statCards = [
-    { key: "totalTastings", value: summary?.totalTastings ?? 0, icon: Calendar, color: "text-amber-400" },
-    { key: "totalParticipants", value: summary?.totalParticipants ?? 0, icon: Users, color: "text-blue-400" },
-    { key: "totalWhiskies", value: summary?.totalWhiskies ?? 0, icon: Wine, color: "text-rose-400" },
+  const chartData = [
+    { dimension: isDE ? "Nase" : "Nose", value: effectiveSummary.averageScores.nose },
+    { dimension: isDE ? "Geschmack" : "Taste", value: effectiveSummary.averageScores.taste },
+    { dimension: isDE ? "Abgang" : "Finish", value: effectiveSummary.averageScores.finish },
+    { dimension: "Balance", value: effectiveSummary.averageScores.balance },
+    { dimension: isDE ? "Gesamt" : "Overall", value: effectiveSummary.averageScores.overall },
   ];
 
-  const draftTastings = summary?.recentTastings?.filter((t) => t.status === "draft") ?? [];
-  const upcomingTasting = summary?.recentTastings?.find(
+  const statCards = [
+    { key: "totalTastings", value: effectiveSummary.totalTastings, icon: Calendar, color: "text-amber-400" },
+    { key: "totalParticipants", value: effectiveSummary.totalParticipants, icon: Users, color: "text-blue-400" },
+    { key: "totalWhiskies", value: effectiveSummary.totalWhiskies, icon: Wine, color: "text-rose-400" },
+  ];
+
+  const draftTastings = effectiveSummary.recentTastings.filter((t) => t.status === "draft");
+  const upcomingTasting = effectiveSummary.recentTastings.find(
     (t) => (t.status === "draft" || t.status === "open") && new Date(t.date) >= new Date(new Date().toDateString())
   );
 
@@ -681,12 +680,12 @@ export default function HostDashboard() {
 
             {/* Row 4: Top Whiskies + Tools */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {summary?.topWhiskies && summary.topWhiskies.length > 0 && (
+              {effectiveSummary.topWhiskies.length > 0 && (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.5 }}>
                   <SectionCard className="h-full" testId="host-dashboard-top-whiskies">
                     <SectionTitle icon={Trophy} title={t("hostDashboard.topWhiskies")} />
                     <div className="space-y-3">
-                      {summary.topWhiskies.map((whisky, i) => (
+                      {effectiveSummary.topWhiskies.map((whisky, i) => (
                         <div key={`${whisky.name}-${i}`} className="flex items-center gap-4 py-2 border-b border-border/20 last:border-0" data-testid={`top-whisky-${i}`}>
                           <span className="text-lg font-serif font-bold text-primary/60 w-8">{i + 1}</span>
                           <div className="flex-1 min-w-0">
@@ -718,12 +717,12 @@ export default function HostDashboard() {
             </div>
 
             {/* Row 5: Recent Tastings (full-width) */}
-            {summary?.recentTastings && summary.recentTastings.length > 0 && (
+            {effectiveSummary.recentTastings.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5 }}>
                 <SectionCard testId="host-dashboard-recent-tastings">
                   <SectionTitle icon={Calendar} title={t("hostDashboard.recentTastings")} />
                   <div className="space-y-2">
-                    {summary.recentTastings.map((tasting) => (
+                    {effectiveSummary.recentTastings.map((tasting) => (
                       <div key={tasting.id} className="flex items-center gap-4 py-3 px-3 rounded-lg hover:bg-primary/5 transition-colors border-b border-border/10 last:border-0" data-testid={`recent-tasting-${tasting.id}`}>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold truncate" data-testid={`recent-tasting-title-${tasting.id}`}>{tasting.title}</p>
@@ -772,7 +771,7 @@ export default function HostDashboard() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55, duration: 0.5 }}>
               <SectionCard testId="section-invitations">
                 <SectionTitle icon={Mail} title={isDE ? "Einladungen" : "Invitations"} />
-                <InvitationsPanel tastings={summary?.recentTastings ?? []} isDE={isDE} />
+                <InvitationsPanel tastings={effectiveSummary.recentTastings} isDE={isDE} />
               </SectionCard>
             </motion.div>
 
