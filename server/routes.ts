@@ -5218,6 +5218,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           date: d.tasting.date,
           status: d.tasting.status,
           participantCount: d.participantCount,
+          code: d.tasting.code,
         }));
 
       res.json({

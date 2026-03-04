@@ -61,6 +61,7 @@ import Account from "@/pages/account";
 import SessionsDark from "@/pages/sessions-dark";
 import DataExportDark from "@/pages/data-export-dark";
 import VocabularyDark from "@/pages/vocabulary-dark";
+import AICurationDark from "@/pages/ai-curation-dark";
 import SimpleLegacyShell from "@/components/simple/simple-legacy-shell";
 import LabDarkLayout from "@/lab-dark/LabDarkLayout";
 import LabHome from "@/lab-dark/pages/LabHome";
@@ -113,6 +114,7 @@ function Router() {
         <Route path="/sessions" component={SessionsDark} />
         <Route path="/data-export" component={DataExportDark} />
         <Route path="/vocabulary" component={VocabularyDark} />
+        <Route path="/ai-curation" component={AICurationDark} />
         <Route path="/host-dashboard" component={HostDashboard} />
         <Route path="/support" component={SupportConsole} />
         <Route path="/host" component={SimpleHostPage} />

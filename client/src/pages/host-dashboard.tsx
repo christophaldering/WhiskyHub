@@ -1,18 +1,20 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
-import { hostDashboardApi } from "@/lib/api";
+import { hostDashboardApi, inviteApi } from "@/lib/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
   GlassWater, Users, Wine, Star, Calendar, Trophy, LayoutDashboard, Eye,
   Plus, FileText, Printer, ClipboardList, Download, Sparkles, ChevronLeft,
   ChevronRight, Copy, Mail, QrCode, Archive, BarChart3, BookOpen, Zap,
+  Check, Send, Loader2, Link as LinkIcon, ChevronDown,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
+import QRCodeLib from "qrcode";
 
 interface HostSummary {
   totalTastings: number;
@@ -20,7 +22,7 @@ interface HostSummary {
   totalWhiskies: number;
   averageScores: { nose: number; taste: number; finish: number; balance: number; overall: number };
   topWhiskies: { name: string; distillery: string; averageScore: number; tastingTitle: string }[];
-  recentTastings: { id: string; title: string; date: string; status: string; participantCount: number }[];
+  recentTastings: { id: string; title: string; date: string; status: string; participantCount: number; code?: string }[];
 }
 
 interface CalendarEvent {
@@ -201,6 +203,218 @@ function DashboardCalendar() {
       )}
       {selectedDay && selectedEvents.length === 0 && (
         <p className="text-xs text-muted-foreground text-center py-2">No tastings on this day.</p>
+      )}
+    </div>
+  );
+}
+
+interface InviteTasting {
+  id: string;
+  title: string;
+  date: string;
+  status: string;
+  participantCount: number;
+  code?: string;
+}
+
+interface InviteResult {
+  email: string;
+  status: string;
+}
+
+function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE: boolean }) {
+  const [selectedTastingId, setSelectedTastingId] = useState<string>("");
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [emails, setEmails] = useState("");
+  const [personalNote, setPersonalNote] = useState("");
+  const [sending, setSending] = useState(false);
+  const [results, setResults] = useState<InviteResult[] | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const activeTastings = tastings.filter(t => t.status !== "archived");
+  const selectedTasting = activeTastings.find(t => t.id === selectedTastingId);
+
+  const joinUrl = useMemo(() => {
+    if (!selectedTasting?.code) return null;
+    const base = typeof window !== "undefined" ? window.location.origin : "";
+    return `${base}/enter?code=${selectedTasting.code}`;
+  }, [selectedTasting]);
+
+  useEffect(() => {
+    if (!joinUrl) { setQrDataUrl(null); return; }
+    QRCodeLib.toDataURL(joinUrl, {
+      width: 280,
+      margin: 2,
+      color: { dark: "#1a1a2e", light: "#f5f0e8" },
+    }).then(setQrDataUrl).catch(() => setQrDataUrl(null));
+  }, [joinUrl]);
+
+  const handleCopyLink = useCallback(() => {
+    if (!joinUrl) return;
+    navigator.clipboard.writeText(joinUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  }, [joinUrl]);
+
+  const handleDownloadQr = useCallback(() => {
+    if (!qrDataUrl || !selectedTasting) return;
+    const a = document.createElement("a");
+    a.href = qrDataUrl;
+    a.download = `casksense-qr-${selectedTasting.title.replace(/\s+/g, "-").toLowerCase()}.png`;
+    a.click();
+  }, [qrDataUrl, selectedTasting]);
+
+  const handleSendEmails = useCallback(async () => {
+    if (!selectedTastingId || !emails.trim()) return;
+    const emailList = emails.split(/[,;\s]+/).map(e => e.trim()).filter(Boolean);
+    if (emailList.length === 0) return;
+    setSending(true);
+    setResults(null);
+    try {
+      const data = await inviteApi.sendInvites(selectedTastingId, emailList, personalNote || undefined);
+      setResults(data.results || emailList.map(e => ({ email: e, status: "sent" })));
+      setEmails("");
+      setPersonalNote("");
+    } catch {
+      setResults(emailList.map(e => ({ email: e, status: "error" })));
+    } finally {
+      setSending(false);
+    }
+  }, [selectedTastingId, emails, personalNote]);
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-muted-foreground">
+        {isDE ? "Wähle ein Tasting und lade Teilnehmer per QR-Code oder Email ein." : "Select a tasting and invite participants via QR code or email."}
+      </p>
+
+      {/* Tasting selector */}
+      <div className="relative">
+        <button
+          onClick={() => setDropdownOpen(!dropdownOpen)}
+          className="w-full flex items-center justify-between gap-2 p-3 rounded-lg border border-border/40 bg-background text-sm hover:border-primary/40 transition-colors"
+          data-testid="invite-tasting-selector"
+        >
+          <span className={selectedTasting ? "text-foreground" : "text-muted-foreground"}>
+            {selectedTasting ? selectedTasting.title : (isDE ? "Tasting auswählen..." : "Select a tasting...")}
+          </span>
+          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+        </button>
+        {dropdownOpen && (
+          <div className="absolute z-20 top-full left-0 right-0 mt-1 rounded-lg border border-border/40 bg-card shadow-xl max-h-48 overflow-y-auto">
+            {activeTastings.length === 0 && (
+              <p className="p-3 text-xs text-muted-foreground">{isDE ? "Keine aktiven Tastings" : "No active tastings"}</p>
+            )}
+            {activeTastings.map(t => (
+              <button
+                key={t.id}
+                onClick={() => { setSelectedTastingId(t.id); setDropdownOpen(false); setResults(null); }}
+                className={`w-full text-left p-3 text-sm hover:bg-primary/5 transition-colors flex items-center justify-between ${t.id === selectedTastingId ? "bg-primary/10" : ""}`}
+                data-testid={`invite-tasting-option-${t.id}`}
+              >
+                <span className="truncate">{t.title}</span>
+                <Badge variant="outline" className={`text-[10px] ml-2 shrink-0 ${statusColors[t.status] || ""}`}>{t.status}</Badge>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {selectedTasting && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* QR Code section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 mb-2">
+              <QrCode className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold">{isDE ? "QR-Code" : "QR Code"}</span>
+            </div>
+            {qrDataUrl ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="bg-[#f5f0e8] rounded-lg p-2 inline-block">
+                  <img src={qrDataUrl} alt="QR Code" className="w-40 h-40" data-testid="invite-qr-image" />
+                </div>
+                <div className="flex gap-2 w-full">
+                  <button
+                    onClick={handleDownloadQr}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                    data-testid="invite-download-qr"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    {isDE ? "Speichern" : "Save"}
+                  </button>
+                  <button
+                    onClick={handleCopyLink}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                    data-testid="invite-copy-link"
+                  >
+                    {copiedLink ? <Check className="w-3.5 h-3.5" /> : <LinkIcon className="w-3.5 h-3.5" />}
+                    {copiedLink ? (isDE ? "Kopiert!" : "Copied!") : (isDE ? "Link kopieren" : "Copy Link")}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground italic">
+                {isDE ? "Kein Session-Code verfügbar" : "No session code available"}
+              </p>
+            )}
+          </div>
+
+          {/* Email section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Mail className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold">{isDE ? "Email-Einladung" : "Email Invite"}</span>
+            </div>
+            <div>
+              <input
+                type="text"
+                value={emails}
+                onChange={e => setEmails(e.target.value)}
+                placeholder={isDE ? "Emails (kommagetrennt)" : "Emails (comma separated)"}
+                className="w-full px-3 py-2 rounded-lg border border-border/40 bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+                data-testid="invite-email-input"
+              />
+            </div>
+            <div>
+              <textarea
+                value={personalNote}
+                onChange={e => setPersonalNote(e.target.value)}
+                placeholder={isDE ? "Persönliche Nachricht (optional)" : "Personal note (optional)"}
+                rows={2}
+                className="w-full px-3 py-2 rounded-lg border border-border/40 bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 resize-none"
+                data-testid="invite-personal-note"
+              />
+            </div>
+            <button
+              onClick={handleSendEmails}
+              disabled={sending || !emails.trim()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              data-testid="invite-send-button"
+            >
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {sending ? (isDE ? "Wird gesendet..." : "Sending...") : (isDE ? "Einladungen senden" : "Send Invitations")}
+            </button>
+
+            {results && (
+              <div className="space-y-1 mt-2" data-testid="invite-results">
+                {results.map((r, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    {r.status === "sent" || r.status === "success" ? (
+                      <Check className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                    ) : (
+                      <Mail className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                    )}
+                    <span className="truncate text-muted-foreground">{r.email}</span>
+                    <Badge variant="outline" className={`text-[10px] ml-auto shrink-0 ${r.status === "sent" || r.status === "success" ? "text-green-400 border-green-600/30" : "text-red-400 border-red-600/30"}`}>
+                      {r.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -494,7 +708,7 @@ export default function HostDashboard() {
                     <ToolLink href="/data-export" icon={Download} label={isDE ? "Datenexport" : "Data Export"} desc={isDE ? "CSV, Excel, kompletter Export" : "CSV, Excel, full export"} />
                     <ToolLink href="/sessions" icon={Copy} label={isDE ? "Sessions verwalten" : "Manage Sessions"} desc={isDE ? "Duplizieren, archivieren, bearbeiten" : "Duplicate, archive, edit"} />
                     <ToolLink href="/vocabulary" icon={BookOpen} label={isDE ? "Tasting-Vokabular" : "Tasting Vocabulary"} desc={isDE ? "Beschreibungshilfen für jede Stilrichtung" : "Descriptors for every whisky style"} />
-                    <ToolLink href="/vocabulary" icon={Sparkles} label={isDE ? "KI-Kuratierung" : "AI Curation"} desc={isDE ? "KI-gestützte Whisky-Vorschläge" : "AI-powered whisky suggestions"} />
+                    <ToolLink href="/ai-curation" icon={Sparkles} label={isDE ? "KI-Kuratierung" : "AI Curation"} desc={isDE ? "KI-gestützte Whisky-Vorschläge" : "AI-powered whisky suggestions"} />
                   </div>
                 </SectionCard>
               </motion.div>
@@ -548,36 +762,7 @@ export default function HostDashboard() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55, duration: 0.5 }}>
               <SectionCard testId="section-invitations">
                 <SectionTitle icon={Mail} title={isDE ? "Einladungen" : "Invitations"} />
-                <p className="text-xs text-muted-foreground mb-4">
-                  {isDE ? "Teilnehmer zu deinen Tastings einladen" : "Invite participants to your tastings"}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="flex items-center gap-3 p-4 rounded-lg border border-border/30 bg-card">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <QrCode className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">{isDE ? "QR-Code" : "QR Code"}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {isDE ? "Erstelle einen QR-Code zum Scannen und Beitreten" : "Generate a QR code for scan-to-join"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-4 rounded-lg border border-border/30 bg-card">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Mail className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">{isDE ? "Email-Einladung" : "Email Invite"}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {isDE ? "Sende Einladungen direkt per Email" : "Send invitations directly via email"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-3 italic">
-                  {isDE ? "QR-Codes und Email-Einladungen sind beim Erstellen eines Tastings verfügbar" : "QR codes and email invites are available when creating a tasting"}
-                </p>
+                <InvitationsPanel tastings={summary?.recentTastings ?? []} isDE={isDE} />
               </SectionCard>
             </motion.div>
 
