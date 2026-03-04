@@ -1854,6 +1854,7 @@ export default function SimpleHostPage() {
   const [wizardStep, setWizardStep] = useState<WizardStep>("list");
   const [createdTasting, setCreatedTasting] = useState<TastingFull | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
 
   const { data: tastings = [], isLoading } = useQuery<TastingFull[]>({
     queryKey: ["/api/tastings", pid],
@@ -1934,109 +1935,81 @@ export default function SimpleHostPage() {
 
         {!showingWizard && (
           <>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 2 }}>
-                Tasting erstellen
-              </h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
-                <button
-                  onClick={() => setWizardStep("step1")}
-                  style={{
-                    ...cardStyle,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                    padding: "16px 18px",
-                    border: `1px solid ${c.accent}40`,
-                    textAlign: "left",
-                    background: cardStyle.background,
-                    fontFamily: "system-ui, sans-serif",
-                  }}
-                  data-testid="card-create-manual"
-                >
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: `${c.accent}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Plus style={{ width: 20, height: 20, color: c.accent }} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Manual Entry</div>
-                    <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>Create a session and add whiskies step by step</div>
-                  </div>
-                  <ChevronRight style={{ width: 16, height: 16, color: c.muted, flexShrink: 0 }} />
-                </button>
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={() => setCreateMenuOpen(!createMenuOpen)}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: "14px 20px",
+                  background: c.accent,
+                  border: "none",
+                  borderRadius: 14,
+                  color: "#1a1714",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "system-ui, sans-serif",
+                  letterSpacing: "-0.01em",
+                }}
+                data-testid="button-new-tasting"
+              >
+                <Plus style={{ width: 18, height: 18 }} strokeWidth={2.5} />
+                Neues Tasting
+              </button>
 
-                <Link href="/photo-tasting">
-                  <div
-                    style={{
-                      ...cardStyle,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 14,
-                      padding: "16px 18px",
-                      textAlign: "left",
-                    }}
-                    data-testid="card-create-photo"
-                  >
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(96, 165, 250, 0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <Camera style={{ width: 20, height: 20, color: "#60a5fa" }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Photo / AI Identification</div>
-                      <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>Snap photos of bottles and let AI identify them</div>
-                    </div>
-                    <ChevronRight style={{ width: 16, height: 16, color: c.muted, flexShrink: 0 }} />
-                  </div>
-                </Link>
-
-                <button
-                  onClick={() => setImportDialogOpen(true)}
-                  style={{
-                    ...cardStyle,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                    padding: "16px 18px",
-                    textAlign: "left",
-                    background: cardStyle.background,
-                    fontFamily: "system-ui, sans-serif",
-                    border: cardStyle.border,
-                  }}
-                  data-testid="card-create-import"
-                >
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(74, 222, 128, 0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <FileSpreadsheet style={{ width: 20, height: 20, color: "#4ade80" }} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Excel / CSV Import</div>
-                    <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>Import your lineup from a spreadsheet or paste text</div>
-                  </div>
-                  <ChevronRight style={{ width: 16, height: 16, color: c.muted, flexShrink: 0 }} />
-                </button>
-              </div>
-
-              <Link href="/ai-curation">
+              {createMenuOpen && (
                 <div
                   style={{
                     ...cardStyle,
-                    cursor: "pointer",
+                    marginTop: 8,
+                    padding: 6,
                     display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                    padding: "14px 18px",
-                    borderStyle: "dashed",
+                    flexDirection: "column",
+                    gap: 2,
+                    overflow: "hidden",
                   }}
-                  data-testid="card-ai-curation"
+                  data-testid="menu-create-options"
                 >
-                  <Sparkles style={{ width: 18, height: 18, color: c.accent, flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: c.text }}>AI Lineup Suggestions</div>
-                    <div style={{ fontSize: 11, color: c.muted, marginTop: 1 }}>Get AI-powered recommendations to complement your tasting</div>
-                  </div>
-                  <ChevronRight style={{ width: 14, height: 14, color: c.muted, flexShrink: 0 }} />
+                  {[
+                    { label: "Manual Entry", desc: "Step by step", icon: Plus, color: c.accent, bg: `${c.accent}18`, action: () => { setWizardStep("step1"); setCreateMenuOpen(false); }, testId: "card-create-manual" },
+                    { label: "Photo / AI", desc: "Snap & identify bottles", icon: Camera, color: "#60a5fa", bg: "rgba(96,165,250,0.15)", href: "/photo-tasting", testId: "card-create-photo" },
+                    { label: "Excel / CSV Import", desc: "From spreadsheet or text", icon: FileSpreadsheet, color: "#4ade80", bg: "rgba(74,222,128,0.15)", action: () => { setImportDialogOpen(true); setCreateMenuOpen(false); }, testId: "card-create-import" },
+                    { label: "AI Lineup Suggestions", desc: "AI-powered recommendations", icon: Sparkles, color: c.accent, bg: `${c.accent}15`, href: "/ai-curation", testId: "card-ai-curation" },
+                  ].map((item) => {
+                    const IconComp = item.icon;
+                    const content = (
+                      <div
+                        key={item.testId}
+                        onClick={item.action}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          padding: "12px 14px",
+                          cursor: "pointer",
+                          borderRadius: 10,
+                          transition: "background 0.15s",
+                        }}
+                        data-testid={item.testId}
+                      >
+                        <div style={{ width: 34, height: 34, borderRadius: 9, background: item.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <IconComp style={{ width: 17, height: 17, color: item.color }} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{item.label}</div>
+                          <div style={{ fontSize: 11, color: c.muted, marginTop: 1 }}>{item.desc}</div>
+                        </div>
+                        <ChevronRight style={{ width: 14, height: 14, color: `${c.muted}60`, flexShrink: 0 }} />
+                      </div>
+                    );
+                    return item.href ? <Link key={item.testId} href={item.href}>{content}</Link> : <div key={item.testId}>{content}</div>;
+                  })}
                 </div>
-              </Link>
+              )}
             </div>
 
             <AiTastingImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} />
