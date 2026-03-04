@@ -8,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import {
   GlassWater, Users, Wine, Star, Calendar, Trophy, Eye,
   Plus, FileText, Printer, ClipboardList, Download, Sparkles,
-  ChevronRight, Copy, Mail, QrCode, BarChart3, Zap,
+  ChevronLeft, ChevronRight, Copy, Mail, QrCode, BarChart3, Zap,
   Check, Send, Loader2, Link as LinkIcon, ChevronDown,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -123,13 +123,14 @@ function ToolLink({ href, icon: Icon, label, desc }: { href: string; icon: React
   );
 }
 
-function DashboardCalendar({ isDE }: { isDE: boolean }) {
+function DashboardCalendar() {
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === "de" ? "de-DE" : "en-US";
 
   const { data: events = [] } = useQuery<CalendarEvent[]>({
     queryKey: ["/api/calendar"],
@@ -158,10 +159,11 @@ function DashboardCalendar({ isDE }: { isDE: boolean }) {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startOffset = (firstDay + 6) % 7;
 
-  const monthNames = isDE
-    ? ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
-    : ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const dayNames = isDE ? ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] : ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+  const monthName = new Intl.DateTimeFormat(locale, { month: "long" }).format(currentMonth);
+  const dayNames = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(2024, 0, i + 1);
+    return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(d).slice(0, 2);
+  });
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const selectedEvents = selectedDay ? (eventsByDate.get(selectedDay) || []) : [];
@@ -173,7 +175,7 @@ function DashboardCalendar({ isDE }: { isDE: boolean }) {
           style={{ background: "none", border: "none", cursor: "pointer", color: c.text, padding: 4 }} data-testid="button-cal-prev">
           <ChevronLeft style={{ width: 18, height: 18 }} />
         </button>
-        <span style={{ fontSize: 15, fontWeight: 700, color: c.text }}>{monthNames[month]} {year}</span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: c.text }}>{monthName} {year}</span>
         <button type="button" onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}
           style={{ background: "none", border: "none", cursor: "pointer", color: c.text, padding: 4 }} data-testid="button-cal-next">
           <ChevronRight style={{ width: 18, height: 18 }} />
@@ -248,7 +250,7 @@ function DashboardCalendar({ isDE }: { isDE: boolean }) {
               >
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 600, color: c.text, margin: 0 }}>{ev.title}</p>
-                  <p style={{ fontSize: 11, color: c.muted, margin: "2px 0 0" }}>{ev.whiskyCount} whiskies · {ev.participantCount} {isDE ? "Teilnehmer" : "participants"}</p>
+                  <p style={{ fontSize: 11, color: c.muted, margin: "2px 0 0" }}>{ev.whiskyCount} whiskies · {ev.participantCount} {t("hostDashboard.calParticipants")}</p>
                 </div>
                 <StatusBadge status={ev.status} label={t(`session.status.${ev.status}`)} />
               </div>
@@ -258,7 +260,7 @@ function DashboardCalendar({ isDE }: { isDE: boolean }) {
       )}
       {selectedDay && selectedEvents.length === 0 && (
         <p style={{ fontSize: 12, color: c.muted, textAlign: "center", padding: "8px 0" }}>
-          {isDE ? "Keine Tastings an diesem Tag." : "No tastings on this day."}
+          {t("hostDashboard.noTastingsDay")}
         </p>
       )}
     </div>
@@ -279,7 +281,7 @@ interface InviteResult {
   status: string;
 }
 
-function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE: boolean }) {
+function InvitationsPanel({ tastings }: { tastings: InviteTasting[] }) {
   const [selectedTastingId, setSelectedTastingId] = useState<string>("");
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [emails, setEmails] = useState("");
@@ -361,7 +363,7 @@ function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE:
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <p style={{ fontSize: 12, color: c.muted }}>
-        {isDE ? "Wähle ein Tasting und lade Teilnehmer per QR-Code oder Email ein." : "Select a tasting and invite participants via QR code or email."}
+        {t("hostDashboard.inviteDesc")}
       </p>
 
       <div style={{ position: "relative" }}>
@@ -378,7 +380,7 @@ function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE:
           }}
           data-testid="invite-tasting-selector"
         >
-          <span>{selectedTasting ? selectedTasting.title : (isDE ? "Tasting auswählen..." : "Select a tasting...")}</span>
+          <span>{selectedTasting ? selectedTasting.title : t("hostDashboard.selectTasting")}</span>
           <ChevronDown style={{ width: 14, height: 14, color: c.muted, transition: "transform 0.15s", transform: dropdownOpen ? "rotate(180deg)" : "none" }} />
         </button>
         {dropdownOpen && (
@@ -397,7 +399,7 @@ function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE:
             overflowY: "auto",
           }}>
             {activeTastings.length === 0 && (
-              <p style={{ padding: 12, fontSize: 12, color: c.muted }}>{isDE ? "Keine aktiven Tastings" : "No active tastings"}</p>
+              <p style={{ padding: 12, fontSize: 12, color: c.muted }}>{t("hostDashboard.noActiveTastings")}</p>
             )}
             {activeTastings.map(t => (
               <button
@@ -432,7 +434,7 @@ function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE:
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
               <QrCode style={{ width: 14, height: 14, color: c.accent }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{isDE ? "QR-Code" : "QR Code"}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{t("hostDashboard.qrCode")}</span>
             </div>
             {qrDataUrl ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
@@ -441,17 +443,17 @@ function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE:
                 </div>
                 <div style={{ display: "flex", gap: 8, width: "100%" }}>
                   <button onClick={handleDownloadQr} style={btnSmall} data-testid="invite-download-qr">
-                    <Download style={{ width: 13, height: 13 }} /> {isDE ? "Speichern" : "Save"}
+                    <Download style={{ width: 13, height: 13 }} /> {t("hostDashboard.save")}
                   </button>
                   <button onClick={handleCopyLink} style={btnSmall} data-testid="invite-copy-link">
                     {copiedLink ? <Check style={{ width: 13, height: 13 }} /> : <LinkIcon style={{ width: 13, height: 13 }} />}
-                    {copiedLink ? (isDE ? "Kopiert!" : "Copied!") : (isDE ? "Link" : "Link")}
+                    {copiedLink ? t("hostDashboard.copied") : t("hostDashboard.link")}
                   </button>
                 </div>
               </div>
             ) : (
               <p style={{ fontSize: 12, color: c.muted, fontStyle: "italic" }}>
-                {isDE ? "Kein Tasting-Code verfügbar" : "No tasting code available"}
+                {t("hostDashboard.noCode")}
               </p>
             )}
           </div>
@@ -459,20 +461,20 @@ function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE:
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
               <Mail style={{ width: 14, height: 14, color: c.accent }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{isDE ? "Email-Einladung" : "Email Invite"}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{t("hostDashboard.emailInvite")}</span>
             </div>
             <input
               type="text"
               value={emails}
               onChange={e => setEmails(e.target.value)}
-              placeholder={isDE ? "Emails (kommagetrennt)" : "Emails (comma separated)"}
+              placeholder={t("hostDashboard.emailsPlaceholder")}
               style={{ ...inputStyle, fontSize: 13, padding: "10px 12px" }}
               data-testid="invite-email-input"
             />
             <textarea
               value={personalNote}
               onChange={e => setPersonalNote(e.target.value)}
-              placeholder={isDE ? "Persönliche Nachricht (optional)" : "Personal note (optional)"}
+              placeholder={t("hostDashboard.personalNote")}
               rows={2}
               style={{ ...inputStyle, fontSize: 13, padding: "10px 12px", resize: "none" } as React.CSSProperties}
               data-testid="invite-personal-note"
@@ -500,7 +502,7 @@ function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE:
               data-testid="invite-send-button"
             >
               {sending ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Send style={{ width: 14, height: 14 }} />}
-              {sending ? (isDE ? "Wird gesendet..." : "Sending...") : (isDE ? "Einladungen senden" : "Send Invitations")}
+              {sending ? t("hostDashboard.sending") : t("hostDashboard.sendInvitations")}
             </button>
 
             {results && (
@@ -530,8 +532,7 @@ function InvitationsPanel({ tastings, isDE }: { tastings: InviteTasting[]; isDE:
 export default function HostDashboard() {
   const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const isDE = i18n.language === "de";
-  const lang = isDE ? "de" : "en";
+  const lang = i18n.language === "de" ? "de" : "en";
 
   const { data: summary, isLoading } = useQuery<HostSummary>({
     queryKey: ["host-dashboard", currentParticipant?.id],
@@ -566,11 +567,11 @@ export default function HostDashboard() {
   const hasData = effectiveSummary.totalTastings > 0;
 
   const chartData = [
-    { dimension: isDE ? "Nase" : "Nose", value: effectiveSummary.averageScores.nose },
-    { dimension: isDE ? "Geschmack" : "Taste", value: effectiveSummary.averageScores.taste },
-    { dimension: isDE ? "Abgang" : "Finish", value: effectiveSummary.averageScores.finish },
-    { dimension: "Balance", value: effectiveSummary.averageScores.balance },
-    { dimension: isDE ? "Gesamt" : "Overall", value: effectiveSummary.averageScores.overall },
+    { dimension: t("hostDashboard.dimNose"), value: effectiveSummary.averageScores.nose },
+    { dimension: t("hostDashboard.dimTaste"), value: effectiveSummary.averageScores.taste },
+    { dimension: t("hostDashboard.dimFinish"), value: effectiveSummary.averageScores.finish },
+    { dimension: t("hostDashboard.dimBalance"), value: effectiveSummary.averageScores.balance },
+    { dimension: t("hostDashboard.dimOverall"), value: effectiveSummary.averageScores.overall },
   ];
 
   const statCards = [
@@ -625,7 +626,7 @@ export default function HostDashboard() {
                 }}
                 data-testid="button-create-first"
               >
-                <Plus style={{ width: 16, height: 16 }} /> {isDE ? "Erstes Tasting erstellen" : "Create your first tasting"}
+                <Plus style={{ width: 16, height: 16 }} /> {t("hostDashboard.createFirst")}
               </span>
             </Link>
           </motion.div>
@@ -651,12 +652,12 @@ export default function HostDashboard() {
 
             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.4 }}>
               <div style={sectionCard} data-testid="section-quick-actions">
-                <SectionTitle icon={Zap} title={isDE ? "Schnellzugriff" : "Quick Actions"} />
+                <SectionTitle icon={Zap} title={t("hostDashboard.quickActions")} />
                 <div className="hd-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
                   {[
-                    { href: "/host", icon: Plus, label: isDE ? "Neues Tasting" : "New Tasting", accent: true },
+                    { href: "/host", icon: Plus, label: t("hostDashboard.newTasting"), accent: true },
                     { href: "/sessions", icon: FileText, label: "Tastings", accent: false },
-                    { href: "/data-export", icon: Download, label: isDE ? "Datenexport" : "Data Export", accent: false },
+                    { href: "/data-export", icon: Download, label: t("hostDashboard.dataExport"), accent: false },
                   ].map(item => (
                     <Link key={item.href} href={item.href}>
                       <div
@@ -683,7 +684,7 @@ export default function HostDashboard() {
                 {draftTastings.length > 0 && (
                   <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${c.border}` }}>
                     <p style={{ fontSize: 11, fontWeight: 600, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
-                      {isDE ? "Entwürfe fortsetzen" : "Resume Drafts"}
+                      {t("hostDashboard.resumeDrafts")}
                     </p>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {draftTastings.slice(0, 4).map((dt) => (
@@ -730,7 +731,7 @@ export default function HostDashboard() {
                           <Tooltip
                             contentStyle={{ backgroundColor: c.card, border: `1px solid ${c.border}`, borderRadius: 8, color: c.text }}
                             labelStyle={{ color: c.text }}
-                            formatter={(value: number) => [value.toFixed(1), isDE ? "Durchschnitt" : "Average"]}
+                            formatter={(value: number) => [value.toFixed(1), t("hostDashboard.average")]}
                           />
                           <Bar dataKey="value" fill={c.accent} radius={[4, 4, 0, 0]} />
                         </BarChart>
@@ -742,9 +743,9 @@ export default function HostDashboard() {
 
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.4 }}>
                 <div style={{ ...sectionCard, height: "100%", display: "flex", flexDirection: "column" }} data-testid="section-documents">
-                  <SectionTitle icon={Printer} title={isDE ? "Dokumente" : "Documents"} />
+                  <SectionTitle icon={Printer} title={t("hostDashboard.documents")} />
                   <p style={{ fontSize: 12, color: c.muted, marginBottom: 14 }}>
-                    {isDE ? "Blanko-Vorlagen als PDF herunterladen" : "Download blank printable templates (PDF)"}
+                    {t("hostDashboard.documentsDesc")}
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     <button
@@ -766,8 +767,8 @@ export default function HostDashboard() {
                     >
                       <ClipboardList style={{ width: 18, height: 18, color: c.accent, flexShrink: 0 }} />
                       <div>
-                        <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{isDE ? "Verkostungsbogen" : "Score Sheet"}</p>
-                        <p style={{ fontSize: 11, color: c.muted, margin: "2px 0 0" }}>{isDE ? "A4 Hochformat · 6 Whiskies" : "A4 Portrait · 6 whiskies"}</p>
+                        <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{t("hostDashboard.scoreSheet")}</p>
+                        <p style={{ fontSize: 11, color: c.muted, margin: "2px 0 0" }}>{t("hostDashboard.scoreSheetDesc")}</p>
                       </div>
                     </button>
                     <button
@@ -789,13 +790,13 @@ export default function HostDashboard() {
                     >
                       <Printer style={{ width: 18, height: 18, color: c.accent, flexShrink: 0 }} />
                       <div>
-                        <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{isDE ? "Tasting-Matte" : "Tasting Mat"}</p>
-                        <p style={{ fontSize: 11, color: c.muted, margin: "2px 0 0" }}>{isDE ? "A4 Querformat · Glaskreise" : "A4 Landscape · Glass circles"}</p>
+                        <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{t("hostDashboard.tastingMat")}</p>
+                        <p style={{ fontSize: 11, color: c.muted, margin: "2px 0 0" }}>{t("hostDashboard.tastingMatDesc")}</p>
                       </div>
                     </button>
                   </div>
                   <p style={{ fontSize: 11, color: c.muted, marginTop: 12, fontStyle: "italic" }}>
-                    {isDE ? "Tasting-spezifische Menüs im Live-Tasting-Raum" : "Tasting-specific menus in the live tasting room"}
+                    {t("hostDashboard.tastingSpecificMenus")}
                   </p>
                 </div>
               </motion.div>
@@ -839,11 +840,11 @@ export default function HostDashboard() {
 
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.4 }}>
                 <div style={{ ...sectionCard, height: "100%" }} data-testid="section-tools">
-                  <SectionTitle icon={BarChart3} title={isDE ? "Tools & Analyse" : "Tools & Analytics"} />
+                  <SectionTitle icon={BarChart3} title={t("hostDashboard.toolsAnalytics")} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <ToolLink href="/data-export" icon={Download} label={isDE ? "Datenexport" : "Data Export"} desc={isDE ? "CSV, Excel, kompletter Export" : "CSV, Excel, full export"} />
-                    <ToolLink href="/sessions" icon={Copy} label={isDE ? "Tastings verwalten" : "Manage Tastings"} desc={isDE ? "Duplizieren, archivieren, bearbeiten" : "Duplicate, archive, edit"} />
-                    <ToolLink href="/ai-curation" icon={Sparkles} label={isDE ? "KI-Kuratierung" : "AI Curation"} desc={isDE ? "KI-gestützte Whisky-Vorschläge" : "AI-powered whisky suggestions"} />
+                    <ToolLink href="/data-export" icon={Download} label={t("hostDashboard.dataExport")} desc={t("hostDashboard.dataExportDesc")} />
+                    <ToolLink href="/sessions" icon={Copy} label={t("hostDashboard.manageTastings")} desc={t("hostDashboard.manageTastingsDesc")} />
+                    <ToolLink href="/ai-curation" icon={Sparkles} label={t("hostDashboard.aiCuration")} desc={t("hostDashboard.aiCurationDesc")} />
                   </div>
                 </div>
               </motion.div>
@@ -872,7 +873,7 @@ export default function HostDashboard() {
                           </p>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
                             <p style={{ fontSize: 11, color: c.muted, margin: 0 }}>
-                              {new Date(tasting.date).toLocaleDateString(isDE ? "de-DE" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
+                              {new Date(tasting.date).toLocaleDateString(i18n.language === "de" ? "de-DE" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
                             </p>
                             {tasting.code && (
                               <span style={{ fontSize: 10, fontFamily: "monospace", background: `${c.accent}15`, color: c.accent, padding: "2px 6px", borderRadius: 4 }} data-testid={`recent-tasting-code-${tasting.id}`}>
@@ -891,7 +892,7 @@ export default function HostDashboard() {
                             <>
                               <Link href={`/tasting-results/${tasting.id}`}>
                                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: c.accent, cursor: "pointer" }} data-testid={`results-link-${tasting.id}`}>
-                                  <Trophy style={{ width: 12, height: 12 }} /> {isDE ? "Ergebnisse" : "Results"}
+                                  <Trophy style={{ width: 12, height: 12 }} /> {t("hostDashboard.results")}
                                 </span>
                               </Link>
                               <Link href={`/recap/${tasting.id}`}>
@@ -918,8 +919,8 @@ export default function HostDashboard() {
 
             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55, duration: 0.4 }}>
               <div style={sectionCard} data-testid="section-invitations">
-                <SectionTitle icon={Mail} title={isDE ? "Einladungen" : "Invitations"} />
-                <InvitationsPanel tastings={effectiveSummary.recentTastings} isDE={isDE} />
+                <SectionTitle icon={Mail} title={t("hostDashboard.invitations")} />
+                <InvitationsPanel tastings={effectiveSummary.recentTastings} />
               </div>
             </motion.div>
 

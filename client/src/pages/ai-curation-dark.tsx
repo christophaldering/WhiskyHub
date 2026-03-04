@@ -64,9 +64,8 @@ function TagPill({ icon: Icon, label, bg, fg }: { icon: React.ElementType; label
 }
 
 export default function AICurationDark() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const isDE = i18n.language === "de";
   const [selectedTastingId, setSelectedTastingId] = useState<string>("");
   const [timeFilter, setTimeFilter] = useState<string>("all");
 
@@ -102,6 +101,13 @@ export default function AICurationDark() {
   const lineup = pairingData?.lineup;
   const suggestions = pairingData?.suggestions || [];
 
+  const timeFilterOptions = [
+    { value: "30", labelKey: "aiCuration.last30Days" },
+    { value: "90", labelKey: "aiCuration.last3Months" },
+    { value: "365", labelKey: "aiCuration.thisYear" },
+    { value: "all", labelKey: "aiCuration.all" },
+  ] as const;
+
   const selectStyle: React.CSSProperties = {
     width: "100%",
     maxWidth: 400,
@@ -126,13 +132,11 @@ export default function AICurationDark() {
             <Sparkles style={{ width: 28, height: 28, color: c.accent }} />
             <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: c.accent, margin: 0 }}
               data-testid="text-ai-curation-title">
-              {isDE ? "KI-Kuratierung" : "AI Curation"}
+              {t("aiCuration.title")}
             </h1>
           </div>
           <p style={{ fontSize: 13, color: c.muted, margin: 0, lineHeight: 1.5 }}>
-            {isDE
-              ? "Dieses Tool analysiert dein Tasting-Lineup und schlägt ergänzende Whiskys vor, die Lücken füllen oder neue Dimensionen hinzufügen."
-              : "This tool analyzes your tasting lineup and suggests complementary whiskies that fill gaps or add new dimensions."}
+            {t("aiCuration.description")}
           </p>
         </div>
 
@@ -140,22 +144,17 @@ export default function AICurationDark() {
           <div style={{ textAlign: "center", padding: "60px 0", color: c.muted }} data-testid="ai-curation-login-required">
             <Wine style={{ width: 48, height: 48, margin: "0 auto 16px", opacity: 0.3 }} />
             <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 16 }}>
-              {isDE ? "Bitte anmelden, um KI-Vorschläge zu erhalten" : "Please sign in to get AI suggestions"}
+              {t("aiCuration.loginRequired")}
             </p>
           </div>
         ) : (
           <>
             <div style={{ marginBottom: 32 }} data-testid="select-tasting">
               <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 8, color: c.text }}>
-                {isDE ? "Tasting auswählen" : "Select Tasting"}
+                {t("aiCuration.selectTasting")}
               </label>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                {([
-                  { value: "30", labelEn: "Last 30 days", labelDe: "Letzte 30 Tage" },
-                  { value: "90", labelEn: "Last 3 months", labelDe: "Letzte 3 Monate" },
-                  { value: "365", labelEn: "This year", labelDe: "Dieses Jahr" },
-                  { value: "all", labelEn: "All", labelDe: "Alle" },
-                ] as const).map((opt) => (
+                {timeFilterOptions.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => { setTimeFilter(opt.value); setSelectedTastingId(""); }}
@@ -171,7 +170,7 @@ export default function AICurationDark() {
                     }}
                     data-testid={`time-filter-${opt.value}`}
                   >
-                    {isDE ? opt.labelDe : opt.labelEn}
+                    {t(opt.labelKey)}
                   </button>
                 ))}
               </div>
@@ -182,15 +181,15 @@ export default function AICurationDark() {
                   style={selectStyle}
                   data-testid="select-tasting-trigger"
                 >
-                  <option value="" disabled>{isDE ? "Wähle ein Tasting..." : "Choose a tasting..."}</option>
+                  <option value="" disabled>{t("aiCuration.selectPlaceholder")}</option>
                   {tastingsLoading ? (
-                    <option value="" disabled>{isDE ? "Laden..." : "Loading..."}</option>
+                    <option value="" disabled>{t("aiCuration.loading")}</option>
                   ) : filteredTastings.length === 0 ? (
-                    <option value="" disabled>{isDE ? "Keine Tastings in diesem Zeitraum" : "No tastings in this period"}</option>
+                    <option value="" disabled>{t("aiCuration.noTastingsInPeriod")}</option>
                   ) : (
                     filteredTastings.map((tasting: any) => {
                       const dateStr = tasting.date
-                        ? new Date(tasting.date).toLocaleDateString(isDE ? "de-DE" : "en-US", { year: "numeric", month: "short", day: "numeric" })
+                        ? new Date(tasting.date).toLocaleDateString(i18n.language === "de" ? "de-DE" : "en-US", { year: "numeric", month: "short", day: "numeric" })
                         : "";
                       const title = tasting.title || tasting.name || tasting.id;
                       return (
@@ -219,14 +218,14 @@ export default function AICurationDark() {
             {selectedTastingId && !pairingsLoading && lineup && (
               <div style={{ ...cardStyle, marginBottom: 24 }} data-testid="lineup-summary">
                 <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 600, color: c.accent, marginBottom: 14 }}>
-                  {isDE ? "Aktuelles Lineup" : "Current Lineup"}
+                  {t("aiCuration.currentLineup")}
                 </h2>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16 }}>
                   {lineup.regions.length > 0 && (
                     <div data-testid="lineup-regions">
                       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: c.muted, marginBottom: 6 }}>
                         <MapPin style={{ width: 14, height: 14 }} />
-                        <span>{isDE ? "Regionen" : "Regions"}</span>
+                        <span>{t("aiCuration.regions")}</span>
                       </div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                         {lineup.regions.map((r) => (
@@ -239,7 +238,7 @@ export default function AICurationDark() {
                     <div data-testid="lineup-casks">
                       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: c.muted, marginBottom: 6 }}>
                         <Package style={{ width: 14, height: 14 }} />
-                        <span>{isDE ? "Fasstypen" : "Cask Types"}</span>
+                        <span>{t("aiCuration.caskTypes")}</span>
                       </div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                         {lineup.caskTypes.map((ct) => (
@@ -252,7 +251,7 @@ export default function AICurationDark() {
                     <div data-testid="lineup-peat">
                       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: c.muted, marginBottom: 6 }}>
                         <Flame style={{ width: 14, height: 14 }} />
-                        <span>{isDE ? "Torfstufen" : "Peat Levels"}</span>
+                        <span>{t("aiCuration.peatLevels")}</span>
                       </div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                         {lineup.peatLevels.map((p) => (
@@ -269,9 +268,7 @@ export default function AICurationDark() {
               <div style={{ textAlign: "center", padding: "48px 0", color: c.muted }} data-testid="pairings-empty">
                 <Wine style={{ width: 48, height: 48, margin: "0 auto 16px", opacity: 0.3 }} />
                 <p style={{ fontFamily: "'Playfair Display', serif" }}>
-                  {isDE
-                    ? "Dein Lineup ist bereits ausgewogen, oder es wurden keine passenden Whiskys gefunden."
-                    : "Your lineup is already well-balanced, or no matching whiskies were found."}
+                  {t("aiCuration.emptyResults")}
                 </p>
               </div>
             )}
@@ -280,12 +277,10 @@ export default function AICurationDark() {
               <div style={{ textAlign: "center", padding: "48px 0", color: c.muted }} data-testid="ai-curation-prompt">
                 <Sparkles style={{ width: 48, height: 48, margin: "0 auto 16px", opacity: 0.25 }} />
                 <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, marginBottom: 8 }}>
-                  {isDE ? "Wähle ein Tasting aus, um loszulegen" : "Select a tasting to get started"}
+                  {t("aiCuration.getStartedPrompt")}
                 </p>
                 <p style={{ fontSize: 12, color: c.mutedLight, maxWidth: 340, margin: "0 auto", lineHeight: 1.5 }}>
-                  {isDE
-                    ? "Die KI analysiert dein Lineup und schlägt Whiskys vor, die dein Tasting ergänzen."
-                    : "The AI will analyze your lineup and suggest whiskies that complement your tasting."}
+                  {t("aiCuration.getStartedDescription")}
                 </p>
               </div>
             )}
@@ -294,7 +289,7 @@ export default function AICurationDark() {
               <div>
                 <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 600, color: c.accent, marginBottom: 16 }}
                   data-testid="text-suggestions-heading">
-                  {isDE ? "Vorgeschlagene Whiskys" : "Suggested Whiskies"}
+                  {t("aiCuration.suggestedWhiskies")}
                 </h2>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {suggestions.map((suggestion, index) => (
@@ -332,7 +327,7 @@ export default function AICurationDark() {
                             marginTop: 10, fontSize: 12, color: c.muted, borderLeft: `2px solid ${c.accent}30`,
                             paddingLeft: 12, lineHeight: 1.5,
                           }} data-testid={`text-suggestion-reason-${index}`}>
-                            <span style={{ fontWeight: 500, color: `${c.text}b0` }}>{isDE ? "Warum" : "Why"}:</span> {suggestion.reason}
+                            <span style={{ fontWeight: 500, color: `${c.text}b0` }}>{t("aiCuration.why")}:</span> {suggestion.reason}
                           </div>
                           <div style={{
                             marginTop: 8, width: "100%", background: `${c.border}40`, borderRadius: 4, height: 5,
@@ -349,9 +344,7 @@ export default function AICurationDark() {
                   ))}
                 </div>
                 <p style={{ fontSize: 11, color: c.muted, textAlign: "center", marginTop: 20, fontStyle: "italic" }}>
-                  {isDE
-                    ? "Vorschläge basieren auf der Vielfalt deines aktuellen Lineups."
-                    : "Suggestions are based on the diversity of your current lineup."}
+                  {t("aiCuration.disclaimer")}
                 </p>
               </div>
             )}

@@ -6,7 +6,7 @@ import { journalApi, ratingNotesApi } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { CircleDot, X } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 
 interface FlavorCategory {
   id: string;
@@ -129,7 +129,11 @@ interface JournalEntry {
   body?: string | null;
 }
 
-function computeFlavorFrequencies(entries: JournalEntry[], isDE: boolean) {
+function localizedName(item: { en: string; de: string }, lang: string): string {
+  return lang === "de" ? item.de : item.en;
+}
+
+function computeFlavorFrequencies(entries: JournalEntry[]) {
   const allText = entries
     .map((e) => [e.noseNotes, e.tasteNotes, e.finishNotes, e.body].filter(Boolean).join(" "))
     .join(" ")
@@ -159,8 +163,9 @@ function computeFlavorFrequencies(entries: JournalEntry[], isDE: boolean) {
 export function FlavorWheelContent() {
   const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const isDE = i18n.language === "de";
+  const lang = i18n.language;
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const locName = useCallback((item: { en: string; de: string }) => localizedName(item, lang), [lang]);
 
   const { data: journalEntries, isLoading } = useQuery<JournalEntry[]>({
     queryKey: ["journal", currentParticipant?.id],
@@ -190,7 +195,7 @@ export function FlavorWheelContent() {
       return { categoryFreqs: {}, subFreqs: {}, totalMentions: 0, topCategory: null, mostUniqueFlavor: null, innerData: [], outerData: [] };
     }
 
-    const { categoryFreqs, subFreqs } = computeFlavorFrequencies(combinedEntries, isDE);
+    const { categoryFreqs, subFreqs } = computeFlavorFrequencies(combinedEntries);
     const totalMentions = Object.values(categoryFreqs).reduce((s, v) => s + v, 0);
 
     let topCategory: FlavorCategory | null = null;
@@ -215,7 +220,7 @@ export function FlavorWheelContent() {
     }
 
     const innerData = FLAVOR_WHEEL_DATA.map((cat) => ({
-      name: isDE ? cat.de : cat.en,
+      name: localizedName(cat, lang),
       value: Math.max(categoryFreqs[cat.id], 1),
       actualValue: categoryFreqs[cat.id],
       color: cat.color,
@@ -226,7 +231,7 @@ export function FlavorWheelContent() {
     for (const cat of FLAVOR_WHEEL_DATA) {
       for (const sub of cat.subcategories) {
         outerData.push({
-          name: isDE ? sub.de : sub.en,
+          name: localizedName(sub, lang),
           value: Math.max(subFreqs[cat.id][sub.id], 0.3),
           actualValue: subFreqs[cat.id][sub.id],
           color: cat.color,
@@ -237,7 +242,7 @@ export function FlavorWheelContent() {
     }
 
     return { categoryFreqs, subFreqs, totalMentions, topCategory, mostUniqueFlavor, innerData, outerData };
-  }, [journalEntries, ratingNotes, isDE]);
+  }, [journalEntries, ratingNotes, lang]);
 
   if (isLoading) {
     return (
@@ -272,13 +277,13 @@ export function FlavorWheelContent() {
             </div>
             <div className="bg-card rounded-lg border border-border/40 p-4 text-center" data-testid="stat-top-category">
               <p className="text-2xl font-serif font-bold" style={{ color: topCategory?.color }}>
-                {topCategory ? (isDE ? topCategory.de : topCategory.en) : "—"}
+                {topCategory ? locName(topCategory) : "—"}
               </p>
               <p className="text-xs text-muted-foreground">{t("flavorWheel.topCategory")}</p>
             </div>
             <div className="bg-card rounded-lg border border-border/40 p-4 text-center" data-testid="stat-unique-flavor">
               <p className="text-2xl font-serif font-bold text-primary/80">
-                {mostUniqueFlavor ? (isDE ? mostUniqueFlavor.sub.de : mostUniqueFlavor.sub.en) : "—"}
+                {mostUniqueFlavor ? locName(mostUniqueFlavor.sub) : "—"}
               </p>
               <p className="text-xs text-muted-foreground">{t("flavorWheel.mostUnique")}</p>
             </div>
@@ -319,7 +324,7 @@ export function FlavorWheelContent() {
               {FLAVOR_WHEEL_DATA.map((cat) => (
                 <button key={cat.id} onClick={() => setSelectedCategory(cat.id === selectedCategory ? null : cat.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${selectedCategory === cat.id ? "ring-2 ring-primary/60 bg-card shadow-sm" : "bg-card/50 hover:bg-card"}`} data-testid={`legend-${cat.id}`}>
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                  <span className="text-foreground">{isDE ? cat.de : cat.en}</span>
+                  <span className="text-foreground">{locName(cat)}</span>
                   <span className="text-muted-foreground">({categoryFreqs[cat.id] || 0})</span>
                 </button>
               ))}
@@ -332,7 +337,7 @@ export function FlavorWheelContent() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedCatData.color }} />
-                    <h2 className="text-lg font-serif font-semibold text-foreground">{isDE ? selectedCatData.de : selectedCatData.en}</h2>
+                    <h2 className="text-lg font-serif font-semibold text-foreground">{locName(selectedCatData)}</h2>
                     <span className="text-sm text-muted-foreground ml-1">({categoryFreqs[selectedCatData.id]} {t("flavorWheel.mentions")})</span>
                   </div>
                   <button onClick={() => setSelectedCategory(null)} className="p-1 rounded-md hover:bg-secondary/50 text-muted-foreground" data-testid="button-close-detail">
@@ -347,7 +352,7 @@ export function FlavorWheelContent() {
                       <div key={sub.id} className="relative overflow-hidden rounded-lg border border-border/30 p-3" data-testid={`sub-${sub.id}`}>
                         <div className="absolute inset-0 opacity-15" style={{ backgroundColor: selectedCatData.color, width: `${(count / maxInCat) * 100}%` }} />
                         <div className="relative flex items-center justify-between">
-                          <span className="text-sm font-medium text-foreground">{isDE ? sub.de : sub.en}</span>
+                          <span className="text-sm font-medium text-foreground">{locName(sub)}</span>
                           <span className="text-sm font-serif font-bold" style={{ color: count > 0 ? selectedCatData.color : "hsl(var(--muted-foreground))" }}>{count}</span>
                         </div>
                       </div>
@@ -366,8 +371,9 @@ export function FlavorWheelContent() {
 export default function FlavorWheel() {
   const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const isDE = i18n.language === "de";
+  const lang = i18n.language;
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const locName = useCallback((item: { en: string; de: string }) => localizedName(item, lang), [lang]);
 
   const { data: journalEntries, isLoading } = useQuery<JournalEntry[]>({
     queryKey: ["journal", currentParticipant?.id],
@@ -397,7 +403,7 @@ export default function FlavorWheel() {
       return { categoryFreqs: {}, subFreqs: {}, totalMentions: 0, topCategory: null, mostUniqueFlavor: null, innerData: [], outerData: [] };
     }
 
-    const { categoryFreqs, subFreqs } = computeFlavorFrequencies(combinedEntries, isDE);
+    const { categoryFreqs, subFreqs } = computeFlavorFrequencies(combinedEntries);
     const totalMentions = Object.values(categoryFreqs).reduce((s, v) => s + v, 0);
 
     let topCategory: FlavorCategory | null = null;
@@ -422,7 +428,7 @@ export default function FlavorWheel() {
     }
 
     const innerData = FLAVOR_WHEEL_DATA.map((cat) => ({
-      name: isDE ? cat.de : cat.en,
+      name: localizedName(cat, lang),
       value: Math.max(categoryFreqs[cat.id], 1),
       actualValue: categoryFreqs[cat.id],
       color: cat.color,
@@ -433,7 +439,7 @@ export default function FlavorWheel() {
     for (const cat of FLAVOR_WHEEL_DATA) {
       for (const sub of cat.subcategories) {
         outerData.push({
-          name: isDE ? sub.de : sub.en,
+          name: localizedName(sub, lang),
           value: Math.max(subFreqs[cat.id][sub.id], 0.3),
           actualValue: subFreqs[cat.id][sub.id],
           color: cat.color,
@@ -444,7 +450,7 @@ export default function FlavorWheel() {
     }
 
     return { categoryFreqs, subFreqs, totalMentions, topCategory, mostUniqueFlavor, innerData, outerData };
-  }, [journalEntries, ratingNotes, isDE]);
+  }, [journalEntries, ratingNotes, lang]);
 
   if (!currentParticipant) {
     return (
@@ -519,7 +525,7 @@ export default function FlavorWheel() {
                 data-testid="stat-top-category"
               >
                 <p className="text-2xl font-serif font-bold" style={{ color: topCategory?.color }}>
-                  {topCategory ? (isDE ? topCategory.de : topCategory.en) : "—"}
+                  {topCategory ? locName(topCategory) : "—"}
                 </p>
                 <p className="text-xs text-muted-foreground">{t("flavorWheel.topCategory")}</p>
               </motion.div>
@@ -531,7 +537,7 @@ export default function FlavorWheel() {
                 data-testid="stat-unique-flavor"
               >
                 <p className="text-2xl font-serif font-bold text-primary/80">
-                  {mostUniqueFlavor ? (isDE ? mostUniqueFlavor.sub.de : mostUniqueFlavor.sub.en) : "—"}
+                  {mostUniqueFlavor ? locName(mostUniqueFlavor.sub) : "—"}
                 </p>
                 <p className="text-xs text-muted-foreground">{t("flavorWheel.mostUnique")}</p>
               </motion.div>
@@ -640,7 +646,7 @@ export default function FlavorWheel() {
                     data-testid={`legend-${cat.id}`}
                   >
                     <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                    <span className="text-foreground">{isDE ? cat.de : cat.en}</span>
+                    <span className="text-foreground">{locName(cat)}</span>
                     <span className="text-muted-foreground">({categoryFreqs[cat.id] || 0})</span>
                   </button>
                 ))}
@@ -662,7 +668,7 @@ export default function FlavorWheel() {
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedCatData.color }} />
                       <h2 className="text-lg font-serif font-semibold text-foreground">
-                        {isDE ? selectedCatData.de : selectedCatData.en}
+                        {locName(selectedCatData)}
                       </h2>
                       <span className="text-sm text-muted-foreground ml-1">
                         ({categoryFreqs[selectedCatData.id]} {t("flavorWheel.mentions")})
@@ -699,7 +705,7 @@ export default function FlavorWheel() {
                             }}
                           />
                           <div className="relative flex items-center justify-between">
-                            <span className="text-sm font-medium text-foreground">{isDE ? sub.de : sub.en}</span>
+                            <span className="text-sm font-medium text-foreground">{locName(sub)}</span>
                             <span className="text-sm font-serif font-bold" style={{ color: count > 0 ? selectedCatData.color : "hsl(var(--muted-foreground))" }}>
                               {count}
                             </span>
