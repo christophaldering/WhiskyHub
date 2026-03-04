@@ -321,7 +321,7 @@ export default function MyTastePage() {
                   icon={Radar}
                   label="Flavor Profile"
                   description="Radar chart vs. platform average by region, cask & peat"
-                  href="/legacy/flavor-profile"
+                  href="/my-taste/profile"
                   testId="link-flavor-profile"
                 />
               </div>
@@ -344,7 +344,7 @@ export default function MyTastePage() {
                   icon={FlaskConical}
                   label="Benchmark Analyzer"
                   description="Import external notes & compare with your profile"
-                  href="/legacy/my/journal?tab=benchmark"
+                  href="/my-taste/journal?tab=benchmark"
                   testId="link-benchmark"
                 />
               </div>
@@ -359,7 +359,7 @@ export default function MyTastePage() {
                   icon={BookOpen}
                   label="Journal"
                   description="Your tasting history"
-                  href="/legacy/my/journal"
+                  href="/my-taste/journal"
                   testId="link-journal"
                   badge={journalCount > 0 ? journalCount : null}
                 />
@@ -367,21 +367,21 @@ export default function MyTastePage() {
                   icon={ListChecks}
                   label="My Whiskies"
                   description="All your rated whiskies, filterable & sortable"
-                  href="/legacy/my/journal?tab=tasted"
+                  href="/my-taste/journal?tab=tasted"
                   testId="link-my-whiskies"
                 />
                 <NavCard
                   icon={History}
                   label="Tasting Recap"
                   description="Review your past tasting sessions"
-                  href="/legacy/my/journal?tab=recap"
+                  href="/my-taste/journal?tab=recap"
                   testId="link-tasting-recap"
                 />
                 <NavCard
                   icon={FileDown}
                   label="Export Notes"
                   description="Download your ratings & notes"
-                  href="/legacy/my/journal?tab=export"
+                  href="/my-taste/journal?tab=export"
                   testId="link-export-notes"
                 />
               </div>
@@ -396,14 +396,14 @@ export default function MyTastePage() {
                   icon={Archive}
                   label="Collection"
                   description="Your Whiskybase collection with sync & tracking"
-                  href="/legacy/my/collection"
+                  href="/my-taste/collection"
                   testId="link-collection"
                 />
                 <NavCard
                   icon={Heart}
                   label="Wishlist"
                   description="Whiskies you want to try next"
-                  href="/legacy/my/wishlist"
+                  href="/my-taste/wishlist"
                   testId="link-wishlist"
                 />
               </div>

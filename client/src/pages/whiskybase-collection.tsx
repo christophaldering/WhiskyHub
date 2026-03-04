@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { collectionApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
+import SimpleShell from "@/components/simple/simple-shell";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -389,19 +390,21 @@ export default function WhiskybaseCollection() {
 
   if (!currentParticipant) {
     return (
-      <GuestPreview featureTitle={t("wishlist.title")} featureDescription={t("guestPreview.wishlist")}>
-        <div className="space-y-4">
-          <h1 className="text-2xl font-serif font-bold">{t("wishlist.title")}</h1>
-          <div className="grid gap-3">
-            {[{name: "Lagavulin 16", distillery: "Lagavulin", region: "Islay"}, {name: "Glenfarclas 25", distillery: "Glenfarclas", region: "Speyside"}, {name: "Springbank 15", distillery: "Springbank", region: "Campbeltown"}].map(w => (
-              <div key={w.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
-                <div><div className="font-serif font-semibold">{w.name}</div><div className="text-sm text-muted-foreground">{w.distillery} · {w.region}</div></div>
-                <div className="text-yellow-500">★</div>
-              </div>
-            ))}
+      <SimpleShell maxWidth={900}>
+        <GuestPreview featureTitle={t("wishlist.title")} featureDescription={t("guestPreview.wishlist")}>
+          <div className="space-y-4">
+            <h1 className="text-2xl font-serif font-bold">{t("wishlist.title")}</h1>
+            <div className="grid gap-3">
+              {[{name: "Lagavulin 16", distillery: "Lagavulin", region: "Islay"}, {name: "Glenfarclas 25", distillery: "Glenfarclas", region: "Speyside"}, {name: "Springbank 15", distillery: "Springbank", region: "Campbeltown"}].map(w => (
+                <div key={w.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
+                  <div><div className="font-serif font-semibold">{w.name}</div><div className="text-sm text-muted-foreground">{w.distillery} · {w.region}</div></div>
+                  <div className="text-yellow-500">★</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </GuestPreview>
+        </GuestPreview>
+      </SimpleShell>
     );
   }
 
@@ -424,6 +427,7 @@ export default function WhiskybaseCollection() {
   };
 
   return (
+    <SimpleShell maxWidth={900}>
     <div className="space-y-6 pb-20">
       <div className="space-y-3">
         <div>
@@ -1193,5 +1197,6 @@ export default function WhiskybaseCollection() {
         </DialogContent>
       </Dialog>
     </div>
+    </SimpleShell>
   );
 }

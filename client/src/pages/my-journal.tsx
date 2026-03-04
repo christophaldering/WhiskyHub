@@ -10,6 +10,7 @@ import Analytics from "@/pages/analytics";
 import BenchmarkAnalyzer from "@/pages/benchmark-analyzer";
 import ExportNotes from "@/pages/export-notes";
 import DataExport from "@/pages/data-export";
+import SimpleShell from "@/components/simple/simple-shell";
 
 const VALID_TABS = ["journal", "tasted", "compare", "recap", "analytics", "benchmark", "export"] as const;
 type TabValue = (typeof VALID_TABS)[number];
@@ -30,7 +31,8 @@ export default function MyJournal() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="my-journal-page">
+    <SimpleShell maxWidth={900}>
+    <div className="min-w-0 overflow-x-hidden" data-testid="my-journal-page">
       <div className="flex items-center gap-3 mb-6">
         <NotebookPen className="w-7 h-7 text-primary" />
         <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-my-journal-title">
@@ -55,11 +57,11 @@ export default function MyJournal() {
             </TabsTrigger>
             <TabsTrigger value="analytics" data-testid="tab-analytics">
               Analytik
-              <span className="ml-1 text-[9px] bg-amber-500/20 text-amber-600 px-1.5 py-0.5 rounded-full font-semibold">PRO</span>
+              <span className="ml-1 text-[9px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full font-semibold">PRO</span>
             </TabsTrigger>
             <TabsTrigger value="benchmark" data-testid="tab-benchmark">
               Benchmark
-              <span className="ml-1 text-[9px] bg-amber-500/20 text-amber-600 px-1.5 py-0.5 rounded-full font-semibold">PRO</span>
+              <span className="ml-1 text-[9px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full font-semibold">PRO</span>
             </TabsTrigger>
             <TabsTrigger value="export" data-testid="tab-export">
               Export
@@ -93,5 +95,6 @@ export default function MyJournal() {
         </TabsContent>
       </Tabs>
     </div>
+    </SimpleShell>
   );
 }

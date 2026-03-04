@@ -47,6 +47,8 @@ import DiscoverDistilleriesNative from "@/pages/discover-distilleries-native";
 import MyTasteAnalytics from "@/pages/my-taste-analytics";
 import TastingRoomSimple from "@/pages/tasting-room-simple";
 import TastingResultsPage from "@/pages/tasting-results";
+import Recommendations from "@/pages/recommendations";
+import ActivityFeed from "@/pages/activity-feed";
 import Impressum from "@/pages/impressum";
 import Privacy from "@/pages/privacy";
 import HomeDashboard from "@/pages/home-dashboard";
@@ -123,10 +125,16 @@ function Router() {
         <Route path="/my-taste/flavors" component={MyTasteFlavors} />
         <Route path="/my-taste/compare" component={MyTasteCompare} />
         <Route path="/my-taste/analytics" component={MyTasteAnalytics} />
+        <Route path="/my-taste/profile" component={FlavorProfile} />
+        <Route path="/my-taste/journal" component={MyJournal} />
+        <Route path="/my-taste/collection" component={WhiskybaseCollection} />
+        <Route path="/my-taste/wishlist" component={Wishlist} />
         <Route path="/taste" component={MyTastePage} />
         <Route path="/discover/lexicon" component={DiscoverLexicon} />
         <Route path="/discover/community" component={DiscoverCommunityNative} />
         <Route path="/discover/distilleries" component={DiscoverDistilleriesNative} />
+        <Route path="/discover/recommendations" component={Recommendations} />
+        <Route path="/discover/activity" component={ActivityFeed} />
         <Route path="/impressum" component={Impressum} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/intro" component={Intro} />
@@ -176,24 +184,24 @@ function Router() {
               <Route path="/legacy/tasting/calendar" component={TastingCalendar} />
               <Route path="/legacy/tasting/host" component={HostDashboard} />
               <Route path="/legacy/tasting/:id" component={TastingRoom} />
-              <Route path="/legacy/my/journal" component={MyJournal} />
-              <Route path="/legacy/my/collection" component={WhiskybaseCollection} />
-              <Route path="/legacy/my/wishlist" component={Wishlist} />
+              <Route path="/legacy/my/journal">{() => <Redirect to="/my-taste/journal" />}</Route>
+              <Route path="/legacy/my/collection">{() => <Redirect to="/my-taste/collection" />}</Route>
+              <Route path="/legacy/my/wishlist">{() => <Redirect to="/my-taste/wishlist" />}</Route>
               <Route path="/legacy/discover" component={DiscoverHub} />
               <Route path="/legacy/discover/distilleries" component={DiscoverDistilleries} />
               <Route path="/legacy/discover/community" component={DiscoverCommunity} />
-              <Route path="/legacy/discover/database" component={WhiskyDatabase} />
+              <Route path="/legacy/discover/database">{() => <Redirect to="/discover/database" />}</Route>
               <Route path="/legacy/profile" component={Profile} />
               <Route path="/legacy/profile/account" component={Account} />
               <Route path="/legacy/profile/help" component={ProfileHelp} />
               <Route path="/legacy/admin" component={AdminPanel} />
               <Route path="/legacy/news" component={News} />
               <Route path="/legacy/badges" component={Badges} />
-              <Route path="/legacy/flavor-profile" component={FlavorProfile} />
+              <Route path="/legacy/flavor-profile">{() => <Redirect to="/my-taste/profile" />}</Route>
               <Route path="/legacy/flavor-wheel" component={FlavorWheel} />
               <Route path="/legacy/photo-tasting" component={PhotoTasting} />
               <Route path="/legacy/method" component={Method} />
-              <Route path="/legacy/recap/:id" component={TastingRecap} />
+              <Route path="/legacy/recap/:id">{(params: any) => <Redirect to={`/recap/${params.id}`} />}</Route>
               <Route path="/legacy/invite/:token" component={InviteAccept} />
               <Route path="/legacy/comparison">{() => <RedirectWithQuery to="/legacy/my/journal" query="tab=compare" />}</Route>
               <Route path="/legacy/tasting-templates">{() => <RedirectWithQuery to="/legacy/tasting" query="tab=templates" />}</Route>
@@ -201,7 +209,7 @@ function Router() {
               <Route path="/legacy/benchmark">{() => <RedirectWithQuery to="/legacy/my/journal" query="tab=benchmark" />}</Route>
               <Route path="/legacy/analytics">{() => <RedirectWithQuery to="/legacy/my/journal" query="tab=analytics" />}</Route>
               <Route path="/legacy/data-export">{() => <RedirectWithQuery to="/legacy/my/journal" query="tab=export" />}</Route>
-              <Route path="/legacy/recommendations">{() => <Redirect to="/legacy/discover" />}</Route>
+              <Route path="/legacy/recommendations">{() => <Redirect to="/discover/recommendations" />}</Route>
               <Route path="/legacy/taste-twins">{() => <RedirectWithQuery to="/legacy/discover/community" query="tab=twins" />}</Route>
               <Route path="/legacy/friends">{() => <RedirectWithQuery to="/legacy/discover/community" query="tab=friends" />}</Route>
               <Route path="/legacy/community-rankings">{() => <RedirectWithQuery to="/legacy/discover/community" query="tab=rankings" />}</Route>

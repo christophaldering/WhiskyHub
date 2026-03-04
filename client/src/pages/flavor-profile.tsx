@@ -9,6 +9,7 @@ import { Activity, ChevronDown, ChevronUp, Users, Globe, User, BookOpen, Info } 
 import { GuestPreview } from "@/components/guest-preview";
 import { Link } from "wouter";
 import { FlavorWheelContent } from "./flavor-wheel";
+import SimpleShell from "@/components/simple/simple-shell";
 
 const COLORS = ["#c8a864", "#a8845c", "#8b6f47", "#d4a853", "#b8934a", "#9e7d3f", "#c4956c", "#d9b87c"];
 
@@ -56,9 +57,9 @@ interface WhiskyProfileData {
 }
 
 function StabilityBadge({ level, percent, t }: { level: string; percent: number; t: any }) {
-  const color = level === "stable" ? "text-green-600 bg-green-50 border-green-200" :
-    level === "tendency" ? "text-amber-600 bg-amber-50 border-amber-200" :
-    "text-slate-500 bg-slate-50 border-slate-200";
+  const color = level === "stable" ? "text-green-400 bg-green-500/10 border-green-500/30" :
+    level === "tendency" ? "text-amber-400 bg-amber-500/10 border-amber-500/30" :
+    "text-slate-400 bg-slate-500/10 border-slate-500/30";
   const label = level === "stable" ? t("flavorProfile.stable") :
     level === "tendency" ? t("flavorProfile.tendency") : t("flavorProfile.preliminary");
   return (
@@ -244,7 +245,7 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
           <div className="border-t border-border/20 pt-4">
             <h3 className="text-sm font-serif font-semibold mb-2">{t("flavorProfile.systematicDeviation")}</h3>
             <div className="flex items-center gap-4 mb-2">
-              <div className={`text-2xl font-serif font-bold ${dev.avgDelta > 0 ? "text-green-600" : dev.avgDelta < 0 ? "text-red-500" : "text-muted-foreground"}`} data-testid="text-avg-delta">
+              <div className={`text-2xl font-serif font-bold ${dev.avgDelta > 0 ? "text-green-400" : dev.avgDelta < 0 ? "text-red-400" : "text-muted-foreground"}`} data-testid="text-avg-delta">
                 {dev.avgDelta > 0 ? "+" : ""}{dev.avgDelta}
               </div>
               <div className="text-xs text-muted-foreground">
@@ -385,29 +386,33 @@ export default function FlavorProfile() {
 
   if (!currentParticipant) {
     return (
-      <GuestPreview featureTitle={t("flavorProfile.title")} featureDescription={t("guestPreview.flavorProfile")}>
-        <div className="space-y-4">
-          <h1 className="text-2xl font-serif font-bold">{t("flavorProfile.title")}</h1>
-          <div className="bg-card rounded-xl border p-6 flex items-center justify-center" style={{height: 300}}>
-            <div className="text-center space-y-3">
-              <div className="grid grid-cols-3 gap-6 text-sm">
-                {[{label: "Fruity", val: "8.4"}, {label: "Smoky", val: "6.2"}, {label: "Sweet", val: "7.8"}, {label: "Spicy", val: "5.5"}, {label: "Floral", val: "4.1"}, {label: "Maritime", val: "7.0"}].map(f => (
-                  <div key={f.label} className="text-center"><div className="text-lg font-serif font-bold text-primary">{f.val}</div><div className="text-muted-foreground text-xs">{f.label}</div></div>
-                ))}
+      <SimpleShell maxWidth={900}>
+        <GuestPreview featureTitle={t("flavorProfile.title")} featureDescription={t("guestPreview.flavorProfile")}>
+          <div className="space-y-4">
+            <h1 className="text-2xl font-serif font-bold">{t("flavorProfile.title")}</h1>
+            <div className="bg-card rounded-xl border p-6 flex items-center justify-center" style={{height: 300}}>
+              <div className="text-center space-y-3">
+                <div className="grid grid-cols-3 gap-6 text-sm">
+                  {[{label: "Fruity", val: "8.4"}, {label: "Smoky", val: "6.2"}, {label: "Sweet", val: "7.8"}, {label: "Spicy", val: "5.5"}, {label: "Floral", val: "4.1"}, {label: "Maritime", val: "7.0"}].map(f => (
+                    <div key={f.label} className="text-center"><div className="text-lg font-serif font-bold text-primary">{f.val}</div><div className="text-muted-foreground text-xs">{f.label}</div></div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </GuestPreview>
+        </GuestPreview>
+      </SimpleShell>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="h-8 w-48 bg-card/50 rounded animate-pulse mb-4" />
-        <div className="h-64 bg-card/50 rounded-lg animate-pulse" />
-      </div>
+      <SimpleShell maxWidth={900}>
+        <div className="py-8">
+          <div className="h-8 w-48 bg-card/50 rounded animate-pulse mb-4" />
+          <div className="h-64 bg-card/50 rounded-lg animate-pulse" />
+        </div>
+      </SimpleShell>
     );
   }
 
@@ -446,7 +451,8 @@ export default function FlavorProfile() {
   const hasData = totalRatings > 0 || totalJournalScores > 0;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="flavor-profile-page">
+    <SimpleShell maxWidth={900}>
+    <div className="min-w-0 overflow-x-hidden" data-testid="flavor-profile-page">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-3 mb-2">
           <Activity className="w-7 h-7 text-primary" />
@@ -652,5 +658,6 @@ export default function FlavorProfile() {
         )}
       </motion.div>
     </div>
+    </SimpleShell>
   );
 }

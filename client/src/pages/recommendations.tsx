@@ -6,6 +6,7 @@ import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ExternalLink, Users, Info, ChevronDown } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
+import SimpleShell from "@/components/simple/simple-shell";
 
 interface Whisky {
   id: string;
@@ -141,19 +142,21 @@ export default function Recommendations() {
 
   if (!currentParticipant) {
     return (
-      <GuestPreview featureTitle={t("recommendations.title")} featureDescription={t("guestPreview.recommendations")}>
-        <div className="space-y-4">
-          <h1 className="text-2xl font-serif font-bold">{t("recommendations.title")}</h1>
-          <div className="grid gap-3">
-            {[{name: "Ardbeg Corryvreckan", reason: "Based on your love for peated whiskies", score: "94%"}, {name: "Clynelish 14", reason: "Similar to your top-rated Highland malts", score: "89%"}, {name: "Bunnahabhain 18", reason: "Matches your preference for maritime notes", score: "87%"}].map(r => (
-              <div key={r.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
-                <div><div className="font-serif font-semibold">{r.name}</div><div className="text-sm text-muted-foreground">{r.reason}</div></div>
-                <div className="text-primary font-serif font-bold">{r.score}</div>
-              </div>
-            ))}
+      <SimpleShell maxWidth={900}>
+        <GuestPreview featureTitle={t("recommendations.title")} featureDescription={t("guestPreview.recommendations")}>
+          <div className="space-y-4">
+            <h1 className="text-2xl font-serif font-bold">{t("recommendations.title")}</h1>
+            <div className="grid gap-3">
+              {[{name: "Ardbeg Corryvreckan", reason: "Based on your love for peated whiskies", score: "94%"}, {name: "Clynelish 14", reason: "Similar to your top-rated Highland malts", score: "89%"}, {name: "Bunnahabhain 18", reason: "Matches your preference for maritime notes", score: "87%"}].map(r => (
+                <div key={r.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
+                  <div><div className="font-serif font-semibold">{r.name}</div><div className="text-sm text-muted-foreground">{r.reason}</div></div>
+                  <div className="text-primary font-serif font-bold">{r.score}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </GuestPreview>
+        </GuestPreview>
+      </SimpleShell>
     );
   }
 
@@ -179,7 +182,8 @@ export default function Recommendations() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="recommendations-page">
+    <SimpleShell maxWidth={900}>
+    <div className="min-w-0 overflow-x-hidden" data-testid="recommendations-page">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-3 mb-2">
           <Sparkles className="w-7 h-7 text-primary" />
@@ -320,5 +324,6 @@ export default function Recommendations() {
         )}
       </motion.div>
     </div>
+    </SimpleShell>
   );
 }

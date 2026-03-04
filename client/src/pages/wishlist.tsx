@@ -8,6 +8,7 @@ import { wishlistApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { GuestPreview } from "@/components/guest-preview";
+import SimpleShell from "@/components/simple/simple-shell";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,19 +88,21 @@ export default function Wishlist() {
 
   if (!currentParticipant) {
     return (
-      <GuestPreview featureTitle={t("wishlist.title")} featureDescription={t("guestPreview.wishlist")}>
-        <div className="space-y-4">
-          <h1 className="text-2xl font-serif font-bold">{t("wishlist.title")}</h1>
-          <div className="grid gap-3">
-            {[{name: "Lagavulin 16", distillery: "Lagavulin", region: "Islay"}, {name: "Glenfarclas 25", distillery: "Glenfarclas", region: "Speyside"}, {name: "Springbank 15", distillery: "Springbank", region: "Campbeltown"}, {name: "Macallan 18 Sherry Oak", distillery: "Macallan", region: "Speyside"}].map(w => (
-              <div key={w.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
-                <div><div className="font-serif font-semibold">{w.name}</div><div className="text-sm text-muted-foreground">{w.distillery} · {w.region}</div></div>
-                <div className="text-yellow-500">★</div>
-              </div>
-            ))}
+      <SimpleShell maxWidth={900}>
+        <GuestPreview featureTitle={t("wishlist.title")} featureDescription={t("guestPreview.wishlist")}>
+          <div className="space-y-4">
+            <h1 className="text-2xl font-serif font-bold">{t("wishlist.title")}</h1>
+            <div className="grid gap-3">
+              {[{name: "Lagavulin 16", distillery: "Lagavulin", region: "Islay"}, {name: "Glenfarclas 25", distillery: "Glenfarclas", region: "Speyside"}, {name: "Springbank 15", distillery: "Springbank", region: "Campbeltown"}, {name: "Macallan 18 Sherry Oak", distillery: "Macallan", region: "Speyside"}].map(w => (
+                <div key={w.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
+                  <div><div className="font-serif font-semibold">{w.name}</div><div className="text-sm text-muted-foreground">{w.distillery} · {w.region}</div></div>
+                  <div className="text-yellow-500">★</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </GuestPreview>
+        </GuestPreview>
+      </SimpleShell>
     );
   }
 
@@ -140,7 +143,8 @@ export default function Wishlist() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="wishlist-page">
+    <SimpleShell maxWidth={900}>
+    <div className="min-w-0 overflow-x-hidden" data-testid="wishlist-page">
       <AnimatePresence mode="wait">
         {view === "list" && (
           <motion.div
@@ -235,7 +239,7 @@ export default function Wishlist() {
                             <div className="mt-3 p-3 bg-amber-500/5 border border-amber-500/15 rounded-md">
                               <div className="flex items-center gap-1.5 mb-1">
                                 <Sparkles className="w-3 h-3 text-amber-500" />
-                                <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">{t("wishlist.whyInteresting")}</span>
+                                <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400">{t("wishlist.whyInteresting")}</span>
                               </div>
                               <p className="text-xs text-foreground/80 leading-relaxed" data-testid={`text-summary-${entry.id}`}>
                                 {entry.aiSummary}
@@ -332,6 +336,7 @@ export default function Wishlist() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </SimpleShell>
   );
 }
 
@@ -524,7 +529,7 @@ function WishlistForm({
           <motion.div
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 rounded-lg px-3 py-2 text-xs text-green-700 dark:text-green-400 flex items-center justify-between gap-2"
+            className="mt-3 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2 text-xs text-green-400 flex items-center justify-between gap-2"
           >
             <span className="flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5" />

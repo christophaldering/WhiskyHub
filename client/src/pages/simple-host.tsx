@@ -1163,7 +1163,7 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
             testId: "button-view-results",
           })}
           {bigButton({
-            onClick: () => navigate(`/legacy/recap/${tasting.id}`),
+            onClick: () => navigate(`/recap/${tasting.id}`),
             icon: ClipboardList,
             label: "View Recap",
             bg: c.card,
@@ -1817,7 +1817,7 @@ function HistoryAccordion({ tastings }: { tastings: TastingFull[] }) {
                         <BarChart3 style={{ width: 12, height: 12 }} /> Results
                       </span>
                     </Link>
-                    <Link href={`/legacy/recap/${t.id}`}>
+                    <Link href={`/recap/${t.id}`}>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: c.mutedLight, cursor: "pointer" }} data-testid={`recap-link-${t.id}`}>
                         <ClipboardList style={{ width: 12, height: 12 }} /> Recap
                       </span>

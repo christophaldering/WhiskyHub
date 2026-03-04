@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, ArrowUpDown, ExternalLink, Wine, ShieldAlert, Star, Database } from "lucide-react";
 import { Link } from "wouter";
+import SimpleShell from "@/components/simple/simple-shell";
 
 interface DbWhisky {
   id: string;
@@ -97,22 +98,26 @@ export default function WhiskyDatabase() {
 
   if (!currentParticipant) {
     return (
-      <div className="text-center py-20 space-y-4">
-        <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground" />
-        <p className="text-muted-foreground font-serif">{t("whiskyDb.loginRequired")}</p>
-      </div>
+      <SimpleShell maxWidth={900}>
+        <div className="text-center py-20 space-y-4">
+          <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground" />
+          <p className="text-muted-foreground font-serif">{t("whiskyDb.loginRequired")}</p>
+        </div>
+      </SimpleShell>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-20 space-y-6 max-w-md mx-auto">
-        <Database className="w-14 h-14 mx-auto text-primary/40" />
-        <div className="space-y-2">
-          <p className="text-base sm:text-lg font-serif font-semibold text-primary">{t("whiskyDb.accessDenied")}</p>
-          <p className="text-sm text-muted-foreground font-serif leading-relaxed">{t("whiskyDb.accessDeniedDesc")}</p>
+      <SimpleShell maxWidth={900}>
+        <div className="text-center py-20 space-y-6 max-w-md mx-auto">
+          <Database className="w-14 h-14 mx-auto text-primary/40" />
+          <div className="space-y-2">
+            <p className="text-base sm:text-lg font-serif font-semibold text-primary">{t("whiskyDb.accessDenied")}</p>
+            <p className="text-sm text-muted-foreground font-serif leading-relaxed">{t("whiskyDb.accessDeniedDesc")}</p>
+          </div>
         </div>
-      </div>
+      </SimpleShell>
     );
   }
 
@@ -122,6 +127,7 @@ export default function WhiskyDatabase() {
     : null;
 
   return (
+    <SimpleShell maxWidth={900}>
     <div className="space-y-8 min-w-0 overflow-x-hidden" data-testid="whisky-database">
       <header>
         <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight break-words">{t("whiskyDb.title")}</h1>
@@ -265,5 +271,6 @@ export default function WhiskyDatabase() {
         </div>
       )}
     </div>
+    </SimpleShell>
   );
 }

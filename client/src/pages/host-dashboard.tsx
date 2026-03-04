@@ -940,7 +940,7 @@ export default function HostDashboard() {
                                   <Trophy style={{ width: 12, height: 12 }} /> {isDE ? "Ergebnisse" : "Results"}
                                 </span>
                               </Link>
-                              <Link href={`/legacy/recap/${tasting.id}`}>
+                              <Link href={`/recap/${tasting.id}`}>
                                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: c.accentDim, cursor: "pointer" }} data-testid={`recap-link-${tasting.id}`}>
                                   <ClipboardList style={{ width: 12, height: 12 }} /> Recap
                                 </span>

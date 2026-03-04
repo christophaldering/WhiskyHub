@@ -12,6 +12,7 @@ import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { ThankYouDialog } from "@/components/thank-you-dialog";
 import jsPDF from "jspdf";
+import SimpleShell from "@/components/simple/simple-shell";
 
 interface RecapData {
   tasting: { id: string; title: string; date: string; location: string; status: string; hostId: string; ratingScale?: number };
@@ -236,7 +237,8 @@ export default function TastingRecap() {
 
   if (!params.id && !selectedTastingId) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8" data-testid="recap-page">
+      <SimpleShell maxWidth={900}>
+      <div data-testid="recap-page">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center gap-3 mb-2">
             <Trophy className="w-7 h-7 text-primary" />
@@ -278,22 +280,26 @@ export default function TastingRecap() {
           </div>
         </motion.div>
       </div>
+      </SimpleShell>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8" data-testid="recap-page">
+      <SimpleShell maxWidth={900}>
+      <div data-testid="recap-page">
         <div className="h-8 w-48 bg-card/50 rounded animate-pulse mb-4" />
         <div className="h-64 bg-card/50 rounded-lg animate-pulse mb-4" />
         <div className="h-48 bg-card/50 rounded-lg animate-pulse" />
       </div>
+      </SimpleShell>
     );
   }
 
   if (isError || !recap) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8 text-center" data-testid="recap-page">
+      <SimpleShell maxWidth={900}>
+      <div className="text-center" data-testid="recap-page">
         <p className="text-muted-foreground font-serif" data-testid="text-recap-error">
           {t("recap.error")}
         </p>
@@ -303,6 +309,7 @@ export default function TastingRecap() {
           </Button>
         )}
       </div>
+      </SimpleShell>
     );
   }
 
@@ -322,7 +329,8 @@ export default function TastingRecap() {
     : null;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 print:p-0 min-w-0 overflow-x-hidden" data-testid="recap-page">
+    <SimpleShell maxWidth={900}>
+    <div className="print:p-0 min-w-0 overflow-x-hidden" data-testid="recap-page">
       <style>{`
         @media print {
           body * { visibility: hidden; }
@@ -519,5 +527,6 @@ export default function TastingRecap() {
         )}
       </motion.div>
     </div>
+    </SimpleShell>
   );
 }

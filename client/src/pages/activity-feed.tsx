@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Rss, NotebookPen, Wine, Star } from "lucide-react";
 import { Link } from "wouter";
 import { GuestPreview } from "@/components/guest-preview";
+import SimpleShell from "@/components/simple/simple-shell";
 
 interface ActivityItem {
   type: "journal" | "tasting";
@@ -44,26 +45,29 @@ export default function ActivityFeed() {
 
   if (!currentParticipant) {
     return (
-      <GuestPreview featureTitle={t("activityFeed.title")} featureDescription={t("guestPreview.activity")}>
-        <div className="space-y-4">
-          <h1 className="text-2xl font-serif font-bold">{t("activityFeed.title")}</h1>
-          <div className="space-y-3">
-            {[{user: "Alex M.", action: "rated Ardbeg Uigeadail", score: "9.2", time: "2h ago"}, {user: "Sarah K.", action: "joined Highland Evening tasting", score: "", time: "5h ago"}, {user: "Tom B.", action: "added Lagavulin 16 to wishlist", score: "", time: "1d ago"}].map((a, i) => (
-              <div key={i} className="bg-card rounded-xl border p-4 flex items-center gap-4">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-serif text-primary text-sm font-semibold">{a.user[0]}</div>
-                <div className="flex-1"><div className="text-sm"><span className="font-semibold">{a.user}</span> {a.action} {a.score && <span className="text-primary font-serif font-bold ml-1">{a.score}</span>}</div><div className="text-xs text-muted-foreground">{a.time}</div></div>
-              </div>
-            ))}
+      <SimpleShell maxWidth={700}>
+        <GuestPreview featureTitle={t("activityFeed.title")} featureDescription={t("guestPreview.activity")}>
+          <div className="space-y-4">
+            <h1 className="text-2xl font-serif font-bold">{t("activityFeed.title")}</h1>
+            <div className="space-y-3">
+              {[{user: "Alex M.", action: "rated Ardbeg Uigeadail", score: "9.2", time: "2h ago"}, {user: "Sarah K.", action: "joined Highland Evening tasting", score: "", time: "5h ago"}, {user: "Tom B.", action: "added Lagavulin 16 to wishlist", score: "", time: "1d ago"}].map((a, i) => (
+                <div key={i} className="bg-card rounded-xl border p-4 flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-serif text-primary text-sm font-semibold">{a.user[0]}</div>
+                  <div className="flex-1"><div className="text-sm"><span className="font-semibold">{a.user}</span> {a.action} {a.score && <span className="text-primary font-serif font-bold ml-1">{a.score}</span>}</div><div className="text-xs text-muted-foreground">{a.time}</div></div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </GuestPreview>
+        </GuestPreview>
+      </SimpleShell>
     );
   }
 
   const activities = data?.activities || [];
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="activity-feed-page">
+    <SimpleShell maxWidth={700}>
+    <div className="min-w-0 overflow-x-hidden" data-testid="activity-feed-page">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-3 mb-2">
           <Rss className="w-7 h-7 text-primary" />
@@ -156,5 +160,6 @@ export default function ActivityFeed() {
         )}
       </motion.div>
     </div>
+    </SimpleShell>
   );
 }

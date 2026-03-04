@@ -497,7 +497,7 @@ export default function TastingResultsPage() {
           </div>
         )}
 
-        <Link href={`/legacy/recap/${tastingId}`} style={{ textDecoration: "none" }}>
+        <Link href={`/recap/${tastingId}`} style={{ textDecoration: "none" }}>
           <div style={{
             display: "flex",
             alignItems: "center",
