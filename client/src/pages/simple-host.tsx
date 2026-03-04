@@ -1654,7 +1654,7 @@ export default function SimpleHostPage() {
                       {draftTastings.map((t) => (
                         <div
                           key={t.id}
-                          onClick={() => { setCreatedTasting(t); setWizardStep("step4"); }}
+                          onClick={() => { setCreatedTasting(t); setWizardStep("step2"); }}
                           style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
                           data-testid={`card-tasting-${t.id}`}
                         >
