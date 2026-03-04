@@ -1112,10 +1112,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertWhiskybaseCollectionItem(data: InsertWhiskybaseCollection): Promise<WhiskybaseCollectionItem> {
+    const lookupCol = data.collectionId
+      ? eq(whiskybaseCollection.collectionId, data.collectionId)
+      : eq(whiskybaseCollection.whiskybaseId, data.whiskybaseId);
     const [existing] = await db.select().from(whiskybaseCollection)
       .where(and(
         eq(whiskybaseCollection.participantId, data.participantId),
-        eq(whiskybaseCollection.whiskybaseId, data.whiskybaseId)
+        lookupCol
       ));
     
     if (existing) {

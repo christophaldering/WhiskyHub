@@ -3441,7 +3441,8 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
       let skipped = 0;
       
       const existingItems = await storage.getWhiskybaseCollection(participantId as string);
-      const existingMap = new Map(existingItems.map(item => [item.whiskybaseId, true]));
+      const existingByCollection = new Map(existingItems.filter(item => item.collectionId).map(item => [item.collectionId, true]));
+      const existingByWb = new Map(existingItems.map(item => [item.whiskybaseId, true]));
       
       for (const row of rows) {
         const whiskybaseId = colMap(row, "ID", "id");
@@ -3450,7 +3451,10 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
         const name = colMap(row, "Name", "name");
         if (!name) { skipped++; continue; }
         
-        const isUpdate = existingMap.has(whiskybaseId);
+        const collId = colMap(row, "Sammlungs-ID", "Collection ID", "Collection-ID");
+        const isUpdate = collId
+          ? existingByCollection.has(collId)
+          : existingByWb.has(whiskybaseId);
         
         await storage.upsertWhiskybaseCollectionItem({
           participantId: participantId as string,
@@ -3644,15 +3648,18 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
       const uploadedItems = rows.map(r => mapCollectionRow(r, participantId)).filter(Boolean);
       const existingItems = await storage.getWhiskybaseCollection(participantId);
 
-      const existingMap = new Map(existingItems.map(item => [item.whiskybaseId, item]));
-      const uploadedMap = new Map(uploadedItems.map((item: any) => [item.whiskybaseId, item]));
+      const existingByCollId = new Map(existingItems.filter(item => item.collectionId).map(item => [item.collectionId!, item]));
+      const existingByWbId = new Map(existingItems.map(item => [item.whiskybaseId, item]));
+      const uploadedByCollId = new Map(uploadedItems.filter((item: any) => item.collectionId).map((item: any) => [item.collectionId, item]));
 
       const newItems: any[] = [];
       const changedItems: any[] = [];
       let unchangedCount = 0;
 
       for (const uploaded of uploadedItems) {
-        const existing = existingMap.get(uploaded.whiskybaseId);
+        const existing = uploaded.collectionId
+          ? existingByCollId.get(uploaded.collectionId)
+          : existingByWbId.get(uploaded.whiskybaseId);
         if (!existing) {
           newItems.push(uploaded);
         } else {
@@ -3672,8 +3679,11 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
       }
 
       const removedItems = existingItems
-        .filter(item => !uploadedMap.has(item.whiskybaseId))
-        .map(item => ({ id: item.id, whiskybaseId: item.whiskybaseId, name: item.name, brand: item.brand, status: item.status }));
+        .filter(item => {
+          if (item.collectionId) return !uploadedByCollId.has(item.collectionId);
+          return !uploadedItems.some((u: any) => u.whiskybaseId === item.whiskybaseId);
+        })
+        .map(item => ({ id: item.id, whiskybaseId: item.whiskybaseId, collectionId: item.collectionId, name: item.name, brand: item.brand, status: item.status }));
 
       res.json({ newItems, removedItems, changedItems, unchangedCount, totalUploaded: uploadedItems.length, totalExisting: existingItems.length });
     } catch (error: any) {
