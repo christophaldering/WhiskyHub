@@ -113,6 +113,7 @@ function Router() {
         <Route path="/sessions" component={SessionsDark} />
         <Route path="/data-export" component={DataExportDark} />
         <Route path="/vocabulary" component={VocabularyDark} />
+        <Route path="/host-dashboard" component={HostDashboard} />
         <Route path="/support" component={SupportConsole} />
         <Route path="/host" component={SimpleHostPage} />
         <Route path="/analyze" component={SimpleAnalyzePage} />
@@ -254,7 +255,6 @@ function Router() {
               <Route path="/wishlist">{() => <Redirect to="/my/wishlist" />}</Route>
               <Route path="/recap">{() => <RedirectWithQuery to="/my/journal" query="tab=recap" />}</Route>
               <Route path="/my-tastings">{() => <RedirectWithQuery to="/tasting/sessions" query="tab=mine" />}</Route>
-              <Route path="/host-dashboard">{() => <Redirect to="/tasting/host" />}</Route>
               <Route path="/export-notes">{() => <RedirectWithQuery to="/my/journal" query="tab=export" />}</Route>
               <Route path="/calendar">{() => <Redirect to="/tasting/calendar" />}</Route>
               <Route path="/comparison">{() => <RedirectWithQuery to="/my/journal" query="tab=compare" />}</Route>

@@ -397,43 +397,9 @@ export default function HostDashboard() {
                 </SectionCard>
               </motion.div>
 
-              <motion.div custom={4} variants={cardVariants} initial="hidden" animate="visible">
-                <SectionCard className="h-full" testId="section-next-tasting">
-                  <SectionTitle icon={Calendar} title={isDE ? "Nächstes Tasting" : "Next Tasting"} />
-                  {upcomingTasting ? (
-                    <div className="flex flex-col items-center text-center gap-3 py-4">
-                      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Wine className="w-7 h-7 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-serif font-bold text-lg" data-testid="next-tasting-title">{upcomingTasting.title}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(upcomingTasting.date).toLocaleDateString(isDE ? "de-DE" : "en-US", { weekday: "long", day: "numeric", month: "long" })}
-                        </p>
-                        <div className="flex items-center justify-center gap-1 mt-2 text-xs text-muted-foreground">
-                          <Users className="w-3 h-3" /> {upcomingTasting.participantCount} {isDE ? "Teilnehmer" : "participants"}
-                        </div>
-                      </div>
-                      <Badge variant="outline" className={`text-[10px] ${statusColors[upcomingTasting.status] ?? ""}`}>
-                        {t(`session.status.${upcomingTasting.status}`)}
-                      </Badge>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center text-center gap-3 py-6 text-muted-foreground">
-                      <Calendar className="w-10 h-10 opacity-20" />
-                      <p className="text-sm">{isDE ? "Kein anstehendes Tasting" : "No upcoming tasting"}</p>
-                      <Link href="/host">
-                        <span className="text-xs text-primary cursor-pointer hover:underline" data-testid="link-plan-next">
-                          {isDE ? "Jetzt planen" : "Plan one now"} →
-                        </span>
-                      </Link>
-                    </div>
-                  )}
-                </SectionCard>
-              </motion.div>
             </div>
 
-            {/* Row 3: Average Scores + Documents */}
+            {/* Row 4: Average Scores + Documents */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {chartData.length > 0 && (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="lg:col-span-2">
@@ -578,51 +544,42 @@ export default function HostDashboard() {
               </motion.div>
             )}
 
-            {/* Row 6: Calendar + Invitations */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55, duration: 0.5 }}>
-                <SectionCard className="h-full" testId="section-dashboard-calendar">
-                  <SectionTitle icon={Calendar} title={isDE ? "Kalender" : "Calendar"} />
-                  <DashboardCalendar />
-                </SectionCard>
-              </motion.div>
-
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.5 }}>
-                <SectionCard className="h-full" testId="section-invitations">
-                  <SectionTitle icon={Mail} title={isDE ? "Einladungen" : "Invitations"} />
-                  <p className="text-xs text-muted-foreground mb-4">
-                    {isDE ? "Teilnehmer zu deinen Tastings einladen" : "Invite participants to your tastings"}
-                  </p>
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-3 p-4 rounded-lg border border-border/30 bg-card">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <QrCode className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold">{isDE ? "QR-Code" : "QR Code"}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {isDE ? "Erstelle einen QR-Code zum Scannen und Beitreten" : "Generate a QR code for scan-to-join"}
-                        </p>
-                      </div>
+            {/* Row 6: Invitations */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55, duration: 0.5 }}>
+              <SectionCard testId="section-invitations">
+                <SectionTitle icon={Mail} title={isDE ? "Einladungen" : "Invitations"} />
+                <p className="text-xs text-muted-foreground mb-4">
+                  {isDE ? "Teilnehmer zu deinen Tastings einladen" : "Invite participants to your tastings"}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex items-center gap-3 p-4 rounded-lg border border-border/30 bg-card">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <QrCode className="w-5 h-5 text-primary" />
                     </div>
-                    <div className="flex items-center gap-3 p-4 rounded-lg border border-border/30 bg-card">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Mail className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold">{isDE ? "Email-Einladung" : "Email Invite"}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {isDE ? "Sende Einladungen direkt per Email" : "Send invitations directly via email"}
-                        </p>
-                      </div>
+                    <div>
+                      <p className="text-sm font-semibold">{isDE ? "QR-Code" : "QR Code"}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {isDE ? "Erstelle einen QR-Code zum Scannen und Beitreten" : "Generate a QR code for scan-to-join"}
+                      </p>
                     </div>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-3 italic">
-                    {isDE ? "QR-Codes und Email-Einladungen sind beim Erstellen eines Tastings verfügbar" : "QR codes and email invites are available when creating a tasting"}
-                  </p>
-                </SectionCard>
-              </motion.div>
-            </div>
+                  <div className="flex items-center gap-3 p-4 rounded-lg border border-border/30 bg-card">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Mail className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">{isDE ? "Email-Einladung" : "Email Invite"}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {isDE ? "Sende Einladungen direkt per Email" : "Send invitations directly via email"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-3 italic">
+                  {isDE ? "QR-Codes und Email-Einladungen sind beim Erstellen eines Tastings verfügbar" : "QR codes and email invites are available when creating a tasting"}
+                </p>
+              </SectionCard>
+            </motion.div>
 
           </div>
         )}
