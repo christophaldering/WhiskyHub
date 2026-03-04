@@ -314,19 +314,19 @@ export default function HostDashboard() {
                         <span className="text-xs font-semibold">{isDE ? "Neues Tasting" : "New Tasting"}</span>
                       </div>
                     </Link>
-                    <Link href="/legacy/tasting/sessions">
+                    <Link href="/sessions">
                       <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-card hover:bg-primary/5 transition-colors cursor-pointer border border-border/30 text-center" data-testid="action-manage-sessions">
                         <FileText className="w-6 h-6 text-muted-foreground" />
                         <span className="text-xs font-semibold">{isDE ? "Sessions" : "Sessions"}</span>
                       </div>
                     </Link>
-                    <Link href="/legacy/data-export">
+                    <Link href="/data-export">
                       <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-card hover:bg-primary/5 transition-colors cursor-pointer border border-border/30 text-center" data-testid="action-export">
                         <Download className="w-6 h-6 text-muted-foreground" />
                         <span className="text-xs font-semibold">{isDE ? "Datenexport" : "Data Export"}</span>
                       </div>
                     </Link>
-                    <Link href="/legacy/tasting?tab=templates">
+                    <Link href="/vocabulary">
                       <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-card hover:bg-primary/5 transition-colors cursor-pointer border border-border/30 text-center" data-testid="action-templates">
                         <BookOpen className="w-6 h-6 text-muted-foreground" />
                         <span className="text-xs font-semibold">{isDE ? "Vokabular" : "Vocabulary"}</span>
@@ -480,10 +480,10 @@ export default function HostDashboard() {
                 <SectionCard className="h-full" testId="section-tools">
                   <SectionTitle icon={BarChart3} title={isDE ? "Tools & Analyse" : "Tools & Analytics"} />
                   <div className="flex flex-col gap-1">
-                    <ToolLink href="/legacy/data-export" icon={Download} label={isDE ? "Datenexport" : "Data Export"} desc={isDE ? "CSV, Excel, kompletter Export" : "CSV, Excel, full export"} />
-                    <ToolLink href="/legacy/tasting/sessions" icon={Copy} label={isDE ? "Sessions verwalten" : "Manage Sessions"} desc={isDE ? "Duplizieren, archivieren, bearbeiten" : "Duplicate, archive, edit"} />
-                    <ToolLink href="/legacy/tasting?tab=templates" icon={BookOpen} label={isDE ? "Tasting-Vokabular" : "Tasting Vocabulary"} desc={isDE ? "Beschreibungshilfen für jede Stilrichtung" : "Descriptors for every whisky style"} />
-                    <ToolLink href="/legacy/tasting?tab=ai" icon={Sparkles} label={isDE ? "KI-Kuratierung" : "AI Curation"} desc={isDE ? "KI-gestützte Whisky-Vorschläge" : "AI-powered whisky suggestions"} />
+                    <ToolLink href="/data-export" icon={Download} label={isDE ? "Datenexport" : "Data Export"} desc={isDE ? "CSV, Excel, kompletter Export" : "CSV, Excel, full export"} />
+                    <ToolLink href="/sessions" icon={Copy} label={isDE ? "Sessions verwalten" : "Manage Sessions"} desc={isDE ? "Duplizieren, archivieren, bearbeiten" : "Duplicate, archive, edit"} />
+                    <ToolLink href="/vocabulary" icon={BookOpen} label={isDE ? "Tasting-Vokabular" : "Tasting Vocabulary"} desc={isDE ? "Beschreibungshilfen für jede Stilrichtung" : "Descriptors for every whisky style"} />
+                    <ToolLink href="/vocabulary" icon={Sparkles} label={isDE ? "KI-Kuratierung" : "AI Curation"} desc={isDE ? "KI-gestützte Whisky-Vorschläge" : "AI-powered whisky suggestions"} />
                   </div>
                 </SectionCard>
               </motion.div>

@@ -58,6 +58,9 @@ import DiscoverDistilleries from "@/pages/discover-distilleries";
 import DiscoverCommunity from "@/pages/discover-community";
 import ProfileHelp from "@/pages/profile-help";
 import Account from "@/pages/account";
+import SessionsDark from "@/pages/sessions-dark";
+import DataExportDark from "@/pages/data-export-dark";
+import VocabularyDark from "@/pages/vocabulary-dark";
 import SimpleLegacyShell from "@/components/simple/simple-legacy-shell";
 import LabDarkLayout from "@/lab-dark/LabDarkLayout";
 import LabHome from "@/lab-dark/pages/LabHome";
@@ -107,6 +110,9 @@ function Router() {
         <Route path="/tasting-room-simple/:id" component={TastingRoomSimple} />
         <Route path="/tasting-results/:id" component={TastingResultsPage} />
         <Route path="/naked/:code" component={NakedTasting} />
+        <Route path="/sessions" component={SessionsDark} />
+        <Route path="/data-export" component={DataExportDark} />
+        <Route path="/vocabulary" component={VocabularyDark} />
         <Route path="/support" component={SupportConsole} />
         <Route path="/host" component={SimpleHostPage} />
         <Route path="/analyze" component={SimpleAnalyzePage} />
@@ -242,7 +248,6 @@ function Router() {
               <Route path="/recap/:id" component={TastingRecap} />
               <Route path="/invite/:token" component={InviteAccept} />
 
-              <Route path="/sessions">{() => <Redirect to="/tasting/sessions" />}</Route>
               <Route path="/journal">{() => <Redirect to="/my/journal" />}</Route>
               <Route path="/my-whiskies">{() => <RedirectWithQuery to="/my/journal" query="tab=tasted" />}</Route>
               <Route path="/collection">{() => <Redirect to="/my/collection" />}</Route>
@@ -258,7 +263,6 @@ function Router() {
               <Route path="/benchmark">{() => <RedirectWithQuery to="/my/journal" query="tab=benchmark" />}</Route>
               <Route path="/whisky-database">{() => <Redirect to="/discover/database" />}</Route>
               <Route path="/analytics">{() => <RedirectWithQuery to="/my/journal" query="tab=analytics" />}</Route>
-              <Route path="/data-export">{() => <RedirectWithQuery to="/my/journal" query="tab=export" />}</Route>
               <Route path="/recommendations">{() => <Redirect to="/discover" />}</Route>
               <Route path="/taste-twins">{() => <RedirectWithQuery to="/discover/community" query="tab=twins" />}</Route>
               <Route path="/friends">{() => <RedirectWithQuery to="/discover/community" query="tab=friends" />}</Route>
