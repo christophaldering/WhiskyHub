@@ -3351,6 +3351,101 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
     }
   });
 
+  // --- Whiskybase Lookup (auto-fill from WB ID) ---
+
+  const wbLookupCache = new Map<string, { data: any; ts: number }>();
+  const wbLookupRateMap = new Map<string, number[]>();
+  const WB_RATE_LIMIT = 10;
+  const WB_RATE_WINDOW = 60_000;
+  const WB_CACHE_TTL = 3600_000;
+
+  app.get("/api/whiskybase-lookup/:wbId", async (req: Request, res: Response) => {
+    try {
+      const wbId = (req.params.wbId as string).trim();
+      if (!wbId || wbId.length > 10 || !/^\d+$/.test(wbId)) {
+        return res.status(400).json({ error: "Invalid Whiskybase ID (numeric, max 10 digits)" });
+      }
+
+      const participantId = req.headers["x-participant-id"] as string | undefined;
+
+      if (participantId) {
+        const collection = await storage.getWhiskybaseCollection(participantId);
+        const match = collection.find((item: any) => item.whiskybaseId === wbId);
+        if (match) {
+          return res.json({
+            source: "collection",
+            name: match.name || "",
+            distillery: match.distillery || match.brand || "",
+            age: match.statedAge || "",
+            abv: match.abv || "",
+            caskType: match.caskType || "",
+            price: match.pricePaid ? `€${match.pricePaid}` : "",
+          });
+        }
+      }
+
+      const cached = wbLookupCache.get(wbId);
+      if (cached && Date.now() - cached.ts < WB_CACHE_TTL) {
+        return res.json(cached.data);
+      }
+
+      const rateKey = participantId || req.ip || "anon";
+      const now = Date.now();
+      const history = (wbLookupRateMap.get(rateKey) || []).filter(t => now - t < WB_RATE_WINDOW);
+      if (history.length >= WB_RATE_LIMIT) {
+        return res.status(429).json({ error: "Too many lookups, please wait" });
+      }
+      history.push(now);
+      wbLookupRateMap.set(rateKey, history);
+
+      const { client } = await getAIClient(participantId || undefined, "whiskybase_lookup");
+      if (!client) {
+        return res.status(503).json({ error: "ai_unavailable" });
+      }
+
+      const completion = await client.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `You are a whisky expert with extensive knowledge of the Whiskybase.com database. Given a Whiskybase ID number, return what you know about this whisky. Return JSON with fields: name (full product name), distillery, age (just the number or empty string), abv (with % sign or empty string), caskType, region, price (estimated retail price in EUR with € sign, or empty string). If you don't know a field, return an empty string. If you cannot identify the whisky at all, return {"found": false}.`,
+          },
+          {
+            role: "user",
+            content: `Whiskybase ID: ${wbId}`,
+          },
+        ],
+      });
+
+      const raw = completion.choices[0]?.message?.content || "{}";
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : "{}");
+
+      if (parsed.found === false) {
+        return res.status(404).json({ error: "Whisky not found" });
+      }
+
+      const result = {
+        source: "ai" as const,
+        name: parsed.name || "",
+        distillery: parsed.distillery || "",
+        age: String(parsed.age || ""),
+        abv: parsed.abv || "",
+        caskType: parsed.caskType || parsed.cask_type || "",
+        region: parsed.region || "",
+        price: parsed.price || "",
+      };
+
+      wbLookupCache.set(wbId, { data: result, ts: Date.now() });
+      res.json(result);
+    } catch (error: any) {
+      console.error("Whiskybase lookup error:", error.message);
+      res.status(500).json({ error: "Lookup failed" });
+    }
+  });
+
   // --- Whiskybase Collection ---
   
   app.get("/api/collection/:participantId", async (req: Request, res: Response) => {

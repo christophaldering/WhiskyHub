@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, ChevronDown, Camera } from "lucide-react";
+import { Mic, ChevronDown, Camera, Loader2, Search } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
@@ -790,6 +790,8 @@ export default function SimpleLogPage() {
   const [unknownCask, setUnknownCask] = useState("");
   const [unknownWbId, setUnknownWbId] = useState("");
   const [unknownPrice, setUnknownPrice] = useState("");
+  const [wbLookupLoading, setWbLookupLoading] = useState(false);
+  const [wbLookupResult, setWbLookupResult] = useState<string>("");
   const [showDetailed, setShowDetailed] = useState(false);
   const [detailedScores, setDetailedScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50 });
   const [detailTouched, setDetailTouched] = useState(false);
@@ -802,6 +804,37 @@ export default function SimpleLogPage() {
   const [voiceTarget, setVoiceTarget] = useState<DimKey | "notes" | null>(null);
   const recognitionRef = useRef<any>(null);
   const hasSpeechAPI = !!SpeechRecognitionAPI;
+
+  const lookupWhiskybaseId = useCallback(async (wbId: string) => {
+    const id = wbId.trim();
+    if (!id || wbLookupLoading) return;
+    setWbLookupLoading(true);
+    setWbLookupResult("");
+    try {
+      const headers: Record<string, string> = {};
+      if (pid) headers["x-participant-id"] = pid;
+      const res = await fetch(`/api/whiskybase-lookup/${encodeURIComponent(id)}`, { headers });
+      if (!res.ok) {
+        if (res.status === 429) { setWbLookupResult("rate_limit"); return; }
+        if (res.status === 503) { setWbLookupResult("ai_unavailable"); return; }
+        if (res.status === 400) { setWbLookupResult("invalid"); return; }
+        setWbLookupResult("not_found");
+        return;
+      }
+      const data = await res.json();
+      if (data.name && !whiskyName) setWhiskyName(data.name);
+      if (data.distillery && !distillery) setDistillery(data.distillery);
+      if (data.age && !unknownAge) setUnknownAge(String(data.age));
+      if (data.abv && !unknownAbv) setUnknownAbv(data.abv);
+      if (data.caskType && !unknownCask) setUnknownCask(data.caskType);
+      if (data.price && !unknownPrice) setUnknownPrice(data.price);
+      setWbLookupResult(data.source === "collection" ? "collection" : "ai");
+    } catch {
+      setWbLookupResult("error");
+    } finally {
+      setWbLookupLoading(false);
+    }
+  }, [pid, whiskyName, distillery, unknownAge, unknownAbv, unknownCask, unknownPrice, wbLookupLoading]);
 
   const stopVoice = useCallback(() => {
     if (recognitionRef.current) {
@@ -1413,7 +1446,51 @@ export default function SimpleLogPage() {
                       <div style={{ display: "flex", gap: 8 }}>
                         <div style={{ flex: 1 }}>
                           <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Whiskybase ID</label>
-                          <input type="text" value={unknownWbId} onChange={(e) => setUnknownWbId(e.target.value)} style={inputStyle} data-testid="input-manual-wbid" autoComplete="off" />
+                          <div style={{ position: "relative" }}>
+                            <input
+                              type="text"
+                              value={unknownWbId}
+                              onChange={(e) => { setUnknownWbId(e.target.value); setWbLookupResult(""); }}
+                              onBlur={() => { if (unknownWbId.trim() && !wbLookupResult) lookupWhiskybaseId(unknownWbId); }}
+                              style={{ ...inputStyle, paddingRight: 40 }}
+                              data-testid="input-manual-wbid"
+                              autoComplete="off"
+                              placeholder="e.g. 12345"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => lookupWhiskybaseId(unknownWbId)}
+                              disabled={!unknownWbId.trim() || wbLookupLoading}
+                              data-testid="button-wb-lookup"
+                              style={{
+                                position: "absolute",
+                                right: 4,
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                background: "none",
+                                border: "none",
+                                cursor: unknownWbId.trim() && !wbLookupLoading ? "pointer" : "default",
+                                padding: 6,
+                                color: wbLookupLoading ? c.accent : c.muted,
+                                opacity: unknownWbId.trim() ? 1 : 0.3,
+                                transition: "color 0.2s",
+                              }}
+                            >
+                              {wbLookupLoading
+                                ? <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+                                : <Search style={{ width: 16, height: 16 }} />}
+                            </button>
+                          </div>
+                          {wbLookupResult && (
+                            <p style={{ fontSize: 10, margin: "4px 0 0", color: wbLookupResult === "collection" || wbLookupResult === "ai" ? c.success : c.error }}>
+                              {wbLookupResult === "collection" ? "✓ Aus deiner Sammlung" :
+                               wbLookupResult === "ai" ? "✓ Per AI erkannt" :
+                               wbLookupResult === "not_found" ? "Nicht gefunden" :
+                               wbLookupResult === "rate_limit" ? "Zu viele Anfragen, bitte warten" :
+                               wbLookupResult === "ai_unavailable" ? "AI nicht verfügbar" :
+                               wbLookupResult === "invalid" ? "Ungültige ID (nur Zahlen)" : "Fehler"}
+                            </p>
+                          )}
                         </div>
                         <div style={{ flex: 1 }}>
                           <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Price</label>
