@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { Wine, PenLine, Crown, User, Compass, KeyRound } from "lucide-react";
+import { Wine, PenLine, Crown, User, Compass, KeyRound, ChevronDown } from "lucide-react";
 import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
 import type { SessionMode } from "@/lib/session";
@@ -81,19 +81,34 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
           <button
             onClick={() => setShowSessionSheet(true)}
             style={{
-              background: "none",
-              border: "none",
+              background: session.signedIn ? `${c.accent}18` : "none",
+              border: session.signedIn ? `1px solid ${c.accent}30` : "none",
               cursor: "pointer",
-              padding: 6,
-              borderRadius: 8,
+              padding: session.signedIn ? "4px 10px" : 6,
+              borderRadius: 20,
               color: session.signedIn ? c.accent : c.mutedLight,
               display: "flex",
               alignItems: "center",
               gap: 4,
+              fontSize: 13,
+              fontWeight: 500,
+              fontFamily: "system-ui, sans-serif",
+              maxWidth: 160,
             }}
             data-testid="button-user-menu"
           >
-            <KeyRound style={{ width: 18, height: 18 }} strokeWidth={session.signedIn ? 2.2 : 1.6} />
+            {session.signedIn ? (
+              <>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {(session.name || "Account").length > 14
+                    ? (session.name || "Account").slice(0, 12) + "…"
+                    : (session.name || "Account")}
+                </span>
+                <ChevronDown style={{ width: 14, height: 14, flexShrink: 0 }} />
+              </>
+            ) : (
+              <KeyRound style={{ width: 18, height: 18 }} strokeWidth={1.6} />
+            )}
           </button>
         </div>
 

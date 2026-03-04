@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, Wine, Compass, Archive, MoreHorizontal, KeyRound } from "lucide-react";
+import { Home, Wine, Compass, Archive, MoreHorizontal, KeyRound, ChevronDown } from "lucide-react";
 import { ViewSwitcherV2 } from "@/components/view-switcher";
 import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
@@ -53,15 +53,33 @@ export default function AppShellV2({ children }: AppShellV2Props) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowSessionSheet(true)}
-            className="p-1.5 rounded-lg transition-colors cursor-pointer"
+            className="rounded-full transition-colors cursor-pointer"
             style={{
               color: session.signedIn ? "var(--v2-accent)" : "var(--v2-text-muted)",
-              background: "transparent",
-              border: "none",
+              background: session.signedIn ? "rgba(212,162,86,0.1)" : "transparent",
+              border: session.signedIn ? "1px solid rgba(212,162,86,0.2)" : "none",
+              padding: session.signedIn ? "4px 10px" : "6px",
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 13,
+              fontWeight: 500,
+              maxWidth: 160,
             }}
             data-testid="button-v2-session"
           >
-            <KeyRound className="w-4 h-4" strokeWidth={session.signedIn ? 2.2 : 1.6} />
+            {session.signedIn ? (
+              <>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {(session.name || "Account").length > 14
+                    ? (session.name || "Account").slice(0, 12) + "…"
+                    : (session.name || "Account")}
+                </span>
+                <ChevronDown style={{ width: 14, height: 14, flexShrink: 0 }} />
+              </>
+            ) : (
+              <KeyRound className="w-4 h-4" strokeWidth={1.6} />
+            )}
           </button>
           <ViewSwitcherV2 />
         </div>

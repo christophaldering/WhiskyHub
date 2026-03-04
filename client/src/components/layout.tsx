@@ -660,14 +660,35 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setShowSessionSheet(true)}
             className={cn(
-              "p-1.5 rounded-lg transition-colors",
+              "rounded-full transition-colors",
               session.signedIn
                 ? "text-primary hover:bg-primary/10"
                 : "text-muted-foreground hover:bg-secondary"
             )}
+            style={{
+              padding: session.signedIn ? "4px 10px" : "6px",
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 13,
+              fontWeight: 500,
+              maxWidth: 160,
+              border: session.signedIn ? "1px solid hsl(var(--primary) / 0.2)" : "none",
+            }}
             data-testid="button-classic-session"
           >
-            <KeyRound className="w-4 h-4" strokeWidth={session.signedIn ? 2.2 : 1.6} />
+            {session.signedIn ? (
+              <>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {(session.name || "Account").length > 14
+                    ? (session.name || "Account").slice(0, 12) + "…"
+                    : (session.name || "Account")}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 flex-shrink-0" />
+              </>
+            ) : (
+              <KeyRound className="w-4 h-4" strokeWidth={1.6} />
+            )}
           </button>
           <LanguageToggle />
           <ThemeToggle />
