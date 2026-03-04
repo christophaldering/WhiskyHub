@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Printer, FileDown, ClipboardList, EyeOff, Download } from "lucide-react";
 import type { Whisky, Tasting } from "@shared/schema";
 import jsPDF from "jspdf";
+import i18n from "@/lib/i18n";
 
 type RGB = [number, number, number];
 
@@ -98,9 +99,12 @@ function drawFooter(doc: jsPDF, pageNum: number, totalPages: number) {
   doc.text(`${pageNum} / ${totalPages}`, pageW - 15, pageH - 7, { align: "right" });
 }
 
+function tp(key: string, lang: string, opts?: Record<string, any>): string {
+  return i18n.t(key, { lng: lang, ...opts }) as string;
+}
+
 async function drawParticipantInfo(doc: jsPDF, participant: ParticipantInfo, y: number, marginX: number, pageW: number, lang: string): Promise<number> {
-  const isDE = lang === "de";
-  const nameLabel = isDE ? "Teilnehmer" : "Participant";
+  const nameLabel = tp("printableSheets.pdfParticipant", lang);
 
   let photoDataUrl: string | null = null;
   if (participant.photoUrl) {
@@ -137,15 +141,14 @@ async function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], l
   const marginX = 15;
   const contentW = pageW - marginX * 2;
 
-  const isDE = lang === "de";
   const labels = {
-    title: isDE ? "Verkostungsnotizen" : "Tasting Notes",
-    nose: isDE ? "Nase" : "Nose",
-    palate: isDE ? "Geschmack" : "Palate",
-    finish: isDE ? "Abgang" : "Finish",
-    rating: isDE ? "Bewertung" : "Rating",
-    notes: isDE ? "Notizen" : "Notes",
-    name: isDE ? "Teilnehmer" : "Participant",
+    title: tp("printableSheets.pdfTastingNotes", lang),
+    nose: tp("printableSheets.pdfNose", lang),
+    palate: tp("printableSheets.pdfPalate", lang),
+    finish: tp("printableSheets.pdfFinish", lang),
+    rating: tp("printableSheets.pdfRating", lang),
+    notes: tp("printableSheets.pdfNotes", lang),
+    name: tp("printableSheets.pdfParticipant", lang),
   };
 
   const whiskiesPerPage = 3;
@@ -167,9 +170,7 @@ async function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], l
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...MUTED);
-  doc.text(isDE
-    ? `${whiskies.length} Whiskys · Platz für deine persönlichen Notizen und Bewertungen`
-    : `${whiskies.length} whiskies · Space for your personal notes and ratings`, marginX, y);
+  doc.text(tp("printableSheets.pdfWhiskiesSubtitle", lang, { count: whiskies.length }), marginX, y);
   y += 4;
 
   doc.setDrawColor(...MUTED);
@@ -311,23 +312,20 @@ async function generateBlindEvaluationSheet(tasting: Tasting, whiskies: Whisky[]
   const marginX = 15;
   const contentW = pageW - marginX * 2;
 
-  const isDE = lang === "de";
   const labels = {
-    title: isDE ? "Bewertungsbogen — Blind Tasting" : "Evaluation Sheet — Blind Tasting",
-    sample: isDE ? "Probe" : "Sample",
-    color: isDE ? "Farbe" : "Colour",
-    nose: isDE ? "Nase" : "Nose",
-    palate: isDE ? "Geschmack" : "Palate",
-    finish: isDE ? "Abgang" : "Finish",
-    notes: isDE ? "Notizen" : "Notes",
-    rating: isDE ? "Bewertung" : "Rating",
-    guessRegion: isDE ? "Region (Tipp)" : "Region (guess)",
-    guessAge: isDE ? "Alter (Tipp)" : "Age (guess)",
-    guessAbv: isDE ? "ABV (Tipp)" : "ABV (guess)",
-    name: isDE ? "Teilnehmer" : "Participant",
-    instructions: isDE
-      ? "Bewerte jeden Whisky ohne Vorwissen. Notiere deine Eindrücke und rate die Details."
-      : "Rate each whisky without prior knowledge. Note your impressions and guess the details.",
+    title: tp("printableSheets.pdfBlindTitle", lang),
+    sample: tp("printableSheets.pdfSample", lang),
+    color: tp("printableSheets.pdfColour", lang),
+    nose: tp("printableSheets.pdfNose", lang),
+    palate: tp("printableSheets.pdfPalate", lang),
+    finish: tp("printableSheets.pdfFinish", lang),
+    notes: tp("printableSheets.pdfNotes", lang),
+    rating: tp("printableSheets.pdfRating", lang),
+    guessRegion: tp("printableSheets.pdfGuessRegion", lang),
+    guessAge: tp("printableSheets.pdfGuessAge", lang),
+    guessAbv: tp("printableSheets.pdfGuessAbv", lang),
+    name: tp("printableSheets.pdfParticipant", lang),
+    instructions: tp("printableSheets.pdfBlindInstructions", lang),
   };
 
   const whiskiesPerPage = 3;
@@ -349,7 +347,7 @@ async function generateBlindEvaluationSheet(tasting: Tasting, whiskies: Whisky[]
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...MUTED);
-  const instrText = `${whiskies.length} ${isDE ? "Proben" : "samples"} · ${labels.instructions}`;
+  const instrText = `${whiskies.length} ${tp("printableSheets.pdfSamples", lang)} · ${labels.instructions}`;
   const instrLines = doc.splitTextToSize(instrText, contentW);
   doc.text(instrLines, marginX, y);
   y += instrLines.length * 4;
@@ -498,10 +496,9 @@ interface PrintableTastingSheetsProps {
 }
 
 export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSheetsProps) {
-  const { i18n } = useTranslation();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const lang = i18n.language;
-  const isDE = lang === "de";
   const isBlind = tasting.blindMode;
   const { currentParticipant } = useAppStore();
 
@@ -528,19 +525,17 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="border-primary/30 text-primary font-serif" data-testid="button-printable-sheets">
           <Printer className="w-4 h-4 mr-1" />
-          {isDE ? "Unterlagen drucken" : "Print Sheets"}
+          {t("printableSheets.printSheets")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-serif text-xl text-primary flex items-center gap-2">
             <Printer className="w-5 h-5" />
-            {isDE ? "Druckbare Unterlagen" : "Printable Sheets"}
+            {t("printableSheets.printableSheetsTitle")}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            {isDE
-              ? "PDF-Vorlagen zum Ausdrucken oder Herunterladen — für handschriftliche Notizen und Bewertungen."
-              : "PDF templates for printing or downloading — for handwritten notes and ratings."}
+            {t("printableSheets.printableSheetsDesc")}
           </DialogDescription>
         </DialogHeader>
 
@@ -552,12 +547,10 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-serif font-semibold text-foreground">
-                  {isDE ? "Verkostungsnotizen" : "Tasting Notes Sheet"}
+                  {t("printableSheets.tastingNotesTitle")}
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">
-                  {isDE
-                    ? `${whiskies.length} Whiskys mit Namen, Details und Feldern für Nase, Geschmack, Abgang`
-                    : `${whiskies.length} whiskies with names, details, and fields for nose, palate, finish`}
+                  {t("printableSheets.tastingNotesDesc", { count: whiskies.length })}
                 </div>
               </div>
             </div>
@@ -571,7 +564,7 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
                 data-testid="button-download-tasting-notes"
               >
                 <Download className="w-3.5 h-3.5 mr-1" />
-                {isDE ? "Als PDF" : "Download PDF"}
+                {t("printableSheets.downloadPdf")}
               </Button>
               <Button
                 variant="outline"
@@ -582,7 +575,7 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
                 data-testid="button-print-tasting-notes"
               >
                 <Printer className="w-3.5 h-3.5 mr-1" />
-                {isDE ? "Drucken" : "Print"}
+                {t("printableSheets.print")}
               </Button>
             </div>
           </div>
@@ -594,16 +587,14 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-serif font-semibold text-foreground">
-                  {isDE ? "Blind-Bewertungsbogen" : "Blind Evaluation Sheet"}
+                  {t("printableSheets.blindSheetTitle")}
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">
-                  {isDE
-                    ? `${whiskies.length} Proben ohne Namen — mit Farbe, Sensorik und Rate-Feldern`
-                    : `${whiskies.length} samples without names — with colour, sensory and guessing fields`}
+                  {t("printableSheets.blindSheetDesc", { count: whiskies.length })}
                 </div>
                 {isBlind && (
                   <span className="inline-block mt-1 text-[10px] bg-amber-500/10 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">
-                    {isDE ? "Empfohlen für dieses Tasting" : "Recommended for this tasting"}
+                    {t("printableSheets.recommended")}
                   </span>
                 )}
               </div>
@@ -618,7 +609,7 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
                 data-testid="button-download-blind-sheet"
               >
                 <Download className="w-3.5 h-3.5 mr-1" />
-                {isDE ? "Als PDF" : "Download PDF"}
+                {t("printableSheets.downloadPdf")}
               </Button>
               <Button
                 variant="outline"
@@ -629,14 +620,14 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
                 data-testid="button-print-blind-sheet"
               >
                 <Printer className="w-3.5 h-3.5 mr-1" />
-                {isDE ? "Drucken" : "Print"}
+                {t("printableSheets.print")}
               </Button>
             </div>
           </div>
         </div>
 
         <div className="mt-3 text-[11px] text-muted-foreground text-center">
-          {isDE ? "A4-Format · Dein Name und Profilbild werden automatisch eingefügt" : "A4 format · Your name and profile photo are automatically included"}
+          {t("printableSheets.a4Notice")}
         </div>
       </DialogContent>
     </Dialog>
@@ -644,7 +635,6 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
 }
 
 export function generateBlankTastingSheet(lang: string, slots = 6) {
-  const isDE = lang === "de";
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = 210;
   const marginX = 15;
@@ -653,11 +643,11 @@ export function generateBlankTastingSheet(lang: string, slots = 6) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(...NAVY);
-  doc.text(isDE ? "Verkostungsbogen" : "Tasting Score Sheet", pageW / 2, 20, { align: "center" });
+  doc.text(tp("printableSheets.pdfScoreSheet", lang), pageW / 2, 20, { align: "center" });
 
   doc.setFontSize(10);
   doc.setTextColor(...SLATE);
-  doc.text(isDE ? "Name: ________________________   Datum: ________________" : "Name: ________________________   Date: ________________", pageW / 2, 30, { align: "center" });
+  doc.text(`${tp("printableSheets.pdfName", lang)}: ________________________   ${tp("printableSheets.pdfDate", lang)}: ________________`, pageW / 2, 30, { align: "center" });
 
   let y = 40;
   const slotH = (280 - y) / slots;
@@ -679,9 +669,7 @@ export function generateBlankTastingSheet(lang: string, slots = 6) {
     doc.setFontSize(9);
     doc.setTextColor(...SLATE);
 
-    const labels = isDE
-      ? ["Nase:", "Gaumen:", "Abgang:", "Gesamt:   __ / 10"]
-      : ["Nose:", "Palate:", "Finish:", "Overall:   __ / 10"];
+    const labels = [tp("printableSheets.labelNose", lang), tp("printableSheets.labelPalate", lang), tp("printableSheets.labelFinish", lang), tp("printableSheets.labelOverall", lang)];
 
     const lineY = sy + 14;
     const lineSpacing = (slotH - 22) / labels.length;
@@ -697,11 +685,10 @@ export function generateBlankTastingSheet(lang: string, slots = 6) {
   doc.setTextColor(...MUTED);
   doc.text("CaskSense · casksense.com", pageW / 2, 292, { align: "center" });
 
-  doc.save(isDE ? "Verkostungsbogen.pdf" : "Tasting_Score_Sheet.pdf");
+  doc.save(`${tp("printableSheets.pdfScoreSheet", lang).replace(/\s+/g, "_")}.pdf`);
 }
 
 export function generateBlankTastingMat(lang: string, slots = 6) {
-  const isDE = lang === "de";
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = 297;
   const pageH = 210;
@@ -711,7 +698,7 @@ export function generateBlankTastingMat(lang: string, slots = 6) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.setTextColor(...NAVY);
-  doc.text(isDE ? "Tasting-Matte" : "Tasting Mat", pageW / 2, 14, { align: "center" });
+  doc.text(tp("printableSheets.pdfTastingMat", lang), pageW / 2, 14, { align: "center" });
 
   const cols = Math.min(slots, 3);
   const rows = Math.ceil(slots / cols);
@@ -742,13 +729,13 @@ export function generateBlankTastingMat(lang: string, slots = 6) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...SLATE);
-    doc.text(isDE ? "Name: ___________________" : "Name: ___________________", cx + 6, cy + cellH - 14);
-    doc.text(isDE ? "Bewertung: __ / 10" : "Rating: __ / 10", cx + 6, cy + cellH - 8);
+    doc.text(`${tp("printableSheets.pdfName", lang)}: ___________________`, cx + 6, cy + cellH - 14);
+    doc.text(`${tp("printableSheets.pdfRatingLabel", lang)}: __ / 10`, cx + 6, cy + cellH - 8);
   }
 
   doc.setFontSize(7);
   doc.setTextColor(...MUTED);
   doc.text("CaskSense · casksense.com", pageW / 2, pageH - 5, { align: "center" });
 
-  doc.save(isDE ? "Tasting_Matte.pdf" : "Tasting_Mat.pdf");
+  doc.save(`${tp("printableSheets.pdfTastingMat", lang).replace(/\s+/g, "_")}.pdf`);
 }

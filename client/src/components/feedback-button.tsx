@@ -11,8 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MessageSquarePlus, Send, Loader2 } from "lucide-react";
 
 export function FeedbackButton() {
-  const { i18n } = useTranslation();
-  const isDE = i18n.language === "de";
+  const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -28,8 +27,8 @@ export function FeedbackButton() {
     }),
     onSuccess: () => {
       toast({
-        title: isDE ? "Vielen Dank!" : "Thank you!",
-        description: isDE ? "Dein Feedback wurde gesendet." : "Your feedback has been submitted.",
+        title: t("feedbackButton.thankYou"),
+        description: t("feedbackButton.feedbackSubmitted"),
       });
       setMessage("");
       setCategory("feature");
@@ -37,18 +36,18 @@ export function FeedbackButton() {
     },
     onError: () => {
       toast({
-        title: isDE ? "Fehler" : "Error",
-        description: isDE ? "Feedback konnte nicht gesendet werden." : "Could not submit feedback.",
+        title: t("feedbackButton.error"),
+        description: t("feedbackButton.couldNotSubmit"),
         variant: "destructive",
       });
     },
   });
 
   const categories = [
-    { value: "feature", label: isDE ? "Neue Funktion" : "New Feature" },
-    { value: "improvement", label: isDE ? "Verbesserung" : "Improvement" },
-    { value: "bug", label: isDE ? "Problem melden" : "Report Issue" },
-    { value: "other", label: isDE ? "Sonstiges" : "Other" },
+    { value: "feature", label: t("feedbackButton.feature") },
+    { value: "improvement", label: t("feedbackButton.improvement") },
+    { value: "bug", label: t("feedbackButton.bug") },
+    { value: "other", label: t("feedbackButton.other") },
   ];
 
   return (
@@ -56,7 +55,7 @@ export function FeedbackButton() {
       <button
         onClick={() => setOpen(true)}
         className="fixed bottom-20 md:bottom-6 right-4 z-40 w-10 h-10 rounded-full bg-primary/80 hover:bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all flex items-center justify-center group"
-        title={isDE ? "Feedback geben" : "Give Feedback"}
+        title={t("feedbackButton.giveFeedback")}
         data-testid="button-feedback-open"
       >
         <MessageSquarePlus className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />
@@ -67,25 +66,23 @@ export function FeedbackButton() {
           <DialogHeader>
             <DialogTitle className="font-serif text-xl text-primary flex items-center gap-2">
               <MessageSquarePlus className="w-5 h-5" />
-              {isDE ? "Feedback & Ideen" : "Feedback & Ideas"}
+              {t("feedbackButton.feedbackAndIdeas")}
             </DialogTitle>
             <DialogDescription>
-              {isDE
-                ? "Hilf uns, CaskSense weiterzuentwickeln! Was wünschst du dir?"
-                : "Help us improve CaskSense! What would you like to see?"}
+              {t("feedbackButton.helpImprove")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 mt-2">
             {currentParticipant && (
               <div className="text-xs text-muted-foreground">
-                {isDE ? "Absender" : "From"}: <span className="font-medium text-foreground">{currentParticipant.name}</span>
+                {t("feedbackButton.from")}: <span className="font-medium text-foreground">{currentParticipant.name}</span>
               </div>
             )}
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">
-                {isDE ? "Kategorie" : "Category"}
+                {t("feedbackButton.category")}
               </label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger data-testid="select-feedback-category">
@@ -103,14 +100,12 @@ export function FeedbackButton() {
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">
-                {isDE ? "Deine Nachricht" : "Your Message"}
+                {t("feedbackButton.yourMessage")}
               </label>
               <Textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder={isDE
-                  ? "Beschreibe deine Idee, deinen Wunsch oder das Problem..."
-                  : "Describe your idea, wish, or issue..."}
+                placeholder={t("feedbackButton.placeholder")}
                 rows={4}
                 className="resize-none"
                 data-testid="textarea-feedback-message"
@@ -128,14 +123,12 @@ export function FeedbackButton() {
               ) : (
                 <Send className="w-4 h-4 mr-2" />
               )}
-              {isDE ? "Feedback senden" : "Submit Feedback"}
+              {t("feedbackButton.submitFeedback")}
             </Button>
           </div>
 
           <div className="text-[11px] text-muted-foreground text-center mt-1">
-            {isDE
-              ? "Dein Feedback hilft uns, CaskSense besser zu machen. Danke!"
-              : "Your feedback helps us make CaskSense better. Thank you!"}
+            {t("feedbackButton.helpNote")}
           </div>
         </DialogContent>
       </Dialog>

@@ -107,3 +107,56 @@ export const sliderCSS = `
 `;
 
 export const sectionSpacing = 40;
+
+export const radius = { sm: 10, md: 14, lg: 18, xl: 22, pill: 999 } as const;
+export const space = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 } as const;
+
+export const shadow = {
+  card: "0 1px 4px rgba(0,0,0,0.18), 0 0 1px rgba(0,0,0,0.08)",
+  elevated: "0 4px 16px rgba(0,0,0,0.24), 0 1px 4px rgba(0,0,0,0.12)",
+  subtle: "0 1px 2px rgba(0,0,0,0.1)",
+} as const;
+
+export const typo = {
+  pageTitle: {
+    fontFamily: "'Playfair Display', Georgia, serif",
+    fontSize: 28,
+    fontWeight: 700,
+    letterSpacing: "-0.02em",
+    lineHeight: 1.15,
+    color: c.text,
+  } as React.CSSProperties,
+  pageSubtitle: {
+    fontSize: 14,
+    fontWeight: 400,
+    color: c.muted,
+    lineHeight: 1.5,
+    marginTop: 6,
+  } as React.CSSProperties,
+  sectionHeading: {
+    fontSize: 12,
+    fontWeight: 700,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.1em",
+    color: c.mutedLight,
+  } as React.CSSProperties,
+  body: {
+    fontSize: 15,
+    fontWeight: 400,
+    lineHeight: 1.55,
+    color: c.text,
+    fontFamily: "system-ui, -apple-system, sans-serif",
+  } as React.CSSProperties,
+  caption: {
+    fontSize: 12,
+    fontWeight: 400,
+    color: c.muted,
+    lineHeight: 1.4,
+  } as React.CSSProperties,
+  label: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: c.text,
+    fontFamily: "system-ui, -apple-system, sans-serif",
+  } as React.CSSProperties,
+} as const;

@@ -1,0 +1,151 @@
+CaskSense – Hard Prompt: “Apple-Style Skin Pass” (Dark Warm, No Feature Loss, Reversible)
+
+CONTEXT
+Repo: CaskSense v2.0.0
+Frontend: React 18 + Vite + TypeScript, Wouter, Zustand, shadcn/ui (Radix), Tailwind legacy, inline styles with c-tokens.
+Theme tokens live in: client/src/lib/theme.ts (Dark Warm)
+Goal: make UI feel consistent, premium, “Apple-style” in existing colors — WITHOUT cutting or changing functionality.
+
+GOAL (STRICT)
+Perform a “Skin Pass” only:
+- unify layout, spacing, typography, component styling
+- standardize page headers, sections, cards, lists, buttons, inputs, empty/loading states
+- NO business logic changes
+- NO route changes
+- NO backend changes
+- NO DB changes
+- NO feature removal
+- MUST be reversible via a single feature flag
+
+PRIMARY TARGET PAGES (do these first, highest UX impact)
+1) /tasting (Tasting Hub) OR current main entry hub if /tasting not present yet
+2) /enter (Join)
+3) /tasting-room-simple/:id (Live Tasting Room)
+4) /host-simple (Host)
+5) /my-taste (My Taste home)
+6) /log-simple (Log Dram) – only styling, keep flows
+
+SECONDARY TARGETS (only if time allows, do not expand scope)
+- /discover-hub
+- /my-journal
+- /analytics
+- /flavor-profile
+
+------------------------------------------------------------
+STEP 0 — Add a Reversible Flag
+------------------------------------------------------------
+Create/extend: client/src/lib/config.ts
+export const UI_SKIN: "legacy" | "apple_dark_warm" = "apple_dark_warm";
+
+All new UI wrappers/components must apply only when UI_SKIN === "apple_dark_warm".
+Rollback = set to "legacy".
+
+------------------------------------------------------------
+STEP 1 — Define Apple-Style Tokens (NO new palette)
+------------------------------------------------------------
+Extend: client/src/lib/theme.ts
+
+Keep existing colors exactly. Add ONLY non-color tokens:
+- radiusScale: e.g. 16/20/24
+- spacing scale (xs/s/m/l/xl)
+- shadow tokens (very subtle)
+- typography tokens (title, subtitle, section heading, body, caption)
+- border widths
+- focus ring style
+
+Make tokens exported and reused.
+
+Rules:
+- fewer borders, more spacing
+- consistent padding (cards, sections, screens)
+- consistent max width for content (mobile-first)
+
+------------------------------------------------------------
+STEP 2 — Create Minimal “UI Shell” Components (centralize styling)
+------------------------------------------------------------
+Create: client/src/components/apple/
+- ApplePage.tsx
+  - props: title, subtitle?, rightSlot?, children
+  - uses Playfair for title, system UI for body
+  - consistent top spacing, safe-area padding, background = theme.bg
+- AppleSection.tsx
+  - section heading + optional action slot
+- AppleCard.tsx
+  - uses theme.card, radius token, subtle shadow, consistent padding
+- AppleList.tsx / AppleRow.tsx
+  - “iOS Settings”-like rows with label, value, chevron, optional icon
+- AppleButton.tsx
+  - variants: primary, secondary, ghost
+  - consistent height, radius, disabled/loading states
+- AppleInput.tsx
+  - consistent height, radius, focus state, placeholder style
+- AppleEmptyState.tsx
+  - icon + title + hint + optional action button
+- AppleSkeleton.tsx (optional)
+  - consistent loading placeholder blocks
+
+IMPORTANT:
+- Do NOT replace shadcn globally.
+- Wrap/compose existing components where possible.
+- Keep changes localized.
+
+------------------------------------------------------------
+STEP 3 — Apply Skin Pass to TARGET PAGES ONLY
+------------------------------------------------------------
+For each PRIMARY TARGET PAGE:
+- Replace ad-hoc header styling with <ApplePage>
+- Replace inconsistent section headers with <AppleSection>
+- Replace mixed card styles with <AppleCard>
+- Replace primary actions with <AppleButton variant="primary">
+- Normalize inputs to <AppleInput> (or style existing inputs to match)
+- Ensure spacing consistency: screen padding, section gaps, card gaps
+- Ensure icon sizing consistency (lucide-react), avoid clutter
+- Keep all original functionality, handlers, state, API calls intact
+
+DO NOT:
+- rename routes
+- remove options
+- move features
+- change copy substantially (minor wording ok if needed for clarity)
+- change any data fetching behavior
+
+------------------------------------------------------------
+STEP 4 — Interaction & Motion (subtle)
+------------------------------------------------------------
+Only small transitions:
+- page fade-in or card hover/press feedback (mobile: active state)
+- no flashy animations
+- keep it “quiet premium”
+
+If Framer Motion exists, use minimal fade/slide; otherwise simple CSS transitions.
+
+------------------------------------------------------------
+STEP 5 — States Consistency
+------------------------------------------------------------
+On target pages ensure:
+- loading states look consistent (AppleSkeleton)
+- error states: one pattern (AppleEmptyState with error message + retry)
+- empty states: one pattern
+- toasts/alerts: do not change logic, but align spacing and typography if easy
+
+------------------------------------------------------------
+STEP 6 — Quality Gate
+------------------------------------------------------------
+After changes:
+- TypeScript compile clean
+- No console errors
+- Visual check: pages feel like one product
+- Buttons/inputs/cards have consistent radius/spacing
+- Dark Warm palette preserved exactly
+
+------------------------------------------------------------
+DELIVERABLE
+------------------------------------------------------------
+Implement the above now.
+At the end output:
+1) List of added/modified files
+2) Which pages were updated (primary list)
+3) Short note: where to rollback (UI_SKIN flag)
+4) Any pages you intentionally did NOT touch and why
+
+EXECUTE NOW.

@@ -8,8 +8,11 @@ import SimpleShell from "@/components/simple/simple-shell";
 import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, Download, PenLine } from "lucide-react";
 import { c, cardStyle, inputStyle, sectionHeadingStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 import { NAV_VERSION } from "@/lib/config";
+import { ApplePage, AppleSection, AppleRow, AppleButton, AppleCard } from "@/components/apple";
+import { UI_SKIN } from "@/lib/config";
 
 const LS_KEY = "casksense_participant_id";
+const isApple = UI_SKIN === "apple_dark_warm";
 
 function StatRow({ label, value }: { label: string; value: number | null | undefined }) {
   const display = value != null ? value.toFixed(1) : "—";
@@ -202,6 +205,167 @@ export default function MyTastePage() {
   const handleUnlock = (p: { id: string; name: string; role?: string }) => {
     setParticipant(p);
   };
+
+  if (isApple) {
+    return (
+      <SimpleShell>
+        <ApplePage title={t("myTastePage.title")} subtitle={t("myTastePage.subtitle")} center>
+
+          {pid && NAV_VERSION === "v2_simplified" && (
+            <Link href="/log-simple">
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: "14px 20px",
+                  background: c.accent,
+                  color: c.bg,
+                  borderRadius: 14,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "system-ui, sans-serif",
+                }}
+                data-testid="button-log-dram"
+              >
+                <PenLine style={{ width: 18, height: 18 }} strokeWidth={2} />
+                {t("myTastePage.logDram")}
+              </div>
+            </Link>
+          )}
+
+          {pid && (
+            <div style={cardStyle} data-testid="card-taste-snapshot">
+              <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                {t("myTastePage.tasteSnapshot")}
+              </h2>
+              {hasStats ? (
+                <div>
+                  <StatRow label={t("myTastePage.stability")} value={stability} />
+                  <StatRow label={t("myTastePage.exploration")} value={exploration} />
+                  <StatRow label={t("myTastePage.smokeAffinity")} value={smoke} />
+                  {tastingCount != null && <StatRow label={t("myTastePage.tastings")} value={tastingCount} />}
+                </div>
+              ) : (
+                <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
+              )}
+            </div>
+          )}
+
+          {pid && (
+            <div style={cardStyle} data-testid="card-taste-insight">
+              <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                {t("myTastePage.tasteInsight")}
+              </h2>
+              {insight ? (
+                <p style={{ fontSize: 14, lineHeight: 1.6, color: c.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
+              ) : (
+                <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-insight-empty">{t("myTastePage.insightEmpty")}</p>
+              )}
+            </div>
+          )}
+
+          {pid && (
+            <>
+              <AppleSection title={t("myTastePage.sectionProfile")}>
+                <NavCard
+                  icon={Radar}
+                  label={t("myTastePage.flavorProfile")}
+                  description={t("myTastePage.flavorProfileDesc")}
+                  href="/my-taste/profile"
+                  testId="link-flavor-profile"
+                />
+              </AppleSection>
+
+              <AppleSection title={t("myTastePage.sectionAnalytics")}>
+                <AnalyticsPreviewCard pid={pid} stats={stats} />
+                <NavCard
+                  icon={GitCompareArrows}
+                  label={t("myTastePage.comparison")}
+                  description={t("myTastePage.comparisonDesc")}
+                  href="/my-taste/compare"
+                  testId="link-comparison"
+                />
+                <NavCard
+                  icon={Sparkles}
+                  label={t("myTastePage.recommendations")}
+                  description={t("myTastePage.recommendationsDesc")}
+                  href="/my-taste/recommendations"
+                  testId="link-recommendations"
+                />
+                <NavCard
+                  icon={FlaskConical}
+                  label={t("myTastePage.benchmarkAnalyzer")}
+                  description={t("myTastePage.benchmarkDesc")}
+                  href="/my-taste/benchmark"
+                  testId="link-benchmark"
+                />
+              </AppleSection>
+
+              <AppleSection title={t("myTastePage.sectionTasted")}>
+                <p style={{ fontSize: 11, color: c.muted, marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
+                  {t("myTastePage.tastedDesc")}
+                </p>
+                <NavCard
+                  icon={BookOpen}
+                  label={t("myTastePage.journal")}
+                  description={t("myTastePage.journalDesc")}
+                  href="/my-taste/journal"
+                  testId="link-journal"
+                  badge={journalCount > 0 ? journalCount : null}
+                />
+                <NavCard
+                  icon={ClipboardList}
+                  label={t("myTastePage.tastingRecap")}
+                  description={t("myTastePage.tastingRecapDesc")}
+                  href="/sessions"
+                  testId="link-tasting-recap"
+                  badge={tastingCount != null && tastingCount > 0 ? tastingCount : null}
+                />
+                <NavCard
+                  icon={Download}
+                  label={t("myTastePage.dataExport")}
+                  description={t("myTastePage.dataExportDesc")}
+                  href="/data-export"
+                  testId="link-data-export"
+                />
+              </AppleSection>
+
+              <AppleSection title={t("myTastePage.sectionLibrary")}>
+                <p style={{ fontSize: 11, color: c.muted, marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
+                  {t("myTastePage.libraryDesc")}
+                </p>
+                <NavCard
+                  icon={Archive}
+                  label={t("myTastePage.myCollection")}
+                  description={t("myTastePage.collectionDesc")}
+                  href="/my-taste/collection"
+                  testId="link-collection"
+                />
+                <NavCard
+                  icon={Heart}
+                  label={t("myTastePage.wishlist")}
+                  description={t("myTastePage.wishlistDesc")}
+                  href="/my-taste/wishlist"
+                  testId="link-wishlist"
+                />
+              </AppleSection>
+            </>
+          )}
+
+          {!pid && <UnlockCard onUnlock={handleUnlock} />}
+
+          <div style={{ textAlign: "center", marginTop: 8 }}>
+            <Link href="/support" style={{ fontSize: 11, color: "#4a4540", textDecoration: "none" }} data-testid="link-support">
+              {t("myTastePage.advancedSupport")}
+            </Link>
+          </div>
+        </ApplePage>
+      </SimpleShell>
+    );
+  }
 
   return (
     <SimpleShell>

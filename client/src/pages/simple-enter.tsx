@@ -6,7 +6,9 @@ import { useAppStore } from "@/lib/store";
 import { participantApi, tastingApi } from "@/lib/api";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSession, tryAutoResume } from "@/lib/session";
-import { c, inputStyle, cardStyle } from "@/lib/theme";
+import { c, inputStyle, cardStyle, radius, shadow } from "@/lib/theme";
+import { ApplePage, AppleCard, AppleButton, AppleInput } from "@/components/apple";
+import { UI_SKIN } from "@/lib/config";
 
 const RL_KEY = "simple_join_attempts";
 const RL_MAX = 5;
@@ -33,6 +35,33 @@ function recordAttempt() {
     sessionStorage.setItem(RL_KEY, JSON.stringify(recent));
   } catch {}
 }
+
+const appleInputStyle: React.CSSProperties = {
+  ...inputStyle,
+  borderRadius: radius.md,
+};
+
+const appleButtonStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "13px 20px",
+  fontSize: 15,
+  fontWeight: 650,
+  background: c.accent,
+  color: c.bg,
+  border: "none",
+  borderRadius: radius.md,
+  fontFamily: "system-ui, -apple-system, sans-serif",
+  letterSpacing: "-0.01em",
+  transition: "all 0.15s ease",
+};
+
+const appleCardStyle: React.CSSProperties = {
+  background: c.card,
+  border: `1px solid ${c.border}20`,
+  borderRadius: radius.lg,
+  padding: 24,
+  boxShadow: shadow.card,
+};
 
 export default function SimpleEnterPage() {
   const [, navigate] = useLocation();
@@ -126,38 +155,38 @@ export default function SimpleEnterPage() {
     <SimpleShell>
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         {step === "name" ? (
-          <div style={cardStyle} data-testid="card-identify">
-            <h1 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 4px", color: c.text }}>{t("simpleEnter.joinTitle")}</h1>
-            <p style={{ fontSize: 13, color: c.muted, margin: "0 0 20px" }}>{t("simpleEnter.joinDesc")}</p>
-            <form style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" tabIndex={-1}>
-              <input type="text" name="cs_trap_user" autoComplete="username" tabIndex={-1} />
-              <input type="password" name="cs_trap_pw" autoComplete="current-password" tabIndex={-1} />
-            </form>
-            <form onSubmit={handleIdentify} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <input type="text" placeholder={t("simpleEnter.namePlaceholder")} name="cs_display_name" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} data-testid="input-enter-name" autoFocus autoComplete="name" autoCapitalize="words" spellCheck={false} />
-              <input type="password" placeholder={t("simpleEnter.pinPlaceholder")} name="cs_password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-enter-pin" autoComplete="new-password" autoCapitalize="none" spellCheck={false} />
-              <button type="submit" disabled={loading || !name.trim() || !pin.trim()} data-testid="button-identify" style={{ width: "100%", padding: 12, fontSize: 15, fontWeight: 600, background: c.accent, color: c.bg, border: "none", borderRadius: 8, cursor: loading ? "wait" : "pointer", opacity: (!name.trim() || !pin.trim()) ? 0.5 : 1 }}>
-                {loading ? "…" : t("simpleEnter.continue")}
-              </button>
-              {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }} data-testid="text-enter-error">{error}</p>}
-            </form>
+          <div style={appleCardStyle} data-testid="card-identify">
+            <ApplePage title={t("simpleEnter.joinTitle")} subtitle={t("simpleEnter.joinDesc")}>
+              <form style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" tabIndex={-1}>
+                <input type="text" name="cs_trap_user" autoComplete="username" tabIndex={-1} />
+                <input type="password" name="cs_trap_pw" autoComplete="current-password" tabIndex={-1} />
+              </form>
+              <form onSubmit={handleIdentify} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <input type="text" placeholder={t("simpleEnter.namePlaceholder")} name="cs_display_name" value={name} onChange={(e) => setName(e.target.value)} style={appleInputStyle} data-testid="input-enter-name" autoFocus autoComplete="name" autoCapitalize="words" spellCheck={false} />
+                <input type="password" placeholder={t("simpleEnter.pinPlaceholder")} name="cs_password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...appleInputStyle, letterSpacing: 3 }} data-testid="input-enter-pin" autoComplete="new-password" autoCapitalize="none" spellCheck={false} />
+                <button type="submit" disabled={loading || !name.trim() || !pin.trim()} data-testid="button-identify" style={{ ...appleButtonStyle, cursor: loading ? "wait" : "pointer", opacity: (!name.trim() || !pin.trim()) ? 0.5 : 1 }}>
+                  {loading ? "…" : t("simpleEnter.continue")}
+                </button>
+                {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }} data-testid="text-enter-error">{error}</p>}
+              </form>
+            </ApplePage>
           </div>
         ) : (
-          <div style={cardStyle} data-testid="card-join">
+          <div style={appleCardStyle} data-testid="card-join">
             {currentParticipant && sessionSignedIn && (
               <p style={{ fontSize: 12, color: c.muted, margin: "0 0 16px", textAlign: "center" }}>
                 {t("simpleEnter.greeting", { name: currentParticipant.name })}
               </p>
             )}
-            <h1 style={{ fontSize: 18, fontWeight: 600, margin: "0 0 4px", color: c.text }}>{t("simpleEnter.codeTitle")}</h1>
-            <p style={{ fontSize: 13, color: c.muted, margin: "0 0 20px" }}>{t("simpleEnter.codeDesc")}</p>
-            <form onSubmit={handleJoin} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <input type="text" placeholder={t("simpleEnter.codePlaceholder")} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} style={{ ...inputStyle, textAlign: "center", fontSize: 20, letterSpacing: 4, fontFamily: "monospace" }} data-testid="input-session-code" autoFocus autoComplete="off" maxLength={12} />
-              <button type="submit" disabled={loading || !code.trim()} data-testid="button-join" style={{ width: "100%", padding: 12, fontSize: 15, fontWeight: 600, background: c.accent, color: c.bg, border: "none", borderRadius: 8, cursor: loading ? "wait" : "pointer", opacity: !code.trim() ? 0.5 : 1 }}>
-                {loading ? "…" : t("simpleEnter.join")}
-              </button>
-              {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }} data-testid="text-join-error">{error}</p>}
-            </form>
+            <ApplePage title={t("simpleEnter.codeTitle")} subtitle={t("simpleEnter.codeDesc")}>
+              <form onSubmit={handleJoin} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <input type="text" placeholder={t("simpleEnter.codePlaceholder")} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} style={{ ...appleInputStyle, textAlign: "center", fontSize: 20, letterSpacing: 4, fontFamily: "monospace" }} data-testid="input-session-code" autoFocus autoComplete="off" maxLength={12} />
+                <button type="submit" disabled={loading || !code.trim()} data-testid="button-join" style={{ ...appleButtonStyle, cursor: loading ? "wait" : "pointer", opacity: !code.trim() ? 0.5 : 1 }}>
+                  {loading ? "…" : t("simpleEnter.join")}
+                </button>
+                {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }} data-testid="text-join-error">{error}</p>}
+              </form>
+            </ApplePage>
           </div>
         )}
       </motion.div>

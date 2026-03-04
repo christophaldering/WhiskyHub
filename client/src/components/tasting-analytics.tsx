@@ -22,7 +22,8 @@ const CATEGORY_LABELS: Record<string, { en: string; de: string }> = {
   balance: { en: "Balance", de: "Balance" },
 };
 
-function KendallBadge({ value, isDE }: { value: number | null; isDE: boolean }) {
+function KendallBadge({ value }: { value: number | null }) {
+  const { t } = useTranslation();
   if (value === null || value === undefined) return <span className="text-xs text-muted-foreground italic">n/a</span>;
   const color = value >= 0.7
     ? "text-green-600 bg-green-500/10 border-green-500/20"
@@ -30,10 +31,10 @@ function KendallBadge({ value, isDE }: { value: number | null; isDE: boolean }) 
       ? "text-amber-600 bg-amber-500/10 border-amber-500/20"
       : "text-red-600 bg-red-500/10 border-red-500/20";
   const label = value >= 0.7
-    ? (isDE ? "stark" : "strong")
+    ? t("tastingAnalytics.strong")
     : value >= 0.4
-      ? (isDE ? "moderat" : "moderate")
-      : (isDE ? "schwach" : "weak");
+      ? t("tastingAnalytics.moderate")
+      : t("tastingAnalytics.weak");
   return (
     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${color}`} data-testid="badge-kendall-w">
       W = {value.toFixed(2)} ({label})
@@ -49,9 +50,8 @@ function MedalIcon({ rank }: { rank: number }) {
 }
 
 export function TastingAnalytics({ tastingId }: { tastingId: string }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const isDE = i18n.language === "de";
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedWhisky, setExpandedWhisky] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
     return (
       <div className="bg-card border border-border/40 rounded-lg p-6 flex items-center justify-center">
         <Loader2 className="w-5 h-5 animate-spin text-primary mr-2" />
-        <span className="text-sm text-muted-foreground">{isDE ? "Lade Analyse…" : "Loading analytics…"}</span>
+        <span className="text-sm text-muted-foreground">{t("tastingAnalytics.loading")}</span>
       </div>
     );
   }
@@ -78,7 +78,7 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
     return (
       <div className="bg-card border border-border/40 rounded-lg p-6 flex items-center gap-2">
         <AlertCircle className="w-5 h-5 text-destructive" />
-        <span className="text-sm text-muted-foreground">{isDE ? "Analyse konnte nicht geladen werden." : "Could not load analytics."}</span>
+        <span className="text-sm text-muted-foreground">{t("tastingAnalytics.loadError")}</span>
       </div>
     );
   }
@@ -102,13 +102,13 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
           </div>
           <div className="text-left">
             <h3 className="font-serif font-bold text-primary text-base md:text-lg">
-              {isDE ? "Tasting-Analyse" : "Tasting Analytics"}
+              {t("tastingAnalytics.title")}
             </h3>
             <div className="flex flex-wrap items-center gap-2 mt-0.5">
               <span className="text-xs text-muted-foreground">
-                {participantCount} {isDE ? "Teilnehmer" : "participants"} · {totalRatings} {isDE ? "Bewertungen" : "ratings"}
+                {participantCount} {t("tastingAnalytics.participants")} · {totalRatings} {t("tastingAnalytics.ratings")}
               </span>
-              <KendallBadge value={kendallW} isDE={isDE} />
+              <KendallBadge value={kendallW} />
             </div>
           </div>
         </div>
@@ -132,17 +132,17 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                 <div className="text-center bg-secondary/30 rounded-lg p-3" data-testid="stat-participants">
                   <Users className="w-4 h-4 text-primary mx-auto mb-1" />
                   <div className="text-xl font-serif font-bold text-primary">{participantCount}</div>
-                  <div className="text-[10px] text-muted-foreground">{isDE ? "Teilnehmer" : "Participants"}</div>
+                  <div className="text-[10px] text-muted-foreground">{t("tastingAnalytics.participantsLabel")}</div>
                 </div>
                 <div className="text-center bg-secondary/30 rounded-lg p-3" data-testid="stat-ratings">
                   <TrendingUp className="w-4 h-4 text-primary mx-auto mb-1" />
                   <div className="text-xl font-serif font-bold text-primary">{totalRatings}</div>
-                  <div className="text-[10px] text-muted-foreground">{isDE ? "Bewertungen" : "Ratings"}</div>
+                  <div className="text-[10px] text-muted-foreground">{t("tastingAnalytics.ratingsLabel")}</div>
                 </div>
                 <div className="text-center bg-secondary/30 rounded-lg p-3" data-testid="stat-whiskies">
                   <Trophy className="w-4 h-4 text-primary mx-auto mb-1" />
                   <div className="text-xl font-serif font-bold text-primary">{whiskyAnalytics.length}</div>
-                  <div className="text-[10px] text-muted-foreground">{isDE ? "Whiskys" : "Whiskies"}</div>
+                  <div className="text-[10px] text-muted-foreground">{t("tastingAnalytics.whiskiesLabel")}</div>
                 </div>
               </div>
 
@@ -150,19 +150,19 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                 <section>
                   <h4 className="font-serif font-bold text-primary text-sm mb-3 flex items-center gap-2" data-testid="text-ranking-title">
                     <Trophy className="w-4 h-4" />
-                    {isDE ? "Ranking (nach Median)" : "Ranking (by Median)"}
+                    {t("tastingAnalytics.rankingTitle")}
                   </h4>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm" data-testid="ranking-table">
                       <thead>
                         <tr className="border-b border-border/40 text-muted-foreground text-xs">
                           <th className="text-left py-2 px-2 w-8">#</th>
-                          <th className="text-left py-2 px-2">{isDE ? "Whisky" : "Whisky"}</th>
-                          <th className="text-center py-2 px-2">{isDE ? "Median" : "Median"}</th>
+                          <th className="text-left py-2 px-2">{t("tastingAnalytics.whisky")}</th>
+                          <th className="text-center py-2 px-2">{t("tastingAnalytics.median")}</th>
                           <th className="text-center py-2 px-2 hidden sm:table-cell">Ø</th>
                           <th className="text-center py-2 px-2 hidden sm:table-cell">σ</th>
                           <th className="text-center py-2 px-2 hidden md:table-cell">IQR</th>
-                          <th className="text-center py-2 px-2">{isDE ? "n" : "n"}</th>
+                          <th className="text-center py-2 px-2">{t("tastingAnalytics.n")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -193,10 +193,13 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                 const cats = wa.categories || {};
                 const myRating = wa.myRating;
 
+                const groupAvgLabel = t("tastingAnalytics.groupAvg");
+                const myRatingLabel = t("tastingAnalytics.myRating");
+
                 const radarData = (["nose", "taste", "finish", "balance"] as const).map(cat => ({
-                  category: CATEGORY_LABELS[cat]?.[isDE ? "de" : "en"] || cat,
-                  [isDE ? "Gruppen-Ø" : "Group Avg"]: cats[cat]?.avg ?? 0,
-                  ...(myRating ? { [isDE ? "Meine Bewertung" : "My Rating"]: myRating[cat] ?? 0 } : {}),
+                  category: t("tastingAnalytics." + cat),
+                  [groupAvgLabel]: cats[cat]?.avg ?? 0,
+                  ...(myRating ? { [myRatingLabel]: myRating[cat] ?? 0 } : {}),
                 }));
 
                 return (
@@ -212,12 +215,12 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
                       {(["nose", "taste", "finish", "balance"] as const).map(cat => (
                         <div key={cat} className="bg-card/50 rounded p-2">
-                          <div className="text-muted-foreground mb-0.5">{CATEGORY_LABELS[cat]?.[isDE ? "de" : "en"]}</div>
+                          <div className="text-muted-foreground mb-0.5">{t("tastingAnalytics." + cat)}</div>
                           <div className="font-semibold text-primary">Ø {cats[cat]?.avg?.toFixed(1) ?? "–"}</div>
                           <div className="text-[10px] text-muted-foreground">Md {cats[cat]?.median?.toFixed(1) ?? "–"}</div>
                           {myRating && (
                             <div className="text-[10px] text-amber-600 mt-0.5">
-                              {isDE ? "Ich" : "Me"}: {myRating[cat] ?? "–"}
+                              {t("tastingAnalytics.me")}: {myRating[cat] ?? "–"}
                             </div>
                           )}
                         </div>
@@ -231,8 +234,8 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                           <PolarAngleAxis dataKey="category" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                           <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 9 }} />
                           <Radar
-                            name={isDE ? "Gruppen-Ø" : "Group Avg"}
-                            dataKey={isDE ? "Gruppen-Ø" : "Group Avg"}
+                            name={groupAvgLabel}
+                            dataKey={groupAvgLabel}
                             stroke="#8b5e3c"
                             fill="#8b5e3c"
                             fillOpacity={0.15}
@@ -240,8 +243,8 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                           />
                           {myRating && (
                             <Radar
-                              name={isDE ? "Meine Bewertung" : "My Rating"}
-                              dataKey={isDE ? "Meine Bewertung" : "My Rating"}
+                              name={myRatingLabel}
+                              dataKey={myRatingLabel}
                               stroke="#c4956a"
                               fill="#c4956a"
                               fillOpacity={0.1}
@@ -256,10 +259,10 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
 
                     {myRating && (
                       <div className="text-center text-xs text-muted-foreground">
-                        {isDE ? "Mein Gesamt:" : "My Overall:"}{" "}
+                        {t("tastingAnalytics.myOverall")}{" "}
                         <span className="font-semibold text-primary">{myRating.overall}</span>
                         <span className="mx-2">·</span>
-                        {isDE ? "Gruppen-Median:" : "Group Median:"}{" "}
+                        {t("tastingAnalytics.groupMedian")}{" "}
                         <span className="font-semibold text-primary">{wa.median?.toFixed(1)}</span>
                       </div>
                     )}
@@ -271,7 +274,7 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                 <section>
                   <h4 className="font-serif font-bold text-primary text-sm mb-3 flex items-center gap-2" data-testid="text-distribution-title">
                     <BarChart3 className="w-4 h-4" />
-                    {isDE ? "Gesamtverteilung der Bewertungen" : "Overall Score Distribution"}
+                    {t("tastingAnalytics.distributionTitle")}
                   </h4>
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={overallDistribution}>
@@ -280,9 +283,9 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                       <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                       <RechartsTooltip
                         contentStyle={{ fontSize: 12, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
-                        formatter={(v: number) => [v, isDE ? "Anzahl" : "Count"]}
+                        formatter={(v: number) => [v, t("tastingAnalytics.count")]}
                       />
-                      <Bar dataKey="count" fill="#8b5e3c" radius={[3, 3, 0, 0]} name={isDE ? "Anzahl" : "Count"} />
+                      <Bar dataKey="count" fill="#8b5e3c" radius={[3, 3, 0, 0]} name={t("tastingAnalytics.count")} />
                     </BarChart>
                   </ResponsiveContainer>
                 </section>
@@ -297,7 +300,7 @@ export function TastingAnalytics({ tastingId }: { tastingId: string }) {
                 >
                   <a href={downloadUrl} download>
                     <Download className="w-4 h-4 mr-1.5" />
-                    {isDE ? "Excel herunterladen" : "Download Excel"}
+                    {t("tastingAnalytics.downloadExcel")}
                   </a>
                 </Button>
               </div>
