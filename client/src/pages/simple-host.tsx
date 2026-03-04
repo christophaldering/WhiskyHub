@@ -1649,6 +1649,160 @@ function HostCalendar({ pid }: { pid: string }) {
   );
 }
 
+function parseTastingDate(dateStr: string | null): Date | null {
+  if (!dateStr) return null;
+  const iso = new Date(dateStr);
+  if (!isNaN(iso.getTime()) && dateStr.includes("-")) return iso;
+  const euMatch = dateStr.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (euMatch) return new Date(+euMatch[3], +euMatch[2] - 1, +euMatch[1]);
+  return null;
+}
+
+interface TimeGroup {
+  key: string;
+  label: string;
+  tastings: TastingFull[];
+}
+
+function groupByTimePeriod(tastings: TastingFull[]): TimeGroup[] {
+  const now = new Date();
+  const d30 = new Date(now); d30.setDate(d30.getDate() - 30);
+  const d90 = new Date(now); d90.setDate(d90.getDate() - 90);
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+
+  const groups: TimeGroup[] = [
+    { key: "30d", label: "Last 30 days", tastings: [] },
+    { key: "90d", label: "Last 3 months", tastings: [] },
+    { key: "year", label: "This year", tastings: [] },
+    { key: "older", label: "Older", tastings: [] },
+  ];
+
+  const sorted = [...tastings].sort((a, b) => {
+    const da = parseTastingDate(a.date);
+    const db = parseTastingDate(b.date);
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return db.getTime() - da.getTime();
+  });
+
+  for (const t of sorted) {
+    const d = parseTastingDate(t.date);
+    if (!d || d >= d30) groups[0].tastings.push(t);
+    else if (d >= d90) groups[1].tastings.push(t);
+    else if (d >= yearStart) groups[2].tastings.push(t);
+    else groups[3].tastings.push(t);
+  }
+
+  return groups.filter(g => g.tastings.length > 0);
+}
+
+function HistoryAccordion({ tastings }: { tastings: TastingFull[] }) {
+  const groups = useMemo(() => groupByTimePeriod(tastings), [tastings]);
+  const [expanded, setExpanded] = useState<Set<string>>(() => {
+    const first = groups[0]?.key;
+    return first ? new Set([first]) : new Set();
+  });
+
+  const toggle = (key: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  return (
+    <div>
+      <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 10 }}>
+        History
+      </h3>
+      {tastings.length === 0 ? (
+        <div style={{ ...cardStyle, textAlign: "center" }}>
+          <p style={{ color: c.muted, fontSize: 13, margin: "4px 0" }} data-testid="text-no-history">
+            No past tastings yet.
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {groups.map(group => {
+            const isOpen = expanded.has(group.key);
+            return (
+              <div key={group.key} style={{ ...cardStyle, padding: 0, overflow: "hidden" }} data-testid={`history-group-${group.key}`}>
+                <button
+                  onClick={() => toggle(group.key)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "14px 16px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: c.text,
+                    fontFamily: "system-ui, sans-serif",
+                  }}
+                  data-testid={`button-toggle-${group.key}`}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>{group.label}</span>
+                    <span style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: c.accent,
+                      background: `${c.accent}18`,
+                      padding: "2px 8px",
+                      borderRadius: 10,
+                    }}>
+                      {group.tastings.length}
+                    </span>
+                  </div>
+                  {isOpen
+                    ? <ChevronUp style={{ width: 16, height: 16, color: c.muted }} />
+                    : <ChevronDown style={{ width: 16, height: 16, color: c.muted }} />
+                  }
+                </button>
+                {isOpen && (
+                  <div style={{ padding: "0 12px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+                    {group.tastings.map(t => (
+                      <Link key={t.id} href={`/tasting-results/${t.id}`}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "10px 12px",
+                            borderRadius: 8,
+                            background: c.bg,
+                            border: `1px solid ${c.border}`,
+                            cursor: "pointer",
+                          }}
+                          data-testid={`card-tasting-${t.id}`}
+                        >
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{t.title}</div>
+                            {t.date && <div style={{ fontSize: 11, color: c.muted, marginTop: 3 }}>{t.date}</div>}
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <StatusBadge status={t.status} />
+                            <ChevronRight style={{ width: 14, height: 14, color: c.muted }} />
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SimpleHostPage() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -1837,42 +1991,7 @@ export default function SimpleHostPage() {
                   </div>
                 )}
 
-                <div>
-                  <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 10 }}>
-                    History
-                  </h3>
-                  {pastTastings.length === 0 ? (
-                    <div style={{ ...cardStyle, textAlign: "center" }}>
-                      <p style={{ color: c.muted, fontSize: 13, margin: "4px 0" }} data-testid="text-no-history">
-                        No past tastings yet.
-                      </p>
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {pastTastings.slice(0, 5).map((t) => (
-                        <Link key={t.id} href={`/tasting-results/${t.id}`}>
-                          <div style={{ ...cardStyle, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }} data-testid={`card-tasting-${t.id}`}>
-                            <div>
-                              <div style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</div>
-                              {t.date && <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>{t.date}</div>}
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <StatusBadge status={t.status} />
-                              <ChevronRight style={{ width: 16, height: 16, color: c.muted }} />
-                            </div>
-                          </div>
-                        </Link>
-                      ))}
-                      {pastTastings.length > 5 && (
-                        <Link href="/legacy/tasting/sessions">
-                          <div style={{ textAlign: "center", color: c.accent, fontSize: 13, padding: 8, cursor: "pointer" }} data-testid="link-all-sessions">
-                            Show all {pastTastings.length} tastings →
-                          </div>
-                        </Link>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <HistoryAccordion tastings={pastTastings} />
               </>
             )}
 
