@@ -1550,7 +1550,9 @@ export async function registerRoutes(
     }
 
     if (participant && participant.pin) {
+      console.log(`[SESSION][AUTH] verifying password for pid=${participant.id} email=${participant.email} credLen=${credential.trim().length} pinHashLen=${participant.pin.length}`);
       const valid = await verifyPassword(credential.trim(), participant.pin);
+      console.log(`[SESSION][AUTH] bcrypt result: ${valid}`);
       if (valid) {
         let displayName = participant.name;
         if (name && typeof name === "string" && name.trim() && name.trim() !== participant.name) {
