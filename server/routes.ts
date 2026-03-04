@@ -1502,7 +1502,7 @@ export async function registerRoutes(
       sessionSigninAttempts.set(clientIp, { count: 1, resetAt: now + 5 * 60 * 1000 });
     }
 
-    const { name, pin, password, mode, remember } = req.body || {};
+    const { name, email, pin, password, mode, remember } = req.body || {};
     const credential = password || pin;
     if (!credential || typeof credential !== "string") {
       return res.status(400).json({ ok: false, message: "Password is required" });
@@ -1511,7 +1511,10 @@ export async function registerRoutes(
     const authMode = mode === "tasting" ? "tasting" : "log";
 
     let participant: any = null;
-    if (name && typeof name === "string" && name.trim()) {
+    if (email && typeof email === "string" && email.trim()) {
+      participant = await storage.getParticipantByEmail(email.trim().toLowerCase());
+    }
+    if (!participant && name && typeof name === "string" && name.trim()) {
       participant = await storage.getParticipantByName(name.trim());
     }
 
@@ -1519,7 +1522,7 @@ export async function registerRoutes(
       const valid = await verifyPassword(credential.trim(), participant.pin);
       if (valid) {
         const displayName = participant.name;
-        console.log(`[SESSION][AUTH] signin success for "${displayName}" mode=${authMode} (DB match)`);
+        console.log(`[SESSION][AUTH] signin success for "${displayName}" mode=${authMode} (DB match via ${email ? "email" : "name"})`);
         const e = sessionSigninAttempts.get(clientIp);
         if (e) e.count = 0;
         const result: any = { ok: true, name: displayName, mode: authMode, pid: participant.id };
@@ -1563,7 +1566,11 @@ export async function registerRoutes(
       return res.json(result);
     }
 
-    console.log(`[SESSION][AUTH] signin failed for "${name || "anon"}"`);
+    if (email && !participant) {
+      console.log(`[SESSION][AUTH] signin failed — no account for email "${email}"`);
+      return res.status(401).json({ ok: false, message: "No account found for this email" });
+    }
+    console.log(`[SESSION][AUTH] signin failed for "${email || name || "anon"}"`);
     return res.status(401).json({ ok: false, message: "Invalid password" });
   };
 

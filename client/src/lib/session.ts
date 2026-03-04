@@ -79,6 +79,7 @@ export function setSessionPid(pid: string) {
 export async function signIn(opts: {
   pin: string;
   name?: string;
+  email?: string;
   mode: SessionMode;
   remember?: boolean;
 }): Promise<{ ok: boolean; name?: string; resumeToken?: string; error?: string }> {
@@ -88,6 +89,7 @@ export async function signIn(opts: {
     body: JSON.stringify({
       pin: opts.pin,
       name: opts.name || undefined,
+      email: opts.email || undefined,
       mode: opts.mode,
       remember: opts.remember ?? (opts.mode === "log"),
     }),

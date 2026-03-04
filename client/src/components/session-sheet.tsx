@@ -25,9 +25,9 @@ const darkColors = {
 export default function SessionSheet({ open, onClose, onSessionChange, defaultMode = "log", variant = "dark" }: SessionSheetProps) {
   const [session, setSession] = useState(() => getSession());
   const [showForm, setShowForm] = useState(false);
-  const [siName, setSiName] = useState("");
+  const [siEmail, setSiEmail] = useState("");
   const [siPin, setSiPin] = useState("");
-  const [siRemember, setSiRemember] = useState(defaultMode === "log");
+  const [siRemember, setSiRemember] = useState(true);
   const [siLoading, setSiLoading] = useState(false);
   const [siError, setSiError] = useState("");
 
@@ -36,9 +36,9 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       setSession(getSession());
       setShowForm(false);
       setSiPin("");
-      setSiName("");
+      setSiEmail("");
       setSiError("");
-      setSiRemember(defaultMode === "log");
+      setSiRemember(true);
     }
   }, [open, defaultMode]);
 
@@ -82,12 +82,12 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!siPin.trim()) return;
+    if (!siPin.trim() || !siEmail.trim()) return;
     setSiLoading(true);
     setSiError("");
     const result = await signIn({
       pin: siPin.trim(),
-      name: siName.trim() || undefined,
+      email: siEmail.trim(),
       mode: defaultMode,
       remember: siRemember,
     });
@@ -96,13 +96,14 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       const msg = result.error || "";
       if (msg.includes("Invalid p") || msg.includes("Invalid P")) setSiError("Wrong password.");
       else if (msg.includes("Too many")) setSiError("Too many attempts. Wait a moment.");
+      else if (msg.includes("No account")) setSiError("No account found for this email.");
       else setSiError(msg || "Something went wrong.");
       return;
     }
     setSession(getSession());
     setShowForm(false);
     setSiPin("");
-    setSiName("");
+    setSiEmail("");
     setSiError("");
     onSessionChange();
     onClose();
@@ -202,13 +203,13 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
             <input type="text" name="cs_trap_user" autoComplete="username" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
             <input type="password" name="cs_trap_pw" autoComplete="current-password" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
             <input
-              type="text"
-              placeholder="Name"
-              name="cs_display_name"
-              value={siName}
-              onChange={(e) => setSiName(e.target.value)}
+              type="email"
+              placeholder="Email"
+              name="cs_email"
+              value={siEmail}
+              onChange={(e) => setSiEmail(e.target.value)}
               style={inputStyle}
-              data-testid="input-session-name"
+              data-testid="input-session-email"
               autoComplete="off"
               autoCapitalize="none"
               spellCheck={false}
@@ -226,7 +227,6 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
               autoCapitalize="none"
               spellCheck={false}
               data-form-type="other"
-              autoFocus
             />
             <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: c.mutedLight, cursor: "pointer", padding: "2px 0" }}>
               <input
@@ -240,18 +240,18 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
             </label>
             <button
               type="submit"
-              disabled={siLoading || !siPin.trim() || !siName.trim()}
+              disabled={siLoading || !siPin.trim() || !siEmail.trim()}
               data-testid="button-session-signin-submit"
               style={{
                 width: "100%",
                 padding: 12,
                 fontSize: 14,
                 fontWeight: 600,
-                background: !siPin.trim() ? c.muted : c.accent,
-                color: !siPin.trim() ? c.mutedLight : (isDark ? darkColors.bg : "#fff"),
+                background: (!siPin.trim() || !siEmail.trim()) ? c.muted : c.accent,
+                color: (!siPin.trim() || !siEmail.trim()) ? c.mutedLight : (isDark ? darkColors.bg : "#fff"),
                 border: "none",
                 borderRadius: 10,
-                cursor: siLoading ? "wait" : !siPin.trim() ? "not-allowed" : "pointer",
+                cursor: siLoading ? "wait" : (!siPin.trim() || !siEmail.trim()) ? "not-allowed" : "pointer",
                 fontFamily: "system-ui, sans-serif",
               }}
             >
