@@ -264,7 +264,7 @@ export default function MyTastePage() {
 
   const { data: insightData } = useQuery({
     queryKey: ["participant-insights", pid],
-    queryFn: () => fetch(`/api/participants/${pid}/insights`).then((r) => r.json()),
+    queryFn: () => fetch(`/api/participants/${pid}/insights`, { headers: { "x-participant-id": pid! } }).then((r) => r.json()),
     enabled: !!pid,
   });
 

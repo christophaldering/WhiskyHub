@@ -463,6 +463,10 @@ export async function registerRoutes(
 
   app.post("/api/participants/lookup", async (req, res) => {
     try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
       const { name } = req.body;
       if (!name || typeof name !== "string") return res.status(400).json({ message: "Name required" });
       const participant = await storage.getParticipantByName(name.trim());
@@ -701,7 +705,12 @@ export async function registerRoutes(
   app.get("/api/participants/:id", async (req, res) => {
     const participant = await storage.getParticipant(req.params.id);
     if (!participant) return res.status(404).json({ message: "Not found" });
-    res.json(participant);
+    const requesterId = req.headers["x-participant-id"] as string;
+    if (requesterId === participant.id) {
+      res.json(participant);
+    } else {
+      res.json({ id: participant.id, name: participant.name, role: participant.role, language: participant.language });
+    }
   });
 
   app.post("/api/participants/:id/verify", async (req, res) => {
@@ -1998,6 +2007,10 @@ export async function registerRoutes(
   });
 
   app.get("/api/ratings/:participantId/:whiskyId", async (req, res) => {
+    const requesterId = req.headers["x-participant-id"] as string;
+    if (!requesterId || requesterId !== req.params.participantId) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
     const rating = await storage.getRatingByParticipantAndWhisky(req.params.participantId, req.params.whiskyId);
     if (!rating) return res.status(404).json({ message: "Not found" });
     res.json(rating);
@@ -4061,6 +4074,10 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
   // ===== Journal Entries =====
   app.get("/api/journal/:participantId", async (req, res) => {
     try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       const entries = await storage.getJournalEntries(req.params.participantId);
       res.json(entries);
     } catch (e: any) {
@@ -4070,6 +4087,10 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.get("/api/journal/:participantId/:id", async (req, res) => {
     try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       const entry = await storage.getJournalEntry(req.params.id, req.params.participantId);
       if (!entry) return res.status(404).json({ message: "Journal entry not found" });
       res.json(entry);
@@ -4507,6 +4528,10 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
   app.get("/api/participants/:id/rating-notes", async (req, res) => {
     try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId || requesterId !== req.params.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       const participant = await storage.getParticipant(req.params.id);
       if (!participant) return res.status(404).json({ message: "Not found" });
       const notes = await storage.getRatingNotes(req.params.id);

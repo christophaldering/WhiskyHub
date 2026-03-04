@@ -2,9 +2,23 @@ import { queryClient } from "./queryClient";
 
 const API_BASE = "/api";
 
+export function getParticipantId(): string | null {
+  try {
+    return sessionStorage.getItem("session_pid") || localStorage.getItem("casksense_participant_id") || null;
+  } catch { return null; }
+}
+
+export function pidHeaders(): Record<string, string> {
+  const pid = getParticipantId();
+  return pid ? { "x-participant-id": pid } : {};
+}
+
 async function fetchJSON(url: string, options?: RequestInit) {
+  const pid = getParticipantId();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (pid) headers["x-participant-id"] = pid;
   const res = await fetch(`${API_BASE}${url}`, {
-    headers: { "Content-Type": "application/json" },
+    headers,
     ...options,
   });
   if (!res.ok) {

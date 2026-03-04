@@ -52,7 +52,7 @@ export default function Account() {
     try {
       const res = await fetch(`/api/participants/${currentParticipant.id}/email`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-participant-id": currentParticipant.id },
         body: JSON.stringify({ email: newEmail }),
       });
       if (!res.ok) throw new Error((await res.json()).message);
@@ -78,7 +78,7 @@ export default function Account() {
     try {
       const res = await fetch(`/api/participants/${currentParticipant.id}/pin`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-participant-id": currentParticipant.id },
         body: JSON.stringify({ currentPin, newPin }),
       });
       if (!res.ok) throw new Error((await res.json()).message);
@@ -96,7 +96,7 @@ export default function Account() {
   const handleDownloadData = async () => {
     setDownloadLoading(true);
     try {
-      const res = await fetch(`/api/participants/${currentParticipant.id}/export-data`);
+      const res = await fetch(`/api/participants/${currentParticipant.id}/export-data`, { headers: { "x-participant-id": currentParticipant.id } });
       if (!res.ok) throw new Error("Export failed");
       const data = await res.json();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -128,7 +128,7 @@ export default function Account() {
     try {
       const res = await fetch(`/api/participants/${currentParticipant.id}/anonymize`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-participant-id": currentParticipant.id },
         body: JSON.stringify({ pin: deletePin }),
       });
       if (!res.ok) {

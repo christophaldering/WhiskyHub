@@ -269,7 +269,7 @@ export function FocusedTasting({ tasting, whiskies, onExit, contextLevel = 2 }: 
   const { data: tastingHistory } = useQuery({
     queryKey: ["tasting-history-baseline", participantId],
     queryFn: async () => {
-      const res = await fetch(`/api/participants/${participantId}/tasting-history`);
+      const res = await fetch(`/api/participants/${participantId}/tasting-history`, { headers: { "x-participant-id": participantId } });
       if (!res.ok) return [];
       return res.json();
     },

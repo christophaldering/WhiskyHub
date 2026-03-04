@@ -154,7 +154,110 @@ function WaitingForHost({ tasting }: { tasting: TastingState }) {
   );
 }
 
+function AccountUpgradePrompt({ participantId }: { participantId: string }) {
+  const DISMISS_KEY = `upgrade_dismissed_${participantId}`;
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem(DISMISS_KEY) === "1"; } catch { return false; }
+  });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
+
+  if (dismissed || done) return null;
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim() || password.length < 4) return;
+    setSaving(true);
+    setError("");
+    try {
+      const emailRes = await fetch(`/api/participants/${participantId}/email`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-participant-id": participantId },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      if (!emailRes.ok) {
+        const err = await emailRes.json().catch(() => ({}));
+        throw new Error(err.message || "Could not save email");
+      }
+      const pinRes = await fetch(`/api/participants/${participantId}/pin`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-participant-id": participantId },
+        body: JSON.stringify({ newPin: password }),
+      });
+      if (!pinRes.ok) {
+        const err = await pinRes.json().catch(() => ({}));
+        throw new Error(err.message || "Could not save password");
+      }
+      setDone(true);
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDismiss = () => {
+    try { localStorage.setItem(DISMISS_KEY, "1"); } catch {}
+    setDismissed(true);
+  };
+
+  const inputS: React.CSSProperties = {
+    width: "100%",
+    background: c.bg,
+    border: `1px solid ${c.border}`,
+    borderRadius: 8,
+    color: c.text,
+    padding: "10px 12px",
+    fontSize: 14,
+    outline: "none",
+    boxSizing: "border-box",
+    fontFamily: "system-ui, sans-serif",
+  };
+
+  return (
+    <div style={{ marginTop: 24, padding: 20, background: `${c.accent}10`, border: `1px solid ${c.accent}30`, borderRadius: 12 }} data-testid="upgrade-prompt">
+      <p style={{ fontSize: 14, fontWeight: 600, color: c.text, margin: "0 0 4px" }}>
+        Keep your tasting notes safe?
+      </p>
+      <p style={{ fontSize: 12, color: c.muted, margin: "0 0 16px" }}>
+        Add your email and a password so you can access your data anytime — even from another device.
+      </p>
+      <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputS} autoComplete="email" data-testid="input-upgrade-email" />
+        <div style={{ position: "relative" }}>
+          <input type={showPw ? "text" : "password"} placeholder="Password (min. 4 characters)" value={password} onChange={(e) => setPassword(e.target.value)} style={{ ...inputS, paddingRight: 36, letterSpacing: showPw ? 0 : 3 }} autoComplete="new-password" data-testid="input-upgrade-password" />
+          <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: c.muted, cursor: "pointer", padding: 2 }} tabIndex={-1}>
+            {showPw ? <EyeOff style={{ width: 16, height: 16 }} /> : <Eye style={{ width: 16, height: 16 }} />}
+          </button>
+        </div>
+        <button type="submit" disabled={saving || !email.trim() || password.length < 4} style={{ padding: 10, fontSize: 14, fontWeight: 600, background: c.accent, color: c.bg, border: "none", borderRadius: 8, cursor: saving ? "wait" : "pointer", opacity: (!email.trim() || password.length < 4) ? 0.5 : 1 }} data-testid="button-upgrade-save">
+          {saving ? "Saving…" : "Save"}
+        </button>
+        {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }}>{error}</p>}
+      </form>
+      <button onClick={handleDismiss} style={{ marginTop: 8, width: "100%", padding: 8, fontSize: 12, color: c.muted, background: "none", border: "none", cursor: "pointer" }} data-testid="button-upgrade-dismiss">
+        Maybe later
+      </button>
+    </div>
+  );
+}
+
 function SessionEndedView({ tasting }: { tasting: TastingState }) {
+  const { currentParticipant } = useAppStore();
+  const [hasEmail, setHasEmail] = useState(true);
+
+  useEffect(() => {
+    if (!currentParticipant?.id) return;
+    fetch(`/api/participants/${currentParticipant.id}`, { headers: { "x-participant-id": currentParticipant.id } })
+      .then((r) => r.ok ? r.json() : null)
+      .then((p) => { if (p) setHasEmail(!!p.email); })
+      .catch(() => {});
+  }, [currentParticipant?.id]);
+
   return (
     <div style={{ textAlign: "center", padding: "32px 0" }} data-testid="session-ended">
       <div style={{ fontSize: 32, marginBottom: 12 }}>🥃</div>
@@ -176,6 +279,9 @@ function SessionEndedView({ tasting }: { tasting: TastingState }) {
           </div>
         </Link>
       </div>
+      {currentParticipant?.id && !hasEmail && (
+        <AccountUpgradePrompt participantId={currentParticipant.id} />
+      )}
     </div>
   );
 }
@@ -242,7 +348,7 @@ export default function TastingRoomSimple() {
 
   useEffect(() => {
     if (!pid || !whiskyId) return;
-    fetch(`/api/ratings/${pid}/${whiskyId}`)
+    fetch(`/api/ratings/${pid}/${whiskyId}`, { headers: { "x-participant-id": pid } })
       .then((r) => (r.ok ? r.json() : null))
       .then((existing) => {
         if (existing && !ratings[whiskyId]) {

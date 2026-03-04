@@ -152,7 +152,7 @@ export async function tryAutoResume(): Promise<boolean> {
     const storedPid = localStorage.getItem("casksense_participant_id");
     if (storedPid) {
       try {
-        const res = await fetch(`/api/participants/${storedPid}`);
+        const res = await fetch(`/api/participants/${storedPid}`, { headers: { "x-participant-id": storedPid } });
         if (res.ok) {
           const p = await res.json();
           if (p?.id) {

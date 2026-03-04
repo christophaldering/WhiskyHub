@@ -68,7 +68,7 @@ export default function Profile() {
   const { data: insightData } = useQuery({
     queryKey: ["insights", currentParticipant?.id],
     queryFn: async () => {
-      const res = await fetch(`/api/participants/${currentParticipant!.id}/insights`);
+      const res = await fetch(`/api/participants/${currentParticipant!.id}/insights`, { headers: { "x-participant-id": currentParticipant!.id } });
       if (!res.ok) return { insight: null };
       return res.json();
     },
@@ -172,7 +172,7 @@ export default function Profile() {
       if (!currentParticipant) return;
       const res = await fetch(`/api/participants/${currentParticipant.id}/anonymize`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-participant-id": currentParticipant.id },
         body: JSON.stringify({ pin }),
       });
       if (!res.ok) {

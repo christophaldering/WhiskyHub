@@ -323,7 +323,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         if (!editName.trim()) { setEditMsg("Name cannot be empty."); setEditLoading(false); return; }
         const res = await fetch(`/api/participants/${pid}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-participant-id": pid },
           body: JSON.stringify({ name: editName.trim() }),
         });
         if (!res.ok) { const d = await res.json(); setEditMsg(d.message || "Failed."); setEditLoading(false); return; }
@@ -339,7 +339,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         if (!editEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail.trim())) { setEditMsg("Enter a valid email."); setEditLoading(false); return; }
         const res = await fetch(`/api/participants/${pid}/email`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-participant-id": pid },
           body: JSON.stringify({ email: editEmail.trim() }),
         });
         if (!res.ok) { const d = await res.json(); setEditMsg(d.message || "Failed."); setEditLoading(false); return; }
@@ -349,7 +349,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         if (editNewPw.trim().length < 4) { setEditMsg("New password must be at least 4 characters."); setEditLoading(false); return; }
         const res = await fetch(`/api/participants/${pid}/pin`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-participant-id": pid },
           body: JSON.stringify({ currentPin: editCurPw.trim(), newPin: editNewPw.trim() }),
         });
         if (!res.ok) { const d = await res.json(); setEditMsg(d.message || "Failed."); setEditLoading(false); return; }
