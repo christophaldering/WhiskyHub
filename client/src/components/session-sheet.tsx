@@ -206,6 +206,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
                 style={inputStyle}
                 data-testid="input-session-name"
                 autoComplete="off"
+                data-form-type="other"
               />
             )}
             <input
@@ -215,7 +216,8 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
               onChange={(e) => setSiPin(e.target.value)}
               style={{ ...inputStyle, letterSpacing: 3 }}
               data-testid="input-session-pin"
-              autoComplete="off"
+              autoComplete="new-password"
+              data-form-type="other"
               autoFocus
             />
             <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: c.mutedLight, cursor: "pointer", padding: "2px 0" }}>

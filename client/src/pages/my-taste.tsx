@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useAppStore } from "@/lib/store";
-import { participantApi, journalApi, statsApi } from "@/lib/api";
+import { participantApi, journalApi, statsApi, flavorProfileApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
 import { CircleDot, GitCompareArrows, BarChart3, BookOpen, ChevronRight } from "lucide-react";
@@ -88,8 +88,8 @@ function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; ro
         Unlock your taste profile
       </h2>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} data-testid="input-unlock-name" autoComplete="off" />
-        <input type="password" placeholder="Password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-unlock-pin" autoComplete="off" />
+        <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} data-testid="input-unlock-name" autoComplete="off" data-form-type="other" />
+        <input type="password" placeholder="Password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, letterSpacing: 3 }} data-testid="input-unlock-pin" autoComplete="new-password" data-form-type="other" />
         <button
           type="submit"
           disabled={loading || !name.trim() || !pin.trim()}
@@ -105,6 +105,96 @@ function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; ro
         {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }} data-testid="text-unlock-error">{error}</p>}
       </form>
     </div>
+  );
+}
+
+const FLAVOR_COLORS = ["#c8a864", "#7ea87e", "#d97c5a", "#6b9bd2", "#b07ab0", "#cc9966", "#8ab4a0", "#d4a256"];
+
+function FlavorPreviewCard({ pid }: { pid: string | undefined }) {
+  const { data: profile } = useQuery({
+    queryKey: ["flavor-profile-preview", pid],
+    queryFn: () => flavorProfileApi.get(pid!),
+    enabled: !!pid,
+    staleTime: 120000,
+  });
+
+  const topFlavors = profile?.topCategories?.slice(0, 4) ?? [];
+
+  return (
+    <Link href="/my-taste/flavors">
+      <div style={{ ...cardStyle, padding: "16px 20px", cursor: "pointer" }} data-testid="card-flavor-wheel">
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c.accent}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <CircleDot style={{ width: 18, height: 18, color: c.accent }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Flavor Wheel</div>
+            <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>Your personal aroma profile</div>
+          </div>
+          <ChevronRight style={{ width: 14, height: 14, color: c.muted, flexShrink: 0 }} />
+        </div>
+        {pid && topFlavors.length > 0 && (
+          <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
+            {topFlavors.map((f: any, i: number) => (
+              <span
+                key={f.category || i}
+                style={{
+                  fontSize: 11,
+                  padding: "3px 10px",
+                  borderRadius: 20,
+                  background: `${FLAVOR_COLORS[i % FLAVOR_COLORS.length]}20`,
+                  color: FLAVOR_COLORS[i % FLAVOR_COLORS.length],
+                  fontWeight: 500,
+                }}
+              >
+                {f.category}
+              </span>
+            ))}
+          </div>
+        )}
+        {pid && topFlavors.length === 0 && (
+          <div style={{ fontSize: 11, color: c.muted, marginTop: 10 }}>Rate more whiskies to build your flavor profile</div>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+function AnalyticsPreviewCard({ pid, stats }: { pid: string | undefined; stats: any }) {
+  const totalRatings = stats?.totalRatings ?? stats?.ratingCount ?? null;
+  const avgOverall = stats?.avgOverall ?? stats?.averageOverall ?? null;
+
+  return (
+    <Link href="/legacy/my/journal?tab=analytics">
+      <div style={{ ...cardStyle, padding: "16px 20px", cursor: "pointer" }} data-testid="card-analytics">
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c.accent}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <BarChart3 style={{ width: 18, height: 18, color: c.accent }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>My Analytics</div>
+            <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>Your rating statistics & trends</div>
+          </div>
+          <ChevronRight style={{ width: 14, height: 14, color: c.muted, flexShrink: 0 }} />
+        </div>
+        {pid && (totalRatings != null || avgOverall != null) && (
+          <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
+            {totalRatings != null && (
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif" }}>{totalRatings}</div>
+                <div style={{ fontSize: 10, color: c.muted }}>Ratings</div>
+              </div>
+            )}
+            {avgOverall != null && (
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif" }}>{Number(avgOverall).toFixed(1)}</div>
+                <div style={{ fontSize: 10, color: c.muted }}>Avg Score</div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </Link>
   );
 }
 
@@ -249,13 +339,7 @@ export default function MyTastePage() {
             Explore Your Taste
           </h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <NavCard
-              icon={CircleDot}
-              label="Flavor Wheel"
-              description="Your personal aroma profile"
-              href="/my-taste/flavors"
-              testId="link-flavor-wheel"
-            />
+            <FlavorPreviewCard pid={pid} />
             <NavCard
               icon={GitCompareArrows}
               label="Comparison"
@@ -263,13 +347,7 @@ export default function MyTastePage() {
               href="/my-taste/compare"
               testId="link-comparison"
             />
-            <NavCard
-              icon={BarChart3}
-              label="My Analytics"
-              description="Your rating statistics & trends"
-              href="/legacy/my/journal?tab=analytics"
-              testId="link-analytics"
-            />
+            <AnalyticsPreviewCard pid={pid} stats={stats} />
             <NavCard
               icon={BookOpen}
               label="Journal"

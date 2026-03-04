@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { KeyRound } from "lucide-react";
+import { KeyRound, User } from "lucide-react";
 import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
 
@@ -46,15 +46,32 @@ export default function Landing() {
           background: "none",
           border: "none",
           cursor: "pointer",
-          padding: 6,
+          padding: "6px 10px",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
           color: session.signedIn ? "#d4a256" : "#6b6354",
-          opacity: session.signedIn ? 1 : 0.6,
+          opacity: session.signedIn ? 1 : 0.7,
           transition: "opacity 0.2s, color 0.2s",
+          fontFamily: "system-ui, sans-serif",
+          fontSize: 13,
+          fontWeight: 500,
+          borderRadius: 8,
         }}
         data-testid="button-session-key"
         aria-label="Session"
       >
-        <KeyRound style={{ width: 20, height: 20 }} strokeWidth={session.signedIn ? 2.2 : 1.6} />
+        {session.signedIn ? (
+          <>
+            <User style={{ width: 16, height: 16 }} strokeWidth={2} />
+            <span>{session.name || "Signed in"}</span>
+          </>
+        ) : (
+          <>
+            <KeyRound style={{ width: 16, height: 16 }} strokeWidth={1.6} />
+            <span>Sign in</span>
+          </>
+        )}
       </button>
 
       <SessionSheet
@@ -199,29 +216,6 @@ export default function Landing() {
               data-testid="button-my-taste"
             >
               My Taste
-            </motion.div>
-          </Link>
-
-          <Link href="/analyze">
-            <motion.div
-              whileTap={{ scale: 0.97 }}
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "0.875rem",
-                textAlign: "center",
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                fontFamily: "system-ui, sans-serif",
-                background: "transparent",
-                color: "#d4a256",
-                borderRadius: "12px",
-                cursor: "pointer",
-                border: "1px solid #d4a256",
-              }}
-              data-testid="button-analyze"
-            >
-              Discover
             </motion.div>
           </Link>
         </div>
