@@ -333,11 +333,13 @@ function IdentifyPicker({
   onTakePhoto,
   onUploadPhotos,
   onDescribe,
+  onScanBarcode,
   onClose,
 }: {
   onTakePhoto: () => void;
   onUploadPhotos: () => void;
   onDescribe: () => void;
+  onScanBarcode: () => void;
   onClose: () => void;
 }) {
   return (
@@ -367,6 +369,9 @@ function IdentifyPicker({
         <button onClick={onTakePhoto} data-testid="button-take-photo" style={{ ...btnPrimary, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           <span style={{ fontSize: 18 }}>📷</span> Take a photo
         </button>
+        <button onClick={onScanBarcode} data-testid="button-scan-barcode" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, borderColor: c.accent, color: c.accent }}>
+          <span style={{ fontSize: 18 }}>📊</span> Scan barcode
+        </button>
         <button onClick={onUploadPhotos} data-testid="button-upload-photos" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           <span style={{ fontSize: 18 }}>🖼️</span> Upload from gallery
         </button>
@@ -378,6 +383,217 @@ function IdentifyPicker({
       <button onClick={onClose} data-testid="button-close-picker" style={{ ...btnOutline, marginTop: 12, color: c.muted, borderColor: c.muted, fontSize: 13 }}>
         Cancel
       </button>
+    </motion.div>
+  );
+}
+
+function BarcodeScannerSheet({
+  onResult,
+  onClose,
+  participantId,
+}: {
+  onResult: (data: { name: string; distillery: string; age: string; abv: string; caskType: string; whiskybaseId: string; price: string; source: string }) => void;
+  onClose: () => void;
+  participantId?: string;
+}) {
+  const scannerRef = useRef<HTMLDivElement>(null);
+  const html5QrCodeRef = useRef<any>(null);
+  const [manualCode, setManualCode] = useState("");
+  const [status, setStatus] = useState<"scanning" | "looking_up" | "error" | "not_found" | "camera_error">("scanning");
+  const [errorMsg, setErrorMsg] = useState("");
+  const processedRef = useRef(false);
+
+  const lookupBarcode = useCallback(async (code: string) => {
+    if (processedRef.current) return;
+    processedRef.current = true;
+    setStatus("looking_up");
+    try {
+      const headers: Record<string, string> = {};
+      if (participantId) headers["x-participant-id"] = participantId;
+      const res = await fetch(`/api/barcode-lookup/${encodeURIComponent(code.trim())}`, { headers });
+      if (!res.ok) {
+        if (res.status === 404) { setStatus("not_found"); setErrorMsg(code); processedRef.current = false; return; }
+        if (res.status === 429) { setStatus("error"); setErrorMsg("Zu viele Anfragen"); processedRef.current = false; return; }
+        setStatus("error"); setErrorMsg("Lookup fehlgeschlagen"); processedRef.current = false; return;
+      }
+      const data = await res.json();
+      onResult(data);
+    } catch {
+      setStatus("error");
+      setErrorMsg("Verbindungsfehler");
+      processedRef.current = false;
+    }
+  }, [participantId, onResult]);
+
+  useEffect(() => {
+    let scanner: any = null;
+    const startScanner = async () => {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        if (!scannerRef.current) return;
+        scanner = new Html5Qrcode("barcode-reader");
+        html5QrCodeRef.current = scanner;
+        await scanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 280, height: 120 },
+            formatsToSupport: [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13],
+          },
+          (decodedText: string) => {
+            if (!processedRef.current) {
+              lookupBarcode(decodedText);
+            }
+          },
+          () => {}
+        );
+      } catch {
+        setStatus("camera_error");
+      }
+    };
+    startScanner();
+    return () => {
+      if (scanner) {
+        scanner.stop().catch(() => {});
+        scanner.clear();
+      }
+    };
+  }, [lookupBarcode]);
+
+  const handleClose = useCallback(() => {
+    if (html5QrCodeRef.current) {
+      html5QrCodeRef.current.stop().catch(() => {});
+    }
+    onClose();
+  }, [onClose]);
+
+  return (
+    <motion.div
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", damping: 25, stiffness: 300 }}
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        top: 0,
+        background: c.bg,
+        zIndex: 101,
+        display: "flex",
+        flexDirection: "column",
+      }}
+      data-testid="sheet-barcode-scanner"
+    >
+      <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: 0 }}>Barcode scannen</h3>
+        <button onClick={handleClose} data-testid="button-close-barcode" style={{ background: "none", border: "none", color: c.muted, cursor: "pointer", fontSize: 14, fontFamily: "system-ui" }}>
+          Abbrechen
+        </button>
+      </div>
+
+      {status === "scanning" && (
+        <>
+          <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+            <div id="barcode-reader" ref={scannerRef} style={{ width: "100%", height: "100%" }} />
+          </div>
+          <div style={{ padding: "16px 20px 32px" }}>
+            <p style={{ fontSize: 12, color: c.muted, textAlign: "center", margin: "0 0 12px" }}>
+              Halte die Kamera auf den Barcode der Flasche
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                type="text"
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value.replace(/\D/g, ""))}
+                placeholder="Oder Code eingeben..."
+                style={{ ...inputStyle, flex: 1, fontSize: 13 }}
+                data-testid="input-barcode-manual"
+                inputMode="numeric"
+              />
+              <button
+                onClick={() => { if (manualCode.trim().length >= 8) lookupBarcode(manualCode.trim()); }}
+                disabled={manualCode.trim().length < 8}
+                data-testid="button-barcode-submit"
+                style={{
+                  ...btnPrimary,
+                  width: "auto",
+                  padding: "10px 16px",
+                  fontSize: 13,
+                  opacity: manualCode.trim().length >= 8 ? 1 : 0.4,
+                }}
+              >
+                Suchen
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {status === "looking_up" && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+          <div style={{ width: 32, height: 32, border: `3px solid ${c.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          <p style={{ fontSize: 15, fontWeight: 600, color: c.text }}>Whisky wird erkannt...</p>
+          <p style={{ fontSize: 12, color: c.muted }}>Barcode wird analysiert</p>
+        </div>
+      )}
+
+      {status === "not_found" && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 20 }}>
+          <p style={{ fontSize: 40, margin: 0 }}>🔍</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: c.text }}>Nicht erkannt</p>
+          <p style={{ fontSize: 12, color: c.muted, textAlign: "center" }}>Barcode {errorMsg} konnte keinem Whisky zugeordnet werden.</p>
+          <button onClick={() => { setStatus("scanning"); processedRef.current = false; }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }} data-testid="button-barcode-retry">
+            Nochmal versuchen
+          </button>
+          <button onClick={handleClose} style={{ background: "none", border: "none", color: c.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui", marginTop: 4 }}>
+            Abbrechen
+          </button>
+        </div>
+      )}
+
+      {status === "camera_error" && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 20 }}>
+          <p style={{ fontSize: 40, margin: 0 }}>📷</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: c.text }}>Kein Kamerazugriff</p>
+          <p style={{ fontSize: 12, color: c.muted, textAlign: "center" }}>Bitte erlaube den Kamerazugriff oder gib den Barcode manuell ein.</p>
+          <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 320, marginTop: 8 }}>
+            <input
+              type="text"
+              value={manualCode}
+              onChange={(e) => setManualCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="Barcode eingeben..."
+              style={{ ...inputStyle, flex: 1, fontSize: 13 }}
+              data-testid="input-barcode-fallback"
+              inputMode="numeric"
+            />
+            <button
+              onClick={() => { if (manualCode.trim().length >= 8) lookupBarcode(manualCode.trim()); }}
+              disabled={manualCode.trim().length < 8}
+              style={{ ...btnPrimary, width: "auto", padding: "10px 16px", fontSize: 13, opacity: manualCode.trim().length >= 8 ? 1 : 0.4 }}
+            >
+              Suchen
+            </button>
+          </div>
+          <button onClick={handleClose} style={{ background: "none", border: "none", color: c.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui", marginTop: 8 }}>
+            Abbrechen
+          </button>
+        </div>
+      )}
+
+      {status === "error" && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 20 }}>
+          <p style={{ fontSize: 40, margin: 0 }}>⚠️</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: c.text }}>{errorMsg || "Fehler"}</p>
+          <button onClick={() => { setStatus("scanning"); processedRef.current = false; }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }}>
+            Nochmal versuchen
+          </button>
+          <button onClick={handleClose} style={{ background: "none", border: "none", color: c.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui", marginTop: 4 }}>
+            Abbrechen
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -746,7 +962,7 @@ function OnlineSearchSheet({
   );
 }
 
-type SheetView = "none" | "picker" | "describe" | "candidates" | "identifying" | "onlineSearch";
+type SheetView = "none" | "picker" | "describe" | "candidates" | "identifying" | "onlineSearch" | "barcode";
 
 export default function SimpleLogPage() {
   const { currentParticipant, setParticipant } = useAppStore();
@@ -1795,6 +2011,7 @@ export default function SimpleLogPage() {
             onTakePhoto={() => { setSheetView("none"); setTimeout(() => cameraInputRef.current?.click(), 100); }}
             onUploadPhotos={() => { setSheetView("none"); setTimeout(() => uploadInputRef.current?.click(), 100); }}
             onDescribe={() => setSheetView("describe")}
+            onScanBarcode={() => setSheetView("barcode")}
             onClose={() => setSheetView("none")}
           />
         )}
@@ -1832,12 +2049,34 @@ export default function SimpleLogPage() {
             onCreateUnknown={handleCreateUnknown}
           />
         )}
+
+        {sheetView === "barcode" && (
+          <BarcodeScannerSheet
+            key="barcode"
+            participantId={pid}
+            onResult={(data) => {
+              setSheetView("none");
+              if (data.name) setWhiskyName(data.name);
+              if (data.distillery) setDistillery(data.distillery);
+              if (!showManual) { setShowManual(true); setSelectedCandidate(null); }
+              if (data.age) setUnknownAge(String(data.age));
+              if (data.abv) setUnknownAbv(data.abv);
+              if (data.caskType) setUnknownCask(data.caskType);
+              if (data.whiskybaseId) setUnknownWbId(data.whiskybaseId);
+              if (data.price) setUnknownPrice(data.price);
+            }}
+            onClose={() => setSheetView("none")}
+          />
+        )}
       </AnimatePresence>
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse-mic { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(204,68,68,0.4); } 50% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(204,68,68,0); } }
         ${sliderCSS}
+        #barcode-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+        #barcode-reader { border: none !important; }
+        #barcode-reader img[alt="Info icon"] { display: none !important; }
       `}</style>
     </SimpleShell>
   );

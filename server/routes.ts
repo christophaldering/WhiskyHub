@@ -3446,6 +3446,81 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
     }
   });
 
+  // --- Barcode Lookup (EAN/UPC to whisky) ---
+
+  const barcodeLookupCache = new Map<string, { data: any; ts: number }>();
+
+  app.get("/api/barcode-lookup/:code", async (req: Request, res: Response) => {
+    try {
+      const code = (req.params.code as string).trim();
+      if (!code || code.length < 8 || code.length > 14 || !/^\d+$/.test(code)) {
+        return res.status(400).json({ error: "Invalid barcode (8-14 digits)" });
+      }
+
+      const cached = barcodeLookupCache.get(code);
+      if (cached && Date.now() - cached.ts < WB_CACHE_TTL) {
+        return res.json(cached.data);
+      }
+
+      const participantId = req.headers["x-participant-id"] as string | undefined;
+      const rateKey = participantId || req.ip || "anon";
+      const now = Date.now();
+      const history = (wbLookupRateMap.get(rateKey) || []).filter(t => now - t < WB_RATE_WINDOW);
+      if (history.length >= WB_RATE_LIMIT) {
+        return res.status(429).json({ error: "Too many lookups, please wait" });
+      }
+      history.push(now);
+      wbLookupRateMap.set(rateKey, history);
+
+      const { client } = await getAIClient(participantId || undefined, "barcode_lookup");
+      if (!client) {
+        return res.status(503).json({ error: "ai_unavailable" });
+      }
+
+      const completion = await client.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `You are a whisky and spirits product database expert. Given a product barcode (EAN-13, UPC-A, or similar), identify the whisky or spirit bottle it belongs to. Return JSON with fields: name (full product name), distillery, age (just the number or empty string), abv (with % sign or empty string), caskType (or empty string), region (or empty string), whiskybaseId (if known, or empty string), price (estimated retail price in EUR with € sign, or empty string). If you cannot identify the product at all, return {"found": false}.`,
+          },
+          {
+            role: "user",
+            content: `Product barcode: ${code}`,
+          },
+        ],
+      });
+
+      const raw = completion.choices[0]?.message?.content || "{}";
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : "{}");
+
+      if (parsed.found === false) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      const result = {
+        source: "barcode" as const,
+        name: parsed.name || "",
+        distillery: parsed.distillery || "",
+        age: String(parsed.age || ""),
+        abv: parsed.abv || "",
+        caskType: parsed.caskType || parsed.cask_type || "",
+        region: parsed.region || "",
+        whiskybaseId: parsed.whiskybaseId || "",
+        price: parsed.price || "",
+      };
+
+      barcodeLookupCache.set(code, { data: result, ts: Date.now() });
+      res.json(result);
+    } catch (error: any) {
+      console.error("Barcode lookup error:", error.message);
+      res.status(500).json({ error: "Lookup failed" });
+    }
+  });
+
   // --- Whiskybase Collection ---
   
   app.get("/api/collection/:participantId", async (req: Request, res: Response) => {

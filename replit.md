@@ -39,6 +39,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Knowledge Base**: Includes a Whisky Lexicon, Distillery Encyclopedia, and Independent Bottlers Encyclopedia.
 -   **AI Integration**: AI for bottle identification, content generation, market price estimation, tasting suggestions, and Whiskybase ID auto-fill lookup. Supports user-provided OpenAI API keys or platform-wide AI access.
 -   **Whiskybase ID Lookup**: Entering a Whiskybase ID in the Log form auto-fills Name, Distillery, Age, ABV, Cask Type, and Price — first checks user's collection, then falls back to GPT-4o-mini. Rate-limited (10/min) and cached (1h).
+-   **Barcode Scanner**: Camera-based barcode scanning (EAN-13/UPC-A) in the Log form identifies whisky bottles and auto-fills all fields including Whiskybase ID. Uses html5-qrcode library with manual code entry fallback. Rate-limited and cached.
 -   **Collection Sync**: Whiskybase collection supports smart sync/diff via CSV re-upload.
 -   **Host Wizard (Simple Mode)**: A 4-step inline wizard for creating sessions, adding whiskies, inviting participants, and running live tastings, with options for manual entry, AI identification, and CSV import.
 -   **Tasting Results**: Displays ranked whiskies by average overall score after a tasting, with detailed breakdowns and multi-format export (CSV, Excel, PDF).
