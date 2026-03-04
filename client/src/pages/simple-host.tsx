@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, BarChart3, Star } from "lucide-react";
+import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronLeft, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, BarChart3, Star } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1459,6 +1459,196 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
   );
 }
 
+interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string;
+  status: string;
+  code: string;
+  hostName: string;
+  participantCount: number;
+  whiskyCount: number;
+}
+
+function parseCalendarDate(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  const iso = new Date(dateStr);
+  if (!isNaN(iso.getTime()) && dateStr.includes("-")) return iso;
+  const euMatch = dateStr.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (euMatch) return new Date(+euMatch[3], +euMatch[2] - 1, +euMatch[1]);
+  return null;
+}
+
+function HostCalendar({ pid }: { pid: string }) {
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  const { data: events = [] } = useQuery<CalendarEvent[]>({
+    queryKey: ["/api/calendar"],
+    queryFn: async () => {
+      const res = await fetch("/api/calendar");
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+    for (const ev of events) {
+      const d = parseCalendarDate(ev.date);
+      if (!d) continue;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(ev);
+    }
+    return map;
+  }, [events]);
+
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startOffset = (firstDay + 6) % 7;
+
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const dayNames = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const selectedEvents = selectedDay ? (eventsByDate.get(selectedDay) || []) : [];
+
+  const statusColor = (status: string) => {
+    if (status === "open" || status === "reveal") return c.success;
+    if (status === "draft") return "#888";
+    return c.accent;
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <button
+          type="button"
+          onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}
+          style={{ background: "none", border: "none", color: c.text, cursor: "pointer", padding: 4 }}
+          data-testid="button-calendar-prev"
+        >
+          <ChevronLeft style={{ width: 20, height: 20 }} />
+        </button>
+        <span style={{ fontSize: 16, fontWeight: 700, color: c.text }}>
+          {monthNames[month]} {year}
+        </span>
+        <button
+          type="button"
+          onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}
+          style={{ background: "none", border: "none", color: c.text, cursor: "pointer", padding: 4 }}
+          data-testid="button-calendar-next"
+        >
+          <ChevronRight style={{ width: 20, height: 20 }} />
+        </button>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, textAlign: "center" }}>
+        {dayNames.map((d) => (
+          <div key={d} style={{ fontSize: 11, fontWeight: 600, color: c.muted, padding: "4px 0", textTransform: "uppercase" }}>
+            {d}
+          </div>
+        ))}
+        {Array.from({ length: startOffset }).map((_, i) => (
+          <div key={`empty-${i}`} />
+        ))}
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1;
+          const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const dayEvents = eventsByDate.get(dateKey) || [];
+          const isToday = dateKey === todayKey;
+          const isSelected = dateKey === selectedDay;
+
+          return (
+            <button
+              key={day}
+              type="button"
+              onClick={() => setSelectedDay(isSelected ? null : dateKey)}
+              style={{
+                background: isSelected ? c.accent : isToday ? `${c.accent}20` : "transparent",
+                color: isSelected ? c.bg : c.text,
+                border: "none",
+                borderRadius: 8,
+                padding: "6px 0 2px",
+                cursor: "pointer",
+                fontFamily: "system-ui, sans-serif",
+                fontSize: 14,
+                fontWeight: isToday || isSelected ? 700 : 400,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 2,
+                minHeight: 36,
+              }}
+              data-testid={`calendar-day-${dateKey}`}
+            >
+              {day}
+              {dayEvents.length > 0 && (
+                <div style={{ display: "flex", gap: 2 }}>
+                  {dayEvents.slice(0, 3).map((ev, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        width: 5,
+                        height: 5,
+                        borderRadius: "50%",
+                        background: isSelected ? c.bg : statusColor(ev.status),
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {selectedDay && selectedEvents.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {selectedEvents.map((ev) => (
+            <Link key={ev.id} href={ev.status === "closed" || ev.status === "archived" ? `/tasting-results/${ev.id}` : "#"}>
+              <div
+                style={{
+                  ...cardStyle,
+                  padding: "12px 14px",
+                  cursor: "pointer",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderLeft: `3px solid ${statusColor(ev.status)}`,
+                }}
+                data-testid={`calendar-event-${ev.id}`}
+              >
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{ev.title}</div>
+                  <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>
+                    {ev.whiskyCount} whiskies · {ev.participantCount} participants
+                  </div>
+                </div>
+                <StatusBadge status={ev.status} />
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {selectedDay && selectedEvents.length === 0 && (
+        <div style={{ fontSize: 13, color: c.muted, textAlign: "center", padding: "8px 0" }}>
+          No tastings on this day.
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SimpleHostPage() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -1647,11 +1837,17 @@ export default function SimpleHostPage() {
                   </div>
                 )}
 
-                {pastTastings.length > 0 && (
-                  <div>
-                    <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 10 }}>
-                      History
-                    </h3>
+                <div>
+                  <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 10 }}>
+                    History
+                  </h3>
+                  {pastTastings.length === 0 ? (
+                    <div style={{ ...cardStyle, textAlign: "center" }}>
+                      <p style={{ color: c.muted, fontSize: 13, margin: "4px 0" }} data-testid="text-no-history">
+                        No past tastings yet.
+                      </p>
+                    </div>
+                  ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {pastTastings.slice(0, 5).map((t) => (
                         <Link key={t.id} href={`/tasting-results/${t.id}`}>
@@ -1675,8 +1871,8 @@ export default function SimpleHostPage() {
                         </Link>
                       )}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </>
             )}
 
@@ -1691,13 +1887,13 @@ export default function SimpleHostPage() {
                   <ChevronRight style={{ width: 14, height: 14, color: c.muted, marginLeft: "auto" }} />
                 </div>
               </Link>
-              <Link href="/legacy/tasting/calendar">
-                <div style={{ ...cardStyle, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} data-testid="link-calendar">
+              <div style={cardStyle} data-testid="section-calendar">
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
                   <Calendar style={{ width: 18, height: 18, color: c.accent }} />
-                  <span style={{ fontSize: 14 }}>Calendar</span>
-                  <ChevronRight style={{ width: 14, height: 14, color: c.muted, marginLeft: "auto" }} />
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>Calendar</span>
                 </div>
-              </Link>
+                {pid && <HostCalendar pid={pid} />}
+              </div>
               <Link href="/legacy/tasting/host">
                 <div style={{ ...cardStyle, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} data-testid="link-host-dashboard">
                   <Settings style={{ width: 18, height: 18, color: c.accent }} />
