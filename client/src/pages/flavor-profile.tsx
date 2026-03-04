@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { Activity, ChevronDown, ChevronUp, Users, Globe, User, BookOpen, Info } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
-import { Link } from "wouter";
 import { FlavorWheelContent } from "./flavor-wheel";
 import SimpleShell from "@/components/simple/simple-shell";
 
@@ -63,7 +62,7 @@ function StabilityBadge({ level, percent, t }: { level: string; percent: number;
   const label = level === "stable" ? t("flavorProfile.stable") :
     level === "tendency" ? t("flavorProfile.tendency") : t("flavorProfile.preliminary");
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${color}`} data-testid={`badge-stability-${level}`}>
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${color}`} data-testid={`badge-stability-${level}`}>
       {label} {percent < 100 && <span className="opacity-60">{percent}%</span>}
     </span>
   );
@@ -73,8 +72,8 @@ function DetailsPanel({ children, label, t }: { children: React.ReactNode; label
   const [open, setOpen] = useState(false);
   return (
     <div className="mt-2">
-      <button onClick={() => setOpen(!open)} className="text-xs text-primary/70 hover:text-primary flex items-center gap-1" data-testid="button-toggle-details">
-        {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+      <button onClick={() => setOpen(!open)} className="text-sm text-primary/80 hover:text-primary flex items-center gap-1.5" data-testid="button-toggle-details">
+        {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         {open ? t("flavorProfile.hideDetails") : t("flavorProfile.showDetails")}
       </button>
       <AnimatePresence>
@@ -82,6 +81,108 @@ function DetailsPanel({ children, label, t }: { children: React.ReactNode; label
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
             <div className="mt-2 p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground space-y-1 font-mono">
               {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function MethodologySection({ isDE }: { isDE: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [expertOpen, setExpertOpen] = useState(false);
+
+  return (
+    <div className="bg-card rounded-lg border border-border/40 overflow-hidden" data-testid="section-methodology">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between p-5 text-left hover:bg-muted/10 transition-colors"
+        data-testid="button-toggle-methodology"
+      >
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-primary" />
+          <h2 className="text-base font-serif font-semibold">
+            {isDE ? "So wird dein Profil erstellt" : "How Your Profile Is Built"}
+          </h2>
+        </div>
+        {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+            <div className="px-5 pb-5 space-y-5">
+              <p className="text-sm text-muted-foreground">
+                {isDE
+                  ? "Transparenz ist uns wichtig. Hier erklären wir, wie dein Whisky-Profil berechnet wird."
+                  : "Transparency matters. Here we explain how your whisky profile is calculated."}
+              </p>
+
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  {isDE
+                    ? "Dein Whisky-Profil basiert ausschließlich auf deinem Bewertungsverhalten — nicht auf Persönlichkeitstests, Fragebögen oder Annahmen über dich als Person."
+                    : "Your whisky profile is based exclusively on your rating behavior — not on personality tests, questionnaires, or assumptions about you as a person."}
+                </p>
+                <p className="font-medium text-foreground">
+                  {isDE ? "Was das Profil zeigt:" : "What the profile shows:"}
+                </p>
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li>{isDE ? "Keine Typologien oder Kategorien — du wirst nicht als \"Explorer\" oder \"Kenner\" eingestuft." : "No typologies or categories — you are not classified as an \"Explorer\" or \"Connoisseur\"."}</li>
+                  <li>{isDE ? "Dein Geschmack wird als mehrdimensionale, sich verändernde Struktur abgebildet." : "Your taste is mapped as a multidimensional, evolving structure."}</li>
+                  <li>{isDE ? "Alle Aussagen beschreiben dein Verhalten, nie deine Persönlichkeit." : "All statements describe your behavior, never your personality."}</li>
+                  <li>{isDE ? "Vergleiche mit der Plattform oder Freunden musst du aktiv einschalten." : "Comparisons with the platform or friends must be actively enabled by you."}</li>
+                  <li>{isDE ? "Jede Zahl wird mit Stichprobengröße und Streuungsmaß angezeigt." : "Every number is shown with sample size and dispersion measure."}</li>
+                </ul>
+                <p>
+                  {isDE
+                    ? "Dein Profil verändert sich mit jeder neuen Bewertung. Es ist ein lebendiges Dokument deiner Geschmacksentwicklung."
+                    : "Your profile changes with every new rating. It is a living document of your taste evolution."}
+                </p>
+              </div>
+
+              <div className="border-t border-border/20 pt-4">
+                <button
+                  onClick={() => setExpertOpen(!expertOpen)}
+                  className="w-full flex items-center justify-between text-left"
+                  data-testid="button-toggle-expert"
+                >
+                  <h3 className="text-base font-serif font-semibold">
+                    {isDE ? "Für Experten" : "For Experts"}
+                  </h3>
+                  {expertOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                </button>
+                <AnimatePresence>
+                  {expertOpen && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                      <div className="mt-4 space-y-4 text-sm text-muted-foreground">
+                        <div>
+                          <h4 className="font-serif font-semibold text-foreground mb-1">{isDE ? "Dimensionales Modell" : "Dimensional Model"}</h4>
+                          <p>{isDE ? "Geschmack wird als kontinuierlicher, mehrdimensionaler Präferenzraum modelliert. Jede Dimension (Nase, Geschmack, Abgang, Balance, Gesamt) wird unabhängig berechnet." : "Taste is modeled as a continuous, multidimensional preference space. Each dimension (Nose, Taste, Finish, Balance, Overall) is computed independently."}</p>
+                        </div>
+                        <div>
+                          <h4 className="font-serif font-semibold text-foreground mb-1">{isDE ? "Plattform-Basis: Median statt Mittelwert" : "Platform Basis: Median Over Mean"}</h4>
+                          <p>{isDE ? "Für alle Plattform-Vergleiche wird der Median verwendet, nicht der arithmetische Mittelwert. Der Median ist robust gegenüber Ausreißern." : "For all platform comparisons, the median is used, not the arithmetic mean. The median is robust against outliers."}</p>
+                        </div>
+                        <div>
+                          <h4 className="font-serif font-semibold text-foreground mb-1">{isDE ? "Systematische Abweichung" : "Systematic Deviation"}</h4>
+                          <p className="font-mono text-xs bg-muted/30 p-2 rounded mb-2">avg_delta = mean(UserScore_i - PlatformMedian_i)</p>
+                          <p>{isDE ? "Misst, ob du systematisch höher oder niedriger bewertest als der Plattform-Median." : "Measures whether you systematically rate higher or lower than the platform median."}</p>
+                        </div>
+                        <div>
+                          <h4 className="font-serif font-semibold text-foreground mb-1">{isDE ? "Stabilitätslogik" : "Stability Logic"}</h4>
+                          <ul className="list-disc pl-5 space-y-1 font-mono text-xs">
+                            <li>{isDE ? "Vorläufig" : "Preliminary"}: N &lt; 5</li>
+                            <li>{isDE ? "Tendenz" : "Tendency"}: 5 ≤ N &lt; 15</li>
+                            <li>{isDE ? "Stabil" : "Stable"}: N ≥ 15</li>
+                          </ul>
+                          <p className="font-mono text-xs bg-muted/30 p-2 rounded mt-2">{isDE ? "Stabilität %" : "Stability %"} = min(100, N × 6.67)</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </motion.div>
         )}
@@ -169,7 +270,7 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
       {tasteStructure && source !== "journal" && (
         <div className="bg-card rounded-lg border border-border/40 p-6">
           <h2 className="text-lg font-serif font-semibold mb-1">{t("flavorProfile.radarTitle")}</h2>
-          <p className="text-xs text-muted-foreground mb-4">{t("flavorProfile.radarSubtitle", { count: ratingStyle.nRatings })}</p>
+          <p className="text-sm text-muted-foreground mb-4">{t("flavorProfile.radarSubtitle", { count: ratingStyle.nRatings })}</p>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
@@ -184,7 +285,7 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
             </ResponsiveContainer>
           </div>
           {comparisonData && (
-            <p className="text-xs text-muted-foreground mt-2 text-center" data-testid="text-comparison-basis">
+            <p className="text-sm text-muted-foreground mt-2 text-center" data-testid="text-comparison-basis">
               {comparisonData.mode === "friends"
                 ? t("flavorProfile.friendsBasis", { n: comparisonData.nFriends, r: comparisonData.nRatings })
                 : t("flavorProfile.platformBasisFull", { n: comparisonData.nParticipants, r: comparisonData.nRatings })}
@@ -205,7 +306,7 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
                       <span className="font-mono text-foreground font-medium">{userVal.toFixed(1)}</span>
                       <span className="text-muted-foreground/50">vs</span>
                       <span className="font-mono text-muted-foreground">{compVal.toFixed(1)}</span>
-                      {iqr && <span className="text-[10px] text-muted-foreground/50">(IQR {iqr.iqr.toFixed(1)})</span>}
+                      {iqr && <span className="text-xs text-muted-foreground/60">(IQR {iqr.iqr.toFixed(1)})</span>}
                       <span className={`font-mono text-xs w-14 text-right ${diff > 0 ? "text-green-500" : diff < 0 ? "text-red-400" : "text-muted-foreground"}`}>
                         {diff > 0 ? `+${diff}` : diff.toString()}
                       </span>
@@ -220,24 +321,24 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
 
       <div className="bg-card rounded-lg border border-border/40 p-6" data-testid="section-rating-style">
         <h2 className="text-lg font-serif font-semibold mb-1">{t("flavorProfile.ratingStyleTitle")}</h2>
-        <p className="text-xs text-muted-foreground mb-4">{t("flavorProfile.ratingStyleSubtitle")}</p>
+        <p className="text-sm text-muted-foreground mb-4">{t("flavorProfile.ratingStyleSubtitle")}</p>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="text-center p-3 bg-muted/20 rounded-lg">
-            <div className="text-xl font-serif font-bold text-primary" data-testid="text-mean-score">{ratingStyle.meanScore}</div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">{t("flavorProfile.meanScore")}</div>
+          <div className="text-center p-4 bg-muted/20 rounded-lg">
+            <div className="text-2xl font-serif font-bold text-primary" data-testid="text-mean-score">{ratingStyle.meanScore}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider mt-1">{t("flavorProfile.meanScore")}</div>
           </div>
-          <div className="text-center p-3 bg-muted/20 rounded-lg">
-            <div className="text-xl font-serif font-bold text-foreground" data-testid="text-std-dev">{ratingStyle.stdDev}</div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">{t("flavorProfile.stdDev")}</div>
+          <div className="text-center p-4 bg-muted/20 rounded-lg">
+            <div className="text-2xl font-serif font-bold text-foreground" data-testid="text-std-dev">{ratingStyle.stdDev}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider mt-1">{t("flavorProfile.stdDev")}</div>
           </div>
-          <div className="text-center p-3 bg-muted/20 rounded-lg">
-            <div className="text-xl font-serif font-bold text-foreground" data-testid="text-scale-range">{ratingStyle.scaleRange.min}–{ratingStyle.scaleRange.max}</div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">{t("flavorProfile.scaleRange")}</div>
+          <div className="text-center p-4 bg-muted/20 rounded-lg">
+            <div className="text-2xl font-serif font-bold text-foreground" data-testid="text-scale-range">{ratingStyle.scaleRange.min}–{ratingStyle.scaleRange.max}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider mt-1">{t("flavorProfile.scaleRange")}</div>
           </div>
-          <div className="text-center p-3 bg-muted/20 rounded-lg">
-            <div className="text-xl font-serif font-bold text-foreground" data-testid="text-n-ratings">{ratingStyle.nRatings}</div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">N</div>
+          <div className="text-center p-4 bg-muted/20 rounded-lg">
+            <div className="text-2xl font-serif font-bold text-foreground" data-testid="text-n-ratings">{ratingStyle.nRatings}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider mt-1">N</div>
           </div>
         </div>
 
@@ -252,16 +353,16 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
                 <StabilityBadge level={confidence.overall?.level || "preliminary"} percent={confidence.overall?.percent || 0} t={t} />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mb-1" data-testid="text-deviation-interpretation">
+            <p className="text-sm text-muted-foreground mb-1" data-testid="text-deviation-interpretation">
               {deltaDir
                 ? t("flavorProfile.deviationDesc", { direction: t(`flavorProfile.deviation${deltaDir === "positive" ? "Positive" : "Negative"}`) })
                 : t("flavorProfile.deviationNeutral")}
             </p>
-            <p className="text-[10px] text-muted-foreground/70">
+            <p className="text-xs text-muted-foreground/80">
               {t("flavorProfile.nWhiskiesCompared", { n: dev.nWhiskiesCompared })} · {t("flavorProfile.platformBasis", { n: dev.nPlatformRatings, p: dev.nPlatformParticipants })}
             </p>
             {dev.deltaStdDev !== null && (
-              <p className="text-[10px] text-muted-foreground/70">
+              <p className="text-xs text-muted-foreground/80">
                 {t("flavorProfile.platformMedian")}: {dev.platformMedian} · {t("flavorProfile.stdDev")}: {dev.deltaStdDev}
               </p>
             )}
@@ -276,16 +377,16 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
       </div>
 
       <div className="bg-card rounded-lg border border-border/40 p-6" data-testid="section-confidence">
-        <h2 className="text-sm font-serif font-semibold mb-3">{t("flavorProfile.confidenceTitle")}</h2>
+        <h2 className="text-base font-serif font-semibold mb-3">{t("flavorProfile.confidenceTitle")}</h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {dims.map(dim => {
             const c = confidence[dim];
             if (!c) return null;
             return (
-              <div key={dim} className="text-center p-2 bg-muted/20 rounded-lg" data-testid={`confidence-${dim}`}>
-                <div className="text-xs font-serif text-muted-foreground mb-1">{dimLabels[dim]}</div>
+              <div key={dim} className="text-center p-3 bg-muted/20 rounded-lg" data-testid={`confidence-${dim}`}>
+                <div className="text-sm font-serif text-muted-foreground mb-1">{dimLabels[dim]}</div>
                 <StabilityBadge level={c.level} percent={c.percent} t={t} />
-                <div className="text-[10px] text-muted-foreground/60 mt-1">N = {c.n}</div>
+                <div className="text-xs text-muted-foreground/70 mt-1">N = {c.n}</div>
               </div>
             );
           })}
@@ -309,7 +410,7 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
           {showWhiskyComparison && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="overflow-x-auto">
-                <table className="w-full text-xs">
+                <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border/30">
                       <th className="text-left py-2 font-serif font-semibold text-muted-foreground">Whisky</th>
@@ -326,7 +427,7 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
                         <td className="py-2">
                           <div className="font-medium text-foreground">{w.whiskyName}</div>
                           {(w.distillery || w.region) && (
-                            <div className="text-[10px] text-muted-foreground">{[w.distillery, w.region].filter(Boolean).join(" · ")}</div>
+                            <div className="text-xs text-muted-foreground">{[w.distillery, w.region].filter(Boolean).join(" · ")}</div>
                           )}
                         </td>
                         <td className="text-right py-2 font-mono font-medium text-foreground">{w.userScore}</td>
@@ -334,10 +435,10 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
                         <td className={`text-right py-2 font-mono ${w.delta > 0 ? "text-green-500" : w.delta < 0 ? "text-red-400" : "text-muted-foreground"}`}>
                           {w.delta > 0 ? "+" : ""}{w.delta}
                         </td>
-                        <td className="text-right py-2 font-mono text-muted-foreground/60">
+                        <td className="text-right py-2 font-mono text-muted-foreground/70">
                           {w.iqr ? w.iqr.iqr.toFixed(1) : "–"}
                         </td>
-                        <td className="text-right py-2 font-mono text-muted-foreground/60">{w.platformN}</td>
+                        <td className="text-right py-2 font-mono text-muted-foreground/70">{w.platformN}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -353,12 +454,7 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
         </div>
       )}
 
-      <div className="text-center">
-        <Link href="/method" className="inline-flex items-center gap-1.5 text-xs text-primary/70 hover:text-primary transition-colors" data-testid="link-method">
-          <BookOpen className="w-3.5 h-3.5" />
-          {t("flavorProfile.methodLink")}
-        </Link>
-      </div>
+      <MethodologySection isDE={isDE} />
     </div>
   );
 }
@@ -458,14 +554,14 @@ export default function FlavorProfile() {
             {t("flavorProfile.title")}
           </h1>
         </div>
-        <p className="text-sm text-muted-foreground mb-6">{t("flavorProfile.subtitle")}</p>
+        <p className="text-sm text-muted-foreground/90 mb-6">{t("flavorProfile.subtitle")}</p>
 
         <div className="space-y-10">
 
         <FlavorWheelContent />
 
         {profile?.sources && (profile.sources.tastingRatings > 0 || profile.sources.journalEntries > 0) && (
-              <p className="text-xs text-muted-foreground/70 mb-8" data-testid="text-flavor-sources">
+              <p className="text-sm text-muted-foreground/80 mb-8" data-testid="text-flavor-sources">
                 {isDE
                   ? `Basierend auf ${profile.sources.tastingRatings} Tasting-Bewertung${profile.sources.tastingRatings !== 1 ? "en" : ""} und ${profile.sources.journalEntries} Journal-Eintr${profile.sources.journalEntries !== 1 ? "ägen" : "ag"}`
                   : `Based on ${profile.sources.tastingRatings} tasting rating${profile.sources.tastingRatings !== 1 ? "s" : ""} and ${profile.sources.journalEntries} journal entr${profile.sources.journalEntries !== 1 ? "ies" : "y"}`}
@@ -481,8 +577,8 @@ export default function FlavorProfile() {
               <div className="space-y-8">
                 <div className="bg-card rounded-lg border border-border/40 p-6">
                   <h2 className="text-lg font-serif font-semibold mb-1 text-foreground">{t("flavorProfile.radarTitle")}</h2>
-                  <p className="text-xs text-muted-foreground mb-1">{t("flavorProfile.radarSubtitle", { count: totalRatings })}</p>
-                  <p className="text-xs text-muted-foreground/70 mb-4" data-testid="text-radar-desc">{t("flavorProfile.radarDesc")}</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("flavorProfile.radarSubtitle", { count: totalRatings })}</p>
+                  <p className="text-sm text-muted-foreground/80 mb-4" data-testid="text-radar-desc">{t("flavorProfile.radarDesc")}</p>
                   <div className="h-[320px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
@@ -497,8 +593,8 @@ export default function FlavorProfile() {
                   {profile?.avgScores && globalAvg && globalAvg.totalRatings > 0 && (
                     <div className="mt-6 pt-4 border-t border-border/20">
                       <h3 className="text-sm font-serif font-bold text-muted-foreground uppercase tracking-widest mb-1">{t("flavorProfile.personalVsGlobal")}</h3>
-                      <p className="text-xs text-muted-foreground/70 mb-2" data-testid="text-personal-vs-global-desc">{t("flavorProfile.personalVsGlobalDesc")}</p>
-                      <div className="text-xs text-muted-foreground mb-3">{t("flavorProfile.globalBasedOn", { ratings: globalAvg.totalRatings, participants: globalAvg.totalParticipants })}</div>
+                      <p className="text-sm text-muted-foreground/80 mb-2" data-testid="text-personal-vs-global-desc">{t("flavorProfile.personalVsGlobalDesc")}</p>
+                      <div className="text-sm text-muted-foreground mb-3">{t("flavorProfile.globalBasedOn", { ratings: globalAvg.totalRatings, participants: globalAvg.totalParticipants })}</div>
                       <div className="space-y-2">
                         {[
                           { key: "nose", label: isDE ? "Nase" : "Nose", personal: profile.avgScores.nose, global: globalAvg.nose },
@@ -530,8 +626,8 @@ export default function FlavorProfile() {
                 {regionData.length > 0 && (
                   <div className="bg-card rounded-lg border border-border/40 p-6">
                     <h2 className="text-lg font-serif font-semibold mb-1">{t("flavorProfile.regionTitle")}</h2>
-                    <p className="text-xs text-muted-foreground mb-1">{t("flavorProfile.regionSubtitle")}</p>
-                    <p className="text-xs text-muted-foreground/70 mb-4" data-testid="text-region-desc">{t("flavorProfile.regionDesc")}</p>
+                    <p className="text-sm text-muted-foreground mb-1">{t("flavorProfile.regionSubtitle")}</p>
+                    <p className="text-sm text-muted-foreground/80 mb-4" data-testid="text-region-desc">{t("flavorProfile.regionDesc")}</p>
                     <div className="h-[200px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={regionData} layout="vertical" margin={{ left: 80 }}>
@@ -555,7 +651,7 @@ export default function FlavorProfile() {
                   {peatData.length > 0 && (
                     <div className="bg-card rounded-lg border border-border/40 p-6">
                       <h2 className="text-base font-serif font-semibold mb-1">{t("flavorProfile.peatTitle")}</h2>
-                      <p className="text-xs text-muted-foreground/70 mb-3" data-testid="text-peat-desc">{t("flavorProfile.peatDesc")}</p>
+                      <p className="text-sm text-muted-foreground/80 mb-3" data-testid="text-peat-desc">{t("flavorProfile.peatDesc")}</p>
                       <div className="space-y-3">
                         {peatData.map((d) => (
                           <div key={d.name} className="flex items-center justify-between">
@@ -565,7 +661,7 @@ export default function FlavorProfile() {
                                 <div className="h-full bg-primary/60 rounded-full" style={{ width: `${d.avgScore}%` }} />
                               </div>
                               <span className="text-xs text-muted-foreground w-10 text-right">{d.avgScore}</span>
-                              <span className="text-[10px] text-muted-foreground/60">({d.count})</span>
+                              <span className="text-xs text-muted-foreground/70">({d.count})</span>
                             </div>
                           </div>
                         ))}
@@ -576,7 +672,7 @@ export default function FlavorProfile() {
                   {caskData.length > 0 && (
                     <div className="bg-card rounded-lg border border-border/40 p-6">
                       <h2 className="text-base font-serif font-semibold mb-1">{t("flavorProfile.caskTitle")}</h2>
-                      <p className="text-xs text-muted-foreground/70 mb-3" data-testid="text-cask-desc">{t("flavorProfile.caskDesc")}</p>
+                      <p className="text-sm text-muted-foreground/80 mb-3" data-testid="text-cask-desc">{t("flavorProfile.caskDesc")}</p>
                       <div className="space-y-3">
                         {caskData.map((d) => (
                           <div key={d.name} className="flex items-center justify-between">
@@ -586,7 +682,7 @@ export default function FlavorProfile() {
                                 <div className="h-full bg-primary/60 rounded-full" style={{ width: `${d.avgScore}%` }} />
                               </div>
                               <span className="text-xs text-muted-foreground w-10 text-right">{d.avgScore}</span>
-                              <span className="text-[10px] text-muted-foreground/60">({d.count})</span>
+                              <span className="text-xs text-muted-foreground/70">({d.count})</span>
                             </div>
                           </div>
                         ))}
@@ -598,7 +694,7 @@ export default function FlavorProfile() {
                 {topWhiskies.length > 0 && (
                   <div className="bg-card rounded-lg border border-border/40 p-6">
                     <h2 className="text-lg font-serif font-semibold mb-1">{t("flavorProfile.topTitle")}</h2>
-                    <p className="text-xs text-muted-foreground/70 mb-4" data-testid="text-top-desc">{t("flavorProfile.topDesc")}</p>
+                    <p className="text-sm text-muted-foreground/80 mb-4" data-testid="text-top-desc">{t("flavorProfile.topDesc")}</p>
                     <div className="space-y-3">
                       {topWhiskies.map((item, i) => (
                         <div key={item.whisky.id} className="flex items-center gap-4 py-2 border-b border-border/20 last:border-0">
