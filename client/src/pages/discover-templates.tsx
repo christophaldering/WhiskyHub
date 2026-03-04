@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
-import { c, cardStyle } from "@/lib/theme";
+import { c, cardStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 
 interface TemplateCategory {
   id: string;
@@ -191,11 +191,11 @@ export default function DiscoverTemplates() {
   return (
     <SimpleShell>
       <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
-        <div style={{ marginBottom: 4 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0, fontFamily: "'Playfair Display', serif", color: c.accent }} data-testid="text-templates-title">
-            {isDE ? "Tasting Templates" : "Tasting Templates"}
+        <div style={{ marginBottom: 8 }}>
+          <h2 style={pageTitleStyle} data-testid="text-templates-title">
+            Tasting Templates
           </h2>
-          <p style={{ fontSize: 13, color: c.muted, marginTop: 4 }}>
+          <p style={pageSubtitleStyle}>
             {isDE ? "Vokabular-Guides für verschiedene Whisky-Stile" : "Style-specific vocabulary & sensory guides"}
           </p>
         </div>

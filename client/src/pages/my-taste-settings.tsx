@@ -297,8 +297,8 @@ export default function MyTasteSettings() {
   return (
     <SimpleShell>
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20 }}>
-        <div style={{ marginBottom: 4 }}>
-          <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 24, fontWeight: 700, color: c.accent, margin: 0, textAlign: "center" }} data-testid="text-settings-title">
+        <div style={{ marginBottom: 8 }}>
+          <h1 style={{ ...pageTitleStyle, textAlign: "center" }} data-testid="text-settings-title">
             Settings & Profile
           </h1>
           <p style={{ fontSize: 13, color: c.muted, marginTop: 4, textAlign: "center" }}>

@@ -246,8 +246,8 @@ function Router() {
               <Route path="/legacy/recap/:id">{(params: any) => <Redirect to={`/recap/${params.id}`} />}</Route>
               <Route path="/legacy/invite/:token" component={InviteAccept} />
               <Route path="/legacy/comparison">{() => <Redirect to="/my-taste/compare" />}</Route>
-              <Route path="/legacy/tasting-templates">{() => <RedirectWithQuery to="/legacy/tasting" query="tab=templates" />}</Route>
-              <Route path="/legacy/pairings">{() => <RedirectWithQuery to="/legacy/tasting" query="tab=pairings" />}</Route>
+              <Route path="/legacy/tasting-templates">{() => <Redirect to="/discover/templates" />}</Route>
+              <Route path="/legacy/pairings">{() => <Redirect to="/my-taste/pairings" />}</Route>
               <Route path="/legacy/benchmark">{() => <Redirect to="/my-taste/benchmark" />}</Route>
               <Route path="/legacy/analytics">{() => <Redirect to="/my-taste/analytics" />}</Route>
               <Route path="/legacy/data-export">{() => <RedirectWithQuery to="/legacy/my/journal" query="tab=export" />}</Route>
@@ -260,11 +260,11 @@ function Router() {
               <Route path="/legacy/lexicon">{() => <RedirectWithQuery to="/legacy/discover" query="section=lexicon" />}</Route>
               <Route path="/legacy/distilleries">{() => <Redirect to="/legacy/discover/distilleries" />}</Route>
               <Route path="/legacy/distillery-map">{() => <RedirectWithQuery to="/legacy/discover/distilleries" query="tab=map" />}</Route>
-              <Route path="/legacy/bottlers">{() => <RedirectWithQuery to="/legacy/discover/distilleries" query="tab=bottlers" />}</Route>
+              <Route path="/legacy/bottlers">{() => <Redirect to="/discover/bottlers" />}</Route>
               <Route path="/legacy/research">{() => <RedirectWithQuery to="/legacy/discover" query="section=research" />}</Route>
-              <Route path="/legacy/about">{() => <RedirectWithQuery to="/legacy/profile/help" query="tab=about" />}</Route>
+              <Route path="/legacy/about">{() => <Redirect to="/discover/about" />}</Route>
               <Route path="/legacy/features">{() => <RedirectWithQuery to="/legacy/profile/help" query="tab=features" />}</Route>
-              <Route path="/legacy/donate">{() => <RedirectWithQuery to="/legacy/profile/help" query="tab=donate" />}</Route>
+              <Route path="/legacy/donate">{() => <Redirect to="/discover/donate" />}</Route>
               <Route path="/legacy">{() => <Redirect to="/legacy/home" />}</Route>
               <Route component={NotFound} />
             </Switch>

@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { Heart } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
-import { c, cardStyle } from "@/lib/theme";
+import { c, cardStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 import authorPhoto from "@assets/22A3ABF8-0085-4C82-97DF-EAA0ACD46B4E_1771448218726.png";
 
 type Block = {
@@ -20,17 +20,17 @@ export default function AboutDark() {
   return (
     <SimpleShell>
       <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }} data-testid="about-dark-page">
-        <div style={{ marginBottom: 4 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0, color: c.text }} data-testid="text-about-dark-title">
+        <div style={{ marginBottom: 8 }}>
+          <h2 style={pageTitleStyle} data-testid="text-about-dark-title">
             {t("about.title")}
           </h2>
-          <p style={{ fontSize: 13, color: c.muted, marginTop: 4 }}>
+          <p style={pageSubtitleStyle}>
             The story behind CaskSense
           </p>
         </div>
 
         <div style={{ display: "flex", justifyContent: "center" }}>
-          <div style={{ maxWidth: 320, width: "100%", borderRadius: 14, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
+          <div style={{ maxWidth: 320, width: "100%", borderRadius: 20, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
             <img
               src={authorPhoto}
               alt="Christoph Aldering & Sammy"

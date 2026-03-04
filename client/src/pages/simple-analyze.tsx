@@ -6,7 +6,7 @@ import {
 import SimpleShell from "@/components/simple/simple-shell";
 import { useQuery } from "@tanstack/react-query";
 import { platformStatsApi } from "@/lib/api";
-import { c } from "@/lib/theme";
+import { c, cardStyle, sectionHeadingStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 
 interface NavItem {
   icon: React.ElementType;
@@ -151,11 +151,11 @@ export default function SimpleAnalyzePage() {
   return (
     <SimpleShell showBack={false}>
       <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
-        <div style={{ marginBottom: 4 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }} data-testid="text-analyze-title">
+        <div style={{ marginBottom: 8 }}>
+          <h2 style={pageTitleStyle} data-testid="text-analyze-title">
             Discover
           </h2>
-          <p style={{ fontSize: 13, color: c.muted, marginTop: 4 }}>
+          <p style={pageSubtitleStyle}>
             Sozial · Empfehlungen · Wissen
           </p>
         </div>
@@ -163,15 +163,15 @@ export default function SimpleAnalyzePage() {
         {(totalWhiskies || totalParticipants) && (
           <div style={{ display: "flex", gap: 10 }}>
             {totalParticipants != null && (
-              <div style={{ flex: 1, background: c.card, border: `1px solid ${c.border}`, borderRadius: 10, padding: "14px 16px", textAlign: "center" }} data-testid="stat-participants">
-                <div style={{ fontSize: 22, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif" }}>{totalParticipants}</div>
-                <div style={{ fontSize: 11, color: c.muted, marginTop: 2 }}>Tasters</div>
+              <div style={{ ...cardStyle, flex: 1, padding: "16px 18px", textAlign: "center" }} data-testid="stat-participants">
+                <div style={{ fontSize: 24, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }}>{totalParticipants}</div>
+                <div style={{ fontSize: 11, color: c.muted, marginTop: 4 }}>Tasters</div>
               </div>
             )}
             {totalWhiskies != null && (
-              <div style={{ flex: 1, background: c.card, border: `1px solid ${c.border}`, borderRadius: 10, padding: "14px 16px", textAlign: "center" }} data-testid="stat-whiskies">
-                <div style={{ fontSize: 22, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif" }}>{totalWhiskies}</div>
-                <div style={{ fontSize: 11, color: c.muted, marginTop: 2 }}>Whiskies</div>
+              <div style={{ ...cardStyle, flex: 1, padding: "16px 18px", textAlign: "center" }} data-testid="stat-whiskies">
+                <div style={{ fontSize: 24, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif", letterSpacing: "-0.02em" }}>{totalWhiskies}</div>
+                <div style={{ fontSize: 11, color: c.muted, marginTop: 4 }}>Whiskies</div>
               </div>
             )}
           </div>
@@ -179,7 +179,7 @@ export default function SimpleAnalyzePage() {
 
         {sections.map((section) => (
           <div key={section.title}>
-            <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.accent, marginBottom: 10 }}>
+            <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
               {section.title}
             </h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -187,25 +187,24 @@ export default function SimpleAnalyzePage() {
                 <Link key={item.testId} href={item.href}>
                   <div
                     style={{
-                      background: c.card,
-                      border: `1px solid ${c.border}`,
-                      borderRadius: 12,
-                      padding: "16px 20px",
+                      ...cardStyle,
+                      padding: "14px 18px",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       gap: 14,
+                      transition: "all 0.2s ease",
                     }}
                     data-testid={item.testId}
                   >
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c.accent}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <item.icon style={{ width: 18, height: 18, color: c.accent }} />
+                    <div style={{ width: 38, height: 38, borderRadius: 12, background: `${c.accent}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <item.icon style={{ width: 18, height: 18, color: c.accent }} strokeWidth={1.8} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{item.label}</div>
-                      <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>{item.description}</div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: c.text, letterSpacing: "-0.01em" }}>{item.label}</div>
+                      <div style={{ fontSize: 12, color: c.muted, marginTop: 3, lineHeight: 1.4 }}>{item.description}</div>
                     </div>
-                    <ChevronRight style={{ width: 14, height: 14, color: c.muted, flexShrink: 0 }} />
+                    <ChevronRight style={{ width: 16, height: 16, color: `${c.muted}80`, flexShrink: 0 }} strokeWidth={1.8} />
                   </div>
                 </Link>
               ))}

@@ -265,7 +265,7 @@ export default function MyTasteWheel() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 4 }}>
             <CircleDot style={{ width: 22, height: 22, color: c.accent }} />
             <h1
-              style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 24, fontWeight: 700, color: c.accent, margin: 0 }}
+              style={pageTitleStyle}
               data-testid="text-wheel-title"
             >
               Aroma Wheel

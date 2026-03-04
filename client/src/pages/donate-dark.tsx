@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Heart, ExternalLink, HandHeart, Eye } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
-import { c, cardStyle } from "@/lib/theme";
+import { c, cardStyle, pageTitleStyle } from "@/lib/theme";
 
 const HOSPIZ_NAME = "Christina-Kleintjes-Hospiz-Stiftung";
 const HOSPIZ_URL = "https://c-kleintjes-hospiz-stiftung.de";
@@ -32,12 +32,12 @@ export default function DonateDark() {
       <div style={{ display: "flex", flexDirection: "column", gap: 20, width: "100%" }}>
         <div>
           <h2
-            style={{ fontSize: 20, fontWeight: 700, margin: 0, fontFamily: "'Playfair Display', serif", color: c.accent }}
+            style={pageTitleStyle}
             data-testid="text-donate-dark-title"
           >
             {t("donate.title")}
           </h2>
-          <div style={{ width: 48, height: 3, background: `${c.accent}60`, borderRadius: 2, marginTop: 8 }} />
+          <div style={{ width: 48, height: 3, background: `${c.accent}40`, borderRadius: 2, marginTop: 10 }} />
         </div>
 
         <div style={sectionCard}>

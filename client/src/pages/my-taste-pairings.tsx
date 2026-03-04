@@ -101,14 +101,14 @@ export default function MyTastePairings() {
   return (
     <SimpleShell>
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={{ marginBottom: 4 }}>
+        <div style={{ marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 4 }}>
-            <Wine style={{ width: 22, height: 22, color: c.accent }} />
-            <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 24, fontWeight: 700, color: c.accent, margin: 0 }} data-testid="text-pairings-title">
+            <Wine style={{ width: 22, height: 22, color: c.accent }} strokeWidth={1.8} />
+            <h1 style={pageTitleStyle} data-testid="text-pairings-title">
               Food Pairings
             </h1>
           </div>
-          <p style={{ fontSize: 13, color: c.muted, marginTop: 4, textAlign: "center" }}>
+          <p style={{ ...pageSubtitleStyle, textAlign: "center" }}>
             AI-driven food pairing suggestions for your tastings
           </p>
         </div>

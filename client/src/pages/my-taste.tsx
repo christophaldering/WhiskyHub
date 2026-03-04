@@ -5,7 +5,7 @@ import { participantApi, journalApi, statsApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
 import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, CircleDot, Settings } from "lucide-react";
-import { c, cardStyle, inputStyle } from "@/lib/theme";
+import { c, cardStyle, inputStyle, sectionHeadingStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 
 const LS_KEY = "casksense_participant_id";
 
@@ -149,26 +149,26 @@ function NavCard({ icon: Icon, label, description, href, testId, badge }: NavCar
       <div
         style={{
           ...cardStyle,
-          padding: "16px 20px",
+          padding: "14px 18px",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           gap: 14,
-          transition: "border-color 0.2s",
+          transition: "all 0.2s ease",
         }}
         data-testid={testId}
       >
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c.accent}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Icon style={{ width: 18, height: 18, color: c.accent }} />
+        <div style={{ width: 38, height: 38, borderRadius: 12, background: `${c.accent}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon style={{ width: 18, height: 18, color: c.accent }} strokeWidth={1.8} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{label}</div>
-          <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>{description}</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: c.text, letterSpacing: "-0.01em" }}>{label}</div>
+          <div style={{ fontSize: 12, color: c.muted, marginTop: 3, lineHeight: 1.4 }}>{description}</div>
         </div>
         {badge != null && (
-          <span style={{ fontSize: 11, fontWeight: 600, color: c.accent, background: `${c.accent}15`, padding: "2px 8px", borderRadius: 20, flexShrink: 0 }}>{badge}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: c.accent, background: `${c.accent}12`, padding: "3px 10px", borderRadius: 20, flexShrink: 0 }}>{badge}</span>
         )}
-        <ChevronRight style={{ width: 14, height: 14, color: c.muted, flexShrink: 0 }} />
+        <ChevronRight style={{ width: 16, height: 16, color: `${c.muted}80`, flexShrink: 0 }} strokeWidth={1.8} />
       </div>
     </Link>
   );
@@ -217,11 +217,11 @@ export default function MyTastePage() {
   return (
     <SimpleShell>
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={{ marginBottom: 4 }}>
-          <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 24, fontWeight: 700, color: c.accent, margin: 0, textAlign: "center" }} data-testid="text-my-taste-title">
+        <div style={{ marginBottom: 8 }}>
+          <h1 style={{ ...pageTitleStyle, textAlign: "center" }} data-testid="text-my-taste-title">
             My Taste
           </h1>
-          <p style={{ fontSize: 13, color: c.muted, marginTop: 4, textAlign: "center" }}>
+          <p style={{ ...pageSubtitleStyle, textAlign: "center" }}>
             Your personal whisky profile
           </p>
         </div>
@@ -260,7 +260,7 @@ export default function MyTastePage() {
         {pid && (
           <>
             <div>
-              <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.accent, marginBottom: 10 }}>
+              <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
                 Mein Profil
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -289,7 +289,7 @@ export default function MyTastePage() {
             </div>
 
             <div>
-              <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.accent, marginBottom: 10 }}>
+              <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
                 Auswertungen
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -326,7 +326,7 @@ export default function MyTastePage() {
             </div>
 
             <div>
-              <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.accent, marginBottom: 10 }}>
+              <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
                 Meine Daten
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -350,7 +350,7 @@ export default function MyTastePage() {
             </div>
 
             <div>
-              <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.accent, marginBottom: 10 }}>
+              <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
                 Meine Sammlung
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

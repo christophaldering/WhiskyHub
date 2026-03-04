@@ -164,23 +164,17 @@ export default function DiscoverBottlersNative() {
   return (
     <SimpleShell>
       <div data-testid="discover-bottlers-native-page">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+        <div style={{ marginBottom: 8 }}>
           <h1
-            style={{
-              fontSize: 24,
-              fontWeight: 700,
-              color: c.text,
-              margin: 0,
-              fontFamily: "'Playfair Display', serif",
-            }}
+            style={pageTitleStyle}
             data-testid="text-page-title"
           >
             Independent Bottlers
           </h1>
+          <p style={{ ...pageSubtitleStyle, marginBottom: 0 }}>
+            Explore {bottlers.length} independent bottlers worldwide
+          </p>
         </div>
-        <p style={{ fontSize: 13, color: c.muted, margin: "0 0 20px" }}>
-          Explore {bottlers.length} independent bottlers worldwide
-        </p>
 
         <input
           type="text"

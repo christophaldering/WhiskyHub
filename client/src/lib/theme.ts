@@ -24,20 +24,47 @@ export const inputStyle: React.CSSProperties = {
   width: "100%",
   background: c.inputBg,
   border: `1px solid ${c.inputBorder}`,
-  borderRadius: 10,
+  borderRadius: 12,
   color: c.text,
-  padding: "12px 14px",
+  padding: "12px 16px",
   fontSize: 15,
   outline: "none",
   boxSizing: "border-box",
-  fontFamily: "system-ui, sans-serif",
+  fontFamily: "system-ui, -apple-system, sans-serif",
+  transition: "border-color 0.2s",
 };
 
 export const cardStyle: React.CSSProperties = {
   background: c.card,
-  border: `1px solid ${c.inputBorder}`,
-  borderRadius: 14,
+  border: `1px solid ${c.border}30`,
+  borderRadius: 16,
   padding: 24,
+  boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08)",
+};
+
+export const sectionHeadingStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.1em",
+  color: c.mutedLight,
+  marginBottom: 12,
+};
+
+export const pageTitleStyle: React.CSSProperties = {
+  fontFamily: "'Playfair Display', Georgia, serif",
+  fontSize: 26,
+  fontWeight: 700,
+  color: c.text,
+  margin: 0,
+  letterSpacing: "-0.02em",
+};
+
+export const pageSubtitleStyle: React.CSSProperties = {
+  fontSize: 14,
+  color: c.muted,
+  marginTop: 6,
+  lineHeight: 1.5,
 };
 
 export const sliderCSS = `
