@@ -106,6 +106,12 @@ export async function signIn(opts: {
   }
   if (data.resumeToken) {
     setRemember(data.resumeToken, opts.mode, displayName);
+  } else {
+    try {
+      localStorage.setItem(LK_TOKEN, "");
+      localStorage.setItem(LK_MODE, opts.mode);
+      if (displayName) localStorage.setItem(LK_NAME, displayName);
+    } catch {}
   }
   window.dispatchEvent(new Event("session-change"));
   return { ok: true, name: displayName || undefined, resumeToken: data.resumeToken };
@@ -117,35 +123,51 @@ export async function tryAutoResume(): Promise<boolean> {
 
     migrateLegacyKeys();
 
-    if (localStorage.getItem(LK_REMEMBER) !== "1") return false;
     const token = localStorage.getItem(LK_TOKEN);
-    if (!token) return false;
+    if (token) {
+      try {
+        const res = await fetch("/api/session/resume", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resumeToken: token }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok) {
+            const mode = (data.mode || localStorage.getItem(LK_MODE) || "log") as SessionMode;
+            const name = data.name || localStorage.getItem(LK_NAME) || null;
+            const pid = data.pid || undefined;
+            setSessionStorage(mode, name, pid);
+            if (pid) {
+              try { localStorage.setItem("casksense_participant_id", pid); } catch {}
+            }
+            window.dispatchEvent(new Event("session-change"));
+            return true;
+          }
+        }
+      } catch {}
+      clearRemember();
+    }
 
-    const res = await fetch("/api/session/resume", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resumeToken: token }),
-    });
-    if (!res.ok) {
-      clearRemember();
-      return false;
+    const storedPid = localStorage.getItem("casksense_participant_id");
+    if (storedPid) {
+      try {
+        const res = await fetch(`/api/participants/${storedPid}`);
+        if (res.ok) {
+          const p = await res.json();
+          if (p?.id) {
+            const mode = (localStorage.getItem(LK_MODE) || "log") as SessionMode;
+            setSessionStorage(mode, p.name || null, p.id);
+            window.dispatchEvent(new Event("session-change"));
+            return true;
+          }
+        }
+      } catch {}
+      try { localStorage.removeItem("casksense_participant_id"); } catch {}
     }
-    const data = await res.json();
-    if (!data.ok) {
-      clearRemember();
-      return false;
-    }
-    const mode = (data.mode || localStorage.getItem(LK_MODE) || "log") as SessionMode;
-    const name = data.name || localStorage.getItem(LK_NAME) || null;
-    const pid = data.pid || undefined;
-    setSessionStorage(mode, name, pid);
-    if (pid) {
-      try { localStorage.setItem("casksense_participant_id", pid); } catch {}
-    }
-    window.dispatchEvent(new Event("session-change"));
-    return true;
+
+    return false;
   } catch {
-    clearRemember();
     return false;
   }
 }

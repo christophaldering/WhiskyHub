@@ -1566,11 +1566,9 @@ export async function registerRoutes(
         const e = sessionSigninAttempts.get(clientIp);
         if (e) e.count = 0;
         const result: any = { ok: true, name: displayName, mode: authMode, pid: participant.id };
-        if (remember) {
-          const token = generateResumeToken();
-          sessionResumeTokens.set(token, { mode: authMode, name: displayName, pid: participant.id, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
-          result.resumeToken = token;
-        }
+        const token = generateResumeToken();
+        sessionResumeTokens.set(token, { mode: authMode, name: displayName, pid: participant.id, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
+        result.resumeToken = token;
         return res.json(result);
       }
     }
@@ -1587,22 +1585,18 @@ export async function registerRoutes(
         if (found) globalPid = found.id;
       }
       const result: any = { ok: true, name: displayName, mode: authMode, pid: globalPid };
-      if (remember) {
-        const token = generateResumeToken();
-        sessionResumeTokens.set(token, { mode: authMode, name: displayName, pid: globalPid, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
-        result.resumeToken = token;
-      }
+      const token = generateResumeToken();
+      sessionResumeTokens.set(token, { mode: authMode, name: displayName, pid: globalPid, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
+      result.resumeToken = token;
       return res.json(result);
     }
 
     if (!configuredPin && process.env.NODE_ENV !== "production") {
       console.warn("[SESSION][AUTH] No credentials matched, allowing in dev");
       const result: any = { ok: true, name: authMode === "log" ? (name || undefined) : undefined, mode: authMode };
-      if (remember) {
-        const token = generateResumeToken();
-        sessionResumeTokens.set(token, { mode: authMode, name: result.name, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
-        result.resumeToken = token;
-      }
+      const token = generateResumeToken();
+      sessionResumeTokens.set(token, { mode: authMode, name: result.name, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
+      result.resumeToken = token;
       return res.json(result);
     }
 

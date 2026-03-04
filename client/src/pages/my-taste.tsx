@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
 import { useAppStore } from "@/lib/store";
 import { participantApi, journalApi, statsApi, flavorProfileApi } from "@/lib/api";
@@ -255,17 +255,6 @@ function NavCard({ icon: Icon, label, description, href, testId, badge }: NavCar
 export default function MyTastePage() {
   const { currentParticipant, setParticipant } = useAppStore();
   const pid = currentParticipant?.id;
-
-  useEffect(() => {
-    if (!pid) {
-      const storedId = localStorage.getItem(LS_KEY);
-      if (storedId) {
-        participantApi.get(storedId).then((p: any) => {
-          if (p?.id) setParticipant({ id: p.id, name: p.name, role: p.role });
-        }).catch(() => localStorage.removeItem(LS_KEY));
-      }
-    }
-  }, [pid, setParticipant]);
 
   const { data: participant } = useQuery({
     queryKey: ["participant-detail", pid],
