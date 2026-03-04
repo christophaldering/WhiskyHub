@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import {
   Users, UserCheck, TrendingUp, Award, BookOpen, Map, Sparkles,
-  ChevronRight, Database, Activity
+  ChevronRight, Database, Activity, GraduationCap
 } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { useQuery } from "@tanstack/react-query";
@@ -93,6 +93,13 @@ const sections: { title: string; items: NavItem[] }[] = [
         description: "Search all whiskies",
         href: "/discover/database",
         testId: "link-database",
+      },
+      {
+        icon: GraduationCap,
+        label: "Tasting Guide",
+        description: "Illustrated assessment methodology",
+        href: "/guide",
+        testId: "link-tasting-guide",
       },
     ],
   },

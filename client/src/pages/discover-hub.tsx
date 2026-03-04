@@ -1,9 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearch } from "wouter";
-import { Compass, Sparkles, BookOpen, FlaskConical } from "lucide-react";
+import { Link, useSearch } from "wouter";
+import { Compass, Sparkles, BookOpen, FlaskConical, ChevronRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import Recommendations from "@/pages/recommendations";
 import Lexicon from "@/pages/lexicon";
 import Research from "@/pages/research";
 
@@ -49,13 +48,18 @@ export default function DiscoverHub() {
       </div>
 
       <div ref={recommendationsRef} data-testid="section-recommendations" className="scroll-mt-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="w-5 h-5 text-primary/70" />
-          <h2 className="text-lg font-serif font-semibold text-primary" data-testid="text-section-recommendations">
-            {t("recommendations.title", "Empfehlungen")}
-          </h2>
-        </div>
-        <Recommendations />
+        <Link href="/my-taste/recommendations">
+          <div className="bg-card rounded-xl border border-border/40 p-5 flex items-center gap-4 cursor-pointer hover:border-primary/30 transition-colors" data-testid="link-recommendations-cross">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-serif font-semibold">{t("recommendations.title", "Empfehlungen")}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{t("recommendations.subtitle", "Personalized whisky recommendations based on your taste profile")}</div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </div>
+        </Link>
       </div>
 
       <Separator className="my-10 opacity-40" />

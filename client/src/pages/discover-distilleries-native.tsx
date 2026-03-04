@@ -1,8 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { distilleries, type Distillery } from "@/data/distilleries";
-import { Building2, MapPin, Calendar, ChevronDown } from "lucide-react";
+import { Building2, MapPin, Calendar, ChevronDown, List, Map as MapIcon } from "lucide-react";
 import { c } from "@/lib/theme";
+
+const DistilleryMap = lazy(() => import("@/pages/distillery-map"));
 
 const COUNTRY_FILTERS = ["All", "Scotland", "Ireland", "Japan", "USA"];
 
@@ -126,6 +128,7 @@ function DistilleryCard({ d }: { d: Distillery }) {
 export default function DiscoverDistilleriesNative() {
   const [search, setSearch] = useState("");
   const [activeCountry, setActiveCountry] = useState("All");
+  const [view, setView] = useState<"list" | "map">("list");
 
   const filtered = useMemo(() => {
     return distilleries.filter((d) => {
@@ -144,98 +147,176 @@ export default function DiscoverDistilleriesNative() {
   }, [search, activeCountry]);
 
   return (
-    <SimpleShell maxWidth={600}>
+    <SimpleShell maxWidth={view === "map" ? 1200 : 600}>
       <div data-testid="discover-distilleries-native-page">
-        <h1
-          style={{
-            fontSize: 24,
-            fontWeight: 700,
-            color: c.text,
-            margin: "0 0 4px",
-            fontFamily: "'Playfair Display', serif",
-          }}
-          data-testid="text-page-title"
-        >
-          Distillery Encyclopedia
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <h1
+            style={{
+              fontSize: 24,
+              fontWeight: 700,
+              color: c.text,
+              margin: 0,
+              fontFamily: "'Playfair Display', serif",
+            }}
+            data-testid="text-page-title"
+          >
+            Distillery Encyclopedia
+          </h1>
+          <div
+            style={{
+              display: "flex",
+              borderRadius: 10,
+              border: `1px solid ${c.border}`,
+              overflow: "hidden",
+            }}
+            data-testid="toggle-view-mode"
+          >
+            <button
+              onClick={() => setView("list")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "6px 12px",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 500,
+                background: view === "list" ? c.accent : "transparent",
+                color: view === "list" ? c.bg : c.muted,
+                transition: "all 0.2s",
+              }}
+              data-testid="button-view-list"
+            >
+              <List style={{ width: 14, height: 14 }} />
+              List
+            </button>
+            <button
+              onClick={() => setView("map")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "6px 12px",
+                border: "none",
+                borderLeft: `1px solid ${c.border}`,
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 500,
+                background: view === "map" ? c.accent : "transparent",
+                color: view === "map" ? c.bg : c.muted,
+                transition: "all 0.2s",
+              }}
+              data-testid="button-view-map"
+            >
+              <MapIcon style={{ width: 14, height: 14 }} />
+              Map
+            </button>
+          </div>
+        </div>
         <p style={{ fontSize: 13, color: c.muted, margin: "0 0 20px" }}>
           Explore {distilleries.length} distilleries worldwide
         </p>
 
-        <input
-          type="text"
-          placeholder="Search distilleries..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px 14px",
-            borderRadius: 10,
-            border: `1px solid ${c.border}`,
-            background: c.card,
-            color: c.text,
-            fontSize: 14,
-            outline: "none",
-            boxSizing: "border-box",
-          }}
-          data-testid="input-search-distilleries"
-        />
-
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            overflowX: "auto",
-            padding: "14px 0",
-            WebkitOverflowScrolling: "touch",
-          }}
-          data-testid="filter-region-chips"
-        >
-          {COUNTRY_FILTERS.map((country) => (
-            <button
-              key={country}
-              onClick={() => setActiveCountry(country)}
-              style={{
-                padding: "6px 14px",
-                borderRadius: 20,
-                border: `1px solid ${activeCountry === country ? c.accent : c.border}`,
-                background: activeCountry === country ? c.accent : "transparent",
-                color: activeCountry === country ? c.bg : c.muted,
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                transition: "all 0.2s",
-              }}
-              data-testid={`chip-filter-${country.toLowerCase()}`}
-            >
-              {country}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ fontSize: 12, color: c.muted, marginBottom: 12 }} data-testid="text-result-count">
-          {filtered.length} distiller{filtered.length !== 1 ? "ies" : "y"} found
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {filtered.map((d) => (
-            <DistilleryCard key={d.name} d={d} />
-          ))}
-          {filtered.length === 0 && (
+        {view === "map" ? (
+          <Suspense
+            fallback={
+              <div style={{ textAlign: "center", padding: 60, color: c.muted, fontSize: 14 }}>
+                Loading map…
+              </div>
+            }
+          >
             <div
               style={{
-                textAlign: "center",
-                padding: 40,
-                color: c.muted,
-                fontSize: 14,
+                margin: "0 -16px",
+                background: c.card,
+                borderRadius: 12,
+                overflow: "hidden",
+                border: `1px solid ${c.border}`,
               }}
-              data-testid="text-no-results"
+              data-testid="map-container"
             >
-              No distilleries match your search.
+              <DistilleryMap />
             </div>
-          )}
-        </div>
+          </Suspense>
+        ) : (
+          <>
+            <input
+              type="text"
+              placeholder="Search distilleries..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 14px",
+                borderRadius: 10,
+                border: `1px solid ${c.border}`,
+                background: c.card,
+                color: c.text,
+                fontSize: 14,
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+              data-testid="input-search-distilleries"
+            />
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                overflowX: "auto",
+                padding: "14px 0",
+                WebkitOverflowScrolling: "touch",
+              }}
+              data-testid="filter-region-chips"
+            >
+              {COUNTRY_FILTERS.map((country) => (
+                <button
+                  key={country}
+                  onClick={() => setActiveCountry(country)}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: 20,
+                    border: `1px solid ${activeCountry === country ? c.accent : c.border}`,
+                    background: activeCountry === country ? c.accent : "transparent",
+                    color: activeCountry === country ? c.bg : c.muted,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    transition: "all 0.2s",
+                  }}
+                  data-testid={`chip-filter-${country.toLowerCase()}`}
+                >
+                  {country}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ fontSize: 12, color: c.muted, marginBottom: 12 }} data-testid="text-result-count">
+              {filtered.length} distiller{filtered.length !== 1 ? "ies" : "y"} found
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {filtered.map((d) => (
+                <DistilleryCard key={d.name} d={d} />
+              ))}
+              {filtered.length === 0 && (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: 40,
+                    color: c.muted,
+                    fontSize: 14,
+                  }}
+                  data-testid="text-no-results"
+                >
+                  No distilleries match your search.
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </SimpleShell>
   );

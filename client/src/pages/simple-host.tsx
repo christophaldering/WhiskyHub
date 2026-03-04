@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronLeft, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, BarChart3, Star, BookOpen, ClipboardList } from "lucide-react";
+import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronLeft, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, BarChart3, Star, BookOpen, ClipboardList, Camera, FileSpreadsheet, Sparkles } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCodeLib from "qrcode";
 import { c, cardStyle } from "@/lib/theme";
+import { AiTastingImportDialog } from "@/components/ai-tasting-import";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -1852,6 +1853,7 @@ export default function SimpleHostPage() {
 
   const [wizardStep, setWizardStep] = useState<WizardStep>("list");
   const [createdTasting, setCreatedTasting] = useState<TastingFull | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const { data: tastings = [], isLoading } = useQuery<TastingFull[]>({
     queryKey: ["/api/tastings", pid],
@@ -1904,36 +1906,13 @@ export default function SimpleHostPage() {
     <SimpleShell showBack={false}>
       <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
         {!showingWizard && (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }} data-testid="text-host-title">
-                Host a Tasting
-              </h2>
-              <p style={{ fontSize: 13, color: c.muted, marginTop: 4 }}>
-                Create a session, add whiskies, and run the tasting live.
-              </p>
-            </div>
-            <button
-              onClick={() => setWizardStep("step1")}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                background: c.accent,
-                color: c.bg,
-                border: "none",
-                borderRadius: 10,
-                padding: "8px 16px",
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: "pointer",
-                flexShrink: 0,
-              }}
-              data-testid="button-create-tasting"
-            >
-              <Plus style={{ width: 16, height: 16 }} />
-              New
-            </button>
+          <div>
+            <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }} data-testid="text-host-title">
+              Host a Tasting
+            </h2>
+            <p style={{ fontSize: 13, color: c.muted, marginTop: 4 }}>
+              Create a session, add whiskies, and run the tasting live.
+            </p>
           </div>
         )}
 
@@ -1955,6 +1934,113 @@ export default function SimpleHostPage() {
 
         {!showingWizard && (
           <>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 2 }}>
+                Tasting erstellen
+              </h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
+                <button
+                  onClick={() => setWizardStep("step1")}
+                  style={{
+                    ...cardStyle,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    padding: "16px 18px",
+                    border: `1px solid ${c.accent}40`,
+                    textAlign: "left",
+                    background: cardStyle.background,
+                    fontFamily: "system-ui, sans-serif",
+                  }}
+                  data-testid="card-create-manual"
+                >
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: `${c.accent}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Plus style={{ width: 20, height: 20, color: c.accent }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Manual Entry</div>
+                    <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>Create a session and add whiskies step by step</div>
+                  </div>
+                  <ChevronRight style={{ width: 16, height: 16, color: c.muted, flexShrink: 0 }} />
+                </button>
+
+                <Link href="/photo-tasting">
+                  <div
+                    style={{
+                      ...cardStyle,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 14,
+                      padding: "16px 18px",
+                      textAlign: "left",
+                    }}
+                    data-testid="card-create-photo"
+                  >
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(96, 165, 250, 0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Camera style={{ width: 20, height: 20, color: "#60a5fa" }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Photo / AI Identification</div>
+                      <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>Snap photos of bottles and let AI identify them</div>
+                    </div>
+                    <ChevronRight style={{ width: 16, height: 16, color: c.muted, flexShrink: 0 }} />
+                  </div>
+                </Link>
+
+                <button
+                  onClick={() => setImportDialogOpen(true)}
+                  style={{
+                    ...cardStyle,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    padding: "16px 18px",
+                    textAlign: "left",
+                    background: cardStyle.background,
+                    fontFamily: "system-ui, sans-serif",
+                    border: cardStyle.border,
+                  }}
+                  data-testid="card-create-import"
+                >
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(74, 222, 128, 0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <FileSpreadsheet style={{ width: 20, height: 20, color: "#4ade80" }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Excel / CSV Import</div>
+                    <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>Import your lineup from a spreadsheet or paste text</div>
+                  </div>
+                  <ChevronRight style={{ width: 16, height: 16, color: c.muted, flexShrink: 0 }} />
+                </button>
+              </div>
+
+              <Link href="/ai-curation">
+                <div
+                  style={{
+                    ...cardStyle,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    padding: "14px 18px",
+                    borderStyle: "dashed",
+                  }}
+                  data-testid="card-ai-curation"
+                >
+                  <Sparkles style={{ width: 18, height: 18, color: c.accent, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: c.text }}>AI Lineup Suggestions</div>
+                    <div style={{ fontSize: 11, color: c.muted, marginTop: 1 }}>Get AI-powered recommendations to complement your tasting</div>
+                  </div>
+                  <ChevronRight style={{ width: 14, height: 14, color: c.muted, flexShrink: 0 }} />
+                </div>
+              </Link>
+            </div>
+
+            <AiTastingImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} />
+
             {isLoading ? (
               <div style={{ textAlign: "center", color: c.muted, padding: "32px 0" }}>
                 Loading...

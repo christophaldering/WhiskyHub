@@ -4,7 +4,7 @@ import { useAppStore } from "@/lib/store";
 import { participantApi, journalApi, statsApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList } from "lucide-react";
+import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles } from "lucide-react";
 import { c, cardStyle, inputStyle } from "@/lib/theme";
 
 const LS_KEY = "casksense_participant_id";
@@ -286,6 +286,13 @@ export default function MyTastePage() {
                   description="Compare your personal ratings side by side"
                   href="/my-taste/compare"
                   testId="link-comparison"
+                />
+                <NavCard
+                  icon={Sparkles}
+                  label="Empfehlungen"
+                  description="Personalized whisky recommendations based on your taste"
+                  href="/my-taste/recommendations"
+                  testId="link-recommendations"
                 />
                 <NavCard
                   icon={FlaskConical}
