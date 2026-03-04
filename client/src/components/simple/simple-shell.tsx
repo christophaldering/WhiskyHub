@@ -45,6 +45,64 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
+      <div style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 20,
+        background: c.bg,
+        padding: "8px 20px 12px",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Link href="/">
+            <span
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 18,
+                color: c.accent,
+                cursor: "pointer",
+              }}
+              data-testid="link-brand-home"
+            >
+              CaskSense
+            </span>
+          </Link>
+          <button
+            onClick={() => setShowSessionSheet(true)}
+            style={{
+              background: session.signedIn ? `${c.accent}18` : "none",
+              border: session.signedIn ? `1px solid ${c.accent}30` : "none",
+              cursor: "pointer",
+              padding: session.signedIn ? "4px 10px" : 6,
+              borderRadius: 20,
+              color: session.signedIn ? c.accent : c.mutedLight,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 13,
+              fontWeight: 500,
+              fontFamily: "system-ui, sans-serif",
+              maxWidth: 160,
+            }}
+            data-testid="button-user-menu"
+          >
+            {session.signedIn ? (
+              <>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {(session.name || "Account").length > 14
+                    ? (session.name || "Account").slice(0, 12) + "…"
+                    : (session.name || "Account")}
+                </span>
+                <ChevronDown style={{ width: 14, height: 14, flexShrink: 0 }} />
+              </>
+            ) : (
+              <KeyRound style={{ width: 18, height: 18 }} strokeWidth={1.6} />
+            )}
+          </button>
+        </div>
+      </div>
+
       <div
         style={{
           maxWidth,
@@ -55,69 +113,6 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
           alignItems: "center",
         }}
       >
-        <div style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 20,
-          background: c.bg,
-          marginLeft: -20,
-          marginRight: -20,
-          paddingLeft: 20,
-          paddingRight: 20,
-          paddingTop: 8,
-          paddingBottom: 12,
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-        }}>
-          <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <Link href="/">
-              <span
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: 18,
-                  color: c.accent,
-                  cursor: "pointer",
-                }}
-                data-testid="link-brand-home"
-              >
-                CaskSense
-              </span>
-            </Link>
-            <button
-              onClick={() => setShowSessionSheet(true)}
-              style={{
-                background: session.signedIn ? `${c.accent}18` : "none",
-                border: session.signedIn ? `1px solid ${c.accent}30` : "none",
-                cursor: "pointer",
-                padding: session.signedIn ? "4px 10px" : 6,
-                borderRadius: 20,
-                color: session.signedIn ? c.accent : c.mutedLight,
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                fontSize: 13,
-                fontWeight: 500,
-                fontFamily: "system-ui, sans-serif",
-                maxWidth: 160,
-              }}
-              data-testid="button-user-menu"
-            >
-              {session.signedIn ? (
-                <>
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {(session.name || "Account").length > 14
-                      ? (session.name || "Account").slice(0, 12) + "…"
-                      : (session.name || "Account")}
-                  </span>
-                  <ChevronDown style={{ width: 14, height: 14, flexShrink: 0 }} />
-                </>
-              ) : (
-                <KeyRound style={{ width: 18, height: 18 }} strokeWidth={1.6} />
-              )}
-            </button>
-          </div>
-        </div>
-
         <div style={{ width: "100%" }}>
           {children}
         </div>
