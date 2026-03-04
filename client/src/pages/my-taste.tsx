@@ -12,6 +12,7 @@ import { ApplePage, AppleSection, AppleRow, AppleButton, AppleCard } from "@/com
 
 const LS_KEY = "casksense_participant_id";
 const isApple = UI_SKIN === "apple_dark_warm";
+const isTwoTab = NAV_VERSION === "v2_two_tab";
 
 function StatRow({ label, value }: { label: string; value: number | null | undefined }) {
   const display = value != null ? value.toFixed(1) : "—";
