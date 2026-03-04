@@ -185,23 +185,38 @@ export default function VocabularyDark() {
   return (
     <SimpleShell maxWidth={600}>
       <div data-testid="vocabulary-page">
-        <h1
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 22,
-            fontWeight: 700,
-            color: c.accent,
-            marginBottom: 4,
-          }}
-          data-testid="text-vocabulary-title"
-        >
-          {isDE ? "Tasting-Vokabular" : "Tasting Vocabulary"}
-        </h1>
-        <p style={{ fontSize: 13, color: c.muted, marginBottom: 28 }}>
-          {isDE
-            ? "Beschreibungen für Nase, Gaumen & Abgang – nach Whisky-Stil sortiert"
-            : "Descriptors for Nose, Palate & Finish – sorted by whisky style"}
-        </p>
+        <div style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          background: c.bg,
+          paddingTop: 4,
+          paddingBottom: 16,
+          marginLeft: -20,
+          marginRight: -20,
+          paddingLeft: 20,
+          paddingRight: 20,
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+        }}>
+          <h1
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 22,
+              fontWeight: 700,
+              color: c.accent,
+              marginBottom: 4,
+            }}
+            data-testid="text-vocabulary-title"
+          >
+            {isDE ? "Tasting-Vokabular" : "Tasting Vocabulary"}
+          </h1>
+          <p style={{ fontSize: 13, color: c.muted, margin: 0 }}>
+            {isDE
+              ? "Beschreibungen für Nase, Gaumen & Abgang – nach Whisky-Stil sortiert"
+              : "Descriptors for Nose, Palate & Finish – sorted by whisky style"}
+          </p>
+        </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {CATEGORIES.map((cat) => {

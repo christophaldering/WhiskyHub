@@ -366,24 +366,39 @@ export default function DataExportDark() {
       />
 
       <div data-testid="data-export-dark-page">
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-          <HardDriveDownload style={{ width: 24, height: 24, color: c.accent }} />
-          <h1
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: c.text,
-              margin: 0,
-              fontFamily: "'Playfair Display', serif",
-            }}
-            data-testid="text-data-export-title"
-          >
-            {t("dataExport.title")}
-          </h1>
+        <div style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          background: c.bg,
+          paddingTop: 4,
+          paddingBottom: 16,
+          marginLeft: -20,
+          marginRight: -20,
+          paddingLeft: 20,
+          paddingRight: 20,
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+            <HardDriveDownload style={{ width: 24, height: 24, color: c.accent }} />
+            <h1
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: c.text,
+                margin: 0,
+                fontFamily: "'Playfair Display', serif",
+              }}
+              data-testid="text-data-export-title"
+            >
+              {t("dataExport.title")}
+            </h1>
+          </div>
+          <p style={{ fontSize: 13, color: c.muted, margin: 0 }}>
+            {t("dataExport.subtitle")}
+          </p>
         </div>
-        <p style={{ fontSize: 13, color: c.muted, marginBottom: 20, marginTop: 4 }}>
-          {t("dataExport.subtitle")}
-        </p>
 
         <div
           style={{

@@ -478,15 +478,18 @@ export default function HostDashboard() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="host-dashboard-page">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="flex items-center gap-3 mb-2">
-          <LayoutDashboard className="w-7 h-7 text-primary" />
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-host-dashboard-title">
-            {t("hostDashboard.title")}
-          </h1>
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm -mx-4 px-4 pt-1 pb-4">
+          <div className="flex items-center gap-3 mb-2">
+            <LayoutDashboard className="w-7 h-7 text-primary" />
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-host-dashboard-title">
+              {t("hostDashboard.title")}
+            </h1>
+          </div>
+          <p className="text-sm text-muted-foreground" data-testid="text-host-dashboard-subtitle">
+            {t("hostDashboard.subtitle")}
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground mb-8" data-testid="text-host-dashboard-subtitle">
-          {t("hostDashboard.subtitle")}
-        </p>
+        <div className="h-4" />
 
         {!hasData ? (
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16 text-muted-foreground" data-testid="host-dashboard-empty">
