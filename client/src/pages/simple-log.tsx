@@ -1424,12 +1424,6 @@ export default function SimpleLogPage() {
               </AnimatePresence>
             </div>
 
-            {!(hasWhisky || showManual || whiskyName.trim()) && (
-              <div style={{ height: 16 }} />
-            )}
-
-            <div style={{ opacity: (hasWhisky || showManual || whiskyName.trim()) ? 1 : 0.3, pointerEvents: (hasWhisky || showManual || whiskyName.trim()) ? "auto" : "none", transition: "opacity 0.3s ease" }}>
-
             {/* ── SECTION 2: SCORE ── */}
             <div style={{ marginBottom: sectionSpacing }} data-testid="section-score">
               <SectionLabel>Score</SectionLabel>
@@ -1692,8 +1686,6 @@ export default function SimpleLogPage() {
               </div>
 
               {error && <p style={{ fontSize: 12, color: c.error, margin: "10px 0 0", textAlign: "center" }}>{error}</p>}
-            </div>
-
             </div>
 
           </form>
