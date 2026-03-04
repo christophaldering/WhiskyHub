@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronLeft, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, BarChart3, Star, BookOpen, ClipboardList, Camera, FileSpreadsheet, Sparkles } from "lucide-react";
+import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronLeft, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, BarChart3, Star, BookOpen, ClipboardList, Camera, FileSpreadsheet, Sparkles, Wine } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -2071,6 +2071,16 @@ export default function SimpleHostPage() {
                 </div>
                 {pid && <HostCalendar pid={pid} />}
               </div>
+              <Link href="/my-taste/pairings">
+                <div style={{ ...cardStyle, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} data-testid="link-lineup-suggestions">
+                  <Wine style={{ width: 18, height: 18, color: c.accent }} />
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 14, fontWeight: 500 }}>Lineup-Ergänzung</span>
+                    <div style={{ fontSize: 11, color: c.muted, marginTop: 2 }}>Whisky-Vorschläge für dein Tasting-Lineup</div>
+                  </div>
+                  <ChevronRight style={{ width: 14, height: 14, color: c.muted, flexShrink: 0 }} />
+                </div>
+              </Link>
               <Link href="/host-dashboard">
                 <div style={{ ...cardStyle, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} data-testid="link-host-dashboard">
                   <Settings style={{ width: 18, height: 18, color: c.accent }} />

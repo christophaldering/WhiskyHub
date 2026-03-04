@@ -279,13 +279,6 @@ export default function MyTastePage() {
                   testId="link-recommendations"
                 />
                 <NavCard
-                  icon={Wine}
-                  label="Food Pairings"
-                  description="AI-driven food pairing suggestions"
-                  href="/my-taste/pairings"
-                  testId="link-pairings"
-                />
-                <NavCard
                   icon={FlaskConical}
                   label="Benchmark Analyzer"
                   description="Import external notes & compare with your profile"
@@ -297,13 +290,16 @@ export default function MyTastePage() {
 
             <div>
               <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
-                Meine Daten
+                Getastete Whiskys
               </h3>
+              <p style={{ fontSize: 11, color: c.muted, marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
+                Whiskys, die du probiert und bewertet hast — aus Tastings, Journal-Einträgen oder persönlichen Notizen.
+              </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <NavCard
                   icon={BookOpen}
                   label="Journal"
-                  description="Your tasting notes & rated whiskies"
+                  description="Dein Tasting-Tagebuch — probierte & bewertete Whiskys"
                   href="/my-taste/journal"
                   testId="link-journal"
                   badge={journalCount > 0 ? journalCount : null}
@@ -311,7 +307,7 @@ export default function MyTastePage() {
                 <NavCard
                   icon={ClipboardList}
                   label="Tasting Recap"
-                  description="Review past tasting results & highlights"
+                  description="Ergebnisse & Highlights vergangener Tastings"
                   href="/sessions"
                   testId="link-tasting-recap"
                   badge={tastingCount != null && tastingCount > 0 ? tastingCount : null}
@@ -328,20 +324,23 @@ export default function MyTastePage() {
 
             <div>
               <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
-                Meine Sammlung
+                Meine Whisky-Bibliothek
               </h3>
+              <p style={{ fontSize: 11, color: c.muted, marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
+                Flaschen, die du besitzt oder besessen hast — importiert aus deiner Whiskybase-Sammlung.
+              </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <NavCard
                   icon={Archive}
-                  label="Collection"
-                  description="Your Whiskybase collection with sync & tracking"
+                  label="Meine Sammlung"
+                  description="Whiskybase-Import — deine Flaschen mit Sync & Tracking"
                   href="/my-taste/collection"
                   testId="link-collection"
                 />
                 <NavCard
                   icon={Heart}
                   label="Wishlist"
-                  description="Whiskies you want to try next"
+                  description="Whiskys, die du noch probieren möchtest"
                   href="/my-taste/wishlist"
                   testId="link-wishlist"
                 />
