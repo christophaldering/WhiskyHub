@@ -1119,7 +1119,14 @@ export default function SimpleLogPage() {
 
   const [scanning, setScanning] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [sheetView, setSheetView] = useState<SheetView>("none");
+  const [sheetView, setSheetView] = useState<SheetView>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("barcode") === "1") {
+      window.history.replaceState({}, "", window.location.pathname);
+      return "barcode";
+    }
+    return "none";
+  });
   const [photoUrl, setPhotoUrl] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isMenuMode, setIsMenuMode] = useState(false);

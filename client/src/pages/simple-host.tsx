@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronLeft, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, BarChart3, Star, BookOpen, ClipboardList, Camera, FileSpreadsheet, Sparkles, Wine } from "lucide-react";
+import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronLeft, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, BarChart3, Star, BookOpen, ClipboardList, Camera, FileSpreadsheet, Sparkles, Wine, ScanLine } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1987,6 +1987,7 @@ export default function SimpleHostPage() {
                   {[
                     { label: t("simpleHost.manualEntry"), desc: t("simpleHost.manualEntryDesc"), icon: Plus, color: c.accent, bg: `${c.accent}18`, action: () => { setWizardStep("step1"); setCreateMenuOpen(false); }, testId: "card-create-manual" },
                     { label: "Photo / AI", desc: "Snap & identify bottles", icon: Camera, color: "#60a5fa", bg: "rgba(96,165,250,0.15)", href: "/photo-tasting", testId: "card-create-photo" },
+                    { label: "Barcode", desc: "Scan bottle barcode", icon: ScanLine, color: "#f59e0b", bg: "rgba(245,158,11,0.15)", href: "/log-simple?barcode=1", testId: "card-create-barcode" },
                     { label: "Excel / CSV Import", desc: "From spreadsheet or text", icon: FileSpreadsheet, color: "#4ade80", bg: "rgba(74,222,128,0.15)", action: () => { setImportDialogOpen(true); setCreateMenuOpen(false); }, testId: "card-create-import" },
                     { label: t("simpleHost.aiLineup"), desc: t("simpleHost.aiLineupDesc"), icon: Sparkles, color: c.accent, bg: `${c.accent}15`, href: "/ai-curation", testId: "card-ai-curation" },
                   ].map((item) => {
