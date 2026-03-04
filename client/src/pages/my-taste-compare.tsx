@@ -192,6 +192,9 @@ export default function MyTasteCompare() {
                     ) : (
                       <span style={{ width: 12, height: 12, borderRadius: "50%", border: `1px solid ${c.muted}`, flexShrink: 0 }} />
                     )}
+                    {item.whisky.imageUrl && (
+                      <img src={item.whisky.imageUrl} alt="" style={{ width: 24, height: 32, objectFit: "cover", borderRadius: 4, flexShrink: 0, background: c.bg }} />
+                    )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {item.whisky.name}
