@@ -6,8 +6,8 @@ import { useAppStore } from "@/lib/store";
 import { hostDashboardApi, inviteApi } from "@/lib/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
-  GlassWater, Users, Wine, Star, Calendar, Trophy, LayoutDashboard, Eye,
-  Plus, FileText, Printer, ClipboardList, Download, Sparkles, ChevronLeft,
+  GlassWater, Users, Wine, Star, Calendar, Trophy, Eye,
+  Plus, FileText, Printer, ClipboardList, Download, Sparkles,
   ChevronRight, Copy, Mail, QrCode, BarChart3, Zap,
   Check, Send, Loader2, Link as LinkIcon, ChevronDown,
 } from "lucide-react";
@@ -589,7 +589,7 @@ export default function HostDashboard() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <LayoutDashboard style={{ width: 22, height: 22, color: c.accent }} strokeWidth={1.8} />
+            <Wine style={{ width: 22, height: 22, color: c.accent }} strokeWidth={1.8} />
             <h1 style={pageTitleStyle} data-testid="text-host-dashboard-title">
               {t("hostDashboard.title")}
             </h1>
@@ -649,57 +649,13 @@ export default function HostDashboard() {
               ))}
             </div>
 
-            <div className="hd-grid-2-1" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
-              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.4 }}>
-                <div style={sectionCard} data-testid="section-dashboard-calendar">
-                  <SectionTitle icon={Calendar} title={isDE ? "Kalender" : "Calendar"} />
-                  <DashboardCalendar isDE={isDE} />
-                </div>
-              </motion.div>
-
-              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}>
-                <div style={{ ...sectionCard, height: "100%", display: "flex", flexDirection: "column" }} data-testid="section-next-tasting">
-                  <SectionTitle icon={Calendar} title={isDE ? "Nächstes Tasting" : "Next Tasting"} />
-                  {upcomingTasting ? (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 10, padding: "16px 0", flex: 1, justifyContent: "center" }}>
-                      <div style={{ width: 48, height: 48, borderRadius: "50%", background: `${c.accent}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Wine style={{ width: 24, height: 24, color: c.accent }} />
-                      </div>
-                      <div>
-                        <p style={{ fontSize: 16, fontWeight: 700, color: c.text, margin: 0, fontFamily: "'Playfair Display', serif" }} data-testid="next-tasting-title">
-                          {upcomingTasting.title}
-                        </p>
-                        <p style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>
-                          {new Date(upcomingTasting.date).toLocaleDateString(isDE ? "de-DE" : "en-US", { weekday: "long", day: "numeric", month: "long" })}
-                        </p>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 6, fontSize: 12, color: c.muted }}>
-                          <Users style={{ width: 12, height: 12 }} /> {upcomingTasting.participantCount} {isDE ? "Teilnehmer" : "participants"}
-                        </div>
-                      </div>
-                      <StatusBadge status={upcomingTasting.status} label={t(`session.status.${upcomingTasting.status}`)} />
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 10, padding: "24px 0", flex: 1, justifyContent: "center" }}>
-                      <Calendar style={{ width: 36, height: 36, color: c.muted, opacity: 0.3 }} />
-                      <p style={{ fontSize: 13, color: c.muted }}>{isDE ? "Kein anstehendes Tasting" : "No upcoming tasting"}</p>
-                      <Link href="/host">
-                        <span style={{ fontSize: 12, color: c.accent, cursor: "pointer" }} data-testid="link-plan-next">
-                          {isDE ? "Jetzt planen" : "Plan one now"} →
-                        </span>
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            </div>
-
-            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.4 }}>
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.4 }}>
               <div style={sectionCard} data-testid="section-quick-actions">
                 <SectionTitle icon={Zap} title={isDE ? "Schnellzugriff" : "Quick Actions"} />
                 <div className="hd-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
                   {[
                     { href: "/host", icon: Plus, label: isDE ? "Neues Tasting" : "New Tasting", accent: true },
-                    { href: "/sessions", icon: FileText, label: "Sessions", accent: false },
+                    { href: "/sessions", icon: FileText, label: "Tastings", accent: false },
                     { href: "/data-export", icon: Download, label: isDE ? "Datenexport" : "Data Export", accent: false },
                   ].map(item => (
                     <Link key={item.href} href={item.href}>
@@ -886,7 +842,7 @@ export default function HostDashboard() {
                   <SectionTitle icon={BarChart3} title={isDE ? "Tools & Analyse" : "Tools & Analytics"} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <ToolLink href="/data-export" icon={Download} label={isDE ? "Datenexport" : "Data Export"} desc={isDE ? "CSV, Excel, kompletter Export" : "CSV, Excel, full export"} />
-                    <ToolLink href="/sessions" icon={Copy} label={isDE ? "Sessions verwalten" : "Manage Sessions"} desc={isDE ? "Duplizieren, archivieren, bearbeiten" : "Duplicate, archive, edit"} />
+                    <ToolLink href="/sessions" icon={Copy} label={isDE ? "Tastings verwalten" : "Manage Tastings"} desc={isDE ? "Duplizieren, archivieren, bearbeiten" : "Duplicate, archive, edit"} />
                     <ToolLink href="/ai-curation" icon={Sparkles} label={isDE ? "KI-Kuratierung" : "AI Curation"} desc={isDE ? "KI-gestützte Whisky-Vorschläge" : "AI-powered whisky suggestions"} />
                   </div>
                 </div>
