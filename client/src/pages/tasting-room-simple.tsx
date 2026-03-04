@@ -5,7 +5,8 @@ import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { Lock, Eye, EyeOff, Clock, Users } from "lucide-react";
+import { Lock, Eye, EyeOff, Clock, Users, ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
 import { c, cardStyle, inputStyle, sliderCSS } from "@/lib/theme";
 
 interface WhiskyItem {
@@ -32,6 +33,7 @@ interface TastingState {
   id: string;
   title: string;
   status: string;
+  hostId?: string;
   blindMode?: boolean;
   guidedMode?: boolean;
   guidedWhiskyIndex?: number;
@@ -265,6 +267,7 @@ export default function TastingRoomSimple() {
   const tastingId = params.id;
   const { currentParticipant } = useAppStore();
   const pid = currentParticipant?.id;
+  const [, navigate] = useLocation();
 
   const [freeIndex, setFreeIndex] = useState(0);
   const [ratings, setRatings] = useState<Record<string, RatingData>>({});
@@ -308,6 +311,7 @@ export default function TastingRoomSimple() {
   const revealStep = tasting?.guidedRevealStep ?? 0;
   const canRate = isOpen;
   const showAvg = !!tasting?.showGroupAvg;
+  const isHost = !!(pid && tasting?.hostId && pid === tasting.hostId);
 
   const currentIndex = isGuided ? guidedIndex : freeIndex;
   const currentWhisky = currentIndex >= 0 && currentIndex < sortedWhiskies.length ? sortedWhiskies[currentIndex] : null;
