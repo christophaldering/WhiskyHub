@@ -676,7 +676,7 @@ export default function Profile() {
 
           <Button
             onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending || (newPin !== "" && newPin !== confirmPin)}
+            disabled={saveMutation.isPending || (newPin !== "" && newPin !== confirmPin) || (email !== (participant?.email || "") && email !== confirmEmail)}
             className="w-full bg-primary text-primary-foreground font-serif tracking-wide"
             data-testid="button-save-profile"
           >

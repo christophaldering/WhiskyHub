@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronLeft, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, BarChart3, Star } from "lucide-react";
+import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronLeft, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, BarChart3, Star, Printer, ClipboardList, BookOpen } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCodeLib from "qrcode";
 import { c, cardStyle } from "@/lib/theme";
+import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -1878,12 +1879,76 @@ export default function SimpleHostPage() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
               <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 2 }}>
+                Documents
+              </h3>
+              <div style={cardStyle} data-testid="section-documents">
+                <p style={{ fontSize: 12, color: c.muted, margin: "0 0 10px" }}>
+                  Download blank printable templates (PDF)
+                </p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => generateBlankTastingSheet(navigator.language.startsWith("de") ? "de" : "en")}
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      padding: "10px 12px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      background: `${c.accent}15`,
+                      color: c.accent,
+                      border: `1px solid ${c.accent}40`,
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      fontFamily: "system-ui, sans-serif",
+                      minWidth: 0,
+                    }}
+                    data-testid="button-download-scoresheet"
+                  >
+                    <ClipboardList style={{ width: 15, height: 15, flexShrink: 0 }} />
+                    Score Sheet
+                  </button>
+                  <button
+                    onClick={() => generateBlankTastingMat(navigator.language.startsWith("de") ? "de" : "en")}
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      padding: "10px 12px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      background: `${c.accent}15`,
+                      color: c.accent,
+                      border: `1px solid ${c.accent}40`,
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      fontFamily: "system-ui, sans-serif",
+                      minWidth: 0,
+                    }}
+                    data-testid="button-download-tasting-mat"
+                  >
+                    <Printer style={{ width: 15, height: 15, flexShrink: 0 }} />
+                    Tasting Mat
+                  </button>
+                </div>
+                <p style={{ fontSize: 11, color: c.muted, margin: "8px 0 0", fontStyle: "italic" }}>
+                  For session-specific menus & sheets, use the print tools in the live tasting room.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: c.muted, marginBottom: 2 }}>
                 Tools
               </h3>
-              <Link href="/legacy/tasting?tab=templates">
-                <div style={{ ...cardStyle, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} data-testid="link-templates">
-                  <FileText style={{ width: 18, height: 18, color: c.accent }} />
-                  <span style={{ fontSize: 14 }}>Tasting Templates</span>
+              <Link href="/legacy/data-export">
+                <div style={{ ...cardStyle, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }} data-testid="link-data-export">
+                  <Download style={{ width: 18, height: 18, color: c.accent }} />
+                  <span style={{ fontSize: 14 }}>Data Export</span>
                   <ChevronRight style={{ width: 14, height: 14, color: c.muted, marginLeft: "auto" }} />
                 </div>
               </Link>

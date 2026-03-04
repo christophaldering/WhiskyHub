@@ -642,3 +642,113 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
     </Dialog>
   );
 }
+
+export function generateBlankTastingSheet(lang: string, slots = 6) {
+  const isDE = lang === "de";
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageW = 210;
+  const marginX = 15;
+  const contentW = pageW - 2 * marginX;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(...NAVY);
+  doc.text(isDE ? "Verkostungsbogen" : "Tasting Score Sheet", pageW / 2, 20, { align: "center" });
+
+  doc.setFontSize(10);
+  doc.setTextColor(...SLATE);
+  doc.text(isDE ? "Name: ________________________   Datum: ________________" : "Name: ________________________   Date: ________________", pageW / 2, 30, { align: "center" });
+
+  let y = 40;
+  const slotH = (280 - y) / slots;
+
+  for (let i = 0; i < slots; i++) {
+    const sy = y + i * slotH;
+
+    doc.setFillColor(...LIGHT_BG);
+    doc.roundedRect(marginX, sy, contentW, slotH - 4, 2, 2, "F");
+    doc.setDrawColor(...LINE_GRAY);
+    doc.roundedRect(marginX, sy, contentW, slotH - 4, 2, 2, "S");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...NAVY);
+    doc.text(`#${i + 1}  ___________________________________`, marginX + 6, sy + 7);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...SLATE);
+
+    const labels = isDE
+      ? ["Nase:", "Gaumen:", "Abgang:", "Gesamt:   __ / 10"]
+      : ["Nose:", "Palate:", "Finish:", "Overall:   __ / 10"];
+
+    const lineY = sy + 14;
+    const lineSpacing = (slotH - 22) / labels.length;
+    labels.forEach((lbl, li) => {
+      const ly = lineY + li * lineSpacing;
+      doc.text(lbl, marginX + 6, ly);
+      doc.setDrawColor(...LINE_GRAY);
+      doc.line(marginX + 6 + (li === labels.length - 1 ? 30 : 20), ly + 1, marginX + contentW - 6, ly + 1);
+    });
+  }
+
+  doc.setFontSize(7);
+  doc.setTextColor(...MUTED);
+  doc.text("CaskSense · casksense.com", pageW / 2, 292, { align: "center" });
+
+  doc.save(isDE ? "Verkostungsbogen.pdf" : "Tasting_Score_Sheet.pdf");
+}
+
+export function generateBlankTastingMat(lang: string, slots = 6) {
+  const isDE = lang === "de";
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageW = 297;
+  const pageH = 210;
+  const marginX = 12;
+  const marginY = 15;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(...NAVY);
+  doc.text(isDE ? "Tasting-Matte" : "Tasting Mat", pageW / 2, 14, { align: "center" });
+
+  const cols = Math.min(slots, 3);
+  const rows = Math.ceil(slots / cols);
+  const cellW = (pageW - 2 * marginX - (cols - 1) * 6) / cols;
+  const cellH = (pageH - marginY - 20 - (rows - 1) * 6) / rows;
+
+  for (let i = 0; i < slots; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const cx = marginX + col * (cellW + 6);
+    const cy = marginY + 6 + row * (cellH + 6);
+
+    doc.setDrawColor(...LINE_GRAY);
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(cx, cy, cellW, cellH, 3, 3, "FD");
+
+    doc.setDrawColor(...AMBER);
+    doc.setLineWidth(0.5);
+    const circleR = Math.min(cellW, cellH) * 0.18;
+    doc.circle(cx + cellW / 2, cy + cellH * 0.38, circleR);
+    doc.setLineWidth(0.2);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...NAVY);
+    doc.text(`#${i + 1}`, cx + cellW / 2, cy + 8, { align: "center" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...SLATE);
+    doc.text(isDE ? "Name: ___________________" : "Name: ___________________", cx + 6, cy + cellH - 14);
+    doc.text(isDE ? "Bewertung: __ / 10" : "Rating: __ / 10", cx + 6, cy + cellH - 8);
+  }
+
+  doc.setFontSize(7);
+  doc.setTextColor(...MUTED);
+  doc.text("CaskSense · casksense.com", pageW / 2, pageH - 5, { align: "center" });
+
+  doc.save(isDE ? "Tasting_Matte.pdf" : "Tasting_Mat.pdf");
+}
