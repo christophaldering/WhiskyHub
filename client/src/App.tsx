@@ -40,6 +40,7 @@ import SimpleTestPage from "@/pages/simple-test";
 import SimpleHostPage from "@/pages/simple-host";
 import SimpleAnalyzePage from "@/pages/simple-analyze";
 import MyTasteCompare from "@/pages/my-taste-compare";
+import MyTasteBenchmark from "@/pages/my-taste-benchmark";
 import DiscoverLexicon from "@/pages/discover-lexicon";
 import DiscoverCommunityNative from "@/pages/discover-community-native";
 import DiscoverDistilleriesNative from "@/pages/discover-distilleries-native";
@@ -146,6 +147,7 @@ function Router() {
         <Route path="/my-taste/flavors">{() => <Redirect to="/my-taste/profile" />}</Route>
         <Route path="/my-taste/compare" component={MyTasteCompare} />
         <Route path="/my-taste/analytics" component={MyTasteAnalytics} />
+        <Route path="/my-taste/benchmark" component={MyTasteBenchmark} />
         <Route path="/my-taste/profile" component={FlavorProfile} />
         <Route path="/my-taste/journal" component={MyJournal} />
         <Route path="/my-taste/collection" component={WhiskybaseCollection} />
@@ -224,11 +226,11 @@ function Router() {
               <Route path="/legacy/method" component={Method} />
               <Route path="/legacy/recap/:id">{(params: any) => <Redirect to={`/recap/${params.id}`} />}</Route>
               <Route path="/legacy/invite/:token" component={InviteAccept} />
-              <Route path="/legacy/comparison">{() => <RedirectWithQuery to="/legacy/my/journal" query="tab=compare" />}</Route>
+              <Route path="/legacy/comparison">{() => <Redirect to="/my-taste/compare" />}</Route>
               <Route path="/legacy/tasting-templates">{() => <RedirectWithQuery to="/legacy/tasting" query="tab=templates" />}</Route>
               <Route path="/legacy/pairings">{() => <RedirectWithQuery to="/legacy/tasting" query="tab=pairings" />}</Route>
-              <Route path="/legacy/benchmark">{() => <RedirectWithQuery to="/legacy/my/journal" query="tab=benchmark" />}</Route>
-              <Route path="/legacy/analytics">{() => <RedirectWithQuery to="/legacy/my/journal" query="tab=analytics" />}</Route>
+              <Route path="/legacy/benchmark">{() => <Redirect to="/my-taste/benchmark" />}</Route>
+              <Route path="/legacy/analytics">{() => <Redirect to="/my-taste/analytics" />}</Route>
               <Route path="/legacy/data-export">{() => <RedirectWithQuery to="/legacy/my/journal" query="tab=export" />}</Route>
               <Route path="/legacy/recommendations">{() => <Redirect to="/discover/recommendations" />}</Route>
               <Route path="/legacy/taste-twins">{() => <RedirectWithQuery to="/legacy/discover/community" query="tab=twins" />}</Route>
@@ -288,12 +290,12 @@ function Router() {
               <Route path="/my-tastings">{() => <RedirectWithQuery to="/tasting/sessions" query="tab=mine" />}</Route>
               <Route path="/export-notes">{() => <RedirectWithQuery to="/my/journal" query="tab=export" />}</Route>
               <Route path="/calendar">{() => <Redirect to="/tasting/calendar" />}</Route>
-              <Route path="/comparison">{() => <RedirectWithQuery to="/my/journal" query="tab=compare" />}</Route>
+              <Route path="/comparison">{() => <Redirect to="/my-taste/compare" />}</Route>
               <Route path="/tasting-templates">{() => <RedirectWithQuery to="/tasting" query="tab=templates" />}</Route>
               <Route path="/pairings">{() => <RedirectWithQuery to="/tasting" query="tab=pairings" />}</Route>
-              <Route path="/benchmark">{() => <RedirectWithQuery to="/my/journal" query="tab=benchmark" />}</Route>
+              <Route path="/benchmark">{() => <Redirect to="/my-taste/benchmark" />}</Route>
               <Route path="/whisky-database">{() => <Redirect to="/discover/database" />}</Route>
-              <Route path="/analytics">{() => <RedirectWithQuery to="/my/journal" query="tab=analytics" />}</Route>
+              <Route path="/analytics">{() => <Redirect to="/my-taste/analytics" />}</Route>
               <Route path="/recommendations">{() => <Redirect to="/discover" />}</Route>
               <Route path="/taste-twins">{() => <RedirectWithQuery to="/discover/community" query="tab=twins" />}</Route>
               <Route path="/friends">{() => <RedirectWithQuery to="/discover/community" query="tab=friends" />}</Route>

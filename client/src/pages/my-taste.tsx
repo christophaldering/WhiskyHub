@@ -4,7 +4,7 @@ import { useAppStore } from "@/lib/store";
 import { participantApi, journalApi, statsApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical } from "lucide-react";
+import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList } from "lucide-react";
 import { c, cardStyle, inputStyle } from "@/lib/theme";
 
 const LS_KEY = "casksense_participant_id";
@@ -291,7 +291,7 @@ export default function MyTastePage() {
                   icon={FlaskConical}
                   label="Benchmark Analyzer"
                   description="Import external notes & compare with your profile"
-                  href="/my-taste/journal?tab=benchmark"
+                  href="/my-taste/benchmark"
                   testId="link-benchmark"
                 />
               </div>
@@ -309,6 +309,14 @@ export default function MyTastePage() {
                   href="/my-taste/journal"
                   testId="link-journal"
                   badge={journalCount > 0 ? journalCount : null}
+                />
+                <NavCard
+                  icon={ClipboardList}
+                  label="Tasting Recap"
+                  description="Review past tasting results & highlights"
+                  href="/sessions"
+                  testId="link-tasting-recap"
+                  badge={tastingCount != null && tastingCount > 0 ? tastingCount : null}
                 />
               </div>
             </div>
