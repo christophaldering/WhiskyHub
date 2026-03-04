@@ -1255,8 +1255,7 @@ export default function SimpleLogPage() {
           <form onSubmit={handleSave} data-testid="form-log">
 
             <div style={{ marginBottom: 28, textAlign: "center" }} data-testid="section-intro">
-              <h1 style={{ fontSize: 24, fontWeight: 700, color: c.text, margin: 0, fontFamily: "'Playfair Display', serif" }}>Log a Whisky</h1>
-              <p style={{ fontSize: 13, color: c.mutedLight, margin: "6px 0 0", lineHeight: 1.4 }}>Snap a photo, rate it, save your notes.</p>
+              <h1 style={{ fontSize: 24, fontWeight: 700, color: c.text, margin: 0, fontFamily: "'Playfair Display', serif" }}>Log</h1>
             </div>
 
             {/* ── SECTION 1: IDENTIFY ── */}
@@ -1317,67 +1316,58 @@ export default function SimpleLogPage() {
                 </motion.div>
               ) : (
                 <motion.div key="whisky-input" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
-                  <input
-                    type="text"
-                    value={whiskyName}
-                    onChange={(e) => setWhiskyName(e.target.value)}
-                    style={{ ...inputStyle, height: 44, marginBottom: showManual ? 0 : 10 }}
-                    data-testid="input-whisky-name"
-                    autoComplete="off"
-                    placeholder="Identify by photo, description or search"
-                  />
-                  {!showManual && (
-                    <div style={{ fontSize: 12, color: c.mutedLight, marginTop: 4, marginBottom: 10, lineHeight: 1.4 }} data-testid="text-identify-helper">
-                      Matches your history automatically – or add manually.
-                    </div>
-                  )}
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type="text"
+                      value={whiskyName}
+                      onChange={(e) => setWhiskyName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (whiskyName.trim() && !scanning) handleDescribeSubmit(whiskyName.trim());
+                        }
+                      }}
+                      style={{ ...inputStyle, height: 44, paddingRight: 44 }}
+                      data-testid="input-whisky-name"
+                      autoComplete="off"
+                      placeholder="Name, description or photo"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { if (!scanning) setSheetView("picker"); }}
+                      data-testid="button-identify"
+                      aria-label="Identify by photo"
+                      style={{
+                        position: "absolute",
+                        right: 8,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        cursor: scanning ? "wait" : "pointer",
+                        color: scanning ? c.muted : c.mutedLight,
+                        padding: 6,
+                        borderRadius: 6,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      {scanning
+                        ? <span style={{ display: "inline-block", width: 18, height: 18, border: `2px solid ${c.muted}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                        : <Camera style={{ width: 20, height: 20 }} />
+                      }
+                    </button>
+                  </div>
 
                   {!showManual && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setSheetView("picker")}
-                        disabled={scanning}
-                        data-testid="button-identify"
-                        style={{
-                          width: "100%",
-                          padding: "11px 14px",
-                          fontSize: 14,
-                          fontWeight: 600,
-                          background: scanning ? c.border : c.accent,
-                          color: scanning ? c.muted : c.bg,
-                          border: "none",
-                          borderRadius: 8,
-                          cursor: scanning ? "wait" : "pointer",
-                          fontFamily: "system-ui, sans-serif",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 6,
-                          marginBottom: 8,
-                        }}
-                      >
-                        {scanning ? (
-                          <>
-                            <span style={{ display: "inline-block", width: 14, height: 14, border: `2px solid ${c.muted}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                            Identifying...
-                          </>
-                        ) : (
-                          <>
-                            <Camera style={{ width: 16, height: 16 }} />
-                            Identify Whisky
-                          </>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setShowManual(true); setSelectedCandidate(null); }}
-                        data-testid="button-add-manually"
-                        style={{ background: "none", border: "none", cursor: "pointer", color: c.mutedLight, fontSize: 12, fontFamily: "system-ui, sans-serif", padding: 0, textAlign: "center", width: "100%" }}
-                      >
-                        or <span style={{ textDecoration: "underline", textDecorationColor: `${c.mutedLight}50`, textUnderlineOffset: 2 }}>add manually</span>
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      onClick={() => { setShowManual(true); setSelectedCandidate(null); }}
+                      data-testid="button-add-manually"
+                      style={{ background: "none", border: "none", cursor: "pointer", color: c.mutedLight, fontSize: 11, fontFamily: "system-ui, sans-serif", padding: "8px 0 0", textDecoration: "underline", textDecorationColor: `${c.mutedLight}40`, textUnderlineOffset: 2 }}
+                    >
+                      Add details
+                    </button>
                   )}
 
                   <AnimatePresence>
@@ -1435,9 +1425,7 @@ export default function SimpleLogPage() {
             </div>
 
             {!(hasWhisky || showManual || whiskyName.trim()) && (
-              <div style={{ textAlign: "center", padding: "12px 0 4px", color: c.mutedLight, fontSize: 12 }} data-testid="text-unlock-hint">
-                Add a whisky above to start
-              </div>
+              <div style={{ height: 16 }} />
             )}
 
             <div style={{ opacity: (hasWhisky || showManual || whiskyName.trim()) ? 1 : 0.3, pointerEvents: (hasWhisky || showManual || whiskyName.trim()) ? "auto" : "none", transition: "opacity 0.3s ease" }}>
@@ -1484,11 +1472,7 @@ export default function SimpleLogPage() {
                         );
                       })}
                     </span>
-                    {!detailTouched && (
-                      <span style={{ fontSize: 11, color: c.mutedLight, lineHeight: 1.3 }}>
-                        Rate Nose, Taste, Finish &amp; Balance individually
-                      </span>
-                    )}
+                    
                   </>
                 )}
               </button>
@@ -1548,7 +1532,7 @@ export default function SimpleLogPage() {
                     <img src={photoUrl} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: `1px solid ${c.border}`, flexShrink: 0 }} data-testid="img-score-thumb" />
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>Your Final Score</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>Score</span>
                     {overrideActive && (
                       <span
                         style={{
@@ -1588,8 +1572,8 @@ export default function SimpleLogPage() {
 
                 <div style={{ fontSize: 11, color: c.mutedLight, marginTop: 6, textAlign: "center" }}>
                   {detailTouched
-                    ? (overrideActive ? "You've adjusted the score manually" : "Calculated from your detail ratings — slide to override")
-                    : "Slide to set your score — or rate in detail above"
+                    ? (overrideActive ? "Manual" : "From detail ratings")
+                    : ""
                   }
                 </div>
 
@@ -1620,7 +1604,7 @@ export default function SimpleLogPage() {
 
             {/* ── SECTION 3: REFLECTION ── */}
             <div style={{ marginBottom: sectionSpacing }} data-testid="section-reflection">
-              <SectionLabel>Reflection</SectionLabel>
+              <SectionLabel>Notes</SectionLabel>
               <div style={{ position: "relative" }}>
                 <textarea
                   value={notes}
@@ -1688,7 +1672,7 @@ export default function SimpleLogPage() {
                   transition: "background 0.2s, color 0.2s",
                 }}
               >
-                {saving ? "Saving..." : "Save to Journal"}
+                {saving ? "Saving..." : "Save"}
               </button>
 
               <AnimatePresence>
