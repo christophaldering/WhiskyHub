@@ -22,7 +22,7 @@ interface HostSummary {
   totalParticipants: number;
   totalWhiskies: number;
   averageScores: { nose: number; taste: number; finish: number; balance: number; overall: number };
-  topWhiskies: { name: string; distillery: string; averageScore: number; tastingTitle: string }[];
+  topWhiskies: { name: string; distillery: string; imageUrl: string | null; averageScore: number; tastingTitle: string }[];
   recentTastings: { id: string; title: string; date: string; status: string; participantCount: number; code?: string }[];
 }
 
@@ -859,6 +859,9 @@ export default function HostDashboard() {
                           data-testid={`top-whisky-${i}`}
                         >
                           <span style={{ fontSize: 16, fontWeight: 700, color: `${c.accent}60`, width: 28, fontFamily: "'Playfair Display', serif" }}>{i + 1}</span>
+                          {whisky.imageUrl && (
+                            <img src={whisky.imageUrl} alt="" style={{ width: 28, height: 38, objectFit: "cover", borderRadius: 5, flexShrink: 0, background: c.bg }} data-testid={`img-top-whisky-${i}`} />
+                          )}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: 13, fontWeight: 600, color: c.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} data-testid={`top-whisky-name-${i}`}>
                               {whisky.name}

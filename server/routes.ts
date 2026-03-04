@@ -1966,6 +1966,7 @@ export async function registerRoutes(
           age: w.age ?? null,
           abv: w.abv ?? null,
           region: w.region ?? null,
+          imageUrl: w.imageUrl ?? null,
           sortOrder: w.sortOrder ?? 0,
           ratingCount: rats.length,
           avgOverall: avg(overalls),
@@ -6549,7 +6550,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           const t = tastingMap.get(r.tastingId);
           if (w) {
             if (!whiskyScores[r.whiskyId]) {
-              whiskyScores[r.whiskyId] = { name: w.name, distillery: w.distillery, scores: [], tastingTitle: t?.title || "" };
+              whiskyScores[r.whiskyId] = { name: w.name, distillery: w.distillery, imageUrl: w.imageUrl ?? null, scores: [], tastingTitle: t?.title || "" };
             }
             whiskyScores[r.whiskyId].scores.push(r.overall);
           }
@@ -6561,6 +6562,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           id,
           name: data.name,
           distillery: data.distillery,
+          imageUrl: data.imageUrl,
           tastingTitle: data.tastingTitle,
           avgScore: Math.round((data.scores.reduce((a, b) => a + b, 0) / data.scores.length) * 10) / 10,
           ratingCount: data.scores.length,

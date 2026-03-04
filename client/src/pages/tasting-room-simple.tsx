@@ -18,6 +18,7 @@ interface WhiskyItem {
   region?: string;
   type?: string;
   sortOrder?: number;
+  imageUrl?: string | null;
 }
 
 interface RatingData {
@@ -580,7 +581,16 @@ export default function TastingRoomSimple() {
       <div style={cardStyle} data-testid="card-rating">
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
+            <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+              {display.showDetails && currentWhisky.imageUrl && (
+                <img
+                  src={currentWhisky.imageUrl}
+                  alt=""
+                  style={{ width: 44, height: 58, objectFit: "cover", borderRadius: 8, flexShrink: 0, background: c.bg }}
+                  data-testid="img-whisky-thumbnail"
+                />
+              )}
+              <div>
               <h3 style={{
                 fontSize: 20,
                 fontWeight: 700,
@@ -602,6 +612,7 @@ export default function TastingRoomSimple() {
                   <span style={{ fontSize: 11, color: c.success }}>Revealed</span>
                 </div>
               )}
+              </div>
             </div>
             {!canRate && (
               <div style={{ display: "flex", alignItems: "center", gap: 4, color: c.muted, fontSize: 11 }} data-testid="badge-locked">

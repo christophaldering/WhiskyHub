@@ -10,7 +10,7 @@ import { c } from "@/lib/theme";
 const CHART_COLORS = ["#c8a864", "#6b9bd2", "#d97c5a"];
 
 interface RatedWhiskyItem {
-  whisky: { id: string; name: string; distillery: string | null; region: string | null };
+  whisky: { id: string; name: string; distillery: string | null; region: string | null; imageUrl: string | null };
   rating: { overall: number; nose: number; taste: number; finish: number; balance: number; notes: string | null };
 }
 

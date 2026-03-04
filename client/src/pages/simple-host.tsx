@@ -63,6 +63,7 @@ interface Whisky {
   notes: string | null;
   sortOrder: number;
   caskInfluence: string | null;
+  imageUrl: string | null;
 }
 
 function generateCode() {
@@ -618,6 +619,9 @@ function AddWhiskiesStep({ tasting, onDone, onNext }: { tasting: TastingFull; on
                       <ChevronDown style={{ width: 14, height: 14 }} />
                     </button>
                   </div>
+                  {w.imageUrl && (
+                    <img src={w.imageUrl} alt="" style={{ width: 32, height: 42, objectFit: "cover", borderRadius: 6, flexShrink: 0, background: c.bg }} data-testid={`img-whisky-${w.id}`} />
+                  )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                       {isBlind && (
@@ -1256,7 +1260,11 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
             Current Dram
           </div>
           {activeWhisky ? (
-            <div>
+            <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+              {activeWhisky.imageUrl && (
+                <img src={activeWhisky.imageUrl} alt="" style={{ width: 48, height: 64, objectFit: "cover", borderRadius: 8, flexShrink: 0, background: c.card }} data-testid="img-active-whisky" />
+              )}
+              <div>
               <div style={{ fontSize: 24, fontWeight: 700, color: c.accent, fontFamily: "'Playfair Display', serif", marginBottom: 2 }} data-testid="text-active-whisky">
                 {isBlind ? `Whisky ${blindLabel(activeIndex)}` : activeWhisky.name}
               </div>
@@ -1272,6 +1280,7 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
                   {[activeWhisky.distillery, activeWhisky.abv ? `${activeWhisky.abv}%` : null].filter(Boolean).join(" · ")}
                 </div>
               )}
+              </div>
             </div>
           ) : (
             <div style={{ fontSize: 14, color: c.muted }}>No whisky selected</div>

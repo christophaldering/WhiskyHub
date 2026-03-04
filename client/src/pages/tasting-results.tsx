@@ -14,6 +14,7 @@ interface WhiskyResult {
   age: string | null;
   abv: number | null;
   region: string | null;
+  imageUrl: string | null;
   ratingCount: number;
   avgOverall: number | null;
   avgNose: number | null;
@@ -83,6 +84,15 @@ function WhiskyResultCard({ result, rank }: { result: WhiskyResult; rank: number
         }} data-testid={`badge-rank-${rank + 1}`}>
           {rank + 1}
         </div>
+
+        {result.imageUrl && (
+          <img
+            src={result.imageUrl}
+            alt=""
+            style={{ width: 36, height: 48, objectFit: "cover", borderRadius: 6, flexShrink: 0, background: c.bg }}
+            data-testid={`img-result-${result.whiskyId}`}
+          />
+        )}
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <h3 style={{
