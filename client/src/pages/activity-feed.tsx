@@ -7,6 +7,7 @@ import { Rss, NotebookPen, Wine, Star } from "lucide-react";
 import { Link } from "wouter";
 import { GuestPreview } from "@/components/guest-preview";
 import SimpleShell from "@/components/simple/simple-shell";
+import { c, cardStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 
 interface ActivityItem {
   type: "journal" | "tasting";
@@ -47,13 +48,13 @@ export default function ActivityFeed() {
     return (
       <SimpleShell maxWidth={700}>
         <GuestPreview featureTitle={t("activityFeed.title")} featureDescription={t("guestPreview.activity")}>
-          <div className="space-y-4">
-            <h1 className="text-2xl font-serif font-bold">{t("activityFeed.title")}</h1>
-            <div className="space-y-3">
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <h1 style={{ ...pageTitleStyle }}>{t("activityFeed.title")}</h1>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[{user: "Alex M.", action: "rated Ardbeg Uigeadail", score: "9.2", time: "2h ago"}, {user: "Sarah K.", action: "joined Highland Evening tasting", score: "", time: "5h ago"}, {user: "Tom B.", action: "added Lagavulin 16 to wishlist", score: "", time: "1d ago"}].map((a, i) => (
-                <div key={i} className="bg-card rounded-xl border p-4 flex items-center gap-4">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-serif text-primary text-sm font-semibold">{a.user[0]}</div>
-                  <div className="flex-1"><div className="text-sm"><span className="font-semibold">{a.user}</span> {a.action} {a.score && <span className="text-primary font-serif font-bold ml-1">{a.score}</span>}</div><div className="text-xs text-muted-foreground">{a.time}</div></div>
+                <div key={i} style={{ ...cardStyle, padding: 16, display: "flex", alignItems: "center", gap: 16 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: `${c.accent}18`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Playfair Display', Georgia, serif", color: c.accent, fontSize: 14, fontWeight: 600 }}>{a.user[0]}</div>
+                  <div style={{ flex: 1 }}><div style={{ fontSize: 14, color: c.text }}><span style={{ fontWeight: 600 }}>{a.user}</span> {a.action} {a.score && <span style={{ color: c.accent, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, marginLeft: 4 }}>{a.score}</span>}</div><div style={{ fontSize: 12, color: c.muted }}>{a.time}</div></div>
                 </div>
               ))}
             </div>
@@ -67,86 +68,86 @@ export default function ActivityFeed() {
 
   return (
     <SimpleShell maxWidth={700}>
-    <div className="min-w-0 overflow-x-hidden" data-testid="activity-feed-page">
+    <div style={{ minWidth: 0, overflowX: "hidden" }} data-testid="activity-feed-page">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="flex items-center gap-3 mb-2">
-          <Rss className="w-7 h-7 text-primary" />
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-feed-title">
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+          <Rss style={{ width: 28, height: 28, color: c.accent }} />
+          <h1 style={{ ...pageTitleStyle, color: c.accent }} data-testid="text-feed-title">
             {t("activityFeed.title")}
           </h1>
         </div>
-        <p className="text-sm text-muted-foreground mb-8">{t("activityFeed.subtitle")}</p>
+        <p style={{ ...pageSubtitleStyle, marginBottom: 32 }}>{t("activityFeed.subtitle")}</p>
 
         {isLoading ? (
-          <div className="space-y-4">
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-16 bg-card/50 rounded-lg animate-pulse" />
+              <div key={i} style={{ height: 64, background: `${c.card}80`, borderRadius: 8 }} />
             ))}
           </div>
         ) : activities.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <Rss className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <p className="font-serif">{t("activityFeed.empty")}</p>
-            <p className="text-xs mt-2">{t("activityFeed.emptyHint")}</p>
+          <div style={{ textAlign: "center", padding: "64px 0", color: c.muted }}>
+            <Rss style={{ width: 48, height: 48, margin: "0 auto 16px", opacity: 0.3, display: "block" }} />
+            <p style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{t("activityFeed.empty")}</p>
+            <p style={{ fontSize: 12, marginTop: 8 }}>{t("activityFeed.emptyHint")}</p>
           </div>
         ) : (
-          <div className="relative">
-            <div className="absolute left-[19px] top-0 bottom-0 w-px bg-border/30" />
-            <div className="space-y-1">
+          <div style={{ position: "relative" }}>
+            <div style={{ position: "absolute", left: 19, top: 0, bottom: 0, width: 1, background: `${c.border}4D` }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {activities.map((activity, index) => (
                 <motion.div
                   key={`${activity.type}-${activity.participantId}-${index}`}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.03 }}
-                  className="relative flex gap-4 pl-0"
+                  style={{ position: "relative", display: "flex", gap: 16, paddingLeft: 0 }}
                   data-testid={`card-activity-${index}`}
                 >
-                  <div className="relative z-10 mt-3 flex-shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-card border border-border/40 flex items-center justify-center">
+                  <div style={{ position: "relative", zIndex: 10, marginTop: 12, flexShrink: 0 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: c.card, border: `1px solid ${c.border}66`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {activity.type === "journal" ? (
-                        <NotebookPen className="w-4 h-4 text-primary/70" />
+                        <NotebookPen style={{ width: 16, height: 16, color: `${c.accent}B3` }} />
                       ) : (
-                        <Wine className="w-4 h-4 text-primary/70" />
+                        <Wine style={{ width: 16, height: 16, color: `${c.accent}B3` }} />
                       )}
                     </div>
                   </div>
-                  <div className="flex-1 py-3 min-w-0">
-                    <div className="bg-card rounded-lg border border-border/40 p-4 hover:border-primary/20 transition-colors">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-serif font-semibold text-foreground">{activity.participantName}</span>
-                        <span className="text-[10px] text-muted-foreground/60">{formatRelativeTime(activity.timestamp, isDE)}</span>
+                  <div style={{ flex: 1, padding: "12px 0", minWidth: 0 }}>
+                    <div style={{ background: c.card, borderRadius: 8, border: `1px solid ${c.border}66`, padding: 16, transition: "border-color 0.2s" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontSize: 14, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text }}>{activity.participantName}</span>
+                        <span style={{ fontSize: 10, color: `${c.muted}99` }}>{formatRelativeTime(activity.timestamp, isDE)}</span>
                       </div>
                       {activity.type === "journal" ? (
                         <div>
-                          <p className="text-xs text-muted-foreground">
+                          <p style={{ fontSize: 12, color: c.muted }}>
                             {isDE ? "Hat einen Tagebucheintrag geschrieben" : "Wrote a journal entry"}
                           </p>
-                          <p className="text-sm font-medium mt-1 truncate">{activity.details.title}</p>
+                          <p style={{ fontSize: 14, fontWeight: 500, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: c.text }}>{activity.details.title}</p>
                           {activity.details.whiskyName && (
-                            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                            <p style={{ fontSize: 12, color: c.muted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {activity.details.whiskyName}
                               {activity.details.distillery ? ` · ${activity.details.distillery}` : ""}
                             </p>
                           )}
                           {activity.details.personalScore && (
-                            <div className="flex items-center gap-1 mt-1.5">
-                              <Star className="w-3 h-3 text-primary/60 fill-primary/40" />
-                              <span className="text-xs font-serif font-bold text-primary/70">{activity.details.personalScore}</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6 }}>
+                              <Star style={{ width: 12, height: 12, color: `${c.accent}99`, fill: `${c.accent}66` }} />
+                              <span style={{ fontSize: 12, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: `${c.accent}B3` }}>{activity.details.personalScore}</span>
                             </div>
                           )}
                         </div>
                       ) : (
                         <div>
-                          <p className="text-xs text-muted-foreground">
+                          <p style={{ fontSize: 12, color: c.muted }}>
                             {isDE ? "Nimmt an einem Tasting teil" : "Joined a tasting"}
                           </p>
                           <Link href={`/tasting/${activity.details.tastingId}`}>
-                            <p className="text-sm font-medium mt-1 truncate hover:text-primary transition-colors cursor-pointer">
+                            <p style={{ fontSize: 14, fontWeight: 500, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: c.text, cursor: "pointer", transition: "color 0.2s" }}>
                               {activity.details.title}
                             </p>
                           </Link>
-                          <p className="text-xs text-muted-foreground mt-0.5">
+                          <p style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>
                             {activity.details.date} · {activity.details.location}
                           </p>
                         </div>

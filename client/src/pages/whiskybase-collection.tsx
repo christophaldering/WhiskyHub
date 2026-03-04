@@ -6,35 +6,7 @@ import { collectionApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import SimpleShell from "@/components/simple/simple-shell";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { c, cardStyle, inputStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 import {
   Upload,
   Search,
@@ -79,6 +51,60 @@ type SyncDiff = {
 };
 
 type RemoveAction = "keep" | "delete" | "empty";
+
+const btnBase: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  padding: "6px 12px",
+  borderRadius: 8,
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: "pointer",
+  border: "none",
+  transition: "opacity 0.15s",
+  whiteSpace: "nowrap",
+};
+
+const btnOutline: React.CSSProperties = {
+  ...btnBase,
+  background: "transparent",
+  border: `1px solid ${c.border}`,
+  color: c.text,
+};
+
+const btnPrimary: React.CSSProperties = {
+  ...btnBase,
+  background: c.accent,
+  color: c.bg,
+};
+
+const btnGhost: React.CSSProperties = {
+  ...btnBase,
+  background: "transparent",
+  color: c.muted,
+};
+
+const btnSmall: React.CSSProperties = {
+  padding: "4px 8px",
+  fontSize: 12,
+  borderRadius: 6,
+};
+
+const btnDanger: React.CSSProperties = {
+  ...btnGhost,
+  color: c.danger,
+};
+
+const chipActive: React.CSSProperties = {
+  background: c.accent,
+  color: c.bg,
+};
+
+const chipInactive: React.CSSProperties = {
+  background: c.inputBg,
+  color: c.muted,
+};
 
 export default function WhiskybaseCollection() {
   const { t } = useTranslation();
@@ -140,8 +166,8 @@ export default function WhiskybaseCollection() {
       setRemoveActions(actions);
       const decisions: Record<string, "new" | "old"> = {};
       diff.changedItems.forEach((item: SyncChangedItem) => {
-        item.changes.forEach((c: SyncChange) => {
-          decisions[`${item.existingId}-${c.field}`] = "new";
+        item.changes.forEach((ch: SyncChange) => {
+          decisions[`${item.existingId}-${ch.field}`] = "new";
         });
       });
       setChangeDecisions(decisions);
@@ -310,10 +336,10 @@ export default function WhiskybaseCollection() {
     syncDiff.changedItems.forEach((item) => {
       const updates: any = {};
       let hasUpdate = false;
-      item.changes.forEach((c) => {
-        const decision = changeDecisions[`${item.existingId}-${c.field}`];
+      item.changes.forEach((ch) => {
+        const decision = changeDecisions[`${item.existingId}-${ch.field}`];
         if (decision === "new") {
-          updates[c.field] = c.new;
+          updates[ch.field] = ch.new;
           hasUpdate = true;
         }
       });
@@ -386,7 +412,7 @@ export default function WhiskybaseCollection() {
     const prices = all.filter((i) => i.avgPrice).map((i) => i.avgPrice!);
     const totalValue = prices.reduce((a, b) => a + b, 0);
     const currencies = all.map((i) => i.avgPriceCurrency || i.currency).filter(Boolean);
-    const mainCurrency = currencies.length ? currencies.sort((a, b) => currencies.filter((c) => c === b).length - currencies.filter((c) => c === a).length)[0] : "EUR";
+    const mainCurrency = currencies.length ? currencies.sort((a, b) => currencies.filter((cv) => cv === b).length - currencies.filter((cv) => cv === a).length)[0] : "EUR";
 
     const distilleryCounts: Record<string, number> = {};
     all.forEach((i) => {
@@ -404,13 +430,16 @@ export default function WhiskybaseCollection() {
     return (
       <SimpleShell maxWidth={900}>
         <GuestPreview featureTitle={t("wishlist.title")} featureDescription={t("guestPreview.wishlist")}>
-          <div className="space-y-4">
-            <h1 className="text-2xl font-serif font-bold">{t("wishlist.title")}</h1>
-            <div className="grid gap-3">
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <h1 style={pageTitleStyle}>{t("wishlist.title")}</h1>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[{name: "Lagavulin 16", distillery: "Lagavulin", region: "Islay"}, {name: "Glenfarclas 25", distillery: "Glenfarclas", region: "Speyside"}, {name: "Springbank 15", distillery: "Springbank", region: "Campbeltown"}].map(w => (
-                <div key={w.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
-                  <div><div className="font-serif font-semibold">{w.name}</div><div className="text-sm text-muted-foreground">{w.distillery} · {w.region}</div></div>
-                  <div className="text-yellow-500">★</div>
+                <div key={w.name} style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text }}>{w.name}</div>
+                    <div style={{ fontSize: 13, color: c.muted }}>{w.distillery} · {w.region}</div>
+                  </div>
+                  <div style={{ color: "#eab308" }}>★</div>
                 </div>
               ))}
             </div>
@@ -420,12 +449,12 @@ export default function WhiskybaseCollection() {
     );
   }
 
-  const statusColor = (s: string | null) => {
+  const statusColorStyle = (s: string | null): React.CSSProperties => {
     switch (s) {
-      case "open": return "bg-green-500/10 text-green-400 border-green-500/20";
-      case "closed": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-      case "empty": return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
-      default: return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
+      case "open": return { background: "rgba(74,157,110,0.1)", color: "#4a9d6e", border: `1px solid rgba(74,157,110,0.2)` };
+      case "closed": return { background: "rgba(96,165,250,0.1)", color: "#60a5fa", border: `1px solid rgba(96,165,250,0.2)` };
+      case "empty": return { background: "rgba(113,113,122,0.1)", color: "#71717a", border: `1px solid rgba(113,113,122,0.2)` };
+      default: return { background: "rgba(113,113,122,0.1)", color: "#71717a", border: `1px solid rgba(113,113,122,0.2)` };
     }
   };
 
@@ -438,33 +467,49 @@ export default function WhiskybaseCollection() {
     }
   };
 
+  const badgeStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "2px 6px",
+    borderRadius: 6,
+    fontSize: 10,
+    fontWeight: 500,
+    whiteSpace: "nowrap",
+  };
+
+  const statCard: React.CSSProperties = {
+    background: c.card,
+    border: `1px solid ${c.border}`,
+    borderRadius: 10,
+    padding: 12,
+    textAlign: "center" as const,
+  };
+
   return (
     <SimpleShell maxWidth={900}>
-    <div className="space-y-6 pb-20">
-      <div className="space-y-3">
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 80 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div>
-          <h1 className="text-2xl font-bold font-display" data-testid="text-collection-title">
+          <h1 style={pageTitleStyle} data-testid="text-collection-title">
             {t("collection.title")}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">{t("collection.subtitle")}</p>
+          <p style={{ ...pageSubtitleStyle, marginTop: 4 }}>{t("collection.subtitle")}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
           {items.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              style={btnOutline}
               onClick={() => setShowStats(!showStats)}
               title={t("collection.statistics")}
               data-testid="button-toggle-stats"
             >
-              <BarChart3 className="w-4 h-4 sm:mr-1" />
-              <span className="hidden sm:inline">{t("collection.statistics")}</span>
-            </Button>
+              <BarChart3 style={{ width: 16, height: 16 }} />
+              <span style={{ display: "none" }}>{t("collection.statistics")}</span>
+            </button>
           )}
           {items.length > 0 && !priceSelectMode && (
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              style={btnOutline}
               onClick={() => {
                 setPriceSelectMode(true);
                 setSelectedForPrice(new Set());
@@ -472,46 +517,45 @@ export default function WhiskybaseCollection() {
               title={t("collection.estimatePrices")}
               data-testid="button-start-price-estimate"
             >
-              <Sparkles className="w-4 h-4 sm:mr-1" />
-              <span className="hidden sm:inline">{t("collection.estimatePrices")}</span>
-            </Button>
+              <Sparkles style={{ width: 16, height: 16 }} />
+              <span style={{ display: "none" }}>{t("collection.estimatePrices")}</span>
+            </button>
           )}
           {items.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              style={btnOutline}
               onClick={() => syncFileInputRef.current?.click()}
               disabled={syncMutation.isPending}
               title={syncMutation.isPending ? t("collection.syncing") : t("collection.syncButton")}
               data-testid="button-sync-collection"
             >
               {syncMutation.isPending ? (
-                <Loader2 className="w-4 h-4 sm:mr-1 animate-spin" />
+                <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
               ) : (
-                <RefreshCw className="w-4 h-4 sm:mr-1" />
+                <RefreshCw style={{ width: 16, height: 16 }} />
               )}
-              <span className="hidden sm:inline">{syncMutation.isPending ? t("collection.syncing") : t("collection.syncButton")}</span>
-            </Button>
+              <span style={{ display: "none" }}>{syncMutation.isPending ? t("collection.syncing") : t("collection.syncButton")}</span>
+            </button>
           )}
-          <Button
-            size="sm"
+          <button
+            style={btnPrimary}
             onClick={() => fileInputRef.current?.click()}
             disabled={importMutation.isPending}
             title={importMutation.isPending ? t("collection.importing") : t("collection.importButton")}
             data-testid="button-import-collection"
           >
             {importMutation.isPending ? (
-              <Loader2 className="w-4 h-4 sm:mr-1 animate-spin" />
+              <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
             ) : (
-              <Upload className="w-4 h-4 sm:mr-1" />
+              <Upload style={{ width: 16, height: 16 }} />
             )}
-            <span className="hidden sm:inline">{importMutation.isPending ? t("collection.importing") : t("collection.importButton")}</span>
-          </Button>
+            <span style={{ display: "none" }}>{importMutation.isPending ? t("collection.importing") : t("collection.importButton")}</span>
+          </button>
           <input
             ref={fileInputRef}
             type="file"
             accept=".csv,.xlsx,.xls"
-            className="hidden"
+            style={{ display: "none" }}
             onChange={handleFileUpload}
             data-testid="input-import-file"
           />
@@ -519,7 +563,7 @@ export default function WhiskybaseCollection() {
             ref={syncFileInputRef}
             type="file"
             accept=".csv,.xlsx,.xls"
-            className="hidden"
+            style={{ display: "none" }}
             onChange={handleSyncUpload}
             data-testid="input-sync-file"
           />
@@ -527,56 +571,53 @@ export default function WhiskybaseCollection() {
       </div>
 
       {items.length > 0 && !priceSelectMode && (
-        <p className="text-xs text-muted-foreground">{t("collection.reimportHint")}</p>
+        <p style={{ fontSize: 12, color: c.muted }}>{t("collection.reimportHint")}</p>
       )}
 
       {priceSelectMode && (
-        <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg p-3">
-          <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-medium">{t("collection.selectForEstimate")}</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, background: `${c.accent}10`, border: `1px solid ${c.accent}30`, borderRadius: 10, padding: 12 }}>
+          <Sparkles style={{ width: 20, height: 20, color: c.accent, flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 13, fontWeight: 500, color: c.text }}>{t("collection.selectForEstimate")}</p>
             {selectedForPrice.size > 0 && (
-              <p className="text-xs text-muted-foreground">{t("collection.selectedCount", { count: selectedForPrice.size })}</p>
+              <p style={{ fontSize: 12, color: c.muted }}>{t("collection.selectedCount", { count: selectedForPrice.size })}</p>
             )}
             {rateLimitDate && !isAdmin && (
-              <p className="text-xs text-amber-500 mt-1">{t("collection.rateLimited", { date: rateLimitDate })}</p>
+              <p style={{ fontSize: 12, color: "#f59e0b", marginTop: 4 }}>{t("collection.rateLimited", { date: rateLimitDate })}</p>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              style={{ ...btnGhost, ...btnSmall }}
               onClick={selectAllForPrice}
               data-testid="button-select-all-price"
             >
-              <Check className="w-3 h-3 mr-1" />
+              <Check style={{ width: 12, height: 12 }} />
               {t("collection.filterAll")}
-            </Button>
-            <Button
-              size="sm"
-              variant="default"
+            </button>
+            <button
+              style={{ ...btnPrimary, ...btnSmall, opacity: selectedForPrice.size === 0 || priceEstimateMutation.isPending ? 0.5 : 1 }}
               disabled={selectedForPrice.size === 0 || priceEstimateMutation.isPending}
               onClick={() => priceEstimateMutation.mutate(Array.from(selectedForPrice))}
               data-testid="button-run-price-estimate"
             >
               {priceEstimateMutation.isPending ? (
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
               ) : (
-                <Sparkles className="w-4 h-4 mr-1" />
+                <Sparkles style={{ width: 16, height: 16 }} />
               )}
               {priceEstimateMutation.isPending ? t("collection.estimatingPrices") : t("collection.estimatePrices")}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
+            </button>
+            <button
+              style={{ ...btnGhost, ...btnSmall }}
               onClick={() => {
                 setPriceSelectMode(false);
                 setSelectedForPrice(new Set());
               }}
               data-testid="button-cancel-price-select"
             >
-              <X className="w-4 h-4" />
-            </Button>
+              <X style={{ width: 16, height: 16 }} />
+            </button>
           </div>
         </div>
       )}
@@ -587,50 +628,48 @@ export default function WhiskybaseCollection() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
+            style={{ overflow: "hidden" }}
           >
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-              <div className="bg-card border rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <div className="text-xs text-muted-foreground">{t("collection.totalBottles", { count: stats.total })}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12, marginBottom: 16 }}>
+              <div style={statCard}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: c.text }}>{stats.total}</div>
+                <div style={{ fontSize: 11, color: c.muted }}>{t("collection.totalBottles", { count: stats.total })}</div>
               </div>
-              <div className="bg-card border rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-green-400">{stats.open}</div>
-                <div className="text-xs text-muted-foreground">{t("collection.openBottles")}</div>
+              <div style={statCard}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#4ade80" }}>{stats.open}</div>
+                <div style={{ fontSize: 11, color: c.muted }}>{t("collection.openBottles")}</div>
               </div>
-              <div className="bg-card border rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-blue-400">{stats.closed}</div>
-                <div className="text-xs text-muted-foreground">{t("collection.closedBottles")}</div>
+              <div style={statCard}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#60a5fa" }}>{stats.closed}</div>
+                <div style={{ fontSize: 11, color: c.muted }}>{t("collection.closedBottles")}</div>
               </div>
-              <div className="bg-card border rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-zinc-400">{stats.empty}</div>
-                <div className="text-xs text-muted-foreground">{t("collection.emptyBottles")}</div>
+              <div style={statCard}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#71717a" }}>{stats.empty}</div>
+                <div style={{ fontSize: 11, color: c.muted }}>{t("collection.emptyBottles")}</div>
               </div>
-              <div className="bg-card border rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold">{stats.avgRating || "—"}</div>
-                <div className="text-xs text-muted-foreground">{t("collection.avgRating")}</div>
+              <div style={statCard}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: c.text }}>{stats.avgRating || "—"}</div>
+                <div style={{ fontSize: 11, color: c.muted }}>{t("collection.avgRating")}</div>
               </div>
             </div>
 
             {stats.totalValue > 0 && (
-              <div className="bg-card border rounded-lg p-3 mb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{t("collection.totalValue")}</span>
-                  <span className="text-lg font-bold">
-                    {stats.totalValue.toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {stats.mainCurrency}
-                  </span>
-                </div>
+              <div style={{ ...statCard, textAlign: "left" as const, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: c.text }}>{t("collection.totalValue")}</span>
+                <span style={{ fontSize: 17, fontWeight: 700, color: c.text }}>
+                  {stats.totalValue.toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} {stats.mainCurrency}
+                </span>
               </div>
             )}
 
             {stats.topDistilleries.length > 0 && (
-              <div className="bg-card border rounded-lg p-3 mb-4">
-                <h3 className="text-sm font-medium mb-2">{t("collection.topDistilleries")}</h3>
-                <div className="flex flex-wrap gap-2">
+              <div style={{ ...statCard, textAlign: "left" as const, marginBottom: 16 }}>
+                <h3 style={{ fontSize: 13, fontWeight: 500, color: c.text, marginBottom: 8 }}>{t("collection.topDistilleries")}</h3>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {stats.topDistilleries.map(([name, count]) => (
-                    <Badge key={name} variant="secondary" className="text-xs">
+                    <span key={name} style={{ ...badgeStyle, background: c.inputBg, color: c.muted, border: `1px solid ${c.border}` }}>
                       {name} ({count})
-                    </Badge>
+                    </span>
                   ))}
                 </div>
               </div>
@@ -640,74 +679,78 @@ export default function WhiskybaseCollection() {
       </AnimatePresence>
 
       {items.length > 0 && (
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              className="pl-9"
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ position: "relative", flex: 1 }}>
+            <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: c.muted }} />
+            <input
+              style={{ ...inputStyle, paddingLeft: 36 }}
               placeholder={t("collection.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               data-testid="input-collection-search"
             />
           </div>
-          <div className="flex gap-2">
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-              <SelectTrigger className="w-[130px]" data-testid="select-status-filter">
-                <Filter className="w-3 h-3 mr-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("collection.filterAll")}</SelectItem>
-                <SelectItem value="open">{t("collection.filterOpen")}</SelectItem>
-                <SelectItem value="closed">{t("collection.filterClosed")}</SelectItem>
-                <SelectItem value="empty">{t("collection.filterEmpty")}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
-              <SelectTrigger className="w-[140px]" data-testid="select-sort">
-                <ArrowUpDown className="w-3 h-3 mr-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="name">{t("collection.sortName")}</SelectItem>
-                <SelectItem value="rating">{t("collection.sortRating")}</SelectItem>
-                <SelectItem value="price">{t("collection.sortPrice")}</SelectItem>
-                <SelectItem value="added">{t("collection.sortAdded")}</SelectItem>
-              </SelectContent>
-            </Select>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <Filter style={{ width: 12, height: 12, color: c.muted }} />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                style={{ ...inputStyle, width: 130, padding: "8px 12px", fontSize: 13 }}
+                data-testid="select-status-filter"
+              >
+                <option value="all">{t("collection.filterAll")}</option>
+                <option value="open">{t("collection.filterOpen")}</option>
+                <option value="closed">{t("collection.filterClosed")}</option>
+                <option value="empty">{t("collection.filterEmpty")}</option>
+              </select>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <ArrowUpDown style={{ width: 12, height: 12, color: c.muted }} />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortKey)}
+                style={{ ...inputStyle, width: 140, padding: "8px 12px", fontSize: 13 }}
+                data-testid="select-sort"
+              >
+                <option value="name">{t("collection.sortName")}</option>
+                <option value="rating">{t("collection.sortRating")}</option>
+                <option value="price">{t("collection.sortPrice")}</option>
+                <option value="added">{t("collection.sortAdded")}</option>
+              </select>
+            </div>
           </div>
         </div>
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}>
+          <Loader2 style={{ width: 32, height: 32, color: c.muted, animation: "spin 1s linear infinite" }} />
         </div>
       ) : items.length === 0 ? (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center py-16"
+          style={{ textAlign: "center", padding: "64px 0" }}
         >
-          <Archive className="w-16 h-16 mx-auto mb-4 opacity-30" />
-          <p className="text-muted-foreground mb-4">{t("collection.empty")}</p>
-          <p className="text-xs text-muted-foreground mb-6">{t("collection.importHint")}</p>
-          <Button onClick={() => fileInputRef.current?.click()} data-testid="button-import-empty">
-            <Upload className="w-4 h-4 mr-2" />
+          <Archive style={{ width: 64, height: 64, margin: "0 auto 16px", opacity: 0.3, color: c.muted }} />
+          <p style={{ color: c.muted, marginBottom: 16 }}>{t("collection.empty")}</p>
+          <p style={{ fontSize: 12, color: c.muted, marginBottom: 24 }}>{t("collection.importHint")}</p>
+          <button style={btnPrimary} onClick={() => fileInputRef.current?.click()} data-testid="button-import-empty">
+            <Upload style={{ width: 16, height: 16, marginRight: 8 }} />
             {t("collection.importButton")}
-          </Button>
+          </button>
         </motion.div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">{t("collection.noResults")}</p>
+        <div style={{ textAlign: "center", padding: "48px 0" }}>
+          <p style={{ color: c.muted }}>{t("collection.noResults")}</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{ fontSize: 12, color: c.muted }}>
             {filtered.length} / {items.length} {t("collection.totalBottles", { count: items.length }).split(" ").slice(1).join(" ")}
             {uniqueExpressions < items.length && (
-              <span className="text-muted-foreground/60"> · {uniqueExpressions} {uniqueExpressions === 1 ? "expression" : "expressions"}</span>
+              <span style={{ color: c.muted, opacity: 0.6 }}> · {uniqueExpressions} {uniqueExpressions === 1 ? "expression" : "expressions"}</span>
             )}
           </p>
           {filtered.map((item: WhiskybaseCollectionItem) => (
@@ -716,10 +759,10 @@ export default function WhiskybaseCollection() {
               layout
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bg-card border rounded-lg overflow-hidden"
+              style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 10, overflow: "hidden" }}
             >
               <div
-                className="flex items-center gap-3 p-3 cursor-pointer hover:bg-accent/30 transition-colors"
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, cursor: "pointer", transition: "background 0.15s" }}
                 onClick={() => {
                   if (priceSelectMode) {
                     togglePriceSelect(item.id);
@@ -730,10 +773,12 @@ export default function WhiskybaseCollection() {
                 data-testid={`card-collection-${item.id}`}
               >
                 {priceSelectMode && (
-                  <Checkbox
+                  <input
+                    type="checkbox"
                     checked={selectedForPrice.has(item.id)}
-                    onCheckedChange={() => togglePriceSelect(item.id)}
+                    onChange={() => togglePriceSelect(item.id)}
                     onClick={(e) => e.stopPropagation()}
+                    style={{ width: 18, height: 18, accentColor: c.accent }}
                     data-testid={`checkbox-price-${item.id}`}
                   />
                 )}
@@ -741,55 +786,55 @@ export default function WhiskybaseCollection() {
                   <img
                     src={item.imageUrl}
                     alt={item.name}
-                    className="w-10 h-14 object-contain rounded flex-shrink-0"
+                    style={{ width: 40, height: 56, objectFit: "contain", borderRadius: 4, flexShrink: 0 }}
                     loading="lazy"
                   />
                 )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium truncate">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontWeight: 500, color: c.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {item.brand && item.brand !== item.name ? `${item.brand} ` : ""}
                       {item.name}
                     </span>
                     {duplicateCounts[item.whiskybaseId] > 1 && (
-                      <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+                      <span style={{ ...badgeStyle, background: `${c.accent}15`, color: c.accent, border: `1px solid ${c.accent}30` }}>
                         ×{duplicateCounts[item.whiskybaseId]}
-                      </Badge>
+                      </span>
                     )}
                     {item.status && (
-                      <Badge variant="outline" className={`text-[10px] ${statusColor(item.status)}`}>
+                      <span style={{ ...badgeStyle, ...statusColorStyle(item.status), borderRadius: 6 }}>
                         {statusLabel(item.status)}
-                      </Badge>
+                      </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: c.muted, marginTop: 2 }}>
                     {item.distillery && <span>{item.distillery}</span>}
                     {item.statedAge && <span>{item.statedAge}y</span>}
                     {item.abv && <span>{item.abv}{item.unit || "%vol"}</span>}
                   </div>
                 </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
                   {item.communityRating && (
-                    <div className="text-right">
-                      <div className="flex items-center gap-1 text-sm font-medium">
-                        <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 500, color: c.text }}>
+                        <Star style={{ width: 12, height: 12, color: "#fbbf24", fill: "#fbbf24" }} />
                         {item.communityRating.toFixed(1)}
                       </div>
                     </div>
                   )}
                   {item.estimatedPrice != null && (
-                    <div className="text-right" data-testid={`text-estimated-price-${item.id}`}>
-                      <div className="flex items-center gap-1 text-sm font-medium">
+                    <div style={{ textAlign: "right" }} data-testid={`text-estimated-price-${item.id}`}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 500, color: c.text }}>
                         <span>{item.estimatedPrice.toFixed(0)} {item.estimatedPriceCurrency || "EUR"}</span>
                       </div>
-                      <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-400 border-violet-500/20">
-                        <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                      <span style={{ ...badgeStyle, background: "rgba(139,92,246,0.1)", color: "#a78bfa", border: "1px solid rgba(139,92,246,0.2)" }}>
+                        <Sparkles style={{ width: 10, height: 10, marginRight: 2 }} />
                         {item.estimatedPriceSource === "manual" ? t("collection.manualOverride") : t("collection.aiEstimated")}
-                      </Badge>
+                      </span>
                     </div>
                   )}
                   {(item.avgPrice || item.pricePaid) && (
-                    <div className="text-right text-xs text-muted-foreground">
+                    <div style={{ textAlign: "right", fontSize: 12, color: c.muted }}>
                       {item.avgPrice ? `~${item.avgPrice.toFixed(0)}` : item.pricePaid?.toFixed(0)} {item.avgPriceCurrency || item.currency || "€"}
                     </div>
                   )}
@@ -802,74 +847,74 @@ export default function WhiskybaseCollection() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden border-t"
+                    style={{ overflow: "hidden", borderTop: `1px solid ${c.border}` }}
                   >
-                    <div className="p-3 space-y-3">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                    <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 8, fontSize: 12 }}>
                         {item.bottlingSeries && (
                           <div>
-                            <span className="text-muted-foreground">{t("collection.series")}:</span>{" "}
-                            <span className="font-medium">{item.bottlingSeries}</span>
+                            <span style={{ color: c.muted }}>{t("collection.series")}:</span>{" "}
+                            <span style={{ fontWeight: 500, color: c.text }}>{item.bottlingSeries}</span>
                           </div>
                         )}
                         {item.caskType && (
                           <div>
-                            <span className="text-muted-foreground">{t("collection.caskType")}:</span>{" "}
-                            <span className="font-medium">{item.caskType}</span>
+                            <span style={{ color: c.muted }}>{t("collection.caskType")}:</span>{" "}
+                            <span style={{ fontWeight: 500, color: c.text }}>{item.caskType}</span>
                           </div>
                         )}
                         {item.vintage && (
                           <div>
-                            <span className="text-muted-foreground">{t("collection.vintage")}:</span>{" "}
-                            <span className="font-medium">{item.vintage}</span>
+                            <span style={{ color: c.muted }}>{t("collection.vintage")}:</span>{" "}
+                            <span style={{ fontWeight: 500, color: c.text }}>{item.vintage}</span>
                           </div>
                         )}
                         {item.size && (
                           <div>
-                            <span className="text-muted-foreground">{t("collection.size")}:</span>{" "}
-                            <span className="font-medium">{item.size}ml</span>
+                            <span style={{ color: c.muted }}>{t("collection.size")}:</span>{" "}
+                            <span style={{ fontWeight: 500, color: c.text }}>{item.size}ml</span>
                           </div>
                         )}
                         {item.pricePaid != null && (
                           <div>
-                            <span className="text-muted-foreground">{t("collection.pricePaid")}:</span>{" "}
-                            <span className="font-medium">{item.pricePaid.toFixed(2)} {item.currency}</span>
+                            <span style={{ color: c.muted }}>{t("collection.pricePaid")}:</span>{" "}
+                            <span style={{ fontWeight: 500, color: c.text }}>{item.pricePaid.toFixed(2)} {item.currency}</span>
                           </div>
                         )}
                         {item.auctionPrice != null && (
                           <div>
-                            <span className="text-muted-foreground">{t("collection.auctionPrice")}:</span>{" "}
-                            <span className="font-medium">{item.auctionPrice.toFixed(2)} {item.auctionCurrency || item.avgPriceCurrency || "EUR"}</span>
+                            <span style={{ color: c.muted }}>{t("collection.auctionPrice")}:</span>{" "}
+                            <span style={{ fontWeight: 500, color: c.text }}>{item.auctionPrice.toFixed(2)} {item.auctionCurrency || item.avgPriceCurrency || "EUR"}</span>
                           </div>
                         )}
                         {item.personalRating != null && (
                           <div>
-                            <span className="text-muted-foreground">{t("collection.personalRating")}:</span>{" "}
-                            <span className="font-medium">{item.personalRating}</span>
+                            <span style={{ color: c.muted }}>{t("collection.personalRating")}:</span>{" "}
+                            <span style={{ fontWeight: 500, color: c.text }}>{item.personalRating}</span>
                           </div>
                         )}
                         {item.addedAt && (
                           <div>
-                            <span className="text-muted-foreground">{t("collection.sortAdded")}:</span>{" "}
-                            <span className="font-medium">{item.addedAt.split(" ")[0]}</span>
+                            <span style={{ color: c.muted }}>{t("collection.sortAdded")}:</span>{" "}
+                            <span style={{ fontWeight: 500, color: c.text }}>{item.addedAt.split(" ")[0]}</span>
                           </div>
                         )}
                         {item.purchaseLocation && (
                           <div>
-                            <span className="text-muted-foreground">{t("collection.purchaseLocation")}:</span>{" "}
-                            <span className="font-medium">{item.purchaseLocation}</span>
+                            <span style={{ color: c.muted }}>{t("collection.purchaseLocation")}:</span>{" "}
+                            <span style={{ fontWeight: 500, color: c.text }}>{item.purchaseLocation}</span>
                           </div>
                         )}
                         {item.estimatedPrice != null && (
                           <div>
-                            <span className="text-muted-foreground">{t("collection.estimatePrice")}:</span>{" "}
-                            <span className="font-medium">{item.estimatedPrice.toFixed(2)} {item.estimatedPriceCurrency || "EUR"}</span>{" "}
-                            <Badge variant="outline" className="text-[9px] ml-1 bg-violet-500/10 text-violet-400 border-violet-500/20" data-testid={`badge-ai-estimated-${item.id}`}>
-                              <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                            <span style={{ color: c.muted }}>{t("collection.estimatePrice")}:</span>{" "}
+                            <span style={{ fontWeight: 500, color: c.text }}>{item.estimatedPrice.toFixed(2)} {item.estimatedPriceCurrency || "EUR"}</span>{" "}
+                            <span style={{ ...badgeStyle, background: "rgba(139,92,246,0.1)", color: "#a78bfa", border: "1px solid rgba(139,92,246,0.2)", marginLeft: 4 }} data-testid={`badge-ai-estimated-${item.id}`}>
+                              <Sparkles style={{ width: 10, height: 10, marginRight: 2 }} />
                               {item.estimatedPriceSource === "manual" ? t("collection.manualOverride") : t("collection.aiEstimated")}
-                            </Badge>
+                            </span>
                             {item.estimatedPriceDate && (
-                              <span className="text-[10px] text-muted-foreground ml-1">
+                              <span style={{ fontSize: 10, color: c.muted, marginLeft: 4 }}>
                                 {t("collection.priceEstimateDate", { date: new Date(item.estimatedPriceDate).toLocaleDateString() })}
                               </span>
                             )}
@@ -878,24 +923,22 @@ export default function WhiskybaseCollection() {
                       </div>
 
                       {editingPriceId === item.id && (
-                        <div className="flex items-center gap-2 text-xs">
-                          <DollarSign className="w-3 h-3 text-muted-foreground" />
-                          <Input
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
+                          <DollarSign style={{ width: 12, height: 12, color: c.muted }} />
+                          <input
                             type="number"
                             min="0"
                             step="1"
-                            className="h-7 w-24 text-xs"
+                            style={{ ...inputStyle, width: 96, height: 28, padding: "4px 8px", fontSize: 12 }}
                             placeholder="0"
                             value={manualPriceValue}
                             onChange={(e) => setManualPriceValue(e.target.value)}
                             onClick={(e) => e.stopPropagation()}
                             data-testid={`input-manual-price-${item.id}`}
                           />
-                          <span className="text-muted-foreground">EUR</span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs"
+                          <span style={{ color: c.muted }}>EUR</span>
+                          <button
+                            style={{ ...btnOutline, ...btnSmall, height: 28, opacity: !manualPriceValue || manualPriceMutation.isPending ? 0.5 : 1 }}
                             disabled={!manualPriceValue || manualPriceMutation.isPending}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -903,45 +946,41 @@ export default function WhiskybaseCollection() {
                             }}
                             data-testid={`button-save-manual-price-${item.id}`}
                           >
-                            {manualPriceMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs"
+                            {manualPriceMutation.isPending ? <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} /> : <Check style={{ width: 12, height: 12 }} />}
+                          </button>
+                          <button
+                            style={{ ...btnGhost, ...btnSmall, height: 28 }}
                             onClick={(e) => {
                               e.stopPropagation();
                               setEditingPriceId(null);
                               setManualPriceValue("");
                             }}
                           >
-                            <X className="w-3 h-3" />
-                          </Button>
+                            <X style={{ width: 12, height: 12 }} />
+                          </button>
                         </div>
                       )}
 
                       {item.notes && (
-                        <div className="text-xs">
-                          <span className="text-muted-foreground">{t("collection.notes")}:</span>{" "}
-                          <span>{item.notes}</span>
+                        <div style={{ fontSize: 12 }}>
+                          <span style={{ color: c.muted }}>{t("collection.notes")}:</span>{" "}
+                          <span style={{ color: c.text }}>{item.notes}</span>
                         </div>
                       )}
 
-                      <div className="flex flex-wrap gap-2 pt-1">
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingTop: 4 }}>
                         <a
                           href={`https://www.whiskybase.com/whiskies/whisky/${item.whiskybaseId}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: c.accent, textDecoration: "none" }}
                           data-testid={`link-whiskybase-${item.id}`}
                         >
-                          <ExternalLink className="w-3 h-3" />
+                          <ExternalLink style={{ width: 12, height: 12 }} />
                           {t("collection.viewOnWhiskybase")}
                         </a>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
+                        <button
+                          style={{ ...btnOutline, ...btnSmall, height: 28 }}
                           onClick={(e) => {
                             e.stopPropagation();
                             toJournalMutation.mutate(item.id);
@@ -950,16 +989,14 @@ export default function WhiskybaseCollection() {
                           data-testid={`button-to-journal-${item.id}`}
                         >
                           {toJournalMutation.isPending ? (
-                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} />
                           ) : (
-                            <NotebookPen className="w-3 h-3 mr-1" />
+                            <NotebookPen style={{ width: 12, height: 12 }} />
                           )}
                           {t("collection.toJournal")}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
+                        </button>
+                        <button
+                          style={{ ...btnOutline, ...btnSmall, height: 28 }}
                           onClick={(e) => {
                             e.stopPropagation();
                             priceEstimateMutation.mutate([item.id]);
@@ -968,16 +1005,14 @@ export default function WhiskybaseCollection() {
                           data-testid={`button-estimate-price-${item.id}`}
                         >
                           {priceEstimateMutation.isPending ? (
-                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} />
                           ) : (
-                            <Sparkles className="w-3 h-3 mr-1" />
+                            <Sparkles style={{ width: 12, height: 12 }} />
                           )}
                           {t("collection.estimatePrice")}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
+                        </button>
+                        <button
+                          style={{ ...btnOutline, ...btnSmall, height: 28 }}
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingPriceId(editingPriceId === item.id ? null : item.id);
@@ -985,22 +1020,20 @@ export default function WhiskybaseCollection() {
                           }}
                           data-testid={`button-manual-price-${item.id}`}
                         >
-                          <Pencil className="w-3 h-3 mr-1" />
+                          <Pencil style={{ width: 12, height: 12 }} />
                           {t("collection.manualPriceHint")}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs text-destructive hover:text-destructive"
+                        </button>
+                        <button
+                          style={{ ...btnDanger, ...btnSmall, height: 28 }}
                           onClick={(e) => {
                             e.stopPropagation();
                             setDeleteTarget(item);
                           }}
                           data-testid={`button-delete-${item.id}`}
                         >
-                          <Trash2 className="w-3 h-3 mr-1" />
+                          <Trash2 style={{ width: 12, height: 12 }} />
                           {t("collection.deleteItem")}
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   </motion.div>
@@ -1011,211 +1044,225 @@ export default function WhiskybaseCollection() {
         </div>
       )}
 
-      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("collection.deleteItem")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("collection.deleteConfirm")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("journal.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t("collection.deleteItem")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {deleteTarget && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div style={{ ...cardStyle, maxWidth: 420, width: "100%" }}>
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, marginBottom: 8 }}>{t("collection.deleteItem")}</h2>
+            <p style={{ fontSize: 14, color: c.muted, marginBottom: 20 }}>{t("collection.deleteConfirm")}</p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button style={btnOutline} onClick={() => setDeleteTarget(null)}>{t("journal.cancel")}</button>
+              <button
+                style={{ ...btnBase, background: c.danger, color: "#fff" }}
+                onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+              >
+                {t("collection.deleteItem")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <Dialog open={syncDialogOpen} onOpenChange={(open) => { if (!open) { setSyncDialogOpen(false); setSyncDiff(null); } }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" data-testid="dialog-sync">
-          <DialogHeader>
-            <DialogTitle>{t("collection.syncDialogTitle")}</DialogTitle>
-            <DialogDescription>{t("collection.syncDialogDesc")}</DialogDescription>
-          </DialogHeader>
+      {syncDialogOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div style={{ ...cardStyle, maxWidth: 640, width: "100%", maxHeight: "85vh", overflowY: "auto" }} data-testid="dialog-sync">
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, marginBottom: 4 }}>{t("collection.syncDialogTitle")}</h2>
+            <p style={{ fontSize: 13, color: c.muted, marginBottom: 16 }}>{t("collection.syncDialogDesc")}</p>
 
-          {syncDiff && (
-            <div className="space-y-4">
-              <div className="bg-muted/50 rounded-lg p-3 text-sm font-medium" data-testid="text-sync-summary">
-                {t("collection.syncSummary", {
-                  newCount: syncDiff.newItems.length,
-                  removedCount: syncDiff.removedItems.length,
-                  changedCount: syncDiff.changedItems.length,
-                  unchangedCount: syncDiff.unchangedCount,
-                })}
-              </div>
-
-              {syncDiff.newItems.length === 0 && syncDiff.removedItems.length === 0 && syncDiff.changedItems.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground" data-testid="text-sync-no-changes">
-                  <Check className="w-8 h-8 mx-auto mb-2 text-green-500" />
-                  <p>{t("collection.syncNoChanges")}</p>
+            {syncDiff && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ background: c.inputBg, borderRadius: 10, padding: 12, fontSize: 13, fontWeight: 500, color: c.text }} data-testid="text-sync-summary">
+                  {t("collection.syncSummary", {
+                    newCount: syncDiff.newItems.length,
+                    removedCount: syncDiff.removedItems.length,
+                    changedCount: syncDiff.changedItems.length,
+                    unchangedCount: syncDiff.unchangedCount,
+                  })}
                 </div>
-              )}
 
-              {syncDiff.newItems.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold flex items-center gap-2">
-                      <Plus className="w-4 h-4 text-green-500" />
-                      {t("collection.syncSectionNew")} ({syncDiff.newItems.length})
-                    </h3>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 text-xs"
-                        onClick={() => {
-                          const all: Record<number, boolean> = {};
-                          syncDiff.newItems.forEach((_: any, i: number) => { all[i] = true; });
-                          setNewItemChecked(all);
-                        }}
-                        data-testid="button-sync-add-all"
-                      >
-                        {t("collection.syncAddAll")}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 text-xs"
-                        onClick={() => {
-                          const none: Record<number, boolean> = {};
-                          syncDiff.newItems.forEach((_: any, i: number) => { none[i] = false; });
-                          setNewItemChecked(none);
-                        }}
-                        data-testid="button-sync-add-none"
-                      >
-                        {t("collection.syncAddNone")}
-                      </Button>
+                {syncDiff.newItems.length === 0 && syncDiff.removedItems.length === 0 && syncDiff.changedItems.length === 0 && (
+                  <div style={{ textAlign: "center", padding: "32px 0", color: c.muted }} data-testid="text-sync-no-changes">
+                    <Check style={{ width: 32, height: 32, margin: "0 auto 8px", color: c.success }} />
+                    <p>{t("collection.syncNoChanges")}</p>
+                  </div>
+                )}
+
+                {syncDiff.newItems.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <h3 style={{ fontSize: 13, fontWeight: 600, color: c.text, display: "flex", alignItems: "center", gap: 8 }}>
+                        <Plus style={{ width: 16, height: 16, color: c.success }} />
+                        {t("collection.syncSectionNew")} ({syncDiff.newItems.length})
+                      </h3>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          style={{ ...btnGhost, ...btnSmall, fontSize: 11 }}
+                          onClick={() => {
+                            const all: Record<number, boolean> = {};
+                            syncDiff.newItems.forEach((_: any, i: number) => { all[i] = true; });
+                            setNewItemChecked(all);
+                          }}
+                          data-testid="button-sync-add-all"
+                        >
+                          {t("collection.syncAddAll")}
+                        </button>
+                        <button
+                          style={{ ...btnGhost, ...btnSmall, fontSize: 11 }}
+                          onClick={() => {
+                            const none: Record<number, boolean> = {};
+                            syncDiff.newItems.forEach((_: any, i: number) => { none[i] = false; });
+                            setNewItemChecked(none);
+                          }}
+                          data-testid="button-sync-add-none"
+                        >
+                          {t("collection.syncAddNone")}
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ maxHeight: 192, overflowY: "auto", border: `1px solid ${c.border}`, borderRadius: 10, padding: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                      {syncDiff.newItems.map((item: any, i: number) => (
+                        <label
+                          key={i}
+                          style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 6, cursor: "pointer", fontSize: 13, color: c.text }}
+                          data-testid={`sync-new-item-${i}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!!newItemChecked[i]}
+                            onChange={(e) => setNewItemChecked(prev => ({ ...prev, [i]: e.target.checked }))}
+                            style={{ width: 16, height: 16, accentColor: c.accent }}
+                            data-testid={`checkbox-sync-new-${i}`}
+                          />
+                          <span style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {item.brand && item.brand !== item.name ? `${item.brand} ` : ""}{item.name}
+                          </span>
+                          {item.distillery && <span style={{ fontSize: 12, color: c.muted, marginLeft: "auto" }}>{item.distillery}</span>}
+                        </label>
+                      ))}
                     </div>
                   </div>
-                  <div className="space-y-1 max-h-48 overflow-y-auto border rounded-lg p-2">
-                    {syncDiff.newItems.map((item: any, i: number) => (
-                      <label
-                        key={i}
-                        className="flex items-center gap-2 p-1.5 rounded hover:bg-accent/30 cursor-pointer text-sm"
-                        data-testid={`sync-new-item-${i}`}
-                      >
-                        <Checkbox
-                          checked={!!newItemChecked[i]}
-                          onCheckedChange={(checked) => setNewItemChecked(prev => ({ ...prev, [i]: !!checked }))}
-                          data-testid={`checkbox-sync-new-${i}`}
-                        />
-                        <span className="font-medium truncate">
-                          {item.brand && item.brand !== item.name ? `${item.brand} ` : ""}{item.name}
-                        </span>
-                        {item.distillery && <span className="text-xs text-muted-foreground ml-auto">{item.distillery}</span>}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
+                )}
 
-              {syncDiff.removedItems.length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold flex items-center gap-2">
-                    <Minus className="w-4 h-4 text-red-500" />
-                    {t("collection.syncSectionRemoved")} ({syncDiff.removedItems.length})
-                  </h3>
-                  <div className="space-y-1 max-h-48 overflow-y-auto border rounded-lg p-2">
-                    {syncDiff.removedItems.map((item, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between gap-2 p-1.5 rounded text-sm"
-                        data-testid={`sync-removed-item-${i}`}
-                      >
-                        <span className="font-medium truncate flex-1">
-                          {item.brand && item.brand !== item.name ? `${item.brand} ` : ""}{item.name}
-                        </span>
-                        <Select
-                          value={removeActions[i] || "keep"}
-                          onValueChange={(v) => setRemoveActions(prev => ({ ...prev, [i]: v as RemoveAction }))}
+                {syncDiff.removedItems.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <h3 style={{ fontSize: 13, fontWeight: 600, color: c.text, display: "flex", alignItems: "center", gap: 8 }}>
+                      <Minus style={{ width: 16, height: 16, color: c.danger }} />
+                      {t("collection.syncSectionRemoved")} ({syncDiff.removedItems.length})
+                    </h3>
+                    <div style={{ maxHeight: 192, overflowY: "auto", border: `1px solid ${c.border}`, borderRadius: 10, padding: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                      {syncDiff.removedItems.map((item, i) => (
+                        <div
+                          key={i}
+                          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "6px 8px", borderRadius: 6, fontSize: 13, color: c.text }}
+                          data-testid={`sync-removed-item-${i}`}
                         >
-                          <SelectTrigger className="w-[160px] h-7 text-xs" data-testid={`select-sync-remove-${i}`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="keep">{t("collection.syncRemoveKeep")}</SelectItem>
-                            <SelectItem value="delete">{t("collection.syncRemoveDelete")}</SelectItem>
-                            <SelectItem value="empty">{t("collection.syncRemoveMarkEmpty")}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {syncDiff.changedItems.length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold flex items-center gap-2">
-                    <ArrowRight className="w-4 h-4 text-amber-500" />
-                    {t("collection.syncSectionChanged")} ({syncDiff.changedItems.length})
-                  </h3>
-                  <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-2">
-                    {syncDiff.changedItems.map((item, ci) => (
-                      <div key={ci} className="border rounded-md p-2 space-y-1.5" data-testid={`sync-changed-item-${ci}`}>
-                        <div className="text-sm font-medium">
-                          {item.brand && item.brand !== item.name ? `${item.brand} ` : ""}{item.name}
+                          <span style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                            {item.brand && item.brand !== item.name ? `${item.brand} ` : ""}{item.name}
+                          </span>
+                          <select
+                            value={removeActions[i] || "keep"}
+                            onChange={(e) => setRemoveActions(prev => ({ ...prev, [i]: e.target.value as RemoveAction }))}
+                            style={{ ...inputStyle, width: 160, height: 28, padding: "2px 8px", fontSize: 12 }}
+                            data-testid={`select-sync-remove-${i}`}
+                          >
+                            <option value="keep">{t("collection.syncRemoveKeep")}</option>
+                            <option value="delete">{t("collection.syncRemoveDelete")}</option>
+                            <option value="empty">{t("collection.syncRemoveMarkEmpty")}</option>
+                          </select>
                         </div>
-                        {item.changes.map((change, chi) => {
-                          const key = `${item.existingId}-${change.field}`;
-                          const decision = changeDecisions[key] || "new";
-                          return (
-                            <div key={chi} className="flex items-center gap-2 text-xs pl-2">
-                              <span className="text-muted-foreground w-28 flex-shrink-0">{fieldLabel(change.field)}:</span>
-                              <button
-                                className={`px-2 py-0.5 rounded border transition-colors ${decision === "old" ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent/50"}`}
-                                onClick={() => setChangeDecisions(prev => ({ ...prev, [key]: "old" }))}
-                                data-testid={`button-sync-keep-old-${ci}-${chi}`}
-                              >
-                                {String(change.old ?? "—")}
-                              </button>
-                              <ArrowRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                              <button
-                                className={`px-2 py-0.5 rounded border transition-colors ${decision === "new" ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent/50"}`}
-                                onClick={() => setChangeDecisions(prev => ({ ...prev, [key]: "new" }))}
-                                data-testid={`button-sync-accept-new-${ci}-${chi}`}
-                              >
-                                {String(change.new ?? "—")}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {syncDiff.changedItems.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <h3 style={{ fontSize: 13, fontWeight: 600, color: c.text, display: "flex", alignItems: "center", gap: 8 }}>
+                      <ArrowRight style={{ width: 16, height: 16, color: "#f59e0b" }} />
+                      {t("collection.syncSectionChanged")} ({syncDiff.changedItems.length})
+                    </h3>
+                    <div style={{ maxHeight: 256, overflowY: "auto", border: `1px solid ${c.border}`, borderRadius: 10, padding: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                      {syncDiff.changedItems.map((item, ci) => (
+                        <div key={ci} style={{ border: `1px solid ${c.border}`, borderRadius: 8, padding: 8, display: "flex", flexDirection: "column", gap: 6 }} data-testid={`sync-changed-item-${ci}`}>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: c.text }}>
+                            {item.brand && item.brand !== item.name ? `${item.brand} ` : ""}{item.name}
+                          </div>
+                          {item.changes.map((change, chi) => {
+                            const key = `${item.existingId}-${change.field}`;
+                            const decision = changeDecisions[key] || "new";
+                            return (
+                              <div key={chi} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, paddingLeft: 8 }}>
+                                <span style={{ color: c.muted, width: 112, flexShrink: 0 }}>{fieldLabel(change.field)}:</span>
+                                <button
+                                  style={{
+                                    padding: "2px 8px",
+                                    borderRadius: 4,
+                                    border: `1px solid ${decision === "old" ? c.accent : c.border}`,
+                                    background: decision === "old" ? c.accent : "transparent",
+                                    color: decision === "old" ? c.bg : c.text,
+                                    cursor: "pointer",
+                                    fontSize: 12,
+                                    transition: "all 0.15s",
+                                  }}
+                                  onClick={() => setChangeDecisions(prev => ({ ...prev, [key]: "old" }))}
+                                  data-testid={`button-sync-keep-old-${ci}-${chi}`}
+                                >
+                                  {String(change.old ?? "—")}
+                                </button>
+                                <ArrowRight style={{ width: 12, height: 12, color: c.muted, flexShrink: 0 }} />
+                                <button
+                                  style={{
+                                    padding: "2px 8px",
+                                    borderRadius: 4,
+                                    border: `1px solid ${decision === "new" ? c.accent : c.border}`,
+                                    background: decision === "new" ? c.accent : "transparent",
+                                    color: decision === "new" ? c.bg : c.text,
+                                    cursor: "pointer",
+                                    fontSize: 12,
+                                    transition: "all 0.15s",
+                                  }}
+                                  onClick={() => setChangeDecisions(prev => ({ ...prev, [key]: "new" }))}
+                                  data-testid={`button-sync-accept-new-${ci}-${chi}`}
+                                >
+                                  {String(change.new ?? "—")}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
+              <button
+                style={btnOutline}
+                onClick={() => { setSyncDialogOpen(false); setSyncDiff(null); }}
+                data-testid="button-sync-cancel"
+              >
+                {t("journal.cancel")}
+              </button>
+              {syncDiff && (syncDiff.newItems.length > 0 || syncDiff.removedItems.length > 0 || syncDiff.changedItems.length > 0) && (
+                <button
+                  style={{ ...btnPrimary, opacity: syncApplyMutation.isPending ? 0.7 : 1 }}
+                  onClick={handleApplySync}
+                  disabled={syncApplyMutation.isPending}
+                  data-testid="button-sync-apply"
+                >
+                  {syncApplyMutation.isPending ? (
+                    <Loader2 style={{ width: 16, height: 16, marginRight: 8, animation: "spin 1s linear infinite" }} />
+                  ) : (
+                    <Check style={{ width: 16, height: 16, marginRight: 8 }} />
+                  )}
+                  {syncApplyMutation.isPending ? t("collection.syncApplying") : t("collection.syncApply")}
+                </button>
               )}
             </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => { setSyncDialogOpen(false); setSyncDiff(null); }}
-              data-testid="button-sync-cancel"
-            >
-              {t("journal.cancel")}
-            </Button>
-            {syncDiff && (syncDiff.newItems.length > 0 || syncDiff.removedItems.length > 0 || syncDiff.changedItems.length > 0) && (
-              <Button
-                onClick={handleApplySync}
-                disabled={syncApplyMutation.isPending}
-                data-testid="button-sync-apply"
-              >
-                {syncApplyMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Check className="w-4 h-4 mr-2" />
-                )}
-                {syncApplyMutation.isPending ? t("collection.syncApplying") : t("collection.syncApply")}
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </div>
     </SimpleShell>
   );

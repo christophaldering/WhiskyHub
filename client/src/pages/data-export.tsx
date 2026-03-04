@@ -4,20 +4,9 @@ import { motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
 import { tastingApi } from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { c, cardStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 import { GuestPreview } from "@/components/guest-preview";
 import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
 import {
   HardDriveDownload,
   Wine,
@@ -52,6 +41,67 @@ const EXPORT_CARDS: ExportCard[] = [
   { type: "friends", titleKey: "dataExport.friends", descKey: "dataExport.friendsDesc", icon: Users, access: "own" },
   { type: "tastings", titleKey: "dataExport.tastings", descKey: "dataExport.tastingsDesc", icon: Wine, access: "extended" },
 ];
+
+const btnStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "6px 14px",
+  fontSize: 13,
+  fontWeight: 500,
+  borderRadius: 8,
+  border: `1px solid ${c.border}`,
+  background: c.inputBg,
+  color: c.text,
+  cursor: "pointer",
+  transition: "border-color 0.2s, opacity 0.2s",
+};
+
+const btnDisabledExtra: React.CSSProperties = {
+  opacity: 0.5,
+  cursor: "not-allowed",
+};
+
+const badgeStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  fontSize: 10,
+  fontWeight: 400,
+  border: `1px solid ${c.border}`,
+  borderRadius: 6,
+  padding: "2px 8px",
+  color: c.muted,
+};
+
+const iconBoxStyle = (active: boolean): React.CSSProperties => ({
+  width: 40,
+  height: 40,
+  borderRadius: 10,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: active ? `${c.accent}18` : c.inputBg,
+  color: active ? c.accent : c.muted,
+  flexShrink: 0,
+});
+
+const overlayStyle: React.CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0,0,0,0.6)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 1000,
+};
+
+const dialogStyle: React.CSSProperties = {
+  ...cardStyle,
+  width: "90%",
+  maxWidth: 420,
+  padding: 24,
+};
 
 export default function DataExport() {
   const { t } = useTranslation();
@@ -146,17 +196,17 @@ export default function DataExport() {
     if (level === "own") return null;
     if (level === "extended") {
       return (
-        <Badge variant="outline" className="text-[10px] gap-1 font-normal">
-          <Shield className="w-3 h-3" />
+        <span style={badgeStyle}>
+          <Shield style={{ width: 12, height: 12 }} />
           {t("dataExport.hostOnly")}
-        </Badge>
+        </span>
       );
     }
     return (
-      <Badge variant="outline" className="text-[10px] gap-1 font-normal">
-        <Shield className="w-3 h-3" />
+      <span style={badgeStyle}>
+        <Shield style={{ width: 12, height: 12 }} />
         {t("dataExport.adminOnly")}
-      </Badge>
+      </span>
     );
   };
 
@@ -166,19 +216,19 @@ export default function DataExport() {
         featureTitle={t("dataExport.title")}
         featureDescription={t("dataExport.subtitle")}
       >
-        <div className="space-y-4">
-          <h1 className="text-2xl font-serif font-bold">{t("dataExport.title")}</h1>
-          <div className="grid gap-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <h1 style={{ ...pageTitleStyle, fontSize: 22 }}>{t("dataExport.title")}</h1>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {EXPORT_CARDS.filter(c => c.access === "own").slice(0, 3).map((card) => {
               const Icon = card.icon;
               return (
-                <div key={card.type} className="bg-card rounded-xl border p-4 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                    <Icon className="w-5 h-5" />
+                <div key={card.type} style={{ ...cardStyle, display: "flex", alignItems: "center", gap: 16, padding: 16 }}>
+                  <div style={iconBoxStyle(true)}>
+                    <Icon style={{ width: 20, height: 20 }} />
                   </div>
                   <div>
-                    <div className="font-serif font-semibold">{t(card.titleKey)}</div>
-                    <div className="text-sm text-muted-foreground">{t(card.descKey)}</div>
+                    <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text }}>{t(card.titleKey)}</div>
+                    <div style={{ fontSize: 13, color: c.muted }}>{t(card.descKey)}</div>
                   </div>
                 </div>
               );
@@ -190,73 +240,116 @@ export default function DataExport() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="data-export-page">
-      <AlertDialog open={showPinDialog} onOpenChange={setShowPinDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <KeyRound className="w-5 h-5 text-primary" />
-              {t("dataExport.pinTitle")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px", minWidth: 0, overflowX: "hidden" }} data-testid="data-export-page">
+      {showPinDialog && (
+        <div style={overlayStyle} onClick={() => setShowPinDialog(false)}>
+          <div style={dialogStyle} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <KeyRound style={{ width: 20, height: 20, color: c.accent }} />
+              <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, fontSize: 18 }}>
+                {t("dataExport.pinTitle")}
+              </h2>
+            </div>
+            <p style={{ fontSize: 13, color: c.muted, marginBottom: 16 }}>
               {t("dataExport.pinDesc")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-3">
-            <Input
-              type="password"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder={t("dataExport.pinPlaceholder")}
-              value={pinInput}
-              onChange={(e) => { setPinInput(e.target.value); setPinError(false); }}
-              className={pinError ? "border-destructive" : ""}
-              onKeyDown={(e) => e.key === "Enter" && handlePinConfirm()}
-              data-testid="input-export-pin"
-              autoFocus
-            />
-            {pinError && (
-              <p className="text-xs text-destructive">{t("dataExport.pinInvalid")}</p>
-            )}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder={t("dataExport.pinPlaceholder")}
+                value={pinInput}
+                onChange={(e) => { setPinInput(e.target.value); setPinError(false); }}
+                style={{
+                  width: "100%",
+                  background: c.inputBg,
+                  border: `1px solid ${pinError ? c.error : c.inputBorder}`,
+                  borderRadius: 10,
+                  color: c.text,
+                  padding: "10px 14px",
+                  fontSize: 15,
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+                onKeyDown={(e) => e.key === "Enter" && handlePinConfirm()}
+                data-testid="input-export-pin"
+                autoFocus
+              />
+              {pinError && (
+                <p style={{ fontSize: 12, color: c.error, margin: 0 }}>{t("dataExport.pinInvalid")}</p>
+              )}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
+              <button
+                style={{ ...btnStyle, background: "transparent" }}
+                onClick={() => setShowPinDialog(false)}
+              >
+                {t("admin.cancel")}
+              </button>
+              <button
+                style={{
+                  ...btnStyle,
+                  background: c.accent,
+                  color: c.bg,
+                  border: "none",
+                  ...(pinInput.length < 4 ? btnDisabledExtra : {}),
+                }}
+                onClick={handlePinConfirm}
+                disabled={pinInput.length < 4}
+                data-testid="button-confirm-export-pin"
+              >
+                <KeyRound style={{ width: 16, height: 16 }} />
+                {t("dataExport.pinConfirm")}
+              </button>
+            </div>
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("admin.cancel")}</AlertDialogCancel>
-            <Button
-              onClick={handlePinConfirm}
-              disabled={pinInput.length < 4}
-              data-testid="button-confirm-export-pin"
-            >
-              <KeyRound className="w-4 h-4 mr-1" />
-              {t("dataExport.pinConfirm")}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        </div>
+      )}
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="flex items-center gap-3 mb-2">
-          <HardDriveDownload className="w-7 h-7 text-primary" />
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-data-export-title">
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+          <HardDriveDownload style={{ width: 28, height: 28, color: c.accent }} />
+          <h1 style={pageTitleStyle} data-testid="text-data-export-title">
             {t("dataExport.title")}
           </h1>
         </div>
-        <p className="text-sm text-muted-foreground mb-4">{t("dataExport.subtitle")}</p>
+        <p style={pageSubtitleStyle}>{t("dataExport.subtitle")}</p>
 
-        <div className="bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/40 rounded-lg p-4 mb-8 flex items-start gap-3">
-          <Lock className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-          <div className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
-            <p className="font-semibold mb-1">{t("dataExport.securityTitle")}</p>
-            <p>{t("dataExport.securityDesc")}</p>
+        <div style={{
+          background: `${c.accent}10`,
+          border: `1px solid ${c.accent}30`,
+          borderRadius: 10,
+          padding: 16,
+          marginTop: 16,
+          marginBottom: 32,
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 12,
+        }}>
+          <Lock style={{ width: 16, height: 16, color: c.accent, marginTop: 2, flexShrink: 0 }} />
+          <div style={{ fontSize: 12, color: c.text, lineHeight: 1.6 }}>
+            <p style={{ fontWeight: 600, marginBottom: 4, margin: 0 }}>{t("dataExport.securityTitle")}</p>
+            <p style={{ margin: 0 }}>{t("dataExport.securityDesc")}</p>
           </div>
         </div>
 
         {verifiedPin && (
-          <div className="flex items-center gap-2 mb-6 text-xs text-emerald-600 dark:text-emerald-400">
-            <Shield className="w-3.5 h-3.5" />
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, fontSize: 12, color: c.success }}>
+            <Shield style={{ width: 14, height: 14 }} />
             <span>{t("dataExport.pinVerified")}</span>
             <button
               onClick={() => setVerifiedPin(null)}
-              className="text-muted-foreground hover:text-destructive underline ml-2"
+              style={{
+                background: "none",
+                border: "none",
+                color: c.muted,
+                textDecoration: "underline",
+                cursor: "pointer",
+                marginLeft: 8,
+                fontSize: 12,
+                padding: 0,
+              }}
               data-testid="button-lock-exports"
             >
               {t("dataExport.lockAgain")}
@@ -265,47 +358,49 @@ export default function DataExport() {
         )}
 
         {isAdmin && (
-          <div className="bg-card border border-border/40 rounded-lg p-5 mb-6" data-testid="card-export-all">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                  <HardDriveDownload className="w-5 h-5" />
+          <div style={{ ...cardStyle, padding: 20, marginBottom: 24 }} data-testid="card-export-all">
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={iconBoxStyle(true)}>
+                  <HardDriveDownload style={{ width: 20, height: 20 }} />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="font-serif font-semibold text-foreground">{t("dataExport.exportAll")}</h2>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, fontSize: 15 }}>{t("dataExport.exportAll")}</h2>
                     {accessBadge("admin")}
                   </div>
-                  <p className="text-xs text-muted-foreground">{t("dataExport.exportAllDesc")}</p>
+                  <p style={{ fontSize: 12, color: c.muted, margin: "4px 0 0" }}>{t("dataExport.exportAllDesc")}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  style={{ ...btnStyle, ...(loadingStates["all-csv"] ? btnDisabledExtra : {}) }}
                   onClick={() => requestExport("all", "csv")}
                   disabled={loadingStates["all-csv"]}
                   data-testid="button-export-all-csv"
                 >
-                  {loadingStates["all-csv"] ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
+                  {loadingStates["all-csv"]
+                    ? <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+                    : <FileText style={{ width: 16, height: 16 }} />}
                   {loadingStates["all-csv"] ? t("dataExport.downloading") : t("dataExport.formatCsv")}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
+                </button>
+                <button
+                  style={{ ...btnStyle, ...(loadingStates["all-xlsx"] ? btnDisabledExtra : {}) }}
                   onClick={() => requestExport("all", "xlsx")}
                   disabled={loadingStates["all-xlsx"]}
                   data-testid="button-export-all-xlsx"
                 >
-                  {loadingStates["all-xlsx"] ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 mr-2" />}
+                  {loadingStates["all-xlsx"]
+                    ? <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+                    : <FileSpreadsheet style={{ width: 16, height: 16 }} />}
                   {loadingStates["all-xlsx"] ? t("dataExport.downloading") : t("dataExport.formatExcel")}
-                </Button>
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        <div className="space-y-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {EXPORT_CARDS.map((card, index) => {
             const Icon = card.icon;
             const csvKey = `${card.type}-csv`;
@@ -317,48 +412,55 @@ export default function DataExport() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                className={`bg-card border border-border/40 rounded-lg p-5 transition-colors ${accessible ? "hover:border-primary/30" : "opacity-50"}`}
+                style={{
+                  ...cardStyle,
+                  padding: 20,
+                  opacity: accessible ? 1 : 0.5,
+                  transition: "border-color 0.2s",
+                }}
                 data-testid={`card-export-${card.type}`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${accessible ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                      <Icon className="w-5 h-5" />
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={iconBoxStyle(accessible)}>
+                      <Icon style={{ width: 20, height: 20 }} />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-serif font-semibold text-foreground">{t(card.titleKey)}</h3>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <h3 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, fontSize: 15 }}>{t(card.titleKey)}</h3>
                         {accessBadge(card.access)}
                       </div>
-                      <p className="text-xs text-muted-foreground">{t(card.descKey)}</p>
+                      <p style={{ fontSize: 12, color: c.muted, margin: "4px 0 0" }}>{t(card.descKey)}</p>
                     </div>
                   </div>
                   {accessible ? (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <button
+                        style={{ ...btnStyle, ...(loadingStates[csvKey] ? btnDisabledExtra : {}) }}
                         onClick={() => requestExport(card.type, "csv")}
                         disabled={loadingStates[csvKey]}
                         data-testid={`button-export-${card.type}-csv`}
                       >
-                        {loadingStates[csvKey] ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
+                        {loadingStates[csvKey]
+                          ? <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+                          : <FileText style={{ width: 16, height: 16 }} />}
                         {loadingStates[csvKey] ? t("dataExport.downloading") : t("dataExport.formatCsv")}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      </button>
+                      <button
+                        style={{ ...btnStyle, ...(loadingStates[xlsxKey] ? btnDisabledExtra : {}) }}
                         onClick={() => requestExport(card.type, "xlsx")}
                         disabled={loadingStates[xlsxKey]}
                         data-testid={`button-export-${card.type}-xlsx`}
                       >
-                        {loadingStates[xlsxKey] ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 mr-2" />}
+                        {loadingStates[xlsxKey]
+                          ? <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+                          : <FileSpreadsheet style={{ width: 16, height: 16 }} />}
                         {loadingStates[xlsxKey] ? t("dataExport.downloading") : t("dataExport.formatExcel")}
-                      </Button>
+                      </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Lock className="w-3.5 h-3.5" />
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: c.muted }}>
+                      <Lock style={{ width: 14, height: 14 }} />
                       {t("dataExport.noAccess")}
                     </div>
                   )}

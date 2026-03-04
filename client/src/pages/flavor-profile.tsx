@@ -9,7 +9,7 @@ import { Activity, ChevronDown, ChevronUp, Users, Globe, User, BookOpen, Info } 
 import { GuestPreview } from "@/components/guest-preview";
 import { FlavorWheelContent } from "./flavor-wheel";
 import SimpleShell from "@/components/simple/simple-shell";
-import { c } from "@/lib/theme";
+import { c, cardStyle } from "@/lib/theme";
 
 const COLORS = ["#c8a864", "#a8845c", "#8b6f47", "#d4a853", "#b8934a", "#9e7d3f", "#c4956c", "#d9b87c"];
 
@@ -56,15 +56,26 @@ interface WhiskyProfileData {
   } | null;
 }
 
+const stabilityColors: Record<string, { color: string; bg: string; border: string }> = {
+  stable: { color: "#4ade80", bg: "rgba(74,222,128,0.1)", border: "rgba(74,222,128,0.3)" },
+  tendency: { color: "#fbbf24", bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.3)" },
+  preliminary: { color: "#94a3b8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.3)" },
+};
+
 function StabilityBadge({ level, percent, t }: { level: string; percent: number; t: any }) {
-  const color = level === "stable" ? "text-green-400 bg-green-500/10 border-green-500/30" :
-    level === "tendency" ? "text-amber-400 bg-amber-500/10 border-amber-500/30" :
-    "text-slate-400 bg-slate-500/10 border-slate-500/30";
+  const colors = stabilityColors[level] || stabilityColors.preliminary;
   const label = level === "stable" ? t("flavorProfile.stable") :
     level === "tendency" ? t("flavorProfile.tendency") : t("flavorProfile.preliminary");
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${color}`} data-testid={`badge-stability-${level}`}>
-      {label} {percent < 100 && <span className="opacity-60">{percent}%</span>}
+    <span
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 4,
+        padding: "4px 10px", borderRadius: 9999, fontSize: 12, fontWeight: 500,
+        border: `1px solid ${colors.border}`, background: colors.bg, color: colors.color,
+      }}
+      data-testid={`badge-stability-${level}`}
+    >
+      {label} {percent < 100 && <span style={{ opacity: 0.6 }}>{percent}%</span>}
     </span>
   );
 }
@@ -72,15 +83,27 @@ function StabilityBadge({ level, percent, t }: { level: string; percent: number;
 function DetailsPanel({ children, label, t }: { children: React.ReactNode; label?: string; t: any }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mt-2">
-      <button onClick={() => setOpen(!open)} className="text-sm text-primary/80 hover:text-primary flex items-center gap-1.5" data-testid="button-toggle-details">
-        {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+    <div style={{ marginTop: 8 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          background: "none", border: "none", cursor: "pointer",
+          fontSize: 14, color: c.accent, display: "flex", alignItems: "center", gap: 6,
+          padding: 0, fontFamily: "system-ui, sans-serif",
+        }}
+        data-testid="button-toggle-details"
+      >
+        {open ? <ChevronUp style={{ width: 14, height: 14 }} /> : <ChevronDown style={{ width: 14, height: 14 }} />}
         {open ? t("flavorProfile.hideDetails") : t("flavorProfile.showDetails")}
       </button>
       <AnimatePresence>
         {open && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <div className="mt-2 p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground space-y-1 font-mono">
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
+            <div style={{
+              marginTop: 8, padding: 12, background: `${c.inputBg}`, borderRadius: 8,
+              fontSize: 12, color: c.muted, fontFamily: "monospace",
+              display: "flex", flexDirection: "column", gap: 4,
+            }}>
               {children}
             </div>
           </motion.div>
@@ -95,89 +118,97 @@ function MethodologySection({ isDE }: { isDE: boolean }) {
   const [expertOpen, setExpertOpen] = useState(false);
 
   return (
-    <div className="bg-card rounded-lg border border-border/40 overflow-hidden" data-testid="section-methodology">
+    <div style={{ background: c.card, borderRadius: 12, border: `1px solid ${c.border}40`, overflow: "hidden" }} data-testid="section-methodology">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between p-5 text-left hover:bg-muted/10 transition-colors"
+        style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: 20, textAlign: "left", background: "none", border: "none", cursor: "pointer",
+          color: c.text, fontFamily: "system-ui, sans-serif", transition: "background 0.15s",
+        }}
         data-testid="button-toggle-methodology"
       >
-        <div className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-primary" />
-          <h2 className="text-base font-serif font-semibold">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <BookOpen style={{ width: 20, height: 20, color: c.accent }} />
+          <h2 style={{ fontSize: 16, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, margin: 0 }}>
             {isDE ? "So wird dein Profil erstellt" : "How Your Profile Is Built"}
           </h2>
         </div>
-        {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        {open ? <ChevronUp style={{ width: 16, height: 16, color: c.muted }} /> : <ChevronDown style={{ width: 16, height: 16, color: c.muted }} />}
       </button>
       <AnimatePresence>
         {open && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <div className="px-5 pb-5 space-y-5">
-              <p className="text-sm text-muted-foreground">
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
+            <div style={{ padding: "0 20px 20px", display: "flex", flexDirection: "column", gap: 20 }}>
+              <p style={{ fontSize: 14, color: c.muted, margin: 0 }}>
                 {isDE
                   ? "Transparenz ist uns wichtig. Hier erklären wir, wie dein Whisky-Profil berechnet wird."
                   : "Transparency matters. Here we explain how your whisky profile is calculated."}
               </p>
 
-              <div className="space-y-3 text-sm text-muted-foreground">
-                <p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, fontSize: 14, color: c.muted }}>
+                <p style={{ margin: 0 }}>
                   {isDE
                     ? "Dein Whisky-Profil basiert ausschließlich auf deinem Bewertungsverhalten — nicht auf Persönlichkeitstests, Fragebögen oder Annahmen über dich als Person."
                     : "Your whisky profile is based exclusively on your rating behavior — not on personality tests, questionnaires, or assumptions about you as a person."}
                 </p>
-                <p className="font-medium text-foreground">
+                <p style={{ margin: 0, fontWeight: 500, color: c.text }}>
                   {isDE ? "Was das Profil zeigt:" : "What the profile shows:"}
                 </p>
-                <ul className="list-disc pl-5 space-y-1.5">
+                <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                   <li>{isDE ? "Keine Typologien oder Kategorien — du wirst nicht als \"Explorer\" oder \"Kenner\" eingestuft." : "No typologies or categories — you are not classified as an \"Explorer\" or \"Connoisseur\"."}</li>
                   <li>{isDE ? "Dein Geschmack wird als mehrdimensionale, sich verändernde Struktur abgebildet." : "Your taste is mapped as a multidimensional, evolving structure."}</li>
                   <li>{isDE ? "Alle Aussagen beschreiben dein Verhalten, nie deine Persönlichkeit." : "All statements describe your behavior, never your personality."}</li>
                   <li>{isDE ? "Vergleiche mit der Plattform oder Freunden musst du aktiv einschalten." : "Comparisons with the platform or friends must be actively enabled by you."}</li>
                   <li>{isDE ? "Jede Zahl wird mit Stichprobengröße und Streuungsmaß angezeigt." : "Every number is shown with sample size and dispersion measure."}</li>
                 </ul>
-                <p>
+                <p style={{ margin: 0 }}>
                   {isDE
                     ? "Dein Profil verändert sich mit jeder neuen Bewertung. Es ist ein lebendiges Dokument deiner Geschmacksentwicklung."
                     : "Your profile changes with every new rating. It is a living document of your taste evolution."}
                 </p>
               </div>
 
-              <div className="border-t border-border/20 pt-4">
+              <div style={{ borderTop: `1px solid ${c.border}20`, paddingTop: 16 }}>
                 <button
                   onClick={() => setExpertOpen(!expertOpen)}
-                  className="w-full flex items-center justify-between text-left"
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                    textAlign: "left", background: "none", border: "none", cursor: "pointer",
+                    color: c.text, fontFamily: "system-ui, sans-serif", padding: 0,
+                  }}
                   data-testid="button-toggle-expert"
                 >
-                  <h3 className="text-base font-serif font-semibold">
+                  <h3 style={{ fontSize: 16, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, margin: 0 }}>
                     {isDE ? "Für Experten" : "For Experts"}
                   </h3>
-                  {expertOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                  {expertOpen ? <ChevronUp style={{ width: 16, height: 16, color: c.muted }} /> : <ChevronDown style={{ width: 16, height: 16, color: c.muted }} />}
                 </button>
                 <AnimatePresence>
                   {expertOpen && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                      <div className="mt-4 space-y-4 text-sm text-muted-foreground">
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
+                      <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 16, fontSize: 14, color: c.muted }}>
                         <div>
-                          <h4 className="font-serif font-semibold text-foreground mb-1">{isDE ? "Dimensionales Modell" : "Dimensional Model"}</h4>
-                          <p>{isDE ? "Geschmack wird als kontinuierlicher, mehrdimensionaler Präferenzraum modelliert. Jede Dimension (Nase, Geschmack, Abgang, Balance, Gesamt) wird unabhängig berechnet." : "Taste is modeled as a continuous, multidimensional preference space. Each dimension (Nose, Taste, Finish, Balance, Overall) is computed independently."}</p>
+                          <h4 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, marginBottom: 4 }}>{isDE ? "Dimensionales Modell" : "Dimensional Model"}</h4>
+                          <p style={{ margin: 0 }}>{isDE ? "Geschmack wird als kontinuierlicher, mehrdimensionaler Präferenzraum modelliert. Jede Dimension (Nase, Geschmack, Abgang, Balance, Gesamt) wird unabhängig berechnet." : "Taste is modeled as a continuous, multidimensional preference space. Each dimension (Nose, Taste, Finish, Balance, Overall) is computed independently."}</p>
                         </div>
                         <div>
-                          <h4 className="font-serif font-semibold text-foreground mb-1">{isDE ? "Plattform-Basis: Median statt Mittelwert" : "Platform Basis: Median Over Mean"}</h4>
-                          <p>{isDE ? "Für alle Plattform-Vergleiche wird der Median verwendet, nicht der arithmetische Mittelwert. Der Median ist robust gegenüber Ausreißern." : "For all platform comparisons, the median is used, not the arithmetic mean. The median is robust against outliers."}</p>
+                          <h4 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, marginBottom: 4 }}>{isDE ? "Plattform-Basis: Median statt Mittelwert" : "Platform Basis: Median Over Mean"}</h4>
+                          <p style={{ margin: 0 }}>{isDE ? "Für alle Plattform-Vergleiche wird der Median verwendet, nicht der arithmetische Mittelwert. Der Median ist robust gegenüber Ausreißern." : "For all platform comparisons, the median is used, not the arithmetic mean. The median is robust against outliers."}</p>
                         </div>
                         <div>
-                          <h4 className="font-serif font-semibold text-foreground mb-1">{isDE ? "Systematische Abweichung" : "Systematic Deviation"}</h4>
-                          <p className="font-mono text-xs bg-muted/30 p-2 rounded mb-2">avg_delta = mean(UserScore_i - PlatformMedian_i)</p>
-                          <p>{isDE ? "Misst, ob du systematisch höher oder niedriger bewertest als der Plattform-Median." : "Measures whether you systematically rate higher or lower than the platform median."}</p>
+                          <h4 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, marginBottom: 4 }}>{isDE ? "Systematische Abweichung" : "Systematic Deviation"}</h4>
+                          <p style={{ fontFamily: "monospace", fontSize: 12, background: c.inputBg, padding: 8, borderRadius: 4, margin: 0, marginBottom: 8 }}>avg_delta = mean(UserScore_i - PlatformMedian_i)</p>
+                          <p style={{ margin: 0 }}>{isDE ? "Misst, ob du systematisch höher oder niedriger bewertest als der Plattform-Median." : "Measures whether you systematically rate higher or lower than the platform median."}</p>
                         </div>
                         <div>
-                          <h4 className="font-serif font-semibold text-foreground mb-1">{isDE ? "Stabilitätslogik" : "Stability Logic"}</h4>
-                          <ul className="list-disc pl-5 space-y-1 font-mono text-xs">
+                          <h4 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, marginBottom: 4 }}>{isDE ? "Stabilitätslogik" : "Stability Logic"}</h4>
+                          <ul style={{ paddingLeft: 20, margin: 0, fontFamily: "monospace", fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
                             <li>{isDE ? "Vorläufig" : "Preliminary"}: N &lt; 5</li>
                             <li>{isDE ? "Tendenz" : "Tendency"}: 5 ≤ N &lt; 15</li>
                             <li>{isDE ? "Stabil" : "Stable"}: N ≥ 15</li>
                           </ul>
-                          <p className="font-mono text-xs bg-muted/30 p-2 rounded mt-2">{isDE ? "Stabilität %" : "Stability %"} = min(100, N × 6.67)</p>
+                          <p style={{ fontFamily: "monospace", fontSize: 12, background: c.inputBg, padding: 8, borderRadius: 4, margin: 0, marginTop: 8 }}>{isDE ? "Stabilität %" : "Stability %"} = min(100, N × 6.67)</p>
                         </div>
                       </div>
                     </motion.div>
@@ -205,18 +236,18 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="h-32 bg-card/50 rounded-lg animate-pulse" />
-        <div className="h-48 bg-card/50 rounded-lg animate-pulse" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ height: 128, background: `${c.card}80`, borderRadius: 12, animation: "pulse 2s infinite" }} />
+        <div style={{ height: 192, background: `${c.card}80`, borderRadius: 12, animation: "pulse 2s infinite" }} />
       </div>
     );
   }
 
   if (!profile?.ratingStyle) {
     return (
-      <div className="text-center py-16 text-muted-foreground">
-        <User className="w-12 h-12 mx-auto mb-4 opacity-30" />
-        <p className="font-serif">{t("flavorProfile.empty")}</p>
+      <div style={{ textAlign: "center", padding: "64px 0", color: c.muted }}>
+        <User style={{ width: 48, height: 48, margin: "0 auto 16px", opacity: 0.3 }} />
+        <p style={{ fontFamily: "'Playfair Display', Georgia, serif", margin: 0 }}>{t("flavorProfile.empty")}</p>
       </div>
     );
   }
@@ -239,7 +270,7 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
   const deltaDir = dev ? (dev.avgDelta > 1 ? "positive" : dev.avgDelta < -1 ? "negative" : null) : null;
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }} data-testid="profile-controls">
         <div style={{ display: "flex", borderRadius: 8, border: `1px solid ${c.border}`, overflow: "hidden", fontSize: 12 }}>
           {(["all", "journal", "imported", "all_incl_imported"] as const).map((key) => (
@@ -295,15 +326,15 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
       </div>
 
       {tasteStructure && source !== "journal" && (
-        <div className="bg-card rounded-lg border border-border/40 p-6">
-          <h2 className="text-lg font-serif font-semibold mb-1">{t("flavorProfile.radarTitle")}</h2>
-          <p className="text-sm text-muted-foreground mb-4">{t("flavorProfile.radarSubtitle", { count: ratingStyle.nRatings })}</p>
-          <div className="h-[280px]">
+        <div style={{ background: c.card, borderRadius: 12, border: `1px solid ${c.border}40`, padding: 24 }}>
+          <h2 style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, margin: 0, marginBottom: 4 }}>{t("flavorProfile.radarTitle")}</h2>
+          <p style={{ fontSize: 14, color: c.muted, margin: 0, marginBottom: 16 }}>{t("flavorProfile.radarSubtitle", { count: ratingStyle.nRatings })}</p>
+          <div style={{ height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
-                <PolarGrid stroke="hsl(var(--border))" />
-                <PolarAngleAxis dataKey="dimension" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12, fontFamily: "serif" }} />
-                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                <PolarGrid stroke={c.border} />
+                <PolarAngleAxis dataKey="dimension" tick={{ fill: c.muted, fontSize: 12, fontFamily: "serif" }} />
+                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: c.muted, fontSize: 10 }} />
                 {comparisonData && (
                   <Radar name={comparisonData.mode === "friends" ? t("flavorProfile.compareFriends") : t("flavorProfile.comparePlatform")} dataKey="comparison" stroke="#9ca3af" fill="#9ca3af" fillOpacity={0.1} strokeDasharray="4 4" />
                 )}
@@ -312,7 +343,7 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
             </ResponsiveContainer>
           </div>
           {comparisonData && (
-            <p className="text-sm text-muted-foreground mt-2 text-center" data-testid="text-comparison-basis">
+            <p style={{ fontSize: 14, color: c.muted, marginTop: 8, textAlign: "center" }} data-testid="text-comparison-basis">
               {comparisonData.mode === "friends"
                 ? t("flavorProfile.friendsBasis", { n: comparisonData.nFriends, r: comparisonData.nRatings })
                 : t("flavorProfile.platformBasisFull", { n: comparisonData.nParticipants, r: comparisonData.nRatings })}
@@ -320,21 +351,24 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
           )}
 
           {comparisonData && (
-            <div className="mt-4 pt-4 border-t border-border/20 space-y-2">
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${c.border}20`, display: "flex", flexDirection: "column", gap: 8 }}>
               {dims.map(dim => {
                 const userVal = tasteStructure[dim] || 0;
                 const compVal = comparisonData.medians[dim] || 0;
                 const diff = Math.round((userVal - compVal) * 10) / 10;
                 const iqr = comparisonData.iqrs?.[dim];
                 return (
-                  <div key={dim} className="flex items-center justify-between text-sm">
-                    <span className="font-serif text-muted-foreground w-20">{dimLabels[dim]}</span>
-                    <div className="flex items-center gap-3 flex-1 justify-end">
-                      <span className="font-mono text-foreground font-medium">{userVal.toFixed(1)}</span>
-                      <span className="text-muted-foreground/50">vs</span>
-                      <span className="font-mono text-muted-foreground">{compVal.toFixed(1)}</span>
-                      {iqr && <span className="text-xs text-muted-foreground/60">(IQR {iqr.iqr.toFixed(1)})</span>}
-                      <span className={`font-mono text-xs w-14 text-right ${diff > 0 ? "text-green-500" : diff < 0 ? "text-red-400" : "text-muted-foreground"}`}>
+                  <div key={dim} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 14 }}>
+                    <span style={{ fontFamily: "'Playfair Display', Georgia, serif", color: c.muted, width: 80 }}>{dimLabels[dim]}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, justifyContent: "flex-end" }}>
+                      <span style={{ fontFamily: "monospace", color: c.text, fontWeight: 500 }}>{userVal.toFixed(1)}</span>
+                      <span style={{ color: `${c.muted}80` }}>vs</span>
+                      <span style={{ fontFamily: "monospace", color: c.muted }}>{compVal.toFixed(1)}</span>
+                      {iqr && <span style={{ fontSize: 12, color: `${c.muted}99` }}>(IQR {iqr.iqr.toFixed(1)})</span>}
+                      <span style={{
+                        fontFamily: "monospace", fontSize: 12, width: 56, textAlign: "right",
+                        color: diff > 0 ? c.success : diff < 0 ? "#ef4444" : c.muted,
+                      }}>
                         {diff > 0 ? `+${diff}` : diff.toString()}
                       </span>
                     </div>
@@ -346,50 +380,53 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
         </div>
       )}
 
-      <div className="bg-card rounded-lg border border-border/40 p-6" data-testid="section-rating-style">
-        <h2 className="text-lg font-serif font-semibold mb-1">{t("flavorProfile.ratingStyleTitle")}</h2>
-        <p className="text-sm text-muted-foreground mb-4">{t("flavorProfile.ratingStyleSubtitle")}</p>
+      <div style={{ background: c.card, borderRadius: 12, border: `1px solid ${c.border}40`, padding: 24 }} data-testid="section-rating-style">
+        <h2 style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, margin: 0, marginBottom: 4 }}>{t("flavorProfile.ratingStyleTitle")}</h2>
+        <p style={{ fontSize: 14, color: c.muted, margin: 0, marginBottom: 16 }}>{t("flavorProfile.ratingStyleSubtitle")}</p>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="text-center p-4 bg-muted/20 rounded-lg">
-            <div className="text-2xl font-serif font-bold text-primary" data-testid="text-mean-score">{ratingStyle.meanScore}</div>
-            <div className="text-xs text-muted-foreground uppercase tracking-wider mt-1">{t("flavorProfile.meanScore")}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
+          <div style={{ textAlign: "center", padding: 16, background: c.inputBg, borderRadius: 8 }}>
+            <div style={{ fontSize: 24, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.accent }} data-testid="text-mean-score">{ratingStyle.meanScore}</div>
+            <div style={{ fontSize: 11, color: c.muted, textTransform: "uppercase", letterSpacing: "0.1em", marginTop: 4 }}>{t("flavorProfile.meanScore")}</div>
           </div>
-          <div className="text-center p-4 bg-muted/20 rounded-lg">
-            <div className="text-2xl font-serif font-bold text-foreground" data-testid="text-std-dev">{ratingStyle.stdDev}</div>
-            <div className="text-xs text-muted-foreground uppercase tracking-wider mt-1">{t("flavorProfile.stdDev")}</div>
+          <div style={{ textAlign: "center", padding: 16, background: c.inputBg, borderRadius: 8 }}>
+            <div style={{ fontSize: 24, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.text }} data-testid="text-std-dev">{ratingStyle.stdDev}</div>
+            <div style={{ fontSize: 11, color: c.muted, textTransform: "uppercase", letterSpacing: "0.1em", marginTop: 4 }}>{t("flavorProfile.stdDev")}</div>
           </div>
-          <div className="text-center p-4 bg-muted/20 rounded-lg">
-            <div className="text-2xl font-serif font-bold text-foreground" data-testid="text-scale-range">{ratingStyle.scaleRange.min}–{ratingStyle.scaleRange.max}</div>
-            <div className="text-xs text-muted-foreground uppercase tracking-wider mt-1">{t("flavorProfile.scaleRange")}</div>
+          <div style={{ textAlign: "center", padding: 16, background: c.inputBg, borderRadius: 8 }}>
+            <div style={{ fontSize: 24, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.text }} data-testid="text-scale-range">{ratingStyle.scaleRange.min}–{ratingStyle.scaleRange.max}</div>
+            <div style={{ fontSize: 11, color: c.muted, textTransform: "uppercase", letterSpacing: "0.1em", marginTop: 4 }}>{t("flavorProfile.scaleRange")}</div>
           </div>
-          <div className="text-center p-4 bg-muted/20 rounded-lg">
-            <div className="text-2xl font-serif font-bold text-foreground" data-testid="text-n-ratings">{ratingStyle.nRatings}</div>
-            <div className="text-xs text-muted-foreground uppercase tracking-wider mt-1">N</div>
+          <div style={{ textAlign: "center", padding: 16, background: c.inputBg, borderRadius: 8 }}>
+            <div style={{ fontSize: 24, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.text }} data-testid="text-n-ratings">{ratingStyle.nRatings}</div>
+            <div style={{ fontSize: 11, color: c.muted, textTransform: "uppercase", letterSpacing: "0.1em", marginTop: 4 }}>N</div>
           </div>
         </div>
 
         {dev && (
-          <div className="border-t border-border/20 pt-4">
-            <h3 className="text-sm font-serif font-semibold mb-2">{t("flavorProfile.systematicDeviation")}</h3>
-            <div className="flex items-center gap-4 mb-2">
-              <div className={`text-2xl font-serif font-bold ${dev.avgDelta > 0 ? "text-green-400" : dev.avgDelta < 0 ? "text-red-400" : "text-muted-foreground"}`} data-testid="text-avg-delta">
+          <div style={{ borderTop: `1px solid ${c.border}20`, paddingTop: 16 }}>
+            <h3 style={{ fontSize: 14, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, marginBottom: 8 }}>{t("flavorProfile.systematicDeviation")}</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>
+              <div style={{
+                fontSize: 24, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700,
+                color: dev.avgDelta > 0 ? "#4ade80" : dev.avgDelta < 0 ? "#f87171" : c.muted,
+              }} data-testid="text-avg-delta">
                 {dev.avgDelta > 0 ? "+" : ""}{dev.avgDelta}
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div style={{ fontSize: 12, color: c.muted }}>
                 <StabilityBadge level={confidence.overall?.level || "preliminary"} percent={confidence.overall?.percent || 0} t={t} />
               </div>
             </div>
-            <p className="text-sm text-muted-foreground mb-1" data-testid="text-deviation-interpretation">
+            <p style={{ fontSize: 14, color: c.muted, margin: 0, marginBottom: 4 }} data-testid="text-deviation-interpretation">
               {deltaDir
                 ? t("flavorProfile.deviationDesc", { direction: t(`flavorProfile.deviation${deltaDir === "positive" ? "Positive" : "Negative"}`) })
                 : t("flavorProfile.deviationNeutral")}
             </p>
-            <p className="text-xs text-muted-foreground/80">
+            <p style={{ fontSize: 12, color: `${c.muted}cc`, margin: 0 }}>
               {t("flavorProfile.nWhiskiesCompared", { n: dev.nWhiskiesCompared })} · {t("flavorProfile.platformBasis", { n: dev.nPlatformRatings, p: dev.nPlatformParticipants })}
             </p>
             {dev.deltaStdDev !== null && (
-              <p className="text-xs text-muted-foreground/80">
+              <p style={{ fontSize: 12, color: `${c.muted}cc`, margin: 0 }}>
                 {t("flavorProfile.platformMedian")}: {dev.platformMedian} · {t("flavorProfile.stdDev")}: {dev.deltaStdDev}
               </p>
             )}
@@ -403,17 +440,17 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
         )}
       </div>
 
-      <div className="bg-card rounded-lg border border-border/40 p-6" data-testid="section-confidence">
-        <h2 className="text-base font-serif font-semibold mb-3">{t("flavorProfile.confidenceTitle")}</h2>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div style={{ background: c.card, borderRadius: 12, border: `1px solid ${c.border}40`, padding: 24 }} data-testid="section-confidence">
+        <h2 style={{ fontSize: 16, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, margin: 0, marginBottom: 12 }}>{t("flavorProfile.confidenceTitle")}</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
           {dims.map(dim => {
-            const c = confidence[dim];
-            if (!c) return null;
+            const conf = confidence[dim];
+            if (!conf) return null;
             return (
-              <div key={dim} className="text-center p-3 bg-muted/20 rounded-lg" data-testid={`confidence-${dim}`}>
-                <div className="text-sm font-serif text-muted-foreground mb-1">{dimLabels[dim]}</div>
-                <StabilityBadge level={c.level} percent={c.percent} t={t} />
-                <div className="text-xs text-muted-foreground/70 mt-1">N = {c.n}</div>
+              <div key={dim} style={{ textAlign: "center", padding: 12, background: c.inputBg, borderRadius: 8 }} data-testid={`confidence-${dim}`}>
+                <div style={{ fontSize: 14, fontFamily: "'Playfair Display', Georgia, serif", color: c.muted, marginBottom: 4 }}>{dimLabels[dim]}</div>
+                <StabilityBadge level={conf.level} percent={conf.percent} t={t} />
+                <div style={{ fontSize: 12, color: `${c.muted}b3`, marginTop: 4 }}>N = {conf.n}</div>
               </div>
             );
           })}
@@ -425,47 +462,50 @@ function WhiskyProfileTab({ participantId, t, isDE }: { participantId: string; t
       </div>
 
       {whiskyComparison.length > 0 && (
-        <div className="bg-card rounded-lg border border-border/40 p-6" data-testid="section-whisky-comparison">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-serif font-semibold">{t("flavorProfile.whiskyComparisonTitle")}</h2>
-            <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" checked={showWhiskyComparison} onChange={(e) => setShowWhiskyComparison(e.target.checked)} className="rounded border-border" data-testid="checkbox-show-comparison" />
+        <div style={{ background: c.card, borderRadius: 12, border: `1px solid ${c.border}40`, padding: 24 }} data-testid="section-whisky-comparison">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <h2 style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, margin: 0 }}>{t("flavorProfile.whiskyComparisonTitle")}</h2>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, cursor: "pointer", color: c.muted }}>
+              <input type="checkbox" checked={showWhiskyComparison} onChange={(e) => setShowWhiskyComparison(e.target.checked)} style={{ accentColor: c.accent }} data-testid="checkbox-show-comparison" />
               {t("flavorProfile.showComparison")}
             </label>
           </div>
 
           {showWhiskyComparison && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", fontSize: 14, borderCollapse: "collapse" }}>
                   <thead>
-                    <tr className="border-b border-border/30">
-                      <th className="text-left py-2 font-serif font-semibold text-muted-foreground">Whisky</th>
-                      <th className="text-right py-2 font-serif font-semibold text-muted-foreground">{t("flavorProfile.userScore")}</th>
-                      <th className="text-right py-2 font-serif font-semibold text-muted-foreground">{t("flavorProfile.platformMedian")}</th>
-                      <th className="text-right py-2 font-serif font-semibold text-muted-foreground">{t("flavorProfile.delta")}</th>
-                      <th className="text-right py-2 font-serif font-semibold text-muted-foreground">{t("flavorProfile.iqrLabel")}</th>
-                      <th className="text-right py-2 font-serif font-semibold text-muted-foreground">{t("flavorProfile.platformN")}</th>
+                    <tr style={{ borderBottom: `1px solid ${c.border}4d` }}>
+                      <th style={{ textAlign: "left", padding: "8px 0", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.muted }}>Whisky</th>
+                      <th style={{ textAlign: "right", padding: "8px 0", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.muted }}>{t("flavorProfile.userScore")}</th>
+                      <th style={{ textAlign: "right", padding: "8px 0", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.muted }}>{t("flavorProfile.platformMedian")}</th>
+                      <th style={{ textAlign: "right", padding: "8px 0", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.muted }}>{t("flavorProfile.delta")}</th>
+                      <th style={{ textAlign: "right", padding: "8px 0", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.muted }}>{t("flavorProfile.iqrLabel")}</th>
+                      <th style={{ textAlign: "right", padding: "8px 0", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.muted }}>{t("flavorProfile.platformN")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {whiskyComparison.map(w => (
-                      <tr key={w.whiskyId} className="border-b border-border/10 hover:bg-muted/10" data-testid={`row-whisky-${w.whiskyId}`}>
-                        <td className="py-2">
-                          <div className="font-medium text-foreground">{w.whiskyName}</div>
+                      <tr key={w.whiskyId} style={{ borderBottom: `1px solid ${c.border}1a` }} data-testid={`row-whisky-${w.whiskyId}`}>
+                        <td style={{ padding: "8px 0" }}>
+                          <div style={{ fontWeight: 500, color: c.text }}>{w.whiskyName}</div>
                           {(w.distillery || w.region) && (
-                            <div className="text-xs text-muted-foreground">{[w.distillery, w.region].filter(Boolean).join(" · ")}</div>
+                            <div style={{ fontSize: 12, color: c.muted }}>{[w.distillery, w.region].filter(Boolean).join(" · ")}</div>
                           )}
                         </td>
-                        <td className="text-right py-2 font-mono font-medium text-foreground">{w.userScore}</td>
-                        <td className="text-right py-2 font-mono text-muted-foreground">{w.platformMedian}</td>
-                        <td className={`text-right py-2 font-mono ${w.delta > 0 ? "text-green-500" : w.delta < 0 ? "text-red-400" : "text-muted-foreground"}`}>
+                        <td style={{ textAlign: "right", padding: "8px 0", fontFamily: "monospace", fontWeight: 500, color: c.text }}>{w.userScore}</td>
+                        <td style={{ textAlign: "right", padding: "8px 0", fontFamily: "monospace", color: c.muted }}>{w.platformMedian}</td>
+                        <td style={{
+                          textAlign: "right", padding: "8px 0", fontFamily: "monospace",
+                          color: w.delta > 0 ? c.success : w.delta < 0 ? "#ef4444" : c.muted,
+                        }}>
                           {w.delta > 0 ? "+" : ""}{w.delta}
                         </td>
-                        <td className="text-right py-2 font-mono text-muted-foreground/70">
+                        <td style={{ textAlign: "right", padding: "8px 0", fontFamily: "monospace", color: `${c.muted}b3` }}>
                           {w.iqr ? w.iqr.iqr.toFixed(1) : "–"}
                         </td>
-                        <td className="text-right py-2 font-mono text-muted-foreground/70">{w.platformN}</td>
+                        <td style={{ textAlign: "right", padding: "8px 0", fontFamily: "monospace", color: `${c.muted}b3` }}>{w.platformN}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -509,13 +549,16 @@ export default function FlavorProfile() {
     return (
       <SimpleShell maxWidth={900}>
         <GuestPreview featureTitle={t("flavorProfile.title")} featureDescription={t("guestPreview.flavorProfile")}>
-          <div className="space-y-4">
-            <h1 className="text-2xl font-serif font-bold">{t("flavorProfile.title")}</h1>
-            <div className="bg-card rounded-xl border p-6 flex items-center justify-center" style={{height: 300}}>
-              <div className="text-center space-y-3">
-                <div className="grid grid-cols-3 gap-6 text-sm">
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <h1 style={{ fontSize: 24, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.text, margin: 0 }}>{t("flavorProfile.title")}</h1>
+            <div style={{ background: c.card, borderRadius: 16, border: `1px solid ${c.border}`, padding: 24, display: "flex", alignItems: "center", justifyContent: "center", height: 300 }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, fontSize: 14 }}>
                   {[{label: "Fruity", val: "8.4"}, {label: "Smoky", val: "6.2"}, {label: "Sweet", val: "7.8"}, {label: "Spicy", val: "5.5"}, {label: "Floral", val: "4.1"}, {label: "Maritime", val: "7.0"}].map(f => (
-                    <div key={f.label} className="text-center"><div className="text-lg font-serif font-bold text-primary">{f.val}</div><div className="text-muted-foreground text-xs">{f.label}</div></div>
+                    <div key={f.label} style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.accent }}>{f.val}</div>
+                      <div style={{ color: c.muted, fontSize: 12 }}>{f.label}</div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -529,9 +572,9 @@ export default function FlavorProfile() {
   if (isLoading) {
     return (
       <SimpleShell maxWidth={900}>
-        <div className="py-8">
-          <div className="h-8 w-48 bg-card/50 rounded animate-pulse mb-4" />
-          <div className="h-64 bg-card/50 rounded-lg animate-pulse" />
+        <div style={{ padding: "32px 0" }}>
+          <div style={{ height: 32, width: 192, background: `${c.card}80`, borderRadius: 8, marginBottom: 16 }} />
+          <div style={{ height: 256, background: `${c.card}80`, borderRadius: 12 }} />
         </div>
       </SimpleShell>
     );
@@ -573,22 +616,22 @@ export default function FlavorProfile() {
 
   return (
     <SimpleShell maxWidth={900}>
-    <div className="min-w-0 overflow-x-hidden" data-testid="flavor-profile-page">
+    <div style={{ minWidth: 0, overflowX: "hidden" }} data-testid="flavor-profile-page">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="flex items-center gap-3 mb-2">
-          <Activity className="w-7 h-7 text-primary" />
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-flavor-title">
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+          <Activity style={{ width: 28, height: 28, color: c.accent }} />
+          <h1 style={{ fontSize: 24, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.accent, margin: 0 }} data-testid="text-flavor-title">
             {t("flavorProfile.title")}
           </h1>
         </div>
-        <p className="text-sm text-muted-foreground/90 mb-6">{t("flavorProfile.subtitle")}</p>
+        <p style={{ fontSize: 14, color: `${c.muted}e6`, margin: 0, marginBottom: 24 }}>{t("flavorProfile.subtitle")}</p>
 
-        <div className="space-y-10">
+        <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
 
         <FlavorWheelContent />
 
         {profile?.sources && (profile.sources.tastingRatings > 0 || profile.sources.journalEntries > 0) && (
-              <p className="text-sm text-muted-foreground/80 mb-8" data-testid="text-flavor-sources">
+              <p style={{ fontSize: 14, color: `${c.muted}cc`, margin: 0, marginBottom: 32 }} data-testid="text-flavor-sources">
                 {isDE
                   ? `Basierend auf ${profile.sources.tastingRatings} Tasting-Bewertung${profile.sources.tastingRatings !== 1 ? "en" : ""} und ${profile.sources.journalEntries} Journal-Eintr${profile.sources.journalEntries !== 1 ? "ägen" : "ag"}`
                   : `Based on ${profile.sources.tastingRatings} tasting rating${profile.sources.tastingRatings !== 1 ? "s" : ""} and ${profile.sources.journalEntries} journal entr${profile.sources.journalEntries !== 1 ? "ies" : "y"}`}
@@ -596,33 +639,33 @@ export default function FlavorProfile() {
             )}
 
             {!hasData ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <Activity className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                <p className="font-serif">{t("flavorProfile.empty")}</p>
+              <div style={{ textAlign: "center", padding: "64px 0", color: c.muted }}>
+                <Activity style={{ width: 48, height: 48, margin: "0 auto 16px", opacity: 0.3 }} />
+                <p style={{ fontFamily: "'Playfair Display', Georgia, serif", margin: 0 }}>{t("flavorProfile.empty")}</p>
               </div>
             ) : (
-              <div className="space-y-8">
-                <div className="bg-card rounded-lg border border-border/40 p-6">
-                  <h2 className="text-lg font-serif font-semibold mb-1 text-foreground">{t("flavorProfile.radarTitle")}</h2>
-                  <p className="text-sm text-muted-foreground mb-1">{t("flavorProfile.radarSubtitle", { count: totalRatings })}</p>
-                  <p className="text-sm text-muted-foreground/80 mb-4" data-testid="text-radar-desc">{t("flavorProfile.radarDesc")}</p>
-                  <div className="h-[320px]">
+              <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+                <div style={{ background: c.card, borderRadius: 12, border: `1px solid ${c.border}40`, padding: 24 }}>
+                  <h2 style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.text, margin: 0, marginBottom: 4 }}>{t("flavorProfile.radarTitle")}</h2>
+                  <p style={{ fontSize: 14, color: c.muted, margin: 0, marginBottom: 4 }}>{t("flavorProfile.radarSubtitle", { count: totalRatings })}</p>
+                  <p style={{ fontSize: 14, color: `${c.muted}cc`, margin: 0, marginBottom: 16 }} data-testid="text-radar-desc">{t("flavorProfile.radarDesc")}</p>
+                  <div style={{ height: 320 }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
-                        <PolarGrid stroke="hsl(var(--border))" />
-                        <PolarAngleAxis dataKey="dimension" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12, fontFamily: "serif" }} />
-                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                        <PolarGrid stroke={c.border} />
+                        <PolarAngleAxis dataKey="dimension" tick={{ fill: c.muted, fontSize: 12, fontFamily: "serif" }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: c.muted, fontSize: 10 }} />
                         <Radar name={isDE ? "Alle" : "Everyone"} dataKey="global" stroke="#9ca3af" fill="#9ca3af" fillOpacity={0.1} strokeDasharray="4 4" />
                         <Radar name="Profile" dataKey="value" stroke="#c8a864" fill="#c8a864" fillOpacity={0.3} strokeWidth={2} />
                       </RadarChart>
                     </ResponsiveContainer>
                   </div>
                   {profile?.avgScores && globalAvg && globalAvg.totalRatings > 0 && (
-                    <div className="mt-6 pt-4 border-t border-border/20">
-                      <h3 className="text-sm font-serif font-bold text-muted-foreground uppercase tracking-widest mb-1">{t("flavorProfile.personalVsGlobal")}</h3>
-                      <p className="text-sm text-muted-foreground/80 mb-2" data-testid="text-personal-vs-global-desc">{t("flavorProfile.personalVsGlobalDesc")}</p>
-                      <div className="text-sm text-muted-foreground mb-3">{t("flavorProfile.globalBasedOn", { ratings: globalAvg.totalRatings, participants: globalAvg.totalParticipants })}</div>
-                      <div className="space-y-2">
+                    <div style={{ marginTop: 24, paddingTop: 16, borderTop: `1px solid ${c.border}20` }}>
+                      <h3 style={{ fontSize: 14, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.muted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>{t("flavorProfile.personalVsGlobal")}</h3>
+                      <p style={{ fontSize: 14, color: `${c.muted}cc`, margin: 0, marginBottom: 8 }} data-testid="text-personal-vs-global-desc">{t("flavorProfile.personalVsGlobalDesc")}</p>
+                      <div style={{ fontSize: 14, color: c.muted, marginBottom: 12 }}>{t("flavorProfile.globalBasedOn", { ratings: globalAvg.totalRatings, participants: globalAvg.totalParticipants })}</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {[
                           { key: "nose", label: isDE ? "Nase" : "Nose", personal: profile.avgScores.nose, global: globalAvg.nose },
                           { key: "taste", label: isDE ? "Geschmack" : "Taste", personal: profile.avgScores.taste, global: globalAvg.taste },
@@ -632,13 +675,16 @@ export default function FlavorProfile() {
                         ].map(({ key, label, personal, global }) => {
                           const diff = Math.round((personal - global) * 10) / 10;
                           return (
-                            <div key={key} className="flex items-center justify-between text-sm">
-                              <span className="font-serif text-muted-foreground w-20">{label}</span>
-                              <div className="flex items-center gap-4 flex-1 justify-end">
-                                <span className="font-mono text-foreground font-medium">{personal.toFixed(1)}</span>
-                                <span className="text-muted-foreground/50">vs</span>
-                                <span className="font-mono text-muted-foreground">{global.toFixed(1)}</span>
-                                <span className={`font-mono text-xs w-14 text-right ${diff > 0 ? "text-green-500" : diff < 0 ? "text-red-400" : "text-muted-foreground"}`}>
+                            <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 14 }}>
+                              <span style={{ fontFamily: "'Playfair Display', Georgia, serif", color: c.muted, width: 80 }}>{label}</span>
+                              <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "flex-end" }}>
+                                <span style={{ fontFamily: "monospace", color: c.text, fontWeight: 500 }}>{personal.toFixed(1)}</span>
+                                <span style={{ color: `${c.muted}80` }}>vs</span>
+                                <span style={{ fontFamily: "monospace", color: c.muted }}>{global.toFixed(1)}</span>
+                                <span style={{
+                                  fontFamily: "monospace", fontSize: 12, width: 56, textAlign: "right",
+                                  color: diff > 0 ? c.success : diff < 0 ? "#ef4444" : c.muted,
+                                }}>
                                   {diff > 0 ? `+${diff}` : diff.toString()}
                                 </span>
                               </div>
@@ -651,18 +697,18 @@ export default function FlavorProfile() {
                 </div>
 
                 {regionData.length > 0 && (
-                  <div className="bg-card rounded-lg border border-border/40 p-6">
-                    <h2 className="text-lg font-serif font-semibold mb-1">{t("flavorProfile.regionTitle")}</h2>
-                    <p className="text-sm text-muted-foreground mb-1">{t("flavorProfile.regionSubtitle")}</p>
-                    <p className="text-sm text-muted-foreground/80 mb-4" data-testid="text-region-desc">{t("flavorProfile.regionDesc")}</p>
-                    <div className="h-[200px]">
+                  <div style={{ background: c.card, borderRadius: 12, border: `1px solid ${c.border}40`, padding: 24 }}>
+                    <h2 style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, margin: 0, marginBottom: 4 }}>{t("flavorProfile.regionTitle")}</h2>
+                    <p style={{ fontSize: 14, color: c.muted, margin: 0, marginBottom: 4 }}>{t("flavorProfile.regionSubtitle")}</p>
+                    <p style={{ fontSize: 14, color: `${c.muted}cc`, margin: 0, marginBottom: 16 }} data-testid="text-region-desc">{t("flavorProfile.regionDesc")}</p>
+                    <div style={{ height: 200 }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={regionData} layout="vertical" margin={{ left: 80 }}>
-                          <XAxis type="number" domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
-                          <YAxis type="category" dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} width={75} />
+                          <XAxis type="number" domain={[0, 100]} tick={{ fill: c.muted, fontSize: 10 }} />
+                          <YAxis type="category" dataKey="name" tick={{ fill: c.muted, fontSize: 12 }} width={75} />
                           <Tooltip
-                            contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-                            labelStyle={{ color: "hsl(var(--foreground))" }}
+                            contentStyle={{ backgroundColor: c.card, border: `1px solid ${c.border}`, borderRadius: 8 }}
+                            labelStyle={{ color: c.text }}
                             formatter={(value: number, name: string) => [value.toFixed(1), name === "avgScore" ? (isDE ? "Ø Bewertung" : "Avg Score") : (isDE ? "Anzahl" : "Count")]}
                           />
                           <Bar dataKey="avgScore" radius={[0, 4, 4, 0]}>
@@ -674,20 +720,20 @@ export default function FlavorProfile() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 24 }}>
                   {peatData.length > 0 && (
-                    <div className="bg-card rounded-lg border border-border/40 p-6">
-                      <h2 className="text-base font-serif font-semibold mb-1">{t("flavorProfile.peatTitle")}</h2>
-                      <p className="text-sm text-muted-foreground/80 mb-3" data-testid="text-peat-desc">{t("flavorProfile.peatDesc")}</p>
-                      <div className="space-y-4">
+                    <div style={{ background: c.card, borderRadius: 12, border: `1px solid ${c.border}40`, padding: 24 }}>
+                      <h2 style={{ fontSize: 16, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, margin: 0, marginBottom: 4 }}>{t("flavorProfile.peatTitle")}</h2>
+                      <p style={{ fontSize: 14, color: `${c.muted}cc`, margin: 0, marginBottom: 12 }} data-testid="text-peat-desc">{t("flavorProfile.peatDesc")}</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         {(() => { const maxPeat = Math.max(...peatData.map(d => d.avgScore), 1); return peatData.map((d) => (
                           <div key={d.name}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm text-foreground">{d.name}</span>
-                              <span className="text-xs text-muted-foreground">{d.avgScore} <span className="text-muted-foreground/60">({d.count})</span></span>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                              <span style={{ fontSize: 14, color: c.text }}>{d.name}</span>
+                              <span style={{ fontSize: 12, color: c.muted }}>{d.avgScore} <span style={{ color: `${c.muted}99` }}>({d.count})</span></span>
                             </div>
-                            <div className="w-full h-2 bg-secondary/50 rounded-full overflow-hidden">
-                              <div className="h-full bg-primary/60 rounded-full" style={{ width: `${(d.avgScore / maxPeat) * 100}%` }} />
+                            <div style={{ width: "100%", height: 8, background: `${c.border}80`, borderRadius: 9999, overflow: "hidden" }}>
+                              <div style={{ height: "100%", background: `${c.accent}99`, borderRadius: 9999, width: `${(d.avgScore / maxPeat) * 100}%` }} />
                             </div>
                           </div>
                         )); })()}
@@ -696,18 +742,18 @@ export default function FlavorProfile() {
                   )}
 
                   {caskData.length > 0 && (
-                    <div className="bg-card rounded-lg border border-border/40 p-6">
-                      <h2 className="text-base font-serif font-semibold mb-1">{t("flavorProfile.caskTitle")}</h2>
-                      <p className="text-sm text-muted-foreground/80 mb-3" data-testid="text-cask-desc">{t("flavorProfile.caskDesc")}</p>
-                      <div className="space-y-4">
+                    <div style={{ background: c.card, borderRadius: 12, border: `1px solid ${c.border}40`, padding: 24 }}>
+                      <h2 style={{ fontSize: 16, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, margin: 0, marginBottom: 4 }}>{t("flavorProfile.caskTitle")}</h2>
+                      <p style={{ fontSize: 14, color: `${c.muted}cc`, margin: 0, marginBottom: 12 }} data-testid="text-cask-desc">{t("flavorProfile.caskDesc")}</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         {(() => { const maxCask = Math.max(...caskData.map(d => d.avgScore), 1); return caskData.map((d) => (
                           <div key={d.name}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm text-foreground">{d.name}</span>
-                              <span className="text-xs text-muted-foreground">{d.avgScore} <span className="text-muted-foreground/60">({d.count})</span></span>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                              <span style={{ fontSize: 14, color: c.text }}>{d.name}</span>
+                              <span style={{ fontSize: 12, color: c.muted }}>{d.avgScore} <span style={{ color: `${c.muted}99` }}>({d.count})</span></span>
                             </div>
-                            <div className="w-full h-2 bg-secondary/50 rounded-full overflow-hidden">
-                              <div className="h-full bg-primary/60 rounded-full" style={{ width: `${(d.avgScore / maxCask) * 100}%` }} />
+                            <div style={{ width: "100%", height: 8, background: `${c.border}80`, borderRadius: 9999, overflow: "hidden" }}>
+                              <div style={{ height: "100%", background: `${c.accent}99`, borderRadius: 9999, width: `${(d.avgScore / maxCask) * 100}%` }} />
                             </div>
                           </div>
                         )); })()}
@@ -717,24 +763,27 @@ export default function FlavorProfile() {
                 </div>
 
                 {topWhiskies.length > 0 && (
-                  <div className="bg-card rounded-lg border border-border/40 p-6">
-                    <h2 className="text-lg font-serif font-semibold mb-1">{t("flavorProfile.topTitle")}</h2>
-                    <p className="text-sm text-muted-foreground/80 mb-4" data-testid="text-top-desc">{t("flavorProfile.topDesc")}</p>
-                    <div className="space-y-3">
+                  <div style={{ background: c.card, borderRadius: 12, border: `1px solid ${c.border}40`, padding: 24 }}>
+                    <h2 style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, margin: 0, marginBottom: 4 }}>{t("flavorProfile.topTitle")}</h2>
+                    <p style={{ fontSize: 14, color: `${c.muted}cc`, margin: 0, marginBottom: 16 }} data-testid="text-top-desc">{t("flavorProfile.topDesc")}</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       {topWhiskies.map((item, i) => (
-                        <div key={item.whisky.id} className="flex items-center gap-4 py-2 border-b border-border/20 last:border-0">
-                          <span className="text-lg font-serif font-bold text-primary/60 w-8">{i + 1}</span>
+                        <div key={item.whisky.id} style={{
+                          display: "flex", alignItems: "center", gap: 16, padding: "8px 0",
+                          borderBottom: i < topWhiskies.length - 1 ? `1px solid ${c.border}20` : "none",
+                        }}>
+                          <span style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: `${c.accent}99`, width: 32 }}>{i + 1}</span>
                           {item.whisky.imageUrl && (
-                            <img src={item.whisky.imageUrl} alt={item.whisky.name} className="w-10 h-10 rounded object-cover" />
+                            <img src={item.whisky.imageUrl} alt={item.whisky.name} style={{ width: 40, height: 40, borderRadius: 4, objectFit: "cover" }} />
                           )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate">{item.whisky.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 14, fontWeight: 600, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: c.text }}>{item.whisky.name}</p>
+                            <p style={{ fontSize: 12, color: c.muted, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {[item.whisky.distillery, item.whisky.region, item.whisky.age ? `${item.whisky.age}y` : null].filter(Boolean).join(" · ")}
                             </p>
                           </div>
-                          <div className="text-right">
-                            <span className="text-lg font-serif font-bold text-primary">{item.rating.overall.toFixed(1)}</span>
+                          <div style={{ textAlign: "right" }}>
+                            <span style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.accent }}>{item.rating.overall.toFixed(1)}</span>
                           </div>
                         </div>
                       ))}

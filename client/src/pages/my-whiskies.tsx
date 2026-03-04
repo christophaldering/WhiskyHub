@@ -5,8 +5,7 @@ import { useAppStore } from "@/lib/store";
 import { tastingHistoryApi, journalApi } from "@/lib/api";
 import { motion } from "framer-motion";
 import { GlassWater, Wine, Star, Search, Loader2, Calendar, ArrowUpDown, Filter } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { c, cardStyle, pageTitleStyle, pageSubtitleStyle, inputStyle } from "@/lib/theme";
 import { GuestPreview } from "@/components/guest-preview";
 
 interface WhiskyEntry {
@@ -180,11 +179,11 @@ export default function MyWhiskies() {
     return score.toFixed(1);
   };
 
-  const scoreColor = (score: number | null) => {
-    if (score == null) return "text-muted-foreground";
-    if (score >= 80) return "text-green-600 dark:text-green-400";
-    if (score >= 60) return "text-yellow-600 dark:text-yellow-400";
-    return "text-orange-600 dark:text-orange-400";
+  const getScoreColor = (score: number | null): string => {
+    if (score == null) return c.muted;
+    if (score >= 80) return c.success;
+    if (score >= 60) return c.accent;
+    return c.danger;
   };
 
   const toggleSort = (key: SortKey) => {
@@ -199,8 +198,8 @@ export default function MyWhiskies() {
   if (!currentParticipant) {
     return (
       <GuestPreview featureTitle={t("myWhiskies.title")} featureDescription={t("guestPreview.tastingHistory")}>
-        <div className="space-y-4">
-          <h1 className="text-2xl font-serif font-bold">{t("myWhiskies.title")}</h1>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <h1 style={pageTitleStyle}>{t("myWhiskies.title")}</h1>
         </div>
       </GuestPreview>
     );
@@ -208,8 +207,8 @@ export default function MyWhiskies() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+        <Loader2 style={{ width: 32, height: 32, color: c.accent, animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
@@ -217,14 +216,34 @@ export default function MyWhiskies() {
   const ratedCount = allWhiskies.filter(w => w.overall != null).length;
   const uniqueDistilleries = new Set(allWhiskies.map(w => w.distillery).filter(Boolean)).size;
 
+  const statCardStyle: React.CSSProperties = {
+    ...cardStyle,
+    padding: 16,
+    textAlign: "center",
+    flex: 1,
+  };
+
+  const chipBase: React.CSSProperties = {
+    padding: "2px 8px",
+    borderRadius: 999,
+    border: `1px solid ${c.border}`,
+    fontSize: 10,
+    transition: "all 0.2s",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 4,
+    cursor: "pointer",
+    background: "transparent",
+  };
+
   return (
-    <div className="space-y-6 max-w-4xl mx-auto min-w-0 overflow-x-hidden" data-testid="my-whiskies-page">
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 896, margin: "0 auto", minWidth: 0, overflowX: "hidden" }} data-testid="my-whiskies-page">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-        <h1 className="text-2xl sm:text-4xl font-serif font-black text-primary tracking-tight" data-testid="text-my-whiskies-title">
+        <h1 style={pageTitleStyle} data-testid="text-my-whiskies-title">
           {t("myWhiskies.title")}
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">{t("myWhiskies.subtitle")}</p>
-        <div className="w-12 h-1 bg-primary/50 mt-3" />
+        <p style={pageSubtitleStyle}>{t("myWhiskies.subtitle")}</p>
+        <div style={{ width: 48, height: 4, background: `${c.accent}80`, marginTop: 12, borderRadius: 2 }} />
       </motion.div>
 
       {allWhiskies.length > 0 && (
@@ -232,134 +251,189 @@ export default function MyWhiskies() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }}
-          className="grid grid-cols-3 gap-3"
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}
         >
-          <div className="bg-card border border-border/50 rounded-xl p-4 text-center">
-            <GlassWater className="w-5 h-5 text-primary mx-auto mb-1" />
-            <p className="text-2xl font-mono font-bold text-primary">{allWhiskies.length}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t("myWhiskies.statTotal")}</p>
+          <div style={statCardStyle}>
+            <GlassWater style={{ width: 20, height: 20, color: c.accent, margin: "0 auto 4px" }} />
+            <p style={{ fontSize: 24, fontFamily: "monospace", fontWeight: 700, color: c.accent, margin: 0 }}>{allWhiskies.length}</p>
+            <p style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>{t("myWhiskies.statTotal")}</p>
           </div>
-          <div className="bg-card border border-border/50 rounded-xl p-4 text-center">
-            <Star className="w-5 h-5 text-primary mx-auto mb-1" />
-            <p className="text-2xl font-mono font-bold text-primary">{ratedCount}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t("myWhiskies.statRated")}</p>
+          <div style={statCardStyle}>
+            <Star style={{ width: 20, height: 20, color: c.accent, margin: "0 auto 4px" }} />
+            <p style={{ fontSize: 24, fontFamily: "monospace", fontWeight: 700, color: c.accent, margin: 0 }}>{ratedCount}</p>
+            <p style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>{t("myWhiskies.statRated")}</p>
           </div>
-          <div className="bg-card border border-border/50 rounded-xl p-4 text-center">
-            <Wine className="w-5 h-5 text-primary mx-auto mb-1" />
-            <p className="text-2xl font-mono font-bold text-primary">{uniqueDistilleries}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t("myWhiskies.statDistilleries")}</p>
+          <div style={statCardStyle}>
+            <Wine style={{ width: 20, height: 20, color: c.accent, margin: "0 auto 4px" }} />
+            <p style={{ fontSize: 24, fontFamily: "monospace", fontWeight: 700, color: c.accent, margin: 0 }}>{uniqueDistilleries}</p>
+            <p style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>{t("myWhiskies.statDistilleries")}</p>
           </div>
         </motion.div>
       )}
 
-      <div className="space-y-2">
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ position: "relative", flex: 1 }}>
+            <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: c.muted }} />
+            <input
               placeholder={t("myWhiskies.searchPlaceholder")}
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-9"
+              style={{ ...inputStyle, paddingLeft: 36 }}
               data-testid="input-search-whiskies"
             />
           </div>
-          <div className="flex gap-1">
+          <div style={{ display: "flex", gap: 4 }}>
             {(["date", "score", "name", "distillery"] as SortKey[]).map(key => (
               <button
                 key={key}
                 onClick={() => toggleSort(key)}
-                className={`text-[10px] px-2 py-1.5 rounded-md border transition-colors ${sortBy === key ? "bg-primary/10 border-primary/30 text-primary font-medium" : "border-border/40 text-muted-foreground hover:border-primary/20"}`}
+                style={{
+                  fontSize: 10,
+                  padding: "6px 8px",
+                  borderRadius: 6,
+                  border: `1px solid ${sortBy === key ? `${c.accent}50` : `${c.border}60`}`,
+                  background: sortBy === key ? `${c.accent}18` : "transparent",
+                  color: sortBy === key ? c.accent : c.muted,
+                  fontWeight: sortBy === key ? 500 : 400,
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 2,
+                }}
                 data-testid={`sort-${key}`}
               >
                 {t(`myWhiskies.sort.${key}`)}
-                {sortBy === key && <ArrowUpDown className="w-2.5 h-2.5 inline ml-0.5" />}
+                {sortBy === key && <ArrowUpDown style={{ width: 10, height: 10 }} />}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs" data-testid="source-filter">
-          <Filter className="w-3 h-3 text-muted-foreground" />
-          <span className="text-muted-foreground">{t("myWhiskies.sourceFilter")}:</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }} data-testid="source-filter">
+          <Filter style={{ width: 12, height: 12, color: c.muted }} />
+          <span style={{ color: c.muted }}>{t("myWhiskies.sourceFilter")}:</span>
           <button
-            className="px-2 py-0.5 rounded-full border bg-primary/10 border-primary/30 text-primary font-medium cursor-default text-[10px] inline-flex items-center gap-1"
+            style={{
+              ...chipBase,
+              background: `${c.accent}18`,
+              borderColor: `${c.accent}50`,
+              color: c.accent,
+              fontWeight: 500,
+              cursor: "default",
+            }}
             data-testid="filter-casksense"
           >
             {t("myWhiskies.sourceCaskSense")}
-            <span className="bg-primary/20 text-primary rounded-full px-1.5 min-w-[18px] text-center">{sourceCounts.casksense}</span>
+            <span style={{ background: `${c.accent}30`, color: c.accent, borderRadius: 999, padding: "0 6px", minWidth: 18, textAlign: "center" }}>{sourceCounts.casksense}</span>
           </button>
           <button
             onClick={() => setShowImported(!showImported)}
-            className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors inline-flex items-center gap-1 ${showImported ? "bg-amber-500/10 border-amber-500/30 text-amber-600 font-medium" : "border-border/40 text-muted-foreground hover:border-amber-500/20"}`}
+            style={{
+              ...chipBase,
+              background: showImported ? "#d4920018" : "transparent",
+              borderColor: showImported ? "#d4920050" : `${c.border}60`,
+              color: showImported ? "#d49200" : c.muted,
+              fontWeight: showImported ? 500 : 400,
+            }}
             data-testid="filter-imported"
           >
             {t("myWhiskies.sourceImported")}
-            <span className={`rounded-full px-1.5 min-w-[18px] text-center ${showImported ? "bg-amber-500/20 text-amber-600" : "bg-muted text-muted-foreground"}`}>{sourceCounts.imported}</span>
+            <span style={{
+              borderRadius: 999,
+              padding: "0 6px",
+              minWidth: 18,
+              textAlign: "center",
+              background: showImported ? "#d4920030" : `${c.inputBg}`,
+              color: showImported ? "#d49200" : c.muted,
+            }}>{sourceCounts.imported}</span>
           </button>
           <button
             onClick={() => setShowWhiskybase(!showWhiskybase)}
-            className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors inline-flex items-center gap-1 ${showWhiskybase ? "bg-blue-500/10 border-blue-500/30 text-blue-600 font-medium" : "border-border/40 text-muted-foreground hover:border-blue-500/20"}`}
+            style={{
+              ...chipBase,
+              background: showWhiskybase ? "#4488dd18" : "transparent",
+              borderColor: showWhiskybase ? "#4488dd50" : `${c.border}60`,
+              color: showWhiskybase ? "#4488dd" : c.muted,
+              fontWeight: showWhiskybase ? 500 : 400,
+            }}
             data-testid="filter-whiskybase"
           >
             {t("myWhiskies.sourceWhiskybase")}
-            <span className={`rounded-full px-1.5 min-w-[18px] text-center ${showWhiskybase ? "bg-blue-500/20 text-blue-600" : "bg-muted text-muted-foreground"}`}>{sourceCounts.whiskybase}</span>
+            <span style={{
+              borderRadius: 999,
+              padding: "0 6px",
+              minWidth: 18,
+              textAlign: "center",
+              background: showWhiskybase ? "#4488dd30" : `${c.inputBg}`,
+              color: showWhiskybase ? "#4488dd" : c.muted,
+            }}>{sourceCounts.whiskybase}</span>
           </button>
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-16">
-          <GlassWater className="w-16 h-16 text-muted-foreground/20 mx-auto mb-4" />
-          <p className="text-muted-foreground font-serif text-lg italic">{t("myWhiskies.empty")}</p>
+        <div style={{ textAlign: "center", padding: "64px 0" }}>
+          <GlassWater style={{ width: 64, height: 64, color: `${c.muted}30`, margin: "0 auto 16px" }} />
+          <p style={{ color: c.muted, fontFamily: "'Playfair Display', Georgia, serif", fontSize: 18, fontStyle: "italic" }}>{t("myWhiskies.empty")}</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {filtered.map((whisky, i) => (
             <motion.div
               key={`${whisky.id}-${whisky.tastingId}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.03 * Math.min(i, 15), duration: 0.4 }}
-              className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/40 hover:border-primary/20 transition-colors"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: 12,
+                borderRadius: 10,
+                background: c.card,
+                border: `1px solid ${c.border}60`,
+                transition: "border-color 0.2s",
+              }}
               data-testid={`whisky-card-${whisky.id}`}
             >
               {whisky.imageUrl ? (
-                <img src={whisky.imageUrl} alt={whisky.name} className="w-10 h-13 rounded object-cover flex-shrink-0" />
+                <img src={whisky.imageUrl} alt={whisky.name} style={{ width: 40, height: 52, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
               ) : (
-                <div className="w-10 h-13 rounded bg-secondary/60 flex items-center justify-center flex-shrink-0">
-                  <Wine className="w-5 h-5 text-muted-foreground/30" />
+                <div style={{ width: 40, height: 52, borderRadius: 6, background: `${c.border}60`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Wine style={{ width: 20, height: 20, color: `${c.muted}40` }} />
                 </div>
               )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-serif font-medium text-foreground truncate">
-                  {whisky.distillery && <span className="text-primary">{whisky.distillery} </span>}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 14, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 500, color: c.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {whisky.distillery && <span style={{ color: c.accent }}>{whisky.distillery} </span>}
                   {whisky.name}
                 </p>
-                <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0 8px", fontSize: 10, color: c.muted }}>
                   {whisky.age && <span>{whisky.age}y</span>}
                   {whisky.abv && <span>{whisky.abv}%</span>}
                   {whisky.region && <span>{whisky.region}</span>}
                   {whisky.caskInfluence && <span>{whisky.caskInfluence}</span>}
                 </div>
-                <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground/70">
-                  <Calendar className="w-2.5 h-2.5" />
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2, fontSize: 10, color: `${c.muted}b0` }}>
+                  <Calendar style={{ width: 10, height: 10 }} />
                   <span>{whisky.tastingTitle} · {new Date(whisky.tastingDate).toLocaleDateString()}</span>
                   {whisky.source === "imported" && (
-                    <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 bg-amber-500/10 border-amber-500/30 text-amber-600">{t("myWhiskies.badgeImported")}</Badge>
+                    <span style={{ fontSize: 8, padding: "0 6px", height: 16, lineHeight: "16px", borderRadius: 4, background: "#d4920018", border: "1px solid #d4920050", color: "#d49200" }}>{t("myWhiskies.badgeImported")}</span>
                   )}
                   {whisky.source === "whiskybase" && (
-                    <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 bg-blue-500/10 border-blue-500/30 text-blue-600">{t("myWhiskies.badgeWhiskybase")}</Badge>
+                    <span style={{ fontSize: 8, padding: "0 6px", height: 16, lineHeight: "16px", borderRadius: 4, background: "#4488dd18", border: "1px solid #4488dd50", color: "#4488dd" }}>{t("myWhiskies.badgeWhiskybase")}</span>
                   )}
                 </div>
               </div>
-              <div className="flex-shrink-0 text-right">
+              <div style={{ flexShrink: 0, textAlign: "right" }}>
                 {whisky.overall != null ? (
-                  <p className={`text-lg font-mono font-bold ${scoreColor(whisky.overall)}`}>
+                  <p style={{ fontSize: 18, fontFamily: "monospace", fontWeight: 700, color: getScoreColor(whisky.overall), margin: 0 }}>
                     {formatScore(whisky.overall)}
                   </p>
                 ) : (
-                  <span className="text-xs text-muted-foreground/40 italic">{t("tastingHistory.notRated")}</span>
+                  <span style={{ fontSize: 12, color: `${c.muted}60`, fontStyle: "italic" }}>{t("tastingHistory.notRated")}</span>
                 )}
               </div>
             </motion.div>

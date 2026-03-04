@@ -8,29 +8,116 @@ import { journalApi, journalBottleApi, textExtractApi, wishlistApi, tastingHisto
 import { useAppStore } from "@/lib/store";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { c, cardStyle, inputStyle, pageTitleStyle, pageSubtitleStyle, sectionHeadingStyle } from "@/lib/theme";
 import { Plus, ArrowLeft, Pencil, Trash2, BookOpen, Wine, Calendar, Camera, X, Loader2, ScanLine, ExternalLink, Type, Send, History, ChevronDown, ChevronUp, MapPin, Star } from "lucide-react";
 import { TastingNoteGenerator } from "@/components/tasting-note-generator";
 import type { JournalEntry } from "@shared/schema";
 import { GuestPreview } from "@/components/guest-preview";
 
 type View = "list" | "form" | "detail";
+
+const serif = "'Playfair Display', Georgia, serif";
+
+const btnPrimary: React.CSSProperties = {
+  background: c.accent,
+  color: c.bg,
+  border: "none",
+  borderRadius: 10,
+  padding: "10px 20px",
+  fontFamily: serif,
+  fontWeight: 600,
+  fontSize: 14,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  whiteSpace: "nowrap",
+};
+
+const btnOutline: React.CSSProperties = {
+  background: "transparent",
+  color: c.text,
+  border: `1px solid ${c.border}`,
+  borderRadius: 10,
+  padding: "8px 14px",
+  fontSize: 13,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+};
+
+const btnDanger: React.CSSProperties = {
+  ...btnOutline,
+  color: c.danger,
+  borderColor: `${c.danger}40`,
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 600,
+  color: c.text,
+  display: "block",
+  marginBottom: 6,
+};
+
+const textareaStyle: React.CSSProperties = {
+  ...inputStyle,
+  minHeight: 80,
+  resize: "vertical" as const,
+  lineHeight: 1.5,
+};
+
+const tabActive: React.CSSProperties = {
+  background: c.accent,
+  color: c.bg,
+  border: "none",
+  borderRadius: 8,
+  padding: "8px 16px",
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  flex: 1,
+  justifyContent: "center",
+};
+
+const tabInactive: React.CSSProperties = {
+  background: c.inputBg,
+  color: c.muted,
+  border: "none",
+  borderRadius: 8,
+  padding: "8px 16px",
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  flex: 1,
+  justifyContent: "center",
+};
+
+const badgeStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "3px 10px",
+  borderRadius: 999,
+  fontSize: 11,
+  fontWeight: 600,
+  background: c.inputBg,
+  color: c.muted,
+  border: `1px solid ${c.border}`,
+};
+
+const badgeAccent: React.CSSProperties = {
+  ...badgeStyle,
+  background: c.accent,
+  color: c.bg,
+  border: "none",
+};
 
 export default function Journal() {
   const { t } = useTranslation();
@@ -128,13 +215,13 @@ export default function Journal() {
   if (!currentParticipant) {
     return (
       <GuestPreview featureTitle={t("journal.title")} featureDescription={t("guestPreview.journal")}>
-        <div className="space-y-4">
-          <h1 className="text-2xl font-serif font-bold">{t("journal.title")}</h1>
-          <div className="space-y-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <h1 style={{ ...pageTitleStyle, fontSize: 22 }}>{t("journal.title")}</h1>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {[{name: "Ardbeg Uigeadail", date: "Feb 10, 2026", score: "91"}, {name: "Talisker 18", date: "Jan 28, 2026", score: "88"}, {name: "Glendronach 21", date: "Jan 12, 2026", score: "90"}].map(e => (
-              <div key={e.name} className="bg-card rounded-xl border p-4 flex items-center justify-between">
-                <div><div className="font-serif font-semibold">{e.name}</div><div className="text-sm text-muted-foreground">{e.date}</div></div>
-                <div className="text-lg font-serif font-bold text-primary">{e.score}</div>
+              <div key={e.name} style={{ ...cardStyle, padding: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div><div style={{ fontFamily: serif, fontWeight: 600, color: c.text }}>{e.name}</div><div style={{ fontSize: 13, color: c.muted }}>{e.date}</div></div>
+                <div style={{ fontSize: 18, fontFamily: serif, fontWeight: 700, color: c.accent }}>{e.score}</div>
               </div>
             ))}
           </div>
@@ -168,8 +255,10 @@ export default function Journal() {
     setSelectedEntry(null);
   };
 
+  const [activeTab, setActiveTab] = useState<"journal" | "history">("journal");
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="journal-page">
+    <div style={{ maxWidth: 896, margin: "0 auto", padding: "32px 16px", minWidth: 0, overflowX: "hidden" }} data-testid="journal-page">
       <AnimatePresence mode="wait">
         {view === "list" && (
           <motion.div
@@ -179,110 +268,120 @@ export default function Journal() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-              <div className="min-w-0">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary truncate" data-testid="text-journal-title">
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 24 }}>
+              <div style={{ minWidth: 0 }}>
+                <h1 style={pageTitleStyle} data-testid="text-journal-title">
                   {t("journal.title")}
                 </h1>
-                <p className="text-sm text-muted-foreground mt-1">{t("journal.subtitle")}</p>
+                <p style={pageSubtitleStyle}>{t("journal.subtitle")}</p>
               </div>
-              <Button
+              <button
                 onClick={handleNew}
-                className="bg-primary text-primary-foreground font-serif flex-shrink-0 self-start sm:self-auto"
+                style={btnPrimary}
                 data-testid="button-new-journal-entry"
                 aria-label={t("journal.newEntry")}
               >
-                <Plus className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">{t("journal.newEntry")}</span>
-              </Button>
+                <Plus style={{ width: 16, height: 16 }} />
+                <span>{t("journal.newEntry")}</span>
+              </button>
             </div>
 
-            <Tabs defaultValue="journal" className="mb-6">
-              <TabsList className="w-full grid grid-cols-2">
-                <TabsTrigger value="journal" className="gap-1.5" data-testid="tab-journal-personal">
-                  <BookOpen className="w-3.5 h-3.5" />
-                  {t("journal.tabPersonal")}
-                </TabsTrigger>
-                <TabsTrigger value="history" className="gap-1.5" data-testid="tab-journal-history">
-                  <History className="w-3.5 h-3.5" />
-                  {t("journal.tabFromTastings")}
-                </TabsTrigger>
-              </TabsList>
+            <div style={{ display: "flex", gap: 4, marginBottom: 24, background: c.inputBg, borderRadius: 10, padding: 4 }}>
+              <button
+                onClick={() => setActiveTab("journal")}
+                style={activeTab === "journal" ? tabActive : tabInactive}
+                data-testid="tab-journal-personal"
+              >
+                <BookOpen style={{ width: 14, height: 14 }} />
+                {t("journal.tabPersonal")}
+              </button>
+              <button
+                onClick={() => setActiveTab("history")}
+                style={activeTab === "history" ? tabActive : tabInactive}
+                data-testid="tab-journal-history"
+              >
+                <History style={{ width: 14, height: 14 }} />
+                {t("journal.tabFromTastings")}
+              </button>
+            </div>
 
-              <TabsContent value="journal" className="mt-4">
-            {isLoading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-24 bg-card/50 rounded-lg animate-pulse" />
-                ))}
-              </div>
-            ) : entries.length === 0 ? (
-              <div className="text-center py-20">
-                <BookOpen className="w-12 h-12 mx-auto text-muted-foreground/40 mb-4" />
-                <p className="text-muted-foreground font-serif" data-testid="text-journal-empty">
-                  {t("journal.empty")}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {[...entries].reverse().map((entry: JournalEntry) => (
-                  <motion.div
-                    key={entry.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-card border border-border/40 rounded-lg p-5 cursor-pointer hover:border-primary/30 transition-colors group"
-                    onClick={() => handleView(entry)}
-                    data-testid={`card-journal-entry-${entry.id}`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      {entry.imageUrl && (
-                        <div className="w-12 h-16 rounded overflow-hidden border border-border/30 bg-secondary/30 flex-shrink-0">
-                          <img src={entry.imageUrl} alt="" className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-serif font-semibold text-foreground truncate">
-                          {entry.title}
-                        </h3>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                          {entry.whiskyName && (
-                            <span className="flex items-center gap-1">
-                              <Wine className="w-3 h-3" />
-                              {entry.whiskyName}
-                            </span>
+            {activeTab === "journal" && (
+              <div style={{ marginTop: 16 }}>
+                {isLoading ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} style={{ height: 96, background: `${c.card}80`, borderRadius: 12 }} />
+                    ))}
+                  </div>
+                ) : entries.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "80px 0" }}>
+                    <BookOpen style={{ width: 48, height: 48, margin: "0 auto 16px", color: `${c.muted}60` }} />
+                    <p style={{ color: c.muted, fontFamily: serif }} data-testid="text-journal-empty">
+                      {t("journal.empty")}
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {[...entries].reverse().map((entry: JournalEntry) => (
+                      <motion.div
+                        key={entry.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        style={{ ...cardStyle, padding: 20, cursor: "pointer", transition: "border-color 0.2s" }}
+                        onClick={() => handleView(entry)}
+                        data-testid={`card-journal-entry-${entry.id}`}
+                      >
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+                          {entry.imageUrl && (
+                            <div style={{ width: 48, height: 64, borderRadius: 6, overflow: "hidden", border: `1px solid ${c.border}50`, flexShrink: 0 }}>
+                              <img src={entry.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            </div>
                           )}
-                          {entry.createdAt && (
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              {new Date(entry.createdAt).toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
-                        {entry.body && (
-                          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                            {entry.body}
-                          </p>
-                        )}
-                      </div>
-                      {entry.personalScore != null && (
-                        <div className="flex-shrink-0 text-right">
-                          <div className="text-xl font-bold text-primary font-serif">
-                            {entry.personalScore.toFixed(1)}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <h3 style={{ fontFamily: serif, fontWeight: 600, color: c.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>
+                              {entry.title}
+                            </h3>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4, fontSize: 12, color: c.muted }}>
+                              {entry.whiskyName && (
+                                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                  <Wine style={{ width: 12, height: 12 }} />
+                                  {entry.whiskyName}
+                                </span>
+                              )}
+                              {entry.createdAt && (
+                                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                  <Calendar style={{ width: 12, height: 12 }} />
+                                  {new Date(entry.createdAt).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                            {entry.body && (
+                              <p style={{ fontSize: 13, color: c.muted, marginTop: 8, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                                {entry.body}
+                              </p>
+                            )}
                           </div>
-                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Score</div>
+                          {entry.personalScore != null && (
+                            <div style={{ flexShrink: 0, textAlign: "right" }}>
+                              <div style={{ fontSize: 20, fontWeight: 700, color: c.accent, fontFamily: serif }}>
+                                {entry.personalScore.toFixed(1)}
+                              </div>
+                              <div style={{ fontSize: 10, color: c.muted, textTransform: "uppercase", letterSpacing: "0.1em" }}>Score</div>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-              </TabsContent>
 
-              <TabsContent value="history" className="mt-4">
+            {activeTab === "history" && (
+              <div style={{ marginTop: 16 }}>
                 <TastingHistoryList participantId={currentParticipant?.id} />
-              </TabsContent>
-            </Tabs>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -348,24 +447,24 @@ export default function Journal() {
         )}
       </AnimatePresence>
 
-      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <AlertDialogContent className="bg-card border-border" data-testid="dialog-delete-journal">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-serif">{t("journal.deleteEntry")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("journal.deleteConfirm")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete-journal">{t("journal.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              data-testid="button-confirm-delete-journal"
-            >
-              {t("journal.deleteEntry")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {deleteTarget && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }} data-testid="dialog-delete-journal">
+          <div style={{ ...cardStyle, maxWidth: 420, width: "90%", padding: 28 }}>
+            <h3 style={{ fontFamily: serif, fontSize: 18, fontWeight: 700, color: c.text, marginBottom: 8 }}>{t("journal.deleteEntry")}</h3>
+            <p style={{ fontSize: 14, color: c.muted, marginBottom: 24 }}>{t("journal.deleteConfirm")}</p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button onClick={() => setDeleteTarget(null)} style={btnOutline} data-testid="button-cancel-delete-journal">{t("journal.cancel")}</button>
+              <button
+                onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+                style={{ ...btnPrimary, background: c.danger, color: "#fff" }}
+                data-testid="button-confirm-delete-journal"
+              >
+                {t("journal.deleteEntry")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -399,99 +498,99 @@ function EntryDetail({
 
   return (
     <div data-testid="journal-entry-detail">
-      <div className="flex items-center justify-between mb-6 gap-2">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, gap: 8 }}>
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm flex-shrink-0"
+          style={{ display: "flex", alignItems: "center", gap: 8, color: c.muted, background: "none", border: "none", cursor: "pointer", fontSize: 13, flexShrink: 0 }}
           data-testid="button-back-to-journal"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft style={{ width: 16, height: 16 }} />
           {t("journal.back")}
         </button>
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <Button variant="outline" size="sm" onClick={onEdit} data-testid="button-edit-journal-entry" title={t("journal.editEntry")}>
-            <Pencil className="w-3.5 h-3.5 sm:mr-1.5" />
-            <span className="hidden sm:inline">{t("journal.editEntry")}</span>
-          </Button>
-          <Button variant="outline" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive" data-testid="button-delete-journal-entry" title={t("journal.deleteEntry")}>
-            <Trash2 className="w-3.5 h-3.5 sm:mr-1.5" />
-            <span className="hidden sm:inline">{t("journal.deleteEntry")}</span>
-          </Button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={onEdit} style={btnOutline} data-testid="button-edit-journal-entry" title={t("journal.editEntry")}>
+            <Pencil style={{ width: 14, height: 14 }} />
+            <span>{t("journal.editEntry")}</span>
+          </button>
+          <button onClick={onDelete} style={btnDanger} data-testid="button-delete-journal-entry" title={t("journal.deleteEntry")}>
+            <Trash2 style={{ width: 14, height: 14 }} />
+            <span>{t("journal.deleteEntry")}</span>
+          </button>
         </div>
       </div>
 
-      <div className="bg-card border border-border/40 rounded-lg p-6 md:p-8 space-y-6">
-        <div className="flex items-start justify-between gap-4">
+      <div style={{ ...cardStyle, padding: "24px 32px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 24 }}>
           {entry.imageUrl && (
-            <div className="w-20 h-28 md:w-24 md:h-32 rounded-lg overflow-hidden border border-border/40 bg-secondary/30 flex-shrink-0">
-              <img src={entry.imageUrl} alt={entry.whiskyName || entry.title} className="w-full h-full object-cover" />
+            <div style={{ width: 80, height: 112, borderRadius: 10, overflow: "hidden", border: `1px solid ${c.border}60`, flexShrink: 0 }}>
+              <img src={entry.imageUrl} alt={entry.whiskyName || entry.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           )}
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary">{entry.title}</h1>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ ...pageTitleStyle, fontSize: 24, color: c.accent }}>{entry.title}</h1>
             {entry.whiskyName && (
-              <p className="text-lg text-foreground/80 font-serif mt-1">{entry.whiskyName}</p>
+              <p style={{ fontSize: 18, color: `${c.text}cc`, fontFamily: serif, marginTop: 4 }}>{entry.whiskyName}</p>
             )}
           </div>
           {entry.personalScore != null && (
-            <div className="text-right flex-shrink-0">
-              <div className="text-3xl font-bold text-primary font-serif">{entry.personalScore.toFixed(1)}</div>
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">{t("journal.personalScore")}</div>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div style={{ fontSize: 30, fontWeight: 700, color: c.accent, fontFamily: serif }}>{entry.personalScore.toFixed(1)}</div>
+              <div style={{ fontSize: 11, color: c.muted, textTransform: "uppercase", letterSpacing: "0.1em" }}>{t("journal.personalScore")}</div>
             </div>
           )}
         </div>
 
         {metaItems.length > 0 && (
-          <div className="flex flex-wrap gap-3">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
             {metaItems.map((item, i) => (
-              <div key={i} className="bg-secondary/50 rounded px-3 py-1.5 text-sm">
-                <span className="text-muted-foreground">{item.label}: </span>
-                <span className="text-foreground font-medium">{item.value}</span>
+              <div key={i} style={{ background: c.inputBg, borderRadius: 6, padding: "6px 12px", fontSize: 13 }}>
+                <span style={{ color: c.muted }}>{item.label}: </span>
+                <span style={{ color: c.text, fontWeight: 500 }}>{item.value}</span>
               </div>
             ))}
           </div>
         )}
 
         {tastingNotes.length > 0 && (
-          <div className="space-y-4 border-t border-border/30 pt-6">
+          <div style={{ borderTop: `1px solid ${c.border}50`, paddingTop: 24, display: "flex", flexDirection: "column", gap: 16 }}>
             {tastingNotes.map((note, i) => (
               <div key={i}>
-                <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider mb-1">
+                <h3 style={sectionHeadingStyle}>
                   {note.label}
                 </h3>
-                <p className="text-foreground/80 font-serif leading-relaxed">{note.value}</p>
+                <p style={{ color: `${c.text}cc`, fontFamily: serif, lineHeight: 1.6 }}>{note.value}</p>
               </div>
             ))}
           </div>
         )}
 
         {entry.body && (
-          <div className="border-t border-border/30 pt-6">
-            <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider mb-2">
+          <div style={{ borderTop: `1px solid ${c.border}50`, paddingTop: 24, marginTop: 24 }}>
+            <h3 style={sectionHeadingStyle}>
               {t("journal.body")}
             </h3>
-            <p className="text-foreground/80 font-serif leading-relaxed whitespace-pre-wrap">{entry.body}</p>
+            <p style={{ color: `${c.text}cc`, fontFamily: serif, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{entry.body}</p>
           </div>
         )}
 
         {(entry.mood || entry.occasion) && (
-          <div className="border-t border-border/30 pt-6 flex flex-wrap gap-4 text-sm">
+          <div style={{ borderTop: `1px solid ${c.border}50`, paddingTop: 24, marginTop: 24, display: "flex", flexWrap: "wrap", gap: 16, fontSize: 14 }}>
             {entry.mood && (
               <div>
-                <span className="text-muted-foreground">{t("journal.mood")}: </span>
-                <span className="text-foreground italic">{entry.mood}</span>
+                <span style={{ color: c.muted }}>{t("journal.mood")}: </span>
+                <span style={{ color: c.text, fontStyle: "italic" }}>{entry.mood}</span>
               </div>
             )}
             {entry.occasion && (
               <div>
-                <span className="text-muted-foreground">{t("journal.occasion")}: </span>
-                <span className="text-foreground italic">{entry.occasion}</span>
+                <span style={{ color: c.muted }}>{t("journal.occasion")}: </span>
+                <span style={{ color: c.text, fontStyle: "italic" }}>{entry.occasion}</span>
               </div>
             )}
           </div>
         )}
 
-        <div className="border-t border-border/30 pt-4 text-xs text-muted-foreground flex gap-4">
+        <div style={{ borderTop: `1px solid ${c.border}50`, paddingTop: 16, marginTop: 24, fontSize: 12, color: c.muted, display: "flex", gap: 16 }}>
           {entry.createdAt && (
             <span>{t("journal.created")}: {new Date(entry.createdAt).toLocaleString()}</span>
           )}
@@ -584,69 +683,79 @@ function EntryForm({
     onSave(data);
   };
 
+  const chipStyle = (active: boolean): React.CSSProperties => ({
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    padding: "6px 12px",
+    borderRadius: 8,
+    fontSize: 12,
+    fontWeight: 500,
+    cursor: active ? "pointer" : (aiScanDisabled ? "not-allowed" : "pointer"),
+    opacity: aiScanDisabled ? 0.5 : 1,
+    background: active ? `${c.accent}33` : `${c.inputBg}`,
+    color: active ? c.accent : c.muted,
+    border: "none",
+    transition: "all 0.2s",
+  });
+
   return (
     <div data-testid="journal-entry-form">
-      <div className="flex items-center gap-3 mb-6">
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
+          style={{ display: "flex", alignItems: "center", gap: 8, color: c.muted, background: "none", border: "none", cursor: "pointer", fontSize: 13 }}
           data-testid="button-back-from-form"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft style={{ width: 16, height: 16 }} />
           {t("journal.back")}
         </button>
-        <h2 className="text-xl font-serif font-bold text-primary">
+        <h2 style={{ fontSize: 20, fontFamily: serif, fontWeight: 700, color: c.accent, margin: 0 }}>
           {entry ? t("journal.editEntry") : t("journal.newEntry")}
         </h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-card border border-border/40 rounded-lg p-6 md:p-8 space-y-6">
+      <form onSubmit={handleSubmit} style={{ ...cardStyle, padding: "24px 32px", display: "flex", flexDirection: "column", gap: 24 }}>
         <div>
-          <Label htmlFor="title" className="font-serif text-sm font-semibold">{t("journal.entryTitle")} *</Label>
-          <Input
+          <label htmlFor="title" style={{ ...labelStyle, fontFamily: serif }}>{t("journal.entryTitle")} *</label>
+          <input
             id="title"
             value={form.title}
             onChange={set("title")}
             placeholder={t("journal.entryTitlePlaceholder")}
             required
-            className="mt-1.5 bg-background/50"
+            style={inputStyle}
             data-testid="input-journal-title"
           />
         </div>
 
-        <div className="border-t border-border/30 pt-6">
-          <div className="flex items-center justify-between mb-4">
+        <div style={{ borderTop: `1px solid ${c.border}50`, paddingTop: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <div>
-              <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider">Whisky</h3>
+              <h3 style={sectionHeadingStyle}>Whisky</h3>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-muted-foreground/50 hidden sm:inline" data-testid="text-ai-notice-scan">{t("legal.aiNotice")}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 10, color: `${c.muted}80` }} data-testid="text-ai-notice-scan">{t("legal.aiNotice")}</span>
               <label
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  aiScanDisabled
-                    ? "opacity-50 cursor-not-allowed bg-secondary/40 text-muted-foreground"
-                    : scanning
-                    ? "bg-primary/20 text-primary cursor-pointer"
-                    : "bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground cursor-pointer"
-                }`}
+                style={chipStyle(scanning)}
                 data-testid="button-scan-bottle"
                 title={aiScanDisabled ? t("admin.aiDisabledHint") : undefined}
               >
               {scanning ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />
                   {t("journal.scanning")}
                 </>
               ) : (
                 <>
-                  <ScanLine className="w-3.5 h-3.5" />
+                  <ScanLine style={{ width: 14, height: 14 }} />
                   {t("journal.scanBottle")}
                 </>
               )}
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
-                className="hidden"
+                style={{ display: "none" }}
                 disabled={scanning || aiScanDisabled}
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
@@ -689,7 +798,7 @@ function EntryForm({
           </div>
 
           {scanError && (
-            <div className="mb-3 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+            <div style={{ marginBottom: 12, fontSize: 12, color: c.danger, background: `${c.danger}15`, border: `1px solid ${c.danger}30`, borderRadius: 8, padding: "8px 12px" }}>
               {scanError}
             </div>
           )}
@@ -698,10 +807,10 @@ function EntryForm({
             <motion.div
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 rounded-lg px-3 py-2 text-xs text-green-700 dark:text-green-400 flex items-center justify-between gap-2"
+              style={{ marginBottom: 16, background: `${c.success}20`, border: `1px solid ${c.success}30`, borderRadius: 8, padding: "8px 12px", fontSize: 12, color: c.success, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}
             >
-              <span className="flex items-center gap-1.5">
-                <ScanLine className="w-3.5 h-3.5" />
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <ScanLine style={{ width: 14, height: 14 }} />
                 {t("journal.scanSuccess", { name: scanResult.whiskyName || "Unknown Whisky" })}
               </span>
               {scanResult.whiskybaseUrl && scanResult.whiskybaseUrl.startsWith("http") ? (
@@ -709,18 +818,18 @@ function EntryForm({
                   href={scanResult.whiskybaseUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:underline shrink-0"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 4, background: `${c.accent}30`, color: c.accent, textDecoration: "none", flexShrink: 0 }}
                 >
-                  Whiskybase <ExternalLink className="w-3 h-3" />
+                  Whiskybase <ExternalLink style={{ width: 12, height: 12 }} />
                 </a>
               ) : scanResult.whiskybaseSearch && scanResult.whiskybaseSearch.trim() ? (
                 <a
                   href={`https://www.whiskybase.com/search?q=${encodeURIComponent(scanResult.whiskybaseSearch)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:underline shrink-0"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 4, background: `${c.accent}30`, color: c.accent, textDecoration: "none", flexShrink: 0 }}
                 >
-                  {t("journal.searchWhiskybase")} <ExternalLink className="w-3 h-3" />
+                  {t("journal.searchWhiskybase")} <ExternalLink style={{ width: 12, height: 12 }} />
                 </a>
               ) : null}
             </motion.div>
@@ -730,13 +839,13 @@ function EntryForm({
             <motion.div
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-lg p-3"
+              style={{ marginBottom: 16, background: `${c.accent}15`, border: `1px solid ${c.accent}30`, borderRadius: 8, padding: 12 }}
             >
-              <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-1.5">
-                <ScanLine className="w-3.5 h-3.5" />
+              <p style={{ fontSize: 12, fontWeight: 500, color: c.accent, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                <ScanLine style={{ width: 14, height: 14 }} />
                 {t("journal.multipleFound", { count: scanResult.multipleWhiskies.length })}
               </p>
-              <div className="space-y-1.5">
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {scanResult.multipleWhiskies.map((w: any, idx: number) => (
                   <button
                     key={idx}
@@ -755,11 +864,11 @@ function EntryForm({
                         title: prev.title || w.whiskyName || prev.title,
                       }));
                     }}
-                    className="w-full text-left px-3 py-2 rounded-md bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-800/50 hover:border-blue-400 dark:hover:border-blue-600 transition-colors text-xs"
+                    style={{ width: "100%", textAlign: "left", padding: "8px 12px", borderRadius: 6, background: c.inputBg, border: `1px solid ${c.border}`, cursor: "pointer", fontSize: 12, color: c.text, transition: "border-color 0.2s" }}
                   >
-                    <span className="font-medium text-foreground">{w.whiskyName || "Unknown Whisky"}</span>
+                    <span style={{ fontWeight: 500 }}>{w.whiskyName || "Unknown Whisky"}</span>
                     {(w.distillery || w.age || w.region) && (
-                      <span className="text-muted-foreground ml-1.5">
+                      <span style={{ color: c.muted, marginLeft: 6 }}>
                         {[w.distillery, w.age ? `${w.age}y` : null, w.region].filter(Boolean).join(" · ")}
                       </span>
                     )}
@@ -769,18 +878,14 @@ function EntryForm({
             </motion.div>
           )}
 
-          <div className="flex items-center gap-2 mb-4">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
             <button
               type="button"
               onClick={() => setShowTextExtract(!showTextExtract)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                showTextExtract
-                  ? "bg-primary/20 text-primary"
-                  : "bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground"
-              }`}
+              style={chipStyle(showTextExtract)}
               data-testid="button-text-extract-journal"
             >
-              <Type className="w-3.5 h-3.5" />
+              <Type style={{ width: 14, height: 14 }} />
               {t("journal.extractText")}
             </button>
           </div>
@@ -790,15 +895,15 @@ function EntryForm({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="mb-4 p-3 bg-secondary/20 border border-border/30 rounded-lg"
+              style={{ marginBottom: 16, padding: 12, background: `${c.inputBg}`, border: `1px solid ${c.border}50`, borderRadius: 8 }}
             >
-              <p className="text-xs text-muted-foreground mb-2">{t("journal.extractHint")}</p>
-              <Textarea
+              <p style={{ fontSize: 12, color: c.muted, marginBottom: 8 }}>{t("journal.extractHint")}</p>
+              <textarea
                 value={extractText}
                 onChange={(e) => setExtractText(e.target.value)}
                 placeholder={t("journal.textPlaceholder")}
                 rows={3}
-                className="bg-background/50 text-sm mb-2"
+                style={{ ...textareaStyle, marginBottom: 8 }}
                 data-testid="textarea-extract-journal"
               />
               <button
@@ -833,59 +938,57 @@ function EntryForm({
                     setExtracting(false);
                   }
                 }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  extracting ? "bg-primary/20 text-primary" : "bg-primary text-primary-foreground hover:bg-primary/90"
-                }`}
+                style={extracting ? chipStyle(true) : btnPrimary}
                 data-testid="button-extract-submit-journal"
               >
                 {extracting ? (
-                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("journal.extracting")}</>
+                  <><Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> {t("journal.extracting")}</>
                 ) : (
-                  <><Send className="w-3.5 h-3.5" /> {t("journal.extractButton")}</>
+                  <><Send style={{ width: 14, height: 14 }} /> {t("journal.extractButton")}</>
                 )}
               </button>
             </motion.div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 }}>
             <div>
-              <Label htmlFor="whiskyName" className="text-sm">{t("journal.whiskyName")}</Label>
-              <Input id="whiskyName" value={form.whiskyName} onChange={set("whiskyName")} placeholder={t("journal.whiskyNamePlaceholder")} className="mt-1 bg-background/50" data-testid="input-journal-whisky-name" />
+              <label htmlFor="whiskyName" style={labelStyle}>{t("journal.whiskyName")}</label>
+              <input id="whiskyName" value={form.whiskyName} onChange={set("whiskyName")} placeholder={t("journal.whiskyNamePlaceholder")} style={inputStyle} data-testid="input-journal-whisky-name" />
             </div>
             <div>
-              <Label htmlFor="distillery" className="text-sm">{t("journal.distillery")}</Label>
-              <Input id="distillery" value={form.distillery} onChange={set("distillery")} placeholder={t("journal.distilleryPlaceholder")} className="mt-1 bg-background/50" data-testid="input-journal-distillery" />
+              <label htmlFor="distillery" style={labelStyle}>{t("journal.distillery")}</label>
+              <input id="distillery" value={form.distillery} onChange={set("distillery")} placeholder={t("journal.distilleryPlaceholder")} style={inputStyle} data-testid="input-journal-distillery" />
             </div>
             <div>
-              <Label htmlFor="region" className="text-sm">{t("journal.region")}</Label>
-              <Input id="region" value={form.region} onChange={set("region")} placeholder={t("journal.regionPlaceholder")} className="mt-1 bg-background/50" data-testid="input-journal-region" />
+              <label htmlFor="region" style={labelStyle}>{t("journal.region")}</label>
+              <input id="region" value={form.region} onChange={set("region")} placeholder={t("journal.regionPlaceholder")} style={inputStyle} data-testid="input-journal-region" />
             </div>
             <div>
-              <Label htmlFor="age" className="text-sm">{t("journal.age")}</Label>
-              <Input id="age" value={form.age} onChange={set("age")} placeholder={t("journal.agePlaceholder")} className="mt-1 bg-background/50" data-testid="input-journal-age" />
+              <label htmlFor="age" style={labelStyle}>{t("journal.age")}</label>
+              <input id="age" value={form.age} onChange={set("age")} placeholder={t("journal.agePlaceholder")} style={inputStyle} data-testid="input-journal-age" />
             </div>
             <div>
-              <Label htmlFor="abv" className="text-sm">{t("journal.abv")}</Label>
-              <Input id="abv" value={form.abv} onChange={set("abv")} placeholder={t("journal.abvPlaceholder")} className="mt-1 bg-background/50" data-testid="input-journal-abv" />
+              <label htmlFor="abv" style={labelStyle}>{t("journal.abv")}</label>
+              <input id="abv" value={form.abv} onChange={set("abv")} placeholder={t("journal.abvPlaceholder")} style={inputStyle} data-testid="input-journal-abv" />
             </div>
             <div>
-              <Label htmlFor="caskType" className="text-sm">{t("journal.caskType")}</Label>
+              <label htmlFor="caskType" style={labelStyle}>{t("journal.caskType")}</label>
               <CaskTypeSelect value={form.caskType} onChange={(v) => setForm(p => ({ ...p, caskType: v }))} />
             </div>
           </div>
         </div>
 
-        <div className="border-t border-border/30 pt-6">
-          <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider mb-4">
+        <div style={{ borderTop: `1px solid ${c.border}50`, paddingTop: 24 }}>
+          <h3 style={sectionHeadingStyle}>
             {t("journal.bottlePhoto")}
           </h3>
-          <div className="flex items-start gap-4">
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
             {(pendingImage || (entry?.imageUrl && !removeExistingImage)) && (
-              <div className="relative w-24 h-32 rounded-lg overflow-hidden border border-border/40 bg-secondary/30 flex-shrink-0">
+              <div style={{ position: "relative", width: 96, height: 128, borderRadius: 10, overflow: "hidden", border: `1px solid ${c.border}60`, flexShrink: 0 }}>
                 <img
                   src={pendingImage ? URL.createObjectURL(pendingImage) : entry!.imageUrl!}
                   alt="Bottle"
-                  className="w-full h-full object-cover"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
                 <button
                   type="button"
@@ -896,26 +999,26 @@ function EntryForm({
                       onRemoveExistingImage(true);
                     }
                   }}
-                  className="absolute top-1 right-1 p-0.5 rounded-full bg-background/80 hover:bg-background transition-colors"
+                  style={{ position: "absolute", top: 4, right: 4, padding: 2, borderRadius: "50%", background: `${c.bg}cc`, border: "none", cursor: "pointer" }}
                   data-testid="button-remove-journal-image"
                 >
-                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                  <X style={{ width: 14, height: 14, color: c.muted }} />
                 </button>
               </div>
             )}
             <label
-              className="flex flex-col items-center justify-center w-24 h-32 rounded-lg border-2 border-dashed border-border/50 hover:border-primary/40 cursor-pointer transition-colors bg-secondary/20"
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: 96, height: 128, borderRadius: 10, border: `2px dashed ${c.border}80`, cursor: "pointer", background: `${c.inputBg}` }}
               data-testid="button-upload-journal-image"
             >
-              <Camera className="w-5 h-5 text-muted-foreground mb-1" />
-              <span className="text-[10px] text-muted-foreground text-center leading-tight">
+              <Camera style={{ width: 20, height: 20, color: c.muted, marginBottom: 4 }} />
+              <span style={{ fontSize: 10, color: c.muted, textAlign: "center", lineHeight: 1.3 }}>
                 {t("journal.addPhoto")}
               </span>
-              <span className="text-[8px] text-muted-foreground/50 text-center leading-tight mt-0.5">{t("common.uploadHint")}</span>
+              <span style={{ fontSize: 8, color: `${c.muted}80`, textAlign: "center", lineHeight: 1.3, marginTop: 2 }}>{t("common.uploadHint")}</span>
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
-                className="hidden"
+                style={{ display: "none" }}
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   e.target.value = "";
@@ -967,12 +1070,12 @@ function EntryForm({
           </div>
         </div>
 
-        <div className="border-t border-border/30 pt-6">
-          <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider mb-4">
+        <div style={{ borderTop: `1px solid ${c.border}50`, paddingTop: 24 }}>
+          <h3 style={sectionHeadingStyle}>
             {t("journal.noseNotes")} / {t("journal.tasteNotes")} / {t("journal.finishNotes")}
           </h3>
 
-          <div className="mb-5 bg-secondary/20 rounded-lg border border-border/30 p-3">
+          <div style={{ marginBottom: 20, background: c.inputBg, borderRadius: 8, border: `1px solid ${c.border}50`, padding: 12 }}>
             <TastingNoteGenerator
               currentNotes={[form.noseNotes, form.tasteNotes, form.finishNotes].filter(Boolean).join(" ")}
               onInsertNote={(note: string) => {
@@ -1011,26 +1114,26 @@ function EntryForm({
             />
           </div>
 
-          <div className="space-y-4">
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
-              <Label htmlFor="noseNotes" className="text-sm">{t("journal.noseNotes")}</Label>
-              <Textarea id="noseNotes" value={form.noseNotes} onChange={set("noseNotes")} placeholder={t("journal.noseNotesPlaceholder")} className="mt-1 bg-background/50 min-h-[80px]" data-testid="input-journal-nose" />
+              <label htmlFor="noseNotes" style={labelStyle}>{t("journal.noseNotes")}</label>
+              <textarea id="noseNotes" value={form.noseNotes} onChange={set("noseNotes")} placeholder={t("journal.noseNotesPlaceholder")} style={textareaStyle} data-testid="input-journal-nose" />
             </div>
             <div>
-              <Label htmlFor="tasteNotes" className="text-sm">{t("journal.tasteNotes")}</Label>
-              <Textarea id="tasteNotes" value={form.tasteNotes} onChange={set("tasteNotes")} placeholder={t("journal.tasteNotesPlaceholder")} className="mt-1 bg-background/50 min-h-[80px]" data-testid="input-journal-taste" />
+              <label htmlFor="tasteNotes" style={labelStyle}>{t("journal.tasteNotes")}</label>
+              <textarea id="tasteNotes" value={form.tasteNotes} onChange={set("tasteNotes")} placeholder={t("journal.tasteNotesPlaceholder")} style={textareaStyle} data-testid="input-journal-taste" />
             </div>
             <div>
-              <Label htmlFor="finishNotes" className="text-sm">{t("journal.finishNotes")}</Label>
-              <Textarea id="finishNotes" value={form.finishNotes} onChange={set("finishNotes")} placeholder={t("journal.finishNotesPlaceholder")} className="mt-1 bg-background/50 min-h-[80px]" data-testid="input-journal-finish" />
+              <label htmlFor="finishNotes" style={labelStyle}>{t("journal.finishNotes")}</label>
+              <textarea id="finishNotes" value={form.finishNotes} onChange={set("finishNotes")} placeholder={t("journal.finishNotesPlaceholder")} style={textareaStyle} data-testid="input-journal-finish" />
             </div>
           </div>
         </div>
 
-        <div className="border-t border-border/30 pt-6">
+        <div style={{ borderTop: `1px solid ${c.border}50`, paddingTop: 24 }}>
           <div>
-            <Label htmlFor="personalScore" className="text-sm font-semibold">{t("journal.personalScore")} (0–100)</Label>
-            <Input
+            <label htmlFor="personalScore" style={{ ...labelStyle, fontWeight: 600 }}>{t("journal.personalScore")} (0–100)</label>
+            <input
               id="personalScore"
               type="number"
               min={0}
@@ -1038,46 +1141,46 @@ function EntryForm({
               step={0.1}
               value={form.personalScore}
               onChange={set("personalScore")}
-              className="mt-1 bg-background/50 w-32"
+              style={{ ...inputStyle, width: 128 }}
               data-testid="input-journal-score"
             />
           </div>
         </div>
 
-        <div className="border-t border-border/30 pt-6">
-          <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider mb-4">{t("journal.body")}</h3>
-          <Textarea
+        <div style={{ borderTop: `1px solid ${c.border}50`, paddingTop: 24 }}>
+          <h3 style={sectionHeadingStyle}>{t("journal.body")}</h3>
+          <textarea
             value={form.body}
             onChange={set("body")}
             placeholder={t("journal.bodyPlaceholder")}
-            className="bg-background/50 min-h-[120px]"
+            style={{ ...textareaStyle, minHeight: 120 }}
             data-testid="input-journal-body"
           />
         </div>
 
-        <div className="border-t border-border/30 pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div style={{ borderTop: `1px solid ${c.border}50`, paddingTop: 24, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 }}>
           <div>
-            <Label htmlFor="mood" className="text-sm">{t("journal.mood")}</Label>
-            <Input id="mood" value={form.mood} onChange={set("mood")} placeholder={t("journal.moodPlaceholder")} className="mt-1 bg-background/50" data-testid="input-journal-mood" />
+            <label htmlFor="mood" style={labelStyle}>{t("journal.mood")}</label>
+            <input id="mood" value={form.mood} onChange={set("mood")} placeholder={t("journal.moodPlaceholder")} style={inputStyle} data-testid="input-journal-mood" />
           </div>
           <div>
-            <Label htmlFor="occasion" className="text-sm">{t("journal.occasion")}</Label>
-            <Input id="occasion" value={form.occasion} onChange={set("occasion")} placeholder={t("journal.occasionPlaceholder")} className="mt-1 bg-background/50" data-testid="input-journal-occasion" />
+            <label htmlFor="occasion" style={labelStyle}>{t("journal.occasion")}</label>
+            <input id="occasion" value={form.occasion} onChange={set("occasion")} placeholder={t("journal.occasionPlaceholder")} style={inputStyle} data-testid="input-journal-occasion" />
           </div>
         </div>
 
-        <div className="flex items-center gap-3 pt-4">
-          <Button
+        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 16 }}>
+          <button
             type="submit"
             disabled={!form.title.trim() || isSaving}
-            className="bg-primary text-primary-foreground font-serif"
+            style={{ ...btnPrimary, opacity: (!form.title.trim() || isSaving) ? 0.5 : 1 }}
             data-testid="button-save-journal-entry"
           >
             {t("journal.save")}
-          </Button>
-          <Button type="button" variant="outline" onClick={onBack} data-testid="button-cancel-journal">
+          </button>
+          <button type="button" onClick={onBack} style={btnOutline} data-testid="button-cancel-journal">
             {t("journal.cancel")}
-          </Button>
+          </button>
         </div>
       </form>
     </div>
@@ -1134,9 +1237,9 @@ function TastingHistoryList({ participantId }: { participantId?: string }) {
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {[1, 2, 3].map(i => (
-          <div key={i} className="h-20 bg-card/50 rounded-lg animate-pulse" />
+          <div key={i} style={{ height: 80, background: `${c.card}80`, borderRadius: 12 }} />
         ))}
       </div>
     );
@@ -1144,12 +1247,12 @@ function TastingHistoryList({ participantId }: { participantId?: string }) {
 
   if (history.length === 0) {
     return (
-      <div className="text-center py-20">
-        <History className="w-12 h-12 mx-auto text-muted-foreground/40 mb-4" />
-        <p className="text-muted-foreground font-serif" data-testid="text-history-empty">
+      <div style={{ textAlign: "center", padding: "80px 0" }}>
+        <History style={{ width: 48, height: 48, margin: "0 auto 16px", color: `${c.muted}60` }} />
+        <p style={{ color: c.muted, fontFamily: serif }} data-testid="text-history-empty">
           {t("journal.historyEmpty")}
         </p>
-        <p className="text-sm text-muted-foreground/70 mt-1">{t("journal.historyEmptyDesc")}</p>
+        <p style={{ fontSize: 13, color: `${c.muted}b0`, marginTop: 4 }}>{t("journal.historyEmptyDesc")}</p>
       </div>
     );
   }
@@ -1158,16 +1261,16 @@ function TastingHistoryList({ participantId }: { participantId?: string }) {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4 text-sm text-muted-foreground">
-        <Badge variant="secondary" className="text-xs">
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, fontSize: 13, color: c.muted }}>
+        <span style={badgeStyle}>
           {t("journal.historyWhiskyCount", { count: history.length })}
-        </Badge>
-        <Badge variant="outline" className="text-xs">
+        </span>
+        <span style={{ ...badgeStyle, background: "transparent" }}>
           {t("journal.historyTastingCount", { count: totalTastings })}
-        </Badge>
+        </span>
       </div>
 
-      <div className="space-y-2">
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {history.map((whisky: any, i: number) => {
           const isExpanded = expandedWhisky === whisky.whiskyName;
           const validOveralls = whisky.tastings.filter((t: any) => t.overall != null);
@@ -1182,130 +1285,128 @@ function TastingHistoryList({ participantId }: { participantId?: string }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.02 }}
             >
-              <Card
-                className="cursor-pointer hover:border-primary/30 transition-colors"
+              <div
+                style={{ ...cardStyle, padding: 16, cursor: "pointer", transition: "border-color 0.2s" }}
                 onClick={() => setExpandedWhisky(isExpanded ? null : whisky.whiskyName)}
                 data-testid={`card-history-whisky-${i}`}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    {whisky.imageUrl ? (
-                      <div className="w-10 h-14 rounded overflow-hidden border border-border/30 bg-secondary/30 flex-shrink-0">
-                        <img src={whisky.imageUrl} alt="" className="w-full h-full object-cover" />
-                      </div>
-                    ) : (
-                      <div className="w-10 h-14 rounded border border-border/30 bg-secondary/20 flex items-center justify-center flex-shrink-0">
-                        <Wine className="w-4 h-4 text-muted-foreground/40" />
-                      </div>
-                    )}
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-serif font-semibold text-foreground truncate">{whisky.whiskyName}</h3>
-                        {whisky.count > 1 && (
-                          <Badge variant="default" className="text-[10px] px-1.5 py-0 shrink-0">
-                            {whisky.count}×
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
-                        {whisky.distillery && (
-                          <span>{whisky.distillery}</span>
-                        )}
-                        {whisky.age && (
-                          <span>{whisky.age} {t("journal.years")}</span>
-                        )}
-                        {whisky.abv && (
-                          <span>{whisky.abv}%</span>
-                        )}
-                        {whisky.region && (
-                          <span className="flex items-center gap-0.5">
-                            <MapPin className="w-2.5 h-2.5" />
-                            {whisky.region}
-                          </span>
-                        )}
-                      </div>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                  {whisky.imageUrl ? (
+                    <div style={{ width: 40, height: 56, borderRadius: 6, overflow: "hidden", border: `1px solid ${c.border}50`, flexShrink: 0 }}>
+                      <img src={whisky.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
+                  ) : (
+                    <div style={{ width: 40, height: 56, borderRadius: 6, border: `1px solid ${c.border}50`, background: c.inputBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Wine style={{ width: 16, height: 16, color: `${c.muted}60` }} />
+                    </div>
+                  )}
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {avgOverall != null && (
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-primary font-serif">{avgOverall.toFixed(1)}</div>
-                        <div className="text-[9px] text-muted-foreground uppercase tracking-wider">{t("journal.avgScore")}</div>
-                      </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <h3 style={{ fontFamily: serif, fontWeight: 600, color: c.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>{whisky.whiskyName}</h3>
+                      {whisky.count > 1 && (
+                        <span style={badgeAccent}>
+                          {whisky.count}×
+                        </span>
                       )}
-                      {isExpanded ? (
-                        <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4, fontSize: 12, color: c.muted, flexWrap: "wrap" }}>
+                      {whisky.distillery && (
+                        <span>{whisky.distillery}</span>
+                      )}
+                      {whisky.age && (
+                        <span>{whisky.age} {t("journal.years")}</span>
+                      )}
+                      {whisky.abv && (
+                        <span>{whisky.abv}%</span>
+                      )}
+                      {whisky.region && (
+                        <span style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                          <MapPin style={{ width: 10, height: 10 }} />
+                          {whisky.region}
+                        </span>
                       )}
                     </div>
                   </div>
 
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <div className="mt-4 pt-3 border-t border-border/30 space-y-3">
-                          {whisky.tastings.map((tasting: any, j: number) => (
-                            <div key={j} className="bg-secondary/20 rounded-lg p-3" data-testid={`history-tasting-${i}-${j}`}>
-                              <div className="flex items-center justify-between mb-2">
-                                <div>
-                                  <p className="text-sm font-serif font-semibold">{tasting.tastingTitle}</p>
-                                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
-                                    {tasting.tastingDate && (
-                                      <span className="flex items-center gap-0.5">
-                                        <Calendar className="w-2.5 h-2.5" />
-                                        {new Date(tasting.tastingDate).toLocaleDateString("de-DE", { day: "numeric", month: "short", year: "numeric" })}
-                                      </span>
-                                    )}
-                                    {tasting.tastingLocation && (
-                                      <span className="flex items-center gap-0.5">
-                                        <MapPin className="w-2.5 h-2.5" />
-                                        {tasting.tastingLocation}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <span className="text-base font-bold text-primary font-serif">{tasting.overall?.toFixed(1)}</span>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-4 gap-2 text-[11px]">
-                                <div>
-                                  <span className="text-muted-foreground">{t("journal.historyNose")}</span>
-                                  <span className="ml-1 font-medium">{tasting.nose?.toFixed(0)}</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">{t("journal.historyTaste")}</span>
-                                  <span className="ml-1 font-medium">{tasting.taste?.toFixed(0)}</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">{t("journal.historyFinish")}</span>
-                                  <span className="ml-1 font-medium">{tasting.finish?.toFixed(0)}</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">{t("journal.historyBalance")}</span>
-                                  <span className="ml-1 font-medium">{tasting.balance?.toFixed(0)}</span>
-                                </div>
-                              </div>
-                              {tasting.notes && (
-                                <p className="text-xs text-muted-foreground mt-2 italic">"{tasting.notes}"</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </motion.div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    {avgOverall != null && (
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: c.accent, fontFamily: serif }}>{avgOverall.toFixed(1)}</div>
+                      <div style={{ fontSize: 9, color: c.muted, textTransform: "uppercase", letterSpacing: "0.1em" }}>{t("journal.avgScore")}</div>
+                    </div>
                     )}
-                  </AnimatePresence>
-                </CardContent>
-              </Card>
+                    {isExpanded ? (
+                      <ChevronUp style={{ width: 16, height: 16, color: c.muted }} />
+                    ) : (
+                      <ChevronDown style={{ width: 16, height: 16, color: c.muted }} />
+                    )}
+                  </div>
+                </div>
+
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      style={{ overflow: "hidden" }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <div style={{ marginTop: 16, paddingTop: 12, borderTop: `1px solid ${c.border}50`, display: "flex", flexDirection: "column", gap: 12 }}>
+                        {whisky.tastings.map((tasting: any, j: number) => (
+                          <div key={j} style={{ background: c.inputBg, borderRadius: 8, padding: 12 }} data-testid={`history-tasting-${i}-${j}`}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                              <div>
+                                <p style={{ fontSize: 14, fontFamily: serif, fontWeight: 600, color: c.text, margin: 0 }}>{tasting.tastingTitle}</p>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: c.muted, marginTop: 2 }}>
+                                  {tasting.tastingDate && (
+                                    <span style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                                      <Calendar style={{ width: 10, height: 10 }} />
+                                      {new Date(tasting.tastingDate).toLocaleDateString("de-DE", { day: "numeric", month: "short", year: "numeric" })}
+                                    </span>
+                                  )}
+                                  {tasting.tastingLocation && (
+                                    <span style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                                      <MapPin style={{ width: 10, height: 10 }} />
+                                      {tasting.tastingLocation}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div style={{ textAlign: "right" }}>
+                                <span style={{ fontSize: 16, fontWeight: 700, color: c.accent, fontFamily: serif }}>{tasting.overall?.toFixed(1)}</span>
+                              </div>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, fontSize: 11 }}>
+                              <div>
+                                <span style={{ color: c.muted }}>{t("journal.historyNose")}</span>
+                                <span style={{ marginLeft: 4, fontWeight: 500, color: c.text }}>{tasting.nose?.toFixed(0)}</span>
+                              </div>
+                              <div>
+                                <span style={{ color: c.muted }}>{t("journal.historyTaste")}</span>
+                                <span style={{ marginLeft: 4, fontWeight: 500, color: c.text }}>{tasting.taste?.toFixed(0)}</span>
+                              </div>
+                              <div>
+                                <span style={{ color: c.muted }}>{t("journal.historyFinish")}</span>
+                                <span style={{ marginLeft: 4, fontWeight: 500, color: c.text }}>{tasting.finish?.toFixed(0)}</span>
+                              </div>
+                              <div>
+                                <span style={{ color: c.muted }}>{t("journal.historyBalance")}</span>
+                                <span style={{ marginLeft: 4, fontWeight: 500, color: c.text }}>{tasting.balance?.toFixed(0)}</span>
+                              </div>
+                            </div>
+                            {tasting.notes && (
+                              <p style={{ fontSize: 12, color: c.muted, marginTop: 8, fontStyle: "italic" }}>"{tasting.notes}"</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </motion.div>
           );
         })}

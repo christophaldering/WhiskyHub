@@ -5,9 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { benchmarkApi, tastingApi } from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { c, cardStyle, pageTitleStyle, pageSubtitleStyle, inputStyle } from "@/lib/theme";
+import SimpleShell from "@/components/simple/simple-shell";
 import {
   Upload, FileText, Loader2, Check, X, Trash2, Save, Brain, AlertCircle,
   ChevronDown, ChevronUp, Search, Database, User, Clock, BookOpen, Heart, GlassWater,
@@ -52,6 +51,17 @@ const TAB_LABELS: Record<LibraryTab, string> = {
   article: "benchmark.tabArticles",
   other: "benchmark.tabOther",
 };
+
+const activeTabStyle: React.CSSProperties = { background: c.accent, color: c.bg, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" as const };
+const inactiveTabStyle: React.CSSProperties = { background: c.inputBg, color: c.muted, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" as const };
+
+const badgeStyle: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 4, background: c.inputBg, color: c.muted, borderRadius: 9999, padding: "2px 8px", fontSize: 10, fontWeight: 500 };
+const badgeOutlineStyle: React.CSSProperties = { ...badgeStyle, background: "transparent", border: `1px solid ${c.border}` };
+const badgeAccentStyle: React.CSSProperties = { ...badgeStyle, background: `${c.accent}20`, color: c.accent };
+
+const btnPrimary: React.CSSProperties = { background: c.accent, color: c.bg, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 };
+const btnGhost: React.CSSProperties = { background: "transparent", color: c.muted, border: "none", borderRadius: 6, padding: 4, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" };
+const btnDanger: React.CSSProperties = { ...btnGhost, background: `${c.danger}20`, color: c.danger };
 
 export default function BenchmarkAnalyzer() {
   const { t } = useTranslation();
@@ -242,419 +252,416 @@ export default function BenchmarkAnalyzer() {
 
   if (!currentParticipant) {
     return (
-      <div className="text-center py-20 text-muted-foreground" data-testid="text-login-required">
-        {t("benchmark.loginRequired")}
-      </div>
+      <SimpleShell>
+        <div style={{ textAlign: "center", padding: "80px 0", color: c.muted }} data-testid="text-login-required">
+          {t("benchmark.loginRequired")}
+        </div>
+      </SimpleShell>
     );
   }
 
   if (!hasAccess) {
     return (
-      <div className="text-center py-20 text-muted-foreground" data-testid="text-access-denied">
-        {t("benchmark.accessDenied")}
-      </div>
+      <SimpleShell>
+        <div style={{ textAlign: "center", padding: "80px 0", color: c.muted }} data-testid="text-access-denied">
+          {t("benchmark.accessDenied")}
+        </div>
+      </SimpleShell>
     );
   }
 
   const isSaving = saveMutation.isPending || wishlistMutation.isPending || journalMutation.isPending;
 
+  const classifyChipStyle = (active: boolean, activeColor: string): React.CSSProperties => ({
+    fontSize: 10, padding: "3px 8px", borderRadius: 9999,
+    border: active ? `1px solid ${activeColor}60` : `1px solid ${c.border}`,
+    background: active ? `${activeColor}15` : "transparent",
+    color: active ? activeColor : c.muted,
+    cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4,
+  });
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6 min-w-0 overflow-x-hidden" data-testid="benchmark-analyzer-page">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <h1 className="text-xl sm:text-3xl font-serif font-black text-primary tracking-tight" data-testid="text-benchmark-title">
-          {t("benchmark.title")}
-        </h1>
-        <p className="text-muted-foreground font-serif italic mt-1 text-sm">{t("benchmark.subtitle")}</p>
-        {aiDisabled && (
-          <div className="mt-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-lg p-3 text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            {t("admin.aiDisabledHint")}
-          </div>
-        )}
-        <div className="w-12 h-1 bg-primary/50 mt-3" />
-      </motion.div>
-
-      <div className="flex gap-1 overflow-x-auto border-b border-border/30 pb-0" data-testid="library-tabs">
-        {LIBRARY_CATEGORIES.map(({ key, icon: Icon }) => (
-          <button
-            key={key}
-            onClick={() => setActiveTab(key)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors border-b-2 -mb-[1px] ${
-              activeTab === key
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-            }`}
-            data-testid={`tab-${key}`}
-          >
-            <Icon className="w-3.5 h-3.5" />
-            {t(TAB_LABELS[key])}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === "import" && (
-        <>
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-            className="bg-card border border-border/50 rounded-xl p-6"
-          >
-            <div className="flex flex-col items-center gap-4">
-              <div className="p-4 rounded-full bg-primary/10">
-                <Brain className="w-8 h-8 text-primary" />
-              </div>
-              <div className="text-center space-y-1">
-                <h2 className="text-lg font-serif font-bold text-primary">{t("benchmark.uploadTitle")}</h2>
-                <p className="text-sm text-muted-foreground max-w-md">{t("benchmark.uploadDesc")}</p>
-              </div>
-              <div className="flex flex-wrap gap-1.5 justify-center">
-                {["PDF", "Excel", "CSV", "TXT", "JPG/PNG"].map(fmt => (
-                  <Badge key={fmt} variant="outline" className="text-[10px]">{fmt}</Badge>
-                ))}
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.xlsx,.xls,.csv,.txt,.jpg,.jpeg,.png,.webp"
-                className="hidden"
-                onChange={handleFileUpload}
-                data-testid="input-file-upload"
-              />
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={analyzing || aiDisabled}
-                size="lg"
-                className="gap-2"
-                data-testid="button-upload"
-                title={aiDisabled ? t("admin.aiDisabledHint") : undefined}
-              >
-                {analyzing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {t("benchmark.analyzing")}
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    {t("benchmark.selectFile")}
-                  </>
-                )}
-              </Button>
-            </div>
-          </motion.div>
-
-          {error && (
-            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-              <p className="text-sm text-destructive">{error}</p>
+    <SimpleShell>
+      <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24, minWidth: 0, overflowX: "hidden" }} data-testid="benchmark-analyzer-page">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <h1 style={pageTitleStyle} data-testid="text-benchmark-title">
+            {t("benchmark.title")}
+          </h1>
+          <p style={pageSubtitleStyle}>{t("benchmark.subtitle")}</p>
+          {aiDisabled && (
+            <div style={{ marginTop: 12, background: "#92400e20", border: "1px solid #92400e40", borderRadius: 10, padding: 12, fontSize: 13, color: "#fbbf24", display: "flex", alignItems: "center", gap: 8 }}>
+              <AlertCircle style={{ width: 16, height: 16, flexShrink: 0 }} />
+              {t("admin.aiDisabledHint")}
             </div>
           )}
+          <div style={{ width: 48, height: 3, background: `${c.accent}80`, marginTop: 12, borderRadius: 2 }} />
+        </motion.div>
 
-          {classifySuccess && (
-            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 flex items-center gap-2">
-              <Check className="w-4 h-4 text-green-500" />
-              <span className="text-sm text-green-600 dark:text-green-400">{classifySuccess}</span>
-            </div>
-          )}
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", borderBottom: `1px solid ${c.border}30`, paddingBottom: 0 }} data-testid="library-tabs">
+          {LIBRARY_CATEGORIES.map(({ key, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              style={activeTab === key ? activeTabStyle : inactiveTabStyle}
+              data-testid={`tab-${key}`}
+            >
+              <Icon style={{ width: 14, height: 14 }} />
+              {t(TAB_LABELS[key])}
+            </button>
+          ))}
+        </div>
 
-          <AnimatePresence>
-            {extractedEntries.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="space-y-4"
-              >
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-serif font-bold text-primary">{t("benchmark.results")}</h2>
-                    <Badge variant="secondary">{extractedEntries.length} {t("benchmark.entries")}</Badge>
-                    {fileName && <Badge variant="outline" className="text-xs"><FileText className="w-3 h-3 mr-1" />{fileName}</Badge>}
-                  </div>
+        {activeTab === "import" && (
+          <>
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.5 }}
+              style={cardStyle}
+            >
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+                <div style={{ padding: 16, borderRadius: "50%", background: `${c.accent}15` }}>
+                  <Brain style={{ width: 32, height: 32, color: c.accent }} />
                 </div>
-
-                {currentParticipant && (
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
-                    <span className="flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5" />
-                      {t("benchmark.uploadedBy")}: <span className="font-medium text-foreground">{currentParticipant.name}</span>
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" />
-                      {t("benchmark.uploadedAt")}: <span className="font-medium text-foreground">{new Date().toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5" />
-                      {fileName}
-                    </span>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  {extractedEntries.map((entry, idx) => (
-                    <div
-                      key={idx}
-                      className="border rounded-lg transition-colors border-border/30 bg-card"
-                      data-testid={`benchmark-entry-${idx}`}
-                    >
-                      <div className="flex items-center gap-3 p-3 cursor-pointer" onClick={() => setExpandedIdx(expandedIdx === idx ? null : idx)}>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-serif font-semibold text-sm text-primary">{entry.whiskyName}</span>
-                            {entry.distillery && <span className="text-xs text-muted-foreground">by {entry.distillery}</span>}
-                            {entry.score != null && (
-                              <Badge variant="secondary" className="text-xs">
-                                {entry.score}{entry.scoreScale ? ` (${entry.scoreScale})` : "/100"}
-                              </Badge>
-                            )}
-                            {entry.region && <Badge variant="outline" className="text-[10px]">{entry.region}</Badge>}
-                          </div>
-                          {entry.noseNotes && (
-                            <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-lg">
-                              {t("benchmark.nose")}: {entry.noseNotes}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); removeEntry(idx); }}>
-                            <X className="w-3.5 h-3.5" />
-                          </Button>
-                          {expandedIdx === idx ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                        </div>
-                      </div>
-
-                      {showClassify && (
-                        <div className="px-3 pb-2 flex items-center gap-1.5 flex-wrap">
-                          <button
-                            onClick={() => toggleClassifyAction(idx, "library")}
-                            className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 transition-colors ${
-                              classifySelections[idx]?.includes("library") ? "bg-primary/10 border-primary/40 text-primary" : "border-border/40 text-muted-foreground hover:border-primary/20"
-                            }`}
-                            data-testid={`classify-library-${idx}`}
-                          >
-                            <Database className="w-2.5 h-2.5" />
-                            {t("benchmark.classifySaveToLibrary")}
-                          </button>
-                          <button
-                            onClick={() => toggleClassifyAction(idx, "wishlist")}
-                            className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 transition-colors ${
-                              classifySelections[idx]?.includes("wishlist") ? "bg-amber-500/10 border-amber-500/40 text-amber-600" : "border-border/40 text-muted-foreground hover:border-amber-500/20"
-                            }`}
-                            data-testid={`classify-wishlist-${idx}`}
-                          >
-                            <Heart className="w-2.5 h-2.5" />
-                            {t("benchmark.classifyAddToWishlist")}
-                          </button>
-                          <button
-                            onClick={() => toggleClassifyAction(idx, "tasted")}
-                            className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 transition-colors ${
-                              classifySelections[idx]?.includes("tasted") ? "bg-green-500/10 border-green-500/40 text-green-600" : "border-border/40 text-muted-foreground hover:border-green-500/20"
-                            }`}
-                            data-testid={`classify-tasted-${idx}`}
-                          >
-                            <GlassWater className="w-2.5 h-2.5" />
-                            {t("benchmark.classifyAddToTasted")}
-                          </button>
-                        </div>
-                      )}
-
-                      <AnimatePresence>
-                        {expandedIdx === idx && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="px-3 pb-3 pt-1 border-t border-border/20">
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                <EditField label={t("benchmark.field.whiskyName")} value={entry.whiskyName} onChange={(v) => updateEntry(idx, "whiskyName", v)} />
-                                <EditField label={t("benchmark.field.distillery")} value={entry.distillery || ""} onChange={(v) => updateEntry(idx, "distillery", v)} />
-                                <EditField label={t("benchmark.field.region")} value={entry.region || ""} onChange={(v) => updateEntry(idx, "region", v)} />
-                                <EditField label={t("benchmark.field.country")} value={entry.country || ""} onChange={(v) => updateEntry(idx, "country", v)} />
-                                <EditField label={t("benchmark.field.age")} value={entry.age || ""} onChange={(v) => updateEntry(idx, "age", v)} />
-                                <EditField label={t("benchmark.field.abv")} value={entry.abv || ""} onChange={(v) => updateEntry(idx, "abv", v)} />
-                                <EditField label={t("benchmark.field.caskType")} value={entry.caskType || ""} onChange={(v) => updateEntry(idx, "caskType", v)} />
-                                <EditField label={t("benchmark.field.category")} value={entry.category || ""} onChange={(v) => updateEntry(idx, "category", v)} />
-                                <EditField label={t("benchmark.field.score")} value={entry.score?.toString() || ""} onChange={(v) => updateEntry(idx, "score", v ? parseFloat(v) : null)} />
-                                <EditField label={t("benchmark.field.scoreScale")} value={entry.scoreScale || ""} onChange={(v) => updateEntry(idx, "scoreScale", v)} />
-                                <EditField label={t("benchmark.field.sourceAuthor")} value={entry.sourceAuthor || ""} onChange={(v) => updateEntry(idx, "sourceAuthor", v)} />
-                              </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                                <EditArea label={t("benchmark.field.noseNotes")} value={entry.noseNotes || ""} onChange={(v) => updateEntry(idx, "noseNotes", v)} />
-                                <EditArea label={t("benchmark.field.tasteNotes")} value={entry.tasteNotes || ""} onChange={(v) => updateEntry(idx, "tasteNotes", v)} />
-                                <EditArea label={t("benchmark.field.finishNotes")} value={entry.finishNotes || ""} onChange={(v) => updateEntry(idx, "finishNotes", v)} />
-                                <EditArea label={t("benchmark.field.overallNotes")} value={entry.overallNotes || ""} onChange={(v) => updateEntry(idx, "overallNotes", v)} />
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                <div style={{ textAlign: "center" }}>
+                  <h2 style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.accent }}>{t("benchmark.uploadTitle")}</h2>
+                  <p style={{ fontSize: 13, color: c.muted, maxWidth: 400, marginTop: 4 }}>{t("benchmark.uploadDesc")}</p>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>
+                  {["PDF", "Excel", "CSV", "TXT", "JPG/PNG"].map(fmt => (
+                    <span key={fmt} style={badgeOutlineStyle}>{fmt}</span>
                   ))}
                 </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.xlsx,.xls,.csv,.txt,.jpg,.jpeg,.png,.webp"
+                  style={{ display: "none" }}
+                  onChange={handleFileUpload}
+                  data-testid="input-file-upload"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={analyzing || aiDisabled}
+                  style={{ ...btnPrimary, opacity: (analyzing || aiDisabled) ? 0.5 : 1 }}
+                  data-testid="button-upload"
+                  title={aiDisabled ? t("admin.aiDisabledHint") : undefined}
+                >
+                  {analyzing ? (
+                    <>
+                      <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+                      {t("benchmark.analyzing")}
+                    </>
+                  ) : (
+                    <>
+                      <Upload style={{ width: 16, height: 16 }} />
+                      {t("benchmark.selectFile")}
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
 
-                {showClassify && (
-                  <div className="bg-card border border-border/50 rounded-xl p-4 space-y-3">
-                    <h3 className="text-sm font-serif font-bold text-primary">{t("benchmark.classifyTitle")}</h3>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-muted-foreground">{t("benchmark.classifyChooseCategory")}:</span>
-                      {(["tasting_notes", "analysis", "article", "other"] as const).map(cat => (
-                        <button
-                          key={cat}
-                          onClick={() => setClassifyCategory(cat)}
-                          className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
-                            classifyCategory === cat
-                              ? "bg-primary/10 border-primary/40 text-primary font-medium"
-                              : "border-border/40 text-muted-foreground hover:border-primary/20"
-                          }`}
-                          data-testid={`category-${cat}`}
-                        >
-                          {t(TAB_LABELS[cat])}
-                        </button>
-                      ))}
-                    </div>
-                    <Button
-                      onClick={handleClassifySave}
-                      disabled={isSaving}
-                      className="gap-2"
-                      data-testid="button-classify-save"
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          {t("benchmark.classifySaving")}
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4" />
-                          {t("benchmark.saveSelected")}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </motion.div>
+            {error && (
+              <div style={{ background: `${c.danger}15`, border: `1px solid ${c.danger}30`, borderRadius: 10, padding: 16, display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <AlertCircle style={{ width: 20, height: 20, color: c.danger, flexShrink: 0, marginTop: 2 }} />
+                <p style={{ fontSize: 13, color: c.danger }}>{error}</p>
+              </div>
             )}
-          </AnimatePresence>
-        </>
-      )}
 
-      {isLibraryTab && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder={t("benchmark.searchSaved")}
-                value={searchDb}
-                onChange={(e) => setSearchDb(e.target.value)}
-                className="pl-10 h-8 text-sm"
-                data-testid="input-search-saved"
-              />
-            </div>
-          </div>
+            {classifySuccess && (
+              <div style={{ background: `${c.success}15`, border: `1px solid ${c.success}30`, borderRadius: 10, padding: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                <Check style={{ width: 16, height: 16, color: c.success }} />
+                <span style={{ fontSize: 13, color: c.success }}>{classifySuccess}</span>
+              </div>
+            )}
 
-          {loadingSaved ? (
-            <div className="text-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
-            </div>
-          ) : filteredSaved.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">{t("benchmark.noSavedEntries")}</p>
-          ) : (
-            <div className="border border-border/30 rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-muted/50 border-b border-border/30">
-                      <th className="text-left p-2 font-medium">{t("benchmark.field.whiskyName")}</th>
-                      <th className="text-left p-2 font-medium">{t("benchmark.field.distillery")}</th>
-                      <th className="text-left p-2 font-medium">{t("benchmark.field.region")}</th>
-                      <th className="text-left p-2 font-medium">{t("benchmark.field.score")}</th>
-                      <th className="text-left p-2 font-medium">{t("benchmark.field.source")}</th>
-                      <th className="text-left p-2 font-medium">{t("benchmark.uploadedBy")}</th>
-                      <th className="text-left p-2 font-medium">{t("benchmark.uploadedAt")}</th>
-                      <th className="p-2 w-10"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredSaved.map((entry: any) => (
-                      <tr key={entry.id} className="border-b border-border/10 hover:bg-primary/5" data-testid={`saved-entry-${entry.id}`}>
-                        <td className="p-2 font-serif font-semibold text-primary">{entry.whiskyName}</td>
-                        <td className="p-2 text-muted-foreground">{entry.distillery || "—"}</td>
-                        <td className="p-2 text-muted-foreground">{entry.region || "—"}</td>
-                        <td className="p-2">{entry.score != null ? <Badge variant="secondary" className="text-[10px]">{entry.score}</Badge> : "—"}</td>
-                        <td className="p-2 text-muted-foreground truncate max-w-[150px]">{entry.sourceDocument || "—"}</td>
-                        <td className="p-2 text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <User className="w-3 h-3" />
-                            {entry.uploaderName || "—"}
-                          </span>
-                        </td>
-                        <td className="p-2 text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {formatDate(entry.createdAt)}
-                          </span>
-                        </td>
-                        <td className="p-2">
-                          {deleteConfirmId === entry.id ? (
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="destructive"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => handleDeleteConfirm(entry.id)}
-                                disabled={deleteMutation.isPending}
-                                data-testid={`button-confirm-delete-${entry.id}`}
-                              >
-                                {deleteMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => setDeleteConfirmId(null)}
-                                data-testid={`button-cancel-delete-${entry.id}`}
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
+            <AnimatePresence>
+              {extractedEntries.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  style={{ display: "flex", flexDirection: "column", gap: 16 }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <h2 style={{ fontSize: 20, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.accent }}>{t("benchmark.results")}</h2>
+                      <span style={badgeAccentStyle}>{extractedEntries.length} {t("benchmark.entries")}</span>
+                      {fileName && <span style={{ ...badgeOutlineStyle, display: "inline-flex", alignItems: "center", gap: 4 }}><FileText style={{ width: 12, height: 12 }} />{fileName}</span>}
+                    </div>
+                  </div>
+
+                  {currentParticipant && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 12, color: c.muted, background: `${c.card}80`, borderRadius: 10, padding: "8px 12px" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <User style={{ width: 14, height: 14 }} />
+                        {t("benchmark.uploadedBy")}: <span style={{ fontWeight: 500, color: c.text }}>{currentParticipant.name}</span>
+                      </span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Clock style={{ width: 14, height: 14 }} />
+                        {t("benchmark.uploadedAt")}: <span style={{ fontWeight: 500, color: c.text }}>{new Date().toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>
+                      </span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <FileText style={{ width: 14, height: 14 }} />
+                        {fileName}
+                      </span>
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {extractedEntries.map((entry, idx) => (
+                      <div
+                        key={idx}
+                        style={{ border: `1px solid ${c.border}30`, borderRadius: 10, background: c.card }}
+                        data-testid={`benchmark-entry-${idx}`}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, cursor: "pointer" }} onClick={() => setExpandedIdx(expandedIdx === idx ? null : idx)}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                              <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, fontSize: 13, color: c.accent }}>{entry.whiskyName}</span>
+                              {entry.distillery && <span style={{ fontSize: 12, color: c.muted }}>by {entry.distillery}</span>}
+                              {entry.score != null && (
+                                <span style={badgeAccentStyle}>
+                                  {entry.score}{entry.scoreScale ? ` (${entry.scoreScale})` : "/100"}
+                                </span>
+                              )}
+                              {entry.region && <span style={badgeOutlineStyle}>{entry.region}</span>}
                             </div>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => setDeleteConfirmId(entry.id)}
-                              title={t("benchmark.deleteEntry")}
-                              data-testid={`button-delete-${entry.id}`}
+                            {entry.noseNotes && (
+                              <p style={{ fontSize: 12, color: c.muted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 500 }}>
+                                {t("benchmark.nose")}: {entry.noseNotes}
+                              </p>
+                            )}
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                            <button style={{ ...btnGhost, width: 28, height: 28 }} onClick={(e) => { e.stopPropagation(); removeEntry(idx); }}>
+                              <X style={{ width: 14, height: 14 }} />
+                            </button>
+                            {expandedIdx === idx ? <ChevronUp style={{ width: 16, height: 16, color: c.muted }} /> : <ChevronDown style={{ width: 16, height: 16, color: c.muted }} />}
+                          </div>
+                        </div>
+
+                        {showClassify && (
+                          <div style={{ padding: "0 12px 8px", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <button
+                              onClick={() => toggleClassifyAction(idx, "library")}
+                              style={classifyChipStyle(!!classifySelections[idx]?.includes("library"), c.accent)}
+                              data-testid={`classify-library-${idx}`}
                             >
-                              <Trash2 className="w-3 h-3 text-destructive" />
-                            </Button>
+                              <Database style={{ width: 10, height: 10 }} />
+                              {t("benchmark.classifySaveToLibrary")}
+                            </button>
+                            <button
+                              onClick={() => toggleClassifyAction(idx, "wishlist")}
+                              style={classifyChipStyle(!!classifySelections[idx]?.includes("wishlist"), "#f59e0b")}
+                              data-testid={`classify-wishlist-${idx}`}
+                            >
+                              <Heart style={{ width: 10, height: 10 }} />
+                              {t("benchmark.classifyAddToWishlist")}
+                            </button>
+                            <button
+                              onClick={() => toggleClassifyAction(idx, "tasted")}
+                              style={classifyChipStyle(!!classifySelections[idx]?.includes("tasted"), c.success)}
+                              data-testid={`classify-tasted-${idx}`}
+                            >
+                              <GlassWater style={{ width: 10, height: 10 }} />
+                              {t("benchmark.classifyAddToTasted")}
+                            </button>
+                          </div>
+                        )}
+
+                        <AnimatePresence>
+                          {expandedIdx === idx && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              style={{ overflow: "hidden" }}
+                            >
+                              <div style={{ padding: "4px 12px 12px", borderTop: `1px solid ${c.border}20` }}>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8 }}>
+                                  <EditField label={t("benchmark.field.whiskyName")} value={entry.whiskyName} onChange={(v) => updateEntry(idx, "whiskyName", v)} />
+                                  <EditField label={t("benchmark.field.distillery")} value={entry.distillery || ""} onChange={(v) => updateEntry(idx, "distillery", v)} />
+                                  <EditField label={t("benchmark.field.region")} value={entry.region || ""} onChange={(v) => updateEntry(idx, "region", v)} />
+                                  <EditField label={t("benchmark.field.country")} value={entry.country || ""} onChange={(v) => updateEntry(idx, "country", v)} />
+                                  <EditField label={t("benchmark.field.age")} value={entry.age || ""} onChange={(v) => updateEntry(idx, "age", v)} />
+                                  <EditField label={t("benchmark.field.abv")} value={entry.abv || ""} onChange={(v) => updateEntry(idx, "abv", v)} />
+                                  <EditField label={t("benchmark.field.caskType")} value={entry.caskType || ""} onChange={(v) => updateEntry(idx, "caskType", v)} />
+                                  <EditField label={t("benchmark.field.category")} value={entry.category || ""} onChange={(v) => updateEntry(idx, "category", v)} />
+                                  <EditField label={t("benchmark.field.score")} value={entry.score?.toString() || ""} onChange={(v) => updateEntry(idx, "score", v ? parseFloat(v) : null)} />
+                                  <EditField label={t("benchmark.field.scoreScale")} value={entry.scoreScale || ""} onChange={(v) => updateEntry(idx, "scoreScale", v)} />
+                                  <EditField label={t("benchmark.field.sourceAuthor")} value={entry.sourceAuthor || ""} onChange={(v) => updateEntry(idx, "sourceAuthor", v)} />
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 8, marginTop: 8 }}>
+                                  <EditArea label={t("benchmark.field.noseNotes")} value={entry.noseNotes || ""} onChange={(v) => updateEntry(idx, "noseNotes", v)} />
+                                  <EditArea label={t("benchmark.field.tasteNotes")} value={entry.tasteNotes || ""} onChange={(v) => updateEntry(idx, "tasteNotes", v)} />
+                                  <EditArea label={t("benchmark.field.finishNotes")} value={entry.finishNotes || ""} onChange={(v) => updateEntry(idx, "finishNotes", v)} />
+                                  <EditArea label={t("benchmark.field.overallNotes")} value={entry.overallNotes || ""} onChange={(v) => updateEntry(idx, "overallNotes", v)} />
+                                </div>
+                              </div>
+                            </motion.div>
                           )}
-                        </td>
-                      </tr>
+                        </AnimatePresence>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="p-2 bg-muted/30 text-xs text-muted-foreground text-center">
-                {filteredSaved.length} {t("benchmark.entries")}
+                  </div>
+
+                  {showClassify && (
+                    <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <h3 style={{ fontSize: 14, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.accent }}>{t("benchmark.classifyTitle")}</h3>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12, color: c.muted }}>{t("benchmark.classifyChooseCategory")}:</span>
+                        {(["tasting_notes", "analysis", "article", "other"] as const).map(cat => (
+                          <button
+                            key={cat}
+                            onClick={() => setClassifyCategory(cat)}
+                            style={classifyCategory === cat ? { ...activeTabStyle, padding: "4px 10px" } : { ...inactiveTabStyle, padding: "4px 10px" }}
+                            data-testid={`category-${cat}`}
+                          >
+                            {t(TAB_LABELS[cat])}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={handleClassifySave}
+                        disabled={isSaving}
+                        style={{ ...btnPrimary, opacity: isSaving ? 0.5 : 1, alignSelf: "flex-start" }}
+                        data-testid="button-classify-save"
+                      >
+                        {isSaving ? (
+                          <>
+                            <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+                            {t("benchmark.classifySaving")}
+                          </>
+                        ) : (
+                          <>
+                            <Save style={{ width: 16, height: 16 }} />
+                            {t("benchmark.saveSelected")}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
+
+        {isLibraryTab && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+              <div style={{ position: "relative", width: 256 }}>
+                <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: c.muted }} />
+                <input
+                  placeholder={t("benchmark.searchSaved")}
+                  value={searchDb}
+                  onChange={(e) => setSearchDb(e.target.value)}
+                  style={{ ...inputStyle, paddingLeft: 36, height: 32, fontSize: 13 }}
+                  data-testid="input-search-saved"
+                />
               </div>
             </div>
-          )}
-        </motion.div>
-      )}
-    </div>
+
+            {loadingSaved ? (
+              <div style={{ textAlign: "center", padding: "32px 0" }}>
+                <Loader2 style={{ width: 24, height: 24, animation: "spin 1s linear infinite", margin: "0 auto", color: c.muted }} />
+              </div>
+            ) : filteredSaved.length === 0 ? (
+              <p style={{ fontSize: 13, color: c.muted, textAlign: "center", padding: "32px 0" }}>{t("benchmark.noSavedEntries")}</p>
+            ) : (
+              <div style={{ border: `1px solid ${c.border}30`, borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ background: `${c.card}80`, borderBottom: `1px solid ${c.border}30` }}>
+                        <th style={{ textAlign: "left", padding: 8, fontWeight: 500, color: c.muted }}>{t("benchmark.field.whiskyName")}</th>
+                        <th style={{ textAlign: "left", padding: 8, fontWeight: 500, color: c.muted }}>{t("benchmark.field.distillery")}</th>
+                        <th style={{ textAlign: "left", padding: 8, fontWeight: 500, color: c.muted }}>{t("benchmark.field.region")}</th>
+                        <th style={{ textAlign: "left", padding: 8, fontWeight: 500, color: c.muted }}>{t("benchmark.field.score")}</th>
+                        <th style={{ textAlign: "left", padding: 8, fontWeight: 500, color: c.muted }}>{t("benchmark.field.source")}</th>
+                        <th style={{ textAlign: "left", padding: 8, fontWeight: 500, color: c.muted }}>{t("benchmark.uploadedBy")}</th>
+                        <th style={{ textAlign: "left", padding: 8, fontWeight: 500, color: c.muted }}>{t("benchmark.uploadedAt")}</th>
+                        <th style={{ padding: 8, width: 40 }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSaved.map((entry: any) => (
+                        <tr key={entry.id} style={{ borderBottom: `1px solid ${c.border}10` }} data-testid={`saved-entry-${entry.id}`}>
+                          <td style={{ padding: 8, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.accent }}>{entry.whiskyName}</td>
+                          <td style={{ padding: 8, color: c.muted }}>{entry.distillery || "—"}</td>
+                          <td style={{ padding: 8, color: c.muted }}>{entry.region || "—"}</td>
+                          <td style={{ padding: 8 }}>{entry.score != null ? <span style={badgeAccentStyle}>{entry.score}</span> : "—"}</td>
+                          <td style={{ padding: 8, color: c.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 150 }}>{entry.sourceDocument || "—"}</td>
+                          <td style={{ padding: 8, color: c.muted }}>
+                            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <User style={{ width: 12, height: 12 }} />
+                              {entry.uploaderName || "—"}
+                            </span>
+                          </td>
+                          <td style={{ padding: 8, color: c.muted }}>
+                            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <Clock style={{ width: 12, height: 12 }} />
+                              {formatDate(entry.createdAt)}
+                            </span>
+                          </td>
+                          <td style={{ padding: 8 }}>
+                            {deleteConfirmId === entry.id ? (
+                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                <button
+                                  style={{ ...btnDanger, width: 24, height: 24 }}
+                                  onClick={() => handleDeleteConfirm(entry.id)}
+                                  disabled={deleteMutation.isPending}
+                                  data-testid={`button-confirm-delete-${entry.id}`}
+                                >
+                                  {deleteMutation.isPending ? <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} /> : <Check style={{ width: 12, height: 12 }} />}
+                                </button>
+                                <button
+                                  style={{ ...btnGhost, width: 24, height: 24 }}
+                                  onClick={() => setDeleteConfirmId(null)}
+                                  data-testid={`button-cancel-delete-${entry.id}`}
+                                >
+                                  <X style={{ width: 12, height: 12 }} />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                style={{ ...btnGhost, width: 24, height: 24 }}
+                                onClick={() => setDeleteConfirmId(entry.id)}
+                                title={t("benchmark.deleteEntry")}
+                                data-testid={`button-delete-${entry.id}`}
+                              >
+                                <Trash2 style={{ width: 12, height: 12, color: c.danger }} />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div style={{ padding: 8, background: `${c.card}50`, fontSize: 12, color: c.muted, textAlign: "center" }}>
+                  {filteredSaved.length} {t("benchmark.entries")}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </div>
+    </SimpleShell>
   );
 }
 
 function EditField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div>
-      <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{label}</label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} className="h-7 text-xs mt-0.5" />
+      <label style={{ fontSize: 10, color: c.muted, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{ ...inputStyle, height: 28, fontSize: 12, marginTop: 2, padding: "4px 8px", borderRadius: 6 }}
+      />
     </div>
   );
 }
@@ -662,12 +669,12 @@ function EditField({ label, value, onChange }: { label: string; value: string; o
 function EditArea({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div>
-      <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{label}</label>
+      <label style={{ fontSize: 10, color: c.muted, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={2}
-        className="w-full text-xs mt-0.5 rounded-md border border-input bg-background px-3 py-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-ring"
+        style={{ ...inputStyle, fontSize: 12, marginTop: 2, padding: "6px 8px", borderRadius: 6, resize: "none" }}
       />
     </div>
   );
