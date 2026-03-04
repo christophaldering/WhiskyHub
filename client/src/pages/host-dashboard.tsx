@@ -432,7 +432,7 @@ export default function HostDashboard() {
     enabled: !!currentParticipant,
   });
 
-  if (isLoading && currentParticipant) {
+  if ((isLoading && currentParticipant) || (currentParticipant && !summary)) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8" data-testid="host-dashboard-loading">
         <div className="h-8 w-56 bg-card/50 rounded animate-pulse mb-6" />
