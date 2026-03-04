@@ -133,7 +133,9 @@ function Router() {
       <NavRedirects />
       <Switch>
         <Route path="/" component={Landing} />
-        <Route path="/landing" component={Landing} />
+        <Route path="/landing">{() => <Redirect to="/" />}</Route>
+        <Route path="/start">{() => <Redirect to="/" />}</Route>
+        <Route path="/menu">{() => <Redirect to="/" />}</Route>
         <Route path="/feature-tour" component={FeatureTour} />
         <Route path="/tour" component={Tour} />
         <Route path="/background" component={Background} />

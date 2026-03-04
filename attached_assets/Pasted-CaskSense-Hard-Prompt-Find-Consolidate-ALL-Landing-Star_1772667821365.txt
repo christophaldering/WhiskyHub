@@ -1,0 +1,124 @@
+CaskSense – Hard Prompt: Find & Consolidate ALL Landing/Start Routes (Single Start Screen)
+
+CONTEXT
+We refactored navigation to a two-screen architecture (Tasting | My Taste) and updated landing.
+However, the app may still render an old landing/menu screen (e.g., showing “Entdecken”) because:
+- multiple pages act as “start”
+- routing still points to legacy start routes
+- there are duplicate landing components
+- links/buttons still navigate to an old home route
+
+GOAL
+Find EVERY place where a “landing / home / start / hub / menu” screen is defined or referenced,
+and consolidate into ONE canonical Start Screen that matches the two-screen architecture.
+
+No features removed.
+No backend changes.
+No DB changes.
+Only routing + entry points consolidation.
+
+--------------------------------------------
+STEP 0 — Define the canonical start screen
+--------------------------------------------
+Canonical Start Screen = “Two-Screen Start”
+- 3 primary actions:
+  1) Tasting beitreten -> /tasting/join
+  2) Dram hinzufügen -> /my-taste/log
+  3) Tasting erstellen -> /tasting/host
+- 2 secondary links:
+  - Mein Geschmack -> /my-taste
+  - Profil & Einstellungen -> /my-taste/settings
+NO “Entdecken/Discover/Explore” button on this screen.
+
+Choose ONE canonical route for it:
+Option A (recommended): "/" is the start screen
+Option B: "/start" is the start screen, and "/" redirects to "/start"
+
+Pick ONE and apply consistently. Prefer Option A.
+
+--------------------------------------------
+STEP 1 — Inventory all “start/landing” pages and routes
+--------------------------------------------
+Search frontend for:
+- routes: "/", "/home", "/landing", "/start", "/menu"
+- files named: landing*.tsx, home*.tsx, start*.tsx, hub*.tsx
+- UI labels: "CaskSense", "Wo Verkostung zur Reflexion wird", "Entdecken", "Whisky eintragen", "Tasting erstellen"
+- navigation arrays or menu definitions that include those
+
+Produce a short list of candidates:
+- file path
+- what route renders it
+- whether it is used in Simple Mode or Legacy Mode
+
+--------------------------------------------
+STEP 2 — Make ONE page the canonical start component
+--------------------------------------------
+Select the best existing component to become canonical (or create a new one):
+client/src/pages/start.tsx  (if not existing)
+
+Implement the canonical start UI there (Dark Warm).
+Use i18next labels (DE/EN) and keep copy minimal.
+
+--------------------------------------------
+STEP 3 — Route consolidation
+--------------------------------------------
+In the main router:
+- Make "/" render the canonical start component
+- Remove any competing mapping that previously rendered an old landing/menu screen
+
+If other start routes exist:
+- "/landing", "/home", "/start", "/menu" etc.
+Keep them alive but redirect them to "/"
+
+No deep link must break.
+
+--------------------------------------------
+STEP 4 — Remove legacy “Entdecken” exposure at start
+--------------------------------------------
+Find and update any component that renders the old home menu with:
+- “My Taste”
+- “Entdecken”
+- etc.
+
+If it’s still needed for legacy mode, gate it behind:
+NAV_VERSION === "legacy_5tab"
+or a similar flag.
+
+When NAV_VERSION === "two_screen":
+It must never render.
+
+--------------------------------------------
+STEP 5 — Audit internal links to home
+--------------------------------------------
+Search for links that go to:
+- "/discover-hub"
+- "/explore"
+- "/entdecken"
+- "/home" or "/landing" or "/"
+and ensure:
+- Home ("/") leads to canonical start
+- Discover links go to /my-taste/knowledge (or wherever you relocated)
+- No UI element shows “Entdecken” as a top-level destination in two-screen mode
+
+--------------------------------------------
+STEP 6 — Verify
+--------------------------------------------
+Manually verify (or via quick script) that:
+- Navigating to "/" always shows the canonical start screen (no “Entdecken”)
+- There is exactly ONE visual start screen in two-screen mode
+- Bottom nav shows only Tasting + My Taste
+- All legacy start routes redirect to "/"
+- No console errors, no TS errors
+
+--------------------------------------------
+DELIVERABLE
+--------------------------------------------
+After implementation output:
+1) Which start/landing pages were found and what you did with each (kept/redirected/gated)
+2) The final router mapping for "/"
+3) The list of updated files
+4) Confirmation that “Entdecken” is not shown on the canonical start screen in two-screen mode
+
+EXECUTE NOW.
+Do not refactor unrelated logic.
+Keep changes minimal, safe, and reversible via the existing nav flags.
