@@ -1504,8 +1504,47 @@ function RunLiveStep({ tasting: initialTasting, pid, onDone }: { tasting: Tastin
 export default function SimpleHostPage() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  const session = getSession();
-  const pid = session.pid || localStorage.getItem("casksense_participant_id");
+  const [sessionState, setSessionState] = useState(getSession());
+
+  const [resolvedPid, setResolvedPid] = useState<string | null>(null);
+
+  useEffect(() => {
+    const refresh = () => setSessionState(getSession());
+    window.addEventListener("session-change", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("session-change", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+
+  useEffect(() => {
+    const directPid = sessionState.pid || localStorage.getItem("casksense_participant_id");
+    if (directPid) {
+      setResolvedPid(directPid);
+      return;
+    }
+    if (sessionState.signedIn && sessionState.name) {
+      fetch("/api/participants/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: sessionState.name }),
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.id) {
+            setResolvedPid(data.id);
+            try {
+              sessionStorage.setItem("session_pid", data.id);
+              localStorage.setItem("casksense_participant_id", data.id);
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    }
+  }, [sessionState]);
+
+  const pid = resolvedPid;
 
   const [wizardStep, setWizardStep] = useState<WizardStep>("list");
   const [createdTasting, setCreatedTasting] = useState<TastingFull | null>(null);

@@ -461,6 +461,18 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/participants/lookup", async (req, res) => {
+    try {
+      const { name } = req.body;
+      if (!name || typeof name !== "string") return res.status(400).json({ message: "Name required" });
+      const participant = await storage.getParticipantByName(name.trim());
+      if (!participant) return res.status(404).json({ message: "Not found" });
+      res.json({ id: participant.id, name: participant.name });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.post("/api/participants/login", async (req, res) => {
     try {
       const { email, pin, experienceLevel } = req.body;
@@ -1526,10 +1538,15 @@ export async function registerRoutes(
       console.log(`[SESSION][AUTH] signin success for "${displayName || "anon"}" mode=${authMode} (global PIN)`);
       const e = sessionSigninAttempts.get(clientIp);
       if (e) e.count = 0;
-      const result: any = { ok: true, name: displayName, mode: authMode };
+      let globalPid: string | undefined;
+      if (displayName) {
+        const found = await storage.getParticipantByName(displayName);
+        if (found) globalPid = found.id;
+      }
+      const result: any = { ok: true, name: displayName, mode: authMode, pid: globalPid };
       if (remember) {
         const token = generateResumeToken();
-        sessionResumeTokens.set(token, { mode: authMode, name: displayName, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
+        sessionResumeTokens.set(token, { mode: authMode, name: displayName, pid: globalPid, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
         result.resumeToken = token;
       }
       return res.json(result);
