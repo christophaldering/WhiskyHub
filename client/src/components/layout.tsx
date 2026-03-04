@@ -68,7 +68,7 @@ function ProfileAvatar({ size = 36, showName = false, showSignOut = false }: { s
     : "";
   return (
     <div className="flex items-center gap-2">
-      <Link href="/profile">
+      <Link href="/my-taste">
         <div
           title={t("profile.title")}
           className="cursor-pointer flex flex-col items-center gap-1"

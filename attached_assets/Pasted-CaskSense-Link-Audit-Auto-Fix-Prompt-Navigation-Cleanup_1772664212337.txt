@@ -1,0 +1,97 @@
+CaskSense – Link-Audit & Auto-Fix Prompt (Navigation Cleanup)
+
+CONTEXT
+Repo: CaskSense v2.0.0 (React + Vite + TS, Wouter, Zustand, i18next)
+We are introducing a simplified navigation (Tasting | My Taste | Explore) and must remove/neutralize leftover links pointing to old/legacy paths.
+Many pages still link to the old system (e.g., /legacy/*, /app/*, old host/join/log entrypoints, old profile routes, etc.). We must find and fix them.
+
+GOAL
+1) Identify ALL internal navigation links and route usages across the frontend that:
+   - point to legacy UI (/legacy/*)
+   - point to experimental V2 UI (/app/*)
+   - point to obsolete entrypoints (e.g., old host/join/log routes if different from the new intended ones)
+   - bypass the new hubs (e.g., direct links from random places that should now go via /tasting, /my-taste, /discover-hub)
+
+2) Produce a report (table-like markdown) of:
+   - file path
+   - line number (approx ok if exact is hard)
+   - current link/route
+   - recommended replacement
+   - classification: MUST-FIX / SHOULD-FIX / OK-KEEP
+
+3) Apply safe auto-fixes for MUST-FIX items:
+   - Replace links to /legacy/* and /app/* with safe targets (usually /tasting, sometimes /discover-hub or /my-taste depending on context).
+   - Normalize obvious duplicates:
+     - old host entry -> /host-simple
+     - old join entry -> /enter
+     - old discover entry -> /discover-hub
+     - old “my” entry -> /my-taste
+   - Ensure deep links remain untouched:
+     - /tasting-room-simple/:id must stay
+     - /admin and admin tools must stay
+     - any direct “share” or “invite” URLs must stay if functional
+
+CONSTRAINTS
+- Frontend only. Do NOT change backend routes, DB schema, or API contracts.
+- Do NOT delete legacy pages; just stop linking to them (and optionally redirect elsewhere if a dedicated redirect component exists).
+- Keep changes minimal and reversible.
+
+WHAT TO SEARCH (FRONTEND)
+Run a repo-wide search in client/ for:
+- String literals: "/legacy", "/app/", "/workspaces/", "/profile", "/simple-host", "/host-simple", "/log-simple", "/enter", "/discover", "/my-taste"
+- Wouter usage: import { Link } from "wouter"; <Link href="...">, useLocation(), setLocation("..."), navigate helpers
+- Any custom routing helpers or constants (e.g. routes.ts, nav items arrays)
+- Buttons or cards that call location setters
+- Markdown/HTML content sections with embedded links
+- Any “Quick Actions” menus or “Create” menus
+
+REPLACEMENT RULES (DEFAULT)
+- Any link starting with "/legacy"  -> "/tasting"
+- Any link starting with "/app"     -> "/tasting"
+- "/simple-host" (if exists)        -> "/host-simple"
+- Old join routes (if any)          -> "/enter"
+- Old discover routes (if any)      -> "/discover-hub"
+- Old “log” entrypoints used as nav -> move to "/my-taste" (but keep /log-simple reachable from My Taste UI)
+- If a link is specifically “Learn/Guide/Templates/Lexicon” -> route under Explore (usually "/discover-hub" or the specific explore page)
+- If a link is “My stats / profile / journal / collection / wishlist” -> "/my-taste" or the specific my-taste subpage
+
+EDGE CASES (DO NOT CHANGE)
+- Admin routes: "/admin", "/support-console", "/platform-analytics" (or similar)
+- Deep tasting routes: "/tasting-room-simple/:id", "/tasting-recap/:id"
+- Invite links and QR routes: anything like "/enter?code=..." must remain
+- External URLs (http/https) must remain
+
+DELIVERABLES
+A) REPORT
+Output a markdown report grouped by category:
+1) Legacy/V2 links (MUST-FIX)
+2) Obsolete entrypoints (MUST-FIX)
+3) Non-ideal but acceptable links (SHOULD-FIX)
+4) Confirmed OK links (OK-KEEP)
+
+For each item include:
+- file path
+- line number (or nearest unique snippet)
+- current link
+- replacement link
+- short rationale
+
+B) APPLY FIXES
+Apply auto-fixes for MUST-FIX and clearly safe SHOULD-FIX items.
+For SHOULD-FIX where intent is ambiguous, leave unchanged but list in report.
+
+C) VERIFY
+After edits:
+- Run TypeScript build / lint if available
+- Run the app and click-test:
+  - bottom nav targets
+  - entrypoints: /tasting, /enter, /host-simple, /my-taste, /discover-hub
+  - confirm no UI element still links to /legacy/* or /app/*
+
+OUTPUT AT END
+- list of modified files
+- count of links fixed by category
+- any remaining ambiguous items with suggested manual decisions
+
+NOW EXECUTE:
+Perform the link audit and auto-fix as above.
