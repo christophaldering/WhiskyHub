@@ -1,0 +1,271 @@
+{
+  "timestamp": "2026-03-04T22:48:02.064Z",
+  "baseUrl": "http://localhost:5000",
+  "summary": {
+    "totalRoutes": 43,
+    "passed": 43,
+    "failed": 0,
+    "hygieneIssues": 0
+  },
+  "routes": [
+    {
+      "route": "/",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/tasting",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/enter",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/host",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/my-taste",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/analyze",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/log-simple",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/host-dashboard",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/sessions",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/admin",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/support",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/vocabulary",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/ai-curation",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/guide",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/method",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/discover/lexicon",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/discover/distilleries",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/discover/bottlers",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/discover/community",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/discover/templates",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/discover/about",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/discover/donate",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/discover/activity",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/discover/guide",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/my-taste/journal",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/my-taste/collection",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/my-taste/wishlist",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/my-taste/profile",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/my-taste/wheel",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/my-taste/analytics",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/my-taste/compare",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/my-taste/benchmark",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/my-taste/recommendations",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/my-taste/pairings",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/my-taste/settings",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/data-export",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/impressum",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/privacy",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/landing",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/tour",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/feature-tour",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/intro",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "route": "/background",
+      "status": 200,
+      "ok": true,
+      "notes": ""
+    }
+  ],
+  "hygieneIssues": []
+}

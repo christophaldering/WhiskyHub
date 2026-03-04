@@ -1,0 +1,137 @@
+CaskSense – Link-Integrity Test Prompt (Auto Click-Through / Smoke E2E)
+
+CONTEXT
+Repo: CaskSense v2.0.0 (React/Vite/TS, Wouter, Express backend)
+We need a deterministic way to verify that internal links and routes work after navigation refactors.
+Goal: “alle Verlinkungen funktionieren” + “alle einmal durchtesten lassen”.
+
+GOAL
+Implement an automated “click-through + route health” test suite that:
+1) Discovers internal routes and internal links (href="/...") in the frontend
+2) Starts the app locally (dev or preview)
+3) Visits each route at least once (including key deep routes with sample IDs)
+4) Clicks every internal link it finds on key hub pages
+5) Reports failures: non-200, blank page, JS runtime error, console error, navigation loop, missing route
+
+CONSTRAINTS
+- Prefer Playwright (headless browser) for realistic SPA navigation checks.
+- Do NOT change backend logic or DB schema.
+- Keep test-only changes isolated (tests/ and config).
+- If DB-driven pages require IDs, generate or reuse a safe seeded test record, OR skip with a clear report.
+- Must be runnable with a single command.
+
+-----------------------------
+STEP 1 — Add Playwright (E2E)
+-----------------------------
+Add Playwright as a dev dependency and initialize minimal config.
+
+Create:
+- playwright.config.ts
+- tests/link-integrity.spec.ts
+
+Use baseURL = http://localhost:5173 (or the project’s dev port).
+Add webServer config so Playwright starts the dev server automatically:
+- command: "npm run dev -- --host 0.0.0.0 --port 5173" (adapt if repo differs)
+- reuseExistingServer: true
+
+-----------------------------------------
+STEP 2 — Define the “must-pass” route list
+-----------------------------------------
+Create a curated “critical routes” array that MUST pass:
+
+/tasting (or /enter if /tasting not present yet)
+/enter
+/host-simple
+/my-taste
+/discover-hub
+/log-simple
+
+Also include:
+- /admin (ONLY if logged in admin is possible; otherwise skip and report)
+- /tasting-room-simple/:id and /tasting-recap/:id using a deterministic test ID:
+   - Either create a minimal tasting via API before the test (preferred)
+   - Or fallback: if no ID can be created, SKIP deep routes and report “missing seed”.
+
+--------------------------------------------
+STEP 3 — Auto-discover internal routes/links
+--------------------------------------------
+In the test:
+- Visit each critical route and ensure:
+  - no console “error”
+  - page has non-empty body
+  - no redirect loop
+- For each visited page:
+  - collect all <a href="/..."> links and elements with onClick navigation that render as links/buttons with data-href (if exists)
+  - filter out:
+    - external URLs
+    - mailto/tel
+    - admin routes (unless admin session exists)
+    - legacy/v2 routes (/legacy, /app) (these should be absent; treat as FAIL if found)
+  - enqueue unique internal hrefs
+
+Then:
+- Visit each discovered href once
+- For each visit record:
+  - status (OK/FAIL/SKIPPED)
+  - console errors (if any)
+  - final URL (after redirects)
+  - a short failure reason
+
+-------------------------------------
+STEP 4 — Handle authentication cleanly
+-------------------------------------
+We need a reliable approach:
+
+Option A (preferred):
+- Use a guest-friendly path set that does not require login.
+- Only test admin behind a flag SKIP_ADMIN=true.
+
+Option B:
+- If there is a stable test account in env:
+  - E2E_EMAIL, E2E_PASSWORD
+  - login once at start
+  - then test authenticated pages
+
+Implement:
+- If env vars exist -> login flow runs
+- Else -> run in guest mode and skip routes that hard-require auth, but report them.
+
+--------------------------------------------
+STEP 5 — Add a “Link Hygiene” assert
+--------------------------------------------
+Fail the test suite if ANY of these appear in discovered links:
+- href startsWith "/legacy"
+- href startsWith "/app"
+- href contains "/workspaces/" (if that’s a known old path)
+Unless explicitly whitelisted.
+
+--------------------------------------------
+STEP 6 — Output a readable report (important)
+--------------------------------------------
+At end of test run print a summary table:
+
+Route | Result | Final URL | Notes
+
+Also write JSON report to:
+test-results/link-integrity.json
+
+--------------------------------------------
+STEP 7 — Provide a single command
+--------------------------------------------
+Add scripts:
+
+"test:links": "playwright test tests/link-integrity.spec.ts"
+
+And ensure Playwright browsers are installed (document it in README or output).
+
+--------------------------------------------
+EXECUTION
+--------------------------------------------
+Implement now, then run:
+npm run test:links
+
+Return:
+- list of added/modified files
+- the summary report from the last run (copy into the chat)
+- any skipped routes and why
+- next recommended fixes if failures occur
