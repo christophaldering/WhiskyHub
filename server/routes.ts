@@ -16,6 +16,7 @@ import { APP_VERSION, getVersionInfo } from "@shared/version";
 import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification } from "./email";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES } from "./ai-settings";
+import { getAIClient, getAIStatus } from "./ai-client";
 import { hashPassword, verifyPassword } from "./lib/auth";
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, WidthType, BorderStyle } from "docx";
 import sharp from "sharp";
@@ -2341,6 +2342,11 @@ export async function registerRoutes(
         preferredPeatLevel: req.body.preferredPeatLevel || null,
         preferredCaskInfluence: req.body.preferredCaskInfluence || null,
       };
+      if ("openaiApiKey" in req.body) {
+        data.openaiApiKey = req.body.openaiApiKey || null;
+      } else if (existing) {
+        data.openaiApiKey = existing.openaiApiKey;
+      }
       if ("photoUrl" in req.body) {
         data.photoUrl = req.body.photoUrl || null;
       } else if (existing) {
@@ -2870,8 +2876,9 @@ export async function registerRoutes(
 
   app.post("/api/whiskies/:id/ai-enrich", async (req, res) => {
     try {
-      if (await isAIDisabled("ai_enrich")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const { participantId } = req.body;
+      const { client: openai } = await getAIClient(participantId, "ai_enrich");
+      if (!openai) return res.status(503).json({ message: "AI not available. Add your OpenAI API key in your profile to enable AI features." });
       const whisky = await storage.getWhisky(req.params.id);
       if (!whisky) return res.status(404).json({ message: "Whisky not found" });
 
@@ -2880,12 +2887,6 @@ export async function registerRoutes(
           return res.json(JSON.parse(whisky.aiFactsCache));
         } catch {}
       }
-
-      const { OpenAI } = await import("openai");
-      const openai = new OpenAI({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-      });
       const prompt = `You are a whisky expert. For the following whisky, provide:
 1. 3-4 interesting and potentially surprising facts (historical, production, or cultural)
 2. The distillery's official website URL (if known, otherwise null)
@@ -2987,10 +2988,11 @@ Respond ONLY with valid JSON, no markdown.`;
 
   app.post("/api/whiskies/ai-insights", async (req, res) => {
     try {
-      if (await isAIDisabled("ai_insights")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const { participantId, whiskyId, whiskyName, distillery, region, age, abv, caskInfluence, category, peatLevel, language } = req.body;
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
+      const { client: openai } = await getAIClient(participantId, "ai_insights");
+      if (!openai) return res.status(503).json({ message: "AI not available. Add your OpenAI API key in your profile to enable AI features." });
       const lang = language === "de" ? "German" : "English";
       const cacheKey = language === "de" ? "de" : "en";
 
@@ -3005,11 +3007,6 @@ Respond ONLY with valid JSON, no markdown.`;
           } catch {}
         }
       }
-
-      const openai = new OpenAI({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-      });
 
       const details = [
         whiskyName,
@@ -3912,9 +3909,10 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
   // ===== Journal Bottle Identification (must be before parameterized /api/journal/:participantId routes) =====
   app.post("/api/journal/identify-bottle", docUpload.single("photo"), async (req: Request, res: Response) => {
     try {
-      if (await isAIDisabled("journal_identify")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const participantId = req.body.participantId as string;
       if (!participantId) return res.status(400).json({ message: "participantId required" });
+      const { client: openai } = await getAIClient(participantId, "journal_identify");
+      if (!openai) return res.status(503).json({ message: "AI not available. Add your OpenAI API key in your profile to enable AI features." });
       const participant = await storage.getParticipant(participantId);
       if (!participant) return res.status(404).json({ message: "Participant not found" });
 
@@ -3934,11 +3932,6 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
       const dbWhiskyNames = Array.from(new Set(allWhiskies.map(w => w.name))).slice(0, 200);
       const benchmarkNames = Array.from(new Set(benchmarks.map(b => b.whiskyName))).slice(0, 200);
       const knownWhiskies = Array.from(new Set([...dbWhiskyNames, ...benchmarkNames]));
-
-      const openai = new OpenAI({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-      });
 
       const base64 = file.buffer.toString("base64");
       console.log(`Journal scan: file=${file.originalname}, size=${(file.size / 1024).toFixed(0)}KB, type=${file.mimetype}`);
@@ -4422,10 +4415,11 @@ ${flavorProfile.topWhiskies?.length ? `Top-rated whiskies: ${flavorProfile.topWh
 
   app.post("/api/extract-whisky-text", async (req: Request, res: Response) => {
     try {
-      if (await isAIDisabled("whisky_search")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const { text, participantId } = req.body;
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!text || typeof text !== "string" || text.trim().length < 3) return res.status(400).json({ message: "Text required (min 3 characters)" });
+      const { client: openai } = await getAIClient(participantId, "whisky_search");
+      if (!openai) return res.status(503).json({ message: "AI not available. Add your OpenAI API key in your profile to enable AI features." });
       const participant = await storage.getParticipant(participantId);
       if (!participant) return res.status(404).json({ message: "Participant not found" });
 
@@ -4434,11 +4428,6 @@ ${flavorProfile.topWhiskies?.length ? `Top-rated whiskies: ${flavorProfile.topWh
       const dbWhiskyNames = Array.from(new Set(allWhiskies.map(w => w.name))).slice(0, 200);
       const benchmarkNames = Array.from(new Set(benchmarks.map(b => b.whiskyName))).slice(0, 200);
       const knownWhiskies = Array.from(new Set([...dbWhiskyNames, ...benchmarkNames]));
-
-      const openai = new OpenAI({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-      });
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -6290,8 +6279,9 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
   // --- App Settings ---
 
-  app.get("/api/ai-status", async (_req, res) => {
+  app.get("/api/ai-status", async (req, res) => {
     try {
+      const participantId = req.query.participantId as string | undefined;
       const settings = await getAISettings();
       const disabledFeatures: string[] = [];
       if (settings.ai_master_disabled) {
@@ -6299,9 +6289,12 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       } else {
         disabledFeatures.push(...settings.ai_features_disabled);
       }
+      const { available, source } = await getAIStatus(participantId || null);
       res.json({
         masterDisabled: settings.ai_master_disabled,
         disabledFeatures,
+        available,
+        source,
       });
     } catch (e: any) {
       res.status(500).json({ message: e.message });

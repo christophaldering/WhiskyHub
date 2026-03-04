@@ -35,7 +35,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Host Tools**: Host briefing notes, tasting curation wizard, calendar view, and dashboard summary.
 -   **Communication**: Session invitations via email or QR codes.
 -   **Knowledge Base**: Includes a Whisky Lexicon, Distillery Encyclopedia, and Independent Bottlers Encyclopedia.
--   **AI Integration**: AI for bottle identification, newsletter content generation, market price estimation, and tasting suggestions.
+-   **AI Integration**: AI for bottle identification, newsletter content generation, market price estimation, and tasting suggestions. Two-tier AI access: admin can toggle platform-wide AI via `ai_master_disabled` setting, and users can add their own OpenAI API key in their profile (`profiles.openaiApiKey`). Resolution order: user's own key (preferred) → platform key (if enabled) → AI unavailable. Server-side resolver: `server/ai-client.ts` (`getAIClient(participantId, featureId)`).
 -   **Collection Sync**: Whiskybase collection supports smart sync/diff via CSV re-upload.
 -   **Host Wizard (Simple Mode)**: A 4-step inline wizard for creating sessions, adding whiskies, inviting participants, and running live tastings.
 -   **Tasting Results**: `/tasting-results/:id` displays a ranked list of whiskies by average overall score after a tasting ends. Shows avg score, rating count, and expandable detail breakdowns (Nose/Taste/Finish/Balance bars). Includes CSV export. Backend: `GET /api/tastings/:id/results`. Accessible from Host History list and Run Live ended state. File: `client/src/pages/tasting-results.tsx`.

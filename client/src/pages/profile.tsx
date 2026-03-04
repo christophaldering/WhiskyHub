@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Camera, X, User, KeyRound, Mail, Trash2, AlertTriangle, Layers, Target, FileText, Sparkles } from "lucide-react";
+import { Camera, X, User, KeyRound, Mail, Trash2, AlertTriangle, Layers, Target, FileText, Sparkles, Eye, EyeOff, Bot } from "lucide-react";
 import { GuestPreview } from "@/components/guest-preview";
 import type { UIMode } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -52,6 +52,8 @@ export default function Profile() {
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
+  const [openaiApiKey, setOpenaiApiKey] = useState("");
+  const [showApiKey, setShowApiKey] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile", currentParticipant?.id],
@@ -84,6 +86,7 @@ export default function Profile() {
       setPreferredRegions(profile.preferredRegions || []);
       setPreferredPeatLevel(profile.preferredPeatLevel || "");
       setPreferredCaskInfluence(profile.preferredCaskInfluence || "");
+      setOpenaiApiKey(profile.openaiApiKey || "");
     }
   }, [profile]);
 
@@ -113,6 +116,7 @@ export default function Profile() {
         preferredRegions,
         preferredPeatLevel,
         preferredCaskInfluence,
+        openaiApiKey: openaiApiKey.trim() || null,
       });
 
       const participantUpdates: any = {};
@@ -560,6 +564,53 @@ export default function Profile() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <div className="border-t border-border/30 pt-6">
+            <h2 className="font-serif text-lg text-primary mb-2 flex items-center gap-2">
+              <Bot className="w-4 h-4" />
+              AI Settings
+            </h2>
+            <p className="text-xs text-muted-foreground mb-4">
+              Add your own OpenAI API key to enable AI features like whisky identification, tasting notes, and more. Your key is stored securely and only used for your requests.
+            </p>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                OpenAI API Key
+              </Label>
+              <div className="relative">
+                <Input
+                  type={showApiKey ? "text" : "password"}
+                  value={openaiApiKey}
+                  onChange={(e) => setOpenaiApiKey(e.target.value)}
+                  placeholder="sk-..."
+                  className="bg-secondary/20 pr-10 font-mono text-sm"
+                  data-testid="input-openai-key"
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  data-testid="button-toggle-key-visibility"
+                >
+                  {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {openaiApiKey && (
+                <button
+                  type="button"
+                  onClick={() => setOpenaiApiKey("")}
+                  className="text-xs text-destructive hover:underline"
+                  data-testid="button-clear-api-key"
+                >
+                  Remove API key
+                </button>
+              )}
+              <p className="text-[10px] text-muted-foreground">
+                Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">platform.openai.com</a>. Costs are billed directly to your OpenAI account.
+              </p>
             </div>
           </div>
 

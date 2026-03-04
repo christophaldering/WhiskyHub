@@ -139,6 +139,7 @@ export const profiles = pgTable("profiles", {
   preferredPeatLevel: text("preferred_peat_level"),
   preferredCaskInfluence: text("preferred_cask_influence"),
   photoUrl: text("photo_url"),
+  openaiApiKey: text("openai_api_key"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
