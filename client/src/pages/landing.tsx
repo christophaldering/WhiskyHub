@@ -218,6 +218,29 @@ export default function Landing() {
               My Taste
             </motion.div>
           </Link>
+
+          <Link href="/discover">
+            <motion.div
+              whileTap={{ scale: 0.97 }}
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "0.875rem",
+                textAlign: "center",
+                fontSize: "0.95rem",
+                fontWeight: 600,
+                fontFamily: "system-ui, sans-serif",
+                background: "transparent",
+                color: "#d4a256",
+                borderRadius: "12px",
+                cursor: "pointer",
+                border: "1px solid #d4a256",
+              }}
+              data-testid="button-discover"
+            >
+              Discover
+            </motion.div>
+          </Link>
         </div>
       </motion.div>
 

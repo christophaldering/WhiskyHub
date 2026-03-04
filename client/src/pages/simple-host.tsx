@@ -1674,7 +1674,7 @@ export default function SimpleHostPage() {
     queryKey: ["/api/tastings", pid],
     queryFn: async () => {
       if (!pid) return [];
-      const res = await fetch(`/api/tastings?hostId=${pid}`);
+      const res = await fetch(`/api/tastings?participantId=${pid}`);
       if (!res.ok) return [];
       return res.json();
     },
