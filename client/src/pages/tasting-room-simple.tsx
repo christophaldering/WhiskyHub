@@ -514,11 +514,37 @@ export default function TastingRoomSimple() {
           <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: 0 }}>{tasting.title}</h2>
           <StatusBadge status={tasting.status} />
         </div>
-        <p style={{ fontSize: 12, color: c.muted, margin: 0 }}>
-          {showProgress}
-          {saving && " · saving…"}
-          {isGuided && <span style={{ marginLeft: 8, fontSize: 10, color: c.accent, fontWeight: 600 }}>GUIDED</span>}
-        </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <p style={{ fontSize: 12, color: c.muted, margin: 0 }}>
+            {showProgress}
+            {saving && " · saving…"}
+            {isGuided && <span style={{ marginLeft: 8, fontSize: 10, color: c.accent, fontWeight: 600 }}>GUIDED</span>}
+          </p>
+          {isHost && isOpen && (
+            <button
+              type="button"
+              onClick={() => navigate("/host")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "5px 12px",
+                fontSize: 12,
+                fontWeight: 600,
+                color: c.accent,
+                background: `${c.accent}12`,
+                border: `1px solid ${c.accent}30`,
+                borderRadius: 8,
+                cursor: "pointer",
+                fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="button-back-dram-control"
+            >
+              <ArrowLeft style={{ width: 13, height: 13 }} />
+              Dram Control
+            </button>
+          )}
+        </div>
       </div>
 
       {isGuided && (
