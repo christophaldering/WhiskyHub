@@ -28,86 +28,70 @@ function FadeUp({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 }
 
 function GlencairnGlass({ fillLevel = 0.35, glowIntensity = 0.5, delay = 0 }: { fillLevel?: number; glowIntensity?: number; delay?: number }) {
-  const amberLight = `rgba(200, 169, 126, ${glowIntensity * 0.25})`;
-  const amberMedium = `rgba(200, 169, 126, ${glowIntensity * 0.4})`;
-  const amberDark = `rgba(180, 140, 80, ${glowIntensity * 0.3})`;
-
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 0.8 + delay, ease: "easeOut" }}
+      transition={{ duration: 0.9, delay: 0.8 + delay, ease: "easeOut" }}
       style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
     >
-      <div style={{ position: "relative", width: 44, height: 72 }}>
-        <div style={{
-          position: "absolute",
-          top: 0,
-          left: 4,
-          right: 4,
-          height: 40,
-          borderRadius: "50% 50% 40% 40% / 30% 30% 70% 70%",
-          border: `1px solid rgba(200, 169, 126, 0.15)`,
-          background: `linear-gradient(180deg, transparent ${(1 - fillLevel) * 100}%, ${amberLight} ${(1 - fillLevel) * 100 + 5}%, ${amberMedium} 85%, ${amberDark} 100%)`,
-          overflow: "hidden",
-        }}>
-          <div style={{
-            position: "absolute",
-            top: `${(1 - fillLevel) * 100 - 2}%`,
-            left: "15%",
-            right: "15%",
-            height: 2,
-            background: `linear-gradient(90deg, transparent, rgba(255, 220, 160, ${glowIntensity * 0.3}), transparent)`,
-            borderRadius: 1,
-          }} />
-        </div>
+      <svg width="52" height="88" viewBox="0 0 52 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id={`whisky-${delay}`} x1="26" y1={48 - fillLevel * 36} x2="26" y2="48" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor={`rgba(218, 165, 80, ${glowIntensity * 0.7})`} />
+            <stop offset="60%" stopColor={`rgba(190, 130, 50, ${glowIntensity * 0.55})`} />
+            <stop offset="100%" stopColor={`rgba(160, 100, 30, ${glowIntensity * 0.4})`} />
+          </linearGradient>
+          <radialGradient id={`glow-${delay}`} cx="26" cy="30" r="30" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor={`rgba(218, 175, 100, ${glowIntensity * 0.15})`} />
+            <stop offset="100%" stopColor="rgba(218, 175, 100, 0)" />
+          </radialGradient>
+        </defs>
 
-        <div style={{
-          position: "absolute",
-          top: 38,
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: 8,
-          height: 20,
-          background: `linear-gradient(180deg, rgba(200, 169, 126, 0.12), rgba(200, 169, 126, 0.06))`,
-          borderLeft: `1px solid rgba(200, 169, 126, 0.1)`,
-          borderRight: `1px solid rgba(200, 169, 126, 0.1)`,
-        }} />
+        <circle cx="26" cy="30" r="28" fill={`url(#glow-${delay})`} />
 
-        <div style={{
-          position: "absolute",
-          bottom: 0,
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: 24,
-          height: 6,
-          borderRadius: "50%",
-          background: `linear-gradient(180deg, rgba(200, 169, 126, 0.1), rgba(200, 169, 126, 0.06))`,
-          border: `1px solid rgba(200, 169, 126, 0.12)`,
-        }} />
+        <path
+          d="M12 8 C12 8 8 20 10 35 C11 42 14 48 20 50 L22 50 L22 72 L18 74 C16 75 16 78 18 78 L34 78 C36 78 36 75 34 74 L30 72 L30 50 L32 50 C38 48 41 42 42 35 C44 20 40 8 40 8 Z"
+          fill="none"
+          stroke="rgba(200, 175, 140, 0.35)"
+          strokeWidth="1.2"
+        />
 
-        <div style={{
-          position: "absolute",
-          top: 4,
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: 50,
-          height: 50,
-          borderRadius: "50%",
-          background: `radial-gradient(circle, rgba(200, 169, 126, ${glowIntensity * 0.06}) 0%, transparent 70%)`,
-          pointerEvents: "none",
-        }} />
-      </div>
+        <clipPath id={`bowl-${delay}`}>
+          <path d="M13 9 C13 9 9 20 11 35 C12 42 15 48 20 50 L32 50 C37 48 40 42 41 35 C43 20 39 9 39 9 Z" />
+        </clipPath>
+        <rect
+          x="8" y={48 - fillLevel * 38}
+          width="36" height={fillLevel * 40}
+          fill={`url(#whisky-${delay})`}
+          clipPath={`url(#bowl-${delay})`}
+        />
+
+        <line
+          x1="16" y1={48 - fillLevel * 36}
+          x2="36" y2={48 - fillLevel * 36}
+          stroke={`rgba(255, 220, 160, ${glowIntensity * 0.4})`}
+          strokeWidth="0.8"
+          strokeLinecap="round"
+        />
+
+        <ellipse
+          cx="26" cy="78" rx="10" ry="2.5"
+          fill="none"
+          stroke="rgba(200, 175, 140, 0.2)"
+          strokeWidth="0.8"
+        />
+      </svg>
     </motion.div>
   );
 }
 
 function TastingFlight() {
   const glasses = [
-    { fillLevel: 0.4, glowIntensity: 0.4, delay: 0 },
-    { fillLevel: 0.55, glowIntensity: 0.6, delay: 0.1 },
-    { fillLevel: 0.35, glowIntensity: 0.5, delay: 0.2 },
-    { fillLevel: 0.45, glowIntensity: 0.45, delay: 0.3 },
+    { fillLevel: 0.4, glowIntensity: 0.7, delay: 0 },
+    { fillLevel: 0.6, glowIntensity: 1.0, delay: 0.1 },
+    { fillLevel: 0.35, glowIntensity: 0.85, delay: 0.2 },
+    { fillLevel: 0.5, glowIntensity: 0.75, delay: 0.3 },
   ];
 
   return (
@@ -136,19 +120,19 @@ function TastingFlight() {
         <div style={{
           position: "absolute",
           bottom: 0,
-          left: -16,
-          right: -16,
+          left: -20,
+          right: -20,
           height: 2,
-          background: `linear-gradient(90deg, transparent, rgba(200, 169, 126, 0.15) 20%, rgba(200, 169, 126, 0.2) 50%, rgba(200, 169, 126, 0.15) 80%, transparent)`,
+          background: `linear-gradient(90deg, transparent, rgba(200, 169, 126, 0.3) 15%, rgba(200, 169, 126, 0.45) 50%, rgba(200, 169, 126, 0.3) 85%, transparent)`,
           borderRadius: 1,
         }} />
       </div>
 
       <div style={{
-        width: 220,
-        height: 30,
+        width: 260,
+        height: 40,
         marginTop: -4,
-        background: `radial-gradient(ellipse 100% 100% at 50% 0%, rgba(200, 169, 126, 0.04) 0%, transparent 80%)`,
+        background: `radial-gradient(ellipse 100% 100% at 50% 0%, rgba(200, 169, 126, 0.08) 0%, transparent 80%)`,
         pointerEvents: "none",
       }} />
     </motion.div>
