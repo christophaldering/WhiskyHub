@@ -9,6 +9,8 @@ import { v } from "@/lib/themeVars";
 import { NAV_VERSION } from "@/lib/config";
 import { primaryTabs } from "@/lib/navConfig";
 import { useTranslation } from "react-i18next";
+import { useIsMobile } from "@/hooks/use-mobile";
+import DesktopTabSwitcher from "@/components/navigation/DesktopTabSwitcher";
 
 const NAV_ITEMS_V1 = [
   { href: "/enter", icon: Wine, labelKey: "nav.join", labelFallback: "Join", match: ["/enter", "/join", "/tasting-room-simple", "/naked/"] },
@@ -45,6 +47,7 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
   const [showSessionSheet, setShowSessionSheet] = useState(false);
   const [session, setSession] = useState(() => getSession());
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
 
   const refreshSession = useCallback(() => setSession(getSession()), []);
 
@@ -75,7 +78,7 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative" }}>
           <Link href="/">
             <span
               style={{
@@ -89,6 +92,11 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
               CaskSense
             </span>
           </Link>
+          {!isMobile && (
+            <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
+              <DesktopTabSwitcher />
+            </div>
+          )}
           <button
             onClick={() => setShowSessionSheet(true)}
             style={{
@@ -166,7 +174,7 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
         variant="dark"
       />
 
-      <nav
+      {isMobile && <nav
         style={{
           position: "fixed",
           bottom: 0,
@@ -212,7 +220,7 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
             </Link>
           );
         })}
-      </nav>
+      </nav>}
     </div>
   );
 }
