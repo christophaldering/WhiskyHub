@@ -4,20 +4,20 @@ import { primaryTabs } from "@/lib/navConfig";
 import { v } from "@/lib/themeVars";
 import { c } from "@/lib/theme";
 
-export default function DesktopTabSwitcher() {
+export default function DesktopTabSwitcher({ maxWidth = 600 }: { maxWidth?: number }) {
   const [location, navigate] = useLocation();
   const { t } = useTranslation();
 
   return (
     <div
       style={{
+        width: "100%",
+        maxWidth,
+        margin: "0 auto",
         display: "flex",
         alignItems: "center",
-        gap: 4,
-        padding: 3,
-        borderRadius: 50,
-        background: `${c.accent}0c`,
-        border: `1px solid ${c.accent}18`,
+        justifyContent: "space-between",
+        padding: "0 20px",
       }}
       role="tablist"
       data-testid="desktop-tab-switcher"
@@ -41,7 +41,7 @@ export default function DesktopTabSwitcher() {
               display: "inline-flex",
               alignItems: "center",
               gap: 7,
-              padding: "7px 22px",
+              padding: "6px 18px",
               borderRadius: 50,
               border: "none",
               cursor: "pointer",

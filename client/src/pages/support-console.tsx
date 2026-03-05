@@ -1,5 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useLocation } from "wouter";
 import { BuildFooter } from "@/components/build-footer";
+import { useAppStore } from "@/lib/store";
 
 const PIN = import.meta.env.VITE_SUPPORT_PIN;
 
@@ -189,8 +191,25 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
 }
 
 export default function SupportConsole() {
+  const { currentParticipant } = useAppStore();
+  const [, navigate] = useLocation();
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem("casksense_support_unlocked") === "1");
   const [search, setSearch] = useState("");
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setChecked(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!checked) {
+    return null;
+  }
+
+  if (currentParticipant?.role !== "admin") {
+    navigate("/my-taste", { replace: true });
+    return null;
+  }
 
   if (!PIN) {
     return (

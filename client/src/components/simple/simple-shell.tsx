@@ -78,7 +78,7 @@ export default function SimpleShell({ children, showBack = false, maxWidth = 600
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Link href="/">
             <span
               style={{
@@ -92,11 +92,6 @@ export default function SimpleShell({ children, showBack = false, maxWidth = 600
               CaskSense
             </span>
           </Link>
-          {!isMobile && (
-            <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
-              <DesktopTabSwitcher />
-            </div>
-          )}
           <button
             onClick={() => setShowSessionSheet(true)}
             style={{
@@ -130,6 +125,11 @@ export default function SimpleShell({ children, showBack = false, maxWidth = 600
             )}
           </button>
         </div>
+        {!isMobile && (
+          <div style={{ marginTop: 8 }}>
+            <DesktopTabSwitcher maxWidth={maxWidth} />
+          </div>
+        )}
       </div>
 
       <div
