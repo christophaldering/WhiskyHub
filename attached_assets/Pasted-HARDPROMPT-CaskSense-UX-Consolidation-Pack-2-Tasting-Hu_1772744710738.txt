@@ -1,0 +1,140 @@
+HARDPROMPT — CaskSense UX Consolidation Pack #2 (Tasting Hub + Solo Dram)
+
+ROLE
+You are the senior engineer + product-grade UX designer for CaskSense (React + Vite, Wouter routing, TanStack Query, Zustand, Tailwind, shadcn/ui, i18n via react-i18next, Express backend). Implement the requested UX consolidation exactly. Do not propose alternatives. Do not remove features. Do not “partially implement”. Make changes in small, verifiable commits and run the app after.
+
+GOAL (ABSOLUTE)
+Keep the global two-world structure:
+- Tab 1: /tasting  (Tasting)
+- Tab 2: /my-taste (My Taste)
+
+Now implement this specific structure variant for the Tasting hub:
+
+Tasting
+  [ Tasting beitreten ]
+  [ Tasting hosten ]
+  OR
+  [ Solo Dram verkosten ]
+
+This is a UX + IA consolidation. It must be consistent on Desktop and Mobile.
+
+SCOPE
+A) TASTING HUB (/tasting)
+1) Update the /tasting page layout to contain exactly three primary CTA cards (Apple-clean, dark-warm theme):
+   - “Tasting beitreten” (Join tasting): contains tasting code input + join action (keep existing join logic)
+   - “Tasting hosten” (Host tasting): navigates to existing host flow (keep existing logic/pages)
+   - “Solo Dram verkosten” (Solo dram): navigates to the existing solo logging flow (where a user can add a dram without a tasting) — reuse existing routes/components; do not create duplicate logic
+
+2) Insert a clean visual “ODER” separator between the first two CTAs and the Solo CTA:
+   - Desktop: centered smallcaps “ODER” with thin divider lines left/right
+   - Mobile: stacked spacing with “ODER” centered
+
+3) Under these CTAs, keep “Mehr” as secondary links (not primary CTAs), but remove redundancy:
+   - Ensure there is no “Letzte Tastings” link here if the same concept is in My Taste. If the feature must exist, rename + relocate per instructions below.
+
+B) REMOVE DUPLICATIONS / RENAME
+4) Eliminate the duplication:
+   - If “Letzte Tastings” exists under /tasting and “Tasting Recap” exists under /my-taste, unify naming and placement:
+     - The concept belongs to My Taste and must be called in German “Meine Tastings” (and English “My Tastings”).
+     - Under /tasting, do NOT show a separate “Letzte Tastings” entry anymore. If there is a legitimate admin/host-only “results” shortcut, label it as such and place it under Host dashboard only.
+
+5) Ensure “+ Dram hinzufügen” (Add dram) is not presented as a primary action on My Taste home anymore.
+   - The primary “Add dram” action should live in the Tasting tab as “Solo Dram verkosten”.
+   - My Taste may still contain an inline add button within “Meine Drams” list page (optional), but it must not duplicate the main CTA on the My Taste home screen.
+
+C) ROUTES (KEEP FEATURES)
+6) Do NOT delete routes/pages. Only rewire navigation and text labels.
+7) Confirm these top-level routes remain:
+   - /tasting
+   - /my-taste
+8) Ensure “My Taste” contains:
+   - Meine Drams (All drams history)
+   - Meine Tastings (tastings recap/history/results)
+   - Geschmacksprofil (profile/radar)
+   - Exporte remain accessible (but avoid repeating Export tabs in nested pages if there is already a top export entry; consolidate navigation only).
+
+D) LANGUAGE CONSISTENCY (MUST)
+9) Enforce i18n: German UI must be fully German; English fully English.
+   - Search for hardcoded English strings in pages touched by this change (/tasting, /my-taste home, “Meine Drams”, “Meine Tastings” pages)
+   - Replace with t('…') keys
+   - Add missing translation keys in both de and en resources
+   - Verify in UI by switching language.
+
+E) NAV / ACTIVE STATE (MUST)
+10) Desktop: make sure the top tab highlight (Tasting vs My Taste) is visually obvious:
+   - active tab: filled pill with accent background, clear contrast, icon+label
+   - inactive tab: outline/ghost with lower contrast
+   - Add subtle underline/indicator is OK, but keep it “Apple-clean”
+11) Bottom nav (mobile): increase discoverability:
+   - icons and labels must be legible
+   - active state must be clearly highlighted
+   - ensure it does not look “disabled” on desktop; consider hiding bottom nav on wide screens if there is a top nav.
+
+F) BACK BEHAVIOR (MUST)
+12) Implement consistent back navigation without duplicate “Back” appearing twice.
+   - Introduce a single reusable <BackButton/> component used across pages that need it.
+   - It should appear near the top-left of the content area (not only at bottom).
+   - It should:
+     - go back in history if possible (history length > 1),
+     - otherwise fallback to a sensible parent route (e.g., /my-taste or /tasting depending on section).
+   - Remove any bottom “← Back” duplicates across updated pages.
+
+G) LAYOUT / RESPONSIVENESS (MUST)
+13) Fix the “participant dropdown” (e.g., “Christoph Aldering”) showing in weird places:
+   - It should live only in the global header/top-right area, not floating near charts/content.
+   - Ensure it does not appear at bottom center of content.
+14) Ensure content containers use responsive max-width:
+   - On desktop, pages like “Sessions” must not be unnecessarily narrow.
+   - Use a comfortable max width (e.g., 960–1100) with centered layout, consistent paddings.
+
+IMPLEMENTATION STEPS (STRICT)
+Step 1 — Inventory & Locate
+- Identify the current files for /tasting and /my-taste landing pages (likely in client/src/pages/*).
+- Identify where “Letzte Tastings” and “Tasting Recap” are wired.
+- Identify the existing solo dram logging route/component.
+
+Step 2 — Implement Tasting hub layout
+- Update /tasting page to the 3-CTA structure exactly as specified.
+- Ensure CTA actions call existing logic/routes.
+
+Step 3 — Consolidate naming & navigation
+- Rename “Tasting Recap” -> “Meine Tastings” (DE) / “My Tastings” (EN) everywhere visible.
+- Remove “Letzte Tastings” entry from /tasting navigation.
+- Remove “+ Dram hinzufügen” as a primary CTA on My Taste home (keep it inside the Meine Drams page if needed).
+
+Step 4 — BackButton standardization
+- Create reusable BackButton component.
+- Replace duplicate bottom back links with the single top back button.
+- Confirm no pages show two back controls.
+
+Step 5 — i18n cleanup
+- Replace hardcoded strings, add translations, verify toggle.
+
+Step 6 — Responsive polish
+- Fix participant dropdown placement.
+- Fix narrow containers.
+- Ensure tabs are clearly highlighted on desktop.
+
+QUALITY GATES (NON-NEGOTIABLE)
+- No feature deletions.
+- No new duplicate export/download UI.
+- No hardcoded English in German mode.
+- No duplicated Back buttons.
+- /tasting and /my-taste remain the only top-level tabs.
+- Run the app and manually sanity-test:
+  - /tasting CTAs
+  - Solo dram flow
+  - Join tasting
+  - Host tasting
+  - My Taste -> Meine Drams
+  - My Taste -> Meine Tastings
+  - Language toggle DE/EN
+
+DELIVERABLE
+At the end, print:
+1) A short summary of what you changed (bullet list)
+2) Exact file list touched
+3) Any new i18n keys added (DE + EN)
+4) Confirmations of the sanity tests above (checked)
+
+NOW EXECUTE.
