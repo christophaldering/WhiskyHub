@@ -1,0 +1,83 @@
+HARD PROMPT — CaskSense: Redesign “Mein CaskSense Profil” (UX + Copy + Filters + Dark-Warm Theme)
+
+You are working in the CaskSense repo (React + Vite + TS, Wouter, Tailwind, shadcn/ui, Framer Motion, Recharts, i18next). 
+Goal: Critically redesign the current profile/geschmacksprofil pages and controls so they become intuitive, Apple-clean, and fully consistent with the dark-warm whisky theme.
+
+SCOPE (DO ALL)
+1) Rename UI labels consistently:
+   - Replace “Geschmacksprofil” and “Mein Whisky-Profil” everywhere with ONE term: “Mein CaskSense Profil”.
+   - Ensure i18n keys exist for DE/EN and are used via t().
+2) Critically redesign the page UX where users see complex profile analytics:
+   - Make it understandable for non-power-users.
+   - Explain complex contents in plain language.
+   - Use progressive disclosure (show simple summary first, deep dive optional).
+3) Fix the non-intuitive filter chips:
+   - Replace current ambiguous chip labels like “Alle Getasteten / Nur Getastete / Nur Bibliothek / Alle inkl. Bibliothek” and “Nur eigene / Freunde / Plattform”
+   - Implement two clearly labeled segmented controls with helper text:
+     A) “Datenbasis” (what feeds the profile)
+        Options:
+         - “Nur Bewertungen” (default)
+         - “Bewertungen + Notizen”
+         - “Alles inkl. Sammlung”
+        Helper text below:
+         “Datenbasis bestimmt, was in dein Profil einfließt.”
+     B) “Vergleich” (reference frame, does NOT change profile data)
+        Options:
+         - “Nur ich” (default)
+         - “Freunde”
+         - “Plattform”
+        Helper text below:
+         “Vergleich ändert nicht dein Profil — nur die Einordnung.”
+4) Bring the entire page into the dark-warm Apple-style design:
+   - No big white blocks. Use dark cards (#242018-ish) with subtle borders, gold accent (#d4a256).
+   - Keep typography premium and minimal.
+   - Use SimpleShell layout but allow wider maxWidth on desktop (e.g., 900–1100px) for this page only.
+5) Add “What does this mean?” explanations:
+   - For the radar/dimensions chart, add a short plain-language explanation (3 bullets) below the chart.
+   - Add tooltips (small “i” icon) for:
+     - “Datenbasis”
+     - “Vergleich”
+     - “Profil-Stabilität” (based on sample size)
+6) New page structure (must implement in this order):
+   SECTION 1: Header
+     Title: “Mein CaskSense Profil”
+     Subtitle: one-liner explaining it: “Dein Geschmack, verdichtet aus Bewertungen und Notizen.”
+     Back button always visible with fallback to /my-taste.
+   SECTION 2: Profil-Snapshot (3 small cards)
+     - “Dein Stil” (e.g. Rauchig & Trocken — derived from data if available, else placeholder “Noch im Aufbau”)
+     - “Sweet Spot” (e.g. ABV/Region/Fass preference summary)
+     - “Profil-Stabilität” (low/medium/high + explanation tooltip; based on number of drams/ratings)
+   SECTION 3: Radar / Verkostungsdimensionen
+     - Keep Recharts radar chart but restyle to match dark theme.
+     - Below: “Was heißt das?” with 3 bullet explanations in plain German.
+   SECTION 4: Treiber (Top influences)
+     - Show top 3–5 drivers: “Du magst häufig…”, “Du meidest häufig…”, “Fass/Region…”
+     - If insufficient data, show elegant empty state + CTA to “Solo Dram verkosten” (/log-simple) or “Tasting beitreten” (/enter).
+   SECTION 5: Vergleich (only when Vergleich != “Nur ich”)
+     - Show a simple comparison widget “Du vs Freunde/Plattform” with deltas.
+   SECTION 6: Deep Dive (Accordion)
+     - “Methodik”
+     - “Datenqualität”
+     - “Export & Downloads” (link to /my-taste/downloads)
+7) Ensure no dead ends:
+   - Back button uses history.back() but with explicit fallback route: /my-taste
+8) Keep existing routes working:
+   - If there are currently separate routes (/my-taste/profile and/or another profile page), keep them but unify them to render the new “Mein CaskSense Profil” view (single component).
+   - Update navigation label to the new term.
+
+DELIVERABLES
+After implementation, output:
+1) Files changed list
+2) New i18n keys added (DE/EN)
+3) Manual test checklist (min 8 steps), including:
+   - switching Datenbasis
+   - switching Vergleich
+   - empty state behavior
+   - back button fallback
+   - dark theme consistency
+
+IMPORTANT
+- Do not remove features; restructure UI only.
+- Use existing components where possible (Apple-style primitives, PageHeader, BackButton).
+- Do not introduce new top-level nav items; keep two-world model.
+END.
