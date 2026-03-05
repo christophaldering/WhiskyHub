@@ -1,0 +1,207 @@
+You are Replit AI working inside the CaskSense repository.
+
+Your task is to IMPLEMENT a language consistency audit and UI improvement.
+
+This is NOT an analysis-only task.  
+You must inspect the code, identify inconsistencies, and modify the code where necessary.
+
+Do NOT introduce new features beyond what is specified.
+
+After implementation, the application must still build and run.
+
+------------------------------------------------------------
+GOALS
+------------------------------------------------------------
+
+1) Ensure the application uses consistent language output:
+   - German UI → fully German
+   - English UI → fully English
+
+2) Ensure the language switcher is prominently available:
+   - placed in the session menu
+   - top-right position of the UI
+   - visible and easy to access
+
+------------------------------------------------------------
+PART 1 — LANGUAGE CONSISTENCY AUDIT
+------------------------------------------------------------
+
+Search the repository for language usage problems.
+
+Focus on:
+
+client/src/pages
+client/src/components
+client/src/v2
+client/src/lib/i18n.ts
+client/src/lib/translations
+
+Look for:
+
+• Hardcoded German text
+• Hardcoded English text
+• Mixed language UI strings
+• Text not using the i18n translation system
+
+Search for patterns like:
+
+"Download"
+"Export"
+"Results"
+"Settings"
+"Journal"
+"Tasting"
+"Bewertungsbogen"
+"Ergebnis"
+"Herunterladen"
+"Analyse"
+"Profil"
+
+Also search for:
+
+> ">"text"</"
+> button labels
+> menu labels
+> headings
+> placeholder text
+> tooltips
+
+------------------------------------------------------------
+REQUIREMENTS
+------------------------------------------------------------
+
+All UI text must use the translation system defined in:
+
+client/src/lib/i18n.ts
+
+If hardcoded text is found:
+
+1) Replace the string with a translation key
+2) Add missing keys to translation dictionaries
+
+Supported languages must remain:
+
+DE (default)
+EN
+
+Example transformation:
+
+Before:
+
+<button>Download</button>
+
+After:
+
+<button>{t("download")}</button>
+
+Then ensure:
+
+translations.de.download = "Herunterladen"
+translations.en.download = "Download"
+
+------------------------------------------------------------
+PART 2 — FIX MIXED LANGUAGE UI
+------------------------------------------------------------
+
+If the UI is currently German but displays English elements (or vice versa):
+
+Fix them so they come from translation keys.
+
+Particularly check:
+
+• export buttons
+• tasting screens
+• analytics
+• host dashboard
+• my-taste pages
+• feature-tour
+• data export
+
+------------------------------------------------------------
+PART 3 — LANGUAGE SWITCHER PLACEMENT
+------------------------------------------------------------
+
+The project already includes:
+
+client/src/components/language-toggle.tsx
+
+Your task:
+
+Ensure this component is placed prominently in the session menu.
+
+Target file:
+
+client/src/components/session-sheet.tsx
+
+------------------------------------------------------------
+IMPLEMENTATION
+------------------------------------------------------------
+
+1) Add the LanguageToggle component near the top of the session menu.
+
+Placement:
+
+Top-right within the session panel header area.
+
+Example layout:
+
+--------------------------------
+User Name
+Language: [DE | EN]
+Theme Toggle
+Logout
+--------------------------------
+
+2) The language toggle must:
+
+• be clearly visible
+• not hidden deep in settings
+• use existing i18n context
+
+------------------------------------------------------------
+PART 4 — NAVIGATION CONSISTENCY
+------------------------------------------------------------
+
+Check that switching language updates all visible UI labels.
+
+Test especially:
+
+• navigation tabs
+• export page
+• tasting results
+• host dashboard
+• my-taste pages
+
+Ensure:
+
+No leftover hardcoded strings.
+
+------------------------------------------------------------
+PART 5 — CLEANUP
+------------------------------------------------------------
+
+Remove any unused language utilities.
+
+Ensure:
+
+• no duplicate translation keys
+• no dead imports
+• TypeScript compiles
+
+------------------------------------------------------------
+PART 6 — FINAL REPORT
+------------------------------------------------------------
+
+After finishing, print a concise implementation report:
+
+1) Files modified
+2) Hardcoded strings replaced
+3) New translation keys added
+4) Location of the language toggle
+5) Manual test instructions
+
+Do NOT include speculative recommendations.
+
+Only implement what is necessary for consistent multilingual UI and proper placement of the language switcher.
+
+Begin now.

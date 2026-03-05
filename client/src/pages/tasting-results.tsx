@@ -2,6 +2,7 @@ import { useParams } from "wouter";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import SimpleShell from "@/components/simple/simple-shell";
 import { Trophy, ChevronDown, Download, ArrowLeft, FileSpreadsheet, FileText, ClipboardList, Loader2 } from "lucide-react";
 import { c, cardStyle } from "@/lib/theme";
@@ -62,6 +63,7 @@ function ScoreBar({ label, value }: { label: string; value: number | null }) {
 }
 
 function WhiskyResultCard({ result, rank }: { result: WhiskyResult; rank: number }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const hasDetails = result.avgNose != null || result.avgTaste != null || result.avgFinish != null || result.avgBalance != null;
   const medalColor = rank < 3 ? medals[rank] : c.muted;
@@ -125,7 +127,7 @@ function WhiskyResultCard({ result, rank }: { result: WhiskyResult; rank: number
             {result.avgOverall?.toFixed(1) ?? "—"}
           </div>
           <div style={{ fontSize: 11, color: c.muted, marginTop: 2 }}>
-            {result.ratingCount} {result.ratingCount === 1 ? "rating" : "ratings"}
+            {result.ratingCount} {result.ratingCount === 1 ? t("tastingResults.rating") : t("tastingResults.rating_plural")}
           </div>
         </div>
       </div>
@@ -155,15 +157,15 @@ function WhiskyResultCard({ result, rank }: { result: WhiskyResult; rank: number
               transition: "transform 0.2s",
               transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
             }} />
-            {expanded ? "Hide breakdown" : "Show breakdown"}
+            {expanded ? t("tastingResults.hideBreakdown") : t("tastingResults.showBreakdown")}
           </button>
 
           {expanded && (
             <div style={{ marginTop: 10, padding: "12px 0 0", borderTop: `1px solid ${c.border}` }}>
-              <ScoreBar label="Nose" value={result.avgNose} />
-              <ScoreBar label="Taste" value={result.avgTaste} />
-              <ScoreBar label="Finish" value={result.avgFinish} />
-              <ScoreBar label="Balance" value={result.avgBalance} />
+              <ScoreBar label={t("tastingResults.nose")} value={result.avgNose} />
+              <ScoreBar label={t("tastingResults.taste")} value={result.avgTaste} />
+              <ScoreBar label={t("tastingResults.finish")} value={result.avgFinish} />
+              <ScoreBar label={t("tastingResults.balance")} value={result.avgBalance} />
             </div>
           )}
         </div>
@@ -272,6 +274,7 @@ function exportPdf(data: ResultsData) {
 }
 
 function ExportDropdown({ data }: { data: ResultsData }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -335,7 +338,7 @@ function ExportDropdown({ data }: { data: ResultsData }) {
         data-testid="button-export-menu"
       >
         <Download style={{ width: 14, height: 14 }} />
-        Export
+        {t("tastingResults.export")}
         <ChevronDown style={{ width: 12, height: 12, transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
       </button>
 
@@ -364,7 +367,7 @@ function ExportDropdown({ data }: { data: ResultsData }) {
             data-testid="button-export-csv"
           >
             {loading === "csv" ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Download style={{ width: 14, height: 14, color: c.muted }} />}
-            Export as CSV
+            {t("tastingResults.exportCsv")}
           </button>
           <button
             style={{ ...menuItemStyle, opacity: loading === "xlsx" ? 0.6 : 1 }}
@@ -375,7 +378,7 @@ function ExportDropdown({ data }: { data: ResultsData }) {
             data-testid="button-export-excel"
           >
             {loading === "xlsx" ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <FileSpreadsheet style={{ width: 14, height: 14, color: c.muted }} />}
-            Export as Excel
+            {t("tastingResults.exportExcel")}
           </button>
           <button
             style={menuItemStyle}
@@ -385,7 +388,7 @@ function ExportDropdown({ data }: { data: ResultsData }) {
             data-testid="button-export-pdf"
           >
             <FileText style={{ width: 14, height: 14, color: c.muted }} />
-            Export as PDF
+            {t("tastingResults.exportPdf")}
           </button>
         </div>
       )}
@@ -394,6 +397,7 @@ function ExportDropdown({ data }: { data: ResultsData }) {
 }
 
 export default function TastingResultsPage() {
+  const { t } = useTranslation();
   const params = useParams<{ id: string }>();
   const tastingId = params.id;
 
@@ -410,7 +414,7 @@ export default function TastingResultsPage() {
     return (
       <SimpleShell>
         <div style={{ ...cardStyle, textAlign: "center" }}>
-          <p style={{ color: c.muted }}>Loading results…</p>
+          <p style={{ color: c.muted }}>{t("tastingResults.loadingResults")}</p>
         </div>
       </SimpleShell>
     );
@@ -420,9 +424,9 @@ export default function TastingResultsPage() {
     return (
       <SimpleShell>
         <div style={{ ...cardStyle, textAlign: "center" }}>
-          <p style={{ color: c.muted }}>Could not load results.</p>
+          <p style={{ color: c.muted }}>{t("tastingResults.errorLoading")}</p>
           <Link href="/host" style={{ color: c.accent, fontSize: 13, marginTop: 12, display: "inline-block" }}>
-            Back to Host
+            {t("tastingResults.backToHost")}
           </Link>
         </div>
       </SimpleShell>
@@ -444,13 +448,13 @@ export default function TastingResultsPage() {
             {data.title}
           </h1>
           <p style={{ fontSize: 13, color: c.muted, margin: 0 }}>
-            {data.whiskyCount} {data.whiskyCount === 1 ? "whisky" : "whiskies"} · {data.totalRatings} {data.totalRatings === 1 ? "rating" : "ratings"}
+            {data.whiskyCount} {data.whiskyCount === 1 ? t("tastingResults.whisky") : t("tastingResults.whisky_plural")} · {data.totalRatings} {data.totalRatings === 1 ? t("tastingResults.rating") : t("tastingResults.rating_plural")}
           </p>
         </div>
 
         {data.results.length === 0 ? (
           <div style={{ ...cardStyle, textAlign: "center" }} data-testid="text-no-results">
-            <p style={{ color: c.muted, fontSize: 14, margin: 0 }}>No ratings submitted yet.</p>
+            <p style={{ color: c.muted, fontSize: 14, margin: 0 }}>{t("tastingResults.noRatings")}</p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

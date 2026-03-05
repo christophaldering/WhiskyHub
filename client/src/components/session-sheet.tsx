@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { KeyRound, LogOut, Lock, Unlock, X, Eye, EyeOff, Pencil, Check, ChevronDown, ChevronUp, Settings, Shield } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { KeyRound, LogOut, Lock, Unlock, X, Eye, EyeOff, Pencil, Check, ChevronDown, ChevronUp, Settings, Shield, Globe } from "lucide-react";
 import { getSession, signIn, signOut } from "@/lib/session";
 import type { SessionMode } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
@@ -17,6 +18,7 @@ interface SessionSheetProps {
 type View = "idle" | "login" | "forgot" | "reset" | "recoverEmail";
 
 export default function SessionSheet({ open, onClose, onSessionChange, defaultMode = "log", variant = "dark" }: SessionSheetProps) {
+  const { t, i18n } = useTranslation();
   const [session, setSession] = useState(() => getSession());
   const [view, setView] = useState<View>("idle");
   const [siName, setSiName] = useState("");
@@ -44,6 +46,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
   const [showEditNewPw, setShowEditNewPw] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editMsg, setEditMsg] = useState("");
+  const [editSuccess, setEditSuccess] = useState(false);
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
   const { setParticipant: clearStoreParticipant } = useAppStore();
 
@@ -68,6 +71,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       setShowRecoverPw(false);
       setAccountSection("");
       setEditMsg("");
+      setEditSuccess(false);
       setEditLoading(false);
       setEditCurPw("");
       setEditNewPw("");
@@ -88,7 +92,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         }
         const mins = Math.floor(next / 60);
         const secs = next % 60;
-        setSiError(`Too many attempts. Try again in ${mins}:${String(secs).padStart(2, "0")}.`);
+        setSiError(t("sessionSheet.tooManyAttempts", { time: `${mins}:${String(secs).padStart(2, "0")}` }));
         return next;
       });
     }, 1000);
@@ -201,11 +205,11 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         setLockoutSeconds(result.retryAfter);
         const mins = Math.floor(result.retryAfter / 60);
         const secs = result.retryAfter % 60;
-        setSiError(`Too many attempts. Try again in ${mins}:${String(secs).padStart(2, "0")}.`);
-      } else if (msg.includes("Invalid p") || msg.includes("Invalid P")) setSiError("Wrong password.");
-      else if (msg.includes("Too many")) setSiError("Too many attempts. Wait a moment.");
-      else if (msg.includes("No account")) setSiError("No account found for this email.");
-      else setSiError(msg || "Something went wrong.");
+        setSiError(t("sessionSheet.tooManyAttempts", { time: `${mins}:${String(secs).padStart(2, "0")}` }));
+      } else if (msg.includes("Invalid p") || msg.includes("Invalid P")) setSiError(t("sessionSheet.wrongPassword"));
+      else if (msg.includes("Too many")) setSiError(t("sessionSheet.tooMany"));
+      else if (msg.includes("No account")) setSiError(t("sessionSheet.noAccount"));
+      else setSiError(msg || t("sessionSheet.somethingWrong"));
       return;
     }
     setSession(getSession());
@@ -240,14 +244,14 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       });
       const data = await res.json();
       if (!res.ok) {
-        setSiError(data.message || "Could not send reset code.");
+        setSiError(data.message || t("sessionSheet.couldNotSend"));
         return;
       }
       setResetPid(data.participantId);
       setView("reset");
       setSiError("");
     } catch {
-      setSiError("Network error. Please try again.");
+      setSiError(t("sessionSheet.networkErrorGeneric"));
     } finally {
       setSiLoading(false);
     }
@@ -256,7 +260,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
   const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetCode.trim() || !resetNewPw.trim()) return;
-    if (resetNewPw.trim().length < 4) { setSiError("Password must be at least 4 characters."); return; }
+    if (resetNewPw.trim().length < 4) { setSiError(t("sessionSheet.pwMinLength")); return; }
     setSiLoading(true);
     setSiError("");
     try {
@@ -267,13 +271,13 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       });
       const data = await res.json();
       if (!res.ok) {
-        setSiError(data.message || "Reset failed.");
+        setSiError(data.message || t("sessionSheet.resetFailed"));
         return;
       }
       setResetSuccess(true);
       setSiError("");
     } catch {
-      setSiError("Network error. Please try again.");
+      setSiError(t("sessionSheet.networkErrorGeneric"));
     } finally {
       setSiLoading(false);
     }
@@ -292,13 +296,13 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       });
       const data = await res.json();
       if (!res.ok) {
-        setSiError(data.message || "Could not recover email.");
+        setSiError(data.message || t("sessionSheet.couldNotRecover"));
         return;
       }
       setRecoveredEmail(data.maskedEmail);
       setSiError("");
     } catch {
-      setSiError("Network error. Please try again.");
+      setSiError(t("sessionSheet.networkErrorGeneric"));
     } finally {
       setSiLoading(false);
     }
@@ -308,16 +312,18 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     if (!pid) return;
     setEditLoading(true);
     setEditMsg("");
+    setEditSuccess(false);
     try {
       if (section === "name") {
-        if (!editName.trim()) { setEditMsg("Name cannot be empty."); setEditLoading(false); return; }
+        if (!editName.trim()) { setEditMsg(t("sessionSheet.nameEmpty")); setEditLoading(false); return; }
         const res = await fetch(`/api/participants/${pid}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json", "x-participant-id": pid },
           body: JSON.stringify({ name: editName.trim() }),
         });
-        if (!res.ok) { const d = await res.json(); setEditMsg(d.message || "Failed."); setEditLoading(false); return; }
-        setEditMsg("Name updated.");
+        if (!res.ok) { const d = await res.json(); setEditMsg(d.message || t("sessionSheet.failed")); setEditLoading(false); return; }
+        setEditSuccess(true);
+        setEditMsg(t("sessionSheet.nameUpdated"));
         const s = getSession();
         if (s.signedIn) {
           try { sessionStorage.setItem("session_name", editName.trim()); } catch {}
@@ -326,35 +332,37 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         setSession({ ...session, name: editName.trim() });
         onSessionChange();
       } else if (section === "email") {
-        if (!editEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail.trim())) { setEditMsg("Enter a valid email."); setEditLoading(false); return; }
+        if (!editEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail.trim())) { setEditMsg(t("sessionSheet.validEmail")); setEditLoading(false); return; }
         const res = await fetch(`/api/participants/${pid}/email`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json", "x-participant-id": pid },
           body: JSON.stringify({ email: editEmail.trim() }),
         });
-        if (!res.ok) { const d = await res.json(); setEditMsg(d.message || "Failed."); setEditLoading(false); return; }
-        setEditMsg("Email updated.");
+        if (!res.ok) { const d = await res.json(); setEditMsg(d.message || t("sessionSheet.failed")); setEditLoading(false); return; }
+        setEditSuccess(true);
+        setEditMsg(t("sessionSheet.emailUpdated"));
       } else if (section === "password") {
-        if (!editCurPw.trim() || !editNewPw.trim()) { setEditMsg("Fill in both fields."); setEditLoading(false); return; }
-        if (editNewPw.trim().length < 4) { setEditMsg("New password must be at least 4 characters."); setEditLoading(false); return; }
+        if (!editCurPw.trim() || !editNewPw.trim()) { setEditMsg(t("sessionSheet.fillBothFields")); setEditLoading(false); return; }
+        if (editNewPw.trim().length < 4) { setEditMsg(t("sessionSheet.newPwMinLength")); setEditLoading(false); return; }
         const res = await fetch(`/api/participants/${pid}/pin`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json", "x-participant-id": pid },
           body: JSON.stringify({ currentPin: editCurPw.trim(), newPin: editNewPw.trim() }),
         });
-        if (!res.ok) { const d = await res.json(); setEditMsg(d.message || "Failed."); setEditLoading(false); return; }
-        setEditMsg("Password updated.");
+        if (!res.ok) { const d = await res.json(); setEditMsg(d.message || t("sessionSheet.failed")); setEditLoading(false); return; }
+        setEditSuccess(true);
+        setEditMsg(t("sessionSheet.passwordUpdated"));
         setEditCurPw("");
         setEditNewPw("");
       }
     } catch {
-      setEditMsg("Network error.");
+      setEditMsg(t("sessionSheet.networkError"));
     } finally {
       setEditLoading(false);
     }
   };
 
-  const modeLabel = session.mode === "tasting" ? "Anonymous tasting" : "Log mode";
+  const modeLabel = session.mode === "tasting" ? t("sessionSheet.anonymousTasting") : t("sessionSheet.logMode");
 
   const renderPasswordInput = (
     value: string,
@@ -385,8 +393,47 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     </div>
   );
 
+  const langToggleStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 4,
+    padding: "4px 10px",
+    fontSize: 12,
+    fontWeight: 600,
+    fontFamily: "monospace",
+    background: v.bg,
+    border: `1px solid ${v.border}`,
+    borderRadius: 8,
+    cursor: "pointer",
+    color: v.text,
+  };
+
+  const langOptionStyle = (active: boolean): React.CSSProperties => ({
+    padding: "3px 8px",
+    borderRadius: 6,
+    fontSize: 11,
+    fontWeight: active ? 700 : 400,
+    background: active ? v.accent : "transparent",
+    color: active ? (isDark ? v.bg : "#fff") : v.mutedLight,
+    border: "none",
+    cursor: "pointer",
+    fontFamily: "monospace",
+    transition: "all 0.15s",
+  });
+
   const renderSignedIn = () => (
     <>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", background: v.bg, borderRadius: 10, marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: v.mutedLight }}>
+          <Globe style={{ width: 14, height: 14 }} />
+          {t("sessionSheet.language")}
+        </div>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button onClick={() => i18n.changeLanguage("de")} style={langOptionStyle(i18n.language === "de")} data-testid="button-lang-de">DE</button>
+          <button onClick={() => i18n.changeLanguage("en")} style={langOptionStyle(i18n.language === "en")} data-testid="button-lang-en">EN</button>
+        </div>
+      </div>
+
       <a
         href="/my-taste/settings"
         onClick={(e) => { e.preventDefault(); onClose(); window.location.href = "/my-taste/settings"; }}
@@ -409,8 +456,8 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       >
         <Settings style={{ width: 16, height: 16, color: v.accent }} />
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: v.text }}>Settings & Profile</div>
-          <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 1 }}>Photo, bio, preferences, API key</div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: v.text }}>{t("sessionSheet.settingsProfile")}</div>
+          <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 1 }}>{t("sessionSheet.settingsProfileDesc")}</div>
         </div>
       </a>
       {useAppStore.getState().currentParticipant?.role === "admin" && (
@@ -436,14 +483,14 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         >
           <Shield style={{ width: 16, height: 16, color: v.accent }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: v.text }}>Admin Console</div>
-            <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 1 }}>Platform management & tools</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: v.text }}>{t("sessionSheet.adminConsole")}</div>
+            <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 1 }}>{t("sessionSheet.adminConsoleDesc")}</div>
           </div>
         </a>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
         {(["name", "email"] as const).map((key) => {
-          const labels = { name: "Change Name", email: "Change Email" };
+          const labels: Record<string, string> = { name: t("sessionSheet.changeName"), email: t("sessionSheet.changeEmail") };
           const isOpen = accountSection === key;
           return (
             <div key={key} style={{ background: v.bg, borderRadius: 10, overflow: "hidden" }}>
@@ -480,22 +527,22 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
                 <div style={{ padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
                   {key === "name" && (
                     <>
-                      <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Display name" style={inputStyle} data-testid="input-edit-name" />
+                      <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={t("sessionSheet.displayName")} style={inputStyle} data-testid="input-edit-name" />
                       <button onClick={() => handleAccountSave("name")} disabled={editLoading} style={{ ...btnPrimary, padding: 8, fontSize: 13 }} data-testid="button-save-name">
-                        {editLoading ? "Saving…" : "Save"}
+                        {editLoading ? t("sessionSheet.saving") : t("sessionSheet.save")}
                       </button>
                     </>
                   )}
                   {key === "email" && (
                     <>
-                      <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="New email" style={inputStyle} data-testid="input-edit-email" />
+                      <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder={t("sessionSheet.newEmail")} style={inputStyle} data-testid="input-edit-email" />
                       <button onClick={() => handleAccountSave("email")} disabled={editLoading} style={{ ...btnPrimary, padding: 8, fontSize: 13 }} data-testid="button-save-email">
-                        {editLoading ? "Saving…" : "Save"}
+                        {editLoading ? t("sessionSheet.saving") : t("sessionSheet.save")}
                       </button>
                     </>
                   )}
 
-                  {editMsg && <p style={{ fontSize: 12, color: editMsg.includes("updated") ? v.success : v.error, margin: 0, textAlign: "center" }}>{editMsg}</p>}
+                  {editMsg && <p style={{ fontSize: 12, color: editSuccess ? v.success : v.error, margin: 0, textAlign: "center" }}>{editMsg}</p>}
                 </div>
               )}
             </div>
@@ -524,11 +571,11 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         }}
       >
         <LogOut style={{ width: 16, height: 16 }} />
-        Sign out
+        {t("sessionSheet.signOut")}
       </button>
       <div style={{ fontSize: 11, color: v.mutedLight, textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
-        Signing out clears this session on this device.
-        <br />Your saved tastings remain safe.
+        {t("sessionSheet.signOutDesc")}
+        <br />{t("sessionSheet.tastingsSafe")}
       </div>
     </>
   );
@@ -542,7 +589,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <input
         type="text"
-        placeholder="Display name (optional)"
+        placeholder={t("sessionSheet.displayNameOptional")}
         name="cs_display_name"
         value={siName}
         onChange={(e) => setSiName(e.target.value)}
@@ -554,7 +601,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       />
       <input
         type="email"
-        placeholder="Email"
+        placeholder={t("sessionSheet.email")}
         name="cs_email"
         value={siEmail}
         onChange={(e) => setSiEmail(e.target.value)}
@@ -564,7 +611,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         autoCapitalize="none"
         spellCheck={false}
       />
-      {renderPasswordInput(siPin, setSiPin, showPassword, () => setShowPassword(!showPassword), "Password", "input-session-pin", undefined, "current-password")}
+      {renderPasswordInput(siPin, setSiPin, showPassword, () => setShowPassword(!showPassword), t("sessionSheet.password"), "input-session-pin", undefined, "current-password")}
       <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: v.mutedLight, cursor: "pointer", padding: "2px 0" }}>
         <input
           type="checkbox"
@@ -573,7 +620,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
           style={{ accentColor: isDark ? v.accent : undefined, width: 14, height: 14 }}
           data-testid="checkbox-session-remember"
         />
-        Remember me on this device
+        {t("sessionSheet.rememberMe")}
       </label>
       <button
         type="submit"
@@ -586,19 +633,19 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
           cursor: siLoading ? "wait" : (lockoutSeconds > 0 || !siPin.trim() || !siEmail.trim()) ? "not-allowed" : "pointer",
         }}
       >
-        {siLoading ? "Signing in…" : "Sign in"}
+        {siLoading ? t("sessionSheet.signingIn") : t("sessionSheet.signIn")}
       </button>
       {siError && <p style={{ fontSize: 12, color: v.error, margin: 0, textAlign: "center" }}>{siError}</p>}
       <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 4 }}>
         <button type="button" onClick={() => { setView("forgot"); setSiError(""); }} style={linkStyle} data-testid="link-forgot-password">
-          Forgot password?
+          {t("sessionSheet.forgotPassword")}
         </button>
         <button type="button" onClick={() => { setView("recoverEmail"); setSiError(""); }} style={linkStyle} data-testid="link-forgot-email">
-          Forgot email?
+          {t("sessionSheet.forgotEmail")}
         </button>
       </div>
       <button type="button" onClick={() => { setView("idle"); setSiError(""); }} style={btnSecondary} data-testid="button-session-signin-cancel">
-        Cancel
+        {t("sessionSheet.cancel")}
       </button>
     </form>
     </>
@@ -606,11 +653,11 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
 
   const renderForgotPassword = () => (
     <form onSubmit={handleForgotSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }} autoComplete="off">
-      <p style={{ fontSize: 14, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>Reset Password</p>
-      <p style={{ fontSize: 12, color: v.mutedLight, margin: "0 0 8px" }}>Enter your email. We'll send a 6-digit code.</p>
+      <p style={{ fontSize: 14, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>{t("sessionSheet.resetPasswordTitle")}</p>
+      <p style={{ fontSize: 12, color: v.mutedLight, margin: "0 0 8px" }}>{t("sessionSheet.resetEmailPrompt")}</p>
       <input
         type="email"
-        placeholder="Email"
+        placeholder={t("sessionSheet.email")}
         value={siEmail}
         onChange={(e) => setSiEmail(e.target.value)}
         style={inputStyle}
@@ -618,11 +665,11 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         autoComplete="off"
       />
       <button type="submit" disabled={siLoading || !siEmail.trim()} style={{ ...btnPrimary, opacity: !siEmail.trim() ? 0.5 : 1, cursor: siLoading ? "wait" : "pointer" }} data-testid="button-forgot-submit">
-        {siLoading ? "Sending…" : "Send Code"}
+        {siLoading ? t("sessionSheet.sending") : t("sessionSheet.sendCode")}
       </button>
       {siError && <p style={{ fontSize: 12, color: v.error, margin: 0, textAlign: "center" }}>{siError}</p>}
       <button type="button" onClick={() => { setView("login"); setSiError(""); }} style={btnSecondary} data-testid="button-forgot-back">
-        Back to login
+        {t("sessionSheet.backToLogin")}
       </button>
     </form>
   );
@@ -631,19 +678,19 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     resetSuccess ? (
       <div style={{ textAlign: "center", padding: "12px 0" }}>
         <Check style={{ width: 32, height: 32, color: v.success, margin: "0 auto 12px" }} />
-        <p style={{ fontSize: 14, fontWeight: 600, color: v.text }}>Password reset successfully!</p>
-        <p style={{ fontSize: 12, color: v.mutedLight, marginBottom: 16 }}>You can now sign in with your new password.</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: v.text }}>{t("sessionSheet.resetSuccess")}</p>
+        <p style={{ fontSize: 12, color: v.mutedLight, marginBottom: 16 }}>{t("sessionSheet.resetSuccessDesc")}</p>
         <button onClick={() => { setView("login"); setResetSuccess(false); setSiError(""); }} style={btnPrimary} data-testid="button-reset-to-login">
-          Sign in
+          {t("sessionSheet.signIn")}
         </button>
       </div>
     ) : (
       <form onSubmit={handleResetSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }} autoComplete="off">
-        <p style={{ fontSize: 14, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>Enter Reset Code</p>
-        <p style={{ fontSize: 12, color: v.mutedLight, margin: "0 0 8px" }}>Check your email for the 6-digit code.</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>{t("sessionSheet.enterResetCode")}</p>
+        <p style={{ fontSize: 12, color: v.mutedLight, margin: "0 0 8px" }}>{t("sessionSheet.checkEmail")}</p>
         <input
           type="text"
-          placeholder="6-digit code"
+          placeholder={t("sessionSheet.sixDigitCode")}
           value={resetCode}
           onChange={(e) => setResetCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
           style={{ ...inputStyle, letterSpacing: 6, textAlign: "center", fontSize: 18, fontWeight: 600 }}
@@ -652,13 +699,13 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
           maxLength={6}
           autoComplete="one-time-code"
         />
-        {renderPasswordInput(resetNewPw, setResetNewPw, showResetPw, () => setShowResetPw(!showResetPw), "New password", "input-reset-new-pw")}
+        {renderPasswordInput(resetNewPw, setResetNewPw, showResetPw, () => setShowResetPw(!showResetPw), t("sessionSheet.newPassword"), "input-reset-new-pw")}
         <button type="submit" disabled={siLoading || resetCode.length < 6 || !resetNewPw.trim()} style={{ ...btnPrimary, opacity: (resetCode.length < 6 || !resetNewPw.trim()) ? 0.5 : 1 }} data-testid="button-reset-submit">
-          {siLoading ? "Resetting…" : "Reset Password"}
+          {siLoading ? t("sessionSheet.resetting") : t("sessionSheet.resetPasswordBtn")}
         </button>
         {siError && <p style={{ fontSize: 12, color: v.error, margin: 0, textAlign: "center" }}>{siError}</p>}
         <button type="button" onClick={() => { setView("forgot"); setSiError(""); }} style={btnSecondary} data-testid="button-reset-back">
-          Resend code
+          {t("sessionSheet.resendCode")}
         </button>
       </form>
     )
@@ -667,32 +714,32 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
   const renderRecoverEmail = () => (
     recoveredEmail ? (
       <div style={{ textAlign: "center", padding: "12px 0" }}>
-        <p style={{ fontSize: 14, fontWeight: 600, color: v.text, marginBottom: 8 }}>Your email address</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: v.text, marginBottom: 8 }}>{t("sessionSheet.yourEmailAddress")}</p>
         <p style={{ fontSize: 18, fontWeight: 700, color: v.accent, fontFamily: "monospace", letterSpacing: 1, marginBottom: 16 }}>{recoveredEmail}</p>
         <button onClick={() => { setView("login"); setSiEmail(""); setRecoveredEmail(""); setSiError(""); }} style={btnPrimary} data-testid="button-recover-to-login">
-          Sign in
+          {t("sessionSheet.signIn")}
         </button>
       </div>
     ) : (
       <form onSubmit={handleRecoverEmail} style={{ display: "flex", flexDirection: "column", gap: 8 }} autoComplete="off">
-        <p style={{ fontSize: 14, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>Recover Email</p>
-        <p style={{ fontSize: 12, color: v.mutedLight, margin: "0 0 8px" }}>Enter your name and password to reveal your email.</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>{t("sessionSheet.recoverEmailTitle")}</p>
+        <p style={{ fontSize: 12, color: v.mutedLight, margin: "0 0 8px" }}>{t("sessionSheet.recoverEmailDesc")}</p>
         <input
           type="text"
-          placeholder="Name"
+          placeholder={t("sessionSheet.name")}
           value={recoverName}
           onChange={(e) => setRecoverName(e.target.value)}
           style={inputStyle}
           data-testid="input-recover-name"
           autoComplete="off"
         />
-        {renderPasswordInput(recoverPw, setRecoverPw, showRecoverPw, () => setShowRecoverPw(!showRecoverPw), "Password", "input-recover-pw")}
+        {renderPasswordInput(recoverPw, setRecoverPw, showRecoverPw, () => setShowRecoverPw(!showRecoverPw), t("sessionSheet.password"), "input-recover-pw")}
         <button type="submit" disabled={siLoading || !recoverName.trim() || !recoverPw.trim()} style={{ ...btnPrimary, opacity: (!recoverName.trim() || !recoverPw.trim()) ? 0.5 : 1 }} data-testid="button-recover-submit">
-          {siLoading ? "Looking up…" : "Recover Email"}
+          {siLoading ? t("sessionSheet.lookingUp") : t("sessionSheet.recoverEmailBtn")}
         </button>
         {siError && <p style={{ fontSize: 12, color: v.error, margin: 0, textAlign: "center" }}>{siError}</p>}
         <button type="button" onClick={() => { setView("login"); setSiError(""); }} style={btnSecondary} data-testid="button-recover-back">
-          Back to login
+          {t("sessionSheet.backToLogin")}
         </button>
       </form>
     )
@@ -700,6 +747,16 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
 
   const renderIdle = () => (
     <>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", background: v.bg, borderRadius: 10, marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: v.mutedLight }}>
+          <Globe style={{ width: 14, height: 14 }} />
+          {t("sessionSheet.language")}
+        </div>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button onClick={() => i18n.changeLanguage("de")} style={langOptionStyle(i18n.language === "de")} data-testid="button-lang-de-idle">DE</button>
+          <button onClick={() => i18n.changeLanguage("en")} style={langOptionStyle(i18n.language === "en")} data-testid="button-lang-en-idle">EN</button>
+        </div>
+      </div>
       <button
         onClick={() => setView("login")}
         data-testid="button-session-signin"
@@ -713,10 +770,10 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         }}
       >
         <KeyRound style={{ width: 16, height: 16 }} />
-        Sign in
+        {t("sessionSheet.signIn")}
       </button>
       <div style={{ fontSize: 11, color: v.mutedLight, textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
-        Sign in with your email and password.
+        {t("sessionSheet.signInDesc")}
       </div>
     </>
   );
@@ -744,7 +801,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: 0 }}>
-            {view === "forgot" ? "Reset Password" : view === "reset" ? "Reset Password" : view === "recoverEmail" ? "Recover Email" : "Session"}
+            {view === "forgot" ? t("sessionSheet.resetPassword") : view === "reset" ? t("sessionSheet.resetPassword") : view === "recoverEmail" ? t("sessionSheet.recoverEmail") : t("sessionSheet.title")}
           </h3>
           <button
             onClick={onClose}
@@ -764,11 +821,11 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
           <div style={{ flex: 1 }}>
             {session.signedIn ? (
               <>
-                <div style={{ fontSize: 14, fontWeight: 500, color: v.text }}>{session.name || "Session active"}</div>
-                <div style={{ fontSize: 11, color: v.mutedLight }}>Signed in · {modeLabel}</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: v.text }}>{session.name || t("sessionSheet.sessionActive")}</div>
+                <div style={{ fontSize: 11, color: v.mutedLight }}>{t("sessionSheet.signedIn")} · {modeLabel}</div>
               </>
             ) : (
-              <div style={{ fontSize: 14, fontWeight: 500, color: v.text }}>Signed out</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: v.text }}>{t("sessionSheet.signedOut")}</div>
             )}
           </div>
         </div>

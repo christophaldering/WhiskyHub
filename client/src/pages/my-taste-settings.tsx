@@ -300,7 +300,7 @@ export default function MyTasteSettings() {
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ marginBottom: 8 }}>
           <h1 style={{ ...pageTitleStyle, textAlign: "center" }} data-testid="text-settings-title">
-            Settings & Profile
+            {t("sessionSheet.settingsProfile")}
           </h1>
           <p style={{ fontSize: 13, color: v.muted, marginTop: 4, textAlign: "center" }}>
             {t("profile.title")}
