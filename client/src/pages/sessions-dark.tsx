@@ -363,5 +363,5 @@ export default function SessionsDark() {
     </div>
   );
 
-  return <SimpleShell maxWidth={520}>{content}</SimpleShell>;
+  return <SimpleShell maxWidth={600}>{content}</SimpleShell>;
 }

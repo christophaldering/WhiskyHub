@@ -146,7 +146,7 @@ export default function DataExportDark() {
 
   if (!participantId) {
     return (
-      <SimpleShell maxWidth={520}>
+      <SimpleShell maxWidth={600}>
         <div style={{ textAlign: "center", padding: "60px 20px" }}>
           <HardDriveDownload style={{ width: 48, height: 48, color: c.muted, marginBottom: 16 }} />
           <h2 style={{ fontSize: 20, fontWeight: 600, color: c.text, marginBottom: 8 }}>
@@ -182,7 +182,7 @@ export default function DataExportDark() {
   };
 
   return (
-    <SimpleShell maxWidth={520}>
+    <SimpleShell maxWidth={600}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       <div data-testid="data-export-dark-page">

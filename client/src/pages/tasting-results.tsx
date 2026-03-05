@@ -435,7 +435,7 @@ export default function TastingResultsPage() {
   }
 
   return (
-    <SimpleShell maxWidth={520}>
+    <SimpleShell maxWidth={600}>
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }} data-testid="tasting-results-page">
         <div style={{ textAlign: "center", marginBottom: 4 }}>
           <Trophy style={{ width: 28, height: 28, color: c.gold, marginBottom: 8 }} />

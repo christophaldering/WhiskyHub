@@ -42,7 +42,7 @@ interface SimpleShellProps {
   maxWidth?: number;
 }
 
-export default function SimpleShell({ children, showBack = true, maxWidth = 420 }: SimpleShellProps) {
+export default function SimpleShell({ children, showBack = false, maxWidth = 600 }: SimpleShellProps) {
   const [location] = useLocation();
   const [showSessionSheet, setShowSessionSheet] = useState(false);
   const [session, setSession] = useState(() => getSession());

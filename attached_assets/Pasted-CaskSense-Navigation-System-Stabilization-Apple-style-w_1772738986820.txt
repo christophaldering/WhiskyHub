@@ -1,0 +1,177 @@
+CaskSense Navigation System Stabilization (Apple-style) — without removing features
+
+You are Replit AI working inside the CaskSense repo.
+
+Goal:
+Make navigation consistent, discoverable, and “Apple-clean” across the app:
+- One unified header pattern
+- One unified back pattern
+- Responsive navigation (mobile vs desktop)
+- No duplicate nav controls
+- No feature removal and no route removal
+
+Non-negotiables:
+- Keep the two top-level tabs as the primary IA:
+  - /tasting
+  - /my-taste
+- Mobile bottom navigation stays for those two tabs.
+- Desktop must not rely on tiny bottom navigation.
+- Do NOT delete pages or features.
+- Do NOT change API logic or business logic.
+- Only navigation, layout shells, and i18n labels.
+
+--------------------------------------------------------------------
+A) Establish a single “App Chrome” contract
+--------------------------------------------------------------------
+
+1) Identify which shell(s) render the app chrome:
+- client/src/components/simple/simple-shell.tsx
+- client/src/v2/components/AppShellV2.tsx
+- and any legacy layout wrappers
+
+Choose ONE shell for the “current” experience (dark-warm) and ensure it:
+- renders TopBar (logo left, DesktopTabs center, UserMenu right)
+- renders page content
+- renders BottomTabs ONLY on mobile
+
+Do not refactor routing structure beyond what is necessary to make the shell consistent.
+
+--------------------------------------------------------------------
+B) Desktop: add Apple-like top segmented tabs (2 tabs)
+--------------------------------------------------------------------
+
+1) Create:
+client/src/components/navigation/DesktopTabSwitcher.tsx
+
+- Render 2-tab segmented control:
+  - Tasting → /tasting
+  - My Taste → /my-taste
+- Active state based on current path:
+  - Any route starting with /tasting counts as Tasting
+  - Any route starting with /my-taste counts as My Taste
+- Use i18n keys:
+  - nav.tasting
+  - nav.myTaste
+- Styling: premium, subtle, readable (min 14–16px), rounded-full, active segment clearly distinct.
+- Accessibility: keyboard focus, aria-current, visible focus ring.
+
+2) Render DesktopTabSwitcher in the TopBar on desktop only.
+
+3) Hide bottom nav on desktop once top tabs exist.
+
+--------------------------------------------------------------------
+C) Standardize “Back” across ALL subpages
+--------------------------------------------------------------------
+
+Problem:
+Back appears inconsistently, sometimes duplicated, sometimes at the bottom.
+
+Fix:
+Create a single BackButton and a single PageHeader wrapper.
+
+1) Create:
+client/src/components/navigation/BackButton.tsx
+
+Rules:
+- Appears only once per page.
+- Default behavior:
+  - If browser history length is meaningful → history.back()
+  - Else → navigate to a safe fallback route.
+- Accepts:
+  - fallbackHref (string)
+  - label (i18n key default: common.back)
+  - optional "to" override
+- Always top-left.
+
+2) Create:
+client/src/components/layout/PageHeader.tsx
+
+PageHeader must:
+- render BackButton on the left (optional but default ON for subpages)
+- render Title and optional subtitle
+- be sticky on scroll (desktop and mobile):
+  - position: sticky; top: 0; z-index: 20
+  - subtle background blur/overlay so text remains readable
+- ensure only one header exists (do not nest headers)
+
+3) Apply PageHeader to all subpages under /tasting/* and /my-taste/* where a “Back” makes sense.
+Examples:
+- export pages
+- sessions list/details
+- journal/details
+- recap/results/analytics
+- knowledge pages
+
+Remove any bottom “← Back” links on those pages.
+
+--------------------------------------------------------------------
+D) Remove duplicated global controls in footers
+--------------------------------------------------------------------
+
+Ensure:
+- UserMenu is only top-right in TopBar
+- No “Return to …” plus “Back” duplicates
+- Footer contains no navigation controls (no user menu, no back button)
+- Footer may contain minimal branding only, or be removed.
+
+--------------------------------------------------------------------
+E) Responsive sizing for desktop controls
+--------------------------------------------------------------------
+
+Issue:
+Desktop selects and filters are too narrow.
+
+Fix:
+Define a utility class or component pattern for form controls:
+- width: 100%
+- max-width: min(600px, 90vw) for primary selects on desktop
+Apply to common selects/filters in:
+- export notes page
+- sessions filters
+- any prominent dropdowns
+
+--------------------------------------------------------------------
+F) i18n consistency for navigation chrome
+--------------------------------------------------------------------
+
+Ensure all navigation labels and UI chrome text are i18n-driven:
+- nav.tasting
+- nav.myTaste
+- common.back
+- common.export
+- etc.
+
+Eliminate hardcoded "Back", "Return", "Select a tasting", etc., especially in header and navigation components.
+
+--------------------------------------------------------------------
+G) QA checklist (must pass)
+--------------------------------------------------------------------
+
+1) Desktop:
+- Top segmented control is visible and clearly usable.
+- Bottom nav is hidden.
+- UserMenu only in top-right.
+- Back button appears at top-left on subpages (sticky), never duplicated.
+
+2) Mobile:
+- Bottom nav remains (Tasting / My Taste) and works.
+- PageHeader sticky works without breaking layout.
+
+3) Language:
+- Switch to German → all nav chrome text is German.
+- Switch to English → all nav chrome text is English.
+
+4) No routes broken; build succeeds.
+
+--------------------------------------------------------------------
+Deliverables
+--------------------------------------------------------------------
+
+Output a concise CHANGELOG:
+- Files added/modified
+- Pages updated to use PageHeader
+- Where bottom nav is hidden on desktop
+- i18n keys added
+- Manual test steps (6–10 bullets)
+
+Implement now. No feature removal. No route removal.
