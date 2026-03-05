@@ -1,0 +1,210 @@
+ULTRA-HARDPROMPT (NO EXCUSES) — CaskSense Module 2: Parallel UI + Full Automated Test Suite + “Ship-Ready” Quality Gate
+
+You are working in the CaskSense repository on Replit.
+You MUST deliver a running, production-grade, test-covered “Module 2” that is reachable from the public landing page and uses the SAME data/backend/auth as the existing app.
+You MUST NOT break the existing UI/routes. This is parallel, not replacement.
+
+========================================================
+A) DEFINITION OF DONE (QUALITY GATE) — MUST BE MET 100%
+========================================================
+You are not done until ALL items below are true:
+
+1) App runs locally in Replit and in deployment mode with zero runtime errors.
+2) Existing UI still works (no regressions).
+3) Module 2 works end-to-end with same auth and same DB data.
+4) Automated tests:
+   - Unit tests pass
+   - API tests pass
+   - E2E tests pass
+   - Critical i18n coverage checks pass
+5) A “smoke test script” (one command) runs and prints PASS/FAIL for:
+   - Server health + DB connectivity
+   - Auth session
+   - Tastings list retrieval
+   - Module 2 routing
+   - Theme toggle
+6) You provide a written TEST REPORT at the end:
+   - how many tests
+   - what they cover
+   - how to run them
+   - known limitations (only if unavoidable)
+
+If any test fails, you MUST fix the code and re-run until green.
+
+========================================================
+B) MODULE 2 REQUIREMENTS (PARALLEL UI, SAME DATA)
+========================================================
+
+B1) Navigation in Module 2:
+Tabs: Tastings | Taste | Circle
+Top-right: Profile
+No “My Taste”, no “My Tastings”, no “Friends”, no “Tools”.
+
+B2) Module 2 routing (namespace):
+/m2               Module 2 hub
+/m2/tastings      Tastings home
+/m2/taste         Taste home
+/m2/circle        Circle home
+Plus required subroutes:
+- /m2/tastings/join
+- /m2/tastings/host
+- /m2/tastings/solo
+- /m2/tastings/session/:id
+- /m2/tastings/session/:id/host   (Host Control Screen)
+- /m2/tastings/session/:id/play   (Participant view, or wrapper)
+
+/m2 must use same API client and same auth cookies/session as classic UI.
+
+B3) Landing branch:
+On public landing “/” add a secondary CTA:
+DE: “Modul 2 testen (05.03.26)”
+EN: “Try Module 2 (05.03.26)”
+It must go to /m2 (NOT to /sessions and NOT directly to a session).
+
+B4) Global “Zurück” rule (Module 2 must be perfect):
+Every Module 2 page must show “← Zurück” and return to the previous in-app page.
+Implement an in-app navigation stack stored in sessionStorage (recommended) or Zustand.
+Back priority:
+1) ?from= route param if present
+2) navigation stack pop
+3) history.back()
+4) fallback by module area:
+   /m2/tastings/* -> /m2/tastings
+   /m2/taste/* -> /m2/taste
+   /m2/circle/* -> /m2/circle
+Never fall back to “/” unless origin truly was “/”.
+
+B5) Theme support:
+Module 2 must support BOTH themes: Dark Warm and Light.
+Do not hardcode dark colors. Use existing themeVars/tokens, extend tokens if missing.
+Bottom nav readability must be improved (subtle border, blur, readable inactive labels) in both themes.
+
+B6) Host Live Management MUST be usable:
+In Module 2, host must be able to manage live tasting:
+- Start/close rating (or equivalent existing actions)
+- Reveal bottle
+- Show results
+- Next dram
+- End tasting with confirm
+Show minimal participant status (rated/pending).
+Reuse existing APIs and logic from current tasting room. No feature loss.
+
+========================================================
+C) IMPLEMENTATION STRATEGY (MANDATORY)
+========================================================
+
+C1) DO NOT refactor classic UI.
+Create:
+- Module2Shell layout component
+- Module 2 pages under client/src/pages/m2/* (or equivalent)
+- Wouter routes for /m2/*
+
+C2) Reuse existing:
+- api client (client/src/lib/api.ts)
+- React Query hooks/services
+- session/auth logic
+- existing server endpoints
+
+C3) If Circle backend is not implemented:
+- Build UI with safe empty state (no crashes)
+- Add minimal placeholder endpoints ONLY if needed, but prefer UI-only stubs
+- Do NOT create any social feed.
+
+========================================================
+D) TESTING (COMPREHENSIVE) — MUST IMPLEMENT
+========================================================
+
+You MUST add and run tests at four levels:
+
+D1) Unit tests (frontend):
+- Use Vitest + React Testing Library
+- Add tests for:
+  - Module2Shell renders tabs + Profile button
+  - BackButton logic (from param, stack pop, fallback)
+  - Theme toggle renders correct token classnames/attributes
+  - “Source selection cards” render correctly if applicable
+
+D2) API tests (backend):
+- Use Vitest or Jest + Supertest
+- Add tests for:
+  - GET /api/health (or equivalent) returns OK
+  - Auth session endpoint returns expected shape (or login flow if available)
+  - Sessions list endpoint returns 200 with array
+  - Tasting room endpoint returns 200 for valid session id (use seeded data)
+If no /api/health exists, add it (non-breaking) and test it.
+
+D3) End-to-end (E2E) tests:
+- Use Playwright
+- Create a deterministic seeded test user and seeded tasting session(s).
+- E2E must cover:
+  1) Landing “/” -> click “Modul 2 testen” -> /m2 loads
+  2) Navigate tabs Tastings/Taste/Circle
+  3) Back behavior across at least 5 navigations (must return to previous page)
+  4) Theme toggle in Profile changes theme and UI remains readable
+  5) Tastings list loads under /m2/tastings (data from same API)
+  6) Join/Host/Solo entry pages open (do not crash)
+  7) Host control page renders for host user on seeded session (or at minimum, route loads and shows safe state)
+- Add screenshots on failure and store them as Playwright artifacts.
+
+D4) “Smoke test” CLI (one command):
+Add npm scripts:
+- test:unit
+- test:api
+- test:e2e
+- test:smoke
+- test:all (runs everything)
+Smoke test should:
+- start server in test mode
+- verify DB connection
+- hit key endpoints
+- print PASS/FAIL summary
+- exit non-zero on failure
+
+========================================================
+E) SEED DATA FOR RELIABLE TESTS (MANDATORY)
+========================================================
+Tests MUST NOT depend on random production data.
+
+Implement a deterministic seed routine that:
+- creates test user: test.m2@casksense.local (password: Test1234!)
+- creates at least 1 tasting session:
+  - status open/live
+  - host = test user
+  - 3 whiskies in lineup
+- creates at least 1 participant and 1 rating (optional)
+Where to implement:
+- server/db seed script OR a test-only endpoint guarded by NODE_ENV=test
+Provide npm script:
+- db:seed:test
+
+E2E must run seed before tests.
+
+========================================================
+F) ACCESSIBILITY + I18N CHECKS (MANDATORY)
+========================================================
+- Ensure all new UI strings are in i18next DE+EN.
+- Add a simple i18n test that fails if keys are missing in either language.
+- Ensure buttons have accessible names.
+- Ensure contrast is reasonable in both themes (no unreadable text).
+
+========================================================
+G) OUTPUT (MANDATORY FINAL REPORT)
+========================================================
+When finished, output a “Ship Report”:
+
+1) New routes created (/m2/*)
+2) Files added/changed list
+3) How to run:
+   - npm run dev
+   - npm run test:all
+   - npm run db:seed:test
+4) Test counts + coverage summary
+5) Known limitations (only if strictly unavoidable, with rationale)
+
+========================================================
+H) DO NOT STOP EARLY
+========================================================
+You must iterate until tests are green. If something fails, fix it and rerun.
+No partial delivery. No “should work”. It must work.
+
+END.
