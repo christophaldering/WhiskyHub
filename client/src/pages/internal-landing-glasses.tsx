@@ -70,33 +70,6 @@ export default function InternalLandingGlasses() {
         overflow: "hidden",
         padding: "80px 24px 40px",
       }}>
-        <div style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          paddingBottom: "8%",
-          pointerEvents: "none",
-        }}>
-          <motion.div
-            initial={{ opacity: 0, scale: 1.04 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 2, ease: "easeOut" }}
-            style={{
-              width: "min(620px, 92vw)",
-              height: 420,
-              backgroundImage: `url(${heroImage})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center center",
-              backgroundRepeat: "no-repeat",
-              opacity: 0.3,
-              maskImage: "radial-gradient(ellipse 85% 75% at 50% 50%, black 15%, transparent 65%)",
-              WebkitMaskImage: "radial-gradient(ellipse 85% 75% at 50% 50%, black 15%, transparent 65%)",
-            }}
-          />
-        </div>
-
         <motion.div
           style={{
             position: "absolute",
@@ -115,6 +88,29 @@ export default function InternalLandingGlasses() {
 
         <div style={{ position: "relative", zIndex: 2 }}>
           <FadeUp>
+            <div style={{
+              width: "min(420px, 80vw)",
+              marginBottom: -24,
+              marginLeft: "auto",
+              marginRight: "auto",
+            }}>
+              <img
+                src={heroImage}
+                alt=""
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  display: "block",
+                  objectFit: "cover",
+                  maskImage: "linear-gradient(to bottom, black 40%, transparent 95%)",
+                  WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 95%)",
+                  opacity: 0.45,
+                }}
+              />
+            </div>
+          </FadeUp>
+
+          <FadeUp delay={0.1}>
             <div style={{
               fontSize: 13,
               fontFamily: font.body,
