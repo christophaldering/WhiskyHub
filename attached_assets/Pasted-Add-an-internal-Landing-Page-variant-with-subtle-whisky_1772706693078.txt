@@ -1,0 +1,39 @@
+Add an internal Landing Page variant (with subtle whisky glasses) without changing the current landing.
+
+Context:
+CaskSense already has a very elegant minimal landing at route "/". I want to keep it exactly as-is.
+Create a NEW internal-only landing variant to test a stronger whisky visual cue (subtle whisky glasses / tasting flight), while preserving the same premium “dark-warm Apple-professional” look.
+
+Requirements:
+1) Do NOT modify the existing "/" landing page or its files.
+2) Create a new route: "/internal/landing-glasses"
+3) The page should reuse existing layout/style components (ApplePage/AppleSection or the current landing layout system).
+4) The page should be visually very similar to the current landing:
+   - Same typographic hierarchy (WHISKY TASTING PLATFORM, CaskSense, tagline, subtitle)
+   - Same button row: "Open App", "Guided Tour", "Interactive Version"
+5) Add a subtle visual element BELOW the CTA buttons:
+   - A “tasting flight” of 3–4 whisky glasses OR a single crystal glass
+   - Very subtle: low contrast, dark background, warm amber highlights
+   - Must NOT feel like stock-photo marketing; should feel premium and understated.
+6) Implementation approach:
+   - Prefer a lightweight SVG/illustration already in repo if available; otherwise add a single new asset under:
+     client/src/assets/landing/
+   - If no suitable asset exists, implement a CSS-based illustration (glass silhouettes + amber glow) using divs and gradients (no external network dependencies).
+   - Avoid large heavy images; optimize for quick load.
+7) Add a small “INTERNAL” badge at the top right of the hero (e.g., pill with “Internal Preview”) to avoid confusion.
+8) Keep i18n:
+   - Page content should use i18n keys (EN/DE) like existing landing.
+   - If current landing is English-only, keep this variant consistent (but add keys if i18n is already used).
+9) Ensure no duplicate back navigation:
+   - This is a landing-style page; do NOT show “Back” plus “Return” simultaneously.
+   - Add a single small link below the hero: “Return to main landing” → "/"
+10) Add a minimal note at bottom (small, subdued):
+   - “Internal concept test: visual whisky cue.”
+
+Deliverables:
+- New page file: client/src/pages/internal-landing-glasses.tsx (or similar)
+- Add route in App.tsx for "/internal/landing-glasses"
+- Add asset (if needed) under client/src/assets/landing/ and reference it properly
+- Output a short changelog: files added, route added, how to test.
+
+Now implement.
