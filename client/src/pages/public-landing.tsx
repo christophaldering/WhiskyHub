@@ -7,6 +7,7 @@ import {
   FlaskConical, Trophy, FileText, Layers
 } from "lucide-react";
 import { v, alpha } from "@/lib/themeVars";
+import i18n from "i18next";
 import heroImage from "@/assets/images/hero-whisky.png";
 
 const ACCENT_RAW = "#c8a97e";
@@ -235,6 +236,23 @@ function HeroSection() {
             transition: "border-color 0.2s",
           }}>
             Interactive Version
+          </Link>
+          <Link href="/m2" data-testid="link-hero-module2" style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "14px 36px",
+            background: "transparent",
+            color: v.accent,
+            fontFamily: font.body,
+            fontSize: 14,
+            fontWeight: 600,
+            borderRadius: 50,
+            textDecoration: "none",
+            border: `2px solid ${v.accent}`,
+            transition: "border-color 0.2s, background 0.2s",
+          }}>
+            {i18n.language === "de" ? "Modul 2 testen (05.03.26)" : "Try Module 2 (05.03.26)"}
           </Link>
         </div>
       </FadeUp>

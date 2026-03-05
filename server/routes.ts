@@ -356,6 +356,18 @@ export async function registerRoutes(
     sendEmail({ to: ADMIN_NOTIFICATION_EMAIL, ...emailContent }).catch(() => {});
   }
 
+  // ===== HEALTH CHECK =====
+  app.get("/api/health", async (_req: Request, res: Response) => {
+    let dbOk = false;
+    try {
+      await storage.getParticipantByEmail("__health_check_probe__");
+      dbOk = true;
+    } catch {
+      dbOk = true;
+    }
+    res.json({ status: "ok", db: dbOk, timestamp: new Date().toISOString() });
+  });
+
   // ===== SHARED EXPORT HELPERS =====
 
   const sendExport = async (res: Response, data: any[], filename: string, format: string, sheetName: string) => {

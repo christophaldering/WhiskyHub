@@ -104,6 +104,18 @@ import LogWhiskyPage from "@/pages/log-whisky";
 import Recommendations from "@/pages/recommendations";
 import EnterPage from "@/pages/enter";
 
+// ── Module 2 pages ──
+import Module2Shell from "@/components/m2/Module2Shell";
+import M2TastingsHome from "@/pages/m2/M2TastingsHome";
+import M2TastingsJoin from "@/pages/m2/M2TastingsJoin";
+import M2TastingsHost from "@/pages/m2/M2TastingsHost";
+import M2TastingsSolo from "@/pages/m2/M2TastingsSolo";
+import M2TastingSession from "@/pages/m2/M2TastingSession";
+import M2HostControl from "@/pages/m2/M2HostControl";
+import M2TastingPlay from "@/pages/m2/M2TastingPlay";
+import M2TasteHome from "@/pages/m2/M2TasteHome";
+import M2CircleHome from "@/pages/m2/M2CircleHome";
+
 // ── V2 Dark Warm UI ──
 import LabDarkLayout from "@/lab-dark/LabDarkLayout";
 import LabHome from "@/lab-dark/pages/LabHome";
@@ -257,6 +269,36 @@ function Router() {
         <Route path="/impressum" component={Impressum} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/intro" component={Intro} />
+
+        {/* === MODULE 2 (parallel UI, same data) === */}
+        <Route path="/m2/tastings/session/:id/host">
+          <Module2Shell><M2HostControl /></Module2Shell>
+        </Route>
+        <Route path="/m2/tastings/session/:id/play">
+          <Module2Shell><M2TastingPlay /></Module2Shell>
+        </Route>
+        <Route path="/m2/tastings/session/:id">
+          <Module2Shell><M2TastingSession /></Module2Shell>
+        </Route>
+        <Route path="/m2/tastings/join">
+          <Module2Shell><M2TastingsJoin /></Module2Shell>
+        </Route>
+        <Route path="/m2/tastings/host">
+          <Module2Shell><M2TastingsHost /></Module2Shell>
+        </Route>
+        <Route path="/m2/tastings/solo">
+          <Module2Shell><M2TastingsSolo /></Module2Shell>
+        </Route>
+        <Route path="/m2/tastings">
+          <Module2Shell><M2TastingsHome /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste">
+          <Module2Shell><M2TasteHome /></Module2Shell>
+        </Route>
+        <Route path="/m2/circle">
+          <Module2Shell><M2CircleHome /></Module2Shell>
+        </Route>
+        <Route path="/m2">{() => <Redirect to="/m2/tastings" />}</Route>
 
         {/* ── Admin Backoffice (separate layout, no consumer nav) ── */}
         <Route path="/admin">
