@@ -584,12 +584,6 @@ export default function MyTastePage() {
           )}
 
           {!pid && <UnlockCard onUnlock={handleUnlock} />}
-
-          <div style={{ textAlign: "center", marginTop: 8 }}>
-            <Link href="/support" style={{ fontSize: 11, color: "#4a4540", textDecoration: "none" }} data-testid="link-support">
-              {t("myTastePage.advancedSupport")}
-            </Link>
-          </div>
         </ApplePage>
       </SimpleShell>
     );
@@ -961,12 +955,6 @@ export default function MyTastePage() {
         )}
 
         {!pid && <UnlockCard onUnlock={handleUnlock} />}
-
-        <div style={{ textAlign: "center", marginTop: 8 }}>
-          <Link href="/support" style={{ fontSize: 11, color: "#4a4540", textDecoration: "none" }} data-testid="link-support">
-            {t("myTastePage.advancedSupport")}
-          </Link>
-        </div>
       </div>
     </SimpleShell>
   );

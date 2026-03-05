@@ -51,7 +51,7 @@ function shouldRedirectToLegacy(href: string): boolean {
       href.startsWith("/log-simple") || href === "/log" ||
       href === "/host" || href.startsWith("/my-taste") || href === "/analyze" ||
       href.startsWith("/app/") || href.startsWith("/api/") || href === "/" ||
-      href.startsWith("/support") || href.startsWith("/impressum") || href.startsWith("/privacy") ||
+      href.startsWith("/admin/support") || href.startsWith("/impressum") || href.startsWith("/privacy") ||
       href.startsWith("http") || href.startsWith("#") || href.startsWith("/naked/") ||
       href.startsWith("/join/") || href.startsWith("/tasting-room-simple") || href === "/taste") {
     return false;

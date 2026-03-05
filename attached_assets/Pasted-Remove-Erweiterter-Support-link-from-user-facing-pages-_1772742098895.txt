@@ -1,0 +1,51 @@
+Remove “Erweiterter Support” link from user-facing pages + gate it properly (Admin/Dev only)
+
+You are Replit AI in the CaskSense repo.
+
+Problem:
+A text link “Erweiterter Support” appears at the bottom of multiple user-facing pages (e.g., Knowledge/Discover area). This looks like an internal debug entrypoint and must not be visible to regular users.
+
+Goals:
+1) Remove “Erweiterter Support” from all normal pages (no footer injection, no content-section injection).
+2) Keep the Support Console feature, but make it accessible only via /admin/support
+3) Gate access + visibility:
+   - Visible only when NODE_ENV === "development" OR user is admin (if admin roles exist).
+   - In production for non-admin: the route should show 404 or “Not available”.
+
+Steps:
+A) Locate the source of the “Erweiterter Support” UI
+- Search the codebase for the string “Erweiterter Support”.
+- Also search for “Support Console”, “/support”, “/support-console”, “/admin/support”, “support-console.tsx”.
+- Identify the component/layout that injects this link globally (likely a Shell/Footer/Layout wrapper).
+
+B) Remove it from user-facing rendering
+- Delete the rendering of this link from shared layout components and from any pages where it is appended.
+- Ensure it does NOT appear on:
+  - /my-taste/*
+  - /tasting/*
+  - /discover/*
+  - knowledge pages (lexicon, guide, etc.)
+
+C) Provide a proper internal entry point
+- Register a single route: /admin/support that renders the Support Console component.
+- Do NOT expose any other public link to it.
+- Optionally: add an entry into the user menu (top right) but ONLY when dev/admin, labeled “Admin / Support”.
+
+D) Gate it
+- If NODE_ENV === "production":
+   - deny access unless admin
+- If you have no admin role, simplest safe approach:
+   - allow only in development mode
+
+E) QA
+- Confirm “Erweiterter Support” no longer appears anywhere in normal UI.
+- Confirm /admin/support:
+   - dev: accessible
+   - prod: blocked for non-admin
+- Confirm build succeeds and no routes/features are removed.
+
+Output:
+- Root cause: where the link was injected from (file + component)
+- Files changed
+- Manual test checklist
+Implement now.

@@ -15,7 +15,6 @@ const PROTECTED_PREFIXES = [
   "/tasting-room-simple/",
   "/tasting-results/",
   "/admin",
-  "/support",
   "/api/",
   "/naked/",
   "/join/",
