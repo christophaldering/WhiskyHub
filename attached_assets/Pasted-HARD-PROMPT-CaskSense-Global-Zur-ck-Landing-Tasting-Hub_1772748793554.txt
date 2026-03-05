@@ -1,0 +1,115 @@
+HARD PROMPT — CaskSense: Global “Zurück” + Landing → Tasting Hub + Identify/Import Redesign (Chart 2/3)
+
+You are working in the CaskSense repo (React + Vite + TS, Wouter, Tailwind, shadcn/ui, i18next, dark warm theme).
+Implement the following requirements EXACTLY. No ambiguity, no partials.
+
+========================================================
+1) GLOBAL RULE: EVERY PAGE MUST HAVE “ZURÜCK” TO PREVIOUS PAGE
+========================================================
+Goal:
+On EVERY screen (including /tasting, /enter, /host, /log-simple, /my-taste/*, any wizard step, any detail page) there must be a visible “← Zurück” control that returns to the previous IN-APP page.
+
+Non-negotiable behavior:
+A) Primary: return to the previous in-app route (not to /, not to a default landing), even if user navigated from within the app.
+B) Must work reliably even on refresh/deep link:
+   - If browser history is not reliable, use an app-managed navigation stack.
+
+Implementation approach (do this):
+1) Implement an app-level “navigation stack” that tracks last in-app routes.
+   - Use sessionStorage (recommended) to persist across refresh.
+   - Store last N=20 routes.
+   - Only store routes within the app domain, exclude external.
+2) On every route change, push current pathname+search into the stack.
+   - Ensure duplicates are handled sensibly (avoid pushing same route repeatedly on minor state changes).
+3) BackButton logic:
+   - If a “from” query param exists, it has top priority: navigate(from).
+   - Else, pop from navigation stack and navigate to it.
+   - Else, use history.back().
+   - Else fallback:
+     - if current route is in Tasting world: /tasting
+     - if current route is in My Taste world: /my-taste
+4) Make BackButton visible on ALL pages via a shared PageHeader layout pattern.
+   - Do NOT rely on each page remembering to add it manually.
+   - Implement a wrapper (e.g., SimpleShell/PageHeader) that always renders a BackButton unless explicitly disabled (and disabling is not allowed for now).
+5) Ensure i18n strings: “Zurück” (DE), “Back” (EN).
+
+Acceptance tests:
+- Navigate Landing → /tasting → /log-simple → Back returns to /tasting.
+- Navigate /tasting → /enter → Back returns to /tasting.
+- Navigate /my-taste → /my-taste/profile → Back returns to /my-taste.
+- Hard refresh on /enter: Back returns to /tasting (fallback) if stack empty.
+
+========================================================
+2) LANDING PAGE ROUTING: LANDING MUST GO TO TASTING HUB (NOT SESSION/HOST LIST)
+========================================================
+Goal:
+From the public landing (/) and any “Start/Continue” CTA, users must land on the new 3-CTA Tasting Hub page (/tasting), not directly on session lists or host pages.
+
+Implement:
+- Identify all landing CTAs and default post-login redirects that currently lead to /sessions or host dashboard.
+- Change them to /tasting (the hub with Join/Host/Solo cards).
+- Ensure after login the default route becomes /tasting unless user deep-linked to a specific route.
+
+Acceptance:
+- Opening casksense.com shows landing; clicking primary CTA leads to /tasting hub.
+- No automatic redirect to /sessions on normal entry.
+
+========================================================
+3) CHART 2 (DARK UI ONLY): REDESIGN “FOTO-VERKOSTUNG ERSTELLEN” SECTION
+========================================================
+IMPORTANT:
+Only modify what is visible in the dark-warm UI area (ignore/leave any old left-side light UI; it is legacy and must not be revived). Do not reintroduce old sidebar navigation.
+
+Goal:
+Enhance the “Foto” flow and add “Datei hochladen” for importing external tasting configurations.
+
+Implement on /log-simple (or the relevant page shown):
+A) Rename/adjust copy so users understand “Foto” can include:
+   - multiple whisky bottles in one photo
+   - photos of a printed/written document
+B) Add a new entry option next to “Foto”:
+   - “Datei hochladen” (Excel, Word, PDF)
+   - Purpose: import externally configured tastings/lineups; AI-assisted parsing; integrate into the app’s tasting configuration.
+C) In UI, present these as two large Apple-style action cards at the top of the page:
+   1) “Foto (Flaschen oder Dokument)” with subtext: “Mehrere Whiskys auf einmal möglich.”
+   2) “Datei hochladen (Excel/Word/PDF)” with subtext: “Line-up importieren & KI-gestützt übernehmen.”
+D) Keep the existing 3-step flow concept (1 Fotos → 2 Prüfen → 3 Erstellen) but adapt:
+   - Step 1 becomes “Quelle wählen” (Foto oder Datei)
+   - Then show relevant uploader:
+     - Foto uploader supports multiple images.
+     - Datei uploader supports .xlsx, .csv, .pdf, .docx
+E) Backend/API:
+   - If there is no API yet for file parsing, implement a placeholder endpoint that stores the file and returns a “pending analysis” state.
+   - The UI must still be complete and show “Analyse wird vorbereitet” (with future hook).
+F) Privacy hint must be clearly visible (as in current screen), plus extend:
+   - state that documents/photos are analyzed for identification and import, not used for model training.
+
+Acceptance:
+- The page clearly communicates that photos can contain multiple bottles or documents.
+- Users can upload either multiple photos OR a file (xlsx/docx/pdf).
+- UI remains strictly dark-warm; no white layouts.
+
+========================================================
+4) OPTIONAL BUT RECOMMENDED: MERGE CHART 2 + CHART 3 INTO ONE CLEAN ENTRY (IF IT REDUCES CONFUSION)
+========================================================
+If there are two separate pages/features for solo logging / photo-AI / barcode / import:
+- Consolidate them into a single “Solo Dram verkosten” entry page with three primary methods:
+  - “Manuell”
+  - “Foto (Flaschen oder Dokument)”
+  - “Datei hochladen (Excel/Word/PDF)”
+Barcodes and CSV import become secondary inside “Datei hochladen” (or as advanced options).
+Do this ONLY if it simplifies the UX and reduces the number of entry points.
+
+========================================================
+DELIVERABLES AFTER IMPLEMENTATION
+========================================================
+Output:
+1) List of files changed
+2) Explanation of navigation stack approach (where stored, how pop works)
+3) Manual test checklist (min 10 steps) covering:
+   - Back behavior across worlds
+   - Landing redirect
+   - Foto multi-upload
+   - Datei upload types
+   - Refresh/deep link fallback
+END.
