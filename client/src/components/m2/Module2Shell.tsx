@@ -154,7 +154,7 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
         </nav>
       )}
 
-      <SessionSheet open={showSession} onOpenChange={setShowSession} />
+      <SessionSheet open={showSession} onClose={() => setShowSession(false)} />
     </div>
   );
 }
