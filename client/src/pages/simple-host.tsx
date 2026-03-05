@@ -9,6 +9,7 @@ import { c, cardStyle } from "@/lib/theme";
 import { downloadDataUrl } from "@/lib/download";
 import { AiTastingImportDialog } from "@/components/ai-tasting-import";
 import { useTranslation } from "react-i18next";
+import BackButton from "@/components/back-button";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -1913,6 +1914,7 @@ export default function SimpleHostPage() {
 
   return (
     <SimpleShell showBack={false}>
+      <BackButton fallback="/tasting" />
       <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
         {!showingWizard && (
           <div>

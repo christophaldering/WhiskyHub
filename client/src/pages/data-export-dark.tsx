@@ -84,7 +84,7 @@ function ExportButton({
   );
 }
 
-export default function DataExportDark() {
+export default function DataExportDark({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const session = getSession();
@@ -145,19 +145,19 @@ export default function DataExportDark() {
   );
 
   if (!participantId) {
-    return (
-      <SimpleShell maxWidth={600}>
-        <div style={{ textAlign: "center", padding: "60px 20px" }}>
-          <HardDriveDownload style={{ width: 48, height: 48, color: c.muted, marginBottom: 16 }} />
-          <h2 style={{ fontSize: 20, fontWeight: 600, color: c.text, marginBottom: 8 }}>
-            {t("dataExport.title")}
-          </h2>
-          <p style={{ fontSize: 14, color: c.muted }}>
-            {t("dataExport.subtitle")}
-          </p>
-        </div>
-      </SimpleShell>
+    const emptyContent = (
+      <div style={{ textAlign: "center", padding: "60px 20px" }}>
+        <HardDriveDownload style={{ width: 48, height: 48, color: c.muted, marginBottom: 16 }} />
+        <h2 style={{ fontSize: 20, fontWeight: 600, color: c.text, marginBottom: 8 }}>
+          {t("dataExport.title")}
+        </h2>
+        <p style={{ fontSize: 14, color: c.muted }}>
+          {t("dataExport.subtitle")}
+        </p>
+      </div>
     );
+    if (embedded) return emptyContent;
+    return <SimpleShell maxWidth={600}>{emptyContent}</SimpleShell>;
   }
 
   const accessBadge = (level: AccessLevel) => {
@@ -181,32 +181,33 @@ export default function DataExportDark() {
     );
   };
 
-  return (
-    <SimpleShell maxWidth={600}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-
-      <div data-testid="data-export-dark-page">
-        <BackButton />
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-            <HardDriveDownload style={{ width: 24, height: 24, color: c.accent }} />
-            <h1
-              style={{
-                fontSize: 22,
-                fontWeight: 700,
-                color: c.text,
-                margin: 0,
-                fontFamily: "'Playfair Display', serif",
-              }}
-              data-testid="text-data-export-title"
-            >
-              {t("dataExport.title")}
-            </h1>
+  const mainContent = (
+    <>
+      {!embedded && (
+        <>
+          <BackButton />
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+              <HardDriveDownload style={{ width: 24, height: 24, color: c.accent }} />
+              <h1
+                style={{
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: c.text,
+                  margin: 0,
+                  fontFamily: "'Playfair Display', serif",
+                }}
+                data-testid="text-data-export-title"
+              >
+                {t("dataExport.title")}
+              </h1>
+            </div>
+            <p style={{ fontSize: 13, color: c.muted, margin: 0 }}>
+              {t("dataExport.subtitle")}
+            </p>
           </div>
-          <p style={{ fontSize: 13, color: c.muted, margin: 0 }}>
-            {t("dataExport.subtitle")}
-          </p>
-        </div>
+        </>
+      )}
 
         {isAdmin && (
           <div
@@ -326,6 +327,16 @@ export default function DataExportDark() {
             );
           })}
         </div>
+    </>
+  );
+
+  if (embedded) return mainContent;
+
+  return (
+    <SimpleShell maxWidth={600}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div data-testid="data-export-dark-page">
+        {mainContent}
       </div>
     </SimpleShell>
   );

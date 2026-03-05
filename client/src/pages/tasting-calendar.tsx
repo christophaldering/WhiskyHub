@@ -67,7 +67,7 @@ const OFFSET_OPTIONS = [
   { value: 30, key: "offset30" },
 ];
 
-export default function TastingCalendar() {
+export default function TastingCalendar({ embedded = false }: { embedded?: boolean } = {}) {
   const { t, i18n } = useTranslation();
   const now = new Date();
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
@@ -220,16 +220,20 @@ export default function TastingCalendar() {
   }, [filteredEvents]);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="calendar-page">
-      <BackButton fallback="/enter" />
+    <div className={embedded ? "min-w-0 overflow-x-hidden" : "max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden"} data-testid="calendar-page">
+      {!embedded && <BackButton fallback="/enter" />}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="flex items-center gap-3 mb-2">
-          <CalendarIcon className="w-7 h-7 text-primary" />
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-calendar-title">
-            {t("calendar.title")}
-          </h1>
-        </div>
-        <p className="text-sm text-muted-foreground mb-4">{t("calendar.subtitle")}</p>
+        {!embedded && (
+          <>
+            <div className="flex items-center gap-3 mb-2">
+              <CalendarIcon className="w-7 h-7 text-primary" />
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-calendar-title">
+                {t("calendar.title")}
+              </h1>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">{t("calendar.subtitle")}</p>
+          </>
+        )}
 
         <div className="flex items-center gap-2 mb-6" data-testid="calendar-filter-tabs">
           {(["all", "mine", "friends"] as CalendarFilter[]).map((f) => (

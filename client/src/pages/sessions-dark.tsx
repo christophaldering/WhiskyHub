@@ -1,11 +1,15 @@
-import { useState, useMemo } from "react";
-import { useLocation } from "wouter";
+import { useState, useMemo, lazy, Suspense } from "react";
+import { useLocation, useSearch } from "wouter";
+import { useTranslation } from "react-i18next";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSession } from "@/lib/session";
 import { useQuery } from "@tanstack/react-query";
 import { c, cardStyle } from "@/lib/theme";
-import { Eye, Play, BarChart3, Users, Calendar, MapPin, Wine, ChevronDown } from "lucide-react";
+import { Eye, Play, BarChart3, Users, Calendar, MapPin, Wine, ChevronDown, List, CalendarDays } from "lucide-react";
 
+const TastingCalendar = lazy(() => import("@/pages/tasting-calendar"));
+
+type ViewMode = "list" | "calendar";
 type StatusFilter = "all" | "draft" | "open" | "closed" | "archived";
 type TimeFilter = "30d" | "90d" | "1y" | "all";
 
@@ -54,11 +58,67 @@ const selectStyle: React.CSSProperties = {
   minWidth: 0,
 };
 
+function ViewToggle({ view, onChange, t }: { view: ViewMode; onChange: (v: ViewMode) => void; t: (key: string) => string }) {
+  const options: { value: ViewMode; label: string; Icon: React.ElementType }[] = [
+    { value: "list", label: t("sessions.viewList"), Icon: List },
+    { value: "calendar", label: t("sessions.viewCalendar"), Icon: CalendarDays },
+  ];
+
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        borderRadius: 10,
+        border: `1px solid ${c.border}`,
+        overflow: "hidden",
+      }}
+      data-testid="toggle-view-mode"
+    >
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => onChange(opt.value)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+            padding: "6px 14px",
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: "system-ui, sans-serif",
+            border: "none",
+            cursor: "pointer",
+            transition: "all 0.2s",
+            background: view === opt.value ? c.accent : "transparent",
+            color: view === opt.value ? "#1a1714" : c.muted,
+          }}
+          data-testid={`button-view-${opt.value}`}
+        >
+          <opt.Icon style={{ width: 14, height: 14 }} />
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function SessionsDark() {
   const [, navigate] = useLocation();
+  const searchString = useSearch();
+  const { t } = useTranslation();
   const session = getSession();
+
+  const params = new URLSearchParams(searchString);
+  const initialView: ViewMode = params.get("view") === "calendar" ? "calendar" : "list";
+  const [viewMode, setViewMode] = useState<ViewMode>(initialView);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
+
+  const handleViewChange = (v: ViewMode) => {
+    setViewMode(v);
+    navigate(v === "calendar" ? "/sessions?view=calendar" : "/sessions", { replace: true });
+  };
 
   const { data: tastings = [], isLoading } = useQuery({
     queryKey: ["tastings", session.pid],
@@ -147,221 +207,249 @@ export default function SessionsDark() {
 
   const content = (
     <div style={{ width: "100%" }}>
-      <div>
-        <h1
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 24,
-            fontWeight: 700,
-            color: c.text,
-            margin: 0,
-            marginBottom: 4,
-          }}
-          data-testid="text-sessions-dark-title"
-        >
-          Sessions
-        </h1>
-        <p style={{ fontSize: 13, color: c.muted, margin: 0, marginBottom: 16 }}>
-          All your tastings at a glance
-        </p>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+        <div>
+          <h1
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 24,
+              fontWeight: 700,
+              color: c.text,
+              margin: 0,
+              marginBottom: 4,
+            }}
+            data-testid="text-sessions-dark-title"
+          >
+            Sessions
+          </h1>
+          <p style={{ fontSize: 13, color: c.muted, margin: 0 }}>
+            All your tastings at a glance
+          </p>
+        </div>
+        <ViewToggle view={viewMode} onChange={handleViewChange} t={t} />
       </div>
 
-      {!session.signedIn ? (
-        <div
-          style={{
-            ...cardStyle,
-            textAlign: "center",
-            padding: 40,
-          }}
-          data-testid="sessions-dark-signin-prompt"
+      {viewMode === "calendar" ? (
+        <Suspense
+          fallback={
+            <div style={{ textAlign: "center", padding: 60 }}>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  border: `3px solid ${c.border}`,
+                  borderTopColor: c.accent,
+                  borderRadius: "50%",
+                  animation: "spin 0.8s linear infinite",
+                  margin: "0 auto",
+                }}
+              />
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+          }
         >
-          <Wine style={{ width: 40, height: 40, color: c.mutedLight, margin: "0 auto 12px" }} />
-          <p style={{ fontSize: 15, color: c.text, marginBottom: 4 }}>Sign in to see your sessions</p>
-          <p style={{ fontSize: 13, color: c.muted }}>Tap the account icon above to get started</p>
-        </div>
-      ) : isLoading ? (
-        <div style={{ textAlign: "center", padding: 60 }}>
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              border: `3px solid ${c.border}`,
-              borderTopColor: c.accent,
-              borderRadius: "50%",
-              animation: "spin 0.8s linear infinite",
-              margin: "0 auto",
-            }}
-          />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
+          <TastingCalendar embedded />
+        </Suspense>
       ) : (
         <>
-          <div
-            style={{
-              display: "flex",
-              gap: 10,
-              marginBottom: 20,
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-            data-testid="filter-bar"
-          >
-            <div style={{ position: "relative" }}>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                style={selectStyle}
-                data-testid="select-status-filter"
-              >
-                <option value="all">All Status ({statusCounts.all})</option>
-                <option value="draft">Draft ({statusCounts.draft})</option>
-                <option value="open">Open ({statusCounts.open})</option>
-                <option value="closed">Closed ({statusCounts.closed})</option>
-                <option value="archived">Archived ({statusCounts.archived})</option>
-              </select>
-              <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: c.muted, pointerEvents: "none" }} />
-            </div>
-
-            <div style={{ position: "relative" }}>
-              <select
-                value={timeFilter}
-                onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
-                style={selectStyle}
-                data-testid="select-time-filter"
-              >
-                <option value="all">All Time</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 3 months</option>
-                <option value="1y">Last year</option>
-              </select>
-              <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: c.muted, pointerEvents: "none" }} />
-            </div>
-
-            <span style={{ fontSize: 12, color: c.muted, marginLeft: "auto" }} data-testid="text-result-count">
-              {filtered.length} {filtered.length === 1 ? "session" : "sessions"}
-            </span>
-          </div>
-
-          {filtered.length === 0 ? (
+          {!session.signedIn ? (
             <div
               style={{
                 ...cardStyle,
                 textAlign: "center",
                 padding: 40,
               }}
-              data-testid="sessions-dark-empty"
+              data-testid="sessions-dark-signin-prompt"
             >
-              <Wine style={{ width: 36, height: 36, color: c.mutedLight, margin: "0 auto 10px" }} />
-              <p style={{ fontSize: 14, color: c.muted }}>
-                {statusFilter === "all" && timeFilter === "all" ? "No sessions yet" : "No matching sessions"}
-              </p>
+              <Wine style={{ width: 40, height: 40, color: c.mutedLight, margin: "0 auto 12px" }} />
+              <p style={{ fontSize: 15, color: c.text, marginBottom: 4 }}>Sign in to see your sessions</p>
+              <p style={{ fontSize: 13, color: c.muted }}>Tap the account icon above to get started</p>
+            </div>
+          ) : isLoading ? (
+            <div style={{ textAlign: "center", padding: 60 }}>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  border: `3px solid ${c.border}`,
+                  borderTopColor: c.accent,
+                  borderRadius: "50%",
+                  animation: "spin 0.8s linear infinite",
+                  margin: "0 auto",
+                }}
+              />
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {filtered.map((tasting: any) => {
-                const actions = getActions(tasting);
-                const host = isHost(tasting);
-                return (
-                  <div
-                    key={tasting.id}
-                    style={{
-                      ...cardStyle,
-                      padding: "12px 14px",
-                      cursor: "pointer",
-                      transition: "border-color 0.2s",
-                    }}
-                    data-testid={`card-session-${tasting.id}`}
-                    onClick={() => navigate(`/tasting-room-simple/${tasting.id}`)}
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  marginBottom: 20,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+                data-testid="filter-bar"
+              >
+                <div style={{ position: "relative" }}>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                    style={selectStyle}
+                    data-testid="select-status-filter"
                   >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                          <span
-                            style={{
-                              fontSize: 14,
-                              fontWeight: 600,
-                              color: c.text,
-                              fontFamily: "'Playfair Display', serif",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                              flex: 1,
-                              minWidth: 0,
-                            }}
-                            data-testid={`text-session-title-${tasting.id}`}
-                          >
-                            {tasting.title}
-                          </span>
-                          {host && (
-                            <span style={{ fontSize: 9, color: c.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>
-                              HOST
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                          <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: c.muted }}>
-                            <Calendar style={{ width: 11, height: 11 }} />
-                            {formatDate(tasting.date)}
-                          </span>
-                          {tasting.location && tasting.location !== "—" && (
-                            <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: c.muted }}>
-                              <MapPin style={{ width: 11, height: 11 }} />
-                              {tasting.location}
-                            </span>
-                          )}
-                          {tasting.participantCount != null && (
-                            <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: c.muted }}>
-                              <Users style={{ width: 11, height: 11 }} />
-                              {tasting.participantCount}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                        <StatusBadge status={tasting.status} />
-                        {actions.length > 0 && (
-                          <div
-                            style={{ display: "flex", gap: 4 }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {actions.map((action) => (
-                              <button
-                                key={action.testId}
-                                type="button"
-                                onClick={action.onClick}
-                                title={action.label}
+                    <option value="all">All Status ({statusCounts.all})</option>
+                    <option value="draft">Draft ({statusCounts.draft})</option>
+                    <option value="open">Open ({statusCounts.open})</option>
+                    <option value="closed">Closed ({statusCounts.closed})</option>
+                    <option value="archived">Archived ({statusCounts.archived})</option>
+                  </select>
+                  <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: c.muted, pointerEvents: "none" }} />
+                </div>
+
+                <div style={{ position: "relative" }}>
+                  <select
+                    value={timeFilter}
+                    onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
+                    style={selectStyle}
+                    data-testid="select-time-filter"
+                  >
+                    <option value="all">All Time</option>
+                    <option value="30d">Last 30 days</option>
+                    <option value="90d">Last 3 months</option>
+                    <option value="1y">Last year</option>
+                  </select>
+                  <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: c.muted, pointerEvents: "none" }} />
+                </div>
+
+                <span style={{ fontSize: 12, color: c.muted, marginLeft: "auto" }} data-testid="text-result-count">
+                  {filtered.length} {filtered.length === 1 ? "session" : "sessions"}
+                </span>
+              </div>
+
+              {filtered.length === 0 ? (
+                <div
+                  style={{
+                    ...cardStyle,
+                    textAlign: "center",
+                    padding: 40,
+                  }}
+                  data-testid="sessions-dark-empty"
+                >
+                  <Wine style={{ width: 36, height: 36, color: c.mutedLight, margin: "0 auto 10px" }} />
+                  <p style={{ fontSize: 14, color: c.muted }}>
+                    {statusFilter === "all" && timeFilter === "all" ? "No sessions yet" : "No matching sessions"}
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {filtered.map((tasting: any) => {
+                    const actions = getActions(tasting);
+                    const host = isHost(tasting);
+                    return (
+                      <div
+                        key={tasting.id}
+                        style={{
+                          ...cardStyle,
+                          padding: "12px 14px",
+                          cursor: "pointer",
+                          transition: "border-color 0.2s",
+                        }}
+                        data-testid={`card-session-${tasting.id}`}
+                        onClick={() => navigate(`/tasting-room-simple/${tasting.id}`)}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                              <span
                                 style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  width: 30,
-                                  height: 30,
-                                  borderRadius: 8,
-                                  border: `1px solid ${c.border}`,
-                                  background: "transparent",
-                                  color: c.accent,
-                                  cursor: "pointer",
-                                  fontFamily: "system-ui, sans-serif",
-                                  transition: "all 0.2s",
+                                  fontSize: 14,
+                                  fontWeight: 600,
+                                  color: c.text,
+                                  fontFamily: "'Playfair Display', serif",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                  flex: 1,
+                                  minWidth: 0,
                                 }}
-                                data-testid={action.testId}
+                                data-testid={`text-session-title-${tasting.id}`}
                               >
-                                <action.icon style={{ width: 14, height: 14 }} />
-                              </button>
-                            ))}
+                                {tasting.title}
+                              </span>
+                              {host && (
+                                <span style={{ fontSize: 9, color: c.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>
+                                  HOST
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: c.muted }}>
+                                <Calendar style={{ width: 11, height: 11 }} />
+                                {formatDate(tasting.date)}
+                              </span>
+                              {tasting.location && tasting.location !== "—" && (
+                                <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: c.muted }}>
+                                  <MapPin style={{ width: 11, height: 11 }} />
+                                  {tasting.location}
+                                </span>
+                              )}
+                              {tasting.participantCount != null && (
+                                <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: c.muted }}>
+                                  <Users style={{ width: 11, height: 11 }} />
+                                  {tasting.participantCount}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        )}
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                            <StatusBadge status={tasting.status} />
+                            {actions.length > 0 && (
+                              <div
+                                style={{ display: "flex", gap: 4 }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {actions.map((action) => (
+                                  <button
+                                    key={action.testId}
+                                    type="button"
+                                    onClick={action.onClick}
+                                    title={action.label}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      width: 30,
+                                      height: 30,
+                                      borderRadius: 8,
+                                      border: `1px solid ${c.border}`,
+                                      background: "transparent",
+                                      color: c.accent,
+                                      cursor: "pointer",
+                                      fontFamily: "system-ui, sans-serif",
+                                      transition: "all 0.2s",
+                                    }}
+                                    data-testid={action.testId}
+                                  >
+                                    <action.icon style={{ width: 14, height: 14 }} />
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </>
       )}
     </div>
   );
 
-  return <SimpleShell maxWidth={600}>{content}</SimpleShell>;
+  return <SimpleShell maxWidth={900}>{content}</SimpleShell>;
 }

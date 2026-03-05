@@ -1,4 +1,4 @@
-import { Wine, User, BookOpen, Radar, BarChart3, GitCompareArrows, Sparkles, FlaskConical, Archive, Heart, Download, Settings, Crown, ClipboardList, Calendar } from "lucide-react";
+import { Wine, User, BookOpen, Radar, BarChart3, GitCompareArrows, Sparkles, FlaskConical, Archive, Heart, Download, Settings, Crown, ClipboardList } from "lucide-react";
 import type { ElementType } from "react";
 
 export interface NavItem {
@@ -15,7 +15,7 @@ export const primaryTabs: NavItem[] = [
     labelKey: "nav.tasting",
     route: "/tasting",
     icon: Wine,
-    match: ["/tasting", "/enter", "/join", "/tasting-room-simple", "/naked/", "/host", "/host-dashboard", "/sessions", "/tasting-calendar", "/log-simple", "/log"],
+    match: ["/tasting", "/enter", "/join", "/tasting-room-simple", "/naked/", "/host", "/host-dashboard", "/sessions", "/log-simple", "/log"],
   },
   {
     key: "myTaste",
@@ -35,12 +35,11 @@ export const myTasteLinks: NavItem[] = [
   { key: "benchmark", labelKey: "myTastePage.benchmarkAnalyzer", route: "/my-taste/benchmark", icon: FlaskConical },
   { key: "collection", labelKey: "myTastePage.myCollection", route: "/my-taste/collection", icon: Archive },
   { key: "wishlist", labelKey: "myTastePage.wishlist", route: "/my-taste/wishlist", icon: Heart },
-  { key: "export", labelKey: "myTastePage.dataExport", route: "/my-taste/export", icon: Download },
+  { key: "downloads", labelKey: "downloads.title", route: "/my-taste/downloads", icon: Download },
   { key: "settings", labelKey: "sessionSheet.settingsProfile", route: "/my-taste/settings", icon: Settings },
 ];
 
 export const tastingLinks: NavItem[] = [
   { key: "host", labelKey: "nav.host", route: "/host", icon: Crown },
   { key: "sessions", labelKey: "nav.sessions", route: "/sessions", icon: ClipboardList },
-  { key: "calendar", labelKey: "nav.calendar", route: "/tasting-calendar", icon: Calendar },
 ];

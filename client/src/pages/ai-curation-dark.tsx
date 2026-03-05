@@ -5,6 +5,7 @@ import { useAppStore } from "@/lib/store";
 import { pairingsApi, tastingApi } from "@/lib/api";
 import { c, cardStyle } from "@/lib/theme";
 import SimpleShell from "@/components/simple/simple-shell";
+import BackButton from "@/components/back-button";
 import { Wine, Sparkles, MapPin, Flame, Package, ChevronDown } from "lucide-react";
 
 interface Suggestion {
@@ -126,6 +127,7 @@ export default function AICurationDark() {
 
   return (
     <SimpleShell maxWidth={700}>
+      <BackButton fallback="/tasting" />
       <div data-testid="ai-curation-page">
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>

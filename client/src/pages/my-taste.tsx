@@ -5,7 +5,7 @@ import { useAppStore } from "@/lib/store";
 import { participantApi, journalApi, statsApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, Download, PenLine, Library, Building2, Package, Map, FileText, Users, Trophy, Activity, Info, HandHeart } from "lucide-react";
+import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, Download, PenLine, Library, Building2, Package, Map, Users, Trophy, Activity, Info, HandHeart } from "lucide-react";
 import { c, cardStyle, inputStyle, sectionHeadingStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 import { v, alpha } from "@/lib/themeVars";
 import { NAV_VERSION, MY_TASTE_STRUCTURE, UI_SKIN } from "@/lib/config";
@@ -239,13 +239,6 @@ export default function MyTastePage() {
                   testId="link-my-tastings"
                   badge={tastingCount != null && tastingCount > 0 ? tastingCount : null}
                 />
-                <NavCard
-                  icon={Radar}
-                  label={t("myTastePage.flavorProfile")}
-                  description={t("myTastePage.flavorProfileDesc")}
-                  href="/my-taste/profile"
-                  testId="link-flavor-profile"
-                />
               </AppleSection>
 
               <div style={cardStyle} data-testid="card-taste-snapshot">
@@ -273,7 +266,14 @@ export default function MyTastePage() {
                 </div>
               )}
 
-              <AppleSection title={t("myTastePage.sectionAnalytics")}>
+              <AppleSection title={t("myTastePage.sectionAnalyse")}>
+                <NavCard
+                  icon={Radar}
+                  label={t("myTastePage.flavorProfile")}
+                  description={t("myTastePage.flavorProfileDesc")}
+                  href="/my-taste/profile"
+                  testId="link-flavor-profile"
+                />
                 <AnalyticsPreviewCard pid={pid} stats={stats} />
                 <NavCard
                   icon={GitCompareArrows}
@@ -295,36 +295,6 @@ export default function MyTastePage() {
                   description={t("myTastePage.benchmarkDesc")}
                   href="/my-taste/benchmark"
                   testId="link-benchmark"
-                />
-                <NavCard
-                  icon={Download}
-                  label={t("myTastePage.dataExport")}
-                  description={t("myTastePage.dataExportDesc")}
-                  href="/my-taste/export"
-                  testId="link-data-export"
-                />
-              </AppleSection>
-
-              <AppleSection title={t("myTastePage.sectionCollection")}>
-                <p style={{ fontSize: 13, color: v.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
-                  {t("myTastePage.collectionSubtitle")}
-                </p>
-                <p style={{ fontSize: 11, color: v.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
-                  {t("myTastePage.collectionExplainer")}
-                </p>
-                <NavCard
-                  icon={Archive}
-                  label={t("myTastePage.myCollection")}
-                  description={t("myTastePage.collectionDesc")}
-                  href="/my-taste/collection"
-                  testId="link-collection"
-                />
-                <NavCard
-                  icon={Heart}
-                  label={t("myTastePage.wishlist")}
-                  description={t("myTastePage.wishlistDesc")}
-                  href="/my-taste/wishlist"
-                  testId="link-wishlist"
                 />
               </AppleSection>
 
@@ -360,18 +330,44 @@ export default function MyTastePage() {
                       testId="link-knowledge-guide"
                     />
                     <NavCard
-                      icon={FileText}
-                      label={t("myTastePage.tastingTemplates")}
-                      description={t("myTastePage.tastingTemplatesDesc")}
-                      href="/discover/templates"
-                      testId="link-knowledge-templates"
-                    />
-                    <NavCard
                       icon={FlaskConical}
                       label={t("myTastePage.rabbitHole")}
                       description={t("myTastePage.rabbitHoleDesc")}
                       href="/discover/rabbit-hole"
                       testId="link-knowledge-rabbit-hole"
+                    />
+                  </AppleSection>
+
+                  <AppleSection title={t("myTastePage.sectionCollection")}>
+                    <p style={{ fontSize: 13, color: v.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
+                      {t("myTastePage.collectionSubtitle")}
+                    </p>
+                    <p style={{ fontSize: 11, color: v.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
+                      {t("myTastePage.collectionExplainer")}
+                    </p>
+                    <NavCard
+                      icon={Archive}
+                      label={t("myTastePage.myCollection")}
+                      description={t("myTastePage.collectionDesc")}
+                      href="/my-taste/collection"
+                      testId="link-collection"
+                    />
+                    <NavCard
+                      icon={Heart}
+                      label={t("myTastePage.wishlist")}
+                      description={t("myTastePage.wishlistDesc")}
+                      href="/my-taste/wishlist"
+                      testId="link-wishlist"
+                    />
+                  </AppleSection>
+
+                  <AppleSection title={t("myTastePage.sectionDownloads")}>
+                    <NavCard
+                      icon={Download}
+                      label={t("downloads.title")}
+                      description={t("myTastePage.downloadsDesc")}
+                      href="/my-taste/downloads"
+                      testId="link-downloads-export"
                     />
                   </AppleSection>
 
@@ -604,13 +600,6 @@ export default function MyTastePage() {
                   testId="link-my-tastings"
                   badge={tastingCount != null && tastingCount > 0 ? tastingCount : null}
                 />
-                <NavCard
-                  icon={Radar}
-                  label={t("myTastePage.flavorProfile")}
-                  description={t("myTastePage.flavorProfileDesc")}
-                  href="/my-taste/profile"
-                  testId="link-flavor-profile"
-                />
               </div>
             </div>
 
@@ -641,9 +630,16 @@ export default function MyTastePage() {
 
             <div>
               <h3 style={{ ...sectionHeadingStyle, color: v.accent }}>
-                {t("myTastePage.sectionAnalytics")}
+                {t("myTastePage.sectionAnalyse")}
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <NavCard
+                  icon={Radar}
+                  label={t("myTastePage.flavorProfile")}
+                  description={t("myTastePage.flavorProfileDesc")}
+                  href="/my-taste/profile"
+                  testId="link-flavor-profile"
+                />
                 <AnalyticsPreviewCard pid={pid} stats={stats} />
                 <NavCard
                   icon={GitCompareArrows}
@@ -666,41 +662,6 @@ export default function MyTastePage() {
                   href="/my-taste/benchmark"
                   testId="link-benchmark"
                 />
-                <NavCard
-                  icon={Download}
-                  label={t("myTastePage.dataExport")}
-                  description={t("myTastePage.dataExportDesc")}
-                  href="/my-taste/export"
-                  testId="link-data-export"
-                />
-              </div>
-            </div>
-
-            <div>
-              <h3 style={{ ...sectionHeadingStyle, color: v.accent, fontSize: 15 }}>
-                {t("myTastePage.sectionCollection")}
-              </h3>
-              <p style={{ fontSize: 13, color: v.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
-                {t("myTastePage.collectionSubtitle")}
-              </p>
-              <p style={{ fontSize: 11, color: v.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
-                {t("myTastePage.collectionExplainer")}
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <NavCard
-                  icon={Archive}
-                  label={t("myTastePage.myCollection")}
-                  description={t("myTastePage.collectionDesc")}
-                  href="/my-taste/collection"
-                  testId="link-collection"
-                />
-                <NavCard
-                  icon={Heart}
-                  label={t("myTastePage.wishlist")}
-                  description={t("myTastePage.wishlistDesc")}
-                  href="/my-taste/wishlist"
-                  testId="link-wishlist"
-                />
               </div>
             </div>
 
@@ -715,8 +676,44 @@ export default function MyTastePage() {
                     <NavCard icon={Building2} label={t("myTastePage.distilleries")} description={t("myTastePage.distilleriesDesc")} href="/discover/distilleries" testId="link-knowledge-distilleries" />
                     <NavCard icon={Package} label={t("myTastePage.independentBottlers")} description={t("myTastePage.independentBottlersDesc")} href="/discover/bottlers" testId="link-knowledge-bottlers" />
                     <NavCard icon={Map} label={t("myTastePage.tastingGuide")} description={t("myTastePage.tastingGuideDesc")} href="/discover/guide" testId="link-knowledge-guide" />
-                    <NavCard icon={FileText} label={t("myTastePage.tastingTemplates")} description={t("myTastePage.tastingTemplatesDesc")} href="/discover/templates" testId="link-knowledge-templates" />
                     <NavCard icon={FlaskConical} label={t("myTastePage.rabbitHole")} description={t("myTastePage.rabbitHoleDesc")} href="/discover/rabbit-hole" testId="link-knowledge-rabbit-hole" />
+                  </div>
+                </div>
+
+                <div>
+                  <h3 style={{ ...sectionHeadingStyle, color: v.accent, fontSize: 15 }}>
+                    {t("myTastePage.sectionCollection")}
+                  </h3>
+                  <p style={{ fontSize: 13, color: v.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
+                    {t("myTastePage.collectionSubtitle")}
+                  </p>
+                  <p style={{ fontSize: 11, color: v.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
+                    {t("myTastePage.collectionExplainer")}
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <NavCard
+                      icon={Archive}
+                      label={t("myTastePage.myCollection")}
+                      description={t("myTastePage.collectionDesc")}
+                      href="/my-taste/collection"
+                      testId="link-collection"
+                    />
+                    <NavCard
+                      icon={Heart}
+                      label={t("myTastePage.wishlist")}
+                      description={t("myTastePage.wishlistDesc")}
+                      href="/my-taste/wishlist"
+                      testId="link-wishlist"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <h3 style={{ ...sectionHeadingStyle, color: v.accent }}>
+                    {t("myTastePage.sectionDownloads")}
+                  </h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <NavCard icon={Download} label={t("downloads.title")} description={t("myTastePage.downloadsDesc")} href="/my-taste/downloads" testId="link-downloads-export" />
                   </div>
                 </div>
 

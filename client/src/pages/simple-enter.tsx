@@ -9,6 +9,7 @@ import { getSession, tryAutoResume } from "@/lib/session";
 import { c, inputStyle, cardStyle, radius, shadow } from "@/lib/theme";
 import { ApplePage, AppleCard, AppleButton, AppleInput } from "@/components/apple";
 import { UI_SKIN } from "@/lib/config";
+import BackButton from "@/components/back-button";
 
 const RL_KEY = "simple_join_attempts";
 const RL_MAX = 5;
@@ -153,6 +154,7 @@ export default function SimpleEnterPage() {
 
   return (
     <SimpleShell>
+      <BackButton fallback="/tasting" />
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         {step === "name" ? (
           <div style={appleCardStyle} data-testid="card-identify">

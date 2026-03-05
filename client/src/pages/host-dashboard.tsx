@@ -7,14 +7,14 @@ import { hostDashboardApi, inviteApi } from "@/lib/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
   GlassWater, Users, Wine, Star, Calendar, Trophy, Eye,
-  Plus, FileText, Printer, ClipboardList, Download, Sparkles,
+  Plus, FileText, ClipboardList, Download, Sparkles,
   ChevronLeft, ChevronRight, Copy, Mail, QrCode, BarChart3, Zap,
   Check, Send, Loader2, Link as LinkIcon, ChevronDown,
 } from "lucide-react";
 import { Link } from "wouter";
-import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
 import QRCodeLib from "qrcode";
 import SimpleShell from "@/components/simple/simple-shell";
+import BackButton from "@/components/back-button";
 import { c, cardStyle, inputStyle, pageTitleStyle } from "@/lib/theme";
 import { downloadDataUrl } from "@/lib/download";
 
@@ -530,7 +530,7 @@ function InvitationsPanel({ tastings }: { tastings: InviteTasting[] }) {
 export default function HostDashboard() {
   const { t, i18n } = useTranslation();
   const { currentParticipant } = useAppStore();
-  const lang = i18n.language === "de" ? "de" : "en";
+
 
   const { data: summary, isLoading } = useQuery<HostSummary>({
     queryKey: ["host-dashboard", currentParticipant?.id],
@@ -585,6 +585,7 @@ export default function HostDashboard() {
 
   return (
     <SimpleShell maxWidth={600}>
+      <BackButton fallback="/tasting" />
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
@@ -711,93 +712,31 @@ export default function HostDashboard() {
               </div>
             </motion.div>
 
-            <div className="hd-grid-2-1" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
-              {chartData.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}>
-                  <div style={sectionCard} data-testid="host-dashboard-scores-chart">
-                    <h2 style={{ fontSize: 15, fontWeight: 600, color: c.text, margin: "0 0 4px", fontFamily: "'Playfair Display', serif" }}>
-                      {t("hostDashboard.averageScores")}
-                    </h2>
-                    <p style={{ fontSize: 12, color: c.muted, marginBottom: 16 }}>{t("hostDashboard.averageScoresSubtitle")}</p>
-                    <div style={{ height: 250 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={c.border} opacity={0.4} />
-                          <XAxis dataKey="dimension" tick={{ fill: c.muted, fontSize: 12, fontFamily: "'Playfair Display', serif" }} axisLine={{ stroke: c.border }} />
-                          <YAxis domain={[0, 100]} tick={{ fill: c.muted, fontSize: 10 }} axisLine={{ stroke: c.border }} />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: c.card, border: `1px solid ${c.border}`, borderRadius: 8, color: c.text }}
-                            labelStyle={{ color: c.text }}
-                            formatter={(value: number) => [value.toFixed(1), t("hostDashboard.average")]}
-                          />
-                          <Bar dataKey="value" fill={c.accent} radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+            {chartData.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}>
+                <div style={sectionCard} data-testid="host-dashboard-scores-chart">
+                  <h2 style={{ fontSize: 15, fontWeight: 600, color: c.text, margin: "0 0 4px", fontFamily: "'Playfair Display', serif" }}>
+                    {t("hostDashboard.averageScores")}
+                  </h2>
+                  <p style={{ fontSize: 12, color: c.muted, marginBottom: 16 }}>{t("hostDashboard.averageScoresSubtitle")}</p>
+                  <div style={{ height: 250 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={c.border} opacity={0.4} />
+                        <XAxis dataKey="dimension" tick={{ fill: c.muted, fontSize: 12, fontFamily: "'Playfair Display', serif" }} axisLine={{ stroke: c.border }} />
+                        <YAxis domain={[0, 100]} tick={{ fill: c.muted, fontSize: 10 }} axisLine={{ stroke: c.border }} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: c.card, border: `1px solid ${c.border}`, borderRadius: 8, color: c.text }}
+                          labelStyle={{ color: c.text }}
+                          formatter={(value: number) => [value.toFixed(1), t("hostDashboard.average")]}
+                        />
+                        <Bar dataKey="value" fill={c.accent} radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
-                </motion.div>
-              )}
-
-              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.4 }}>
-                <div style={{ ...sectionCard, height: "100%", display: "flex", flexDirection: "column" }} data-testid="section-documents">
-                  <SectionTitle icon={Printer} title={t("hostDashboard.documents")} />
-                  <p style={{ fontSize: 12, color: c.muted, marginBottom: 14 }}>
-                    {t("hostDashboard.documentsDesc")}
-                  </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <button
-                      onClick={() => generateBlankTastingSheet(lang)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        padding: "12px",
-                        borderRadius: 10,
-                        background: `${c.accent}08`,
-                        border: `1px solid ${c.accent}15`,
-                        cursor: "pointer",
-                        textAlign: "left",
-                        fontFamily: "system-ui, sans-serif",
-                        color: c.text,
-                      }}
-                      data-testid="button-dl-scoresheet"
-                    >
-                      <ClipboardList style={{ width: 18, height: 18, color: c.accent, flexShrink: 0 }} />
-                      <div>
-                        <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{t("hostDashboard.scoreSheet")}</p>
-                        <p style={{ fontSize: 11, color: c.muted, margin: "2px 0 0" }}>{t("hostDashboard.scoreSheetDesc")}</p>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => generateBlankTastingMat(lang)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        padding: "12px",
-                        borderRadius: 10,
-                        background: `${c.accent}08`,
-                        border: `1px solid ${c.accent}15`,
-                        cursor: "pointer",
-                        textAlign: "left",
-                        fontFamily: "system-ui, sans-serif",
-                        color: c.text,
-                      }}
-                      data-testid="button-dl-tasting-mat"
-                    >
-                      <Printer style={{ width: 18, height: 18, color: c.accent, flexShrink: 0 }} />
-                      <div>
-                        <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{t("hostDashboard.tastingMat")}</p>
-                        <p style={{ fontSize: 11, color: c.muted, margin: "2px 0 0" }}>{t("hostDashboard.tastingMatDesc")}</p>
-                      </div>
-                    </button>
-                  </div>
-                  <p style={{ fontSize: 11, color: c.muted, marginTop: 12, fontStyle: "italic" }}>
-                    {t("hostDashboard.tastingSpecificMenus")}
-                  </p>
                 </div>
               </motion.div>
-            </div>
+            )}
 
             <div className="hd-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {effectiveSummary.topWhiskies.length > 0 && (
@@ -837,9 +776,9 @@ export default function HostDashboard() {
 
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.4 }}>
                 <div style={{ ...sectionCard, height: "100%" }} data-testid="section-tools">
-                  <SectionTitle icon={BarChart3} title={t("hostDashboard.toolsAnalytics")} />
+                  <SectionTitle icon={BarChart3} title={t("hostDashboard.manage")} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <ToolLink href="/my-taste/export" icon={Download} label={t("hostDashboard.dataExport")} desc={t("hostDashboard.dataExportDesc")} />
+                    <ToolLink href="/my-taste/downloads" icon={Download} label={t("hostDashboard.downloadsExport")} desc={t("hostDashboard.downloadsExportDesc")} />
                     <ToolLink href="/sessions" icon={Copy} label={t("hostDashboard.manageTastings")} desc={t("hostDashboard.manageTastingsDesc")} />
                     <ToolLink href="/ai-curation" icon={Sparkles} label={t("hostDashboard.aiCuration")} desc={t("hostDashboard.aiCurationDesc")} />
                   </div>

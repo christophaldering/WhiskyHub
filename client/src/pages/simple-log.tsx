@@ -6,6 +6,7 @@ import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
 import SimpleShell from "@/components/simple/simple-shell";
+import BackButton from "@/components/back-button";
 import { c, inputStyle, cardStyle, sliderCSS, sectionSpacing } from "@/lib/theme";
 import { v, alpha } from "@/lib/themeVars";
 
@@ -1487,6 +1488,7 @@ export default function SimpleLogPage() {
 
   return (
     <SimpleShell>
+      <BackButton fallback="/tasting" />
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleCameraChange} style={{ display: "none" }} data-testid="input-camera" />
       <input ref={uploadInputRef} type="file" accept="image/*" multiple onChange={handleUploadChange} style={{ display: "none" }} data-testid="input-upload" />
 

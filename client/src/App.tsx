@@ -43,6 +43,7 @@ import TastingCalendar from "@/pages/tasting-calendar";
 import SessionsDark from "@/pages/sessions-dark";
 import TastingRecap from "@/pages/tasting-recap";
 import DataExportDark from "@/pages/data-export-dark";
+import DownloadsExport from "@/pages/downloads-export";
 import InviteAccept from "@/pages/invite-accept";
 
 // ── Discover / Knowledge pages (eager) ──
@@ -187,15 +188,16 @@ function Router() {
         <Route path="/naked/:code" component={NakedTasting} />
         <Route path="/sessions" component={SessionsDark} />
         <Route path="/host-dashboard" component={HostDashboard} />
-        <Route path="/tasting-calendar" component={TastingCalendar} />
+        <Route path="/tasting-calendar">{() => <Redirect to="/sessions?view=calendar" />}</Route>
         <Route path="/host" component={SimpleHostPage} />
 
         {/* ── My Taste (Tab 2): personal hub + subpages ── */}
         <Route path="/my-taste/log" component={SimpleLogPage} />
         <Route path="/log-simple" component={SimpleLogPage} />
         <Route path="/log">{() => <Redirect to="/log-simple" />}</Route>
-        <Route path="/my-taste/export" component={DataExportDark} />
-        <Route path="/data-export">{() => <Redirect to="/my-taste/export" />}</Route>
+        <Route path="/my-taste/downloads" component={DownloadsExport} />
+        <Route path="/my-taste/export">{() => <Redirect to="/my-taste/downloads" />}</Route>
+        <Route path="/data-export">{() => <Redirect to="/my-taste/downloads" />}</Route>
         <Route path="/discover-hub">{() => <Redirect to="/my-taste" />}</Route>
         <Route path="/my-taste/knowledge">{() => <Redirect to="/my-taste" />}</Route>
         <Route path="/my-taste/community">{() => <Redirect to="/my-taste" />}</Route>

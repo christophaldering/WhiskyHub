@@ -1,47 +1,13 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import SimpleShell from "@/components/simple/simple-shell";
-import { Wine, Crown, GlassWater, Calendar, LayoutDashboard, ChevronRight } from "lucide-react";
+import { Wine, Crown, GlassWater, ChevronRight, Users, Play } from "lucide-react";
 import { ApplePage, AppleSection, AppleActionCard } from "@/components/apple";
 import { c, cardStyle } from "@/lib/theme";
 import { v, alpha } from "@/lib/themeVars";
 import { NAV_VERSION } from "@/lib/config";
-
-interface NavCardProps {
-  icon: React.ElementType;
-  label: string;
-  description: string;
-  href: string;
-  testId: string;
-}
-
-function NavCard({ icon: Icon, label, description, href, testId }: NavCardProps) {
-  return (
-    <Link href={href}>
-      <div
-        style={{
-          ...cardStyle,
-          padding: "14px 18px",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          gap: 14,
-          transition: "all 0.2s ease",
-        }}
-        data-testid={testId}
-      >
-        <div style={{ width: 38, height: 38, borderRadius: 12, background: alpha(v.accent, "12"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Icon style={{ width: 18, height: 18, color: v.accent }} strokeWidth={1.8} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: v.text, letterSpacing: "-0.01em" }}>{label}</div>
-          <div style={{ fontSize: 12, color: v.muted, marginTop: 3, lineHeight: 1.4 }}>{description}</div>
-        </div>
-        <ChevronRight style={{ width: 16, height: 16, color: v.muted, opacity: 0.5, flexShrink: 0 }} strokeWidth={1.8} />
-      </div>
-    </Link>
-  );
-}
+import { useQuery } from "@tanstack/react-query";
+import { tastingApi, getParticipantId } from "@/lib/api";
 
 function OrSeparator({ label }: { label: string }) {
   return (
@@ -72,9 +38,60 @@ function OrSeparator({ label }: { label: string }) {
   );
 }
 
+function ActiveTastingCard({ tasting, t }: { tasting: any; t: any }) {
+  const participantCount = tasting.participantCount || tasting.participants?.length || 0;
+  const hostName = tasting.hostName || tasting.host?.name || "—";
+
+  return (
+    <Link href={`/tasting-room-simple/${tasting.id}`}>
+      <div
+        style={{
+          ...cardStyle,
+          padding: "14px 18px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          transition: "all 0.2s ease",
+        }}
+        data-testid={`card-active-tasting-${tasting.id}`}
+      >
+        <div style={{ width: 38, height: 38, borderRadius: 12, background: alpha(v.accent, "12"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Play style={{ width: 16, height: 16, color: v.accent }} strokeWidth={1.8} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: v.text, letterSpacing: "-0.01em" }}>{tasting.title}</div>
+          <div style={{ fontSize: 12, color: v.muted, marginTop: 3, lineHeight: 1.4, display: "flex", alignItems: "center", gap: 8 }}>
+            <span>{hostName}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+              <Users style={{ width: 11, height: 11 }} strokeWidth={1.8} />
+              {participantCount}
+            </span>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: v.accent }}>{t("tastingHub.continueTasting")}</span>
+          <ChevronRight style={{ width: 16, height: 16, color: v.accent, opacity: 0.7 }} strokeWidth={1.8} />
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function TastingHubSimple() {
   const { t } = useTranslation();
-  const isTwoTab = NAV_VERSION === "v2_two_tab";
+
+  const pid = getParticipantId();
+  const { data: tastings } = useQuery({
+    queryKey: ["/api/tastings", pid],
+    queryFn: () => tastingApi.getAll(pid || undefined),
+    enabled: !!pid,
+    refetchInterval: 30000,
+  });
+
+  const activeTastings = (tastings || []).filter(
+    (s: any) => s.status === "open" || s.status === "reveal"
+  );
 
   return (
     <SimpleShell showBack={false}>
@@ -105,22 +122,26 @@ export default function TastingHubSimple() {
             testId="card-solo-dram"
           />
 
-          {isTwoTab && (
-            <AppleSection title={t("tastingHub.sectionMore")}>
-              <NavCard
-                icon={LayoutDashboard}
-                label={t("tastingHub.hostDashboard")}
-                description={t("tastingHub.hostDashboardDesc")}
-                href="/host-dashboard"
-                testId="link-host-dashboard"
-              />
-              <NavCard
-                icon={Calendar}
-                label={t("tastingHub.tastingCalendar")}
-                description={t("tastingHub.tastingCalendarDesc")}
-                href="/tasting-calendar"
-                testId="link-tasting-calendar"
-              />
+          {pid && (
+            <AppleSection title={t("tastingHub.activeTastings")}>
+              {activeTastings.length > 0 ? (
+                activeTastings.map((tasting: any) => (
+                  <ActiveTastingCard key={tasting.id} tasting={tasting} t={t} />
+                ))
+              ) : (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "20px 16px",
+                    fontSize: 13,
+                    color: v.muted,
+                    lineHeight: 1.5,
+                  }}
+                  data-testid="text-no-active-tastings"
+                >
+                  {t("tastingHub.noActiveTastings")}
+                </div>
+              )}
             </AppleSection>
           )}
         </ApplePage>
