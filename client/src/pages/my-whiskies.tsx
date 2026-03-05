@@ -28,7 +28,7 @@ interface WhiskyEntry {
 
 type SortKey = "name" | "score" | "date" | "distillery";
 
-export default function MyWhiskies() {
+export default function MyWhiskies({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const [search, setSearch] = useState("");
@@ -238,13 +238,15 @@ export default function MyWhiskies() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 896, margin: "0 auto", minWidth: 0, overflowX: "hidden" }} data-testid="my-whiskies-page">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-        <h1 style={pageTitleStyle} data-testid="text-my-whiskies-title">
-          {t("myWhiskies.title")}
-        </h1>
-        <p style={pageSubtitleStyle}>{t("myWhiskies.subtitle")}</p>
-        <div style={{ width: 48, height: 4, background: `${c.accent}80`, marginTop: 12, borderRadius: 2 }} />
-      </motion.div>
+      {!embedded && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+          <h1 style={pageTitleStyle} data-testid="text-my-whiskies-title">
+            {t("myWhiskies.title")}
+          </h1>
+          <p style={pageSubtitleStyle}>{t("myWhiskies.subtitle")}</p>
+          <div style={{ width: 48, height: 4, background: `${c.accent}80`, marginTop: 12, borderRadius: 2 }} />
+        </motion.div>
+      )}
 
       {allWhiskies.length > 0 && (
         <motion.div

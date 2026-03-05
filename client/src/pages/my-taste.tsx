@@ -607,11 +607,8 @@ export default function MyTastePage() {
               <h3 style={{ ...sectionHeadingStyle, color: v.accent, fontSize: 18 }}>
                 {t("myTastePage.sectionDrams")}
               </h3>
-              <p style={{ fontSize: 13, color: v.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
+              <p style={{ fontSize: 13, color: v.muted, marginTop: -8, marginBottom: 12, lineHeight: 1.5 }}>
                 {t("myTastePage.dramsSubtitle")}
-              </p>
-              <p style={{ fontSize: 11, color: v.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
-                {t("myTastePage.dramsExplainer")}
               </p>
               <Link href="/log-simple">
                 <div

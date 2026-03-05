@@ -1,0 +1,101 @@
+HARDPROMPT — UX CONSOLIDATION (My Taste / My Drams) — NO SCOPE CREEP
+
+You are working in the existing CaskSense repo. Implement ONLY what is specified. Do not invent new pages/features. Do not remove features. Keep the global 2-tab structure intact: bottom nav has exactly two main items: "Tasting" and "My Taste".
+
+GOAL
+Fix IA/UX redundancies and confusion around “My Taste” overview + “My Drams” (journal) page:
+- Remove duplicate/competing CTAs
+- Remove misleading “tabs” that imply different data objects
+- Make “My Drams” the single coherent place for all tastings/entries (solo + from tastings), with simple filters
+- Keep Export as a secondary action and avoid duplicate “Export” navigation
+- Keep everything fully i18n-compliant (DE fully German, EN fully English)
+
+NON-NEGOTIABLE CONSTRAINTS
+1) Do NOT change the global top-level structure: only two main bottom-nav tabs remain: /tasting and /my-taste.
+2) Do NOT delete features or endpoints. Rewire UI if needed.
+3) Do NOT create new redundant navigation labels (“Journal” vs “My Drams”). Use ONE concept consistently:
+   - EN: "My Drams"
+   - DE: "Meine Drams"
+4) Do NOT add more than one primary “Add Dram” entry point per screen.
+5) Do NOT add a second Export page. Export remains available via /data-export. “My Drams” may deep-link to it, but not duplicate export UI.
+6) Keep styles consistent with the dark-warm V2 look already used in My Taste.
+
+WHAT TO CHANGE (FRONTEND)
+A) My Taste overview page (client/src/pages/my-taste.tsx)
+1) Remove the confusing “MY DRAMS … definition text” block that appears ABOVE the navigation card list. Replace with a clean section header:
+   - EN: “My Drams” with subtext “All my tastings — solo & from tastings”
+   - DE: “Meine Drams” mit Subtext „Alle meine Verkostungen — solo & aus Tastings“
+   No long definition paragraph here.
+2) Ensure the navigation card currently labeled “Journal” is renamed to “My Drams / Meine Drams” and routes to the drams list page (existing route, see below).
+3) Keep the big primary CTA “+ Add Dram” on the My Taste overview (fine). But avoid presenting another “New Entry” CTA inside the first screen of the drams list (see B).
+
+B) Drams list page (currently journal page, e.g. client/src/pages/my-journal.tsx or equivalent that shows “My Whisky / My Whisky Diary” and segmented tabs “Journal | Tasted | Export”)
+1) Rename page title and IA to match:
+   - EN: Title “My Drams”
+   - DE: Title “Meine Drams”
+   Remove “My Whisky” branding in this context (it confuses object model).
+2) Remove the segmented navigation “Journal / Tasted / Export” entirely. Replace with:
+   - Filter chips (3 options): All / Solo / Tastings
+   - Sort dropdown (Default: Date desc)
+   - Optional search input (if already easy; otherwise omit search)
+   These controls must be responsive (desktop wide, mobile stacked).
+3) Remove duplicate primary CTA inside the page body. Provide ONLY ONE “+ Dram” action in the drams list view:
+   - Put it in the page header (top right), consistent with the app’s style.
+   - On desktop, show as button; on mobile, icon button is OK.
+4) “Export” must NOT be a top-level tab here. Provide secondary access:
+   - A small “⋯” menu in the header with an item:
+     - EN: “Export data…”
+     - DE: „Daten exportieren…“
+     which navigates to /data-export (optionally with query param focus=journal).
+   Do NOT render the export cards list here. Do NOT keep an “Export” tab.
+5) Data model: treat all entries as “drams” and filter by context:
+   - Solo = entries not associated with a tasting session
+   - Tastings = entries associated with a tasting session
+   Use whatever existing fields exist; do not change DB schema. If the current page already separates “Solo Tastings” vs “Tastings”, map them into the new filter chips.
+6) Make layout width responsive:
+   - On desktop, the content container should use a max-width that feels premium (e.g., 900–1100px) and center aligned.
+   - Avoid tiny narrow cards on large screens.
+
+C) Remove duplicate “Back” occurrences
+Across My Taste and My Drams related pages:
+- Ensure there is not a second “Back” stuck at the very bottom AND another back elsewhere.
+- Prefer a single back affordance near top (header). If a bottom back exists, remove it for these pages.
+- Do not break navigation history; use router navigation (back()).
+
+D) i18n correctness
+1) Audit all visible strings touched by this change:
+   - When language is DE, all strings must be German.
+   - When language is EN, all strings must be English.
+2) Use existing i18n pattern in the repo (react-i18next). Do not hardcode English strings in components.
+3) If some strings are currently missing keys, add keys in the existing translation files, but keep changes minimal.
+
+FILES TO INSPECT / LIKELY EDIT
+- client/src/pages/my-taste.tsx
+- client/src/pages/my-journal.tsx (or whatever file renders “My Whisky / My Whisky Diary”)
+- client/src/App.tsx (ONLY if routing needs a small adjustment; do not restructure router)
+- Any small shared components used by these pages (keep minimal)
+
+ACCEPTANCE CRITERIA (MUST PASS)
+1) My Taste overview:
+   - No long “A dram is …” paragraph block above list.
+   - Card is labeled “My Drams / Meine Drams” and routes correctly.
+2) My Drams page:
+   - Title “My Drams / Meine Drams”
+   - No “Journal/Tasted/Export” segmented nav.
+   - Has filters All/Solo/Tastings and sort by date desc default.
+   - Only one Add Dram CTA in the view (header).
+   - Export accessible only as secondary action linking to /data-export.
+3) No duplicate “Back” on these pages.
+4) Desktop layout is not narrow/tiny; cards and controls scale to screen width.
+5) DE/EN language consistency for all touched UI strings.
+
+PROCESS
+- First: Identify the exact page file and route currently used for “Journal” and for the “My Whisky Diary” view.
+- Second: Implement changes carefully with minimal diff.
+- Third: Manually verify by running the app and checking:
+  /my-taste (DE and EN)
+  the drams list route
+  navigation back behavior
+  responsiveness on desktop widths
+
+Now implement.

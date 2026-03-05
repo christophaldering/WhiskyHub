@@ -119,7 +119,7 @@ const badgeAccent: React.CSSProperties = {
   border: "none",
 };
 
-export default function Journal() {
+export default function Journal({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
   const { currentParticipant, wishlistTransfer, setWishlistTransfer } = useAppStore();
   const [view, setView] = useState<View>("list");
@@ -258,7 +258,7 @@ export default function Journal() {
   const [activeTab, setActiveTab] = useState<"journal" | "history">("journal");
 
   return (
-    <div style={{ maxWidth: 896, margin: "0 auto", padding: "32px 16px", minWidth: 0, overflowX: "hidden" }} data-testid="journal-page">
+    <div style={{ maxWidth: 896, margin: "0 auto", padding: embedded ? "0" : "32px 16px", minWidth: 0, overflowX: "hidden" }} data-testid="journal-page">
       <AnimatePresence mode="wait">
         {view === "list" && (
           <motion.div
@@ -268,42 +268,46 @@ export default function Journal() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 24 }}>
-              <div style={{ minWidth: 0 }}>
-                <h1 style={pageTitleStyle} data-testid="text-journal-title">
-                  {t("journal.title")}
-                </h1>
-                <p style={pageSubtitleStyle}>{t("journal.subtitle")}</p>
-              </div>
-              <button
-                onClick={handleNew}
-                style={btnPrimary}
-                data-testid="button-new-journal-entry"
-                aria-label={t("journal.newEntry")}
-              >
-                <Plus style={{ width: 16, height: 16 }} />
-                <span>{t("journal.newEntry")}</span>
-              </button>
-            </div>
+            {!embedded && (
+              <>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 24 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <h1 style={pageTitleStyle} data-testid="text-journal-title">
+                      {t("journal.title")}
+                    </h1>
+                    <p style={pageSubtitleStyle}>{t("journal.subtitle")}</p>
+                  </div>
+                  <button
+                    onClick={handleNew}
+                    style={btnPrimary}
+                    data-testid="button-new-journal-entry"
+                    aria-label={t("journal.newEntry")}
+                  >
+                    <Plus style={{ width: 16, height: 16 }} />
+                    <span>{t("journal.newEntry")}</span>
+                  </button>
+                </div>
 
-            <div style={{ display: "flex", gap: 4, marginBottom: 24, background: c.inputBg, borderRadius: 10, padding: 4 }}>
-              <button
-                onClick={() => setActiveTab("journal")}
-                style={activeTab === "journal" ? tabActive : tabInactive}
-                data-testid="tab-journal-personal"
-              >
-                <BookOpen style={{ width: 14, height: 14 }} />
-                {t("journal.tabPersonal")}
-              </button>
-              <button
-                onClick={() => setActiveTab("history")}
-                style={activeTab === "history" ? tabActive : tabInactive}
-                data-testid="tab-journal-history"
-              >
-                <History style={{ width: 14, height: 14 }} />
-                {t("journal.tabFromTastings")}
-              </button>
-            </div>
+                <div style={{ display: "flex", gap: 4, marginBottom: 24, background: c.inputBg, borderRadius: 10, padding: 4 }}>
+                  <button
+                    onClick={() => setActiveTab("journal")}
+                    style={activeTab === "journal" ? tabActive : tabInactive}
+                    data-testid="tab-journal-personal"
+                  >
+                    <BookOpen style={{ width: 14, height: 14 }} />
+                    {t("journal.tabPersonal")}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("history")}
+                    style={activeTab === "history" ? tabActive : tabInactive}
+                    data-testid="tab-journal-history"
+                  >
+                    <History style={{ width: 14, height: 14 }} />
+                    {t("journal.tabFromTastings")}
+                  </button>
+                </div>
+              </>
+            )}
 
             {activeTab === "journal" && (
               <div style={{ marginTop: 16 }}>
