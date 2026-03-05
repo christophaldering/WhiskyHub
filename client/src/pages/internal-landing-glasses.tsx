@@ -76,12 +76,16 @@ export default function InternalLandingGlasses() {
           transition={{ duration: 2, ease: "easeOut" }}
           style={{
             position: "absolute",
-            inset: 0,
+            top: 0,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "min(600px, 90vw)",
+            height: "45%",
             backgroundImage: `url(${heroImage})`,
             backgroundSize: "cover",
-            backgroundPosition: "center 40%",
+            backgroundPosition: "center 35%",
             backgroundRepeat: "no-repeat",
-            opacity: 0.3,
+            opacity: 0.35,
           }}
         />
 
@@ -89,10 +93,21 @@ export default function InternalLandingGlasses() {
           position: "absolute",
           inset: 0,
           background: `
-            radial-gradient(ellipse 70% 50% at 50% 45%, transparent 0%, ${BG_RAW}ee 70%),
-            linear-gradient(to top, ${BG_RAW} 0%, transparent 40%),
-            linear-gradient(to bottom, ${BG_RAW}dd 0%, transparent 30%)
+            radial-gradient(ellipse 60% 35% at 50% 20%, transparent 0%, ${BG_RAW}ee 70%),
+            linear-gradient(to top, ${BG_RAW} 0%, transparent 30%),
+            linear-gradient(to bottom, ${BG_RAW}cc 0%, transparent 20%)
           `,
+          pointerEvents: "none",
+        }}
+        />
+
+        <div style={{
+          position: "absolute",
+          top: "40%",
+          left: 0,
+          right: 0,
+          height: "15%",
+          background: `linear-gradient(to bottom, transparent 0%, ${BG_RAW} 100%)`,
           pointerEvents: "none",
         }} />
 
