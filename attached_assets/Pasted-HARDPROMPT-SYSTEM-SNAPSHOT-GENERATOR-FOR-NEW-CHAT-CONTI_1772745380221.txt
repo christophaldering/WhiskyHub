@@ -1,0 +1,175 @@
+HARDPROMPT — SYSTEM SNAPSHOT GENERATOR FOR NEW CHAT CONTINUATION
+
+ROLE
+You are the system introspection agent for the CaskSense repository.
+
+Your task is NOT to modify the codebase.
+Your task is to generate a COMPLETE SYSTEM SNAPSHOT PROMPT that can be pasted into a new ChatGPT conversation so that ChatGPT can immediately understand the current architecture, UX state, navigation, and feature set of the application.
+
+This snapshot must be extremely structured and concise but comprehensive.
+
+IMPORTANT
+You must output the result as ONE SINGLE COPYABLE PROMPT that starts with:
+
+"CASKSENSE SYSTEM SNAPSHOT"
+
+and ends with:
+
+"END OF SNAPSHOT"
+
+Do not output explanations outside the prompt.
+
+The output must be optimized for AI ingestion.
+
+DO NOT OMIT DETAILS.
+
+---------------------------------------------------------------------
+
+EXTRACT THE FOLLOWING INFORMATION
+
+1. PROJECT OVERVIEW
+- Project name
+- Purpose of the system
+- Core concept of CaskSense
+- Current UX philosophy (dark warm Apple-style whisky aesthetic)
+
+2. TECH STACK
+Include exact technologies used:
+Frontend
+Backend
+Database
+Routing
+State management
+Styling
+Charts
+AI integrations
+Hosting
+
+3. REPOSITORY STRUCTURE
+Provide the important folders including:
+
+client/
+server/
+shared/
+components/
+pages/
+routes/
+database schema
+api endpoints
+
+List key files if possible.
+
+4. CURRENT NAVIGATION STRUCTURE
+
+Top Level Navigation
+Example:
+
+Tasting
+My Taste
+
+For each section describe the subpages.
+
+Example format:
+
+Tasting
+- Join tasting
+- Host tasting
+- Solo dram tasting
+- Host dashboard
+- Calendar
+
+My Taste
+- My Drams
+- My Tastings
+- Flavor Profile
+- Community
+- Data Export
+
+5. DATA MODEL CONCEPT
+
+Explain the conceptual entities:
+
+Dram
+Solo Dram
+Tasting
+Tasting Session
+User
+Flavor Profile
+
+Explain how they relate.
+
+6. CURRENT UX DECISIONS
+
+Describe the major UX principles implemented recently:
+
+- Two-world navigation model (Tasting vs My Taste)
+- Dram as smallest unit
+- Solo dram vs tasting dram
+- Tasting hub concept
+- Apple-style segmented navigation
+- Back navigation behavior
+- Mobile bottom nav
+
+7. KEY FEATURES CURRENTLY IMPLEMENTED
+
+List all important features:
+
+Example
+
+Join tasting via code
+Host tasting
+Live tasting session
+Solo dram logging
+Flavor radar
+Personal dram history
+Community rankings
+Taste twins
+Data export
+Knowledge base
+
+8. CURRENT KNOWN UX ISSUES (IF ANY)
+
+List any known unresolved issues or inconsistencies.
+
+9. CURRENT ROUTES
+
+List major routes such as:
+
+/tasting
+/tasting/join
+/tasting/host
+/my-taste
+/my-taste/drams
+/my-taste/tastings
+/my-taste/profile
+/data-export
+/support-console
+
+10. CURRENT STATE OF IMPLEMENTATION
+
+Indicate whether the system is:
+
+Prototype
+MVP
+Feature-complete
+UX consolidation phase
+
+---------------------------------------------------------------------
+
+OUTPUT FORMAT
+
+Return the result exactly like this:
+
+CASKSENSE SYSTEM SNAPSHOT
+
+[structured sections]
+
+END OF SNAPSHOT
+
+Do NOT include explanations outside the snapshot.
+
+This output will be pasted into a new ChatGPT conversation to continue development with full system awareness.
+
+---------------------------------------------------------------------
+
+Now scan the repository and generate the snapshot.
