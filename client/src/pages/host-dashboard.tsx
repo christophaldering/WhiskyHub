@@ -653,11 +653,10 @@ export default function HostDashboard() {
             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.4 }}>
               <div style={sectionCard} data-testid="section-quick-actions">
                 <SectionTitle icon={Zap} title={t("hostDashboard.quickActions")} />
-                <div className="hd-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                <div className="hd-grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
                   {[
                     { href: "/host", icon: Plus, label: t("hostDashboard.newTasting"), accent: true },
                     { href: "/sessions", icon: FileText, label: t("hostDashboard.tastings"), accent: false },
-                    { href: "/data-export", icon: Download, label: t("hostDashboard.dataExport"), accent: false },
                   ].map(item => (
                     <Link key={item.href} href={item.href}>
                       <div
