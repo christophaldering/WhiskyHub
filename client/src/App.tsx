@@ -26,6 +26,7 @@ import Intro from "@/pages/intro";
 import Landing from "@/pages/landing";
 import PublicLanding from "@/pages/public-landing";
 import GuidedPresentation from "@/pages/guided-presentation";
+import LandingV2 from "@/pages/landing-v2";
 import FeatureTour from "@/pages/feature-tour";
 import Tour from "@/pages/tour";
 import Background from "@/pages/background";
@@ -137,6 +138,7 @@ function Router() {
       <Switch>
         <Route path="/" component={PublicLanding} />
         <Route path="/presentation" component={GuidedPresentation} />
+        <Route path="/landing-v2" component={LandingV2} />
         <Route path="/app-entry" component={Landing} />
         <Route path="/landing">{() => <Redirect to="/" />}</Route>
         <Route path="/start">{() => <Redirect to="/" />}</Route>

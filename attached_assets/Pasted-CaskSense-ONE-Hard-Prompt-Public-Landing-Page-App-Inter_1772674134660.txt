@@ -1,0 +1,257 @@
+CaskSense — ONE Hard Prompt: Public Landing Page + App Interstitial + Apple-Level WOW (Animated, Interactive, Personal, Scientific)
+
+READ FIRST (CONSTRAINTS)
+- Build INSIDE the existing Replit repo (React/Vite/TS, Wouter, Zustand, shadcn/ui, Tailwind, Dark Warm theme).
+- Do NOT remove or break any existing routes/features/pages.
+- No backend/DB changes required for the landing (frontend-only).
+- Result must be impressive: Apple/Linear/Arc quality, whisky-culture warm, personal & sympathetic, and “research-grade” credibility.
+- Everything must be in ONE implementation pass: routing + landing page + animations + interactive demos + content.
+
+========================================================
+A) ROUTING: “Interstitial” Landing in Front of the App
+========================================================
+1) Create a new PUBLIC marketing landing page at route:
+   "/"
+
+2) Move the existing application entry to:
+   "/app"
+
+3) Maintain backwards compatibility:
+   - If the app is currently expected at "/tasting" or other roots, keep them working.
+   - Add redirects (client side) so old deep links continue to work.
+
+Implementation detail:
+- In the main router, mount a new LandingPage at "/" only.
+- Mount the existing app shell at "/app/*" (or "/app" as the new root that renders the current “simple shell”).
+- If your router structure makes it hard, implement a small “RouteGate” component:
+  - If pathname starts with "/app" → render existing app root
+  - Else if pathname is "/" → LandingPage
+  - Else → fall back to existing routing behavior (do not break deep links)
+
+========================================================
+B) LANDING PAGE: Apple-Style, Dark Warm, Scroll Storytelling
+========================================================
+Create:
+- client/src/pages/landing.tsx  (or landing.tsx in pages)
+Route it to "/".
+
+Design rules:
+- Use Dark Warm tokens from client/src/lib/theme.ts (bg/card/text/muted/accent/border).
+- Typography: Playfair for big headings; system-ui for body.
+- Layout: max width ~1100px, generous whitespace, premium calm.
+- Use shadcn/ui components (Card, Button, Badge, Tabs) where helpful.
+- Use Framer Motion (already used elsewhere) for subtle scroll animations.
+- Do not use heavy images; use gradients, subtle shapes, and micro-interactions.
+
+Landing page must include ALL sections below:
+
+--------------------------------------------------------
+1) HERO (WOW)
+--------------------------------------------------------
+- Big headline: “CaskSense”
+- Subheadline: “Where tasting becomes reflection.”
+- Short text (calm, cultured, not loud marketing):
+  “The most thoughtful way to explore whisky — alone or together.”
+- Primary CTA: “Open the App” → /app
+- Secondary CTA: “See it in action” → scroll to demos
+- Hero background: animated warm glow (Framer Motion) + subtle “cask” gradient.
+- Add a small “Founders note” pill (personal, sympathetic):
+  “Built for tasting nights with friends — and for the nerds who love patterns.”
+
+--------------------------------------------------------
+2) “ON FIRST GLANCE” (2 cards, crystal clear)
+--------------------------------------------------------
+Two large cards side-by-side:
+
+A) “Private Dram”
+- “Log a whisky you taste on your own.”
+- bullets:
+  • structured notes
+  • 5-dimension scoring
+  • flavour memory over time
+
+B) “Tasting Night”
+- “Host a structured tasting with friends.”
+- bullets:
+  • join via PIN + code
+  • guided tasting room
+  • recap & comparison
+
+Both cards:
+- hover lift + warm accent edge glow
+
+--------------------------------------------------------
+3) FEATURE TEASER GRID (Casual + Heavy Users)
+--------------------------------------------------------
+A 2x3 grid of feature cards with icons and short copy:
+
+- Log a Dram (photo/AI, barcode, manual)
+- Host Tastings (wizard, status machine, live controls)
+- Flavor Profile (radar, aroma wheel)
+- Analytics (benchmarks, comparisons)
+- AI Companion (notes generator, lineup curation)
+- Export (JSON/Excel/DOCX)
+
+Add a small “For heavy users” toggle (client-only UI switch):
+- When ON, the same cards expand with one extra line each (advanced detail).
+- When OFF, they stay short.
+
+--------------------------------------------------------
+4) “THE EXPERIENCE” — Animated Step Flow (Scroll)
+--------------------------------------------------------
+A horizontal (or vertical on mobile) step flow with animated reveal:
+- Join → Log → Rate → Compare → Discover
+Each step includes:
+- micro-copy (1 sentence)
+- a mini icon
+- subtle animated progress line
+
+--------------------------------------------------------
+5) INTERACTIVE WOW DEMO #1: “Dram Logger Preview”
+--------------------------------------------------------
+Build a fake “Dram logging” UI inside the landing (NOT connected to backend):
+- Name input (e.g., “Whisky name”)
+- 5 sliders (Nose/Taste/Finish/Balance/Overall)
+- Notes textarea
+- Context Level selector (Naked/Self/Full)
+
+As user moves sliders:
+- show a live “taste signature” mini radar (use Recharts if available, else a simple SVG radar).
+- show a “generated note” (client-only) that updates in real time (no API):
+  Example:
+  “Nose: warm vanilla, dried fruit… Taste: … Finish: … Balance: …”
+Use deterministic text templates based on slider values so it feels “AI-like” without calling GPT.
+
+This demo must feel premium:
+- Apple-style cards
+- smooth slider movement
+- subtle animations on value change
+
+--------------------------------------------------------
+6) INTERACTIVE WOW DEMO #2: “Panel Comparison Preview”
+--------------------------------------------------------
+Create a fake “friends panel” demo with 4 tasters (names can be friendly placeholders):
+- “Lucia”
+- “Markus”
+- “Anika”
+- “You”
+
+Show how the same whisky gets different ratings:
+- a small table + mini bar chart OR radar overlay
+- a “Taste Twins” callout:
+  “Closest palate match: Lucia (92% similarity)”
+Compute similarity client-side (cosine similarity on 5-dim vectors).
+
+Add one “nerd switch”:
+- “Show method”
+When toggled, show a small drawer explaining the similarity metric in plain language.
+
+--------------------------------------------------------
+7) “THE SCIENCE” — Credible, Professor-friendly, but not dry
+--------------------------------------------------------
+Section headline:
+“Taste is personal — but patterns emerge.”
+
+Explain (calm, intelligent):
+- data accumulates over time
+- personal baselines and context effects
+- panel variance as signal, not noise
+- benchmarking
+
+Include 3 “Method Cards” with surprising depth:
+1) “Context Effects”
+   - Naked vs Full shifts
+2) “Scale Usage”
+   - central tendency vs range
+3) “Stability Over Time”
+   - taste drift detection
+
+Include small “Kersting wink” callout (sympathetic, not cringe):
+“For the measurement nerds: yes, we care about reliability and validity.”
+
+--------------------------------------------------------
+8) “FOR HEAVY USERS” (Your whisky friends)
+--------------------------------------------------------
+A section with bold, nerdy appeal:
+- flight design
+- multi-act reveal
+- live tracking who rated what
+- recap exports (PDF/Excel)
+- benchmarks across sessions
+- whiskybase collection import
+Make it feel like a toolkit, not a game.
+
+--------------------------------------------------------
+9) SOCIAL PROOF (Lightweight, personal)
+--------------------------------------------------------
+Add 3 short quotes (invented but plausible placeholders, not fake famous people):
+- “Finally, our tastings don’t vanish the next day.”
+- “The radar profile alone is worth it.”
+- “It’s like Strava for whisky — but calmer.”
+
+Label them as “beta group impressions” (not testimonials from named persons).
+
+--------------------------------------------------------
+10) FINAL CTA (Strong, calm)
+--------------------------------------------------------
+Headline:
+“Ready for your next tasting night?”
+
+Buttons:
+- “Open the App” → /app
+- “Host a tasting” → /app/tasting/host (or the correct route within app)
+
+Footer:
+- minimal links: About, Privacy, Contact (can be placeholders)
+- a small note: “Made in Germany. Built with love for whisky and data.”
+
+========================================================
+C) IMPLEMENTATION DETAILS (Quality, Performance, Responsiveness)
+========================================================
+- Must be mobile-first: hero stacks, cards become vertical, demos still usable.
+- Use lazy rendering for heavy sections (optional): only mount demo components when scrolled into view.
+- No big image assets required; use gradients and subtle SVG patterns.
+- Ensure accessibility:
+  - text contrast within Dark Warm
+  - buttons have focus styles
+
+========================================================
+D) I18N
+========================================================
+- Landing should support DE + EN via existing react-i18next.
+- Minimum: Provide German strings, English can be a simple parallel version.
+- Keep translations in client/src/lib/i18n.ts OR local constant + useTranslation keys.
+Prefer: i18n keys for headings/buttons, local constants for longer paragraphs if needed.
+
+========================================================
+E) FILES TO CREATE / MODIFY
+========================================================
+Create:
+- client/src/pages/landing.tsx
+- client/src/components/landing/*  (Hero, FeatureGrid, StepFlow, DemoDramLogger, DemoPanelCompare, ScienceSection, CTAFooter)
+- client/src/lib/demoMath.ts (similarity, simple radar data helpers)
+
+Modify:
+- routing entry (where Wouter routes are defined) to mount "/" Landing and "/app" existing app
+- ensure existing app root still functions under /app without breaking deep links
+
+========================================================
+F) FINAL VERIFICATION (Must pass)
+========================================================
+1) "/" shows Landing with animations + both interactive demos working.
+2) "Open the App" goes to "/app" and the app works as before.
+3) Existing deep links still work (do not break /admin, /support-console, /tasting-room-simple/:id etc.).
+4) No console errors, no TypeScript errors.
+5) Page is fast and feels premium.
+
+========================================================
+DELIVERABLE
+========================================================
+After changes, output:
+- list of modified/added files
+- final route map (/, /app, redirects)
+- where to tweak copy and which components hold the demos
+
+EXECUTE NOW.
+Do not ask me questions. Make reasonable assumptions consistent with CaskSense v2.0.0.
+Make it impressive, calm, whisky-warm, and Apple-professional.
