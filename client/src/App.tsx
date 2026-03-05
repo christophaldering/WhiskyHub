@@ -75,6 +75,7 @@ const SupportConsole = lazy(() => import("@/pages/support-console"));
 const Landing = lazy(() => import("@/pages/landing"));
 const SimpleFeedbackPage = lazy(() => import("@/pages/simple-feedback"));
 const SimpleTestPage = lazy(() => import("@/pages/simple-test"));
+const InternalLandingGlasses = lazy(() => import("@/pages/internal-landing-glasses"));
 
 // ── Legacy layout shells ──
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -236,6 +237,7 @@ function Router() {
         <Route path="/discover/activity" component={ActivityFeed} />
 
         {/* ── Utility / Internal ── */}
+        <Route path="/internal/landing-glasses" component={InternalLandingGlasses} />
         <Route path="/simple-test" component={SimpleTestPage} />
         <Route path="/simple-feedback" component={SimpleFeedbackPage} />
         <Route path="/support" component={SupportConsole} />
