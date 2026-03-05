@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import BackButton from "@/components/back-button";
-import HeroWhiskyBg from "@/components/hero-whisky-bg";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -27,8 +26,7 @@ export default function Background() {
 
   return (
     <SimpleShell maxWidth={700}>
-      <HeroWhiskyBg />
-      <div data-testid="background-page" style={{ position: "relative", zIndex: 1 }}>
+      <div data-testid="background-page">
         <BackButton fallback="/discover/rabbit-hole" />
 
         <motion.div initial="hidden" animate="visible" variants={fadeUp} className="mb-10">

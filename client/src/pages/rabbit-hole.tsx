@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { FlaskConical, SlidersHorizontal, BarChart3, BookOpen } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import BackButton from "@/components/back-button";
-import HeroWhiskyBg from "@/components/hero-whisky-bg";
 import { v, alpha } from "@/lib/themeVars";
 import { pageTitleStyle } from "@/lib/theme";
 import type { ElementType } from "react";
@@ -45,8 +44,7 @@ export default function RabbitHole() {
 
   return (
     <SimpleShell maxWidth={600}>
-      <HeroWhiskyBg />
-      <div data-testid="rabbit-hole-page" style={{ position: "relative", zIndex: 1 }}>
+      <div data-testid="rabbit-hole-page">
         <BackButton fallback="/my-taste" />
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
