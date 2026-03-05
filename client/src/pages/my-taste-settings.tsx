@@ -91,7 +91,7 @@ const badgeBase: React.CSSProperties = {
 };
 
 export default function MyTasteSettings() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentParticipant, setParticipant } = useAppStore();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -649,6 +649,45 @@ export default function MyTasteSettings() {
                     transition: "all 0.2s",
                   }}
                   data-testid={`button-theme-${th}`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={cardStyle}>
+          <div style={sectionTitle}>{t("profile.language")}</div>
+          <p style={{ fontSize: 12, color: c.muted, marginBottom: 12 }}>
+            {t("profile.languageDesc")}
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            {(["de", "en"] as const).map((lng) => {
+              const active = i18n.language === lng;
+              const label = lng === "de" ? "Deutsch" : "English";
+              return (
+                <button
+                  key={lng}
+                  onClick={() => {
+                    i18n.changeLanguage(lng);
+                    localStorage.setItem("i18nextLng", lng);
+                    toast({ title: t("profile.languageUpdated"), duration: 1500 });
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: active ? `2px solid ${c.accent}` : `1px solid ${c.border}`,
+                    background: active ? `${c.accent}15` : c.card,
+                    color: active ? c.accent : c.text,
+                    fontSize: 13,
+                    fontWeight: active ? 600 : 400,
+                    cursor: "pointer",
+                    fontFamily: "system-ui, sans-serif",
+                    transition: "all 0.2s",
+                  }}
+                  data-testid={`button-language-${lng}`}
                 >
                   {label}
                 </button>

@@ -1840,6 +1840,9 @@ const resources = {
         theme: "Theme",
         themeDesc: "Choose your preferred appearance.",
         themeUpdated: "Theme updated",
+        language: "Language",
+        languageDesc: "Choose your preferred language.",
+        languageUpdated: "Language updated",
       },
       friends: {
         title: "My Whisky Friends",
@@ -5775,6 +5778,9 @@ const resources = {
         theme: "Theme",
         themeDesc: "Wähle dein bevorzugtes Erscheinungsbild.",
         themeUpdated: "Theme aktualisiert",
+        language: "Sprache",
+        languageDesc: "Wähle deine bevorzugte Sprache.",
+        languageUpdated: "Sprache aktualisiert",
       },
       friends: {
         title: "Meine Whisky-Freunde",
