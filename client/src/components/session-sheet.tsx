@@ -4,6 +4,7 @@ import { getSession, signIn, signOut } from "@/lib/session";
 import type { SessionMode } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import { c as darkColors } from "@/lib/theme";
+import { v } from "@/lib/themeVars";
 
 interface SessionSheetProps {
   open: boolean;
@@ -111,10 +112,10 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
-    background: isDark ? darkColors.inputBg : "transparent",
-    border: `1px solid ${isDark ? darkColors.inputBorder : "hsl(var(--border))"}`,
+    background: isDark ? v.inputBg : "transparent",
+    border: `1px solid ${isDark ? v.inputBorder : "hsl(var(--border))"}`,
     borderRadius: 10,
-    color: isDark ? darkColors.text : "hsl(var(--foreground))",
+    color: isDark ? v.text : "hsl(var(--foreground))",
     fontSize: 13,
     padding: "10px 12px",
     fontFamily: "system-ui, sans-serif",
@@ -128,7 +129,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     fontSize: 14,
     fontWeight: 600,
     background: c.accent,
-    color: isDark ? darkColors.bg : "#fff",
+    color: isDark ? v.bg : "#fff",
     border: "none",
     borderRadius: 10,
     cursor: "pointer",
@@ -569,7 +570,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
           type="checkbox"
           checked={siRemember}
           onChange={(e) => setSiRemember(e.target.checked)}
-          style={{ accentColor: isDark ? darkColors.accent : undefined, width: 14, height: 14 }}
+          style={{ accentColor: isDark ? v.accent : undefined, width: 14, height: 14 }}
           data-testid="checkbox-session-remember"
         />
         Remember me on this device
@@ -581,7 +582,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         style={{
           ...btnPrimary,
           background: (lockoutSeconds > 0 || !siPin.trim() || !siEmail.trim()) ? c.muted : c.accent,
-          color: (lockoutSeconds > 0 || !siPin.trim() || !siEmail.trim()) ? c.mutedLight : (isDark ? darkColors.bg : "#fff"),
+          color: (lockoutSeconds > 0 || !siPin.trim() || !siEmail.trim()) ? c.mutedLight : (isDark ? v.bg : "#fff"),
           cursor: siLoading ? "wait" : (lockoutSeconds > 0 || !siPin.trim() || !siEmail.trim()) ? "not-allowed" : "pointer",
         }}
       >

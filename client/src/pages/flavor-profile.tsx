@@ -471,7 +471,7 @@ function WhiskyProfileTab({ participantId, t }: { participantId: string; t: any 
                 <table style={{ width: "100%", fontSize: 14, borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ borderBottom: `1px solid ${c.border}4d` }}>
-                      <th style={{ textAlign: "left", padding: "8px 0", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.muted }}>Whisky</th>
+                      <th style={{ textAlign: "left", padding: "8px 0", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.muted }}>{t("flavorProfile.thWhisky")}</th>
                       <th style={{ textAlign: "right", padding: "8px 0", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.muted }}>{t("flavorProfile.userScore")}</th>
                       <th style={{ textAlign: "right", padding: "8px 0", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.muted }}>{t("flavorProfile.platformMedian")}</th>
                       <th style={{ textAlign: "right", padding: "8px 0", fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, color: c.muted }}>{t("flavorProfile.delta")}</th>
@@ -547,7 +547,7 @@ export default function FlavorProfile() {
             <div style={{ background: c.card, borderRadius: 16, border: `1px solid ${c.border}`, padding: 24, display: "flex", alignItems: "center", justifyContent: "center", height: 300 }}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, fontSize: 14 }}>
-                  {[{label: "Fruity", val: "8.4"}, {label: "Smoky", val: "6.2"}, {label: "Sweet", val: "7.8"}, {label: "Spicy", val: "5.5"}, {label: "Floral", val: "4.1"}, {label: "Maritime", val: "7.0"}].map(f => (
+                  {[{label: t("flavorProfile.previewFruity"), val: "8.4"}, {label: t("flavorProfile.previewSmoky"), val: "6.2"}, {label: t("flavorProfile.previewSweet"), val: "7.8"}, {label: t("flavorProfile.previewSpicy"), val: "5.5"}, {label: t("flavorProfile.previewFloral"), val: "4.1"}, {label: t("flavorProfile.previewMaritime"), val: "7.0"}].map(f => (
                     <div key={f.label} style={{ textAlign: "center" }}>
                       <div style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.accent }}>{f.val}</div>
                       <div style={{ color: c.muted, fontSize: 12 }}>{f.label}</div>

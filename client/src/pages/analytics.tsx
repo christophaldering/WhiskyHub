@@ -205,7 +205,7 @@ export default function Analytics() {
                         <th className="text-center py-2 px-2">{t("analyticsPage.thRatings")}</th>
                         <th className="text-center py-2 px-2">{t("analyticsPage.thAvgScore")}</th>
                         <th className="text-center py-2 px-2">{t("analyticsPage.thSpread")}</th>
-                        <th className="text-center py-2 px-2">Bias</th>
+                        <th className="text-center py-2 px-2">{t("analyticsPage.thBias")}</th>
                       </tr>
                     </thead>
                     <tbody>

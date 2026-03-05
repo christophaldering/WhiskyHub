@@ -460,9 +460,9 @@ export default function FlavorWheel() {
           <div className="bg-card rounded-xl border p-6 flex items-center justify-center" style={{height: 350}}>
             <div className="w-64 h-64 rounded-full border-4 border-primary/20 flex items-center justify-center relative">
               <div className="w-44 h-44 rounded-full border-2 border-primary/30 flex items-center justify-center">
-                <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center font-serif text-primary font-semibold">Aroma</div>
+                <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center font-serif text-primary font-semibold">{t("flavorWheel.previewAroma")}</div>
               </div>
-              {["Fruity","Floral","Peaty","Spicy","Sweet","Woody"].map((label, i) => (
+              {[t("flavorWheel.previewFruity"),t("flavorWheel.previewFloral"),t("flavorWheel.previewPeaty"),t("flavorWheel.previewSpicy"),t("flavorWheel.previewSweet"),t("flavorWheel.previewWoody")].map((label, i) => (
                 <span key={label} className="absolute text-xs text-muted-foreground font-medium" style={{top: `${50 - 45 * Math.cos(i * Math.PI / 3)}%`, left: `${50 + 45 * Math.sin(i * Math.PI / 3)}%`, transform: "translate(-50%, -50%)"}}>{label}</span>
               ))}
             </div>

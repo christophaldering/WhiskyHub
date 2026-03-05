@@ -656,7 +656,7 @@ export default function HostDashboard() {
                 <div className="hd-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
                   {[
                     { href: "/host", icon: Plus, label: t("hostDashboard.newTasting"), accent: true },
-                    { href: "/sessions", icon: FileText, label: "Tastings", accent: false },
+                    { href: "/sessions", icon: FileText, label: t("hostDashboard.tastings"), accent: false },
                     { href: "/data-export", icon: Download, label: t("hostDashboard.dataExport"), accent: false },
                   ].map(item => (
                     <Link key={item.href} href={item.href}>

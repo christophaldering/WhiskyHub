@@ -6,6 +6,7 @@ import { KeyRound, User, Wine, PenLine, Crown, Settings } from "lucide-react";
 import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
 import { NAV_VERSION, LANDING_VERSION } from "@/lib/config";
+import { v } from "@/lib/themeVars";
 
 const HERO_BG_ENABLED = false;
 const HERO_BG_URL = "/images/landing-hero.jpg";
@@ -18,8 +19,8 @@ const btnPrimary = {
   fontSize: "0.95rem",
   fontWeight: 600,
   fontFamily: "system-ui, sans-serif",
-  background: "#d4a256",
-  color: "#1a1714",
+  background: v.accent,
+  color: v.bg,
   borderRadius: "12px",
   cursor: "pointer",
   border: "none",
@@ -28,8 +29,8 @@ const btnPrimary = {
 const btnOutline = {
   ...btnPrimary,
   background: "transparent",
-  color: "#d4a256",
-  border: "1px solid #d4a256",
+  color: v.accent,
+  border: `1px solid ${v.accent}`,
 };
 
 const btnSubtle = {
@@ -41,10 +42,10 @@ const btnSubtle = {
   fontWeight: 500,
   fontFamily: "system-ui, sans-serif",
   background: "transparent",
-  color: "#8a8070",
+  color: v.subtleText,
   borderRadius: "10px",
   cursor: "pointer",
-  border: "1px solid #2e281f",
+  border: `1px solid ${v.subtleBorder}`,
 };
 
 export default function Landing() {
@@ -67,8 +68,8 @@ export default function Landing() {
       style={{
         background: HERO_BG_ENABLED
           ? `linear-gradient(rgba(26,23,20,0.88), rgba(26,23,20,0.94)), url(${HERO_BG_URL}) center/cover no-repeat`
-          : "#1a1714",
-        color: "#f5f0e8",
+          : v.bg,
+        color: v.text,
         minHeight: "100dvh",
         display: "flex",
         flexDirection: "column",
@@ -92,7 +93,7 @@ export default function Landing() {
           display: "flex",
           alignItems: "center",
           gap: 6,
-          color: session.signedIn ? "#d4a256" : "#6b6354",
+          color: session.signedIn ? v.sessionSigned : v.sessionUnsigned,
           opacity: session.signedIn ? 1 : 0.7,
           transition: "opacity 0.2s, color 0.2s",
           fontFamily: "system-ui, sans-serif",
@@ -153,7 +154,7 @@ export default function Landing() {
               fontSize: "0.75rem",
               textTransform: "uppercase",
               letterSpacing: "0.2em",
-              color: "#b8af90",
+              color: v.tagline,
               fontFamily: "system-ui, sans-serif",
             }}
           >

@@ -1,0 +1,160 @@
+CaskSense — Hard Prompt: Theme Toggle “Dark Warm” ↔ “Light Warm” (Pilot nur für Hauptmenüs, dann skalierbar)
+
+CONTEXT
+CaskSense uses a Dark Warm theme with tokens in client/src/lib/theme.ts (bg, card, text, muted, accent, border, etc.).
+We want an OPTIONAL theme toggle:
+- Dark Warm (current)
+- Light Warm (new)
+But we want to start small: apply it FIRST to the “Hauptmenüs” only to get a feel:
+- Start / Landing
+- Bottom Nav (2-tab)
+- Tasting Hub (/tasting)
+- My Taste Hub (/my-taste)
+- Session dropdown/sheet (top right)
+
+Later we can expand across the full app.
+
+STRICT CONSTRAINTS
+- No backend changes
+- No DB changes
+- No route changes
+- No feature removal
+- Minimal diff, reversible
+
+GOAL
+Introduce a theme system using CSS variables, with a toggle stored in localStorage.
+Pilot scope only affects the main menus/shell surfaces; everything else remains on current styling for now.
+
+------------------------------------------------------------
+STEP 0 — Define Themes (CSS variables)
+------------------------------------------------------------
+Create: client/src/lib/theme-css.ts  (or themeVars.ts)
+Export two theme maps (names and values):
+
+ThemeName: "dark-warm" | "light-warm"
+
+Use current Dark Warm values exactly (from theme.ts):
+dark-warm:
+--cs-bg: "#1a1612"
+--cs-card: "#231e19"
+--cs-text: "#e8dfd6"
+--cs-muted: "#9a8e82"
+--cs-accent: "#c8a97e"
+--cs-border: "#3a322a"
+--cs-success: "#5cb85c"
+--cs-danger: "#c44"
+--cs-input-bg: "#2a241e"
+--cs-input-border: "#3a322a"
+
+Define Light Warm (new, warm & premium; keep accent identical):
+light-warm suggestions (adjust if needed):
+--cs-bg: "#f5efe6"        (warm parchment)
+--cs-card: "#ffffff"      (clean card)
+--cs-text: "#231e19"      (ink-brown)
+--cs-muted: "#6f6256"     (warm muted)
+--cs-accent: "#c8a97e"    (same gold)
+--cs-border: "#e2d6c9"    (soft border)
+--cs-success: "#2e7d32"   (darker green for light bg)
+--cs-danger: "#b3261e"    (darker red)
+--cs-input-bg: "#fbf7f2"
+--cs-input-border: "#e2d6c9"
+
+IMPORTANT:
+Keep accent the same for brand continuity.
+
+------------------------------------------------------------
+STEP 1 — Apply Theme Variables to the DOM
+------------------------------------------------------------
+Create: client/src/lib/themeRuntime.ts
+Functions:
+- getTheme(): ThemeName (default "dark-warm")
+- setTheme(theme: ThemeName): void
+  - saves to localStorage key "cs_theme"
+  - applies to document.documentElement:
+    - data-theme="dark-warm" or "light-warm"
+  - sets CSS variables on :root (documentElement.style.setProperty)
+
+On app boot (client entry, e.g. client/src/main.tsx or app root):
+- call setTheme(getTheme()) once.
+
+------------------------------------------------------------
+STEP 2 — Minimal “Theme-aware tokens” for PILOT surfaces only
+------------------------------------------------------------
+We do NOT refactor entire app.
+We only change key “shell”/menu surfaces to use CSS vars instead of hardcoded theme.ts colors.
+
+Create helpers in client/src/lib/themeVars.ts:
+export const v = {
+  bg: "var(--cs-bg)",
+  card: "var(--cs-card)",
+  text: "var(--cs-text)",
+  muted: "var(--cs-muted)",
+  accent: "var(--cs-accent)",
+  border: "var(--cs-border)",
+  inputBg: "var(--cs-input-bg)",
+  inputBorder: "var(--cs-input-border)",
+};
+
+Pilot scope: update styling in these components/pages ONLY:
+- Start/Landing page component ("/" or start route)
+- Bottom navigation component (2-tab)
+- Tasting hub page (/tasting)
+- My Taste hub page (/my-taste)
+- Session dropdown/sheet (top right)
+Optional: Admin left unchanged for now.
+
+Replace direct theme.ts constants used for backgrounds/text/borders in those files with v.* vars.
+
+Do not touch other pages.
+
+------------------------------------------------------------
+STEP 3 — Add Toggle UI (Settings + quick switch)
+------------------------------------------------------------
+Add toggle in:
+- /my-taste/settings (preferred)
+Label:
+- “Theme”
+Options:
+- Dark Warm
+- Light Warm
+
+When changed: call setTheme("light-warm") etc.
+Show small toast: “Theme updated”.
+
+Optional: add a very small toggle button inside session sheet:
+- “Dark Warm / Light Warm”
+(but keep subtle, not clutter)
+
+------------------------------------------------------------
+STEP 4 — Quality Gate (Pilot)
+------------------------------------------------------------
+Verify:
+- switching themes affects the pilot surfaces immediately
+- page remains readable in both modes
+- accent color remains unchanged
+- no TS errors, no console errors
+- refresh persists theme choice
+- non-pilot pages may still look “dark warm”—that’s acceptable for phase 1
+
+------------------------------------------------------------
+STEP 5 — Plan for Phase 2 (no implementation yet)
+------------------------------------------------------------
+At the end, output a short checklist of the next batch to migrate:
+- primary buttons, inputs
+- cards/sections
+- charts
+- remaining pages
+
+But DO NOT implement phase 2 in this prompt.
+
+------------------------------------------------------------
+DELIVERABLE
+------------------------------------------------------------
+Provide:
+1) list of modified files
+2) which surfaces are pilot-themed
+3) how to extend (phase 2 list)
+4) exact Light Warm palette values used
+
+EXECUTE NOW.
+Keep it minimal and safe.

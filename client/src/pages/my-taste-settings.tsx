@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import SimpleShell from "@/components/simple/simple-shell";
 import { c, cardStyle, inputStyle, pageTitleStyle } from "@/lib/theme";
+import { getTheme, setTheme, type ThemeName } from "@/lib/themeVars";
 
 const REGIONS = [
   "Speyside", "Highlands", "Islay", "Lowlands", "Campbeltown",
@@ -615,6 +616,44 @@ export default function MyTasteSettings() {
               </a>
               . Costs are billed directly to your OpenAI account.
             </p>
+          </div>
+        </div>
+
+        <div style={cardStyle}>
+          <div style={sectionTitle}>{t("profile.theme", "Theme")}</div>
+          <p style={{ fontSize: 12, color: c.muted, marginBottom: 12 }}>
+            {t("profile.themeDesc", "Choose your preferred appearance.")}
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            {(["dark-warm", "light-warm"] as ThemeName[]).map((th) => {
+              const active = getTheme() === th;
+              const label = th === "dark-warm" ? "Dark Warm" : "Light Warm";
+              return (
+                <button
+                  key={th}
+                  onClick={() => {
+                    setTheme(th);
+                    toast({ title: t("profile.themeUpdated", "Theme updated"), duration: 1500 });
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: active ? `2px solid ${c.accent}` : `1px solid ${c.border}`,
+                    background: active ? `${c.accent}15` : c.card,
+                    color: active ? c.accent : c.text,
+                    fontSize: 13,
+                    fontWeight: active ? 600 : 400,
+                    cursor: "pointer",
+                    fontFamily: "system-ui, sans-serif",
+                    transition: "all 0.2s",
+                  }}
+                  data-testid={`button-theme-${th}`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
 

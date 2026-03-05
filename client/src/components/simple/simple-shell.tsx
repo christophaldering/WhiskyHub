@@ -5,6 +5,7 @@ import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
 import type { SessionMode } from "@/lib/session";
 import { c } from "@/lib/theme";
+import { v } from "@/lib/themeVars";
 import { NAV_VERSION } from "@/lib/config";
 
 const NAV_ITEMS_V1 = [
@@ -54,8 +55,8 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
     <div
       style={{
         minHeight: "100dvh",
-        background: c.bg,
-        color: c.text,
+        background: v.bg,
+        color: v.text,
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
@@ -63,7 +64,7 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
         position: "sticky",
         top: 0,
         zIndex: 20,
-        background: c.bg,
+        background: v.bg,
         padding: "8px 20px 12px",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
@@ -74,7 +75,7 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
               style={{
                 fontFamily: "'Playfair Display', serif",
                 fontSize: 18,
-                color: c.accent,
+                color: v.accent,
                 cursor: "pointer",
               }}
               data-testid="link-brand-home"
@@ -90,7 +91,7 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
               cursor: "pointer",
               padding: session.signedIn ? "4px 10px" : 6,
               borderRadius: 20,
-              color: session.signedIn ? c.accent : c.mutedLight,
+              color: session.signedIn ? v.accent : v.mutedLight,
               display: "flex",
               alignItems: "center",
               gap: 4,
@@ -136,7 +137,7 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
             onClick={() => window.history.back()}
             style={{
               fontSize: 12,
-              color: c.muted,
+              color: v.muted,
               background: "none",
               border: "none",
               cursor: "pointer",
@@ -169,12 +170,13 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
           display: "flex",
           alignItems: "center",
           justifyContent: "space-around",
-          background: "rgba(26, 23, 20, 0.95)",
+          background: v.bg,
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
-          borderTop: "1px solid #2e281f",
+          borderTop: `1px solid ${v.subtleBorder}`,
           paddingTop: 8,
           paddingBottom: "max(8px, env(safe-area-inset-bottom))",
+          opacity: 0.97,
         }}
         data-testid="simple-bottom-nav"
       >
@@ -190,7 +192,7 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
                   gap: 2,
                   padding: "4px 10px",
                   cursor: "pointer",
-                  color: active ? c.accent : c.mutedLight,
+                  color: active ? v.accent : v.mutedLight,
                   transition: "color 0.2s",
                 }}
                 data-testid={`simple-nav-${item.label.toLowerCase().replace(/\s/g, "-")}`}

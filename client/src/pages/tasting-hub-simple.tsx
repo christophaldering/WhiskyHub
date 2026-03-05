@@ -4,6 +4,7 @@ import SimpleShell from "@/components/simple/simple-shell";
 import { Wine, Crown, ClipboardList, Calendar, LayoutDashboard, ChevronRight } from "lucide-react";
 import { ApplePage, AppleSection, AppleActionCard } from "@/components/apple";
 import { c, cardStyle } from "@/lib/theme";
+import { v } from "@/lib/themeVars";
 import { NAV_VERSION } from "@/lib/config";
 
 interface NavCardProps {
@@ -30,13 +31,13 @@ function NavCard({ icon: Icon, label, description, href, testId }: NavCardProps)
         data-testid={testId}
       >
         <div style={{ width: 38, height: 38, borderRadius: 12, background: `${c.accent}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Icon style={{ width: 18, height: 18, color: c.accent }} strokeWidth={1.8} />
+          <Icon style={{ width: 18, height: 18, color: v.accent }} strokeWidth={1.8} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: c.text, letterSpacing: "-0.01em" }}>{label}</div>
-          <div style={{ fontSize: 12, color: c.muted, marginTop: 3, lineHeight: 1.4 }}>{description}</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: v.text, letterSpacing: "-0.01em" }}>{label}</div>
+          <div style={{ fontSize: 12, color: v.muted, marginTop: 3, lineHeight: 1.4 }}>{description}</div>
         </div>
-        <ChevronRight style={{ width: 16, height: 16, color: `${c.muted}80`, flexShrink: 0 }} strokeWidth={1.8} />
+        <ChevronRight style={{ width: 16, height: 16, color: v.muted, opacity: 0.5, flexShrink: 0 }} strokeWidth={1.8} />
       </div>
     </Link>
   );

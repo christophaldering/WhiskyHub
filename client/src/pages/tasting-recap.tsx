@@ -356,8 +356,8 @@ export default function TastingRecap() {
             {currentParticipant?.id === recap.tasting.hostId && (
               <ThankYouDialog tastingId={recap.tasting.id} tastingTitle={recap.tasting.title} />
             )}
-            <Button variant="outline" size="sm" onClick={handlePdfDownload} data-testid="button-pdf-recap" title="PDF">
-              <FileDown className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">PDF</span>
+            <Button variant="outline" size="sm" onClick={handlePdfDownload} data-testid="button-pdf-recap" title={t("recap.pdfExport")}>
+              <FileDown className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">{t("recap.pdfExport")}</span>
             </Button>
             <Button variant="outline" size="sm" onClick={handleCopy} data-testid="button-copy-recap" title={t("recap.copyRecap")}>
               <Copy className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">{t("recap.copyRecap")}</span>

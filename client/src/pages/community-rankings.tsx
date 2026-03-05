@@ -230,7 +230,7 @@ export default function CommunityRankings() {
                       { label: t("communityRankings.nose"), value: whisky.avgNose },
                       { label: t("communityRankings.taste"), value: whisky.avgTaste },
                       { label: t("communityRankings.finish"), value: whisky.avgFinish },
-                      { label: "Balance", value: whisky.avgBalance },
+                      { label: t("communityRankings.balance"), value: whisky.avgBalance },
                     ].map(d => (
                       <div key={d.label} className="text-center">
                         <div className="text-[10px] text-muted-foreground">{d.label}</div>
