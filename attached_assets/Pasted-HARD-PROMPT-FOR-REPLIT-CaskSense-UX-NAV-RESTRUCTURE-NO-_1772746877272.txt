@@ -1,0 +1,145 @@
+HARD PROMPT FOR REPLIT — CaskSense UX/NAV RESTRUCTURE (NO AMBIGUITY)
+
+You are working in the CaskSense codebase (React + Vite + TS, Wouter, React Query, Zustand, Tailwind, shadcn/ui, dark warm Apple theme). 
+Goal: implement the navigation + IA cleanup described below EXACTLY, with minimal churn and no feature loss.
+
+NON-NEGOTIABLE PRINCIPLES
+1) Two-world model stays strict:
+   - World A: TASTING (action/event-oriented)
+   - World B: MY TASTE (personal history + analysis + knowledge)
+2) No dead-end pages: every page must have an obvious “Zurück” target.
+3) Remove “Tools” category wording in UI (developer language). Use user language.
+4) Centralize Downloads + Exports (one place). Do not duplicate in dashboards.
+5) KI-Kuratierung is part of Host → Line-up (not a standalone “tool page”).
+6) Copy changes must use i18n (t()) and respect DE/EN.
+
+TARGET UX WORDING (DE)
+- Replace “LIVE” section label with: “Laufende Tastings”
+- Rename “Host Insights” to mean: Insights derived ONLY from tastings hosted by the current user (not all tastings).
+- Optional label “Persönliche Insights” should NOT be introduced unless there is a clear, separate content area beyond host-only insights. Default: do not add it now.
+
+INFORMATION ARCHITECTURE (IA) — FINAL
+
+A) TOP LEVEL NAV (unchanged conceptually)
+Mobile: bottom nav with 2 tabs
+Desktop: DesktopTabSwitcher with same 2 tabs
+Tabs:
+1) Tasting → route: /tasting
+2) My Taste → route: /my-taste
+
+B) TASTING WORLD (ONLY actions + immediate event context)
+Route: /tasting
+Page: “Tasting Hub”
+Content (in this order):
+1) Primary CTAs (3 cards/buttons):
+   - “Tasting beitreten” → /enter
+   - “Tasting hosten” → /host
+   - “Solo Dram verkosten” → /log-simple
+   Show a visual “ODER / OR” separator between group actions (Join/Host) and Solo.
+2) Section: “Laufende Tastings”
+   - Show currently open/live tastings relevant to the user (hosted or joined). 
+   - If none: show empty state copy + subtle CTA back to Join/Host.
+3) NOTHING ELSE in Tasting hub:
+   - Remove/avoid “Tools” headings.
+   - Do NOT place Calendar, Documents, Exports here.
+
+C) MY TASTE WORLD (personal + analysis + knowledge)
+Route: /my-taste
+My Taste is the user’s home for:
+1) “Meine Drams” → /my-taste/drams
+2) “Meine Tastings” → /sessions
+   - inside /sessions add a view toggle: “Liste | Kalender”
+   - “Kalender” view replaces the old dedicated /tasting-calendar as primary access
+   - keep /tasting-calendar route for backward compatibility but make it redirect to /sessions?view=calendar (or render same component)
+3) “Analyse” section (grouped navigation, not necessarily separate page):
+   - “Geschmacksprofil” → /my-taste/profile
+   - “Aroma Wheel” → /my-taste/wheel
+   - “Analytics” → /my-taste/analytics
+   - “Compare” → /my-taste/compare
+   - “Benchmark” → /my-taste/benchmark
+   NOTE: Move “Geschmacksprofil” into the same mental cluster as Analyse/Vergleich in UI grouping, even if route stays unchanged.
+4) “Wissen” (keep inside My Taste, per user preference)
+   - “Discover / Wissen” → /discover (and /discover/*)
+   - “Vokabular” → /vocabulary
+   (Do NOT move knowledge into Tasting tab.)
+5) “Sammlung”:
+   - “Collection” → /my-taste/collection
+   - “Wishlist” → /my-taste/wishlist
+6) “Downloads & Export” (centralized):
+   - Create/ensure ONE entry point in My Taste: /my-taste/downloads (new route)
+     Content:
+       a) Templates/PDFs: Verkostungsbogen, Tasting-Matte, etc.
+       b) Data export actions: CSV, Excel, PDF exports (links/buttons)
+   - Keep existing /my-taste/export route but make it either:
+       - redirect to /my-taste/downloads#export
+       OR
+       - show the same unified downloads/export page component.
+   - Remove “Dokumente” cards from host dashboard; instead link to /my-taste/downloads.
+7) Settings stays: /my-taste/settings
+
+D) HOST-SPECIFIC PAGES (where they belong)
+1) /host is the “Host a tasting” wizard (create → lineup → invite → run).
+2) KI-Kuratierung:
+   - Remove standalone discoverability as a top-level “tool”.
+   - Integrate into Host Wizard Step “Line-up” as:
+       - “Line-up ergänzen (KI)” button/section
+       - It analyzes current lineup and proposes additions.
+   - If a separate route exists (e.g., /ai-curation), keep it but make it accessible only from within /host step 2 and/or from a “Manage Tasting” context, not from general nav.
+3) Invitations:
+   - Must live in Host Wizard Step “Invite” and in “Manage Tasting” screens (host-only).
+   - Ensure invite link/QR/email are in those places, not scattered.
+4) Host Insights:
+   - Move host-wide insights pages/cards OUT of Tasting hub/dashboards and into:
+       My Taste → Meine Tastings (/sessions) as a subsection “Host Insights”
+   - “Host Insights” shows ONLY tastings hosted by current user.
+   - Provide a filter “Hosted by me” default-on within Host Insights.
+
+E) BACK NAV / EXIT RULE (fix dead ends)
+Implement a consistent header/back pattern across entry pages:
+- /enter must show “← Zurück zu Tasting”
+- /host, /log-simple, /tasting-calendar (if still accessible), /ai-curation (if exists) must have “← Zurück” with a clear fallback.
+Standard behavior:
+- on back click: history.back(); if no history or external referrer: navigate to fallback route.
+Fallbacks:
+- for /enter, /host, /log-simple: fallback = /tasting
+- for My Taste pages: fallback = /my-taste
+Implement/ensure BackButton supports an explicit fallback prop and use it.
+
+IMPLEMENTATION TASKS (DO THESE IN ORDER)
+1) NAV CONFIG:
+   Update client/src/lib/navConfig.ts (or equivalent) so that:
+   - Tasting tab shows only /tasting plus CTAs within page (not as many links).
+   - My Taste tab includes grouping: Meine Drams, Meine Tastings, Analyse cluster, Wissen cluster, Sammlung cluster, Downloads & Export, Settings.
+2) ROUTES:
+   - Ensure /tasting renders the new hub layout per spec.
+   - Ensure /sessions supports toggle “Liste | Kalender”.
+   - Add /my-taste/downloads route and page.
+   - Make /tasting-calendar route redirect or reuse /sessions calendar view.
+   - Make /my-taste/export redirect/reuse downloads page.
+3) UI COPY:
+   - Replace “LIVE” with “Laufende Tastings”.
+   - Remove “Tools” headings where they appear in these contexts.
+4) HOST DASHBOARD CLEANUP:
+   - Remove “Dokumente” section/cards from host dashboards.
+   - Replace with a single link/button “Downloads & Export” → /my-taste/downloads.
+5) KI-KURATIERUNG INTEGRATION:
+   - Embed the AI curation UI into /host step “Line-up”.
+   - Keep any old route accessible only via deep link from that step.
+6) BACK BUTTON:
+   - Ensure consistent back header on all “entry/action” pages as described.
+
+QUALITY BAR / ACCEPTANCE CRITERIA
+- A user can always find an obvious way back without entering data (no dead ends).
+- Tasting hub is simple and action-oriented; no calendar/documents/export clutter.
+- My Taste owns calendar view, downloads, export, knowledge, analysis.
+- “Host Insights” exists under /sessions and is strictly host-only tastings.
+- All labels are i18n’d (DE/EN) and match dark warm theme.
+- No breaking changes: keep old routes working via redirect/reuse.
+
+DELIVERABLE
+Implement the changes with minimal diffs, reusing existing components where possible.
+After implementation, output:
+1) A concise list of files changed
+2) The new nav map (routes + where they appear)
+3) A quick manual test checklist (5–10 steps) to verify behavior.
+END.
