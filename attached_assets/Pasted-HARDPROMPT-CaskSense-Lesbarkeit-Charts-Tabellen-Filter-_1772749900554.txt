@@ -1,0 +1,237 @@
+HARDPROMPT — CaskSense: Lesbarkeit (Charts/Tabellen), Filter/Selektion, Settings-Ordnung, Dual Theme (Dark Warm + Light)
+
+Context
+You are working in the CaskSense repo (React/Vite/TS, Wouter, Tailwind, shadcn/ui, Zustand, i18next).
+The app supports TWO themes and BOTH must be first-class:
+- Dark Warm (primary)
+- Light (secondary but equally polished)
+
+Goal
+Fix the UX issues shown in the screenshots:
+1) Chart 1 (Sessions/Calendar view) is not readable (contrast/typography/layout).
+2) Chart 2 (Insights blocks like “Treiber”, “Dein Geschmack vs. Alle”, etc.) are also too hard to read.
+3) Chart 3 (Whisky-Vergleich table) will become too large → needs filtering/search/sorting and better readability.
+4) Settings area is not well structured: email/password/address/profile/settings mixed → reorder with clear sections.
+Additionally: ensure any light surfaces shown in Dark Warm are replaced by theme-aware surfaces (no “big white panels” in Dark Warm).
+
+Non-negotiables
+- Do NOT break existing routes or features.
+- Do NOT hardcode colors for only one theme.
+- Use theme tokens / CSS variables and apply them consistently.
+- All user-facing strings must use i18next keys (DE + EN).
+- Maintain the “Apple-clean premium” feel.
+
+-------------------------------------------------------------------
+PART A — FOUNDATION: THEME TOKENS & READABILITY BASELINE
+-------------------------------------------------------------------
+
+1) Establish/confirm these semantic tokens (CSS variables) and use them everywhere:
+--bg-primary
+--bg-surface
+--bg-elevated
+--text-primary
+--text-secondary
+--text-muted
+--border-subtle
+--shadow-soft
+--accent
+--accent-contrastText
+--focus-ring
+--table-row-hover
+--pill-bg
+--pill-text
+
+2) Dark Warm mapping (example values; align with existing theme system):
+bg-primary ~ #141210
+bg-surface ~ #1e1b18
+bg-elevated ~ #242018
+text-primary ~ near #f4efe7 (NOT pure white)
+text-secondary ~ #d6cbbd
+text-muted ~ #a79b8c
+border-subtle ~ with alpha
+accent ~ #d4a256
+
+3) Light mapping:
+bg-primary ~ #faf9f7
+bg-surface ~ #ffffff
+bg-elevated ~ #f3f1ed
+text-primary ~ #1a1714
+text-secondary ~ #3b352f
+text-muted ~ #6c6258
+border-subtle ~ #e6e1d9
+accent ~ #c9973a
+
+4) Typography baseline:
+- Increase default body text size slightly on desktop for readability (e.g., base 16–17px).
+- Ensure minimum contrast for text-secondary on bg-surface.
+- Make numeric values and deltas clearly readable.
+
+Deliverable:
+- Identify where themeVars/theme.ts currently defines tokens.
+- Add missing tokens and refactor the affected pages to use tokens instead of raw colors.
+
+-------------------------------------------------------------------
+PART B — CHART 1 FIX: /sessions Calendar view readability
+-------------------------------------------------------------------
+
+Problem:
+Calendar panel is effectively “light UI inside dark page” and low contrast / hard to scan.
+
+Fix:
+1) Dark Warm:
+- The calendar must render in a dark-friendly surface (bg-surface/bg-elevated).
+- Replace the big white calendar card with a theme-aware calendar container.
+- Calendar day numbers must be readable:
+  - normal day: text-secondary
+  - today: accent pill background + accent-contrastText
+  - selected day: elevated border + subtle highlight
+  - disabled/other month: text-muted (still readable)
+- Increase spacing and font weight slightly.
+
+2) Layout:
+- Keep 2-column on desktop (calendar left, side cards right).
+- Ensure side cards ("Kommende Tastings", "Übersicht", "Erinnerungen") match the same surface style.
+
+3) Controls:
+- Tabs/pills (Alle / Meine Tastings / Von Freunden) must be high-contrast and consistent in both themes.
+- “Liste / Kalender” toggle must be clearly active/inactive.
+
+Deliverable:
+- Update the calendar component styling to use tokens.
+- Ensure the same calendar page looks premium in both themes.
+
+-------------------------------------------------------------------
+PART C — CHART 2 FIX: Insights readability (“Treiber”, “Dein Geschmack vs. Alle” etc.)
+-------------------------------------------------------------------
+
+Problems:
+Text and numbers too small / too low contrast, large blocks are visually “flat”.
+
+Fix:
+1) Card structure:
+- Use bg-elevated, soft border, subtle shadow.
+- Clear hierarchy:
+  - Section title (text-primary, semibold)
+  - Subline/explanation (text-secondary)
+  - Rows: label (text-secondary) + value (text-primary) + optional meta (text-muted)
+
+2) Numeric alignment:
+- Right-align numeric columns.
+- Use tabular-nums for consistent scan.
+- Delta colors must not be neon; use accessible “positive/negative” that still fits Dark Warm and Light.
+  - Provide tokens: --delta-positive, --delta-negative.
+
+3) Progressive disclosure:
+If content is long, provide “Mehr anzeigen / Weniger anzeigen” per card.
+
+Deliverable:
+- Refactor the insights blocks into reusable “InsightCard” + “InsightRow” components.
+- Ensure readability: no tiny grey text on dark.
+
+-------------------------------------------------------------------
+PART D — CHART 3 FIX: Whisky-Vergleich table filtering, search, and scalability
+-------------------------------------------------------------------
+
+Problems:
+Table will get huge, needs filtering and better readability.
+
+Implement:
+1) A filter bar above the table with:
+- Search input (whisky name/distillery)
+- Toggle: Only big deltas (e.g. |delta| ≥ X) with slider or preset chips (5 / 10 / 20)
+- Min N filter (N ≥ 5 / 10 / 20)
+- Sort dropdown: Delta desc/asc, Your score desc, Platform desc, Name A–Z
+- Chips: Positive only / Negative only / All
+
+2) Table UX:
+- Sticky header.
+- Row hover highlight using --table-row-hover.
+- Zebra stripes optional but subtle.
+- Pagination OR virtualization (prefer TanStack Virtual if already used; if not, simple pagination with 25/50/100 rows).
+- Provide an “Export CSV” action in the table menu (if export infra exists; otherwise placeholder).
+
+3) Data correctness:
+- Deduplicate repeated whisky names if duplicates are unintended; if duplicates are intended (multiple tastings), show a small badge “Sessions: X” and optionally group by whisky with expand.
+
+4) i18n keys:
+All labels in DE + EN.
+
+Deliverable:
+- Implement filter state in URL query params (so links are shareable).
+- Ensure performance is good with 1000+ rows.
+
+-------------------------------------------------------------------
+PART E — SETTINGS REORDERING (Chart 4/5)
+-------------------------------------------------------------------
+
+Problem:
+Email/password/address/profile/preferences mixed; user needs a clean, logical structure.
+
+Implement Settings page layout with sections:
+
+1) Account
+- Email (read-only if verified, edit if allowed)
+- Password (change)
+- Security: Sessions / Logout all devices (if exists)
+
+2) Profile
+- Display name
+- Language
+- Theme (Dark Warm / Light toggle)
+- Experience level (if exists)
+
+3) AI & Integrations
+- OpenAI API key (if user-level keys supported)
+- AI features toggle / Kill switch visibility (admin only)
+
+4) Data & Privacy
+- Export data (CSV/Excel/PDF where applicable)
+- Delete account (danger zone)
+
+5) Notifications
+- Email reminders verification + reminder settings (if in scope)
+
+Rules:
+- Each section is a card with clear heading + short explanatory text.
+- Keep actions consistent: primary button only when needed, otherwise subtle.
+
+Deliverable:
+- Refactor settings into subcomponents per section.
+- Ensure back navigation exists and returns correctly (in-app).
+
+-------------------------------------------------------------------
+PART F — ACCEPTANCE CHECKLIST (MUST PROVIDE)
+-------------------------------------------------------------------
+
+After changes, output:
+
+1) Files changed (paths).
+2) Before/after screenshots notes (describe what changed).
+3) Manual test checklist:
+
+- Dark Warm: /sessions calendar readable; no white giant blocks
+- Light: same page looks clean and consistent
+- Insights pages readable and scannable
+- Whisky-Vergleich: filter/search/sort works; performance OK
+- Settings: new structure, all strings translated
+- No broken routes or console errors
+
+-------------------------------------------------------------------
+IMPLEMENTATION NOTES
+-------------------------------------------------------------------
+
+- Prefer using existing design primitives (apple/* components, PageHeader, SimpleShell).
+- Do not introduce a second parallel styling system.
+- If any legacy “light card” styling exists on Dark Warm pages, replace it with token-based surfaces.
+- Keep the aesthetic premium and minimal (no heavy borders, no loud colors).
+
+START by inspecting:
+- The calendar page component used in /sessions
+- The insights pages components
+- The whisky comparison page component
+- The settings page component
+- The theme token files (themeVars.ts / theme.ts)
+
+Then implement the above changes.
+
+END.

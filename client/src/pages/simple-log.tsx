@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, ChevronDown, Camera, Loader2, Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
@@ -168,8 +169,8 @@ function DetailModule({
                     resize: "vertical",
                     minHeight: 56,
                     paddingRight: hasSpeechAPI ? 40 : 14,
-                    borderColor: voiceListening ? "#c44" : v.border,
-                    boxShadow: voiceListening ? "0 0 0 2px #c4444420" : "none",
+                    borderColor: voiceListening ? v.danger : v.border,
+                    boxShadow: voiceListening ? `0 0 0 2px ${alpha(v.danger, "20")}` : "none",
                   }}
                 />
                 {hasSpeechAPI && (
@@ -182,14 +183,14 @@ function DetailModule({
                       position: "absolute",
                       right: 8,
                       top: 8,
-                      background: voiceListening ? "#c44" : "transparent",
+                      background: voiceListening ? v.danger : "transparent",
                       border: "none",
                       borderRadius: "50%",
                       cursor: "pointer",
                       width: 28,
                       height: 28,
                       padding: 0,
-                      color: voiceListening ? "#fff" : v.mutedLight,
+                      color: voiceListening ? v.bg : v.mutedLight,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -337,6 +338,7 @@ function IdentifyPicker({
   onDescribe,
   onScanBarcode,
   onUploadFile,
+  onManualEntry,
   onClose,
 }: {
   onTakePhoto: () => void;
@@ -344,14 +346,16 @@ function IdentifyPicker({
   onDescribe: () => void;
   onScanBarcode: () => void;
   onUploadFile: () => void;
+  onManualEntry: () => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const cardBtn: React.CSSProperties = {
-    width: "100%", padding: "16px 18px", borderRadius: 14,
-    background: `${v.card}`, border: `1px solid rgba(212, 162, 86, 0.2)`,
-    cursor: "pointer", textAlign: "left", transition: "border-color 0.2s",
+  const actionCard: React.CSSProperties = {
+    width: "100%", padding: "18px 20px", borderRadius: 16,
+    background: v.card, border: `1px solid ${v.border}`,
+    cursor: "pointer", textAlign: "left", transition: "border-color 0.2s, box-shadow 0.2s",
     fontFamily: "system-ui, sans-serif",
+    boxShadow: v.shadow,
   };
   return (
     <motion.div
@@ -364,7 +368,7 @@ function IdentifyPicker({
         bottom: 0,
         left: 0,
         right: 0,
-        background: v.card,
+        background: v.bg,
         borderTop: `1px solid ${v.border}`,
         borderRadius: "16px 16px 0 0",
         padding: "20px 20px 40px",
@@ -375,48 +379,53 @@ function IdentifyPicker({
       data-testid="sheet-identify-picker"
     >
       <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 16px" }} />
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>{t("logSimple.identifyTitle")}</h3>
-      <p style={{ fontSize: 12, color: v.muted, margin: "0 0 16px" }}>{t("logSimple.identifySubtitle")}</p>
+      <h3 style={{ fontSize: 17, fontWeight: 700, color: v.text, margin: "0 0 4px", fontFamily: "'Playfair Display', serif" }}>{t("logSimple.identifyTitle")}</h3>
+      <p style={{ fontSize: 13, color: v.muted, margin: "0 0 20px", lineHeight: 1.4 }}>{t("logSimple.identifySubtitle")}</p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <button onClick={onTakePhoto} data-testid="button-card-photo" style={cardBtn}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 28, lineHeight: 1 }}>📷</span>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: v.accent }}>{t("logSimple.photoTitle")}</div>
-              <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>{t("logSimple.photoSubtitle")}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <button onClick={onTakePhoto} data-testid="button-card-photo" style={actionCard}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+            <span style={{ fontSize: 32, lineHeight: 1, marginTop: 2 }}>📷</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: v.accent }}>{t("logSimple.photoTitle")}</div>
+              <div style={{ fontSize: 13, color: v.muted, marginTop: 4, lineHeight: 1.4 }}>{t("logSimple.photoDesc")}</div>
+              <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 6, fontStyle: "italic" }}>{t("logSimple.photoHelper")}</div>
             </div>
           </div>
         </button>
 
-        <button onClick={onUploadFile} data-testid="button-card-file-upload" style={cardBtn}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 28, lineHeight: 1 }}>📄</span>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: v.accent }}>{t("logSimple.fileUploadTitle")}</div>
-              <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>{t("logSimple.fileUploadSubtitle")}</div>
+        <button onClick={onUploadFile} data-testid="button-card-file-upload" style={actionCard}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+            <span style={{ fontSize: 32, lineHeight: 1, marginTop: 2 }}>📄</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: v.accent }}>{t("logSimple.fileUploadTitle")}</div>
+              <div style={{ fontSize: 13, color: v.muted, marginTop: 4, lineHeight: 1.4 }}>{t("logSimple.fileUploadDesc")}</div>
+              <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 6, fontStyle: "italic" }}>{t("logSimple.fileUploadHelper")}</div>
             </div>
           </div>
         </button>
 
-        <div style={{ height: 1, background: v.border, margin: "4px 0", opacity: 0.4 }} />
-
-        <button onClick={onScanBarcode} data-testid="button-scan-barcode" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, borderColor: v.accent, color: v.accent }}>
-          <span style={{ fontSize: 18 }}>📊</span> {t("logSimple.scanBarcode")}
-        </button>
-        <button onClick={onUploadPhotos} data-testid="button-upload-photos" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>🖼️</span> {t("logSimple.uploadGallery")}
-        </button>
-        <button onClick={onDescribe} data-testid="button-describe" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>✏️</span> {t("logSimple.typeDescribe")}
+        <button onClick={onManualEntry} data-testid="button-card-manual" style={actionCard}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+            <span style={{ fontSize: 32, lineHeight: 1, marginTop: 2 }}>✏️</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: v.accent }}>{t("logSimple.manualTitle")}</div>
+              <div style={{ fontSize: 13, color: v.muted, marginTop: 4, lineHeight: 1.4 }}>{t("logSimple.manualDesc")}</div>
+            </div>
+          </div>
         </button>
       </div>
 
-      <p style={{ fontSize: 10, color: v.muted, margin: "14px 0 0", opacity: 0.7, lineHeight: 1.4 }}>
-        {t("logSimple.privacyHint")}
-      </p>
+      <div style={{ margin: "18px 0 0", padding: "14px 16px", background: alpha(v.muted, "0A"), borderRadius: 12, border: `1px solid ${v.border}` }}>
+        <p style={{ fontSize: 11, color: v.muted, margin: 0, lineHeight: 1.5 }}>
+          {t("logSimple.privacyLine1")}
+        </p>
+        <p style={{ fontSize: 11, color: v.muted, margin: "4px 0 0", lineHeight: 1.5 }}>
+          {t("logSimple.privacyLine2")}
+        </p>
+      </div>
 
-      <button onClick={onClose} data-testid="button-close-picker" style={{ ...btnOutline, marginTop: 12, color: v.muted, borderColor: v.muted, fontSize: 13 }}>
+      <button onClick={onClose} data-testid="button-close-picker" style={{ ...btnOutline, marginTop: 14, color: v.muted, borderColor: v.border, fontSize: 13 }}>
         {t("common.cancel", "Cancel")}
       </button>
     </motion.div>
@@ -767,6 +776,8 @@ function CandidateSheet({
   onCreateUnknown: () => void;
   onSearchOnline: () => void;
 }) {
+  const { t } = useTranslation();
+  const hasUncertain = candidates.some((c) => c.confidence < 0.7);
   return (
     <motion.div
       initial={{ y: "100%" }}
@@ -801,12 +812,12 @@ function CandidateSheet({
         )}
         <div>
           <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: 0 }}>
-            {candidates.length > 0 ? "We found" : "Not sure"}
+            {candidates.length > 0 ? t("logSimple.stateFinishedTitle") : t("logSimple.stateUncertain")}
           </h3>
           <p style={{ fontSize: 12, color: v.muted, margin: "2px 0 0" }}>
             {candidates.length > 0
-              ? `${candidates.length} possible match${candidates.length > 1 ? "es" : ""}`
-              : "We couldn't confidently identify this whisky."}
+              ? t("logSimple.stateFinishedDesc")
+              : t("logSimple.stateUncertain")}
           </p>
           {isMenuMode && candidates.length > 0 && (
             <p style={{ fontSize: 11, color: v.accent, margin: "4px 0 0", fontStyle: "italic" }} data-testid="text-menu-hint">
@@ -815,6 +826,12 @@ function CandidateSheet({
           )}
         </div>
       </div>
+
+      {hasUncertain && candidates.length > 0 && (
+        <p style={{ fontSize: 12, color: v.accent, margin: "0 0 12px", fontStyle: "italic", lineHeight: 1.4 }} data-testid="text-uncertain-hint">
+          {t("logSimple.stateUncertain")}
+        </p>
+      )}
 
       {candidates.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
@@ -1001,6 +1018,7 @@ function OnlineSearchSheet({
 type SheetView = "none" | "picker" | "describe" | "candidates" | "identifying" | "onlineSearch" | "barcode" | "fileAnalyzing";
 
 export default function SimpleLogPage() {
+  const { t } = useTranslation();
   const { currentParticipant, setParticipant } = useAppStore();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1593,7 +1611,7 @@ export default function SimpleLogPage() {
           <form onSubmit={handleSave} data-testid="form-log">
 
             <div style={{ marginBottom: 28, textAlign: "center" }} data-testid="section-intro">
-              <h1 style={{ fontSize: 24, fontWeight: 700, color: v.text, margin: 0, fontFamily: "'Playfair Display', serif" }}>Log</h1>
+              <h1 style={{ fontSize: 24, fontWeight: 700, color: v.text, margin: 0, fontFamily: "'Playfair Display', serif" }}>{t("logSimple.pageTitle")}</h1>
             </div>
 
             {/* ── SECTION 1: IDENTIFY ── */}
@@ -1992,8 +2010,8 @@ export default function SimpleLogPage() {
                     minHeight: 120,
                     paddingRight: hasSpeechAPI ? 40 : 14,
                     transition: "border-color 0.2s, box-shadow 0.2s",
-                    borderColor: (voiceListening && voiceTarget === "notes") ? "#c44" : v.border,
-                    boxShadow: (voiceListening && voiceTarget === "notes") ? "0 0 0 2px #c4444420" : "none",
+                    borderColor: (voiceListening && voiceTarget === "notes") ? v.danger : v.border,
+                    boxShadow: (voiceListening && voiceTarget === "notes") ? `0 0 0 2px ${alpha(v.danger, "20")}` : "none",
                   }}
                   onFocus={(e) => { if (!(voiceListening && voiceTarget === "notes")) { e.currentTarget.style.borderColor = v.accent; e.currentTarget.style.boxShadow = `0 0 0 2px ${alpha(v.accent, "20")}`; } }}
                   onBlur={(e) => { if (!(voiceListening && voiceTarget === "notes")) { e.currentTarget.style.borderColor = v.border; e.currentTarget.style.boxShadow = "none"; } }}
@@ -2010,14 +2028,14 @@ export default function SimpleLogPage() {
                       position: "absolute",
                       right: 10,
                       top: 10,
-                      background: (voiceListening && voiceTarget === "notes") ? "#c44" : "transparent",
+                      background: (voiceListening && voiceTarget === "notes") ? v.danger : "transparent",
                       border: "none",
                       borderRadius: "50%",
                       cursor: "pointer",
                       width: 32,
                       height: 32,
                       padding: 0,
-                      color: (voiceListening && voiceTarget === "notes") ? "#fff" : v.mutedLight,
+                      color: (voiceListening && voiceTarget === "notes") ? v.bg : v.mutedLight,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -2098,6 +2116,7 @@ export default function SimpleLogPage() {
             onDescribe={() => setSheetView("describe")}
             onScanBarcode={() => setSheetView("barcode")}
             onUploadFile={() => { setSheetView("none"); setTimeout(() => fileInputRef.current?.click(), 100); }}
+            onManualEntry={() => { setSheetView("none"); setShowManual(true); setSelectedCandidate(null); }}
             onClose={() => setSheetView("none")}
           />
         )}
@@ -2118,8 +2137,8 @@ export default function SimpleLogPage() {
           >
             <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 24px" }} />
             <div style={{ display: "inline-block", width: 24, height: 24, border: `3px solid ${v.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: 16 }} />
-            <p style={{ fontSize: 15, fontWeight: 600, color: v.text, margin: 0 }}>Identifying...</p>
-            <p style={{ fontSize: 12, color: v.muted, margin: "6px 0 0" }}>Analyzing your photo</p>
+            <p style={{ fontSize: 15, fontWeight: 600, color: v.text, margin: 0 }}>{t("logSimple.stateAnalyzingTitle")}</p>
+            <p style={{ fontSize: 12, color: v.muted, margin: "6px 0 0" }}>{t("logSimple.stateAnalyzingDesc")}</p>
           </motion.div>
         )}
 
@@ -2135,8 +2154,8 @@ export default function SimpleLogPage() {
           >
             <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 24px" }} />
             <div style={{ display: "inline-block", width: 24, height: 24, border: `3px solid ${v.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: 16 }} />
-            <p style={{ fontSize: 15, fontWeight: 600, color: v.text, margin: 0 }}>{t("logSimple.fileAnalyzing")}</p>
-            <p style={{ fontSize: 12, color: v.muted, margin: "6px 0 0" }}>{t("logSimple.fileAnalyzingSub")}</p>
+            <p style={{ fontSize: 15, fontWeight: 600, color: v.text, margin: 0 }}>{t("logSimple.stateAnalyzingTitle")}</p>
+            <p style={{ fontSize: 12, color: v.muted, margin: "6px 0 0" }}>{t("logSimple.stateAnalyzingDesc")}</p>
           </motion.div>
         )}
 
@@ -2175,7 +2194,7 @@ export default function SimpleLogPage() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse-mic { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(204,68,68,0.4); } 50% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(204,68,68,0); } }
+        @keyframes pulse-mic { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--cs-danger) 40%, transparent); } 50% { transform: scale(1.1); box-shadow: 0 0 0 6px color-mix(in srgb, var(--cs-danger) 0%, transparent); } }
         ${sliderCSS}
         #barcode-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
         #barcode-reader { border: none !important; }
