@@ -199,7 +199,6 @@ function Router() {
         <Route path="/discover-hub">{() => <Redirect to="/my-taste" />}</Route>
         <Route path="/my-taste/knowledge">{() => <Redirect to="/my-taste" />}</Route>
         <Route path="/my-taste/community">{() => <Redirect to="/my-taste" />}</Route>
-        <Route path="/my-taste" component={MyTastePage} />
         <Route path="/my-taste/flavors">{() => <Redirect to="/my-taste/profile" />}</Route>
         <Route path="/my-taste/compare" component={MyTasteCompare} />
         <Route path="/my-taste/analytics" component={MyTasteAnalytics} />
@@ -213,6 +212,7 @@ function Router() {
         <Route path="/my-taste/journal">{() => <Redirect to="/my-taste/drams" />}</Route>
         <Route path="/my-taste/collection" component={WhiskybaseCollection} />
         <Route path="/my-taste/wishlist" component={Wishlist} />
+        <Route path="/my-taste" component={MyTastePage} />
         <Route path="/taste" component={MyTastePage} />
         <Route path="/analyze" component={SimpleAnalyzePage} />
 
@@ -240,7 +240,8 @@ function Router() {
         <Route path="/internal/landing-glasses" component={InternalLandingGlasses} />
         <Route path="/simple-test" component={SimpleTestPage} />
         <Route path="/simple-feedback" component={SimpleFeedbackPage} />
-        <Route path="/support" component={SupportConsole} />
+        <Route path="/support">{() => <Redirect to="/admin/support" />}</Route>
+        <Route path="/admin/support" component={SupportConsole} />
         <Route path="/impressum" component={Impressum} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/intro" component={Intro} />
