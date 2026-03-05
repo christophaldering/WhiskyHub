@@ -1,0 +1,351 @@
+CaskSense — Build Public Landing Page (Apple-Style, Animated, Premium)
+
+CONTEXT
+
+CaskSense is a sophisticated whisky tasting platform built with:
+
+Frontend
+React 18
+Vite
+TypeScript
+Wouter Router
+TanStack React Query
+Zustand
+Tailwind
+shadcn/ui
+
+Theme
+Dark Warm Theme
+colors defined in client/src/lib/theme.ts
+
+Important tokens:
+bg #1a1612
+card #231e19
+text #e8dfd6
+accent #c8a97e
+muted #9a8e82
+border #3a322a
+
+Fonts
+Playfair Display for headings
+system-ui for body
+
+The application itself already exists and contains ~97 pages.
+
+The goal is to create a **public landing page** that introduces CaskSense
+before entering the actual application.
+
+The landing page must feel:
+
+• elegant
+• premium
+• calm
+• intelligent
+• whisky-culture inspired
+• Apple-level UI quality
+
+The landing page must NOT break any existing routes.
+
+--------------------------------
+
+GOAL
+
+Create a new landing page:
+
+route "/"
+
+The existing application becomes accessible via:
+
+"/app"
+
+The landing page must include:
+
+Hero section
+Feature storytelling
+Animated UI previews
+Personal tone
+Scientific credibility
+Call-to-action
+
+The tone should be:
+
+calm
+cultured
+intelligent
+sympathetic
+not marketing-loud
+
+--------------------------------
+
+ROUTING
+
+Modify router so that:
+
+/ -> LandingPage
+/app -> existing application root
+
+Do NOT change internal application behavior.
+
+--------------------------------
+
+NEW FILE
+
+Create:
+
+client/src/pages/landing.tsx
+
+--------------------------------
+
+DESIGN PRINCIPLES
+
+Use:
+
+max-width container ~1100px
+large spacing
+subtle motion
+soft gradients
+Apple-style layout
+
+Animations using Framer Motion (already installed or add if needed).
+
+Motion must be slow and elegant.
+
+--------------------------------
+
+LANDING STRUCTURE
+
+SECTION 1
+Hero
+
+Title
+
+CaskSense
+
+Subtitle
+
+Where tasting becomes reflection.
+
+Description
+
+The most thoughtful way to explore whisky —
+alone or together.
+
+Buttons
+
+Open App
+Explore Features
+
+Background
+
+subtle whisky-inspired gradient
+slow animated glow
+
+--------------------------------
+
+SECTION 2
+Problem
+
+Headline
+
+Most whisky tastings disappear the next day.
+
+Text
+
+Great bottles are opened.
+Conversations unfold.
+Impressions are shared.
+
+But what remains?
+
+Usually only a memory.
+
+CaskSense helps you capture the moment
+and discover patterns in your taste.
+
+--------------------------------
+
+SECTION 3
+Two Ways To Use CaskSense
+
+Create two large cards.
+
+Card 1
+
+Private Dram
+
+Log a whisky you are tasting alone.
+
+• tasting notes
+• aroma structure
+• personal ratings
+• flavour memory
+
+Card 2
+
+Tasting Night
+
+Host a structured tasting with friends.
+
+• guided tasting flow
+• live comparison
+• shared impressions
+• tasting recap
+
+Cards should animate slightly on hover.
+
+--------------------------------
+
+SECTION 4
+Feature Showcase
+
+Grid with 6 cards.
+
+Log a Dram
+Host Tastings
+Flavor Analytics
+AI Tasting Notes
+Whisky Discovery
+Compare Tastings
+
+Each card should include:
+
+icon
+short text
+hover elevation
+
+--------------------------------
+
+SECTION 5
+Animated Experience Flow
+
+Create horizontal step visualization.
+
+Scan Bottle
+Log Dram
+Rate Aroma
+Compare Impressions
+Discover Taste Profile
+
+Animate steps appearing while scrolling.
+
+--------------------------------
+
+SECTION 6
+Scientific Depth
+
+Headline
+
+Taste is personal —
+but patterns emerge.
+
+Text
+
+CaskSense transforms tasting impressions into structured data.
+
+Over time it reveals:
+
+personal flavour preferences
+recurring patterns
+similarities between tasters
+hidden whisky profiles
+
+Inspired by principles from psychology
+and empirical social research.
+
+--------------------------------
+
+SECTION 7
+For Serious Whisky Explorers
+
+List advanced capabilities.
+
+Structured tasting panels
+Historical tasting archive
+Radar flavour maps
+Benchmark comparisons
+Panel scoring insights
+
+--------------------------------
+
+SECTION 8
+Call to Action
+
+Headline
+
+Start your next tasting with CaskSense.
+
+Buttons
+
+Open App
+Host a Tasting
+
+--------------------------------
+
+STYLE DETAILS
+
+Use theme tokens from theme.ts.
+
+Cards should use:
+
+cardStyle
+border
+accent hover glow
+
+Use Playfair Display for major titles.
+
+Spacing must feel premium and calm.
+
+--------------------------------
+
+ANIMATION RULES
+
+Use Framer Motion.
+
+Animations must be:
+
+slow
+subtle
+professional
+
+Examples
+
+fade up on scroll
+card hover lift
+soft glow hero background
+
+--------------------------------
+
+PERFORMANCE
+
+Landing must be lightweight.
+
+No heavy images.
+Prefer gradients and subtle shapes.
+
+--------------------------------
+
+OUTPUT
+
+Create:
+
+landing.tsx
+route integration
+component sections
+
+Ensure everything compiles.
+
+Do NOT break existing functionality.
+
+--------------------------------
+
+GOAL RESULT
+
+The landing page should feel like:
+
+Apple product page
+Linear landing
+Arc browser site
+
+Premium
+intelligent
+whisky culture inspired.
