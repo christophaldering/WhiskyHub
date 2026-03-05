@@ -9,6 +9,7 @@ import { useAppStore } from "@/lib/store";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { GuestPreview } from "@/components/guest-preview";
 import SimpleShell from "@/components/simple/simple-shell";
+import BackButton from "@/components/back-button";
 import { motion, AnimatePresence } from "framer-motion";
 import { c, inputStyle, cardStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 import { Plus, ArrowLeft, Pencil, Trash2, Star, Wine, Calendar, Flame, Sparkles, Clock, Camera, Loader2, ScanLine, Type, Send, GlassWater, ExternalLink, Check } from "lucide-react";
@@ -147,7 +148,7 @@ export default function Wishlist() {
       abv: entry.abv || undefined,
       caskType: entry.caskType || undefined,
     });
-    navigate("/journal");
+    navigate("/my-taste/drams");
   };
 
   const sortedEntries = [...entries].sort((a: WishlistEntry, b: WishlistEntry) => {
@@ -161,6 +162,7 @@ export default function Wishlist() {
   return (
     <SimpleShell maxWidth={900}>
     <div style={{ minWidth: 0, overflowX: "hidden" }} data-testid="wishlist-page">
+      <BackButton />
       <AnimatePresence mode="wait">
         {view === "list" && (
           <motion.div

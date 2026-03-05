@@ -43,7 +43,7 @@ const LINK_GROUPS: LinkGroup[] = [
     links: [
       { title: "My Taste", url: "/my-taste" },
       { title: "Log Dram", url: "/log-simple" },
-      { title: "Journal", url: "/my-taste/journal" },
+      { title: "My Drams", url: "/my-taste/drams" },
       { title: "Collection", url: "/my-taste/collection" },
       { title: "Wishlist", url: "/my-taste/wishlist" },
       { title: "Flavor Profile", url: "/my-taste/profile" },

@@ -145,7 +145,7 @@ export default function HomeDashboard() {
         <Button
           variant="outline"
           className="h-auto py-4 flex flex-col items-center gap-2 border-border/50 hover:border-primary/40"
-          onClick={() => navigate("/journal")}
+          onClick={() => navigate("/my-taste/drams")}
           data-testid="button-open-journal"
         >
           <BookOpen className="w-5 h-5 text-primary" />

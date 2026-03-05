@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
 import { pairingsApi, tastingApi } from "@/lib/api";
 import SimpleShell from "@/components/simple/simple-shell";
+import BackButton from "@/components/back-button";
 import { c, cardStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 import { Wine, MapPin, Flame, Package } from "lucide-react";
 
@@ -101,6 +102,7 @@ export default function MyTastePairings() {
   return (
     <SimpleShell>
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 16 }}>
+        <BackButton />
         <div style={{ marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 4 }}>
             <Wine style={{ width: 22, height: 22, color: c.accent }} strokeWidth={1.8} />

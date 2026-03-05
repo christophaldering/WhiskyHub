@@ -5,6 +5,7 @@ import { journalApi, ratingNotesApi } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { CircleDot, X } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
+import BackButton from "@/components/back-button";
 import { c, cardStyle, pageTitleStyle } from "@/lib/theme";
 
 interface FlavorCategory {
@@ -261,6 +262,7 @@ export default function MyTasteWheel() {
   return (
     <SimpleShell>
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 16 }}>
+        <BackButton />
         <div style={{ marginBottom: 4 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 4 }}>
             <CircleDot style={{ width: 22, height: 22, color: c.accent }} />

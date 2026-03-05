@@ -9,6 +9,7 @@ import { Activity, ChevronDown, ChevronUp, Users, Globe, User, BookOpen, Info } 
 import { GuestPreview } from "@/components/guest-preview";
 import { FlavorWheelContent } from "./flavor-wheel";
 import SimpleShell from "@/components/simple/simple-shell";
+import BackButton from "@/components/back-button";
 import { c, cardStyle } from "@/lib/theme";
 
 const COLORS = ["#c8a864", "#a8845c", "#8b6f47", "#d4a853", "#b8934a", "#9e7d3f", "#c4956c", "#d9b87c"];
@@ -610,6 +611,7 @@ export default function FlavorProfile() {
   return (
     <SimpleShell maxWidth={900}>
     <div style={{ minWidth: 0, overflowX: "hidden" }} data-testid="flavor-profile-page">
+      <BackButton />
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
           <Activity style={{ width: 28, height: 28, color: c.accent }} />

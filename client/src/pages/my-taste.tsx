@@ -250,8 +250,8 @@ export default function MyTastePage() {
                   icon={BookOpen}
                   label={t("myTastePage.journal")}
                   description={t("myTastePage.journalDesc")}
-                  href="/my-taste/journal"
-                  testId="link-journal"
+                  href="/my-taste/drams"
+                  testId="link-drams"
                   badge={journalCount > 0 ? journalCount : null}
                 />
                 <NavCard
@@ -533,8 +533,8 @@ export default function MyTastePage() {
                   icon={BookOpen}
                   label={t("myTastePage.journal")}
                   description={t("myTastePage.journalDesc")}
-                  href="/my-taste/journal"
-                  testId="link-journal"
+                  href="/my-taste/drams"
+                  testId="link-drams"
                   badge={journalCount > 0 ? journalCount : null}
                 />
                 <NavCard
@@ -640,8 +640,8 @@ export default function MyTastePage() {
                   icon={BookOpen}
                   label={t("myTastePage.journal")}
                   description={t("myTastePage.journalDesc")}
-                  href="/my-taste/journal"
-                  testId="link-journal"
+                  href="/my-taste/drams"
+                  testId="link-drams"
                   badge={journalCount > 0 ? journalCount : null}
                 />
                 <NavCard
@@ -903,8 +903,8 @@ export default function MyTastePage() {
                   icon={BookOpen}
                   label={t("myTastePage.journal")}
                   description={t("myTastePage.journalDesc")}
-                  href="/my-taste/journal"
-                  testId="link-journal"
+                  href="/my-taste/drams"
+                  testId="link-drams"
                   badge={journalCount > 0 ? journalCount : null}
                 />
                 <NavCard

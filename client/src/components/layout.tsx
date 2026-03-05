@@ -604,7 +604,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         id: "tour-explorer",
         level: "explorer" as const,
         steps: [
-          { id: "explorer-1", targetSelector: '[href="/my/journal"]', message: t("tour.explorer.step1"), position: p },
+          { id: "explorer-1", targetSelector: '[href="/my-taste/drams"]', message: t("tour.explorer.step1"), position: p },
           { id: "explorer-2", targetSelector: '[href="/profile"]', message: t("tour.explorer.step2"), position: p },
           { id: "explorer-3", targetSelector: '[href="/my/wishlist"]', message: t("tour.explorer.step3"), position: p },
         ],
@@ -614,7 +614,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         level: "connoisseur" as const,
         steps: [
           { id: "connoisseur-1", targetSelector: '[href="/discover"]', message: t("tour.connoisseur.step1"), position: p },
-          { id: "connoisseur-2", targetSelector: '[href="/my/journal"]', message: t("tour.connoisseur.step2"), position: p },
+          { id: "connoisseur-2", targetSelector: '[href="/my-taste/drams"]', message: t("tour.connoisseur.step2"), position: p },
           { id: "connoisseur-3", targetSelector: '[href="/discover"]', message: t("tour.connoisseur.step3"), position: p },
         ],
       },
@@ -622,9 +622,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         id: "tour-analyst",
         level: "analyst" as const,
         steps: [
-          { id: "analyst-1", targetSelector: '[href="/my/journal"]', message: t("tour.analyst.step1"), position: p },
-          { id: "analyst-2", targetSelector: '[href="/my/journal"]', message: t("tour.analyst.step2"), position: p },
-          { id: "analyst-3", targetSelector: '[href="/my/journal"]', message: t("tour.analyst.step3"), position: p },
+          { id: "analyst-1", targetSelector: '[href="/my-taste/drams"]', message: t("tour.analyst.step1"), position: p },
+          { id: "analyst-2", targetSelector: '[href="/my-taste/drams"]', message: t("tour.analyst.step2"), position: p },
+          { id: "analyst-3", targetSelector: '[href="/my-taste/drams"]', message: t("tour.analyst.step3"), position: p },
         ],
       },
     ];

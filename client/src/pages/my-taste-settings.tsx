@@ -6,6 +6,7 @@ import { profileApi, participantApi, participantUpdateApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import SimpleShell from "@/components/simple/simple-shell";
+import BackButton from "@/components/back-button";
 import { c, cardStyle, inputStyle, pageTitleStyle } from "@/lib/theme";
 import { v, alpha, getTheme, setTheme, type ThemeName } from "@/lib/themeVars";
 
@@ -298,6 +299,7 @@ export default function MyTasteSettings() {
   return (
     <SimpleShell>
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20 }}>
+        <BackButton />
         <div style={{ marginBottom: 8 }}>
           <h1 style={{ ...pageTitleStyle, textAlign: "center" }} data-testid="text-settings-title">
             {t("sessionSheet.settingsProfile")}

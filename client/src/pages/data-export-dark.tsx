@@ -8,6 +8,7 @@ import { downloadBlob } from "@/lib/download";
 import { getSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import SimpleShell from "@/components/simple/simple-shell";
+import BackButton from "@/components/back-button";
 import {
   HardDriveDownload,
   Wine,
@@ -185,6 +186,7 @@ export default function DataExportDark() {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       <div data-testid="data-export-dark-page">
+        <BackButton />
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
             <HardDriveDownload style={{ width: 24, height: 24, color: c.accent }} />

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import BackButton from "@/components/back-button";
 import { calendarApi, friendsApi } from "@/lib/api";
 import { apiRequest } from "@/lib/queryClient";
 import { motion } from "framer-motion";
@@ -220,6 +221,7 @@ export default function TastingCalendar() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden" data-testid="calendar-page">
+      <BackButton fallback="/enter" />
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex items-center gap-3 mb-2">
           <CalendarIcon className="w-7 h-7 text-primary" />

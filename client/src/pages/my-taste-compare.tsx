@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 import SimpleShell from "@/components/simple/simple-shell";
+import BackButton from "@/components/back-button";
 import { flavorProfileApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 
@@ -70,6 +71,7 @@ export default function MyTasteCompare() {
   return (
     <SimpleShell>
       <div data-testid="comparison-page" style={{ width: "100%" }}>
+        <BackButton />
         <h1
           style={{
             fontFamily: "'Playfair Display', serif",

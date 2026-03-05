@@ -574,7 +574,7 @@ export default function Home() {
               <p className="text-xs text-muted-foreground mt-1">{t("home.activeSessions")}</p>
             </div>
           </Link>
-          <Link href="/my/journal">
+          <Link href="/my-taste/drams">
             <div className="bg-card border border-border/50 rounded-xl p-4 text-center hover:shadow-md transition-all duration-300 cursor-pointer" data-testid="card-stat-journal">
               <NotebookPen className="w-6 h-6 text-primary mx-auto mb-2" />
               <ArrowRight className="w-4 h-4 text-muted-foreground mx-auto" />

@@ -187,7 +187,8 @@ function Router() {
         <Route path="/my-taste/benchmark" component={MyTasteBenchmark} />
         <Route path="/my-taste/wheel" component={MyTasteWheel} />
         <Route path="/my-taste/profile" component={FlavorProfile} />
-        <Route path="/my-taste/journal" component={MyJournal} />
+        <Route path="/my-taste/drams" component={MyJournal} />
+        <Route path="/my-taste/journal">{() => <Redirect to="/my-taste/drams" />}</Route>
         <Route path="/my-taste/collection" component={WhiskybaseCollection} />
         <Route path="/my-taste/wishlist" component={Wishlist} />
         <Route path="/taste" component={MyTastePage} />
@@ -254,7 +255,7 @@ function Router() {
               <Route path="/legacy/tasting/calendar" component={TastingCalendar} />
               <Route path="/legacy/tasting/host" component={HostDashboard} />
               <Route path="/legacy/tasting/:id" component={TastingRoom} />
-              <Route path="/legacy/my/journal">{() => <Redirect to="/my-taste/journal" />}</Route>
+              <Route path="/legacy/my/journal">{() => <Redirect to="/my-taste/drams" />}</Route>
               <Route path="/legacy/my/collection">{() => <Redirect to="/my-taste/collection" />}</Route>
               <Route path="/legacy/my/wishlist">{() => <Redirect to="/my-taste/wishlist" />}</Route>
               <Route path="/legacy/discover" component={DiscoverHub} />
@@ -278,7 +279,7 @@ function Router() {
               <Route path="/legacy/pairings">{() => <Redirect to="/my-taste/pairings" />}</Route>
               <Route path="/legacy/benchmark">{() => <Redirect to="/my-taste/benchmark" />}</Route>
               <Route path="/legacy/analytics">{() => <Redirect to="/my-taste/analytics" />}</Route>
-              <Route path="/legacy/data-export">{() => <RedirectWithQuery to="/legacy/my/journal" query="tab=export" />}</Route>
+              <Route path="/legacy/data-export">{() => <RedirectWithQuery to="/my-taste/drams" query="tab=export" />}</Route>
               <Route path="/legacy/recommendations">{() => <Redirect to="/my-taste/recommendations" />}</Route>
               <Route path="/legacy/taste-twins">{() => <RedirectWithQuery to="/legacy/discover/community" query="tab=twins" />}</Route>
               <Route path="/legacy/friends">{() => <RedirectWithQuery to="/legacy/discover/community" query="tab=friends" />}</Route>
@@ -309,7 +310,7 @@ function Router() {
               <Route path="/tasting/calendar" component={TastingCalendar} />
               <Route path="/tasting/host" component={HostDashboard} />
               <Route path="/tasting/:id" component={TastingRoom} />
-              <Route path="/my/journal" component={MyJournal} />
+              <Route path="/my/journal">{() => <Redirect to="/my-taste/drams" />}</Route>
               <Route path="/my/collection" component={WhiskybaseCollection} />
               <Route path="/my/wishlist" component={Wishlist} />
               <Route path="/discover" component={DiscoverHub} />
@@ -328,13 +329,13 @@ function Router() {
               <Route path="/recap/:id" component={TastingRecap} />
               <Route path="/invite/:token" component={InviteAccept} />
 
-              <Route path="/journal">{() => <Redirect to="/my/journal" />}</Route>
-              <Route path="/my-whiskies">{() => <RedirectWithQuery to="/my/journal" query="tab=tasted" />}</Route>
+              <Route path="/journal">{() => <Redirect to="/my-taste/drams" />}</Route>
+              <Route path="/my-whiskies">{() => <RedirectWithQuery to="/my-taste/drams" query="tab=tastings" />}</Route>
               <Route path="/collection">{() => <Redirect to="/my/collection" />}</Route>
               <Route path="/wishlist">{() => <Redirect to="/my/wishlist" />}</Route>
-              <Route path="/recap">{() => <RedirectWithQuery to="/my/journal" query="tab=recap" />}</Route>
+              <Route path="/recap">{() => <RedirectWithQuery to="/my-taste/drams" query="tab=tastings" />}</Route>
               <Route path="/my-tastings">{() => <RedirectWithQuery to="/tasting/sessions" query="tab=mine" />}</Route>
-              <Route path="/export-notes">{() => <RedirectWithQuery to="/my/journal" query="tab=export" />}</Route>
+              <Route path="/export-notes">{() => <RedirectWithQuery to="/my-taste/drams" query="tab=export" />}</Route>
               <Route path="/calendar">{() => <Redirect to="/tasting/calendar" />}</Route>
               <Route path="/comparison">{() => <Redirect to="/my-taste/compare" />}</Route>
               <Route path="/tasting-templates">{() => <RedirectWithQuery to="/tasting" query="tab=templates" />}</Route>

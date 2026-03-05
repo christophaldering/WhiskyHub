@@ -3,8 +3,9 @@ import { useAppStore } from "@/lib/store";
 import { participantApi, statsApi, flavorProfileApi, journalApi, ratingNotesApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { ArrowLeft, Lock, PenLine } from "lucide-react";
+import { Lock, PenLine } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import BackButton from "@/components/back-button";
 import { c, cardStyle } from "@/lib/theme";
 
 function TasteEvolutionCard({ pid }: { pid: string }) {
@@ -332,12 +333,8 @@ export default function MyTasteAnalyticsPage() {
   return (
     <SimpleShell>
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 16 }}>
+        <BackButton />
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <Link href="/my-taste">
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: `${c.accent}15`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }} data-testid="button-back-my-taste">
-              <ArrowLeft style={{ width: 16, height: 16, color: c.accent }} />
-            </div>
-          </Link>
           <div>
             <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 22, fontWeight: 700, color: c.accent, margin: 0 }} data-testid="text-analytics-title">
               Analytics

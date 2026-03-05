@@ -5,6 +5,7 @@ import { queryClient } from "@/lib/queryClient";
 import { collectionApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import SimpleShell from "@/components/simple/simple-shell";
+import BackButton from "@/components/back-button";
 import { motion, AnimatePresence } from "framer-motion";
 import { c, cardStyle, inputStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 import {
@@ -488,6 +489,7 @@ export default function WhiskybaseCollection() {
   return (
     <SimpleShell maxWidth={900}>
     <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 80 }}>
+      <BackButton />
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div>
           <h1 style={pageTitleStyle} data-testid="text-collection-title">
