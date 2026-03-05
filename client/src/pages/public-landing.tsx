@@ -176,7 +176,7 @@ function HeroSection() {
           }} data-testid="link-hero-open-app">
             Open App <ChevronRight style={{ width: 16, height: 16 }} />
           </Link>
-          <a href="#features" data-testid="link-hero-explore" style={{
+          <Link href="/presentation" data-testid="link-hero-presentation" style={{
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
@@ -191,8 +191,8 @@ function HeroSection() {
             border: `1px solid ${v.border}`,
             transition: "border-color 0.2s",
           }}>
-            Explore Features
-          </a>
+            Guided Tour
+          </Link>
         </div>
       </FadeUp>
 
