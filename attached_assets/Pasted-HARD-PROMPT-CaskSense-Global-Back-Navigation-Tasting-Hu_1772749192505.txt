@@ -1,0 +1,364 @@
+HARD PROMPT — CaskSense: Global Back Navigation + Tasting Hub Routing + Photo & File Import + Dual Theme (Dark Warm + Light)
+
+You are working in the CaskSense repository.
+
+Stack:
+React + Vite + TypeScript
+Wouter routing
+Tailwind
+shadcn/ui
+Zustand
+i18next
+Dark Warm + Light theme system
+
+Implement the following changes exactly and consistently.
+
+Do NOT break existing functionality.
+Do NOT remove working components.
+Refactor carefully where necessary.
+
+------------------------------------------------
+PART 1 — GLOBAL NAVIGATION RULE: EVERY PAGE MUST HAVE "ZURÜCK"
+------------------------------------------------
+
+Goal:
+Every page in the application must show a visible "← Zurück" control that returns to the previous in-app page.
+
+Requirements:
+
+1. Implement a global navigation history stack.
+
+Use:
+sessionStorage OR Zustand navigation store.
+
+Store:
+last 20 in-app routes.
+
+On each route change:
+push pathname + query to stack.
+
+Ignore:
+external URLs.
+
+2. Back button logic priority:
+
+1) query parameter "from"
+2) navigation stack previous route
+3) browser history.back()
+4) fallback route
+
+Fallback rules:
+- if current route starts with /tasting → fallback /tasting
+- if current route starts with /my-taste → fallback /my-taste
+
+3. Implement a universal BackButton component.
+
+Location suggestion:
+client/src/components/navigation/BackButton.tsx
+
+Properties:
+- optional fallback
+- optional label
+
+Use i18n keys:
+de: Zurück
+en: Back
+
+4. Ensure BackButton appears automatically in PageHeader.
+
+Every page using PageHeader must show BackButton by default.
+
+No page should omit BackButton.
+
+------------------------------------------------
+PART 2 — LANDING ROUTING
+------------------------------------------------
+
+Landing page must route to the Tasting Hub.
+
+When user clicks main CTA OR logs in without deep link:
+
+redirect to
+
+/tasting
+
+NOT to session lists or host dashboard.
+
+Acceptance:
+Landing → /tasting hub.
+
+------------------------------------------------
+PART 3 — CONSOLIDATE SOLO ENTRY (PHOTO + FILE IMPORT)
+------------------------------------------------
+
+Goal:
+Allow users to create tastings via:
+
+1 Photo analysis
+2 File import
+3 Manual entry
+
+Implement on page:
+/log-simple
+
+Page title:
+
+DE
+Whiskys erfassen
+
+EN
+Add Whiskies
+
+Subheading:
+
+DE
+Wie möchtest du die Whiskys erfassen?
+
+EN
+How would you like to add whiskies?
+
+------------------------------------------------
+SECTION: SOURCE SELECTION CARDS
+------------------------------------------------
+
+Create three large action cards:
+
+CARD 1
+
+DE
+Foto analysieren
+
+EN
+Analyze Photo
+
+Description:
+
+DE
+Fotografiere eine oder mehrere Whiskyflaschen oder ein Dokument mit einem Tasting-Line-up.
+
+EN
+Photograph one or more whisky bottles or a document containing a tasting lineup.
+
+Helper text:
+
+DE
+Mehrere Flaschen in einem Bild sind möglich.
+
+EN
+Multiple bottles in one image are supported.
+
+Supported formats:
+JPG
+PNG
+HEIC
+WEBP
+
+------------------------------------------------
+
+CARD 2
+
+DE
+Datei importieren
+
+EN
+Import File
+
+Description:
+
+DE
+Lade eine Liste oder ein Dokument mit einem Tasting-Line-up hoch.
+
+EN
+Upload a document or list containing a tasting lineup.
+
+Supported formats:
+
+.xlsx
+.csv
+.pdf
+.docx
+
+Helper text:
+
+DE
+CaskSense erkennt die Whiskys automatisch und erstellt eine Verkostung.
+
+EN
+CaskSense identifies whiskies and creates a tasting.
+
+------------------------------------------------
+
+CARD 3
+
+DE
+Manuell erfassen
+
+EN
+Manual Entry
+
+Description:
+
+DE
+Whiskys Schritt für Schritt eingeben.
+
+EN
+Enter whiskies step by step.
+
+------------------------------------------------
+PART 4 — AI PRIVACY NOTICE
+------------------------------------------------
+
+Display below the cards.
+
+DE
+
+Deine Bilder oder Dokumente werden ausschließlich zur Analyse verarbeitet.
+Sie werden nicht zum Training von KI-Modellen verwendet.
+
+EN
+
+Your images or documents are processed only for analysis.
+They are not used to train AI models.
+
+------------------------------------------------
+PART 5 — AI ANALYSIS STATES
+------------------------------------------------
+
+Implement UI states:
+
+STATE: analyzing
+
+DE
+Analyse läuft
+Die KI erkennt aktuell die Whiskys.
+
+EN
+Analyzing
+The AI is identifying whiskies.
+
+STATE: finished
+
+DE
+Analyse abgeschlossen
+Bitte prüfen und bestätigen.
+
+EN
+Analysis complete
+Please review and confirm.
+
+STATE: uncertain
+
+DE
+Einige Einträge konnten nicht eindeutig erkannt werden.
+
+EN
+Some entries could not be identified with certainty.
+
+------------------------------------------------
+PART 6 — THEME SYSTEM (CRITICAL)
+------------------------------------------------
+
+Ensure the feature works in BOTH themes.
+
+Themes:
+1 Dark Warm
+2 Light
+
+Do NOT implement Dark-only styling.
+
+Instead:
+
+Use theme tokens.
+
+Example:
+
+--bg-primary
+--bg-surface
+--text-primary
+--text-muted
+--accent-gold
+--border-subtle
+
+Dark Warm example:
+
+bg-primary: #141210
+bg-surface: #1e1b18
+accent-gold: #d4a256
+
+Light theme example:
+
+bg-primary: #faf9f7
+bg-surface: #ffffff
+accent-gold: #c9973a
+
+Ensure cards render correctly in both themes.
+
+------------------------------------------------
+PART 7 — VISUAL STYLE RULES
+------------------------------------------------
+
+Maintain Apple-style minimal UI.
+
+Cards:
+
+rounded-xl
+subtle shadow
+soft border
+
+Dark Warm:
+warm gradients allowed
+
+Light:
+clean neutral surfaces
+
+Never mix white blocks inside Dark Warm pages.
+
+------------------------------------------------
+PART 8 — OPTIONAL CONSOLIDATION
+------------------------------------------------
+
+If current system splits functionality between:
+
+- photo flow
+- import flow
+- barcode flow
+
+You may consolidate them into the new unified page.
+
+Barcode can remain secondary inside manual entry.
+
+------------------------------------------------
+PART 9 — FILE HANDLING
+------------------------------------------------
+
+If file parsing backend does not exist yet:
+
+Implement placeholder API endpoint.
+
+Return:
+
+status = "processing"
+
+UI shows:
+
+Analyse wird vorbereitet.
+
+------------------------------------------------
+PART 10 — DELIVERABLES
+------------------------------------------------
+
+After implementation output:
+
+1 Files changed
+2 Navigation stack implementation explanation
+3 Theme token changes
+4 Manual test checklist including
+
+Back navigation
+Landing routing
+Photo multi upload
+File import
+Dark theme
+Light theme
+
+END.

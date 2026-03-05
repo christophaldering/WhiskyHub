@@ -186,7 +186,7 @@ function HeroSection() {
 
       <FadeUp delay={0.6}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
-          <Link href="/enter" style={{
+          <Link href="/tasting" style={{
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
@@ -733,7 +733,7 @@ function CTASection() {
         </FadeUp>
         <FadeUp delay={0.15}>
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center", marginTop: 40 }}>
-            <Link href="/enter" style={{
+            <Link href="/tasting" style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
@@ -749,7 +749,7 @@ function CTASection() {
             }} data-testid="link-cta-open-app">
               Open App <ChevronRight style={{ width: 18, height: 18 }} />
             </Link>
-            <Link href="/host" style={{
+            <Link href="/host?from=/tasting" style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
