@@ -1,0 +1,212 @@
+CaskSense UX Cleanup — Fix navigation, language consistency, and layout issues.
+
+Context:
+The current UI is visually strong but has several UX inconsistencies that must be corrected without removing features or changing routes.
+
+Primary structure MUST remain:
+- /tasting
+- /my-taste
+
+Do not remove functionality. Only fix UX and layout.
+
+--------------------------------
+1. Remove duplicated User Menu
+--------------------------------
+
+Problem:
+The user menu ("Christoph Aldering") appears twice:
+- correctly in the top header
+- incorrectly again in the bottom area
+
+Action:
+- Keep the UserMenu ONLY in the header (top right)
+- Remove UserMenu from any Footer or BottomNav components
+
+Search components such as:
+Footer
+BottomNav
+AppShell
+SimpleShell
+
+UserMenu must only render in the Header.
+
+--------------------------------
+2. Fix duplicated Back buttons
+--------------------------------
+
+Problem:
+Some pages render two "← Back" buttons stacked at the bottom.
+
+Cause:
+Back navigation is injected both by:
+- page wrapper
+- page content
+
+Action:
+- Create ONE standardized BackButton component.
+
+File:
+client/src/components/navigation/BackButton.tsx
+
+Rules:
+- Back button appears ONLY once per page
+- Positioned at the TOP of the page
+- Never at the bottom
+- Use consistent styling
+- Supports i18n (nav.back)
+
+Example layout:
+
+← Back
+Page Title
+
+Content
+
+Remove any Back buttons placed at page bottom.
+
+--------------------------------
+3. Make Back navigation always accessible
+--------------------------------
+
+Problem:
+On long pages users must scroll to reach Back.
+
+Action:
+Back button must appear in the top navigation area.
+
+Implementation options:
+- inside page header
+or
+- sticky position
+
+Recommended:
+
+position: sticky
+top: 0
+z-index: 10
+
+Ensure it works on:
+- Export pages
+- Sessions pages
+- Detail pages
+- Knowledge pages
+
+--------------------------------
+4. Fix language consistency (i18n)
+--------------------------------
+
+Problem:
+Interface is set to German but many texts appear in English.
+
+Action:
+Search for hardcoded text strings and replace them with i18n keys.
+
+Examples of problematic strings:
+
+"Select a tasting above to view your notes"
+"Use the dropdown above to pick a tasting"
+"Export tasting notes"
+"Select a tasting"
+
+Convert to:
+
+t("export.selectTastingHint")
+t("export.selectTasting")
+t("export.title")
+
+Ensure:
+German translations exist in:
+
+/locales/de.json
+
+English in:
+
+/locales/en.json
+
+Language switch must affect ALL UI components.
+
+--------------------------------
+5. Improve desktop dropdown sizing
+--------------------------------
+
+Problem:
+Dropdown selectors are too small on desktop screens.
+
+Example:
+Select Tasting dropdown.
+
+Action:
+Make form controls responsive.
+
+Rules:
+
+Desktop:
+max-width: 600px
+width: 100%
+
+Mobile:
+width: 100%
+
+Example CSS:
+
+max-width: min(600px, 90vw)
+
+Apply to:
+- Select components
+- dropdown menus
+- filter controls
+
+--------------------------------
+6. Footer cleanup
+--------------------------------
+
+Footer must not contain:
+
+- Back buttons
+- User menu
+- duplicated navigation
+
+Footer should contain only:
+- branding
+or
+- nothing
+
+--------------------------------
+7. Verify navigation visibility
+--------------------------------
+
+Ensure that primary navigation remains visible and consistent.
+
+Mobile:
+bottom navigation stays.
+
+Desktop:
+top navigation remains primary.
+
+--------------------------------
+8. QA checklist
+--------------------------------
+
+Verify after implementation:
+
+1. User menu appears only in header
+2. No duplicate Back buttons
+3. Back button always near page top
+4. German UI displays German text everywhere
+5. Dropdown inputs scale properly on desktop
+6. Footer contains no navigation controls
+
+--------------------------------
+Deliverables
+--------------------------------
+
+Return summary:
+
+Files modified
+Components created
+Back buttons removed
+Strings converted to i18n
+Dropdown styling changes
+
+Do not modify application logic.
+Only UX cleanup.
