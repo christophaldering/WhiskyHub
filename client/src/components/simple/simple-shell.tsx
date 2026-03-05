@@ -150,18 +150,22 @@ export default function SimpleShell({ children, showBack = false, maxWidth = 600
           <button
             onClick={() => window.history.back()}
             style={{
-              fontSize: 12,
-              color: v.muted,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 13,
+              color: v.accent,
               background: "none",
               border: "none",
               cursor: "pointer",
               padding: 0,
               marginTop: 40,
               fontFamily: "system-ui, sans-serif",
+              opacity: 0.85,
             }}
             data-testid="link-back"
           >
-            ← Back
+            {t("common.back", "Back")}
           </button>
         )}
       </div>

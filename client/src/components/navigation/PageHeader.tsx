@@ -20,7 +20,20 @@ export default function PageHeader({
   icon,
 }: PageHeaderProps) {
   return (
-    <div style={{ marginBottom: 16 }} data-testid="page-header">
+    <div
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 15,
+        background: v.bg,
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        paddingTop: 8,
+        paddingBottom: 12,
+        marginBottom: 8,
+      }}
+      data-testid="page-header"
+    >
       {showBack && <BackButton fallback={backFallback} />}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
