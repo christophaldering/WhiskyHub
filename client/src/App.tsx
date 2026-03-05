@@ -10,6 +10,7 @@ import NavRedirects from "@/components/nav-redirects";
 import { getUIPref } from "@/components/view-switcher";
 import { StorageConsent } from "@/components/storage-consent";
 import "@/lib/i18n";
+import { pushRoute } from "@/lib/navStack";
 
 // ── Core pages (eager-loaded: critical navigation paths) ──
 import TastingHubSimple from "@/pages/tasting-hub-simple";
@@ -160,9 +161,18 @@ function RedirectWithQuery({ to, query }: { to: string; query?: string }) {
   return null;
 }
 
+function RouteTracker() {
+  const [location] = useLocation();
+  useEffect(() => {
+    pushRoute(location);
+  }, [location]);
+  return null;
+}
+
 function Router() {
   return (
     <Suspense fallback={<LazyFallback />}>
+      <RouteTracker />
       <NavRedirects />
       <Switch>
         {/* ── Public / Marketing ── */}

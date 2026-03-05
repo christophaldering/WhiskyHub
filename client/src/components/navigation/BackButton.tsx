@@ -2,9 +2,10 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
 import { v } from "@/lib/themeVars";
+import { popRoute, getSmartFallback } from "@/lib/navStack";
 
-export default function BackButton({ fallback = "/my-taste" }: { fallback?: string }) {
-  const [, navigate] = useLocation();
+export default function BackButton({ fallback }: { fallback?: string }) {
+  const [location, navigate] = useLocation();
   const { t } = useTranslation();
 
   const goBack = () => {
@@ -12,11 +13,21 @@ export default function BackButton({ fallback = "/my-taste" }: { fallback?: stri
     const from = params.get("from");
     if (from && /^\/[a-zA-Z0-9\-_/]*$/.test(from)) {
       navigate(from);
-    } else if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      navigate(fallback);
+      return;
     }
+
+    const prev = popRoute();
+    if (prev) {
+      navigate(prev);
+      return;
+    }
+
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+
+    navigate(fallback || getSmartFallback(location));
   };
 
   return (

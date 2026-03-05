@@ -336,14 +336,23 @@ function IdentifyPicker({
   onUploadPhotos,
   onDescribe,
   onScanBarcode,
+  onUploadFile,
   onClose,
 }: {
   onTakePhoto: () => void;
   onUploadPhotos: () => void;
   onDescribe: () => void;
   onScanBarcode: () => void;
+  onUploadFile: () => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
+  const cardBtn: React.CSSProperties = {
+    width: "100%", padding: "16px 18px", borderRadius: 14,
+    background: `${v.card}`, border: `1px solid rgba(212, 162, 86, 0.2)`,
+    cursor: "pointer", textAlign: "left", transition: "border-color 0.2s",
+    fontFamily: "system-ui, sans-serif",
+  };
   return (
     <motion.div
       initial={{ y: "100%" }}
@@ -360,30 +369,55 @@ function IdentifyPicker({
         borderRadius: "16px 16px 0 0",
         padding: "20px 20px 40px",
         zIndex: 100,
+        maxHeight: "85dvh",
+        overflowY: "auto",
       }}
       data-testid="sheet-identify-picker"
     >
       <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 16px" }} />
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>Identify a whisky</h3>
-      <p style={{ fontSize: 12, color: v.muted, margin: "0 0 16px" }}>Snap the label, a menu, or a shelf — we'll match it to our library.</p>
+      <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>{t("logSimple.identifyTitle")}</h3>
+      <p style={{ fontSize: 12, color: v.muted, margin: "0 0 16px" }}>{t("logSimple.identifySubtitle")}</p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <button onClick={onTakePhoto} data-testid="button-take-photo" style={{ ...btnPrimary, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>📷</span> Take a photo
+        <button onClick={onTakePhoto} data-testid="button-card-photo" style={cardBtn}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 28, lineHeight: 1 }}>📷</span>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: v.accent }}>{t("logSimple.photoTitle")}</div>
+              <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>{t("logSimple.photoSubtitle")}</div>
+            </div>
+          </div>
         </button>
+
+        <button onClick={onUploadFile} data-testid="button-card-file-upload" style={cardBtn}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 28, lineHeight: 1 }}>📄</span>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: v.accent }}>{t("logSimple.fileUploadTitle")}</div>
+              <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>{t("logSimple.fileUploadSubtitle")}</div>
+            </div>
+          </div>
+        </button>
+
+        <div style={{ height: 1, background: v.border, margin: "4px 0", opacity: 0.4 }} />
+
         <button onClick={onScanBarcode} data-testid="button-scan-barcode" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, borderColor: v.accent, color: v.accent }}>
-          <span style={{ fontSize: 18 }}>📊</span> Scan barcode
+          <span style={{ fontSize: 18 }}>📊</span> {t("logSimple.scanBarcode")}
         </button>
         <button onClick={onUploadPhotos} data-testid="button-upload-photos" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>🖼️</span> Upload from gallery
+          <span style={{ fontSize: 18 }}>🖼️</span> {t("logSimple.uploadGallery")}
         </button>
         <button onClick={onDescribe} data-testid="button-describe" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>✏️</span> Type what you see
+          <span style={{ fontSize: 18 }}>✏️</span> {t("logSimple.typeDescribe")}
         </button>
       </div>
 
+      <p style={{ fontSize: 10, color: v.muted, margin: "14px 0 0", opacity: 0.7, lineHeight: 1.4 }}>
+        {t("logSimple.privacyHint")}
+      </p>
+
       <button onClick={onClose} data-testid="button-close-picker" style={{ ...btnOutline, marginTop: 12, color: v.muted, borderColor: v.muted, fontSize: 13 }}>
-        Cancel
+        {t("common.cancel", "Cancel")}
       </button>
     </motion.div>
   );
@@ -964,11 +998,12 @@ function OnlineSearchSheet({
   );
 }
 
-type SheetView = "none" | "picker" | "describe" | "candidates" | "identifying" | "onlineSearch" | "barcode";
+type SheetView = "none" | "picker" | "describe" | "candidates" | "identifying" | "onlineSearch" | "barcode" | "fileAnalyzing";
 
 export default function SimpleLogPage() {
   const { currentParticipant, setParticipant } = useAppStore();
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const [unlocked, setUnlocked] = useState(() => getSession().signedIn);
@@ -1192,6 +1227,45 @@ export default function SimpleLogPage() {
     if (files.length === 0) return;
     if (uploadInputRef.current) uploadInputRef.current.value = "";
     await processFiles(files);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setSheetView("fileAnalyzing");
+    try {
+      const formData = new FormData();
+      files.forEach((f) => formData.append("files", f));
+      const res = await fetch("/api/tastings/ai-import", {
+        method: "POST",
+        headers: pid ? { "x-participant-id": pid } : {},
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Import failed");
+      }
+      const data = await res.json();
+      if (data.whiskies && data.whiskies.length > 0) {
+        const first = data.whiskies[0];
+        if (first.name) setWhiskyName(first.name);
+        if (first.distillery) setDistillery(first.distillery);
+        if (first.age) setUnknownAge(String(first.age));
+        if (first.abv) setUnknownAbv(String(first.abv));
+        if (first.caskType) setUnknownCask(first.caskType);
+        if (first.whiskybaseId) setUnknownWbId(String(first.whiskybaseId));
+        if (first.price) setUnknownPrice(String(first.price));
+        setShowManual(true);
+        setSheetView("none");
+      } else {
+        setError(t("logSimple.fileNoResults", "No whiskies found in the uploaded file."));
+        setSheetView("none");
+      }
+    } catch (err: any) {
+      setError(err.message || "File import failed");
+      setSheetView("none");
+    }
   };
 
   const handleDescribeSubmit = async (query: string) => {
@@ -1491,6 +1565,7 @@ export default function SimpleLogPage() {
       <BackButton fallback="/tasting" />
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleCameraChange} style={{ display: "none" }} data-testid="input-camera" />
       <input ref={uploadInputRef} type="file" accept="image/*" multiple onChange={handleUploadChange} style={{ display: "none" }} data-testid="input-upload" />
+      <input ref={fileInputRef} type="file" accept=".xlsx,.csv,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/csv" onChange={handleFileUpload} style={{ display: "none" }} data-testid="input-file-upload" />
 
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         {saved ? (
@@ -2022,6 +2097,7 @@ export default function SimpleLogPage() {
             onUploadPhotos={() => { setSheetView("none"); setTimeout(() => uploadInputRef.current?.click(), 100); }}
             onDescribe={() => setSheetView("describe")}
             onScanBarcode={() => setSheetView("barcode")}
+            onUploadFile={() => { setSheetView("none"); setTimeout(() => fileInputRef.current?.click(), 100); }}
             onClose={() => setSheetView("none")}
           />
         )}
@@ -2044,6 +2120,23 @@ export default function SimpleLogPage() {
             <div style={{ display: "inline-block", width: 24, height: 24, border: `3px solid ${v.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: 16 }} />
             <p style={{ fontSize: 15, fontWeight: 600, color: v.text, margin: 0 }}>Identifying...</p>
             <p style={{ fontSize: 12, color: v.muted, margin: "6px 0 0" }}>Analyzing your photo</p>
+          </motion.div>
+        )}
+
+        {sheetView === "fileAnalyzing" && (
+          <motion.div
+            key="fileAnalyzing"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: v.card, borderTop: `1px solid ${v.border}`, borderRadius: "16px 16px 0 0", padding: "40px 20px 60px", zIndex: 100, textAlign: "center" }}
+            data-testid="sheet-file-analyzing"
+          >
+            <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 24px" }} />
+            <div style={{ display: "inline-block", width: 24, height: 24, border: `3px solid ${v.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: 16 }} />
+            <p style={{ fontSize: 15, fontWeight: 600, color: v.text, margin: 0 }}>{t("logSimple.fileAnalyzing")}</p>
+            <p style={{ fontSize: 12, color: v.muted, margin: "6px 0 0" }}>{t("logSimple.fileAnalyzingSub")}</p>
           </motion.div>
         )}
 

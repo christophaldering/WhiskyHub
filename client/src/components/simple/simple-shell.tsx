@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { Wine, PenLine, Crown, User, Compass, KeyRound, ChevronDown } from "lucide-react";
+import { Wine, PenLine, Crown, User, Compass, KeyRound, ChevronDown, ArrowLeft } from "lucide-react";
 import { getSession, tryAutoResume } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
 import type { SessionMode } from "@/lib/session";
@@ -11,6 +11,35 @@ import { primaryTabs } from "@/lib/navConfig";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
 import DesktopTabSwitcher from "@/components/navigation/DesktopTabSwitcher";
+import { popRoute, getSmartFallback } from "@/lib/navStack";
+
+function BackButtonBottom() {
+  const [location, navigate] = useLocation();
+  const { t } = useTranslation();
+  const goBack = () => {
+    const params = new URLSearchParams(window.location.search);
+    const from = params.get("from");
+    if (from && /^\/[a-zA-Z0-9\-_/]*$/.test(from)) { navigate(from); return; }
+    const prev = popRoute();
+    if (prev) { navigate(prev); return; }
+    if (window.history.length > 1) { window.history.back(); return; }
+    navigate(getSmartFallback(location));
+  };
+  return (
+    <button
+      onClick={goBack}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13,
+        color: v.accent, background: "none", border: "none", cursor: "pointer",
+        padding: 0, marginTop: 40, fontFamily: "system-ui, sans-serif", opacity: 0.85,
+      }}
+      data-testid="link-back"
+    >
+      <ArrowLeft style={{ width: 14, height: 14 }} strokeWidth={2} />
+      {t("common.back", "Back")}
+    </button>
+  );
+}
 
 const NAV_ITEMS_V1 = [
   { href: "/enter", icon: Wine, labelKey: "nav.join", labelFallback: "Join", match: ["/enter", "/join", "/tasting-room-simple", "/naked/"] },
@@ -147,26 +176,7 @@ export default function SimpleShell({ children, showBack = false, maxWidth = 600
         </div>
 
         {showBack && (
-          <button
-            onClick={() => window.history.back()}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 13,
-              color: v.accent,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: 0,
-              marginTop: 40,
-              fontFamily: "system-ui, sans-serif",
-              opacity: 0.85,
-            }}
-            data-testid="link-back"
-          >
-            {t("common.back", "Back")}
-          </button>
+          <BackButtonBottom />
         )}
       </div>
 
