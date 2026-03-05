@@ -103,8 +103,8 @@ function Hero() {
               height: "auto",
               display: "block",
               objectFit: "cover",
-              maskImage: "linear-gradient(to bottom, black 40%, transparent 95%)",
-              WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 95%)",
+              maskImage: "radial-gradient(ellipse 70% 60% at 50% 45%, black 30%, transparent 75%)",
+              WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 45%, black 30%, transparent 75%)",
               opacity: 0.45,
             }}
           />
