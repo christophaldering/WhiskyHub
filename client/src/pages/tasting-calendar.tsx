@@ -13,6 +13,7 @@ import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
+import { v } from "@/lib/themeVars";
 
 type CalendarFilter = "all" | "mine" | "friends";
 
@@ -52,12 +53,12 @@ function getFirstDayOfMonth(year: number, month: number): number {
   return day === 0 ? 6 : day - 1;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-secondary/60 text-muted-foreground",
-  open: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30",
-  closed: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30",
-  reveal: "bg-primary/10 text-primary border-primary/30",
-  archived: "bg-secondary/40 text-muted-foreground/60",
+const STATUS_COLORS: Record<string, React.CSSProperties> = {
+  draft: { color: v.muted, background: v.elevated, border: `1px solid ${v.border}` },
+  open: { color: v.deltaPositive, background: `color-mix(in srgb, ${v.deltaPositive} 10%, transparent)`, border: `1px solid color-mix(in srgb, ${v.deltaPositive} 30%, transparent)` },
+  closed: { color: v.accent, background: `color-mix(in srgb, ${v.accent} 10%, transparent)`, border: `1px solid color-mix(in srgb, ${v.accent} 30%, transparent)` },
+  reveal: { color: v.accent, background: v.pillBg, border: `1px solid color-mix(in srgb, ${v.accent} 30%, transparent)` },
+  archived: { color: v.muted, background: v.elevated, border: `1px solid ${v.border}` },
 };
 
 const OFFSET_OPTIONS = [
@@ -220,67 +221,130 @@ export default function TastingCalendar({ embedded = false }: { embedded?: boole
   }, [filteredEvents]);
 
   return (
-    <div className={embedded ? "min-w-0 overflow-x-hidden" : "max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden"} data-testid="calendar-page">
+    <div
+      className={embedded ? "min-w-0 overflow-x-hidden" : "max-w-4xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden"}
+      style={{ background: embedded ? undefined : v.bg }}
+      data-testid="calendar-page"
+    >
       {!embedded && <BackButton fallback="/enter" />}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         {!embedded && (
           <>
             <div className="flex items-center gap-3 mb-2">
-              <CalendarIcon className="w-7 h-7 text-primary" />
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-primary" data-testid="text-calendar-title">
+              <CalendarIcon className="w-7 h-7" style={{ color: v.accent }} />
+              <h1
+                className="text-xl sm:text-2xl md:text-3xl font-serif font-bold"
+                style={{ color: v.accent }}
+                data-testid="text-calendar-title"
+              >
                 {t("calendar.title")}
               </h1>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">{t("calendar.subtitle")}</p>
+            <p className="text-sm mb-4" style={{ color: v.muted }}>{t("calendar.subtitle")}</p>
           </>
         )}
 
         <div className="flex items-center gap-2 mb-6" data-testid="calendar-filter-tabs">
           {(["all", "mine", "friends"] as CalendarFilter[]).map((f) => (
-            <Button
+            <button
               key={f}
-              variant={filter === f ? "default" : "outline"}
-              size="sm"
-              className="text-xs font-serif h-8"
               onClick={() => { setFilter(f); setSelectedDate(null); }}
+              style={{
+                padding: "6px 14px",
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                fontFamily: "'Playfair Display', Georgia, serif",
+                border: "none",
+                cursor: "pointer",
+                transition: "all 0.2s",
+                background: filter === f ? v.pillBg : "transparent",
+                color: filter === f ? v.pillText : v.muted,
+              }}
               data-testid={`button-filter-${f}`}
             >
               {t(`calendar.filter${f.charAt(0).toUpperCase() + f.slice(1)}`)}
-            </Button>
+            </button>
           ))}
         </div>
 
         {isLoading ? (
-          <div className="h-80 bg-card/50 rounded-lg animate-pulse" />
+          <div
+            className="h-80 rounded-lg animate-pulse"
+            style={{ background: v.card, opacity: 0.5 }}
+          />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-card rounded-lg border border-border/40 p-5">
+            <div
+              className="lg:col-span-2 rounded-lg p-5"
+              style={{ background: v.card, border: `1px solid ${v.border}` }}
+            >
               <div className="flex items-center justify-between mb-4">
-                <Button variant="ghost" size="sm" onClick={prevMonth} data-testid="button-prev-month">
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
+                <button
+                  onClick={prevMonth}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    color: v.textSecondary,
+                    padding: 8,
+                    borderRadius: 8,
+                  }}
+                  data-testid="button-prev-month"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
                 <div className="flex items-center gap-3">
-                  <h2 className="text-lg font-serif font-semibold">
+                  <h2 className="text-lg font-serif font-semibold" style={{ color: v.text }}>
                     {monthName} {currentYear}
                   </h2>
-                  <Button variant="outline" size="sm" className="text-xs font-serif h-7" onClick={goToday} data-testid="button-today">
+                  <button
+                    onClick={goToday}
+                    style={{
+                      padding: "4px 12px",
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      fontFamily: "'Playfair Display', Georgia, serif",
+                      border: `1px solid ${v.border}`,
+                      background: v.elevated,
+                      color: v.textSecondary,
+                      cursor: "pointer",
+                    }}
+                    data-testid="button-today"
+                  >
                     {t("calendar.today")}
-                  </Button>
+                  </button>
                 </div>
-                <Button variant="ghost" size="sm" onClick={nextMonth} data-testid="button-next-month">
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+                <button
+                  onClick={nextMonth}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    color: v.textSecondary,
+                    padding: 8,
+                    borderRadius: 8,
+                  }}
+                  data-testid="button-next-month"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
               </div>
 
-              <div className="grid grid-cols-7 gap-px mb-1">
+              <div className="grid grid-cols-7 gap-1 mb-2">
                 {dayLabels.map(d => (
-                  <div key={d} className="text-center text-[10px] uppercase tracking-wider text-muted-foreground font-semibold py-1">
+                  <div
+                    key={d}
+                    className="text-center text-[11px] uppercase tracking-wider font-semibold py-1.5"
+                    style={{ color: v.muted }}
+                  >
                     {d}
                   </div>
                 ))}
               </div>
 
-              <div className="grid grid-cols-7 gap-px">
+              <div className="grid grid-cols-7 gap-1">
                 {Array.from({ length: firstDay }).map((_, i) => (
                   <div key={`empty-${i}`} className="aspect-square" />
                 ))}
@@ -295,20 +359,46 @@ export default function TastingCalendar({ embedded = false }: { embedded?: boole
                     <button
                       key={day}
                       onClick={() => setSelectedDate(isSelected ? null : dateKey)}
-                      className={cn(
-                        "aspect-square rounded-md flex flex-col items-center justify-center relative transition-colors text-sm",
-                        isToday && "ring-1 ring-primary/50",
-                        isSelected && "bg-primary/10 text-primary font-bold",
-                        !isSelected && !isToday && "hover:bg-secondary/50",
-                        hasEvents && !isSelected && "font-semibold"
-                      )}
+                      style={{
+                        aspectRatio: "1",
+                        borderRadius: 8,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        position: "relative",
+                        transition: "all 0.15s",
+                        fontSize: 14,
+                        fontWeight: isToday || hasEvents ? 700 : 500,
+                        border: isSelected ? `2px solid ${v.accent}` : isToday ? "none" : "1px solid transparent",
+                        cursor: "pointer",
+                        background: isToday && !isSelected
+                          ? v.pillBg
+                          : isSelected
+                          ? v.elevated
+                          : "transparent",
+                        color: isToday
+                          ? v.accent
+                          : isSelected
+                          ? v.accent
+                          : v.textSecondary,
+                      }}
                       data-testid={`button-day-${day}`}
                     >
                       {day}
                       {hasEvents && (
-                        <div className="absolute bottom-1 flex gap-0.5">
+                        <div style={{ position: "absolute", bottom: 3, display: "flex", gap: 2 }}>
                           {(eventsByDate.get(dateKey) || []).slice(0, 3).map((_, j) => (
-                            <span key={j} className="w-1 h-1 rounded-full bg-primary/70" />
+                            <span
+                              key={j}
+                              style={{
+                                width: 4,
+                                height: 4,
+                                borderRadius: "50%",
+                                background: v.accent,
+                                opacity: 0.8,
+                              }}
+                            />
                           ))}
                         </div>
                       )}
@@ -318,9 +408,13 @@ export default function TastingCalendar({ embedded = false }: { embedded?: boole
               </div>
 
               {selectedDate && (
-                <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="mt-4 border-t border-border/30 pt-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{ marginTop: 16, borderTop: `1px solid ${v.border}`, paddingTop: 16 }}
+                >
                   {selectedEvents.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center italic">{t("calendar.noEvents")}</p>
+                    <p className="text-sm text-center italic" style={{ color: v.muted }}>{t("calendar.noEvents")}</p>
                   ) : (
                     <div className="space-y-2">
                       {selectedEvents.map(ev => (
@@ -333,22 +427,36 @@ export default function TastingCalendar({ embedded = false }: { embedded?: boole
             </div>
 
             <div className="space-y-4">
-              <div className="bg-card rounded-lg border border-border/40 p-5">
-                <h3 className="text-sm font-serif font-semibold mb-3">{t("calendar.upcoming")}</h3>
+              <div
+                className="rounded-lg p-5"
+                style={{ background: v.card, border: `1px solid ${v.border}` }}
+              >
+                <h3 className="text-sm font-serif font-semibold mb-3" style={{ color: v.text }}>{t("calendar.upcoming")}</h3>
                 {upcomingEvents.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">{t("calendar.noUpcoming")}</p>
+                  <p className="text-xs italic" style={{ color: v.muted }}>{t("calendar.noUpcoming")}</p>
                 ) : (
                   <div className="space-y-3">
                     {upcomingEvents.map(ev => (
                       <Link key={ev.id} href={`/tasting/${ev.id}`}>
-                        <div className="group cursor-pointer py-2 border-b border-border/20 last:border-b-0 hover:border-primary/20 transition-colors" data-testid={`link-upcoming-${ev.id}`}>
-                          <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{ev.title}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">{ev.date} · {ev.location}</p>
+                        <div
+                          className="group cursor-pointer py-2 last:border-b-0 transition-colors"
+                          style={{ borderBottom: `1px solid color-mix(in srgb, ${v.border} 50%, transparent)` }}
+                          data-testid={`link-upcoming-${ev.id}`}
+                        >
+                          <p className="text-sm font-semibold truncate transition-colors" style={{ color: v.text }}>{ev.title}</p>
+                          <p className="mt-0.5" style={{ fontSize: 10, color: v.muted }}>{ev.date} · {ev.location}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className={cn("text-[9px] px-1.5 py-0.5 rounded border", STATUS_COLORS[ev.status] || STATUS_COLORS.draft)}>
+                            <span
+                              style={{
+                                fontSize: 9,
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                ...(STATUS_COLORS[ev.status] || STATUS_COLORS.draft),
+                              }}
+                            >
                               {ev.status}
                             </span>
-                            <span className="text-[10px] text-muted-foreground/60">{ev.hostName}</span>
+                            <span style={{ fontSize: 10, color: v.muted, opacity: 0.7 }}>{ev.hostName}</span>
                           </div>
                         </div>
                       </Link>
@@ -357,38 +465,56 @@ export default function TastingCalendar({ embedded = false }: { embedded?: boole
                 )}
               </div>
 
-              <div className="bg-card rounded-lg border border-border/40 p-5">
-                <h3 className="text-sm font-serif font-semibold mb-2">{t("calendar.stats")}</h3>
+              <div
+                className="rounded-lg p-5"
+                style={{ background: v.card, border: `1px solid ${v.border}` }}
+              >
+                <h3 className="text-sm font-serif font-semibold mb-2" style={{ color: v.text }}>{t("calendar.stats")}</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="text-center">
-                    <p className="text-2xl font-serif font-bold text-primary">{filteredEvents.length}</p>
-                    <p className="text-[10px] text-muted-foreground">{t("calendar.totalTastings")}</p>
+                    <p className="text-2xl font-serif font-bold" style={{ color: v.accent }}>{filteredEvents.length}</p>
+                    <p style={{ fontSize: 10, color: v.muted }}>{t("calendar.totalTastings")}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-serif font-bold text-primary">
+                    <p className="text-2xl font-serif font-bold" style={{ color: v.accent }}>
                       {filteredEvents.filter(e => e.status === "open" || e.status === "draft").length}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">{t("calendar.active")}</p>
+                    <p style={{ fontSize: 10, color: v.muted }}>{t("calendar.active")}</p>
                   </div>
                 </div>
               </div>
 
               {participantId && (
-                <div className="bg-card rounded-lg border border-border/40 p-5 space-y-3" data-testid="calendar-reminders-section">
+                <div
+                  className="rounded-lg p-5 space-y-3"
+                  style={{ background: v.card, border: `1px solid ${v.border}` }}
+                  data-testid="calendar-reminders-section"
+                >
                   <div className="flex items-center gap-2">
-                    <Bell className="w-4 h-4 text-primary" />
-                    <h3 className="text-sm font-serif font-semibold">{t("reminders.title")}</h3>
+                    <Bell className="w-4 h-4" style={{ color: v.accent }} />
+                    <h3 className="text-sm font-serif font-semibold" style={{ color: v.text }}>{t("reminders.title")}</h3>
                   </div>
 
                   {!hasVerifiedEmail && (
-                    <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5">
-                      <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                      <p className="text-[11px] text-amber-700 dark:text-amber-300">{t("reminders.emailRequired")}</p>
+                    <div
+                      className="flex items-start gap-2 rounded-lg p-2.5"
+                      style={{
+                        background: `color-mix(in srgb, ${v.accent} 10%, transparent)`,
+                        border: `1px solid color-mix(in srgb, ${v.accent} 20%, transparent)`,
+                      }}
+                    >
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: v.accent }} />
+                      <p style={{ fontSize: 11, color: v.textSecondary }}>{t("reminders.emailRequired")}</p>
                     </div>
                   )}
 
                   {reminders.filter((r: any) => !r.tastingId).map((r: any) => (
-                    <div key={r.id} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2" data-testid={`reminder-global-${r.id}`}>
+                    <div
+                      key={r.id}
+                      className="flex items-center justify-between rounded-lg px-3 py-2"
+                      style={{ background: v.elevated }}
+                      data-testid={`reminder-global-${r.id}`}
+                    >
                       <div className="flex items-center gap-2">
                         <Switch
                           checked={r.enabled}
@@ -396,18 +522,24 @@ export default function TastingCalendar({ embedded = false }: { embedded?: boole
                           disabled={!hasVerifiedEmail}
                           className="scale-75"
                         />
-                        <span className={cn("text-xs", !r.enabled && "text-muted-foreground line-through")}>
+                        <span
+                          className="text-xs"
+                          style={{
+                            color: r.enabled ? v.textSecondary : v.muted,
+                            textDecoration: r.enabled ? "none" : "line-through",
+                          }}
+                        >
                           {t(`reminders.${OFFSET_OPTIONS.find(o => o.value === r.offsetMinutes)?.key || "offset60"}`)}
                         </span>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => deleteReminderMutation.mutate(r.id)} className="text-muted-foreground hover:text-destructive h-7 w-7 p-0">
+                      <Button variant="ghost" size="sm" onClick={() => deleteReminderMutation.mutate(r.id)} className="h-7 w-7 p-0" style={{ color: v.muted }}>
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
                   ))}
 
                   <div className="flex items-center gap-1.5">
-                    <Select value={String(selectedOffset)} onValueChange={(v) => setSelectedOffset(Number(v))}>
+                    <Select value={String(selectedOffset)} onValueChange={(val) => setSelectedOffset(Number(val))}>
                       <SelectTrigger className="h-8 text-xs flex-1" data-testid="select-reminder-offset">
                         <SelectValue />
                       </SelectTrigger>
@@ -433,23 +565,33 @@ export default function TastingCalendar({ embedded = false }: { embedded?: boole
                   </div>
 
                   {upcomingEvents.length > 0 && reminders.filter((r: any) => r.tastingId).length > 0 && (
-                    <div className="border-t border-border/30 pt-2 space-y-2">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t("reminders.perTasting")}</p>
+                    <div style={{ borderTop: `1px solid ${v.border}`, paddingTop: 8 }} className="space-y-2">
+                      <p className="uppercase tracking-wider font-semibold" style={{ fontSize: 10, color: v.muted }}>{t("reminders.perTasting")}</p>
                       {upcomingEvents.slice(0, 3).map(ev => {
                         const evReminders = reminders.filter((r: any) => r.tastingId === ev.id);
                         if (evReminders.length === 0) return null;
                         return (
                           <div key={ev.id} className="space-y-1">
-                            <p className="text-xs font-semibold truncate">{ev.title}</p>
+                            <p className="text-xs font-semibold truncate" style={{ color: v.text }}>{ev.title}</p>
                             {evReminders.map((r: any) => (
-                              <div key={r.id} className="flex items-center justify-between bg-muted/20 rounded px-2 py-1">
+                              <div
+                                key={r.id}
+                                className="flex items-center justify-between rounded px-2 py-1"
+                                style={{ background: v.elevated }}
+                              >
                                 <div className="flex items-center gap-1.5">
                                   <Switch checked={r.enabled} onCheckedChange={() => toggleReminderMutation.mutate(r)} disabled={!hasVerifiedEmail} className="scale-[0.6]" />
-                                  <span className={cn("text-[10px]", !r.enabled && "text-muted-foreground line-through")}>
+                                  <span
+                                    style={{
+                                      fontSize: 10,
+                                      color: r.enabled ? v.textSecondary : v.muted,
+                                      textDecoration: r.enabled ? "none" : "line-through",
+                                    }}
+                                  >
                                     {t(`reminders.${OFFSET_OPTIONS.find(o => o.value === r.offsetMinutes)?.key || "offset60"}`)}
                                   </span>
                                 </div>
-                                <Button variant="ghost" size="sm" onClick={() => deleteReminderMutation.mutate(r.id)} className="text-muted-foreground hover:text-destructive h-6 w-6 p-0">
+                                <Button variant="ghost" size="sm" onClick={() => deleteReminderMutation.mutate(r.id)} className="h-6 w-6 p-0" style={{ color: v.muted }}>
                                   <Trash2 className="w-2.5 h-2.5" />
                                 </Button>
                               </div>
@@ -473,19 +615,31 @@ function EventCard({ event }: { event: CalendarEvent }) {
   const { t } = useTranslation();
   return (
     <Link href={`/tasting/${event.id}`}>
-      <div className="bg-secondary/30 rounded-md p-3 hover:bg-secondary/50 transition-colors cursor-pointer" data-testid={`card-event-${event.id}`}>
+      <div
+        className="rounded-md p-3 transition-colors cursor-pointer"
+        style={{ background: v.elevated, border: `1px solid ${v.border}` }}
+        data-testid={`card-event-${event.id}`}
+      >
         <div className="flex items-center justify-between mb-1">
-          <h4 className="text-sm font-serif font-semibold truncate">{event.title}</h4>
-          <span className={cn("text-[9px] px-1.5 py-0.5 rounded border shrink-0 ml-2", STATUS_COLORS[event.status] || STATUS_COLORS.draft)}>
+          <h4 className="text-sm font-serif font-semibold truncate" style={{ color: v.text }}>{event.title}</h4>
+          <span
+            className="shrink-0 ml-2"
+            style={{
+              fontSize: 9,
+              padding: "2px 6px",
+              borderRadius: 4,
+              ...(STATUS_COLORS[event.status] || STATUS_COLORS.draft),
+            }}
+          >
             {event.status}
           </span>
         </div>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-3 text-xs" style={{ color: v.muted }}>
           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {event.location}</span>
           <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {event.participantCount}</span>
           <span className="flex items-center gap-1"><Wine className="w-3 h-3" /> {event.whiskyCount}</span>
         </div>
-        <p className="text-[10px] text-muted-foreground/60 mt-1">
+        <p className="mt-1" style={{ fontSize: 10, color: v.muted, opacity: 0.7 }}>
           {t("calendar.host")}: {event.hostName}
         </p>
       </div>

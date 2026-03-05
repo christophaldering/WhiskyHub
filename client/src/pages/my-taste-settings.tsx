@@ -27,12 +27,19 @@ const labelStyle: React.CSSProperties = {
   display: "block",
 };
 
-const sectionTitle: React.CSSProperties = {
-  fontSize: 15,
-  fontWeight: 600,
-  color: v.text,
-  marginBottom: 12,
+const sectionHeadingStyle: React.CSSProperties = {
+  fontSize: 17,
+  fontWeight: 700,
+  color: v.accent,
+  marginBottom: 4,
   fontFamily: "'Playfair Display', Georgia, serif",
+};
+
+const sectionDescStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: v.textSecondary,
+  marginBottom: 16,
+  lineHeight: 1.4,
 };
 
 const selectStyle: React.CSSProperties = {
@@ -298,7 +305,7 @@ export default function MyTasteSettings() {
 
   return (
     <SimpleShell>
-      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 24 }}>
         <BackButton />
         <div style={{ marginBottom: 8 }}>
           <h1 style={{ ...pageTitleStyle, textAlign: "center" }} data-testid="text-settings-title">
@@ -309,73 +316,12 @@ export default function MyTasteSettings() {
           </p>
         </div>
 
+        {/* ── Section 1: Account ── */}
         <div style={cardStyle}>
-          <div style={sectionTitle}>Photo</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: "50%",
-                background: currentPhotoUrl ? `url(${currentPhotoUrl}) center/cover` : alpha(v.accent, "20"),
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                border: `2px solid ${v.border}`,
-                flexShrink: 0,
-                fontSize: 24,
-                fontFamily: "'Playfair Display', serif",
-                color: v.accent,
-              }}
-              data-testid="button-avatar-upload"
-            >
-              {!currentPhotoUrl && currentParticipant.name.charAt(0).toUpperCase()}
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              onChange={handlePhotoSelect}
-              style={{ display: "none" }}
-              data-testid="input-profile-photo"
-            />
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                style={{ fontSize: 13, color: v.accent, background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
-                data-testid="button-upload-photo"
-              >
-                {currentPhotoUrl ? t("profile.changePhoto") : t("profile.uploadPhoto")}
-              </button>
-              <span style={{ fontSize: 10, color: v.mutedLight }}>{t("common.uploadHint")}</span>
-              {currentPhotoUrl && (
-                <button
-                  onClick={() => { setPhotoFile(null); setPhotoPreview(null); setRemovePhoto(true); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                  style={{ fontSize: 12, color: v.error, background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
-                  data-testid="button-remove-photo"
-                >
-                  {t("profile.removePhoto")}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+          <div style={sectionHeadingStyle} data-testid="text-section-account">{t("profile.sectionAccount")}</div>
+          <p style={sectionDescStyle}>{t("profile.sectionAccountDesc")}</p>
 
-        <div style={cardStyle}>
-          <div style={sectionTitle}>{t("profile.accountDetails")}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div>
-              <label style={labelStyle}>{t("profile.name")}</label>
-              <input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder={t("profile.namePlaceholder")}
-                style={inputStyle}
-                data-testid="input-display-name"
-              />
-            </div>
             <div>
               <label style={labelStyle}>{t("profile.email")}</label>
               <input
@@ -403,76 +349,127 @@ export default function MyTasteSettings() {
                 )}
               </div>
             )}
+
+            <div style={{ borderTop: `1px solid ${v.border}`, paddingTop: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: v.text, marginBottom: 10 }}>{t("profile.newPin")}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div>
+                  <label style={labelStyle}>{t("profile.currentPin")}</label>
+                  <input
+                    type="password"
+                    value={currentPin}
+                    onChange={(e) => setCurrentPin(e.target.value)}
+                    placeholder={t("profile.currentPinPlaceholder")}
+                    maxLength={6}
+                    style={{ ...inputStyle, letterSpacing: 3 }}
+                    data-testid="input-current-pin"
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>{t("profile.newPin")}</label>
+                  <input
+                    type="password"
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value)}
+                    placeholder={t("profile.newPinPlaceholder")}
+                    maxLength={6}
+                    style={{ ...inputStyle, letterSpacing: 3 }}
+                    data-testid="input-new-pin"
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>{t("profile.confirmPin")}</label>
+                  <input
+                    type="password"
+                    value={confirmPin}
+                    onChange={(e) => setConfirmPin(e.target.value)}
+                    placeholder={t("profile.confirmPinPlaceholder")}
+                    maxLength={6}
+                    style={{ ...inputStyle, letterSpacing: 3 }}
+                    data-testid="input-confirm-pin"
+                  />
+                </div>
+              </div>
+              {newPin && confirmPin && newPin !== confirmPin && (
+                <p style={{ fontSize: 12, color: v.error, marginTop: 8 }} data-testid="text-pin-mismatch">
+                  {t("profile.pinMismatch")}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
+        {/* ── Section 2: Profile ── */}
         <div style={cardStyle}>
-          <div style={sectionTitle}>{t("profile.newPin")}</div>
+          <div style={sectionHeadingStyle} data-testid="text-section-profile">{t("profile.sectionProfile")}</div>
+          <p style={sectionDescStyle}>{t("profile.sectionProfileDesc")}</p>
+
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
-              <label style={labelStyle}>{t("profile.currentPin")}</label>
+              <label style={labelStyle}>{t("profile.name")}</label>
               <input
-                type="password"
-                value={currentPin}
-                onChange={(e) => setCurrentPin(e.target.value)}
-                placeholder={t("profile.currentPinPlaceholder")}
-                maxLength={6}
-                style={{ ...inputStyle, letterSpacing: 3 }}
-                data-testid="input-current-pin"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder={t("profile.namePlaceholder")}
+                style={inputStyle}
+                data-testid="input-display-name"
               />
             </div>
-            <div>
-              <label style={labelStyle}>{t("profile.newPin")}</label>
-              <input
-                type="password"
-                value={newPin}
-                onChange={(e) => setNewPin(e.target.value)}
-                placeholder={t("profile.newPinPlaceholder")}
-                maxLength={6}
-                style={{ ...inputStyle, letterSpacing: 3 }}
-                data-testid="input-new-pin"
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>{t("profile.confirmPin")}</label>
-              <input
-                type="password"
-                value={confirmPin}
-                onChange={(e) => setConfirmPin(e.target.value)}
-                placeholder={t("profile.confirmPinPlaceholder")}
-                maxLength={6}
-                style={{ ...inputStyle, letterSpacing: 3 }}
-                data-testid="input-confirm-pin"
-              />
-            </div>
-          </div>
-          {newPin && confirmPin && newPin !== confirmPin && (
-            <p style={{ fontSize: 12, color: v.error, marginTop: 8 }} data-testid="text-pin-mismatch">
-              {t("profile.pinMismatch")}
-            </p>
-          )}
-        </div>
 
-        <div style={cardStyle}>
-          <div style={sectionTitle}>{t("profile.newsletterLabel")}</div>
-          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={newsletterOptIn}
-              onChange={(e) => setNewsletterOptIn(e.target.checked)}
-              style={{ marginTop: 2, accentColor: v.accent }}
-              data-testid="checkbox-newsletter-profile"
-            />
             <div>
-              <div style={{ fontSize: 14, color: v.text }}>{t("profile.newsletterOptIn")}</div>
-              <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>{t("profile.newsletterHint")}</div>
+              <label style={labelStyle}>{t("profile.photo")}</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: "50%",
+                    background: currentPhotoUrl ? `url(${currentPhotoUrl}) center/cover` : alpha(v.accent, "20"),
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    border: `2px solid ${v.border}`,
+                    flexShrink: 0,
+                    fontSize: 24,
+                    fontFamily: "'Playfair Display', serif",
+                    color: v.accent,
+                  }}
+                  data-testid="button-avatar-upload"
+                >
+                  {!currentPhotoUrl && currentParticipant.name.charAt(0).toUpperCase()}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handlePhotoSelect}
+                  style={{ display: "none" }}
+                  data-testid="input-profile-photo"
+                />
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{ fontSize: 13, color: v.accent, background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
+                    data-testid="button-upload-photo"
+                  >
+                    {currentPhotoUrl ? t("profile.changePhoto") : t("profile.uploadPhoto")}
+                  </button>
+                  <span style={{ fontSize: 10, color: v.mutedLight }}>{t("common.uploadHint")}</span>
+                  {currentPhotoUrl && (
+                    <button
+                      onClick={() => { setPhotoFile(null); setPhotoPreview(null); setRemovePhoto(true); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                      style={{ fontSize: 12, color: v.error, background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
+                      data-testid="button-remove-photo"
+                    >
+                      {t("profile.removePhoto")}
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-          </label>
-        </div>
 
-        <div style={cardStyle}>
-          <div style={sectionTitle}>About You</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <label style={labelStyle}>{t("profile.bio")}</label>
               <textarea
@@ -485,6 +482,7 @@ export default function MyTasteSettings() {
               />
               <p style={{ fontSize: 11, color: v.muted, textAlign: "right", marginTop: 2 }} data-testid="text-bio-counter">{bio.length}/400</p>
             </div>
+
             <div>
               <label style={labelStyle}>{t("profile.favoriteWhisky")}</label>
               <input
@@ -495,6 +493,7 @@ export default function MyTasteSettings() {
                 data-testid="input-favorite-whisky"
               />
             </div>
+
             <div>
               <label style={labelStyle}>{t("profile.goToDram")}</label>
               <input
@@ -508,68 +507,163 @@ export default function MyTasteSettings() {
           </div>
         </div>
 
+        {/* ── Section 3: Preferences ── */}
         <div style={cardStyle}>
-          <div style={sectionTitle}>{t("profile.preferredRegions")}</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }} data-testid="select-regions">
-            {REGIONS.map((region) => {
-              const active = preferredRegions.includes(region);
-              return (
-                <span
-                  key={region}
-                  onClick={() => toggleRegion(region)}
-                  style={{
-                    ...badgeBase,
-                    background: active ? alpha(v.accent, "20") : "transparent",
-                    color: active ? v.accent : v.muted,
-                    borderColor: active ? v.accent : v.border,
-                  }}
-                  data-testid={`badge-region-${region.toLowerCase()}`}
+          <div style={sectionHeadingStyle} data-testid="text-section-preferences">{t("profile.sectionPreferences")}</div>
+          <p style={sectionDescStyle}>{t("profile.sectionPreferencesDesc")}</p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <div>
+              <label style={labelStyle}>{t("profile.language")}</label>
+              <p style={{ fontSize: 12, color: v.muted, marginBottom: 8 }}>{t("profile.languageDesc")}</p>
+              <div style={{ display: "flex", gap: 8 }}>
+                {(["de", "en"] as const).map((lng) => {
+                  const active = i18n.language === lng;
+                  const label = lng === "de" ? "Deutsch" : "English";
+                  return (
+                    <button
+                      key={lng}
+                      onClick={() => {
+                        i18n.changeLanguage(lng);
+                        localStorage.setItem("i18nextLng", lng);
+                        toast({ title: t("profile.languageUpdated"), duration: 1500 });
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: "10px 12px",
+                        borderRadius: 10,
+                        border: active ? `2px solid ${v.accent}` : `1px solid ${v.border}`,
+                        background: active ? alpha(v.accent, "15") : v.card,
+                        color: active ? v.accent : v.text,
+                        fontSize: 13,
+                        fontWeight: active ? 600 : 400,
+                        cursor: "pointer",
+                        fontFamily: "system-ui, sans-serif",
+                        transition: "all 0.2s",
+                      }}
+                      data-testid={`button-language-${lng}`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label style={labelStyle}>{t("profile.theme", "Theme")}</label>
+              <p style={{ fontSize: 12, color: v.muted, marginBottom: 8 }}>{t("profile.themeDesc", "Choose your preferred appearance.")}</p>
+              <div style={{ display: "flex", gap: 8 }}>
+                {(["dark-warm", "light-warm"] as ThemeName[]).map((th) => {
+                  const active = getTheme() === th;
+                  const label = th === "dark-warm" ? "Dark Warm" : "Light Warm";
+                  return (
+                    <button
+                      key={th}
+                      onClick={() => {
+                        setTheme(th);
+                        toast({ title: t("profile.themeUpdated", "Theme updated"), duration: 1500 });
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: "10px 12px",
+                        borderRadius: 10,
+                        border: active ? `2px solid ${v.accent}` : `1px solid ${v.border}`,
+                        background: active ? alpha(v.accent, "15") : v.card,
+                        color: active ? v.accent : v.text,
+                        fontSize: 13,
+                        fontWeight: active ? 600 : 400,
+                        cursor: "pointer",
+                        fontFamily: "system-ui, sans-serif",
+                        transition: "all 0.2s",
+                      }}
+                      data-testid={`button-theme-${th}`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ borderTop: `1px solid ${v.border}`, paddingTop: 14 }}>
+              <label style={labelStyle}>{t("profile.preferredRegions")}</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }} data-testid="select-regions">
+                {REGIONS.map((region) => {
+                  const active = preferredRegions.includes(region);
+                  return (
+                    <span
+                      key={region}
+                      onClick={() => toggleRegion(region)}
+                      style={{
+                        ...badgeBase,
+                        background: active ? alpha(v.accent, "20") : "transparent",
+                        color: active ? v.accent : v.muted,
+                        borderColor: active ? v.accent : v.border,
+                      }}
+                      data-testid={`badge-region-${region.toLowerCase()}`}
+                    >
+                      {region}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>
+                <label style={labelStyle}>{t("profile.preferredPeatLevel")}</label>
+                <select
+                  value={preferredPeatLevel}
+                  onChange={(e) => setPreferredPeatLevel(e.target.value)}
+                  style={selectStyle}
+                  data-testid="select-peat-level"
                 >
-                  {region}
-                </span>
-              );
-            })}
+                  <option value="">{t("profile.selectPeat")}</option>
+                  {PEAT_LEVELS.map((level) => (
+                    <option key={level} value={level}>{level}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>{t("profile.preferredCaskInfluence")}</label>
+                <select
+                  value={preferredCaskInfluence}
+                  onChange={(e) => setPreferredCaskInfluence(e.target.value)}
+                  style={selectStyle}
+                  data-testid="select-cask-influence"
+                >
+                  <option value="">{t("profile.selectCask")}</option>
+                  {CASK_TYPES.map((cask) => (
+                    <option key={cask} value={cask}>{cask}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ borderTop: `1px solid ${v.border}`, paddingTop: 14 }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={newsletterOptIn}
+                  onChange={(e) => setNewsletterOptIn(e.target.checked)}
+                  style={{ marginTop: 2, accentColor: v.accent }}
+                  data-testid="checkbox-newsletter-profile"
+                />
+                <div>
+                  <div style={{ fontSize: 14, color: v.text }}>{t("profile.newsletterOptIn")}</div>
+                  <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>{t("profile.newsletterHint")}</div>
+                </div>
+              </label>
+            </div>
           </div>
         </div>
 
+        {/* ── Section 4: AI & Integrations ── */}
         <div style={cardStyle}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div>
-              <label style={labelStyle}>{t("profile.preferredPeatLevel")}</label>
-              <select
-                value={preferredPeatLevel}
-                onChange={(e) => setPreferredPeatLevel(e.target.value)}
-                style={selectStyle}
-                data-testid="select-peat-level"
-              >
-                <option value="">{t("profile.selectPeat")}</option>
-                {PEAT_LEVELS.map((level) => (
-                  <option key={level} value={level}>{level}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>{t("profile.preferredCaskInfluence")}</label>
-              <select
-                value={preferredCaskInfluence}
-                onChange={(e) => setPreferredCaskInfluence(e.target.value)}
-                style={selectStyle}
-                data-testid="select-cask-influence"
-              >
-                <option value="">{t("profile.selectCask")}</option>
-                {CASK_TYPES.map((cask) => (
-                  <option key={cask} value={cask}>{cask}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
+          <div style={sectionHeadingStyle} data-testid="text-section-ai">{t("profile.sectionAI")}</div>
+          <p style={sectionDescStyle}>{t("profile.sectionAIDesc")}</p>
 
-        <div style={cardStyle}>
-          <div style={sectionTitle}>AI Settings</div>
-          <p style={{ fontSize: 12, color: v.muted, marginBottom: 12 }}>
-            Add your own OpenAI API key to enable AI features like whisky identification, tasting notes, and more.
-          </p>
           <div>
             <label style={labelStyle}>OpenAI API Key</label>
             <div style={{ position: "relative" }}>
@@ -621,83 +715,7 @@ export default function MyTasteSettings() {
           </div>
         </div>
 
-        <div style={cardStyle}>
-          <div style={sectionTitle}>{t("profile.theme", "Theme")}</div>
-          <p style={{ fontSize: 12, color: v.muted, marginBottom: 12 }}>
-            {t("profile.themeDesc", "Choose your preferred appearance.")}
-          </p>
-          <div style={{ display: "flex", gap: 8 }}>
-            {(["dark-warm", "light-warm"] as ThemeName[]).map((th) => {
-              const active = getTheme() === th;
-              const label = th === "dark-warm" ? "Dark Warm" : "Light Warm";
-              return (
-                <button
-                  key={th}
-                  onClick={() => {
-                    setTheme(th);
-                    toast({ title: t("profile.themeUpdated", "Theme updated"), duration: 1500 });
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: active ? `2px solid ${v.accent}` : `1px solid ${v.border}`,
-                    background: active ? alpha(v.accent, "15") : v.card,
-                    color: active ? v.accent : v.text,
-                    fontSize: 13,
-                    fontWeight: active ? 600 : 400,
-                    cursor: "pointer",
-                    fontFamily: "system-ui, sans-serif",
-                    transition: "all 0.2s",
-                  }}
-                  data-testid={`button-theme-${th}`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div style={cardStyle}>
-          <div style={sectionTitle}>{t("profile.language")}</div>
-          <p style={{ fontSize: 12, color: v.muted, marginBottom: 12 }}>
-            {t("profile.languageDesc")}
-          </p>
-          <div style={{ display: "flex", gap: 8 }}>
-            {(["de", "en"] as const).map((lng) => {
-              const active = i18n.language === lng;
-              const label = lng === "de" ? "Deutsch" : "English";
-              return (
-                <button
-                  key={lng}
-                  onClick={() => {
-                    i18n.changeLanguage(lng);
-                    localStorage.setItem("i18nextLng", lng);
-                    toast({ title: t("profile.languageUpdated"), duration: 1500 });
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: active ? `2px solid ${v.accent}` : `1px solid ${v.border}`,
-                    background: active ? alpha(v.accent, "15") : v.card,
-                    color: active ? v.accent : v.text,
-                    fontSize: 13,
-                    fontWeight: active ? 600 : 400,
-                    cursor: "pointer",
-                    fontFamily: "system-ui, sans-serif",
-                    transition: "all 0.2s",
-                  }}
-                  data-testid={`button-language-${lng}`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
+        {/* ── Save Button ── */}
         <button
           onClick={() => saveMutation.mutate()}
           disabled={!canSave}
@@ -707,61 +725,99 @@ export default function MyTasteSettings() {
           {saveMutation.isPending ? t("profile.saving") : t("profile.save")}
         </button>
 
-        <div style={{ ...cardStyle, borderColor: alpha(v.error, "30") }}>
-          <div style={{ ...sectionTitle, color: v.error }}>{t("profile.dangerZone")}</div>
-          <p style={{ fontSize: 13, color: v.muted, marginBottom: 12 }}>
-            {t("profile.deleteAccountDesc")}
-          </p>
-          {!deleteConfirm ? (
-            <button
-              onClick={() => setDeleteConfirm(true)}
-              style={btnDanger}
-              data-testid="button-delete-account"
-            >
-              {t("profile.deleteAccount")}
-            </button>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <p style={{ fontSize: 13, color: v.error, margin: 0 }}>{t("account.closeAccountWarning")}</p>
-              <input
-                type="password"
-                inputMode="numeric"
-                maxLength={4}
-                placeholder={t("account.closeAccountPinPlaceholder")}
-                value={deletePin}
-                onChange={(e) => { setDeletePin(e.target.value.replace(/\D/g, "").slice(0, 4)); setDeletePinError(""); }}
-                style={{ ...inputStyle, borderColor: deletePinError ? v.error : v.inputBorder }}
-                data-testid="input-delete-pin"
-              />
-              {deletePinError && (
-                <p style={{ fontSize: 12, color: v.error, margin: 0 }} data-testid="text-delete-pin-error">{deletePinError}</p>
-              )}
-              <div style={{ display: "flex", gap: 10 }}>
+        {/* ── Section 5: Data & Privacy ── */}
+        <div style={cardStyle}>
+          <div style={sectionHeadingStyle} data-testid="text-section-data">{t("profile.sectionData")}</div>
+          <p style={sectionDescStyle}>{t("profile.sectionDataDesc")}</p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <button
+                onClick={() => navigate("/my-taste/downloads")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  width: "100%",
+                  padding: "12px 16px",
+                  borderRadius: 10,
+                  border: `1px solid ${v.border}`,
+                  background: v.elevated,
+                  color: v.text,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  fontFamily: "system-ui, sans-serif",
+                  transition: "background 0.2s",
+                  textAlign: "left",
+                }}
+                data-testid="button-export-data"
+              >
+                <span style={{ fontSize: 18 }}>📦</span>
+                <div>
+                  <div>{t("profile.exportDataLink")}</div>
+                  <div style={{ fontSize: 12, color: v.muted, fontWeight: 400, marginTop: 2 }}>{t("profile.exportDataDesc")}</div>
+                </div>
+              </button>
+            </div>
+
+            <div style={{ borderTop: `1px solid ${alpha(v.error, "30")}`, paddingTop: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: v.error, marginBottom: 8, fontFamily: "'Playfair Display', Georgia, serif" }}>{t("profile.dangerZone")}</div>
+              <p style={{ fontSize: 13, color: v.muted, marginBottom: 12 }}>
+                {t("profile.deleteAccountDesc")}
+              </p>
+              {!deleteConfirm ? (
                 <button
-                  onClick={() => { setDeleteConfirm(false); setDeletePin(""); setDeletePinError(""); }}
-                  style={{ ...btnDanger, flex: 1, color: v.muted, borderColor: v.border }}
-                  data-testid="button-delete-account-cancel"
-                >
-                  {t("account.cancel")}
-                </button>
-                <button
-                  onClick={() => deleteMutation.mutate(deletePin)}
-                  disabled={deleteMutation.isPending || deletePin.length !== 4}
-                  style={{
-                    ...btnDanger,
-                    flex: 1,
-                    background: v.error,
-                    color: "#fff",
-                    borderColor: v.error,
-                    opacity: deletePin.length === 4 ? 1 : 0.5,
-                  }}
-                  data-testid="button-delete-account-confirm"
+                  onClick={() => setDeleteConfirm(true)}
+                  style={btnDanger}
+                  data-testid="button-delete-account"
                 >
                   {t("profile.deleteAccount")}
                 </button>
-              </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <p style={{ fontSize: 13, color: v.error, margin: 0 }}>{t("account.closeAccountWarning")}</p>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={4}
+                    placeholder={t("account.closeAccountPinPlaceholder")}
+                    value={deletePin}
+                    onChange={(e) => { setDeletePin(e.target.value.replace(/\D/g, "").slice(0, 4)); setDeletePinError(""); }}
+                    style={{ ...inputStyle, borderColor: deletePinError ? v.error : v.inputBorder }}
+                    data-testid="input-delete-pin"
+                  />
+                  {deletePinError && (
+                    <p style={{ fontSize: 12, color: v.error, margin: 0 }} data-testid="text-delete-pin-error">{deletePinError}</p>
+                  )}
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button
+                      onClick={() => { setDeleteConfirm(false); setDeletePin(""); setDeletePinError(""); }}
+                      style={{ ...btnDanger, flex: 1, color: v.muted, borderColor: v.border }}
+                      data-testid="button-delete-account-cancel"
+                    >
+                      {t("account.cancel")}
+                    </button>
+                    <button
+                      onClick={() => deleteMutation.mutate(deletePin)}
+                      disabled={deleteMutation.isPending || deletePin.length !== 4}
+                      style={{
+                        ...btnDanger,
+                        flex: 1,
+                        background: v.error,
+                        color: "#fff",
+                        borderColor: v.error,
+                        opacity: deletePin.length === 4 ? 1 : 0.5,
+                      }}
+                      data-testid="button-delete-account-confirm"
+                    >
+                      {t("profile.deleteAccount")}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </SimpleShell>

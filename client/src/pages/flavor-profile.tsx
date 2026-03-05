@@ -11,6 +11,7 @@ import SimpleShell from "@/components/simple/simple-shell";
 import BackButton from "@/components/back-button";
 import { Link } from "wouter";
 import { c, cardStyle } from "@/lib/theme";
+import { v } from "@/lib/themeVars";
 
 interface BreakdownEntry { count: number; avgScore: number }
 interface RatedWhisky {
@@ -59,15 +60,15 @@ type SourceMode = "all" | "journal" | "all_incl_imported";
 type CompareMode = "none" | "friends" | "platform";
 
 const sCard: React.CSSProperties = {
-  background: c.card,
+  background: v.elevated,
   borderRadius: 12,
-  border: `1px solid ${c.border}40`,
+  border: `1px solid ${v.border}`,
   padding: 20,
 };
 
 const sLabel: React.CSSProperties = {
-  fontSize: 11,
-  color: `${c.muted}cc`,
+  fontSize: 13,
+  color: v.textSecondary,
   textTransform: "uppercase",
   letterSpacing: "0.08em",
   fontWeight: 600,
@@ -78,15 +79,16 @@ const sValue: React.CSSProperties = {
   fontSize: 18,
   fontFamily: "'Playfair Display', Georgia, serif",
   fontWeight: 700,
-  color: c.text,
+  color: v.text,
   margin: 0,
   marginTop: 4,
+  fontVariantNumeric: "tabular-nums",
 };
 
 const stabilityColors: Record<string, { color: string; bg: string; border: string }> = {
-  stable: { color: "#4ade80", bg: "rgba(74,222,128,0.1)", border: "rgba(74,222,128,0.3)" },
-  tendency: { color: "#fbbf24", bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.3)" },
-  preliminary: { color: "#94a3b8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.3)" },
+  stable: { color: v.deltaPositive, bg: v.pillBg, border: v.deltaPositive },
+  tendency: { color: v.accent, bg: v.pillBg, border: v.accent },
+  preliminary: { color: v.muted, bg: v.pillBg, border: v.muted },
 };
 
 function StabilityBadge({ level, t }: { level: string; t: any }) {
@@ -115,7 +117,7 @@ function InfoTooltip({ text }: { text: string }) {
         onClick={() => setShow(!show)}
         style={{
           background: "none", border: "none", cursor: "pointer", padding: 0,
-          color: `${c.muted}99`, display: "inline-flex", alignItems: "center",
+          color: v.muted, display: "inline-flex", alignItems: "center",
         }}
         data-testid="button-info-tooltip"
       >
@@ -129,8 +131,8 @@ function InfoTooltip({ text }: { text: string }) {
             exit={{ opacity: 0, y: 4 }}
             style={{
               position: "absolute", bottom: "100%", left: "50%", transform: "translateX(-50%)",
-              background: c.inputBg, border: `1px solid ${c.border}`, borderRadius: 8,
-              padding: "8px 12px", fontSize: 12, color: c.muted, whiteSpace: "nowrap",
+              background: v.elevated, border: `1px solid ${v.border}`, borderRadius: 8,
+              padding: "8px 12px", fontSize: 12, color: v.textSecondary, whiteSpace: "nowrap",
               zIndex: 10, marginBottom: 4, maxWidth: 260, lineHeight: 1.4,
             }}
           >
@@ -149,7 +151,7 @@ function SegmentedControl({ options, value, onChange }: {
 }) {
   return (
     <div style={{
-      display: "inline-flex", borderRadius: 10, border: `1px solid ${c.border}`,
+      display: "inline-flex", borderRadius: 10, border: `1px solid ${v.border}`,
       overflow: "hidden", fontSize: 13,
     }}>
       {options.map((opt, i) => (
@@ -158,10 +160,10 @@ function SegmentedControl({ options, value, onChange }: {
           onClick={() => onChange(opt.key)}
           style={{
             padding: "7px 14px",
-            background: value === opt.key ? c.accent : c.inputBg,
-            color: value === opt.key ? c.bg : c.muted,
+            background: value === opt.key ? v.pillBg : v.inputBg,
+            color: value === opt.key ? v.pillText : v.muted,
             border: "none",
-            borderRight: i < options.length - 1 ? `1px solid ${c.border}` : "none",
+            borderRight: i < options.length - 1 ? `1px solid ${v.border}` : "none",
             cursor: "pointer",
             fontWeight: value === opt.key ? 600 : 400,
             fontFamily: "system-ui, sans-serif",
@@ -483,15 +485,16 @@ export default function FlavorProfile() {
                         {dims.map(dim => {
                           const conf = whiskyProfile.confidence[dim];
                           if (!conf) return null;
-                          const confColor = conf.level === "high" ? "#4ade80" : conf.level === "medium" ? "#fbbf24" : "#94a3b8";
+                          const confColor = conf.level === "high" ? v.deltaPositive : conf.level === "medium" ? v.accent : v.muted;
                           return (
                             <span key={dim} style={{
                               display: "inline-flex", alignItems: "center", gap: 6,
-                              padding: "4px 10px", borderRadius: 8, fontSize: 12,
-                              background: `${confColor}15`, border: `1px solid ${confColor}30`, color: confColor,
+                              padding: "4px 10px", borderRadius: 8, fontSize: 13,
+                              background: v.pillBg, border: `1px solid ${confColor}`, color: confColor,
+                              fontVariantNumeric: "tabular-nums",
                             }} data-testid={`badge-confidence-${dim}`}>
-                              <span style={{ fontWeight: 600 }}>{dimLabels[dim]}</span>
-                              <span style={{ opacity: 0.8 }}>{conf.percent}% (n={conf.n})</span>
+                                <span style={{ fontWeight: 600 }}>{dimLabels[dim]}</span>
+                              <span style={{ opacity: 0.8, fontVariantNumeric: "tabular-nums" }}>{conf.percent}% (n={conf.n})</span>
                             </span>
                           );
                         })}
@@ -527,8 +530,9 @@ export default function FlavorProfile() {
                             <span style={{ color: `${c.muted}80` }}>vs</span>
                             <span style={{ fontFamily: "monospace", color: c.muted }}>{compVal.toFixed(1)}</span>
                             <span style={{
-                              fontFamily: "monospace", fontSize: 12, width: 56, textAlign: "right",
-                              color: diff > 0 ? "#4ade80" : diff < 0 ? "#ef4444" : c.muted,
+                              fontFamily: "monospace", fontSize: 13, width: 56, textAlign: "right",
+                              fontVariantNumeric: "tabular-nums",
+                              color: diff > 0 ? v.deltaPositive : diff < 0 ? v.deltaNegative : v.muted,
                             }}>
                               {diff > 0 ? `+${diff}` : diff.toString()}
                             </span>
@@ -545,21 +549,21 @@ export default function FlavorProfile() {
                 <div style={sCard} data-testid="section-rating-style">
                   <h2 style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, margin: 0, marginBottom: 12 }}>{t("flavorProfile.ratingStyleTitle")}</h2>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-                    <div style={{ textAlign: "center", padding: 14, background: c.inputBg, borderRadius: 8 }}>
-                      <div style={{ fontSize: 22, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.accent }} data-testid="text-mean-score">{whiskyProfile.ratingStyle.meanScore}</div>
-                      <div style={{ fontSize: 11, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>{t("flavorProfile.meanScore")}</div>
+                    <div style={{ textAlign: "center", padding: 14, background: v.elevated, borderRadius: 8 }}>
+                      <div style={{ fontSize: 22, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }} data-testid="text-mean-score">{whiskyProfile.ratingStyle.meanScore}</div>
+                      <div style={{ fontSize: 13, color: v.textSecondary, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>{t("flavorProfile.meanScore")}</div>
                     </div>
-                    <div style={{ textAlign: "center", padding: 14, background: c.inputBg, borderRadius: 8 }}>
-                      <div style={{ fontSize: 22, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.text }} data-testid="text-std-dev">{whiskyProfile.ratingStyle.stdDev}</div>
-                      <div style={{ fontSize: 11, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>{t("flavorProfile.stdDev")}</div>
+                    <div style={{ textAlign: "center", padding: 14, background: v.elevated, borderRadius: 8 }}>
+                      <div style={{ fontSize: 22, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: v.text, fontVariantNumeric: "tabular-nums" }} data-testid="text-std-dev">{whiskyProfile.ratingStyle.stdDev}</div>
+                      <div style={{ fontSize: 13, color: v.textSecondary, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>{t("flavorProfile.stdDev")}</div>
                     </div>
-                    <div style={{ textAlign: "center", padding: 14, background: c.inputBg, borderRadius: 8 }}>
-                      <div style={{ fontSize: 22, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.text }} data-testid="text-scale-range">{whiskyProfile.ratingStyle.scaleRange.min}–{whiskyProfile.ratingStyle.scaleRange.max}</div>
-                      <div style={{ fontSize: 11, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>{t("flavorProfile.scaleRange")}</div>
+                    <div style={{ textAlign: "center", padding: 14, background: v.elevated, borderRadius: 8 }}>
+                      <div style={{ fontSize: 22, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: v.text, fontVariantNumeric: "tabular-nums" }} data-testid="text-scale-range">{whiskyProfile.ratingStyle.scaleRange.min}–{whiskyProfile.ratingStyle.scaleRange.max}</div>
+                      <div style={{ fontSize: 13, color: v.textSecondary, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>{t("flavorProfile.scaleRange")}</div>
                     </div>
-                    <div style={{ textAlign: "center", padding: 14, background: c.inputBg, borderRadius: 8 }}>
-                      <div style={{ fontSize: 22, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: c.text }} data-testid="text-n-ratings">{whiskyProfile.ratingStyle.nRatings}</div>
-                      <div style={{ fontSize: 11, color: c.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>N</div>
+                    <div style={{ textAlign: "center", padding: 14, background: v.elevated, borderRadius: 8 }}>
+                      <div style={{ fontSize: 22, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, color: v.text, fontVariantNumeric: "tabular-nums" }} data-testid="text-n-ratings">{whiskyProfile.ratingStyle.nRatings}</div>
+                      <div style={{ fontSize: 13, color: v.textSecondary, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>N</div>
                     </div>
                   </div>
 
@@ -572,7 +576,8 @@ export default function FlavorProfile() {
                           <span style={{ color: c.muted }}>{t("caskProfile.avgDelta")}: </span>
                           <span style={{
                             fontFamily: "monospace", fontWeight: 600,
-                            color: whiskyProfile.ratingStyle.systematicDeviation.avgDelta > 0 ? "#4ade80" : whiskyProfile.ratingStyle.systematicDeviation.avgDelta < 0 ? "#ef4444" : c.text,
+                            color: whiskyProfile.ratingStyle.systematicDeviation.avgDelta > 0 ? v.deltaPositive : whiskyProfile.ratingStyle.systematicDeviation.avgDelta < 0 ? v.deltaNegative : v.text,
+                            fontVariantNumeric: "tabular-nums",
                           }}>
                             {whiskyProfile.ratingStyle.systematicDeviation.avgDelta > 0 ? "+" : ""}{whiskyProfile.ratingStyle.systematicDeviation.avgDelta.toFixed(1)}
                           </span>
@@ -671,23 +676,43 @@ function BreakdownBars({ label, entries, t }: {
   entries: [string, BreakdownEntry][];
   t: any;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const INITIAL_SHOW = 4;
+
   if (entries.length === 0) return null;
   const maxCount = Math.max(...entries.map(([, e]) => e.count), 1);
+  const visibleEntries = expanded ? entries : entries.slice(0, INITIAL_SHOW);
+  const hasMore = entries.length > INITIAL_SHOW;
+
   return (
     <div style={{ marginBottom: 16 }} data-testid={`breakdown-${label.toLowerCase()}`}>
-      <p style={{ fontSize: 13, fontWeight: 600, color: c.text, margin: "0 0 6px" }}>{label}</p>
+      <p style={{ fontSize: 13, fontWeight: 600, color: v.text, margin: "0 0 6px" }}>{label}</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {entries.map(([name, entry]) => (
+        {visibleEntries.map(([name, entry]) => (
           <div key={name} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-            <span style={{ width: 100, color: c.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0 }}>{name}</span>
-            <div style={{ flex: 1, height: 14, background: `${c.border}30`, borderRadius: 4, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${(entry.count / maxCount) * 100}%`, background: `${c.accent}80`, borderRadius: 4, transition: "width 0.3s" }} />
+            <span style={{ width: 100, color: v.textSecondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0 }}>{name}</span>
+            <div style={{ flex: 1, height: 14, background: v.border, borderRadius: 4, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${(entry.count / maxCount) * 100}%`, background: v.accent, opacity: 0.6, borderRadius: 4, transition: "width 0.3s" }} />
             </div>
-            <span style={{ fontFamily: "monospace", fontSize: 11, color: c.muted, width: 28, textAlign: "right", flexShrink: 0 }}>{entry.count}{t("caskProfile.count")}</span>
-            <span style={{ fontFamily: "monospace", fontSize: 11, color: c.accent, width: 32, textAlign: "right", flexShrink: 0 }}>{t("caskProfile.avg")} {(entry.avgScore || 0).toFixed(1)}</span>
+            <span style={{ fontFamily: "monospace", fontSize: 13, fontVariantNumeric: "tabular-nums", color: v.textSecondary, width: 28, textAlign: "right", flexShrink: 0 }}>{entry.count}{t("caskProfile.count")}</span>
+            <span style={{ fontFamily: "monospace", fontSize: 13, fontVariantNumeric: "tabular-nums", color: v.accent, width: 42, textAlign: "right", flexShrink: 0 }}>{t("caskProfile.avg")} {(entry.avgScore || 0).toFixed(1)}</span>
           </div>
         ))}
       </div>
+      {hasMore && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          style={{
+            background: "none", border: "none", cursor: "pointer", padding: "6px 0 0",
+            fontSize: 13, color: v.accent, fontFamily: "system-ui, sans-serif",
+            display: "flex", alignItems: "center", gap: 4,
+          }}
+          data-testid={`button-toggle-breakdown-${label.toLowerCase()}`}
+        >
+          {expanded ? <ChevronUp style={{ width: 14, height: 14 }} /> : <ChevronDown style={{ width: 14, height: 14 }} />}
+          {expanded ? t("caskProfile.showLess") : t("caskProfile.showMore")}
+        </button>
+      )}
     </div>
   );
 }
@@ -724,30 +749,30 @@ function WhiskyComparisonTable({ comparisons, t }: {
     <div style={{ overflowX: "auto" }} data-testid="whisky-comparison-table">
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
         <thead>
-          <tr style={{ borderBottom: `1px solid ${c.border}40` }}>
-            <th style={{ textAlign: "left", padding: "6px 8px", color: c.muted, fontWeight: 600 }}>Whisky</th>
-            <th style={{ textAlign: "right", padding: "6px 8px", color: c.muted, fontWeight: 600, whiteSpace: "nowrap" }}>{t("caskProfile.yourScore")}</th>
-            <th style={{ textAlign: "right", padding: "6px 8px", color: c.muted, fontWeight: 600, whiteSpace: "nowrap" }}>{t("caskProfile.platformMedian")}</th>
-            <th style={{ textAlign: "right", padding: "6px 8px", color: c.muted, fontWeight: 600 }}>{t("caskProfile.delta")}</th>
-            <th style={{ textAlign: "right", padding: "6px 8px", color: c.muted, fontWeight: 600 }}>N</th>
+          <tr style={{ borderBottom: `1px solid ${v.border}` }}>
+            <th style={{ textAlign: "left", padding: "8px 8px", color: v.textSecondary, fontWeight: 600, fontSize: 13 }}>Whisky</th>
+            <th style={{ textAlign: "right", padding: "8px 8px", color: v.textSecondary, fontWeight: 600, whiteSpace: "nowrap", fontSize: 13 }}>{t("caskProfile.yourScore")}</th>
+            <th style={{ textAlign: "right", padding: "8px 8px", color: v.textSecondary, fontWeight: 600, whiteSpace: "nowrap", fontSize: 13 }}>{t("caskProfile.platformMedian")}</th>
+            <th style={{ textAlign: "right", padding: "8px 8px", color: v.textSecondary, fontWeight: 600, fontSize: 13 }}>{t("caskProfile.delta")}</th>
+            <th style={{ textAlign: "right", padding: "8px 8px", color: v.textSecondary, fontWeight: 600, fontSize: 13 }}>N</th>
           </tr>
         </thead>
         <tbody>
           {comparisons.map((row) => (
-            <tr key={row.whiskyId} style={{ borderBottom: `1px solid ${c.border}20` }}>
-              <td style={{ padding: "6px 8px", color: c.text, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <tr key={row.whiskyId} style={{ borderBottom: `1px solid ${v.border}` }}>
+              <td style={{ padding: "8px 8px", color: v.text, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {row.whiskyName}
-                {row.distillery && <span style={{ color: `${c.muted}80`, marginLeft: 4, fontSize: 11 }}>({row.distillery})</span>}
+                {row.distillery && <span style={{ color: v.textSecondary, marginLeft: 4, fontSize: 11 }}>({row.distillery})</span>}
               </td>
-              <td style={{ textAlign: "right", padding: "6px 8px", fontFamily: "monospace", color: c.accent }}>{row.userScore.toFixed(1)}</td>
-              <td style={{ textAlign: "right", padding: "6px 8px", fontFamily: "monospace", color: c.muted }}>{row.platformMedian.toFixed(1)}</td>
+              <td style={{ textAlign: "right", padding: "8px 8px", fontFamily: "monospace", fontVariantNumeric: "tabular-nums", fontSize: 15, color: v.accent }}>{row.userScore.toFixed(1)}</td>
+              <td style={{ textAlign: "right", padding: "8px 8px", fontFamily: "monospace", fontVariantNumeric: "tabular-nums", fontSize: 15, color: v.muted }}>{row.platformMedian.toFixed(1)}</td>
               <td style={{
-                textAlign: "right", padding: "6px 8px", fontFamily: "monospace",
-                color: row.delta > 0 ? "#4ade80" : row.delta < 0 ? "#ef4444" : c.muted,
+                textAlign: "right", padding: "8px 8px", fontFamily: "monospace", fontVariantNumeric: "tabular-nums", fontSize: 15,
+                color: row.delta > 0 ? v.deltaPositive : row.delta < 0 ? v.deltaNegative : v.muted,
               }}>
                 {row.delta > 0 ? "+" : ""}{row.delta.toFixed(1)}
               </td>
-              <td style={{ textAlign: "right", padding: "6px 8px", fontFamily: "monospace", color: `${c.muted}80` }}>{row.platformN}</td>
+              <td style={{ textAlign: "right", padding: "8px 8px", fontFamily: "monospace", fontVariantNumeric: "tabular-nums", fontSize: 13, color: v.textSecondary }}>{row.platformN}</td>
             </tr>
           ))}
         </tbody>
@@ -796,17 +821,20 @@ function DriversSection({ topDrivers, lowDrivers, t }: {
   lowDrivers: Array<{ name: string; score: number }>;
   t: any;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const INITIAL_SHOW = 3;
+
   if (topDrivers.length === 0) {
     return (
       <div style={{ ...sCard, textAlign: "center", padding: "40px 20px" }} data-testid="section-drivers-empty">
-        <Wine style={{ width: 40, height: 40, color: `${c.muted}40`, margin: "0 auto 12px" }} />
-        <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 16, color: c.muted, margin: 0, marginBottom: 16 }}>
+        <Wine style={{ width: 40, height: 40, color: v.muted, opacity: 0.4, margin: "0 auto 12px" }} />
+        <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 16, color: v.muted, margin: 0, marginBottom: 16 }}>
           {t("caskProfile.emptyDrivers")}
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <Link href="/log-simple">
             <button style={{
-              padding: "10px 20px", borderRadius: 10, background: c.accent, color: c.bg,
+              padding: "10px 20px", borderRadius: 10, background: v.accent, color: v.bg,
               border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "system-ui, sans-serif",
             }} data-testid="button-log-solo">
               <GlassWater style={{ width: 14, height: 14, display: "inline", verticalAlign: "middle", marginRight: 6 }} />
@@ -815,8 +843,8 @@ function DriversSection({ topDrivers, lowDrivers, t }: {
           </Link>
           <Link href="/enter">
             <button style={{
-              padding: "10px 20px", borderRadius: 10, background: "transparent", color: c.accent,
-              border: `1px solid ${c.accent}`, fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "system-ui, sans-serif",
+              padding: "10px 20px", borderRadius: 10, background: "transparent", color: v.accent,
+              border: `1px solid ${v.accent}`, fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "system-ui, sans-serif",
             }} data-testid="button-join-tasting">
               {t("caskProfile.joinTasting")}
             </button>
@@ -826,6 +854,9 @@ function DriversSection({ topDrivers, lowDrivers, t }: {
     );
   }
 
+  const visibleDrivers = expanded ? topDrivers : topDrivers.slice(0, INITIAL_SHOW);
+  const hasMore = topDrivers.length > INITIAL_SHOW;
+
   return (
     <div style={sCard} data-testid="section-drivers">
       <h2 style={{ fontSize: 18, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, margin: 0, marginBottom: 16 }}>
@@ -833,30 +864,44 @@ function DriversSection({ topDrivers, lowDrivers, t }: {
       </h2>
 
       <div style={{ marginBottom: 16 }}>
-        <p style={{ fontSize: 13, color: c.accent, fontWeight: 600, margin: "0 0 8px" }}>{t("caskProfile.youOftenLike")}</p>
+        <p style={{ fontSize: 13, color: v.accent, fontWeight: 600, margin: "0 0 8px" }}>{t("caskProfile.youOftenLike")}</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {topDrivers.map((d, i) => {
+          {visibleDrivers.map((d, i) => {
             const Icon = d.icon;
             return (
               <div key={`${d.name}-${i}`} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
-                <Icon style={{ width: 14, height: 14, color: c.accent, flexShrink: 0 }} />
-                <span style={{ color: c.text, fontWeight: 500 }}>{d.name}</span>
-                <span style={{ fontSize: 12, color: `${c.muted}99` }}>({d.type})</span>
-                <span style={{ marginLeft: "auto", fontFamily: "monospace", fontSize: 13, color: c.accent }}>{d.score.toFixed(1)}</span>
+                <Icon style={{ width: 14, height: 14, color: v.accent, flexShrink: 0 }} />
+                <span style={{ color: v.text, fontWeight: 500 }}>{d.name}</span>
+                <span style={{ fontSize: 13, color: v.textSecondary }}>({d.type})</span>
+                <span style={{ marginLeft: "auto", fontFamily: "monospace", fontSize: 15, fontVariantNumeric: "tabular-nums", color: v.accent }}>{d.score.toFixed(1)}</span>
               </div>
             );
           })}
         </div>
+        {hasMore && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            style={{
+              background: "none", border: "none", cursor: "pointer", padding: "8px 0 0",
+              fontSize: 13, color: v.accent, fontFamily: "system-ui, sans-serif",
+              display: "flex", alignItems: "center", gap: 4,
+            }}
+            data-testid="button-toggle-drivers"
+          >
+            {expanded ? <ChevronUp style={{ width: 14, height: 14 }} /> : <ChevronDown style={{ width: 14, height: 14 }} />}
+            {expanded ? t("caskProfile.showLess") : t("caskProfile.showMore")}
+          </button>
+        )}
       </div>
 
       {lowDrivers.length > 0 && (
         <div>
-          <p style={{ fontSize: 13, color: `${c.muted}cc`, fontWeight: 600, margin: "0 0 8px" }}>{t("caskProfile.youOftenAvoid")}</p>
+          <p style={{ fontSize: 13, color: v.textSecondary, fontWeight: 600, margin: "0 0 8px" }}>{t("caskProfile.youOftenAvoid")}</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {lowDrivers.map((d, i) => (
               <div key={`low-${d.name}-${i}`} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
-                <span style={{ color: c.muted }}>{d.name}</span>
-                <span style={{ marginLeft: "auto", fontFamily: "monospace", fontSize: 13, color: c.muted }}>{d.score.toFixed(1)}</span>
+                <span style={{ color: v.muted }}>{d.name}</span>
+                <span style={{ marginLeft: "auto", fontFamily: "monospace", fontSize: 15, fontVariantNumeric: "tabular-nums", color: v.muted }}>{d.score.toFixed(1)}</span>
               </div>
             ))}
           </div>

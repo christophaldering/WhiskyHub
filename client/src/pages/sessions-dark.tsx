@@ -5,6 +5,7 @@ import SimpleShell from "@/components/simple/simple-shell";
 import { getSession } from "@/lib/session";
 import { useQuery } from "@tanstack/react-query";
 import { c, cardStyle } from "@/lib/theme";
+import { v, alpha } from "@/lib/themeVars";
 import { Eye, Play, BarChart3, Users, Calendar, MapPin, Wine, ChevronDown, List, CalendarDays } from "lucide-react";
 
 const TastingCalendar = lazy(() => import("@/pages/tasting-calendar"));
@@ -14,15 +15,15 @@ type StatusFilter = "all" | "draft" | "open" | "closed" | "archived";
 type TimeFilter = "30d" | "90d" | "1y" | "all";
 
 const statusBadgeColors: Record<string, { color: string; bg: string }> = {
-  draft: { color: "#888", bg: "#88888820" },
-  open: { color: c.success, bg: `${c.success}20` },
-  closed: { color: c.accent, bg: `${c.accent}20` },
-  reveal: { color: "#c084fc", bg: "#c084fc20" },
-  archived: { color: "#666", bg: "#66666620" },
+  draft: { color: v.muted, bg: alpha(v.muted, "20") },
+  open: { color: v.success, bg: alpha(v.success, "20") },
+  closed: { color: v.accent, bg: alpha(v.accent, "20") },
+  reveal: { color: v.accent, bg: alpha(v.accent, "12") },
+  archived: { color: v.mutedLight, bg: alpha(v.mutedLight, "20") },
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const colors = statusBadgeColors[status] || { color: c.muted, bg: `${c.muted}20` };
+  const colors = statusBadgeColors[status] || { color: v.muted, bg: alpha(v.muted, "20") };
   return (
     <span
       style={{
@@ -45,9 +46,9 @@ function StatusBadge({ status }: { status: string }) {
 const selectStyle: React.CSSProperties = {
   padding: "7px 30px 7px 12px",
   borderRadius: 10,
-  border: `1px solid ${c.border}`,
-  background: c.card,
-  color: c.text,
+  border: `1px solid ${v.border}`,
+  background: v.card,
+  color: v.text,
   fontSize: 13,
   fontWeight: 500,
   fontFamily: "system-ui, sans-serif",
@@ -69,7 +70,7 @@ function ViewToggle({ view, onChange, t }: { view: ViewMode; onChange: (v: ViewM
       style={{
         display: "inline-flex",
         borderRadius: 10,
-        border: `1px solid ${c.border}`,
+        border: `1px solid ${v.border}`,
         overflow: "hidden",
       }}
       data-testid="toggle-view-mode"
@@ -90,8 +91,8 @@ function ViewToggle({ view, onChange, t }: { view: ViewMode; onChange: (v: ViewM
             border: "none",
             cursor: "pointer",
             transition: "all 0.2s",
-            background: view === opt.value ? c.accent : "transparent",
-            color: view === opt.value ? "#1a1714" : c.muted,
+            background: view === opt.value ? v.pillBg : "transparent",
+            color: view === opt.value ? v.pillText : v.muted,
           }}
           data-testid={`button-view-${opt.value}`}
         >
