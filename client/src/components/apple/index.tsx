@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Link } from "wouter";
 import { ChevronRight, Loader2 } from "lucide-react";
 import { c, radius, space, shadow, typo } from "@/lib/theme";
+import { v, alpha } from "@/lib/themeVars";
 import { UI_SKIN } from "@/lib/config";
 
 const isApple = UI_SKIN === "apple_dark_warm";
@@ -77,11 +78,11 @@ export function AppleCard({
   style?: React.CSSProperties;
 }) {
   const style: React.CSSProperties = {
-    background: c.card,
+    background: v.card,
     borderRadius: radius.lg,
     padding: padding ?? `${space.lg}px`,
     boxShadow: shadow.card,
-    border: `1px solid ${c.border}20`,
+    border: "1px solid " + alpha(v.border, "20"),
     transition: "transform 0.15s ease, box-shadow 0.15s ease",
     cursor: onClick || href ? "pointer" : undefined,
     ...extraStyle,
@@ -127,10 +128,10 @@ export function AppleRow({
         alignItems: "center",
         gap: space.md,
         padding: `${space.md}px ${space.lg - 4}px`,
-        background: c.card,
+        background: v.card,
         borderRadius: radius.md,
         boxShadow: shadow.subtle,
-        border: `1px solid ${c.border}15`,
+        border: "1px solid " + alpha(v.border, "15"),
         cursor: href || onClick ? "pointer" : undefined,
         transition: "background 0.15s",
       }}
@@ -140,10 +141,10 @@ export function AppleRow({
       {Icon && (
         <div style={{
           width: 36, height: 36, borderRadius: radius.sm,
-          background: `${c.accent}10`, display: "flex",
+          background: alpha(v.accent, "10"), display: "flex",
           alignItems: "center", justifyContent: "center", flexShrink: 0,
         }}>
-          <Icon style={{ width: 18, height: 18, color: c.accent }} strokeWidth={1.8} />
+          <Icon style={{ width: 18, height: 18, color: v.accent }} strokeWidth={1.8} />
         </div>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -151,17 +152,17 @@ export function AppleRow({
         {description && <div style={{ ...typo.caption, marginTop: 2 }}>{description}</div>}
       </div>
       {value != null && (
-        <span style={{ ...typo.caption, fontFamily: "monospace", color: c.accent, fontWeight: 600 }}>{value}</span>
+        <span style={{ ...typo.caption, fontFamily: "monospace", color: v.accent, fontWeight: 600 }}>{value}</span>
       )}
       {badge != null && (
         <span style={{
-          fontSize: 11, fontWeight: 600, color: c.accent,
-          background: `${c.accent}12`, padding: "3px 10px",
+          fontSize: 11, fontWeight: 600, color: v.accent,
+          background: alpha(v.accent, "12"), padding: "3px 10px",
           borderRadius: radius.pill, flexShrink: 0,
         }}>{badge}</span>
       )}
       {(href || onClick) && chevron && (
-        <ChevronRight style={{ width: 16, height: 16, color: `${c.muted}60`, flexShrink: 0 }} strokeWidth={1.8} />
+        <ChevronRight style={{ width: 16, height: 16, color: alpha(v.muted, "60"), flexShrink: 0 }} strokeWidth={1.8} />
       )}
     </div>
   );
@@ -213,9 +214,9 @@ export function AppleButton({
   };
 
   const variants: Record<string, React.CSSProperties> = {
-    primary: { ...base, background: c.accent, color: c.bg },
-    secondary: { ...base, background: "transparent", color: c.text, border: `1px solid ${c.border}` },
-    ghost: { ...base, background: "transparent", color: c.accent, padding: "10px 16px" },
+    primary: { ...base, background: v.accent, color: v.bg },
+    secondary: { ...base, background: "transparent", color: v.text, border: `1px solid ${v.border}` },
+    ghost: { ...base, background: "transparent", color: v.accent, padding: "10px 16px" },
   };
 
   return (
@@ -257,10 +258,10 @@ export function AppleInput({
       placeholder={placeholder}
       style={{
         width: "100%",
-        background: c.inputBg,
-        border: `1px solid ${c.inputBorder}`,
+        background: v.inputBg,
+        border: `1px solid ${v.inputBorder}`,
         borderRadius: radius.md,
-        color: c.text,
+        color: v.text,
         padding: "13px 16px",
         fontSize: 15,
         outline: "none",
@@ -298,14 +299,14 @@ export function AppleEmptyState({
       {Icon && (
         <div style={{
           width: 52, height: 52, borderRadius: radius.lg,
-          background: `${c.accent}10`,
+          background: alpha(v.accent, "10"),
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-          <Icon style={{ width: 24, height: 24, color: c.mutedLight }} strokeWidth={1.6} />
+          <Icon style={{ width: 24, height: 24, color: v.mutedLight }} strokeWidth={1.6} />
         </div>
       )}
       <div>
-        <div style={{ ...typo.label, color: c.mutedLight }}>{title}</div>
+        <div style={{ ...typo.label, color: v.mutedLight }}>{title}</div>
         {hint && <div style={{ ...typo.caption, marginTop: space.xs }}>{hint}</div>}
       </div>
       {action}
@@ -322,7 +323,7 @@ export function AppleSkeleton({ lines = 3, height = 14 }: { lines?: number; heig
           style={{
             height,
             borderRadius: radius.sm,
-            background: `${c.border}60`,
+            background: alpha(v.border, "60"),
             width: i === lines - 1 ? "60%" : "100%",
             animation: "pulse 1.5s ease-in-out infinite",
           }}
@@ -351,8 +352,8 @@ export function AppleActionCard({
   const content = (
     <div
       style={{
-        background: c.card,
-        border: `1px solid ${c.border}20`,
+        background: v.card,
+        border: "1px solid " + alpha(v.border, "20"),
         borderRadius: radius.xl,
         padding: `${space.xl}px ${space.lg}px`,
         cursor: "pointer",
@@ -369,14 +370,14 @@ export function AppleActionCard({
     >
       <div style={{
         width: 52, height: 52, borderRadius: radius.lg,
-        background: `${c.accent}12`,
+        background: alpha(v.accent, "12"),
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        <Icon style={{ width: 26, height: 26, color: c.accent }} strokeWidth={1.6} />
+        <Icon style={{ width: 26, height: 26, color: v.accent }} strokeWidth={1.6} />
       </div>
       <div>
         <div style={{
-          fontSize: 17, fontWeight: 700, color: c.text,
+          fontSize: 17, fontWeight: 700, color: v.text,
           fontFamily: "'Playfair Display', serif", letterSpacing: "-0.01em",
         }}>{title}</div>
         {description && (

@@ -22,10 +22,10 @@ export const c = {
 
 export const inputStyle: React.CSSProperties = {
   width: "100%",
-  background: c.inputBg,
-  border: `1px solid ${c.inputBorder}`,
+  background: "var(--cs-input-bg)",
+  border: "1px solid var(--cs-input-border)",
   borderRadius: 12,
-  color: c.text,
+  color: "var(--cs-text)",
   padding: "12px 16px",
   fontSize: 15,
   outline: "none",
@@ -35,11 +35,11 @@ export const inputStyle: React.CSSProperties = {
 };
 
 export const cardStyle: React.CSSProperties = {
-  background: c.card,
-  border: `1px solid ${c.border}30`,
+  background: "var(--cs-card)",
+  border: "1px solid var(--cs-border)",
   borderRadius: 16,
   padding: 24,
-  boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08)",
+  boxShadow: "var(--cs-shadow)",
 };
 
 export const sectionHeadingStyle: React.CSSProperties = {
@@ -47,7 +47,7 @@ export const sectionHeadingStyle: React.CSSProperties = {
   fontWeight: 600,
   textTransform: "uppercase",
   letterSpacing: "0.1em",
-  color: c.mutedLight,
+  color: "var(--cs-muted-light)",
   marginBottom: 12,
 };
 
@@ -55,14 +55,14 @@ export const pageTitleStyle: React.CSSProperties = {
   fontFamily: "'Playfair Display', Georgia, serif",
   fontSize: 26,
   fontWeight: 700,
-  color: c.text,
+  color: "var(--cs-text)",
   margin: 0,
   letterSpacing: "-0.02em",
 };
 
 export const pageSubtitleStyle: React.CSSProperties = {
   fontSize: 14,
-  color: c.muted,
+  color: "var(--cs-muted)",
   marginTop: 6,
   lineHeight: 1.5,
 };
@@ -73,7 +73,7 @@ export const sliderCSS = `
     appearance: none;
     width: 100%;
     height: 6px;
-    background: ${c.border};
+    background: var(--cs-slider-track);
     border-radius: 3px;
     outline: none;
     cursor: pointer;
@@ -84,14 +84,14 @@ export const sliderCSS = `
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: ${c.accent};
-    border: 2px solid ${c.text};
+    background: var(--cs-slider-thumb);
+    border: 2px solid var(--cs-text);
     box-shadow: 0 1px 4px rgba(0,0,0,0.4);
     cursor: pointer;
   }
   input[type="range"].warm-slider::-moz-range-track {
     height: 6px;
-    background: ${c.border};
+    background: var(--cs-slider-track);
     border-radius: 3px;
     border: none;
   }
@@ -99,8 +99,8 @@ export const sliderCSS = `
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: ${c.accent};
-    border: 2px solid ${c.text};
+    background: var(--cs-slider-thumb);
+    border: 2px solid var(--cs-text);
     box-shadow: 0 1px 4px rgba(0,0,0,0.4);
     cursor: pointer;
   }
@@ -124,12 +124,12 @@ export const typo = {
     fontWeight: 700,
     letterSpacing: "-0.02em",
     lineHeight: 1.15,
-    color: c.text,
+    color: "var(--cs-text)",
   } as React.CSSProperties,
   pageSubtitle: {
     fontSize: 14,
     fontWeight: 400,
-    color: c.muted,
+    color: "var(--cs-muted)",
     lineHeight: 1.5,
     marginTop: 6,
   } as React.CSSProperties,
@@ -138,25 +138,25 @@ export const typo = {
     fontWeight: 700,
     textTransform: "uppercase" as const,
     letterSpacing: "0.1em",
-    color: c.mutedLight,
+    color: "var(--cs-muted-light)",
   } as React.CSSProperties,
   body: {
     fontSize: 15,
     fontWeight: 400,
     lineHeight: 1.55,
-    color: c.text,
+    color: "var(--cs-text)",
     fontFamily: "system-ui, -apple-system, sans-serif",
   } as React.CSSProperties,
   caption: {
     fontSize: 12,
     fontWeight: 400,
-    color: c.muted,
+    color: "var(--cs-muted)",
     lineHeight: 1.4,
   } as React.CSSProperties,
   label: {
     fontSize: 13,
     fontWeight: 600,
-    color: c.text,
+    color: "var(--cs-text)",
     fontFamily: "system-ui, -apple-system, sans-serif",
   } as React.CSSProperties,
 } as const;

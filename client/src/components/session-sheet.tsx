@@ -128,7 +128,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     padding: 12,
     fontSize: 14,
     fontWeight: 600,
-    background: c.accent,
+    background: v.accent,
     color: isDark ? v.bg : "#fff",
     border: "none",
     borderRadius: 10,
@@ -140,7 +140,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     background: "none",
     border: "none",
     cursor: "pointer",
-    color: c.mutedLight,
+    color: v.mutedLight,
     fontSize: 12,
     fontFamily: "system-ui, sans-serif",
     textAlign: "center" as const,
@@ -151,7 +151,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     background: "none",
     border: "none",
     cursor: "pointer",
-    color: c.accent,
+    color: v.accent,
     fontSize: 12,
     fontFamily: "system-ui, sans-serif",
     padding: 0,
@@ -172,7 +172,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
     background: "none",
     border: "none",
     cursor: "pointer",
-    color: c.mutedLight,
+    color: v.mutedLight,
     padding: 4,
     display: "flex",
     alignItems: "center",
@@ -395,11 +395,11 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
           alignItems: "center",
           gap: 10,
           padding: "12px 14px",
-          background: c.bg,
+          background: v.bg,
           borderRadius: 10,
           marginBottom: 10,
           textDecoration: "none",
-          color: c.text,
+          color: v.text,
           fontSize: 13,
           fontWeight: 500,
           fontFamily: "system-ui, sans-serif",
@@ -407,10 +407,10 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         }}
         data-testid="link-settings-profile"
       >
-        <Settings style={{ width: 16, height: 16, color: c.accent }} />
+        <Settings style={{ width: 16, height: 16, color: v.accent }} />
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: c.text }}>Settings & Profile</div>
-          <div style={{ fontSize: 11, color: c.mutedLight, marginTop: 1 }}>Photo, bio, preferences, API key</div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: v.text }}>Settings & Profile</div>
+          <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 1 }}>Photo, bio, preferences, API key</div>
         </div>
       </a>
       {useAppStore.getState().currentParticipant?.role === "admin" && (
@@ -422,11 +422,11 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
             alignItems: "center",
             gap: 10,
             padding: "12px 14px",
-            background: c.bg,
+            background: v.bg,
             borderRadius: 10,
             marginBottom: 10,
             textDecoration: "none",
-            color: c.text,
+            color: v.text,
             fontSize: 13,
             fontWeight: 500,
             fontFamily: "system-ui, sans-serif",
@@ -434,10 +434,10 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
           }}
           data-testid="link-admin-panel"
         >
-          <Shield style={{ width: 16, height: 16, color: c.accent }} />
+          <Shield style={{ width: 16, height: 16, color: v.accent }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: c.text }}>Admin Console</div>
-            <div style={{ fontSize: 11, color: c.mutedLight, marginTop: 1 }}>Platform management & tools</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: v.text }}>Admin Console</div>
+            <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 1 }}>Platform management & tools</div>
           </div>
         </a>
       )}
@@ -446,7 +446,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
           const labels = { name: "Change Name", email: "Change Email" };
           const isOpen = accountSection === key;
           return (
-            <div key={key} style={{ background: c.bg, borderRadius: 10, overflow: "hidden" }}>
+            <div key={key} style={{ background: v.bg, borderRadius: 10, overflow: "hidden" }}>
               <button
                 onClick={() => {
                   setAccountSection(isOpen ? "" : key);
@@ -463,7 +463,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  color: c.text,
+                  color: v.text,
                   fontSize: 13,
                   fontWeight: 500,
                   fontFamily: "system-ui, sans-serif",
@@ -471,10 +471,10 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
                 data-testid={`button-account-${key}`}
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Pencil style={{ width: 14, height: 14, color: c.mutedLight }} />
+                  <Pencil style={{ width: 14, height: 14, color: v.mutedLight }} />
                   {labels[key]}
                 </span>
-                {isOpen ? <ChevronUp style={{ width: 14, height: 14, color: c.mutedLight }} /> : <ChevronDown style={{ width: 14, height: 14, color: c.mutedLight }} />}
+                {isOpen ? <ChevronUp style={{ width: 14, height: 14, color: v.mutedLight }} /> : <ChevronDown style={{ width: 14, height: 14, color: v.mutedLight }} />}
               </button>
               {isOpen && (
                 <div style={{ padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -495,7 +495,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
                     </>
                   )}
 
-                  {editMsg && <p style={{ fontSize: 12, color: editMsg.includes("updated") ? c.success : c.error, margin: 0, textAlign: "center" }}>{editMsg}</p>}
+                  {editMsg && <p style={{ fontSize: 12, color: editMsg.includes("updated") ? v.success : v.error, margin: 0, textAlign: "center" }}>{editMsg}</p>}
                 </div>
               )}
             </div>
@@ -526,7 +526,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         <LogOut style={{ width: 16, height: 16 }} />
         Sign out
       </button>
-      <div style={{ fontSize: 11, color: c.mutedLight, textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 11, color: v.mutedLight, textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
         Signing out clears this session on this device.
         <br />Your saved tastings remain safe.
       </div>
@@ -565,7 +565,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         spellCheck={false}
       />
       {renderPasswordInput(siPin, setSiPin, showPassword, () => setShowPassword(!showPassword), "Password", "input-session-pin", undefined, "current-password")}
-      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: c.mutedLight, cursor: "pointer", padding: "2px 0" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: v.mutedLight, cursor: "pointer", padding: "2px 0" }}>
         <input
           type="checkbox"
           checked={siRemember}
@@ -581,14 +581,14 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         data-testid="button-session-signin-submit"
         style={{
           ...btnPrimary,
-          background: (lockoutSeconds > 0 || !siPin.trim() || !siEmail.trim()) ? c.muted : c.accent,
-          color: (lockoutSeconds > 0 || !siPin.trim() || !siEmail.trim()) ? c.mutedLight : (isDark ? v.bg : "#fff"),
+          background: (lockoutSeconds > 0 || !siPin.trim() || !siEmail.trim()) ? v.muted : v.accent,
+          color: (lockoutSeconds > 0 || !siPin.trim() || !siEmail.trim()) ? v.mutedLight : (isDark ? v.bg : "#fff"),
           cursor: siLoading ? "wait" : (lockoutSeconds > 0 || !siPin.trim() || !siEmail.trim()) ? "not-allowed" : "pointer",
         }}
       >
         {siLoading ? "Signing in…" : "Sign in"}
       </button>
-      {siError && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }}>{siError}</p>}
+      {siError && <p style={{ fontSize: 12, color: v.error, margin: 0, textAlign: "center" }}>{siError}</p>}
       <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 4 }}>
         <button type="button" onClick={() => { setView("forgot"); setSiError(""); }} style={linkStyle} data-testid="link-forgot-password">
           Forgot password?
@@ -606,8 +606,8 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
 
   const renderForgotPassword = () => (
     <form onSubmit={handleForgotSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }} autoComplete="off">
-      <p style={{ fontSize: 14, fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Reset Password</p>
-      <p style={{ fontSize: 12, color: c.mutedLight, margin: "0 0 8px" }}>Enter your email. We'll send a 6-digit code.</p>
+      <p style={{ fontSize: 14, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>Reset Password</p>
+      <p style={{ fontSize: 12, color: v.mutedLight, margin: "0 0 8px" }}>Enter your email. We'll send a 6-digit code.</p>
       <input
         type="email"
         placeholder="Email"
@@ -620,7 +620,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
       <button type="submit" disabled={siLoading || !siEmail.trim()} style={{ ...btnPrimary, opacity: !siEmail.trim() ? 0.5 : 1, cursor: siLoading ? "wait" : "pointer" }} data-testid="button-forgot-submit">
         {siLoading ? "Sending…" : "Send Code"}
       </button>
-      {siError && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }}>{siError}</p>}
+      {siError && <p style={{ fontSize: 12, color: v.error, margin: 0, textAlign: "center" }}>{siError}</p>}
       <button type="button" onClick={() => { setView("login"); setSiError(""); }} style={btnSecondary} data-testid="button-forgot-back">
         Back to login
       </button>
@@ -630,17 +630,17 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
   const renderResetPassword = () => (
     resetSuccess ? (
       <div style={{ textAlign: "center", padding: "12px 0" }}>
-        <Check style={{ width: 32, height: 32, color: c.success, margin: "0 auto 12px" }} />
-        <p style={{ fontSize: 14, fontWeight: 600, color: c.text }}>Password reset successfully!</p>
-        <p style={{ fontSize: 12, color: c.mutedLight, marginBottom: 16 }}>You can now sign in with your new password.</p>
+        <Check style={{ width: 32, height: 32, color: v.success, margin: "0 auto 12px" }} />
+        <p style={{ fontSize: 14, fontWeight: 600, color: v.text }}>Password reset successfully!</p>
+        <p style={{ fontSize: 12, color: v.mutedLight, marginBottom: 16 }}>You can now sign in with your new password.</p>
         <button onClick={() => { setView("login"); setResetSuccess(false); setSiError(""); }} style={btnPrimary} data-testid="button-reset-to-login">
           Sign in
         </button>
       </div>
     ) : (
       <form onSubmit={handleResetSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }} autoComplete="off">
-        <p style={{ fontSize: 14, fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Enter Reset Code</p>
-        <p style={{ fontSize: 12, color: c.mutedLight, margin: "0 0 8px" }}>Check your email for the 6-digit code.</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>Enter Reset Code</p>
+        <p style={{ fontSize: 12, color: v.mutedLight, margin: "0 0 8px" }}>Check your email for the 6-digit code.</p>
         <input
           type="text"
           placeholder="6-digit code"
@@ -656,7 +656,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         <button type="submit" disabled={siLoading || resetCode.length < 6 || !resetNewPw.trim()} style={{ ...btnPrimary, opacity: (resetCode.length < 6 || !resetNewPw.trim()) ? 0.5 : 1 }} data-testid="button-reset-submit">
           {siLoading ? "Resetting…" : "Reset Password"}
         </button>
-        {siError && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }}>{siError}</p>}
+        {siError && <p style={{ fontSize: 12, color: v.error, margin: 0, textAlign: "center" }}>{siError}</p>}
         <button type="button" onClick={() => { setView("forgot"); setSiError(""); }} style={btnSecondary} data-testid="button-reset-back">
           Resend code
         </button>
@@ -667,16 +667,16 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
   const renderRecoverEmail = () => (
     recoveredEmail ? (
       <div style={{ textAlign: "center", padding: "12px 0" }}>
-        <p style={{ fontSize: 14, fontWeight: 600, color: c.text, marginBottom: 8 }}>Your email address</p>
-        <p style={{ fontSize: 18, fontWeight: 700, color: c.accent, fontFamily: "monospace", letterSpacing: 1, marginBottom: 16 }}>{recoveredEmail}</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: v.text, marginBottom: 8 }}>Your email address</p>
+        <p style={{ fontSize: 18, fontWeight: 700, color: v.accent, fontFamily: "monospace", letterSpacing: 1, marginBottom: 16 }}>{recoveredEmail}</p>
         <button onClick={() => { setView("login"); setSiEmail(""); setRecoveredEmail(""); setSiError(""); }} style={btnPrimary} data-testid="button-recover-to-login">
           Sign in
         </button>
       </div>
     ) : (
       <form onSubmit={handleRecoverEmail} style={{ display: "flex", flexDirection: "column", gap: 8 }} autoComplete="off">
-        <p style={{ fontSize: 14, fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Recover Email</p>
-        <p style={{ fontSize: 12, color: c.mutedLight, margin: "0 0 8px" }}>Enter your name and password to reveal your email.</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>Recover Email</p>
+        <p style={{ fontSize: 12, color: v.mutedLight, margin: "0 0 8px" }}>Enter your name and password to reveal your email.</p>
         <input
           type="text"
           placeholder="Name"
@@ -690,7 +690,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         <button type="submit" disabled={siLoading || !recoverName.trim() || !recoverPw.trim()} style={{ ...btnPrimary, opacity: (!recoverName.trim() || !recoverPw.trim()) ? 0.5 : 1 }} data-testid="button-recover-submit">
           {siLoading ? "Looking up…" : "Recover Email"}
         </button>
-        {siError && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }}>{siError}</p>}
+        {siError && <p style={{ fontSize: 12, color: v.error, margin: 0, textAlign: "center" }}>{siError}</p>}
         <button type="button" onClick={() => { setView("login"); setSiError(""); }} style={btnSecondary} data-testid="button-recover-back">
           Back to login
         </button>
@@ -715,7 +715,7 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
         <KeyRound style={{ width: 16, height: 16 }} />
         Sign in
       </button>
-      <div style={{ fontSize: 11, color: c.mutedLight, textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 11, color: v.mutedLight, textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
         Sign in with your email and password.
       </div>
     </>
@@ -736,39 +736,39 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
           maxWidth: 420,
           maxHeight: "85vh",
           overflowY: "auto",
-          background: c.card,
+          background: v.card,
           borderBottomLeftRadius: 20,
           borderBottomRightRadius: 20,
           padding: "20px 20px 32px",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: 0 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: 0 }}>
             {view === "forgot" ? "Reset Password" : view === "reset" ? "Reset Password" : view === "recoverEmail" ? "Recover Email" : "Session"}
           </h3>
           <button
             onClick={onClose}
-            style={{ background: c.bg, border: "none", cursor: "pointer", padding: 6, borderRadius: "50%", color: c.mutedLight, display: "flex" }}
+            style={{ background: v.bg, border: "none", cursor: "pointer", padding: 6, borderRadius: "50%", color: v.mutedLight, display: "flex" }}
             data-testid="button-close-session-sheet"
           >
             <X style={{ width: 16, height: 16 }} />
           </button>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: c.bg, borderRadius: 12, marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: v.bg, borderRadius: 12, marginBottom: 12 }}>
           {session.signedIn ? (
-            <Unlock style={{ width: 18, height: 18, color: c.accent, flexShrink: 0 }} />
+            <Unlock style={{ width: 18, height: 18, color: v.accent, flexShrink: 0 }} />
           ) : (
-            <Lock style={{ width: 18, height: 18, color: c.mutedLight, flexShrink: 0 }} />
+            <Lock style={{ width: 18, height: 18, color: v.mutedLight, flexShrink: 0 }} />
           )}
           <div style={{ flex: 1 }}>
             {session.signedIn ? (
               <>
-                <div style={{ fontSize: 14, fontWeight: 500, color: c.text }}>{session.name || "Session active"}</div>
-                <div style={{ fontSize: 11, color: c.mutedLight }}>Signed in · {modeLabel}</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: v.text }}>{session.name || "Session active"}</div>
+                <div style={{ fontSize: 11, color: v.mutedLight }}>Signed in · {modeLabel}</div>
               </>
             ) : (
-              <div style={{ fontSize: 14, fontWeight: 500, color: c.text }}>Signed out</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: v.text }}>Signed out</div>
             )}
           </div>
         </div>

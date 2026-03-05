@@ -7,6 +7,7 @@ import { participantApi } from "@/lib/api";
 import { getSession, signIn, setSessionPid } from "@/lib/session";
 import SimpleShell from "@/components/simple/simple-shell";
 import { c, inputStyle, cardStyle, sliderCSS, sectionSpacing } from "@/lib/theme";
+import { v, alpha } from "@/lib/themeVars";
 
 const SpeechRecognitionAPI =
   typeof window !== "undefined"
@@ -18,8 +19,8 @@ const btnPrimary: React.CSSProperties = {
   padding: 12,
   fontSize: 15,
   fontWeight: 600,
-  background: c.accent,
-  color: c.bg,
+  background: v.accent,
+  color: v.bg,
   border: "none",
   borderRadius: 8,
   cursor: "pointer",
@@ -29,8 +30,8 @@ const btnPrimary: React.CSSProperties = {
 const btnOutline: React.CSSProperties = {
   ...btnPrimary,
   background: "transparent",
-  color: c.text,
-  border: `1px solid ${c.border}`,
+  color: v.text,
+  border: `1px solid ${v.border}`,
   fontWeight: 500,
 };
 
@@ -48,9 +49,9 @@ const chipStyle = (selected: boolean): React.CSSProperties => ({
   fontSize: 12,
   fontWeight: 500,
   borderRadius: 20,
-  border: `1px solid ${selected ? c.accent : c.border}`,
-  background: selected ? `${c.accent}18` : "transparent",
-  color: selected ? c.accent : c.mutedLight,
+  border: `1px solid ${selected ? v.accent : v.border}`,
+  background: selected ? alpha(v.accent, "18") : "transparent",
+  color: selected ? v.accent : v.mutedLight,
   cursor: "pointer",
   fontFamily: "system-ui, sans-serif",
   transition: "all 0.15s",
@@ -88,7 +89,7 @@ function DetailModule({
 }) {
   const attrs = ATTRIBUTES[dim];
   return (
-    <div style={{ borderBottom: `1px solid ${c.border}` }}>
+    <div style={{ borderBottom: `1px solid ${v.border}` }}>
       <button
         type="button"
         onClick={onToggleExpand}
@@ -106,16 +107,16 @@ function DetailModule({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{label}</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: v.text }}>{label}</span>
           {chips.length > 0 && (
-            <span style={{ fontSize: 10, color: c.accent, background: `${c.accent}15`, padding: "2px 8px", borderRadius: 10 }}>
+            <span style={{ fontSize: 10, color: v.accent, background: alpha(v.accent, "15"), padding: "2px 8px", borderRadius: 10 }}>
               {chips.length}
             </span>
           )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: c.accent, fontVariantNumeric: "tabular-nums", width: 24, textAlign: "right" }}>{score}</span>
-          <ChevronDown style={{ width: 16, height: 16, color: c.mutedLight, transition: "transform 0.2s", transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }} />
+          <span style={{ fontSize: 14, fontWeight: 600, color: v.accent, fontVariantNumeric: "tabular-nums", width: 24, textAlign: "right" }}>{score}</span>
+          <ChevronDown style={{ width: 16, height: 16, color: v.mutedLight, transition: "transform 0.2s", transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }} />
         </div>
       </button>
 
@@ -137,7 +138,7 @@ function DetailModule({
                 onChange={(e) => onScoreChange(Number(e.target.value))}
                 data-testid={`input-score-${dim}`}
                 className="warm-slider"
-                style={{ width: "100%", accentColor: c.accent, display: "block", marginBottom: 14 }}
+                style={{ width: "100%", accentColor: v.accent, display: "block", marginBottom: 14 }}
               />
 
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }} data-testid={`chips-${dim}`}>
@@ -166,7 +167,7 @@ function DetailModule({
                     resize: "vertical",
                     minHeight: 56,
                     paddingRight: hasSpeechAPI ? 40 : 14,
-                    borderColor: voiceListening ? "#c44" : c.border,
+                    borderColor: voiceListening ? "#c44" : v.border,
                     boxShadow: voiceListening ? "0 0 0 2px #c4444420" : "none",
                   }}
                 />
@@ -187,7 +188,7 @@ function DetailModule({
                       width: 28,
                       height: 28,
                       padding: 0,
-                      color: voiceListening ? "#fff" : c.mutedLight,
+                      color: voiceListening ? "#fff" : v.mutedLight,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -228,9 +229,9 @@ interface IdentifyResult {
 }
 
 function confidenceLabel(conf: number): { text: string; color: string } {
-  if (conf >= 0.78) return { text: "High", color: c.high };
-  if (conf >= 0.55) return { text: "Medium", color: c.medium };
-  return { text: "Low", color: c.low };
+  if (conf >= 0.78) return { text: "High", color: v.high };
+  if (conf >= 0.55) return { text: "Medium", color: v.medium };
+  return { text: "Low", color: v.low };
 }
 
 function SignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, pid?: string) => void; onCancel: () => void }) {
@@ -286,33 +287,33 @@ function SignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, pid?:
       exit={{ y: 80, opacity: 0 }}
       transition={{ duration: 0.18, ease: "easeOut" }}
       style={{
-        background: c.card,
-        border: `1px solid ${c.border}`,
+        background: v.card,
+        border: `1px solid ${v.border}`,
         borderRadius: 14,
         padding: "20px 20px 24px",
         marginTop: 12,
       }}
       data-testid="card-unlock"
     >
-      <h3 style={{ fontSize: 15, fontWeight: 600, color: c.text, margin: "0 0 12px" }}>Sign in to save</h3>
+      <h3 style={{ fontSize: 15, fontWeight: 600, color: v.text, margin: "0 0 12px" }}>Sign in to save</h3>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }} autoComplete="off">
         <input type="text" name="cs_trap_user" autoComplete="username" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
         <input type="password" name="cs_trap_pw" autoComplete="current-password" tabIndex={-1} style={{ position: "absolute", opacity: 0, height: 0, width: 0, overflow: "hidden", pointerEvents: "none" }} aria-hidden="true" />
         <input type="text" placeholder="Name (optional)" name="cs_display_name" value={name} onChange={(e) => setName(e.target.value)} style={{ ...inputStyle, fontSize: 13, padding: "10px 12px" }} data-testid="input-unlock-name" autoComplete="off" autoCapitalize="none" spellCheck={false} data-form-type="other" />
         <input type="password" placeholder="PIN" name="cs_password" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, fontSize: 13, padding: "10px 12px", letterSpacing: 3 }} data-testid="input-unlock-pin" autoComplete="new-password" autoCapitalize="none" spellCheck={false} data-form-type="other" />
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: c.mutedLight, cursor: "pointer", padding: "2px 0" }}>
-          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} style={{ accentColor: c.accent, width: 14, height: 14 }} data-testid="checkbox-remember-save" />
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: v.mutedLight, cursor: "pointer", padding: "2px 0" }}>
+          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} style={{ accentColor: v.accent, width: 14, height: 14 }} data-testid="checkbox-remember-save" />
           Stay signed in on this device
         </label>
         <button type="submit" disabled={loading || !pin.trim()} data-testid="button-unlock-submit" style={{ ...btnPrimary, fontSize: 14, padding: 12, opacity: !pin.trim() ? 0.5 : 1, cursor: loading ? "wait" : "pointer" }}>
           {loading ? "Signing in…" : "Sign in"}
         </button>
-        {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }}>{error}</p>}
+        {error && <p style={{ fontSize: 12, color: v.error, margin: 0, textAlign: "center" }}>{error}</p>}
       </form>
       <button
         type="button"
         onClick={onCancel}
-        style={{ background: "none", border: "none", cursor: "pointer", color: c.mutedLight, fontSize: 12, fontFamily: "system-ui, sans-serif", width: "100%", textAlign: "center", marginTop: 10 }}
+        style={{ background: "none", border: "none", cursor: "pointer", color: v.mutedLight, fontSize: 12, fontFamily: "system-ui, sans-serif", width: "100%", textAlign: "center", marginTop: 10 }}
         data-testid="button-unlock-cancel"
       >
         Cancel
@@ -323,7 +324,7 @@ function SignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, pid?:
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: c.mutedLight, marginBottom: 12 }}>
+    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: v.mutedLight, marginBottom: 12 }}>
       {children}
     </div>
   );
@@ -353,23 +354,23 @@ function IdentifyPicker({
         bottom: 0,
         left: 0,
         right: 0,
-        background: c.card,
-        borderTop: `1px solid ${c.border}`,
+        background: v.card,
+        borderTop: `1px solid ${v.border}`,
         borderRadius: "16px 16px 0 0",
         padding: "20px 20px 40px",
         zIndex: 100,
       }}
       data-testid="sheet-identify-picker"
     >
-      <div style={{ width: 40, height: 4, background: c.border, borderRadius: 2, margin: "0 auto 16px" }} />
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Identify a whisky</h3>
-      <p style={{ fontSize: 12, color: c.muted, margin: "0 0 16px" }}>Snap the label, a menu, or a shelf — we'll match it to our library.</p>
+      <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 16px" }} />
+      <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>Identify a whisky</h3>
+      <p style={{ fontSize: 12, color: v.muted, margin: "0 0 16px" }}>Snap the label, a menu, or a shelf — we'll match it to our library.</p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <button onClick={onTakePhoto} data-testid="button-take-photo" style={{ ...btnPrimary, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           <span style={{ fontSize: 18 }}>📷</span> Take a photo
         </button>
-        <button onClick={onScanBarcode} data-testid="button-scan-barcode" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, borderColor: c.accent, color: c.accent }}>
+        <button onClick={onScanBarcode} data-testid="button-scan-barcode" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, borderColor: v.accent, color: v.accent }}>
           <span style={{ fontSize: 18 }}>📊</span> Scan barcode
         </button>
         <button onClick={onUploadPhotos} data-testid="button-upload-photos" style={{ ...btnOutline, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
@@ -380,7 +381,7 @@ function IdentifyPicker({
         </button>
       </div>
 
-      <button onClick={onClose} data-testid="button-close-picker" style={{ ...btnOutline, marginTop: 12, color: c.muted, borderColor: c.muted, fontSize: 13 }}>
+      <button onClick={onClose} data-testid="button-close-picker" style={{ ...btnOutline, marginTop: 12, color: v.muted, borderColor: v.muted, fontSize: 13 }}>
         Cancel
       </button>
     </motion.div>
@@ -479,7 +480,7 @@ function BarcodeScannerSheet({
         left: 0,
         right: 0,
         top: 0,
-        background: c.bg,
+        background: v.bg,
         zIndex: 101,
         display: "flex",
         flexDirection: "column",
@@ -487,8 +488,8 @@ function BarcodeScannerSheet({
       data-testid="sheet-barcode-scanner"
     >
       <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: 0 }}>Barcode scannen</h3>
-        <button onClick={handleClose} data-testid="button-close-barcode" style={{ background: "none", border: "none", color: c.muted, cursor: "pointer", fontSize: 14, fontFamily: "system-ui" }}>
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: 0 }}>Barcode scannen</h3>
+        <button onClick={handleClose} data-testid="button-close-barcode" style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 14, fontFamily: "system-ui" }}>
           Abbrechen
         </button>
       </div>
@@ -499,7 +500,7 @@ function BarcodeScannerSheet({
             <div id="barcode-reader" ref={scannerRef} style={{ width: "100%", height: "100%" }} />
           </div>
           <div style={{ padding: "16px 20px 32px" }}>
-            <p style={{ fontSize: 12, color: c.muted, textAlign: "center", margin: "0 0 12px" }}>
+            <p style={{ fontSize: 12, color: v.muted, textAlign: "center", margin: "0 0 12px" }}>
               Halte die Kamera auf den Barcode der Flasche
             </p>
             <div style={{ display: "flex", gap: 8 }}>
@@ -533,21 +534,21 @@ function BarcodeScannerSheet({
 
       {status === "looking_up" && (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
-          <div style={{ width: 32, height: 32, border: `3px solid ${c.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <p style={{ fontSize: 15, fontWeight: 600, color: c.text }}>Whisky wird erkannt...</p>
-          <p style={{ fontSize: 12, color: c.muted }}>Barcode wird analysiert</p>
+          <div style={{ width: 32, height: 32, border: `3px solid ${v.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>Whisky wird erkannt...</p>
+          <p style={{ fontSize: 12, color: v.muted }}>Barcode wird analysiert</p>
         </div>
       )}
 
       {status === "not_found" && (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 20 }}>
           <p style={{ fontSize: 40, margin: 0 }}>🔍</p>
-          <p style={{ fontSize: 15, fontWeight: 600, color: c.text }}>Nicht erkannt</p>
-          <p style={{ fontSize: 12, color: c.muted, textAlign: "center" }}>Barcode {errorMsg} konnte keinem Whisky zugeordnet werden.</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>Nicht erkannt</p>
+          <p style={{ fontSize: 12, color: v.muted, textAlign: "center" }}>Barcode {errorMsg} konnte keinem Whisky zugeordnet werden.</p>
           <button onClick={() => { setStatus("scanning"); processedRef.current = false; }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }} data-testid="button-barcode-retry">
             Nochmal versuchen
           </button>
-          <button onClick={handleClose} style={{ background: "none", border: "none", color: c.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui", marginTop: 4 }}>
+          <button onClick={handleClose} style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui", marginTop: 4 }}>
             Abbrechen
           </button>
         </div>
@@ -556,8 +557,8 @@ function BarcodeScannerSheet({
       {status === "camera_error" && (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 20 }}>
           <p style={{ fontSize: 40, margin: 0 }}>📷</p>
-          <p style={{ fontSize: 15, fontWeight: 600, color: c.text }}>Kein Kamerazugriff</p>
-          <p style={{ fontSize: 12, color: c.muted, textAlign: "center" }}>Bitte erlaube den Kamerazugriff oder gib den Barcode manuell ein.</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>Kein Kamerazugriff</p>
+          <p style={{ fontSize: 12, color: v.muted, textAlign: "center" }}>Bitte erlaube den Kamerazugriff oder gib den Barcode manuell ein.</p>
           <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 320, marginTop: 8 }}>
             <input
               type="text"
@@ -576,7 +577,7 @@ function BarcodeScannerSheet({
               Suchen
             </button>
           </div>
-          <button onClick={handleClose} style={{ background: "none", border: "none", color: c.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui", marginTop: 8 }}>
+          <button onClick={handleClose} style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui", marginTop: 8 }}>
             Abbrechen
           </button>
         </div>
@@ -585,11 +586,11 @@ function BarcodeScannerSheet({
       {status === "error" && (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 20 }}>
           <p style={{ fontSize: 40, margin: 0 }}>⚠️</p>
-          <p style={{ fontSize: 15, fontWeight: 600, color: c.text }}>{errorMsg || "Fehler"}</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>{errorMsg || "Fehler"}</p>
           <button onClick={() => { setStatus("scanning"); processedRef.current = false; }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }}>
             Nochmal versuchen
           </button>
-          <button onClick={handleClose} style={{ background: "none", border: "none", color: c.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui", marginTop: 4 }}>
+          <button onClick={handleClose} style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui", marginTop: 4 }}>
             Abbrechen
           </button>
         </div>
@@ -620,17 +621,17 @@ function DescribeSheet({
         bottom: 0,
         left: 0,
         right: 0,
-        background: c.card,
-        borderTop: `1px solid ${c.border}`,
+        background: v.card,
+        borderTop: `1px solid ${v.border}`,
         borderRadius: "16px 16px 0 0",
         padding: "20px 20px 40px",
         zIndex: 100,
       }}
       data-testid="sheet-describe"
     >
-      <div style={{ width: 40, height: 4, background: c.border, borderRadius: 2, margin: "0 auto 16px" }} />
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Describe the bottle</h3>
-      <p style={{ fontSize: 12, color: c.muted, margin: "0 0 12px" }}>Type the name, distillery, or anything you see on the label.</p>
+      <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 16px" }} />
+      <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>Describe the bottle</h3>
+      <p style={{ fontSize: 12, color: v.muted, margin: "0 0 12px" }}>Type the name, distillery, or anything you see on the label.</p>
 
       <textarea
         value={query}
@@ -650,13 +651,13 @@ function DescribeSheet({
       >
         {loading ? (
           <>
-            <span style={{ display: "inline-block", width: 14, height: 14, border: `2px solid ${c.muted}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+            <span style={{ display: "inline-block", width: 14, height: 14, border: `2px solid ${v.muted}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
             Searching...
           </>
         ) : "Find matches"}
       </button>
 
-      <button onClick={onClose} data-testid="button-close-describe" style={{ ...btnOutline, marginTop: 8, color: c.muted, borderColor: c.muted, fontSize: 13 }}>
+      <button onClick={onClose} data-testid="button-close-describe" style={{ ...btnOutline, marginTop: 8, color: v.muted, borderColor: v.muted, fontSize: 13 }}>
         Cancel
       </button>
     </motion.div>
@@ -676,8 +677,8 @@ function CandidateRow({ cand, index, onSelect }: { cand: Candidate; index: numbe
         alignItems: "center",
         width: "100%",
         padding: "12px 14px",
-        background: index === 0 ? `${c.accent}15` : "transparent",
-        border: `1px solid ${index === 0 ? c.accent : c.border}`,
+        background: index === 0 ? alpha(v.accent, "15") : "transparent",
+        border: `1px solid ${index === 0 ? v.accent : v.border}`,
         borderRadius: 10,
         cursor: "pointer",
         textAlign: "left",
@@ -685,15 +686,15 @@ function CandidateRow({ cand, index, onSelect }: { cand: Candidate; index: numbe
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{cand.name}</div>
-        <div style={{ fontSize: 12, color: c.muted }}>{cand.distillery}</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: v.text }}>{cand.name}</div>
+        <div style={{ fontSize: 12, color: v.muted }}>{cand.distillery}</div>
         {isOnline && cand.externalUrl && (
           <a
             href={cand.externalUrl}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            style={{ fontSize: 10, color: c.accent, textDecoration: "underline" }}
+            style={{ fontSize: 10, color: v.accent, textDecoration: "underline" }}
             data-testid={`link-external-${index}`}
           >
             Open source
@@ -704,7 +705,7 @@ function CandidateRow({ cand, index, onSelect }: { cand: Candidate; index: numbe
         <span style={{ fontSize: 11, fontWeight: 600, color: isOnline ? "#6ba3d6" : badge.color, background: isOnline ? "#6ba3d620" : `${badge.color}20`, padding: "3px 8px", borderRadius: 6 }}>
           {isOnline ? "Online" : badge.text}
         </span>
-        <span style={{ fontSize: 9, color: c.muted }}>{cand.source === "local" ? "Library" : "External"}</span>
+        <span style={{ fontSize: 9, color: v.muted }}>{cand.source === "local" ? "Library" : "External"}</span>
       </div>
     </button>
   );
@@ -742,8 +743,8 @@ function CandidateSheet({
         bottom: 0,
         left: 0,
         right: 0,
-        background: c.card,
-        borderTop: `1px solid ${c.border}`,
+        background: v.card,
+        borderTop: `1px solid ${v.border}`,
         borderRadius: "16px 16px 0 0",
         padding: "20px 20px 40px",
         zIndex: 100,
@@ -752,28 +753,28 @@ function CandidateSheet({
       }}
       data-testid="sheet-candidates"
     >
-      <div style={{ width: 40, height: 4, background: c.border, borderRadius: 2, margin: "0 auto 16px" }} />
+      <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 16px" }} />
 
       <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
         {photoUrl && (
           <img
             src={photoUrl}
             alt="Scanned"
-            style={{ width: 56, height: 56, borderRadius: 8, objectFit: "cover", border: `1px solid ${c.border}` }}
+            style={{ width: 56, height: 56, borderRadius: 8, objectFit: "cover", border: `1px solid ${v.border}` }}
             data-testid="img-scan-preview"
           />
         )}
         <div>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: 0 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: 0 }}>
             {candidates.length > 0 ? "We found" : "Not sure"}
           </h3>
-          <p style={{ fontSize: 12, color: c.muted, margin: "2px 0 0" }}>
+          <p style={{ fontSize: 12, color: v.muted, margin: "2px 0 0" }}>
             {candidates.length > 0
               ? `${candidates.length} possible match${candidates.length > 1 ? "es" : ""}`
               : "We couldn't confidently identify this whisky."}
           </p>
           {isMenuMode && candidates.length > 0 && (
-            <p style={{ fontSize: 11, color: c.accent, margin: "4px 0 0", fontStyle: "italic" }} data-testid="text-menu-hint">
+            <p style={{ fontSize: 11, color: v.accent, margin: "4px 0 0", fontStyle: "italic" }} data-testid="text-menu-hint">
               Multiple items detected — pick one to log.
             </p>
           )}
@@ -798,7 +799,7 @@ function CandidateSheet({
         {showOnlineSearch && (
           <button onClick={onSearchOnline} data-testid="button-search-online" style={{ ...btnOutline, color: "#6ba3d6", borderColor: "#6ba3d640" }}>
             Search online (Beta)
-            <span style={{ display: "block", fontSize: 10, color: c.muted, fontWeight: 400, marginTop: 2 }}>may send text externally</span>
+            <span style={{ display: "block", fontSize: 10, color: v.muted, fontWeight: 400, marginTop: 2 }}>may send text externally</span>
           </button>
         )}
         <button onClick={onRetake} data-testid="button-retake" style={btnOutline}>Try again</button>
@@ -806,7 +807,7 @@ function CandidateSheet({
           <button onClick={onSearchManually} data-testid="button-search-manually" style={btnOutline}>Search manually</button>
         )}
         {candidates.length > 0 && (
-          <button onClick={onCreateUnknown} data-testid="button-add-manually-alt" style={{ ...btnOutline, color: c.mutedLight || c.muted, borderColor: `${c.muted}40` }}>Add manually</button>
+          <button onClick={onCreateUnknown} data-testid="button-add-manually-alt" style={{ ...btnOutline, color: v.mutedLight || v.muted, borderColor: alpha(v.muted, "40") }}>Add manually</button>
         )}
       </div>
     </motion.div>
@@ -885,8 +886,8 @@ function OnlineSearchSheet({
         bottom: 0,
         left: 0,
         right: 0,
-        background: c.card,
-        borderTop: `1px solid ${c.border}`,
+        background: v.card,
+        borderTop: `1px solid ${v.border}`,
         borderRadius: "16px 16px 0 0",
         padding: "20px 20px 40px",
         zIndex: 100,
@@ -895,36 +896,36 @@ function OnlineSearchSheet({
       }}
       data-testid="sheet-online-search"
     >
-      <div style={{ width: 40, height: 4, background: c.border, borderRadius: 2, margin: "0 auto 16px" }} />
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: "0 0 8px" }}>Search online (Beta)</h3>
-      <p style={{ fontSize: 12, color: c.muted, margin: "0 0 16px" }}>
-        Searching for: <span style={{ color: c.text }}>{query.substring(0, 60)}{query.length > 60 ? "..." : ""}</span>
+      <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 16px" }} />
+      <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: "0 0 8px" }}>Search online (Beta)</h3>
+      <p style={{ fontSize: 12, color: v.muted, margin: "0 0 16px" }}>
+        Searching for: <span style={{ color: v.text }}>{query.substring(0, 60)}{query.length > 60 ? "..." : ""}</span>
       </p>
 
       {!searched && (
         <>
           <button
             onClick={() => setShowPhotoToggle(!showPhotoToggle)}
-            style={{ background: "none", border: "none", color: c.muted, fontSize: 11, cursor: "pointer", padding: "4px 0", marginBottom: 8, fontFamily: "system-ui, sans-serif" }}
+            style={{ background: "none", border: "none", color: v.muted, fontSize: 11, cursor: "pointer", padding: "4px 0", marginBottom: 8, fontFamily: "system-ui, sans-serif" }}
             data-testid="button-toggle-photo-option"
           >
             {showPhotoToggle ? "Hide options" : "Advanced options"}
           </button>
 
           {showPhotoToggle && photoUrl && (
-            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: c.muted, marginBottom: 4, cursor: "pointer" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: v.muted, marginBottom: 4, cursor: "pointer" }}>
               <input
                 type="checkbox"
                 checked={sendPhoto}
                 onChange={(e) => setSendPhoto(e.target.checked)}
                 data-testid="checkbox-send-photo"
-                style={{ accentColor: c.accent }}
+                style={{ accentColor: v.accent }}
               />
               Also send photo (better results)
             </label>
           )}
           {showPhotoToggle && sendPhoto && (
-            <p style={{ fontSize: 10, color: c.muted, margin: "0 0 12px", fontStyle: "italic" }}>Sends the image to a third-party API.</p>
+            <p style={{ fontSize: 10, color: v.muted, margin: "0 0 12px", fontStyle: "italic" }}>Sends the image to a third-party API.</p>
           )}
 
           <button
@@ -952,10 +953,10 @@ function OnlineSearchSheet({
       )}
 
       {searched && errorMsg && (
-        <p style={{ fontSize: 13, color: c.muted, textAlign: "center", margin: "12px 0" }}>{errorMsg}</p>
+        <p style={{ fontSize: 13, color: v.muted, textAlign: "center", margin: "12px 0" }}>{errorMsg}</p>
       )}
 
-      <button onClick={onClose} data-testid="button-close-online" style={{ ...btnOutline, marginTop: searched ? 8 : 12, color: c.muted, borderColor: c.muted, fontSize: 13 }}>
+      <button onClick={onClose} data-testid="button-close-online" style={{ ...btnOutline, marginTop: searched ? 8 : 12, color: v.muted, borderColor: v.muted, fontSize: 13 }}>
         {searched ? "Back" : "Cancel"}
       </button>
     </motion.div>
@@ -1493,11 +1494,11 @@ export default function SimpleLogPage() {
         {saved ? (
           <div style={{ textAlign: "center", padding: "40px 0 20px" }} data-testid="card-log-success">
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", background: `${c.success}20`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                <span style={{ fontSize: 24, color: c.success }}>✓</span>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: alpha(v.success, "20"), display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                <span style={{ fontSize: 24, color: v.success }}>✓</span>
               </div>
-              <h2 style={{ fontSize: 18, fontWeight: 600, color: c.text, margin: "0 0 4px" }}>Saved.</h2>
-              <p style={{ fontSize: 14, color: c.mutedLight, margin: "0 0 28px" }}>{whiskyName}</p>
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: v.text, margin: "0 0 4px" }}>Saved.</h2>
+              <p style={{ fontSize: 14, color: v.mutedLight, margin: "0 0 28px" }}>{whiskyName}</p>
             </motion.div>
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={handleReset} data-testid="button-log-another" style={{ ...btnPrimary, flex: 1 }}>Log another</button>
@@ -1506,7 +1507,7 @@ export default function SimpleLogPage() {
               </Link>
             </div>
             {lastResult && lastResult.candidates.length > 0 && (lastResult.debug?.detectedMode === "menu" || isMenuMode) && (
-              <button onClick={() => { handleReset(); setTimeout(handleLogAnother, 100); }} data-testid="button-log-from-menu" style={{ ...btnOutline, marginTop: 10, fontSize: 13, color: c.accent, borderColor: c.accent }}>
+              <button onClick={() => { handleReset(); setTimeout(handleLogAnother, 100); }} data-testid="button-log-from-menu" style={{ ...btnOutline, marginTop: 10, fontSize: 13, color: v.accent, borderColor: v.accent }}>
                 Log another from same menu
               </button>
             )}
@@ -1515,7 +1516,7 @@ export default function SimpleLogPage() {
           <form onSubmit={handleSave} data-testid="form-log">
 
             <div style={{ marginBottom: 28, textAlign: "center" }} data-testid="section-intro">
-              <h1 style={{ fontSize: 24, fontWeight: 700, color: c.text, margin: 0, fontFamily: "'Playfair Display', serif" }}>Log</h1>
+              <h1 style={{ fontSize: 24, fontWeight: 700, color: v.text, margin: 0, fontFamily: "'Playfair Display', serif" }}>Log</h1>
             </div>
 
             {/* ── SECTION 1: IDENTIFY ── */}
@@ -1531,8 +1532,8 @@ export default function SimpleLogPage() {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.18 }}
                   style={{
-                    background: c.card,
-                    border: `1px solid ${c.border}`,
+                    background: v.card,
+                    border: `1px solid ${v.border}`,
                     borderRadius: 12,
                     padding: "16px 18px",
                     display: "flex",
@@ -1542,12 +1543,12 @@ export default function SimpleLogPage() {
                   data-testid="card-whisky-selected"
                 >
                   {photoUrl && (
-                    <img src={photoUrl} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover", border: `1px solid ${c.border}`, flexShrink: 0 }} data-testid="img-whisky-thumb" />
+                    <img src={photoUrl} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover", border: `1px solid ${v.border}`, flexShrink: 0 }} data-testid="img-whisky-thumb" />
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 18, fontWeight: 600, color: c.text, lineHeight: 1.2 }} data-testid="text-whisky-name">{whiskyName}</div>
+                    <div style={{ fontSize: 18, fontWeight: 600, color: v.text, lineHeight: 1.2 }} data-testid="text-whisky-name">{whiskyName}</div>
                     {distillery && (
-                      <div style={{ fontSize: 13, color: c.mutedLight, marginTop: 2 }} data-testid="text-whisky-meta">
+                      <div style={{ fontSize: 13, color: v.mutedLight, marginTop: 2 }} data-testid="text-whisky-meta">
                         {distillery}
                         {selectedCandidate && unknownAbv ? ` · ${unknownAbv}` : ""}
                       </div>
@@ -1558,9 +1559,9 @@ export default function SimpleLogPage() {
                       const d = hist.date ? new Date(hist.date) : null;
                       const dateStr = d ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "2-digit" }) : "";
                       return (
-                        <div style={{ fontSize: 11, color: c.mutedLight, marginTop: 4, display: "flex", alignItems: "center", gap: 6 }} data-testid="text-whisky-history">
+                        <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 4, display: "flex", alignItems: "center", gap: 6 }} data-testid="text-whisky-history">
                           <span>Logged before · {hist.score} pts{dateStr ? ` · ${dateStr}` : ""}</span>
-                          <Link href="/my-taste" style={{ color: c.accent, fontSize: 11, textDecoration: "underline", textDecorationColor: `${c.accent}40`, textUnderlineOffset: 2 }} data-testid="link-compare">Compare</Link>
+                          <Link href="/my-taste" style={{ color: v.accent, fontSize: 11, textDecoration: "underline", textDecorationColor: alpha(v.accent, "40"), textUnderlineOffset: 2 }} data-testid="link-compare">Compare</Link>
                         </div>
                       );
                     })()}
@@ -1568,7 +1569,7 @@ export default function SimpleLogPage() {
                   <button
                     type="button"
                     onClick={() => { setWhiskyName(""); setDistillery(""); setSelectedCandidate(null); }}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: c.mutedLight, fontSize: 12, fontFamily: "system-ui, sans-serif", padding: "2px 0", flexShrink: 0, textDecoration: "underline", textDecorationColor: `${c.mutedLight}40`, textUnderlineOffset: 2 }}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: v.mutedLight, fontSize: 12, fontFamily: "system-ui, sans-serif", padding: "2px 0", flexShrink: 0, textDecoration: "underline", textDecorationColor: alpha(v.mutedLight, "40"), textUnderlineOffset: 2 }}
                     data-testid="button-change-whisky"
                   >
                     Change
@@ -1605,7 +1606,7 @@ export default function SimpleLogPage() {
                         background: "none",
                         border: "none",
                         cursor: scanning ? "wait" : "pointer",
-                        color: scanning ? c.muted : c.mutedLight,
+                        color: scanning ? v.muted : v.mutedLight,
                         padding: 6,
                         borderRadius: 6,
                         display: "flex",
@@ -1613,7 +1614,7 @@ export default function SimpleLogPage() {
                       }}
                     >
                       {scanning
-                        ? <span style={{ display: "inline-block", width: 18, height: 18, border: `2px solid ${c.muted}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                        ? <span style={{ display: "inline-block", width: 18, height: 18, border: `2px solid ${v.muted}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                         : <Camera style={{ width: 20, height: 20 }} />
                       }
                     </button>
@@ -1624,7 +1625,7 @@ export default function SimpleLogPage() {
                       type="button"
                       onClick={() => { setShowManual(true); setSelectedCandidate(null); }}
                       data-testid="button-add-manually"
-                      style={{ background: "none", border: "none", cursor: "pointer", color: c.mutedLight, fontSize: 11, fontFamily: "system-ui, sans-serif", padding: "8px 0 0", textDecoration: "underline", textDecorationColor: `${c.mutedLight}40`, textUnderlineOffset: 2 }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: v.mutedLight, fontSize: 11, fontFamily: "system-ui, sans-serif", padding: "8px 0 0", textDecoration: "underline", textDecorationColor: alpha(v.mutedLight, "40"), textUnderlineOffset: 2 }}
                     >
                       Add details
                     </button>
@@ -1641,34 +1642,34 @@ export default function SimpleLogPage() {
                       data-testid="section-manual"
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 500, color: c.accent, background: `${c.accent}18`, padding: "3px 10px", borderRadius: 20 }} data-testid="chip-manual-entry">
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 500, color: v.accent, background: alpha(v.accent, "18"), padding: "3px 10px", borderRadius: 20 }} data-testid="chip-manual-entry">
                           <span style={{ fontSize: 9 }}>✎</span> Manual entry
                         </span>
-                        <button type="button" onClick={() => setShowManual(false)} style={{ background: "none", border: "none", cursor: "pointer", color: c.muted, fontSize: 11, fontFamily: "system-ui, sans-serif", padding: 4 }} data-testid="button-hide-manual">
+                        <button type="button" onClick={() => setShowManual(false)} style={{ background: "none", border: "none", cursor: "pointer", color: v.muted, fontSize: 11, fontFamily: "system-ui, sans-serif", padding: 4 }} data-testid="button-hide-manual">
                           Collapse
                         </button>
                       </div>
                       <div>
-                        <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Distillery</label>
+                        <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 2 }}>Distillery</label>
                         <input type="text" value={distillery} onChange={(e) => setDistillery(e.target.value)} style={inputStyle} data-testid="input-manual-distillery" autoComplete="off" />
                       </div>
                       <div style={{ display: "flex", gap: 8 }}>
                         <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Age</label>
+                          <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 2 }}>Age</label>
                           <input type="text" value={unknownAge} onChange={(e) => setUnknownAge(e.target.value)} style={inputStyle} data-testid="input-manual-age" placeholder="e.g. 12" autoComplete="off" />
                         </div>
                         <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>ABV</label>
+                          <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 2 }}>ABV</label>
                           <input type="text" value={unknownAbv} onChange={(e) => setUnknownAbv(e.target.value)} style={inputStyle} data-testid="input-manual-abv" placeholder="e.g. 46%" autoComplete="off" />
                         </div>
                       </div>
                       <div>
-                        <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Cask type</label>
+                        <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 2 }}>Cask type</label>
                         <input type="text" value={unknownCask} onChange={(e) => setUnknownCask(e.target.value)} style={inputStyle} data-testid="input-manual-cask" placeholder="e.g. Sherry" autoComplete="off" />
                       </div>
                       <div style={{ display: "flex", gap: 8 }}>
                         <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Whiskybase ID</label>
+                          <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 2 }}>Whiskybase ID</label>
                           <div style={{ position: "relative" }}>
                             <input
                               type="text"
@@ -1694,7 +1695,7 @@ export default function SimpleLogPage() {
                                 border: "none",
                                 cursor: unknownWbId.trim() && !wbLookupLoading ? "pointer" : "default",
                                 padding: 6,
-                                color: wbLookupLoading ? c.accent : c.muted,
+                                color: wbLookupLoading ? v.accent : v.muted,
                                 opacity: unknownWbId.trim() ? 1 : 0.3,
                                 transition: "color 0.2s",
                               }}
@@ -1705,7 +1706,7 @@ export default function SimpleLogPage() {
                             </button>
                           </div>
                           {wbLookupResult && (
-                            <p style={{ fontSize: 10, margin: "4px 0 0", color: wbLookupResult === "collection" || wbLookupResult === "ai" ? c.success : c.error }}>
+                            <p style={{ fontSize: 10, margin: "4px 0 0", color: wbLookupResult === "collection" || wbLookupResult === "ai" ? v.success : v.error }}>
                               {wbLookupResult === "collection" ? "✓ Aus deiner Sammlung" :
                                wbLookupResult === "ai" ? "✓ Per AI erkannt" :
                                wbLookupResult === "not_found" ? "Nicht gefunden" :
@@ -1716,7 +1717,7 @@ export default function SimpleLogPage() {
                           )}
                         </div>
                         <div style={{ flex: 1 }}>
-                          <label style={{ fontSize: 11, color: c.muted, display: "block", marginBottom: 2 }}>Price</label>
+                          <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 2 }}>Price</label>
                           <input type="text" value={unknownPrice} onChange={(e) => setUnknownPrice(e.target.value)} style={inputStyle} data-testid="input-manual-price" placeholder="e.g. €65" autoComplete="off" />
                         </div>
                       </div>
@@ -1738,11 +1739,11 @@ export default function SimpleLogPage() {
                 data-testid="button-toggle-detailed"
                 style={{
                   width: "100%",
-                  background: showDetailed ? `${c.accent}10` : c.inputBg,
-                  border: `1px solid ${showDetailed ? c.accent : c.inputBorder}`,
+                  background: showDetailed ? alpha(v.accent, "10") : v.inputBg,
+                  border: `1px solid ${showDetailed ? v.accent : v.inputBorder}`,
                   borderRadius: 12,
                   cursor: "pointer",
-                  color: c.text,
+                  color: v.text,
                   fontSize: 13,
                   fontFamily: "system-ui, sans-serif",
                   padding: "10px 14px",
@@ -1755,7 +1756,7 @@ export default function SimpleLogPage() {
               >
                 <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
                   <span style={{ fontWeight: 600, fontSize: 13 }}>Rate in detail</span>
-                  <span style={{ fontSize: 16, color: c.accent, transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)" }}>▾</span>
+                  <span style={{ fontSize: 16, color: v.accent, transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)" }}>▾</span>
                 </span>
                 {!showDetailed && (
                   <>
@@ -1764,7 +1765,7 @@ export default function SimpleLogPage() {
                         const key = dim.toLowerCase() as DimKey;
                         const chipCount = detailChips[key].length;
                         return (
-                          <span key={dim} style={{ fontSize: 10, color: chipCount > 0 ? c.accent : c.mutedLight, background: chipCount > 0 ? `${c.accent}15` : c.border, padding: "2px 8px", borderRadius: 20, letterSpacing: 0.3 }}>
+                          <span key={dim} style={{ fontSize: 10, color: chipCount > 0 ? v.accent : v.mutedLight, background: chipCount > 0 ? alpha(v.accent, "15") : v.border, padding: "2px 8px", borderRadius: 20, letterSpacing: 0.3 }}>
                             {dim}{chipCount > 0 ? ` (${chipCount})` : ""}
                           </span>
                         );
@@ -1810,16 +1811,16 @@ export default function SimpleLogPage() {
               )}
               </AnimatePresence>
 
-              <div style={{ marginTop: showDetailed ? 8 : 16, borderTop: detailTouched ? `1px solid ${c.border}` : "none", paddingTop: detailTouched ? 14 : 0 }}>
+              <div style={{ marginTop: showDetailed ? 8 : 16, borderTop: detailTouched ? `1px solid ${v.border}` : "none", paddingTop: detailTouched ? 14 : 0 }}>
                 {detailTouched && (
                   <div style={{ marginBottom: 14 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: c.mutedLight }}>Suggested Score</span>
-                      <span style={{ fontSize: 22, fontWeight: 700, color: c.mutedLight, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif" }} data-testid="text-suggested-score">
+                      <span style={{ fontSize: 12, fontWeight: 600, color: v.mutedLight }}>Suggested Score</span>
+                      <span style={{ fontSize: 22, fontWeight: 700, color: v.mutedLight, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif" }} data-testid="text-suggested-score">
                         {calcOverall(detailedScores)}
                       </span>
                     </div>
-                    <div style={{ fontSize: 11, color: c.mutedLight, marginTop: 2 }} data-testid="text-score-suggestion">
+                    <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 2 }} data-testid="text-score-suggestion">
                       Based on your detailed ratings
                     </div>
                   </div>
@@ -1827,16 +1828,16 @@ export default function SimpleLogPage() {
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, gap: 10 }}>
                   {photoUrl && (
-                    <img src={photoUrl} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: `1px solid ${c.border}`, flexShrink: 0 }} data-testid="img-score-thumb" />
+                    <img src={photoUrl} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: `1px solid ${v.border}`, flexShrink: 0 }} data-testid="img-score-thumb" />
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>Score</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: v.text }}>Score</span>
                     {overrideActive && (
                       <span
                         style={{
                           fontSize: 10,
-                          color: c.accent,
-                          background: `${c.accent}15`,
+                          color: v.accent,
+                          background: alpha(v.accent, "15"),
                           padding: "2px 8px",
                           borderRadius: 20,
                           marginLeft: 8,
@@ -1850,7 +1851,7 @@ export default function SimpleLogPage() {
                   <motion.div
                     animate={{ scale: scoreAnimating ? 1.05 : 1 }}
                     transition={{ duration: 0.12 }}
-                    style={{ fontSize: 28, fontWeight: 700, color: c.text, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif", lineHeight: 1 }}
+                    style={{ fontSize: 28, fontWeight: 700, color: v.text, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif", lineHeight: 1 }}
                     data-testid="text-score-value"
                   >
                     {score}
@@ -1865,10 +1866,10 @@ export default function SimpleLogPage() {
                   onChange={(e) => handleScoreChange(Number(e.target.value))}
                   data-testid="input-score"
                   className="warm-slider"
-                  style={{ width: "100%", accentColor: c.accent, display: "block" }}
+                  style={{ width: "100%", accentColor: v.accent, display: "block" }}
                 />
 
-                <div style={{ fontSize: 11, color: c.mutedLight, marginTop: 6, textAlign: "center" }}>
+                <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 6, textAlign: "center" }}>
                   {detailTouched
                     ? (overrideActive ? "Manual" : "From detail ratings")
                     : ""
@@ -1884,7 +1885,7 @@ export default function SimpleLogPage() {
                       background: "none",
                       border: "none",
                       cursor: "pointer",
-                      color: c.accent,
+                      color: v.accent,
                       fontSize: 11,
                       fontFamily: "system-ui, sans-serif",
                       padding: "6px 0 0",
@@ -1914,11 +1915,11 @@ export default function SimpleLogPage() {
                     minHeight: 120,
                     paddingRight: hasSpeechAPI ? 40 : 14,
                     transition: "border-color 0.2s, box-shadow 0.2s",
-                    borderColor: (voiceListening && voiceTarget === "notes") ? "#c44" : c.border,
+                    borderColor: (voiceListening && voiceTarget === "notes") ? "#c44" : v.border,
                     boxShadow: (voiceListening && voiceTarget === "notes") ? "0 0 0 2px #c4444420" : "none",
                   }}
-                  onFocus={(e) => { if (!(voiceListening && voiceTarget === "notes")) { e.currentTarget.style.borderColor = c.accent; e.currentTarget.style.boxShadow = `0 0 0 2px ${c.accent}20`; } }}
-                  onBlur={(e) => { if (!(voiceListening && voiceTarget === "notes")) { e.currentTarget.style.borderColor = c.border; e.currentTarget.style.boxShadow = "none"; } }}
+                  onFocus={(e) => { if (!(voiceListening && voiceTarget === "notes")) { e.currentTarget.style.borderColor = v.accent; e.currentTarget.style.boxShadow = `0 0 0 2px ${alpha(v.accent, "20")}`; } }}
+                  onBlur={(e) => { if (!(voiceListening && voiceTarget === "notes")) { e.currentTarget.style.borderColor = v.border; e.currentTarget.style.boxShadow = "none"; } }}
                   data-testid="input-notes"
                   placeholder={(voiceListening && voiceTarget === "notes") ? "Listening..." : "What stands out?"}
                 />
@@ -1939,7 +1940,7 @@ export default function SimpleLogPage() {
                       width: 32,
                       height: 32,
                       padding: 0,
-                      color: (voiceListening && voiceTarget === "notes") ? "#fff" : c.mutedLight,
+                      color: (voiceListening && voiceTarget === "notes") ? "#fff" : v.mutedLight,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -1965,8 +1966,8 @@ export default function SimpleLogPage() {
                   height: 52,
                   fontSize: 16,
                   fontWeight: 600,
-                  background: !whiskyName.trim() ? c.border : c.accent,
-                  color: !whiskyName.trim() ? c.muted : c.bg,
+                  background: !whiskyName.trim() ? v.border : v.accent,
+                  color: !whiskyName.trim() ? v.muted : v.bg,
                   border: "none",
                   borderRadius: 10,
                   cursor: saving ? "wait" : !whiskyName.trim() ? "not-allowed" : "pointer",
@@ -1989,11 +1990,11 @@ export default function SimpleLogPage() {
                 )}
               </AnimatePresence>
 
-              <div style={{ fontSize: 11, color: c.mutedLight, textAlign: "center", marginTop: 8 }} data-testid="text-save-hint">
+              <div style={{ fontSize: 11, color: v.mutedLight, textAlign: "center", marginTop: 8 }} data-testid="text-save-hint">
                 Your tasting will be added to My Taste
               </div>
 
-              {error && <p style={{ fontSize: 12, color: c.error, margin: "10px 0 0", textAlign: "center" }}>{error}</p>}
+              {error && <p style={{ fontSize: 12, color: v.error, margin: "10px 0 0", textAlign: "center" }}>{error}</p>}
             </div>
 
           </form>
@@ -2034,13 +2035,13 @@ export default function SimpleLogPage() {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: c.card, borderTop: `1px solid ${c.border}`, borderRadius: "16px 16px 0 0", padding: "40px 20px 60px", zIndex: 100, textAlign: "center" }}
+            style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: v.card, borderTop: `1px solid ${v.border}`, borderRadius: "16px 16px 0 0", padding: "40px 20px 60px", zIndex: 100, textAlign: "center" }}
             data-testid="sheet-identifying"
           >
-            <div style={{ width: 40, height: 4, background: c.border, borderRadius: 2, margin: "0 auto 24px" }} />
-            <div style={{ display: "inline-block", width: 24, height: 24, border: `3px solid ${c.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: 16 }} />
-            <p style={{ fontSize: 15, fontWeight: 600, color: c.text, margin: 0 }}>Identifying...</p>
-            <p style={{ fontSize: 12, color: c.muted, margin: "6px 0 0" }}>Analyzing your photo</p>
+            <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 24px" }} />
+            <div style={{ display: "inline-block", width: 24, height: 24, border: `3px solid ${v.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: 16 }} />
+            <p style={{ fontSize: 15, fontWeight: 600, color: v.text, margin: 0 }}>Identifying...</p>
+            <p style={{ fontSize: 12, color: v.muted, margin: "6px 0 0" }}>Analyzing your photo</p>
           </motion.div>
         )}
 

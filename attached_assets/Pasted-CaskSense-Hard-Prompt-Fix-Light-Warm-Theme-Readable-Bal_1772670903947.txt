@@ -1,0 +1,144 @@
+CaskSense — Hard Prompt: Fix “Light Warm” Theme (Readable, Balanced, No Harsh Contrast)
+
+CONTEXT
+We introduced an optional theme toggle: "dark-warm" (original) and "light-warm" (new).
+Current light-warm looks wrong: contrast is harsh, inputs remain too dark, gold text is not readable on light background, sliders/lines look too brutal.
+
+GOAL
+Produce a high-quality “Light Warm” theme that:
+- is comfortably readable (WCAG-ish practical contrast)
+- feels like warm paper / notebook (not stark white)
+- keeps brand accent gold (#c8a97e) but uses it sparingly
+- avoids “dark components on light background” mismatch
+- works at least on the main surfaces + the Log Dram page (pilot)
+- does NOT break Dark Warm
+
+CONSTRAINTS
+- No backend changes
+- No DB changes
+- Minimal refactor; mostly theme tokens/variables
+- Do not redesign layouts, only adjust colors and a few component styles if needed
+- Keep Dark Warm values unchanged
+
+------------------------------------------------------------
+STEP 1 — Define a corrected Light Warm palette
+------------------------------------------------------------
+In the theme vars file (where CSS variables are defined), keep dark-warm identical.
+Replace light-warm tokens with this balanced palette:
+
+Base:
+--cs-bg:            #F4EFE8   (warm paper)
+--cs-card:          #FFFFFF   (clean cards)
+--cs-text:          #2A231C   (ink-brown)
+--cs-muted:         #6F6256   (muted warm text)
+--cs-border:        #E4D8C8   (soft border)
+
+Accent (brand):
+--cs-accent:        #C8A97E   (keep EXACT)
+--cs-accent-ink:    #6B4E2E   (readable “accent text” on light bg)
+
+Inputs:
+--cs-input-bg:      #FBF7F2
+--cs-input-border:  #E4D8C8
+--cs-input-text:    #2A231C
+--cs-placeholder:   #8A7E73
+
+Status:
+--cs-success:       #2E7D32
+--cs-danger:        #B3261E
+
+Shadows / surfaces:
+--cs-shadow:        0 10px 30px rgba(35, 30, 25, 0.08)
+
+Sliders / dividers:
+--cs-divider:       #DDD1C4
+--cs-slider-track:  #D9CFC2
+--cs-slider-thumb:  #C8A97E
+
+------------------------------------------------------------
+STEP 2 — Apply a “Light Warm compatibility layer” for key components
+------------------------------------------------------------
+Problem: some components still hardcode dark backgrounds or use accent for text.
+
+For PILOT surfaces + Log Dram page:
+- ensure inputs, textarea, dropdown triggers, and cards use:
+  background: var(--cs-input-bg) or var(--cs-card)
+  color: var(--cs-text)
+  border-color: var(--cs-input-border) or var(--cs-border)
+
+Specifically fix:
+A) Text inputs/search bars currently dark on light bg
+B) Textareas in “Notes” section
+C) Select/dropdown trigger surfaces
+D) Any “gold text” on light background:
+   - replace with var(--cs-accent-ink) (or normal text color)
+   - reserve gold (#C8A97E) mainly for icons, small highlights, buttons, slider thumb
+
+Implement this by:
+- adding a small utility class set (preferred) OR
+- updating inline styles in the affected pilot components only
+
+Example:
+If you have shared styles in theme.ts (inputStyle/cardStyle), make them read from CSS vars instead of fixed hex values when theme is light-warm.
+
+------------------------------------------------------------
+STEP 3 — Buttons in Light Warm
+------------------------------------------------------------
+Primary button:
+- background: var(--cs-accent)
+- text: #1A1612 (or var(--cs-text) if it’s dark enough)
+- border: none
+- hover: slightly darker via opacity (do not invent new colors if you can use CSS filter)
+
+Secondary button (outline):
+- background: transparent
+- border: var(--cs-border)
+- text: var(--cs-text)
+
+Ensure these are readable and consistent.
+
+------------------------------------------------------------
+STEP 4 — Slider readability
+------------------------------------------------------------
+For slider track/lines:
+- use --cs-slider-track
+For slider thumb:
+- use --cs-slider-thumb
+Avoid pure black lines in light mode.
+
+If slider line color is hardcoded, replace with var(--cs-divider) or var(--cs-slider-track) for light-warm.
+
+------------------------------------------------------------
+STEP 5 — Theme-specific text usage rule
+------------------------------------------------------------
+Implement a simple rule:
+- In light-warm, do NOT use accent gold for normal text.
+- Use accent only for icons / small counters / highlights.
+- If accent text is needed, use --cs-accent-ink.
+
+Fix any headings/counters that currently render in #c8a97e on light background.
+
+------------------------------------------------------------
+STEP 6 — Verify on these pages (must look good)
+------------------------------------------------------------
+Verify visually in both themes:
+- Start/Landing
+- Bottom Nav
+- /tasting (hub)
+- /my-taste (hub)
+- Session dropdown
+- /my-taste/log (Log Dram page)  ← this is where the screenshot showed problems
+
+No “dark input on light background” should remain on these pages.
+
+------------------------------------------------------------
+STEP 7 — Deliverable
+------------------------------------------------------------
+Output:
+1) Exact token values used for light-warm
+2) Files changed
+3) Quick before/after notes (what was fixed: inputs, gold text, sliders)
+4) Confirm dark-warm unchanged
+
+EXECUTE NOW.
+Be conservative with scope: only adjust what’s needed for a good light-warm experience.

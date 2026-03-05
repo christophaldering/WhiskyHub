@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
 import { GitCompareArrows, BarChart3, BookOpen, ChevronRight, Lock, Radar, Archive, Heart, FlaskConical, ClipboardList, Sparkles, Wine, Download, PenLine, Library, Building2, Package, Map, FileText, Users, Trophy, Activity, Info, HandHeart } from "lucide-react";
 import { c, cardStyle, inputStyle, sectionHeadingStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
+import { v, alpha } from "@/lib/themeVars";
 import { NAV_VERSION, MY_TASTE_STRUCTURE, UI_SKIN } from "@/lib/config";
 import { ApplePage, AppleSection, AppleRow, AppleButton, AppleCard } from "@/components/apple";
 
@@ -19,8 +20,8 @@ function StatRow({ label, value }: { label: string; value: number | null | undef
   const hasValue = value != null;
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0" }}>
-      <span style={{ fontSize: 13, color: c.text }}>{label}</span>
-      <span style={{ fontSize: 13, fontFamily: "monospace", color: hasValue ? c.accent : c.muted, fontWeight: hasValue ? 600 : 400 }}>{display}</span>
+      <span style={{ fontSize: 13, color: v.text }}>{label}</span>
+      <span style={{ fontSize: 13, fontFamily: "monospace", color: hasValue ? v.accent : v.muted, fontWeight: hasValue ? 600 : 400 }}>{display}</span>
     </div>
   );
 }
@@ -61,10 +62,10 @@ function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; ro
 
   return (
     <div style={cardStyle} data-testid="card-unlock">
-      <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 6px" }}>
+      <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: v.muted, margin: "0 0 6px" }}>
         {t("myTastePage.signIn")}
       </h2>
-      <p style={{ fontSize: 12, color: c.mutedLight, margin: "0 0 14px" }}>
+      <p style={{ fontSize: 12, color: v.mutedLight, margin: "0 0 14px" }}>
         {t("myTastePage.signInDesc")}
       </p>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }} autoComplete="off">
@@ -78,13 +79,13 @@ function UnlockCard({ onUnlock }: { onUnlock: (p: { id: string; name: string; ro
           data-testid="button-unlock"
           style={{
             width: "100%", padding: "10px", fontSize: 15, fontWeight: 600,
-            background: loading ? c.border : c.accent, color: c.bg, border: "none", borderRadius: 8,
+            background: loading ? v.border : v.accent, color: v.bg, border: "none", borderRadius: 8,
             cursor: loading ? "wait" : "pointer", opacity: (!email.trim() || !pin.trim()) ? 0.5 : 1, transition: "opacity 0.2s",
           }}
         >
           {loading ? "…" : t("myTastePage.signInButton")}
         </button>
-        {error && <p style={{ fontSize: 12, color: c.error, margin: 0, textAlign: "center" }} data-testid="text-unlock-error">{error}</p>}
+        {error && <p style={{ fontSize: 12, color: v.error, margin: 0, textAlign: "center" }} data-testid="text-unlock-error">{error}</p>}
       </form>
     </div>
   );
@@ -104,21 +105,21 @@ function AnalyticsPreviewCard({ pid, stats }: { pid: string | undefined; stats: 
     <Link href="/my-taste/analytics">
       <div style={{ ...cardStyle, padding: "16px 20px", cursor: "pointer", opacity: isLocked ? 0.85 : 1 }} data-testid="card-analytics">
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c.accent}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {isLocked ? <Lock style={{ width: 16, height: 16, color: c.mutedLight }} /> : <BarChart3 style={{ width: 18, height: 18, color: c.accent }} />}
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: alpha(v.accent, "15"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {isLocked ? <Lock style={{ width: 16, height: 16, color: v.mutedLight }} /> : <BarChart3 style={{ width: 18, height: 18, color: v.accent }} />}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: isLocked ? c.mutedLight : c.text }}>{t("myTastePage.myAnalytics")}</div>
-            <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: isLocked ? v.mutedLight : v.text }}>{t("myTastePage.myAnalytics")}</div>
+            <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>
               {isLocked ? t("myTastePage.analyticsLocked", { count: whiskyCount, threshold: ANALYTICS_THRESHOLD }) : t("myTastePage.analyticsUnlocked")}
             </div>
           </div>
           {isLocked && (
-            <div style={{ height: 4, width: 40, background: c.bg, borderRadius: 2, overflow: "hidden", flexShrink: 0 }}>
-              <div style={{ height: "100%", width: `${(whiskyCount / ANALYTICS_THRESHOLD) * 100}%`, background: c.accent, borderRadius: 2 }} />
+            <div style={{ height: 4, width: 40, background: v.bg, borderRadius: 2, overflow: "hidden", flexShrink: 0 }}>
+              <div style={{ height: "100%", width: `${(whiskyCount / ANALYTICS_THRESHOLD) * 100}%`, background: v.accent, borderRadius: 2 }} />
             </div>
           )}
-          {!isLocked && <ChevronRight style={{ width: 14, height: 14, color: c.muted, flexShrink: 0 }} />}
+          {!isLocked && <ChevronRight style={{ width: 14, height: 14, color: v.muted, flexShrink: 0 }} />}
         </div>
       </div>
     </Link>
@@ -149,17 +150,17 @@ function NavCard({ icon: Icon, label, description, href, testId, badge }: NavCar
         }}
         data-testid={testId}
       >
-        <div style={{ width: 38, height: 38, borderRadius: 12, background: `${c.accent}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Icon style={{ width: 18, height: 18, color: c.accent }} strokeWidth={1.8} />
+        <div style={{ width: 38, height: 38, borderRadius: 12, background: alpha(v.accent, "12"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon style={{ width: 18, height: 18, color: v.accent }} strokeWidth={1.8} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: c.text, letterSpacing: "-0.01em" }}>{label}</div>
-          <div style={{ fontSize: 12, color: c.muted, marginTop: 3, lineHeight: 1.4 }}>{description}</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: v.text, letterSpacing: "-0.01em" }}>{label}</div>
+          <div style={{ fontSize: 12, color: v.muted, marginTop: 3, lineHeight: 1.4 }}>{description}</div>
         </div>
         {badge != null && (
-          <span style={{ fontSize: 11, fontWeight: 600, color: c.accent, background: `${c.accent}12`, padding: "3px 10px", borderRadius: 20, flexShrink: 0 }}>{badge}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: v.accent, background: alpha(v.accent, "12"), padding: "3px 10px", borderRadius: 20, flexShrink: 0 }}>{badge}</span>
         )}
-        <ChevronRight style={{ width: 16, height: 16, color: `${c.muted}80`, flexShrink: 0 }} strokeWidth={1.8} />
+        <ChevronRight style={{ width: 16, height: 16, color: alpha(v.muted, "80"), flexShrink: 0 }} strokeWidth={1.8} />
       </div>
     </Link>
   );
@@ -216,10 +217,10 @@ export default function MyTastePage() {
           {pid && isV2 && (
             <>
               <AppleSection title={t("myTastePage.sectionDrams")}>
-                <p style={{ fontSize: 13, color: c.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 13, color: v.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
                   {t("myTastePage.dramsSubtitle")}
                 </p>
-                <p style={{ fontSize: 11, color: c.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
+                <p style={{ fontSize: 11, color: v.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
                   {t("myTastePage.dramsExplainer")}
                 </p>
                 <Link href="/log-simple">
@@ -230,8 +231,8 @@ export default function MyTastePage() {
                       justifyContent: "center",
                       gap: 8,
                       padding: "14px 20px",
-                      background: c.accent,
-                      color: c.bg,
+                      background: v.accent,
+                      color: v.bg,
                       borderRadius: 14,
                       fontSize: 15,
                       fontWeight: 700,
@@ -271,7 +272,7 @@ export default function MyTastePage() {
               </AppleSection>
 
               <div style={cardStyle} data-testid="card-taste-snapshot">
-                <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: v.muted, margin: "0 0 12px" }}>
                   {t("myTastePage.tasteSnapshot")}
                 </h2>
                 {hasStats ? (
@@ -282,16 +283,16 @@ export default function MyTastePage() {
                     {tastingCount != null && <StatRow label={t("myTastePage.tastings")} value={tastingCount} />}
                   </div>
                 ) : (
-                  <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
+                  <p style={{ fontSize: 13, color: v.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
                 )}
               </div>
 
               {insight && (
                 <div style={cardStyle} data-testid="card-taste-insight">
-                  <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                  <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: v.muted, margin: "0 0 12px" }}>
                     {t("myTastePage.tasteInsight")}
                   </h2>
-                  <p style={{ fontSize: 14, lineHeight: 1.6, color: c.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
+                  <p style={{ fontSize: 14, lineHeight: 1.6, color: v.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
                 </div>
               )}
 
@@ -328,10 +329,10 @@ export default function MyTastePage() {
               </AppleSection>
 
               <AppleSection title={t("myTastePage.sectionCollection")}>
-                <p style={{ fontSize: 13, color: c.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 13, color: v.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
                   {t("myTastePage.collectionSubtitle")}
                 </p>
-                <p style={{ fontSize: 11, color: c.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
+                <p style={{ fontSize: 11, color: v.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
                   {t("myTastePage.collectionExplainer")}
                 </p>
                 <NavCard
@@ -446,8 +447,8 @@ export default function MyTastePage() {
                       justifyContent: "center",
                       gap: 8,
                       padding: "14px 20px",
-                      background: c.accent,
-                      color: c.bg,
+                      background: v.accent,
+                      color: v.bg,
                       borderRadius: 14,
                       fontSize: 15,
                       fontWeight: 700,
@@ -463,7 +464,7 @@ export default function MyTastePage() {
               )}
 
               <div style={cardStyle} data-testid="card-taste-snapshot">
-                <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: v.muted, margin: "0 0 12px" }}>
                   {t("myTastePage.tasteSnapshot")}
                 </h2>
                 {hasStats ? (
@@ -474,18 +475,18 @@ export default function MyTastePage() {
                     {tastingCount != null && <StatRow label={t("myTastePage.tastings")} value={tastingCount} />}
                   </div>
                 ) : (
-                  <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
+                  <p style={{ fontSize: 13, color: v.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
                 )}
               </div>
 
               <div style={cardStyle} data-testid="card-taste-insight">
-                <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: v.muted, margin: "0 0 12px" }}>
                   {t("myTastePage.tasteInsight")}
                 </h2>
                 {insight ? (
-                  <p style={{ fontSize: 14, lineHeight: 1.6, color: c.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
+                  <p style={{ fontSize: 14, lineHeight: 1.6, color: v.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
                 ) : (
-                  <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-insight-empty">{t("myTastePage.insightEmpty")}</p>
+                  <p style={{ fontSize: 13, color: v.muted, margin: 0 }} data-testid="text-insight-empty">{t("myTastePage.insightEmpty")}</p>
                 )}
               </div>
 
@@ -525,7 +526,7 @@ export default function MyTastePage() {
               </AppleSection>
 
               <AppleSection title={t("myTastePage.sectionTasted")}>
-                <p style={{ fontSize: 11, color: c.muted, marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 11, color: v.muted, marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
                   {t("myTastePage.tastedDesc")}
                 </p>
                 <NavCard
@@ -554,7 +555,7 @@ export default function MyTastePage() {
               </AppleSection>
 
               <AppleSection title={t("myTastePage.sectionLibrary")}>
-                <p style={{ fontSize: 11, color: c.muted, marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 11, color: v.muted, marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
                   {t("myTastePage.libraryDesc")}
                 </p>
                 <NavCard
@@ -602,13 +603,13 @@ export default function MyTastePage() {
         {pid && isV2 && (
           <>
             <div>
-              <h3 style={{ ...sectionHeadingStyle, color: c.accent, fontSize: 18 }}>
+              <h3 style={{ ...sectionHeadingStyle, color: v.accent, fontSize: 18 }}>
                 {t("myTastePage.sectionDrams")}
               </h3>
-              <p style={{ fontSize: 13, color: c.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
+              <p style={{ fontSize: 13, color: v.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
                 {t("myTastePage.dramsSubtitle")}
               </p>
-              <p style={{ fontSize: 11, color: c.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
+              <p style={{ fontSize: 11, color: v.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
                 {t("myTastePage.dramsExplainer")}
               </p>
               <Link href="/log-simple">
@@ -619,8 +620,8 @@ export default function MyTastePage() {
                     justifyContent: "center",
                     gap: 8,
                     padding: "14px 20px",
-                    background: c.accent,
-                    color: c.bg,
+                    background: v.accent,
+                    color: v.bg,
                     borderRadius: 12,
                     fontSize: 15,
                     fontWeight: 700,
@@ -662,7 +663,7 @@ export default function MyTastePage() {
             </div>
 
             <div style={cardStyle} data-testid="card-taste-snapshot">
-              <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+              <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: v.muted, margin: "0 0 12px" }}>
                 {t("myTastePage.tasteSnapshot")}
               </h2>
               {hasStats ? (
@@ -673,21 +674,21 @@ export default function MyTastePage() {
                   {tastingCount != null && <StatRow label={t("myTastePage.tastings")} value={tastingCount} />}
                 </div>
               ) : (
-                <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
+                <p style={{ fontSize: 13, color: v.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
               )}
             </div>
 
             {insight && (
               <div style={cardStyle} data-testid="card-taste-insight">
-                <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+                <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: v.muted, margin: "0 0 12px" }}>
                   {t("myTastePage.tasteInsight")}
                 </h2>
-                <p style={{ fontSize: 14, lineHeight: 1.6, color: c.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
+                <p style={{ fontSize: 14, lineHeight: 1.6, color: v.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
               </div>
             )}
 
             <div>
-              <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
+              <h3 style={{ ...sectionHeadingStyle, color: v.accent }}>
                 {t("myTastePage.sectionAnalytics")}
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -724,13 +725,13 @@ export default function MyTastePage() {
             </div>
 
             <div>
-              <h3 style={{ ...sectionHeadingStyle, color: c.accent, fontSize: 15 }}>
+              <h3 style={{ ...sectionHeadingStyle, color: v.accent, fontSize: 15 }}>
                 {t("myTastePage.sectionCollection")}
               </h3>
-              <p style={{ fontSize: 13, color: c.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
+              <p style={{ fontSize: 13, color: v.text, marginTop: -8, marginBottom: 4, lineHeight: 1.5 }}>
                 {t("myTastePage.collectionSubtitle")}
               </p>
-              <p style={{ fontSize: 11, color: c.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
+              <p style={{ fontSize: 11, color: v.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
                 {t("myTastePage.collectionExplainer")}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -754,7 +755,7 @@ export default function MyTastePage() {
             {isTwoTab && (
               <>
                 <div>
-                  <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
+                  <h3 style={{ ...sectionHeadingStyle, color: v.accent }}>
                     {t("myTastePage.sectionKnowledge")}
                   </h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -767,7 +768,7 @@ export default function MyTastePage() {
                 </div>
 
                 <div>
-                  <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
+                  <h3 style={{ ...sectionHeadingStyle, color: v.accent }}>
                     {t("myTastePage.sectionCommunity")}
                   </h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -778,7 +779,7 @@ export default function MyTastePage() {
                 </div>
 
                 <div>
-                  <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
+                  <h3 style={{ ...sectionHeadingStyle, color: v.accent }}>
                     {t("myTastePage.sectionAbout")}
                   </h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -802,8 +803,8 @@ export default function MyTastePage() {
                     justifyContent: "center",
                     gap: 8,
                     padding: "14px 20px",
-                    background: c.accent,
-                    color: c.bg,
+                    background: v.accent,
+                    color: v.bg,
                     borderRadius: 12,
                     fontSize: 15,
                     fontWeight: 700,
@@ -819,7 +820,7 @@ export default function MyTastePage() {
             )}
 
             <div style={cardStyle} data-testid="card-taste-snapshot">
-              <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+              <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: v.muted, margin: "0 0 12px" }}>
                 {t("myTastePage.tasteSnapshot")}
               </h2>
               {hasStats ? (
@@ -830,23 +831,23 @@ export default function MyTastePage() {
                   {tastingCount != null && <StatRow label={t("myTastePage.tastings")} value={tastingCount} />}
                 </div>
               ) : (
-                <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
+                <p style={{ fontSize: 13, color: v.muted, margin: 0 }} data-testid="text-snapshot-empty">{t("myTastePage.snapshotEmpty")}</p>
               )}
             </div>
 
             <div style={cardStyle} data-testid="card-taste-insight">
-              <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: c.muted, margin: "0 0 12px" }}>
+              <h2 style={{ fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.2, color: v.muted, margin: "0 0 12px" }}>
                 {t("myTastePage.tasteInsight")}
               </h2>
               {insight ? (
-                <p style={{ fontSize: 14, lineHeight: 1.6, color: c.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
+                <p style={{ fontSize: 14, lineHeight: 1.6, color: v.text, margin: 0 }} data-testid="text-insight-message">{insight.message}</p>
               ) : (
-                <p style={{ fontSize: 13, color: c.muted, margin: 0 }} data-testid="text-insight-empty">{t("myTastePage.insightEmpty")}</p>
+                <p style={{ fontSize: 13, color: v.muted, margin: 0 }} data-testid="text-insight-empty">{t("myTastePage.insightEmpty")}</p>
               )}
             </div>
 
             <div>
-              <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
+              <h3 style={{ ...sectionHeadingStyle, color: v.accent }}>
                 {t("myTastePage.sectionProfile")}
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -861,7 +862,7 @@ export default function MyTastePage() {
             </div>
 
             <div>
-              <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
+              <h3 style={{ ...sectionHeadingStyle, color: v.accent }}>
                 {t("myTastePage.sectionAnalytics")}
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -891,10 +892,10 @@ export default function MyTastePage() {
             </div>
 
             <div>
-              <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
+              <h3 style={{ ...sectionHeadingStyle, color: v.accent }}>
                 {t("myTastePage.sectionTasted")}
               </h3>
-              <p style={{ fontSize: 11, color: c.muted, marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
+              <p style={{ fontSize: 11, color: v.muted, marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
                 {t("myTastePage.tastedDesc")}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -925,10 +926,10 @@ export default function MyTastePage() {
             </div>
 
             <div>
-              <h3 style={{ ...sectionHeadingStyle, color: c.accent }}>
+              <h3 style={{ ...sectionHeadingStyle, color: v.accent }}>
                 {t("myTastePage.sectionLibrary")}
               </h3>
-              <p style={{ fontSize: 11, color: c.muted, marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
+              <p style={{ fontSize: 11, color: v.muted, marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
                 {t("myTastePage.libraryDesc")}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

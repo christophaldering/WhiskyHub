@@ -4,7 +4,7 @@ import SimpleShell from "@/components/simple/simple-shell";
 import { Wine, Crown, ClipboardList, Calendar, LayoutDashboard, ChevronRight } from "lucide-react";
 import { ApplePage, AppleSection, AppleActionCard } from "@/components/apple";
 import { c, cardStyle } from "@/lib/theme";
-import { v } from "@/lib/themeVars";
+import { v, alpha } from "@/lib/themeVars";
 import { NAV_VERSION } from "@/lib/config";
 
 interface NavCardProps {
@@ -30,7 +30,7 @@ function NavCard({ icon: Icon, label, description, href, testId }: NavCardProps)
         }}
         data-testid={testId}
       >
-        <div style={{ width: 38, height: 38, borderRadius: 12, background: `${c.accent}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <div style={{ width: 38, height: 38, borderRadius: 12, background: alpha(v.accent, "12"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <Icon style={{ width: 18, height: 18, color: v.accent }} strokeWidth={1.8} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>

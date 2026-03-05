@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import SimpleShell from "@/components/simple/simple-shell";
 import { c, cardStyle, inputStyle, pageTitleStyle } from "@/lib/theme";
-import { getTheme, setTheme, type ThemeName } from "@/lib/themeVars";
+import { v, alpha, getTheme, setTheme, type ThemeName } from "@/lib/themeVars";
 
 const REGIONS = [
   "Speyside", "Highlands", "Islay", "Lowlands", "Campbeltown",
@@ -21,7 +21,7 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 600,
   textTransform: "uppercase",
   letterSpacing: "0.08em",
-  color: c.muted,
+  color: v.muted,
   marginBottom: 6,
   display: "block",
 };
@@ -29,7 +29,7 @@ const labelStyle: React.CSSProperties = {
 const sectionTitle: React.CSSProperties = {
   fontSize: 15,
   fontWeight: 600,
-  color: c.text,
+  color: v.text,
   marginBottom: 12,
   fontFamily: "'Playfair Display', Georgia, serif",
 };
@@ -57,8 +57,8 @@ const btnPrimary: React.CSSProperties = {
   padding: "12px",
   fontSize: 15,
   fontWeight: 600,
-  background: c.accent,
-  color: c.bg,
+  background: v.accent,
+  color: v.bg,
   border: "none",
   borderRadius: 10,
   cursor: "pointer",
@@ -71,8 +71,8 @@ const btnDanger: React.CSSProperties = {
   fontSize: 14,
   fontWeight: 600,
   background: "transparent",
-  color: c.error,
-  border: `1px solid ${c.error}40`,
+  color: v.error,
+  border: `1px solid ${alpha(v.error, "40")}`,
   borderRadius: 10,
   cursor: "pointer",
   fontFamily: "system-ui, sans-serif",
@@ -86,7 +86,7 @@ const badgeBase: React.CSSProperties = {
   fontWeight: 500,
   cursor: "pointer",
   transition: "all 0.15s",
-  border: `1px solid ${c.border}`,
+  border: `1px solid ${v.border}`,
   userSelect: "none",
 };
 
@@ -279,7 +279,7 @@ export default function MyTasteSettings() {
     return (
       <SimpleShell>
         <div style={{ ...cardStyle, textAlign: "center", padding: 40 }}>
-          <p style={{ color: c.muted, fontSize: 14 }}>Please sign in to access settings.</p>
+          <p style={{ color: v.muted, fontSize: 14 }}>Please sign in to access settings.</p>
         </div>
       </SimpleShell>
     );
@@ -289,7 +289,7 @@ export default function MyTasteSettings() {
     return (
       <SimpleShell>
         <div style={{ textAlign: "center", padding: 60 }}>
-          <p style={{ color: c.muted, fontSize: 14 }}>Loading…</p>
+          <p style={{ color: v.muted, fontSize: 14 }}>Loading…</p>
         </div>
       </SimpleShell>
     );
@@ -302,7 +302,7 @@ export default function MyTasteSettings() {
           <h1 style={{ ...pageTitleStyle, textAlign: "center" }} data-testid="text-settings-title">
             Settings & Profile
           </h1>
-          <p style={{ fontSize: 13, color: c.muted, marginTop: 4, textAlign: "center" }}>
+          <p style={{ fontSize: 13, color: v.muted, marginTop: 4, textAlign: "center" }}>
             {t("profile.title")}
           </p>
         </div>
@@ -316,16 +316,16 @@ export default function MyTasteSettings() {
                 width: 72,
                 height: 72,
                 borderRadius: "50%",
-                background: currentPhotoUrl ? `url(${currentPhotoUrl}) center/cover` : `${c.accent}20`,
+                background: currentPhotoUrl ? `url(${currentPhotoUrl}) center/cover` : alpha(v.accent, "20"),
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                border: `2px solid ${c.border}`,
+                border: `2px solid ${v.border}`,
                 flexShrink: 0,
                 fontSize: 24,
                 fontFamily: "'Playfair Display', serif",
-                color: c.accent,
+                color: v.accent,
               }}
               data-testid="button-avatar-upload"
             >
@@ -342,16 +342,16 @@ export default function MyTasteSettings() {
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                style={{ fontSize: 13, color: c.accent, background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
+                style={{ fontSize: 13, color: v.accent, background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
                 data-testid="button-upload-photo"
               >
                 {currentPhotoUrl ? t("profile.changePhoto") : t("profile.uploadPhoto")}
               </button>
-              <span style={{ fontSize: 10, color: c.mutedLight }}>{t("common.uploadHint")}</span>
+              <span style={{ fontSize: 10, color: v.mutedLight }}>{t("common.uploadHint")}</span>
               {currentPhotoUrl && (
                 <button
                   onClick={() => { setPhotoFile(null); setPhotoPreview(null); setRemovePhoto(true); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                  style={{ fontSize: 12, color: c.error, background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
+                  style={{ fontSize: 12, color: v.error, background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
                   data-testid="button-remove-photo"
                 >
                   {t("profile.removePhoto")}
@@ -393,11 +393,11 @@ export default function MyTasteSettings() {
                   value={confirmEmail}
                   onChange={(e) => setConfirmEmail(e.target.value)}
                   placeholder="Repeat new email"
-                  style={{ ...inputStyle, borderColor: confirmEmail && confirmEmail !== email ? c.error : c.inputBorder }}
+                  style={{ ...inputStyle, borderColor: confirmEmail && confirmEmail !== email ? v.error : v.inputBorder }}
                   data-testid="input-confirm-email"
                 />
                 {confirmEmail && confirmEmail !== email && (
-                  <p style={{ fontSize: 12, color: c.error, marginTop: 4 }}>Emails don't match</p>
+                  <p style={{ fontSize: 12, color: v.error, marginTop: 4 }}>Emails don't match</p>
                 )}
               </div>
             )}
@@ -445,7 +445,7 @@ export default function MyTasteSettings() {
             </div>
           </div>
           {newPin && confirmPin && newPin !== confirmPin && (
-            <p style={{ fontSize: 12, color: c.error, marginTop: 8 }} data-testid="text-pin-mismatch">
+            <p style={{ fontSize: 12, color: v.error, marginTop: 8 }} data-testid="text-pin-mismatch">
               {t("profile.pinMismatch")}
             </p>
           )}
@@ -458,12 +458,12 @@ export default function MyTasteSettings() {
               type="checkbox"
               checked={newsletterOptIn}
               onChange={(e) => setNewsletterOptIn(e.target.checked)}
-              style={{ marginTop: 2, accentColor: c.accent }}
+              style={{ marginTop: 2, accentColor: v.accent }}
               data-testid="checkbox-newsletter-profile"
             />
             <div>
-              <div style={{ fontSize: 14, color: c.text }}>{t("profile.newsletterOptIn")}</div>
-              <div style={{ fontSize: 12, color: c.muted, marginTop: 2 }}>{t("profile.newsletterHint")}</div>
+              <div style={{ fontSize: 14, color: v.text }}>{t("profile.newsletterOptIn")}</div>
+              <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>{t("profile.newsletterHint")}</div>
             </div>
           </label>
         </div>
@@ -481,7 +481,7 @@ export default function MyTasteSettings() {
                 style={textareaStyle}
                 data-testid="input-bio"
               />
-              <p style={{ fontSize: 11, color: c.muted, textAlign: "right", marginTop: 2 }} data-testid="text-bio-counter">{bio.length}/400</p>
+              <p style={{ fontSize: 11, color: v.muted, textAlign: "right", marginTop: 2 }} data-testid="text-bio-counter">{bio.length}/400</p>
             </div>
             <div>
               <label style={labelStyle}>{t("profile.favoriteWhisky")}</label>
@@ -517,9 +517,9 @@ export default function MyTasteSettings() {
                   onClick={() => toggleRegion(region)}
                   style={{
                     ...badgeBase,
-                    background: active ? `${c.accent}20` : "transparent",
-                    color: active ? c.accent : c.muted,
-                    borderColor: active ? c.accent : c.border,
+                    background: active ? alpha(v.accent, "20") : "transparent",
+                    color: active ? v.accent : v.muted,
+                    borderColor: active ? v.accent : v.border,
                   }}
                   data-testid={`badge-region-${region.toLowerCase()}`}
                 >
@@ -565,7 +565,7 @@ export default function MyTasteSettings() {
 
         <div style={cardStyle}>
           <div style={sectionTitle}>AI Settings</div>
-          <p style={{ fontSize: 12, color: c.muted, marginBottom: 12 }}>
+          <p style={{ fontSize: 12, color: v.muted, marginBottom: 12 }}>
             Add your own OpenAI API key to enable AI features like whisky identification, tasting notes, and more.
           </p>
           <div>
@@ -590,7 +590,7 @@ export default function MyTasteSettings() {
                   transform: "translateY(-50%)",
                   background: "none",
                   border: "none",
-                  color: c.muted,
+                  color: v.muted,
                   cursor: "pointer",
                   fontSize: 13,
                   padding: 4,
@@ -603,15 +603,15 @@ export default function MyTasteSettings() {
             {openaiApiKey && (
               <button
                 onClick={() => setOpenaiApiKey("")}
-                style={{ fontSize: 12, color: c.error, background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 6 }}
+                style={{ fontSize: 12, color: v.error, background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 6 }}
                 data-testid="button-clear-api-key"
               >
                 Remove API key
               </button>
             )}
-            <p style={{ fontSize: 10, color: c.mutedLight, marginTop: 6 }}>
+            <p style={{ fontSize: 10, color: v.mutedLight, marginTop: 6 }}>
               Get your key at{" "}
-              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" style={{ color: c.accent, textDecoration: "none" }}>
+              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" style={{ color: v.accent, textDecoration: "none" }}>
                 platform.openai.com
               </a>
               . Costs are billed directly to your OpenAI account.
@@ -621,7 +621,7 @@ export default function MyTasteSettings() {
 
         <div style={cardStyle}>
           <div style={sectionTitle}>{t("profile.theme", "Theme")}</div>
-          <p style={{ fontSize: 12, color: c.muted, marginBottom: 12 }}>
+          <p style={{ fontSize: 12, color: v.muted, marginBottom: 12 }}>
             {t("profile.themeDesc", "Choose your preferred appearance.")}
           </p>
           <div style={{ display: "flex", gap: 8 }}>
@@ -639,9 +639,9 @@ export default function MyTasteSettings() {
                     flex: 1,
                     padding: "10px 12px",
                     borderRadius: 10,
-                    border: active ? `2px solid ${c.accent}` : `1px solid ${c.border}`,
-                    background: active ? `${c.accent}15` : c.card,
-                    color: active ? c.accent : c.text,
+                    border: active ? `2px solid ${v.accent}` : `1px solid ${v.border}`,
+                    background: active ? alpha(v.accent, "15") : v.card,
+                    color: active ? v.accent : v.text,
                     fontSize: 13,
                     fontWeight: active ? 600 : 400,
                     cursor: "pointer",
@@ -659,7 +659,7 @@ export default function MyTasteSettings() {
 
         <div style={cardStyle}>
           <div style={sectionTitle}>{t("profile.language")}</div>
-          <p style={{ fontSize: 12, color: c.muted, marginBottom: 12 }}>
+          <p style={{ fontSize: 12, color: v.muted, marginBottom: 12 }}>
             {t("profile.languageDesc")}
           </p>
           <div style={{ display: "flex", gap: 8 }}>
@@ -678,9 +678,9 @@ export default function MyTasteSettings() {
                     flex: 1,
                     padding: "10px 12px",
                     borderRadius: 10,
-                    border: active ? `2px solid ${c.accent}` : `1px solid ${c.border}`,
-                    background: active ? `${c.accent}15` : c.card,
-                    color: active ? c.accent : c.text,
+                    border: active ? `2px solid ${v.accent}` : `1px solid ${v.border}`,
+                    background: active ? alpha(v.accent, "15") : v.card,
+                    color: active ? v.accent : v.text,
                     fontSize: 13,
                     fontWeight: active ? 600 : 400,
                     cursor: "pointer",
@@ -705,9 +705,9 @@ export default function MyTasteSettings() {
           {saveMutation.isPending ? t("profile.saving") : t("profile.save")}
         </button>
 
-        <div style={{ ...cardStyle, borderColor: `${c.error}30` }}>
-          <div style={{ ...sectionTitle, color: c.error }}>{t("profile.dangerZone")}</div>
-          <p style={{ fontSize: 13, color: c.muted, marginBottom: 12 }}>
+        <div style={{ ...cardStyle, borderColor: alpha(v.error, "30") }}>
+          <div style={{ ...sectionTitle, color: v.error }}>{t("profile.dangerZone")}</div>
+          <p style={{ fontSize: 13, color: v.muted, marginBottom: 12 }}>
             {t("profile.deleteAccountDesc")}
           </p>
           {!deleteConfirm ? (
@@ -720,7 +720,7 @@ export default function MyTasteSettings() {
             </button>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <p style={{ fontSize: 13, color: c.error, margin: 0 }}>{t("account.closeAccountWarning")}</p>
+              <p style={{ fontSize: 13, color: v.error, margin: 0 }}>{t("account.closeAccountWarning")}</p>
               <input
                 type="password"
                 inputMode="numeric"
@@ -728,16 +728,16 @@ export default function MyTasteSettings() {
                 placeholder={t("account.closeAccountPinPlaceholder")}
                 value={deletePin}
                 onChange={(e) => { setDeletePin(e.target.value.replace(/\D/g, "").slice(0, 4)); setDeletePinError(""); }}
-                style={{ ...inputStyle, borderColor: deletePinError ? c.error : c.inputBorder }}
+                style={{ ...inputStyle, borderColor: deletePinError ? v.error : v.inputBorder }}
                 data-testid="input-delete-pin"
               />
               {deletePinError && (
-                <p style={{ fontSize: 12, color: c.error, margin: 0 }} data-testid="text-delete-pin-error">{deletePinError}</p>
+                <p style={{ fontSize: 12, color: v.error, margin: 0 }} data-testid="text-delete-pin-error">{deletePinError}</p>
               )}
               <div style={{ display: "flex", gap: 10 }}>
                 <button
                   onClick={() => { setDeleteConfirm(false); setDeletePin(""); setDeletePinError(""); }}
-                  style={{ ...btnDanger, flex: 1, color: c.muted, borderColor: c.border }}
+                  style={{ ...btnDanger, flex: 1, color: v.muted, borderColor: v.border }}
                   data-testid="button-delete-account-cancel"
                 >
                   {t("account.cancel")}
@@ -748,9 +748,9 @@ export default function MyTasteSettings() {
                   style={{
                     ...btnDanger,
                     flex: 1,
-                    background: c.error,
+                    background: v.error,
                     color: "#fff",
-                    borderColor: c.error,
+                    borderColor: v.error,
                     opacity: deletePin.length === 4 ? 1 : 0.5,
                   }}
                   data-testid="button-delete-account-confirm"
