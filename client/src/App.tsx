@@ -27,6 +27,7 @@ import Landing from "@/pages/landing";
 import PublicLanding from "@/pages/public-landing";
 import GuidedPresentation from "@/pages/guided-presentation";
 import LandingV2 from "@/pages/landing-v2";
+import FeatureShowcase from "@/pages/feature-showcase";
 import FeatureTour from "@/pages/feature-tour";
 import Tour from "@/pages/tour";
 import Background from "@/pages/background";
