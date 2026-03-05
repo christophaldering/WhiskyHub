@@ -1,0 +1,97 @@
+HARD PROMPT — CaskSense: Bottom Nav Visibility + Contextual Back (2→3→2)
+
+You are working in the CaskSense repo (React + Vite + TS, Wouter, Tailwind, shadcn/ui, i18next). 
+Implement TWO UX fixes precisely:
+
+========================
+A) FIX 1 — Bottom Nav more visible (dark warm theme)
+========================
+Problem:
+On mobile (and narrow layouts), the bottom nav is too subtle/low-contrast and not clearly recognizable.
+
+Goal:
+Make the bottom nav slightly more visible while staying premium and Apple-clean (no loud colors).
+
+Requirements:
+1) Keep the 2-tab bottom nav structure (Tasting / My Taste).
+2) Improve recognizability via:
+   - subtle top border (1px) with low-opacity gold or warm gray
+   - slightly stronger background blur/opacity (glass effect)
+   - clearer icon+label contrast (inactive still readable)
+   - active state must be clearly visible (gold accent OK)
+3) Must respect dark warm palette:
+   - background: #1a1714-ish
+   - accent: #d4a256
+   - do not introduce new colors; use opacity/alpha instead.
+4) Ensure it does NOT cover content: keep safe area padding (env(safe-area-inset-bottom)).
+5) Apply consistently wherever the mobile bottom nav is shown.
+
+Implementation hint (do not over-engineer):
+- Find the BottomNav component (likely in client/src/components/navigation/* or similar).
+- Adjust container styles (backdrop-blur, bg with alpha, border-top).
+- Adjust label/icon styles (text opacity, active gold).
+- Keep it minimal and consistent with themeVars/alpha() helpers if available.
+
+Acceptance:
+- On the “Mein Whisky-Profil / Profil” page the bottom nav is clearly visible without feeling heavy.
+- Active tab stands out; inactive tab is still readable.
+
+========================
+B) FIX 2 — Contextual Back: Page 3 must go back to Page 2 (switch), not to landing
+========================
+Problem:
+When navigating from a hub/page (Chart 2 / Page 2) into a deeper page (Chart 3 / Page 3), the Back button currently sends users to a higher-level landing page instead of returning to the previous page (2).
+
+Goal:
+Make Back behave like “return to where I came from inside the app”, with a safe fallback.
+Specifically: from Page 3 → Back should return to Page 2 (the previous in-app page/switch context).
+
+Define the context:
+- Page 2 = Tasting Hub (/tasting) or a sub-hub screen used before the user entered the next page
+- Page 3 = the next screen (examples from screenshots):
+  - /enter (enter tasting code)
+  - /my-taste/profile (profile detail)
+  - /log-simple
+  - any “entry/action” page launched from hub
+
+Requirements:
+1) Introduce a reliable in-app “back target” mechanism that does not rely solely on browser history (because history may be empty or external).
+2) When user navigates from a hub to a child page, store the origin route as an explicit back target:
+   - e.g. in a query param (?from=/tasting) OR
+   - in Zustand store (e.g. navStore.lastInAppRoute) OR
+   - in session storage
+   Choose ONE approach and apply consistently.
+3) BackButton component must prioritize:
+   - explicit “from” param (if present)
+   - else lastInAppRoute (if available and same app)
+   - else history.back()
+   - else fallback prop
+4) Apply to key flows:
+   - From /tasting → /enter : Back on /enter returns to /tasting
+   - From /tasting → /host : Back on /host returns to /tasting
+   - From /tasting → /log-simple : Back on /log-simple returns to /tasting
+   - From /my-taste (or /my-taste menu) → /my-taste/profile : Back returns to /my-taste (or the exact previous My Taste page if applicable)
+5) Do NOT send users to the global landing “/” unless that was the origin.
+
+Implementation steps (do in order):
+1) Identify BackButton component (client/src/components/navigation/BackButton.*).
+2) Implement support for a “from” query param, e.g. /enter?from=/tasting
+3) Update all hub CTA links to include from=...:
+   - In /tasting hub buttons linking to /enter, /host, /log-simple → append ?from=/tasting
+   - In My Taste menu linking to /my-taste/profile → append ?from=/my-taste (or the parent page route)
+4) Update BackButton logic:
+   - If URL has from param: navigate(from)
+   - Else if a stored lastInAppRoute exists: navigate(lastInAppRoute)
+   - Else try history.back()
+   - Else navigate(fallback)
+5) Ensure the label is consistent (DE): “Zurück” (and EN “Back”) via i18n.
+
+Deliverable after changes:
+- List of files modified
+- Short explanation of the chosen “from” mechanism (query param/store)
+- Manual test checklist:
+   1) Open /tasting, click “Tasting beitreten” → /enter, Back returns to /tasting
+   2) Open /tasting, click “Solo Dram verkosten” → /log-simple, Back returns to /tasting
+   3) Open /my-taste, go to /my-taste/profile, Back returns to /my-taste
+   4) Hard refresh on a child page: Back still works via fallback (does not go to /)
+END.
