@@ -1,84 +1,105 @@
 import { Switch, Route, useLocation, useSearch } from "wouter";
-import { useEffect, Component, type ReactNode, type ErrorInfo } from "react";
+import { useEffect, Component, type ReactNode, type ErrorInfo, lazy, Suspense } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Layout from "@/components/layout";
-import TastingRoom from "@/pages/tasting-room";
-import Profile from "@/pages/profile";
-import InviteAccept from "@/pages/invite-accept";
-import Wishlist from "@/pages/wishlist";
-import WhiskybaseCollection from "@/pages/whiskybase-collection";
-import Badges from "@/pages/badges";
-import FlavorProfile from "@/pages/flavor-profile";
-import FlavorWheel from "@/pages/flavor-wheel";
-import TastingCalendar from "@/pages/tasting-calendar";
-import HostDashboard from "@/pages/host-dashboard";
-import TastingRecap from "@/pages/tasting-recap";
-import AdminPanel from "@/pages/admin-panel";
-import AdminLayout from "@/components/admin/AdminLayout";
-import WhiskyDatabase from "@/pages/whisky-database";
-import PhotoTasting from "@/pages/photo-tasting";
-import Method from "@/pages/method";
-import Intro from "@/pages/intro";
-import Landing from "@/pages/landing";
-import PublicLanding from "@/pages/public-landing";
-import GuidedPresentation from "@/pages/guided-presentation";
-import LandingV2 from "@/pages/landing-v2";
-import FeatureShowcase from "@/pages/feature-showcase";
-import FeatureTour from "@/pages/feature-tour";
-import Tour from "@/pages/tour";
-import Background from "@/pages/background";
-import News from "@/pages/news";
-import QuickTasting from "@/pages/quick-tasting";
-import NakedTasting from "@/pages/naked-tasting";
-import SupportConsole from "@/pages/support-console";
+import NavRedirects from "@/components/nav-redirects";
+import { getUIPref } from "@/components/view-switcher";
+import { StorageConsent } from "@/components/storage-consent";
+import "@/lib/i18n";
+
+// ── Core pages (eager-loaded: critical navigation paths) ──
+import TastingHubSimple from "@/pages/tasting-hub-simple";
 import MyTastePage from "@/pages/my-taste";
-import EnterPage from "@/pages/enter";
-import LogWhiskyPage from "@/pages/log-whisky";
 import SimpleEnterPage from "@/pages/simple-enter";
 import SimpleLogPage from "@/pages/simple-log";
-import SimpleFeedbackPage from "@/pages/simple-feedback";
-import SimpleTestPage from "@/pages/simple-test";
 import SimpleHostPage from "@/pages/simple-host";
 import SimpleAnalyzePage from "@/pages/simple-analyze";
-import MyTasteWheel from "@/pages/my-taste-wheel";
+import TastingRoomSimple from "@/pages/tasting-room-simple";
+import TastingResultsPage from "@/pages/tasting-results";
+import NakedTasting from "@/pages/naked-tasting";
+import QuickTasting from "@/pages/quick-tasting";
+import PublicLanding from "@/pages/public-landing";
+
+// ── My Taste subpages (eager: frequently accessed) ──
+import MyJournal from "@/pages/my-journal";
+import MyTasteAnalytics from "@/pages/my-taste-analytics";
 import MyTasteCompare from "@/pages/my-taste-compare";
 import MyTasteBenchmark from "@/pages/my-taste-benchmark";
+import MyTasteWheel from "@/pages/my-taste-wheel";
+import MyTasteRecommendations from "@/pages/my-taste-recommendations";
+import MyTasteSettings from "@/pages/my-taste-settings";
+import MyTastePairings from "@/pages/my-taste-pairings";
+import FlavorProfile from "@/pages/flavor-profile";
+import Wishlist from "@/pages/wishlist";
+import WhiskybaseCollection from "@/pages/whiskybase-collection";
+
+// ── Tasting management (eager) ──
+import HostDashboard from "@/pages/host-dashboard";
+import TastingCalendar from "@/pages/tasting-calendar";
+import SessionsDark from "@/pages/sessions-dark";
+import TastingRecap from "@/pages/tasting-recap";
+import DataExportDark from "@/pages/data-export-dark";
+import InviteAccept from "@/pages/invite-accept";
+
+// ── Discover / Knowledge pages (eager) ──
 import DiscoverLexicon from "@/pages/discover-lexicon";
 import DiscoverCommunityNative from "@/pages/discover-community-native";
 import DiscoverDistilleriesNative from "@/pages/discover-distilleries-native";
 import DiscoverBottlersNative from "@/pages/discover-bottlers-native";
-import MyTasteAnalytics from "@/pages/my-taste-analytics";
-import TastingRoomSimple from "@/pages/tasting-room-simple";
-import TastingResultsPage from "@/pages/tasting-results";
-import Recommendations from "@/pages/recommendations";
-import MyTasteRecommendations from "@/pages/my-taste-recommendations";
-import MyTasteSettings from "@/pages/my-taste-settings";
-import MyTastePairings from "@/pages/my-taste-pairings";
-import ActivityFeed from "@/pages/activity-feed";
-import Impressum from "@/pages/impressum";
-import Privacy from "@/pages/privacy";
-import HomeDashboard from "@/pages/home-dashboard";
-import TastingHub from "@/pages/tasting-hub";
-import TastingSessions from "@/pages/tasting-sessions";
-import MyJournal from "@/pages/my-journal";
-import DiscoverHub from "@/pages/discover-hub";
-import DiscoverDistilleries from "@/pages/discover-distilleries";
-import DiscoverCommunity from "@/pages/discover-community";
-import ProfileHelp from "@/pages/profile-help";
-import Account from "@/pages/account";
-import SessionsDark from "@/pages/sessions-dark";
-import DataExportDark from "@/pages/data-export-dark";
 import VocabularyDark from "@/pages/vocabulary-dark";
 import AICurationDark from "@/pages/ai-curation-dark";
 import DonateDark from "@/pages/donate-dark";
 import TastingGuide from "@/pages/tasting-guide";
 import DiscoverTemplates from "@/pages/discover-templates";
 import AboutDark from "@/pages/about-dark";
+import ActivityFeed from "@/pages/activity-feed";
+import Impressum from "@/pages/impressum";
+import Privacy from "@/pages/privacy";
+
+// ── Lazy-loaded pages (rarely accessed) ──
+const GuidedPresentation = lazy(() => import("@/pages/guided-presentation"));
+const LandingV2 = lazy(() => import("@/pages/landing-v2"));
+const FeatureShowcase = lazy(() => import("@/pages/feature-showcase"));
+const FeatureTour = lazy(() => import("@/pages/feature-tour"));
+const Tour = lazy(() => import("@/pages/tour"));
+const Background = lazy(() => import("@/pages/background"));
+const News = lazy(() => import("@/pages/news"));
+const Intro = lazy(() => import("@/pages/intro"));
+const AdminPanel = lazy(() => import("@/pages/admin-panel"));
+const SupportConsole = lazy(() => import("@/pages/support-console"));
+const Landing = lazy(() => import("@/pages/landing"));
+const SimpleFeedbackPage = lazy(() => import("@/pages/simple-feedback"));
+const SimpleTestPage = lazy(() => import("@/pages/simple-test"));
+
+// ── Legacy layout shells ──
+import AdminLayout from "@/components/admin/AdminLayout";
 import SimpleLegacyShell from "@/components/simple/simple-legacy-shell";
+
+// ── Legacy / Layout-wrapped pages (eager for legacy routes) ──
+import TastingRoom from "@/pages/tasting-room";
+import Profile from "@/pages/profile";
+import Badges from "@/pages/badges";
+import FlavorWheel from "@/pages/flavor-wheel";
+import WhiskyDatabase from "@/pages/whisky-database";
+import PhotoTasting from "@/pages/photo-tasting";
+import Method from "@/pages/method";
+import HomeDashboard from "@/pages/home-dashboard";
+import TastingHub from "@/pages/tasting-hub";
+import TastingSessions from "@/pages/tasting-sessions";
+import DiscoverHub from "@/pages/discover-hub";
+import DiscoverDistilleries from "@/pages/discover-distilleries";
+import DiscoverCommunity from "@/pages/discover-community";
+import ProfileHelp from "@/pages/profile-help";
+import Account from "@/pages/account";
+import LogWhiskyPage from "@/pages/log-whisky";
+import Recommendations from "@/pages/recommendations";
+import EnterPage from "@/pages/enter";
+
+// ── V2 Dark Warm UI ──
 import LabDarkLayout from "@/lab-dark/LabDarkLayout";
 import LabHome from "@/lab-dark/pages/LabHome";
 import LabSessions from "@/lab-dark/pages/LabSessions";
@@ -91,11 +112,14 @@ import V2SessionDetail from "@/v2/pages/V2SessionDetail";
 import V2Discover from "@/v2/pages/V2Discover";
 import V2Cellar from "@/v2/pages/V2Cellar";
 import V2More from "@/v2/pages/V2More";
-import TastingHubSimple from "@/pages/tasting-hub-simple";
-import NavRedirects from "@/components/nav-redirects";
-import { getUIPref } from "@/components/view-switcher";
-import { StorageConsent } from "@/components/storage-consent";
-import "@/lib/i18n";
+
+function LazyFallback() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60dvh" }}>
+      <div style={{ width: 24, height: 24, border: "2px solid #d4a57440", borderTop: "2px solid #d4a574", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+    </div>
+  );
+}
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
@@ -134,9 +158,10 @@ function RedirectWithQuery({ to, query }: { to: string; query?: string }) {
 
 function Router() {
   return (
-    <>
+    <Suspense fallback={<LazyFallback />}>
       <NavRedirects />
       <Switch>
+        {/* ── Public / Marketing ── */}
         <Route path="/" component={PublicLanding} />
         <Route path="/presentation" component={GuidedPresentation} />
         <Route path="/landing-v2" component={LandingV2} />
@@ -147,33 +172,27 @@ function Router() {
         <Route path="/feature-tour" component={FeatureTour} />
         <Route path="/tour" component={Tour} />
         <Route path="/background" component={Background} />
+
+        {/* ── Tasting (Tab 1): join, host, live room, results ── */}
         <Route path="/join/:code" component={QuickTasting} />
         <Route path="/tasting" component={TastingHubSimple} />
         <Route path="/tasting/join">{() => <Redirect to="/enter" />}</Route>
         <Route path="/enter" component={SimpleEnterPage} />
         <Route path="/join">{() => <Redirect to="/enter" />}</Route>
-        <Route path="/my-taste/log" component={SimpleLogPage} />
-        <Route path="/log-simple" component={SimpleLogPage} />
-        <Route path="/log">{() => <Redirect to="/log-simple" />}</Route>
-        <Route path="/simple-test" component={SimpleTestPage} />
-        <Route path="/simple-feedback" component={SimpleFeedbackPage} />
         <Route path="/tasting-room-simple/:id" component={TastingRoomSimple} />
         <Route path="/tasting-results/:id" component={TastingResultsPage} />
         <Route path="/naked/:code" component={NakedTasting} />
         <Route path="/sessions" component={SessionsDark} />
-        <Route path="/my-taste/export" component={DataExportDark} />
-        <Route path="/data-export">{() => <Redirect to="/my-taste/export" />}</Route>
-        <Route path="/vocabulary" component={VocabularyDark} />
-        <Route path="/ai-curation" component={AICurationDark} />
-        <Route path="/guide" component={TastingGuide} />
-        <Route path="/discover/guide" component={TastingGuide} />
-        <Route path="/discover/templates" component={DiscoverTemplates} />
-        <Route path="/discover/about" component={AboutDark} />
         <Route path="/host-dashboard" component={HostDashboard} />
         <Route path="/tasting-calendar" component={TastingCalendar} />
-        <Route path="/support" component={SupportConsole} />
         <Route path="/host" component={SimpleHostPage} />
-        <Route path="/analyze" component={SimpleAnalyzePage} />
+
+        {/* ── My Taste (Tab 2): personal hub + subpages ── */}
+        <Route path="/my-taste/log" component={SimpleLogPage} />
+        <Route path="/log-simple" component={SimpleLogPage} />
+        <Route path="/log">{() => <Redirect to="/log-simple" />}</Route>
+        <Route path="/my-taste/export" component={DataExportDark} />
+        <Route path="/data-export">{() => <Redirect to="/my-taste/export" />}</Route>
         <Route path="/discover-hub">{() => <Redirect to="/my-taste" />}</Route>
         <Route path="/my-taste/knowledge">{() => <Redirect to="/my-taste" />}</Route>
         <Route path="/my-taste/community">{() => <Redirect to="/my-taste" />}</Route>
@@ -192,6 +211,15 @@ function Router() {
         <Route path="/my-taste/collection" component={WhiskybaseCollection} />
         <Route path="/my-taste/wishlist" component={Wishlist} />
         <Route path="/taste" component={MyTastePage} />
+        <Route path="/analyze" component={SimpleAnalyzePage} />
+
+        {/* ── Discover / Knowledge ── */}
+        <Route path="/vocabulary" component={VocabularyDark} />
+        <Route path="/ai-curation" component={AICurationDark} />
+        <Route path="/guide" component={TastingGuide} />
+        <Route path="/discover/guide" component={TastingGuide} />
+        <Route path="/discover/templates" component={DiscoverTemplates} />
+        <Route path="/discover/about" component={AboutDark} />
         <Route path="/discover/lexicon" component={DiscoverLexicon} />
         <Route path="/discover/community" component={DiscoverCommunityNative} />
         <Route path="/discover/distilleries" component={DiscoverDistilleriesNative} />
@@ -199,18 +227,23 @@ function Router() {
         <Route path="/discover/recommendations">{() => <Redirect to="/my-taste/recommendations" />}</Route>
         <Route path="/discover/donate" component={DonateDark} />
         <Route path="/discover/activity" component={ActivityFeed} />
+
+        {/* ── Utility / Internal ── */}
+        <Route path="/simple-test" component={SimpleTestPage} />
+        <Route path="/simple-feedback" component={SimpleFeedbackPage} />
+        <Route path="/support" component={SupportConsole} />
         <Route path="/impressum" component={Impressum} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/intro" component={Intro} />
 
-        {/* === ADMIN BACKOFFICE (separate layout, no consumer nav) === */}
+        {/* ── Admin Backoffice (separate layout, no consumer nav) ── */}
         <Route path="/admin">
           <AdminLayout>
             <AdminPanel />
           </AdminLayout>
         </Route>
 
-        {/* === V2 DARK WARM UI (standalone routes, no shell) === */}
+        {/* ── Hidden: V2 Dark Warm UI (standalone routes, no shell) ── */}
         <Route path="/app/join/:code" component={QuickTasting} />
         <Route path="/app/naked/:code" component={NakedTasting} />
 
@@ -366,7 +399,7 @@ function Router() {
           </Layout>
         </Route>
       </Switch>
-    </>
+    </Suspense>
   );
 }
 

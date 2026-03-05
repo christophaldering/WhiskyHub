@@ -7,25 +7,30 @@ import type { SessionMode } from "@/lib/session";
 import { c } from "@/lib/theme";
 import { v } from "@/lib/themeVars";
 import { NAV_VERSION } from "@/lib/config";
+import { primaryTabs } from "@/lib/navConfig";
+import { useTranslation } from "react-i18next";
 
 const NAV_ITEMS_V1 = [
-  { href: "/enter", icon: Wine, label: "Join", match: ["/enter", "/join", "/tasting-room-simple", "/naked/"] },
-  { href: "/log-simple", icon: PenLine, label: "Log", match: ["/log-simple", "/log"] },
-  { href: "/host", icon: Crown, label: "Host", match: ["/host"] },
-  { href: "/my-taste", icon: User, label: "My Taste", match: ["/my-taste", "/taste", "/my-taste/analytics"] },
-  { href: "/analyze", icon: Compass, label: "Discover", match: ["/analyze", "/discover"] },
+  { href: "/enter", icon: Wine, labelKey: "nav.join", labelFallback: "Join", match: ["/enter", "/join", "/tasting-room-simple", "/naked/"] },
+  { href: "/log-simple", icon: PenLine, labelKey: "nav.log", labelFallback: "Log", match: ["/log-simple", "/log"] },
+  { href: "/host", icon: Crown, labelKey: "nav.host", labelFallback: "Host", match: ["/host"] },
+  { href: "/my-taste", icon: User, labelKey: "nav.myTaste", labelFallback: "My Taste", match: ["/my-taste", "/taste", "/my-taste/analytics"] },
+  { href: "/analyze", icon: Compass, labelKey: "nav.discover", labelFallback: "Discover", match: ["/analyze", "/discover"] },
 ];
 
 const NAV_ITEMS_V2 = [
-  { href: "/tasting", icon: Wine, label: "Tasting", match: ["/tasting", "/enter", "/join", "/tasting-room-simple", "/naked/", "/host"] },
-  { href: "/my-taste", icon: User, label: "My Taste", match: ["/my-taste", "/taste", "/log-simple", "/log"] },
-  { href: "/analyze", icon: Compass, label: "Explore", match: ["/analyze", "/discover"] },
+  { href: "/tasting", icon: Wine, labelKey: "nav.tasting", labelFallback: "Tasting", match: ["/tasting", "/enter", "/join", "/tasting-room-simple", "/naked/", "/host"] },
+  { href: "/my-taste", icon: User, labelKey: "nav.myTaste", labelFallback: "My Taste", match: ["/my-taste", "/taste", "/log-simple", "/log"] },
+  { href: "/analyze", icon: Compass, labelKey: "nav.discover", labelFallback: "Explore", match: ["/analyze", "/discover"] },
 ];
 
-const NAV_ITEMS_TWO_TAB = [
-  { href: "/tasting", icon: Wine, label: "Tasting", match: ["/tasting", "/enter", "/join", "/tasting-room-simple", "/naked/", "/host", "/host-dashboard", "/sessions", "/tasting-calendar"] },
-  { href: "/my-taste", icon: User, label: "My Taste", match: ["/my-taste", "/taste", "/log-simple", "/log", "/analyze", "/discover"] },
-];
+const NAV_ITEMS_TWO_TAB = primaryTabs.map((tab) => ({
+  href: tab.route,
+  icon: tab.icon,
+  labelKey: tab.labelKey,
+  labelFallback: tab.key === "tasting" ? "Tasting" : "My Taste",
+  match: tab.match || [tab.route],
+}));
 
 const NAV_ITEMS = NAV_VERSION === "v2_two_tab" ? NAV_ITEMS_TWO_TAB : NAV_VERSION === "v2_simplified" ? NAV_ITEMS_V2 : NAV_ITEMS_V1;
 
@@ -39,6 +44,7 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
   const [location] = useLocation();
   const [showSessionSheet, setShowSessionSheet] = useState(false);
   const [session, setSession] = useState(() => getSession());
+  const { t } = useTranslation();
 
   const refreshSession = useCallback(() => setSession(getSession()), []);
 
@@ -195,13 +201,13 @@ export default function SimpleShell({ children, showBack = true, maxWidth = 420 
                   color: active ? v.accent : v.mutedLight,
                   transition: "color 0.2s",
                 }}
-                data-testid={`simple-nav-${item.label.toLowerCase().replace(/\s/g, "-")}`}
+                data-testid={`simple-nav-${(item.labelFallback || item.labelKey).toLowerCase().replace(/\s/g, "-")}`}
               >
                 <item.icon
                   style={{ width: 20, height: 20 }}
                   strokeWidth={active ? 2.2 : 1.8}
                 />
-                <span style={{ fontSize: 10, fontWeight: 500 }}>{item.label}</span>
+                <span style={{ fontSize: 10, fontWeight: 500 }}>{t(item.labelKey, item.labelFallback)}</span>
               </div>
             </Link>
           );

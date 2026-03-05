@@ -6,6 +6,7 @@ import { collectionApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import SimpleShell from "@/components/simple/simple-shell";
 import BackButton from "@/components/back-button";
+import EmptyState from "@/components/ui/EmptyState";
 import { motion, AnimatePresence } from "framer-motion";
 import { c, cardStyle, inputStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 import {
@@ -730,19 +731,13 @@ export default function WhiskybaseCollection() {
           <Loader2 style={{ width: 32, height: 32, color: c.muted, animation: "spin 1s linear infinite" }} />
         </div>
       ) : items.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ textAlign: "center", padding: "64px 0" }}
-        >
-          <Archive style={{ width: 64, height: 64, margin: "0 auto 16px", opacity: 0.3, color: c.muted }} />
-          <p style={{ color: c.muted, marginBottom: 16 }}>{t("collection.empty")}</p>
-          <p style={{ fontSize: 12, color: c.muted, marginBottom: 24 }}>{t("collection.importHint")}</p>
-          <button style={btnPrimary} onClick={() => fileInputRef.current?.click()} data-testid="button-import-empty">
-            <Upload style={{ width: 16, height: 16, marginRight: 8 }} />
-            {t("collection.importButton")}
-          </button>
-        </motion.div>
+        <EmptyState
+          icon={Archive}
+          title={t("emptyState.collectionTitle")}
+          description={t("emptyState.collectionDesc")}
+          actionLabel={t("emptyState.collectionCta")}
+          onAction={() => fileInputRef.current?.click()}
+        />
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: "48px 0" }}>
           <p style={{ color: c.muted }}>{t("collection.noResults")}</p>

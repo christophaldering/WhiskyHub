@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ThankYouDialog } from "@/components/thank-you-dialog";
 import jsPDF from "jspdf";
 import SimpleShell from "@/components/simple/simple-shell";
+import BackButton from "@/components/back-button";
 
 interface RecapData {
   tasting: { id: string; title: string; date: string; location: string; status: string; hostId: string; ratingScale?: number };
@@ -238,6 +239,7 @@ export default function TastingRecap() {
     return (
       <SimpleShell maxWidth={900}>
       <div data-testid="recap-page">
+        <BackButton fallback="/tasting" />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center gap-3 mb-2">
             <Trophy className="w-7 h-7 text-primary" />

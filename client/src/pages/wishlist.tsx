@@ -10,6 +10,7 @@ import { useAIStatus } from "@/hooks/use-ai-status";
 import { GuestPreview } from "@/components/guest-preview";
 import SimpleShell from "@/components/simple/simple-shell";
 import BackButton from "@/components/back-button";
+import EmptyState from "@/components/ui/EmptyState";
 import { motion, AnimatePresence } from "framer-motion";
 import { c, inputStyle, cardStyle, pageTitleStyle, pageSubtitleStyle } from "@/lib/theme";
 import { Plus, ArrowLeft, Pencil, Trash2, Star, Wine, Calendar, Flame, Sparkles, Clock, Camera, Loader2, ScanLine, Type, Send, GlassWater, ExternalLink, Check } from "lucide-react";
@@ -201,12 +202,13 @@ export default function Wishlist() {
                 ))}
               </div>
             ) : entries.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "80px 0" }}>
-                <Star style={{ width: 48, height: 48, margin: "0 auto 16px", color: `${c.muted}66` }} />
-                <p style={{ color: c.muted, fontFamily: "'Playfair Display', Georgia, serif" }} data-testid="text-wishlist-empty">
-                  {t("wishlist.empty")}
-                </p>
-              </div>
+              <EmptyState
+                icon={Star}
+                title={t("emptyState.wishlistTitle")}
+                description={t("emptyState.wishlistDesc")}
+                actionLabel={t("emptyState.wishlistCta")}
+                onAction={() => setView("form")}
+              />
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {sortedEntries.map((entry: WishlistEntry) => {

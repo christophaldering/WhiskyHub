@@ -4,7 +4,8 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import SimpleShell from "@/components/simple/simple-shell";
-import { Trophy, ChevronDown, Download, ArrowLeft, FileSpreadsheet, FileText, ClipboardList, Loader2 } from "lucide-react";
+import { Trophy, ChevronDown, Download, FileSpreadsheet, FileText, ClipboardList, Loader2 } from "lucide-react";
+import BackButton from "@/components/back-button";
 import { c, cardStyle } from "@/lib/theme";
 import { downloadBlob } from "@/lib/download";
 import jsPDF from "jspdf";
@@ -488,24 +489,9 @@ export default function TastingResultsPage() {
           {data.results.length > 0 && (
             <ExportDropdown data={data} />
           )}
-          <Link href="/host" style={{ textDecoration: "none", flex: 1 }}>
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              padding: "10px",
-              fontSize: 13,
-              fontWeight: 500,
-              color: c.muted,
-              border: `1px solid ${c.border}`,
-              borderRadius: 10,
-              cursor: "pointer",
-            }} data-testid="button-back-to-host">
-              <ArrowLeft style={{ width: 14, height: 14 }} />
-              Back to Host
-            </div>
-          </Link>
+          <div style={{ flex: 1 }}>
+            <BackButton fallback="/tasting" />
+          </div>
         </div>
       </div>
     </SimpleShell>
