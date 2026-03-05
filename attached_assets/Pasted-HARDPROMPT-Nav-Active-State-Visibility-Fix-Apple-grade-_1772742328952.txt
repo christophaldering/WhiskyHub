@@ -1,0 +1,86 @@
+HARDPROMPT — “Nav Active-State Visibility Fix (Apple-grade, no scope creep)”
+
+You are Replit AI working INSIDE the existing CaskSense repo. You MUST implement exactly what is requested below. You MUST NOT add new features, new pages, new routes, or redesign other parts of the app. Do NOT refactor unrelated code. Do NOT change data models, DB, APIs, auth, exports, or business logic.
+
+GOAL
+Make it instantly obvious (Apple-grade) which of the two top-level tabs is active (“Tasting” vs “My Taste”) in DESKTOP and MOBILE. Current highlight is too subtle. Fix it with a clear active state, hover, focus, and accessible contrast—without changing the IA (information architecture). The two-tab structure stays.
+
+STRICT SCOPE
+Only touch:
+- the top-level tab UI component(s) that render “Tasting” and “My Taste”
+- the CSS/Tailwind classes used by that tab UI
+- (if needed) small shared UI tokens in theme variables for nav only
+Do NOT touch page content, lists, cards, exports, or other navigation components unless required to keep consistency of this top tab bar.
+
+REQUIREMENTS (Non-negotiable)
+1) Active state must be unmistakable at a glance:
+   - Use at least TWO signals simultaneously:
+     a) strong background fill (pill) OR underline indicator
+     b) typography weight change (semibold/bold)
+     c) optional small glow/shadow (subtle, premium)
+2) Inactive state must clearly look inactive (lower contrast).
+3) Hover state (desktop) must be visible but not overpower active.
+4) Focus state (keyboard) must be visible (ring) and WCAG-friendly.
+5) The control must be centered horizontally as it is now (keep layout), but ensure it reads as PRIMARY NAV, not a “filter”.
+6) Must work in both DE and EN (labels are translated; do not hardcode strings).
+7) Must not break mobile bottom nav; this is only the TOP two-tab switch.
+8) No duplication: there must be exactly ONE implementation of this top tab UI (no “slightly different” copies). If duplicates exist, consolidate into a single component used everywhere.
+
+IMPLEMENTATION DETAILS
+A) Locate the top tab switch (“Tasting / My Taste”) rendering
+- Find the component/layout that shows these two items.
+- It may live in:
+  client/src/components/simple/simple-shell.tsx
+  client/src/components/session-sheet.tsx
+  client/src/components/layout.tsx
+  client/src/v2/components/AppShellV2.tsx
+  or a dedicated nav component.
+- Identify ALL places it’s rendered. If more than one, consolidate into ONE shared component:
+  client/src/components/TopTabSwitch.tsx (or similar) and replace usages.
+
+B) Styling (Apple-grade)
+Implement as Segmented Control (preferred):
+- container: rounded-full, subtle border, translucent background
+- active tab: filled pill with “warm gold” background and dark text, semibold
+- inactive tab: transparent, muted text, medium weight
+- hover: slightly brighter background for inactive only
+- focus-visible: ring (gold or neutral) with offset
+
+If you already have a SegmentedControlV2 component:
+- reuse it and apply correct active/inactive styles.
+- do not create a second segmented control component.
+
+Tailwind guidance (adapt to your theme tokens):
+- active: bg-[var(--accent)] text-black/90 font-semibold shadow-sm shadow-black/30
+- inactive: text-white/60 hover:text-white/80 hover:bg-white/5
+- container: bg-white/3 border border-white/10 backdrop-blur rounded-full p-1
+- focus: focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-black/60
+
+C) Correct active determination
+- Active tab is determined by route prefix:
+  - /tasting* => Tasting active
+  - /my-taste* => My Taste active
+- Use the existing router (Wouter) location hook as used elsewhere.
+- Ensure it works for nested routes (e.g. /my-taste/analytics).
+
+D) Deliverables in code
+1) One shared component for the top tab switch (if not already present).
+2) Replace all duplicates to use it.
+3) Adjust styling so active state is obvious.
+4) Add minimal unit-less verification: a tiny dev-only console log is NOT allowed. Instead, add a small inline comment describing route logic.
+
+E) QA checklist (must be included in your final response)
+- Desktop: active tab is obvious even when squinting
+- Hover: inactive highlights on hover
+- Keyboard: Tab shows focus ring
+- Routes: /tasting, /tasting/..., /my-taste, /my-taste/... highlight correctly
+- No layout shift between states
+
+OUTPUT FORMAT
+After changes, respond with:
+1) Root cause (why it was not obvious)
+2) Files changed (list)
+3) Short summary of what you did
+4) QA steps (bullet list)
+
+Now implement exactly this. No extra work.
