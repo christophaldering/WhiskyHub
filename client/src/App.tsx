@@ -24,6 +24,7 @@ import PhotoTasting from "@/pages/photo-tasting";
 import Method from "@/pages/method";
 import Intro from "@/pages/intro";
 import Landing from "@/pages/landing";
+import PublicLanding from "@/pages/public-landing";
 import FeatureTour from "@/pages/feature-tour";
 import Tour from "@/pages/tour";
 import Background from "@/pages/background";
@@ -133,10 +134,11 @@ function Router() {
     <>
       <NavRedirects />
       <Switch>
-        <Route path="/" component={Landing} />
+        <Route path="/" component={PublicLanding} />
+        <Route path="/app-entry" component={Landing} />
         <Route path="/landing">{() => <Redirect to="/" />}</Route>
         <Route path="/start">{() => <Redirect to="/" />}</Route>
-        <Route path="/menu">{() => <Redirect to="/" />}</Route>
+        <Route path="/menu">{() => <Redirect to="/app-entry" />}</Route>
         <Route path="/feature-tour" component={FeatureTour} />
         <Route path="/tour" component={Tour} />
         <Route path="/background" component={Background} />
