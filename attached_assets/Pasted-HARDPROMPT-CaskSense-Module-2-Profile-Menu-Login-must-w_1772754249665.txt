@@ -1,0 +1,153 @@
+HARDPROMPT — CaskSense Module 2: Profile Menu Login must work 100% with existing auth
+
+Problem:
+In Module 2, the new Profile menu/sign-in overlay is visible, but login is not reliably working.
+This is NOT acceptable.
+The new Module 2 Profile menu must use the exact same working authentication/session logic as the classic UI.
+
+Goal:
+Make login/logout/session handling in Module 2 fully functional, production-safe, and test-covered.
+No parallel fake auth state. No disconnected overlay behavior.
+
+================================================
+1) ROOT CAUSE ANALYSIS FIRST
+================================================
+Before changing UI, inspect and document:
+
+- Which existing login flow in the classic UI currently works
+- Which endpoint(s) it uses
+- How session/auth state is stored and refreshed
+- How the current user is fetched after login
+- How logout works
+- How login errors are currently shown
+
+Then compare with the new Module 2 Profile menu implementation and identify exactly where it diverges.
+
+================================================
+2) NON-NEGOTIABLE FIX
+================================================
+The Module 2 Profile menu MUST:
+
+- use the SAME auth endpoint(s) as the classic UI
+- use the SAME session/cookie behavior
+- use the SAME “current user” refresh logic
+- use the SAME logout mechanism
+- use the SAME password/email validation logic if already present
+- show proper loading, success, and error states
+
+Do NOT keep a separate mock/local-only auth flow in Module 2.
+
+================================================
+3) REQUIRED UX BEHAVIOR
+================================================
+When user opens the Profile menu in Module 2:
+
+A) If logged out:
+- show a proper sign-in form
+- fields:
+  - email
+  - password
+- primary button:
+  - DE: “Anmelden”
+  - EN: “Sign in”
+- show validation errors inline
+- show auth/server errors clearly
+- disable button while submitting
+- submit on Enter key
+- after successful login:
+  - close the panel
+  - refresh session/current-user state
+  - update top-right Profile label/avatar immediately
+  - remain on the current Module 2 page (do NOT unexpectedly redirect away)
+
+B) If logged in:
+- show Profile menu items instead of sign-in form:
+  - Einstellungen / Settings
+  - Theme
+  - Daten & Export
+  - Abmelden / Sign out
+  - Zur klassischen Ansicht / Switch to Classic UI
+
+C) If login fails:
+- keep form open
+- show meaningful error message
+- do not silently fail
+- do not reset fields unless necessary
+
+================================================
+4) VISUAL / LAYOUT FIXES
+================================================
+The current Profile overlay must also be improved:
+
+- ensure the panel is fully visible on mobile
+- ensure bottom nav does not visually interfere with the auth panel
+- ensure enough spacing below the Sign-in button
+- make panel scrollable if viewport height is small
+- keep dark warm + light theme support
+- use i18n keys for all strings
+
+================================================
+5) STATE MANAGEMENT
+================================================
+After successful login in Module 2:
+
+- invalidate/refetch the same React Query auth/current-user query used by the classic UI
+- ensure any route guards or conditional UI update immediately
+- ensure Circle page and other authenticated views react correctly without manual reload
+
+After logout:
+- clear/refetch auth state properly
+- return UI to logged-out state
+- do not leave stale username/avatar visible
+
+================================================
+6) TESTING — MUST BE ADDED
+================================================
+Add automated tests specifically for this bug.
+
+A) Unit/integration tests for the Profile menu:
+- renders sign-in form when logged out
+- submit button disabled while loading
+- shows error on failed login
+- closes and updates UI on successful login
+- shows menu options when logged in
+- logout returns to logged-out state
+
+B) API/auth tests:
+- verify login endpoint returns expected success/failure behavior
+- verify session/current-user endpoint reflects login state
+
+C) E2E Playwright tests:
+1. Open /m2
+2. Open Profile menu
+3. Login with seeded test user
+4. Verify menu closes
+5. Verify logged-in user is shown
+6. Reload page
+7. Verify session persists
+8. Logout
+9. Verify logged-out state returns
+
+================================================
+7) SEED USER FOR TESTING
+================================================
+Use/create deterministic test credentials for automated tests:
+- email: test.m2@casksense.local
+- password: Test1234!
+
+If the project already has another deterministic seeded user, reuse it consistently.
+
+================================================
+8) OUTPUT REQUIRED
+================================================
+After fixing, output:
+1) exact root cause found
+2) files changed
+3) tests added
+4) short manual verification checklist
+5) confirmation whether Module 2 now uses the exact same auth flow as classic UI
+
+Do not stop at “UI looks correct”.
+The login must actually work end-to-end.
+
+END.

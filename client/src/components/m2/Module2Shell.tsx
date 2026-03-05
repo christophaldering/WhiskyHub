@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { Wine, BarChart3, Users, User } from "lucide-react";
 import { v } from "@/lib/themeVars";
@@ -23,9 +23,18 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
   const [showSession, setShowSession] = useState(false);
   const [session, setSession] = useState(getSession());
 
-  useEffect(() => {
-    tryAutoResume().then(() => setSession(getSession()));
+  const refreshSession = useCallback(() => {
+    setSession(getSession());
   }, []);
+
+  useEffect(() => {
+    tryAutoResume().then(refreshSession);
+  }, [refreshSession]);
+
+  useEffect(() => {
+    window.addEventListener("session-change", refreshSession);
+    return () => window.removeEventListener("session-change", refreshSession);
+  }, [refreshSession]);
 
   const isActive = (tab: typeof TABS[number]) =>
     tab.match.some((m) => location === m || location.startsWith(m + "/"));
