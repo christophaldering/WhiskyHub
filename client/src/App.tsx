@@ -114,6 +114,10 @@ import M2TastingSession from "@/pages/m2/M2TastingSession";
 import M2HostControl from "@/pages/m2/M2HostControl";
 import M2TastingPlay from "@/pages/m2/M2TastingPlay";
 import M2TasteHome from "@/pages/m2/M2TasteHome";
+import M2TasteProfile from "@/pages/m2/M2TasteProfile";
+import M2TasteAnalytics from "@/pages/m2/M2TasteAnalytics";
+import M2TasteDrams from "@/pages/m2/M2TasteDrams";
+import M2TasteCollection from "@/pages/m2/M2TasteCollection";
 import M2CircleHome from "@/pages/m2/M2CircleHome";
 
 // ── V2 Dark Warm UI ──
@@ -291,6 +295,18 @@ function Router() {
         </Route>
         <Route path="/m2/tastings">
           <Module2Shell><M2TastingsHome /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste/profile">
+          <Module2Shell><M2TasteProfile /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste/analytics">
+          <Module2Shell><M2TasteAnalytics /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste/drams">
+          <Module2Shell><M2TasteDrams /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste/collection">
+          <Module2Shell><M2TasteCollection /></Module2Shell>
         </Route>
         <Route path="/m2/taste">
           <Module2Shell><M2TasteHome /></Module2Shell>

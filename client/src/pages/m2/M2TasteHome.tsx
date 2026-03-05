@@ -1,18 +1,43 @@
 import { useTranslation } from "react-i18next";
-import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { v } from "@/lib/themeVars";
 import { getSession } from "@/lib/session";
 import { Activity, BookOpen, Wine, BarChart3, ChevronRight } from "lucide-react";
+import { Link } from "wouter";
 
 export default function M2TasteHome() {
   const { t } = useTranslation();
   const session = getSession();
 
+  const { data: journal = [] } = useQuery({
+    queryKey: ["journal", session.pid],
+    queryFn: async () => {
+      if (!session.pid) return [];
+      const res = await fetch(`/api/journal?participantId=${session.pid}`, {
+        headers: { "x-participant-id": session.pid },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!session.pid,
+  });
+
+  const { data: tastings = [] } = useQuery({
+    queryKey: ["tastings", session.pid],
+    queryFn: async () => {
+      if (!session.pid) return [];
+      const res = await fetch(`/api/tastings?participantId=${session.pid}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!session.pid,
+  });
+
   const links = [
-    { href: "/my-taste/profile", icon: Activity, labelKey: "m2.taste.profile", fallback: "My CaskSense Profile" },
-    { href: "/my-taste/analytics", icon: BarChart3, labelKey: "m2.taste.analytics", fallback: "Analytics" },
-    { href: "/my-taste/drams", icon: BookOpen, labelKey: "m2.taste.journal", fallback: "My Drams" },
-    { href: "/my-taste/collection", icon: Wine, labelKey: "m2.taste.collection", fallback: "Collection" },
+    { id: "profile", href: "/m2/taste/profile", icon: Activity, labelKey: "m2.taste.profile", fallback: "My CaskSense Profile" },
+    { id: "analytics", href: "/m2/taste/analytics", icon: BarChart3, labelKey: "m2.taste.analytics", fallback: "Analytics" },
+    { id: "drams", href: "/m2/taste/drams", icon: BookOpen, labelKey: "m2.taste.journal", fallback: "My Drams" },
+    { id: "collection", href: "/m2/taste/collection", icon: Wine, labelKey: "m2.taste.collection", fallback: "Collection" },
   ];
 
   return (
@@ -50,31 +75,44 @@ export default function M2TasteHome() {
       )}
 
       {session.signedIn && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {links.map((link) => (
-            <Link key={link.href} href={`${link.href}?from=/m2/taste`} style={{ textDecoration: "none" }}>
-              <div
-                style={{
-                  background: v.card,
-                  border: `1px solid ${v.border}`,
-                  borderRadius: 12,
-                  padding: "14px 16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  cursor: "pointer",
-                }}
-                data-testid={`m2-taste-link-${link.fallback.toLowerCase().replace(/\s/g, "-")}`}
-              >
-                <link.icon style={{ width: 20, height: 20, color: v.accent }} />
-                <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: v.text }}>
-                  {t(link.labelKey, link.fallback)}
-                </span>
-                <ChevronRight style={{ width: 16, height: 16, color: v.muted }} />
-              </div>
-            </Link>
-          ))}
-        </div>
+        <>
+          <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+            <div style={{ flex: 1, background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: "14px 12px", textAlign: "center" }}>
+              <div style={{ fontSize: 22, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>{journal.length}</div>
+              <div style={{ fontSize: 11, color: v.muted }}>{t("m2.taste.dramCount", "Drams")}</div>
+            </div>
+            <div style={{ flex: 1, background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: "14px 12px", textAlign: "center" }}>
+              <div style={{ fontSize: 22, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>{tastings.length}</div>
+              <div style={{ fontSize: 11, color: v.muted }}>{t("m2.taste.tastingCount", "Tastings")}</div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {links.map((link) => (
+              <Link key={link.id} href={link.href} style={{ textDecoration: "none" }}>
+                <div
+                  style={{
+                    background: v.card,
+                    border: `1px solid ${v.border}`,
+                    borderRadius: 12,
+                    padding: "14px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    cursor: "pointer",
+                  }}
+                  data-testid={`m2-taste-link-${link.id}`}
+                >
+                  <link.icon style={{ width: 20, height: 20, color: v.accent }} />
+                  <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: v.text }}>
+                    {t(link.labelKey, link.fallback)}
+                  </span>
+                  <ChevronRight style={{ width: 16, height: 16, color: v.muted }} />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

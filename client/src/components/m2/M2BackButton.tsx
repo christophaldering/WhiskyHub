@@ -15,20 +15,18 @@ export default function M2BackButton() {
   const [location, navigate] = useLocation();
   const { t } = useTranslation();
 
+  const isM2Route = (path: string) => path.startsWith("/m2");
+
   const goBack = () => {
     const params = new URLSearchParams(window.location.search);
     const from = params.get("from");
-    if (from && /^\/[a-zA-Z0-9\-_/]*$/.test(from)) {
+    if (from && /^\/[a-zA-Z0-9\-_/]*$/.test(from) && isM2Route(from)) {
       navigate(from);
       return;
     }
     const prev = popRoute();
-    if (prev) {
+    if (prev && isM2Route(prev)) {
       navigate(prev);
-      return;
-    }
-    if (window.history.length > 1) {
-      window.history.back();
       return;
     }
     navigate(getM2Fallback(location));

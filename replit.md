@@ -47,7 +47,16 @@ PostgreSQL serves as the primary database, accessed via Drizzle ORM. The schema 
 -   **V2 Dark Warm UI (`/app`)**: Redesigned UI with an Apple-clean aesthetic and a whisky-warm dark color palette.
 -   **Simple Mode (`/enter`, `/log-simple`, `/my-taste`)**: Minimalist UI for new users, featuring AI-powered whisky identification via photo or text, and file import.
 -   **Admin Tools**: Provides functionalities for managing test data, AI kill switch, and platform settings, accessible via a dedicated `/admin` route.
--   **Module 2 (`/m2/*`)**: A parallel UI with its own 3-tab bottom navigation (Tastings | Taste | Circle), sharing the same backend, authentication, and database.
+-   **Module 2 (`/m2/*`)**: Fully self-contained parallel UI sharing the same backend, auth, and database. NO cross-links to the old app — all navigation stays within `/m2/*`. 3-tab bottom nav (Tastings | Taste | Circle) with M2-specific profile menu (`M2ProfileMenu.tsx`, not SessionSheet). Components: `Module2Shell.tsx`, `M2BackButton.tsx` (enforces M2-only navigation via `isM2Route` guard), `M2ProfileMenu.tsx`. Pages: `M2TastingsHome`, `M2TastingsJoin`, `M2TastingsHost`, `M2TastingsSolo` (inline dram logger), `M2TastingSession`, `M2HostControl`, `M2TastingPlay` (inline rating UI), `M2TasteHome`, `M2TasteProfile`, `M2TasteAnalytics`, `M2TasteDrams`, `M2TasteCollection`, `M2CircleHome`. All use `v.*` theme tokens, i18n under `m2.*` namespace. Landing page has secondary CTA linking to `/m2`.
+
+### Test Suite
+Comprehensive test framework using Vitest with 4 tiers:
+-   **Unit tests** (`tests/unit/`): Module2Shell rendering, M2BackButton fallback logic, theme token validation, i18n coverage. Config: `vitest.config.ts` (jsdom, @vitejs/plugin-react). Run: `npm run test:unit`.
+-   **API tests** (`tests/api/`): Health endpoint, auth signin, tastings CRUD. Config: `vitest.config.api.ts` (node). Run: `npm run test:api`.
+-   **E2E tests** (`tests/e2e/`): Fetch-based route verification for all `/m2/*` and existing routes, auth flow integration. Config: `vitest.config.e2e.ts` (node). Run: `npm run test:e2e`.
+-   **Smoke tests** (`tests/smoke.ts`): CLI script checking server health, DB, auth, M2 routing. Run: `npm run test:smoke`.
+-   **Full suite**: `npm run test:all` (unit + api + e2e + smoke). 39 tests total.
+-   **Test data**: `npm run db:seed:test` creates test user (`test.m2@casksense.local`) and test tasting with 3 whiskies. Cleanup: `npx tsx server/cleanup-test.ts`.
 
 ## External Dependencies
 

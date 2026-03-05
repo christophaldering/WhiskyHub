@@ -1,8 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Link } from "wouter";
 import { v } from "@/lib/themeVars";
 import { getSession } from "@/lib/session";
-import { Users, Trophy, ChevronRight } from "lucide-react";
+import { Users, Trophy, MessageCircle, Heart } from "lucide-react";
 
 export default function M2CircleHome() {
   const { t } = useTranslation();
@@ -44,28 +43,37 @@ export default function M2CircleHome() {
 
       {session.signedIn && (
         <>
-          <Link href="/discover/community?from=/m2/circle" style={{ textDecoration: "none" }}>
-            <div
-              style={{
-                background: v.card,
-                border: `1px solid ${v.border}`,
-                borderRadius: 12,
-                padding: "14px 16px",
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                cursor: "pointer",
-                marginBottom: 8,
-              }}
-              data-testid="m2-circle-rankings"
-            >
-              <Trophy style={{ width: 20, height: 20, color: v.accent }} />
-              <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: v.text }}>
-                {t("m2.circle.rankings", "Community Rankings")}
-              </span>
-              <ChevronRight style={{ width: 16, height: 16, color: v.muted }} />
-            </div>
-          </Link>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+            {[
+              { icon: Trophy, label: t("m2.circle.rankings", "Community Rankings"), testId: "m2-circle-rankings" },
+              { icon: Users, label: t("m2.circle.tasteTwins", "Taste Twins"), testId: "m2-circle-taste-twins" },
+              { icon: MessageCircle, label: t("m2.circle.activity", "Activity Feed"), testId: "m2-circle-activity" },
+              { icon: Heart, label: t("m2.circle.friends", "Whisky Friends"), testId: "m2-circle-friends" },
+            ].map((item) => (
+              <div
+                key={item.testId}
+                style={{
+                  background: v.card,
+                  border: `1px solid ${v.border}`,
+                  borderRadius: 12,
+                  padding: "14px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  opacity: 0.5,
+                }}
+                data-testid={item.testId}
+              >
+                <item.icon style={{ width: 20, height: 20, color: v.accent }} />
+                <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: v.text }}>
+                  {item.label}
+                </span>
+                <span style={{ fontSize: 11, color: v.muted, fontWeight: 500 }}>
+                  {t("m2.circle.soon", "Soon")}
+                </span>
+              </div>
+            ))}
+          </div>
 
           <div
             style={{
@@ -73,7 +81,6 @@ export default function M2CircleHome() {
               borderRadius: 14,
               padding: "32px 20px",
               textAlign: "center",
-              marginTop: 16,
             }}
             data-testid="m2-circle-coming-soon"
           >

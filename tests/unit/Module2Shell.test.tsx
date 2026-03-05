@@ -4,10 +4,12 @@ import { render, screen } from "@testing-library/react";
 vi.mock("@/lib/session", () => ({
   getSession: () => ({ signedIn: false, name: null }),
   tryAutoResume: () => Promise.resolve(),
+  signIn: vi.fn(),
+  signOut: vi.fn(),
 }));
 
-vi.mock("@/components/session-sheet", () => ({
-  default: ({ open }: any) => (open ? <div data-testid="mock-session-sheet" /> : null),
+vi.mock("@/components/m2/M2ProfileMenu", () => ({
+  default: ({ open }: any) => (open ? <div data-testid="mock-profile-menu" /> : null),
 }));
 
 vi.mock("wouter", () => ({
@@ -22,6 +24,10 @@ vi.mock("react-i18next", () => ({
     t: (key: string, fallback?: string) => fallback || key,
     i18n: { language: "en", changeLanguage: vi.fn() },
   }),
+}));
+
+vi.mock("@/lib/i18n", () => ({
+  default: { language: "en", changeLanguage: vi.fn() },
 }));
 
 import Module2Shell from "@/components/m2/Module2Shell";

@@ -4,7 +4,7 @@ import { Wine, BarChart3, Users, User } from "lucide-react";
 import { v } from "@/lib/themeVars";
 import { useTranslation } from "react-i18next";
 import { getSession, tryAutoResume } from "@/lib/session";
-import SessionSheet from "@/components/session-sheet";
+import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
 
 const TABS = [
   { href: "/m2/tastings", icon: Wine, labelKey: "m2.tabs.tastings", fallback: "Tastings", match: ["/m2/tastings"] },
@@ -154,7 +154,7 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
         </nav>
       )}
 
-      <SessionSheet open={showSession} onClose={() => setShowSession(false)} />
+      <M2ProfileMenu open={showSession} onClose={() => setShowSession(false)} />
     </div>
   );
 }
