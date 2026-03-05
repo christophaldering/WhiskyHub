@@ -1,0 +1,201 @@
+IMPLEMENT “RABBIT HOLE” (Deep Dive) + PORT ADVANCED PAGES TO CURRENT DESIGN (ONE PASS)
+
+You are Replit AI working inside the CaskSense repo.
+
+Goal:
+1) Add a clearly optional “Rabbit Hole” entry point inside the Knowledge area for advanced content (scales, stats, research).
+2) Ensure the advanced pages (existing: /method, /background, /research and any related pages) are visually aligned with the CURRENT app design (dark-warm / simple shell), i18n-consistent, and have proper navigation (single back action).
+
+Constraints (must follow):
+- Keep the two top-level tabs unchanged:
+  - Tab 1: /tasting
+  - Tab 2: /my-taste
+- Do NOT remove any features or routes.
+- Prefer minimal safe refactors: port styling/layout without rewriting content logic.
+- All labels and new copy must use i18n (DE fully German, EN fully English).
+- Avoid duplicate back actions: each page must have only ONE clear “back” affordance.
+- Use the existing design system components where available (SimpleShell / ApplePage / V2 components, shadcn/ui).
+- After implementation, the project must build and run.
+
+========================================================
+PART A — ADD “RABBIT HOLE” ENTRY IN KNOWLEDGE
+========================================================
+
+A1) Locate the Knowledge section UI.
+- It is likely on the /my-taste hub page and/or a /discover page.
+- Add ONE new nav card at the bottom of Knowledge:
+
+Title:
+- EN: “Rabbit Hole”
+- DE: “Rabbit Hole”
+
+Subtitle:
+- EN: “For curious minds: scales, statistics & the science behind taste.”
+- DE: “Für Neugierige: Skalen, Statistik & die Wissenschaft hinter Geschmack.”
+
+CTA / link target:
+- /discover/rabbit-hole  (new hub route)
+
+Make sure this card is clearly marked as optional and placed AFTER the standard knowledge items.
+
+========================================================
+PART B — CREATE THE RABBIT HOLE HUB PAGE
+========================================================
+
+B1) Create a new page file:
+- client/src/pages/rabbit-hole.tsx
+Route:
+- /discover/rabbit-hole (and optionally alias /rabbit-hole redirecting to it)
+
+B2) Design:
+- Use CURRENT app design (dark-warm, same typography, spacing, card style).
+- Use standard PageHeader (if implemented) with ONE back action:
+  - Back target: /my-taste OR the page that links to it (prefer /my-taste, safe fallback).
+- Layout: section intro + grid of cards.
+
+B3) Copy (i18n keys):
+Title:
+- “Rabbit Hole”
+Subtitle:
+- EN: “Dive deeper into how CaskSense measures taste: models, scales, and robust statistics.”
+- DE: “Steige tiefer ein: Modelle, Skalen und robuste Auswertung in CaskSense.”
+
+B4) Cards on hub (ONLY if target exists; do not create empty pages):
+1) Rating Models (Scales)
+   - EN title: “Rating Models”
+   - DE title: “Skalenmodelle”
+   - EN desc: “What a score means — anchors, levels, interpretation.”
+   - DE desc: “Was ein Score bedeutet — Anker, Niveaus, Interpretation.”
+   - Link: /discover/rabbit-hole/rating-models (redirect to existing /method if that’s the real page)
+
+2) Statistical Engine
+   - EN: “Statistical Engine”
+   - DE: “Auswertungslogik”
+   - Link: /discover/rabbit-hole/statistics (redirect to existing /background if that’s the real page)
+
+3) Research Notes
+   - EN: “Research Notes”
+   - DE: “Forschung & Quellen”
+   - Link: /discover/rabbit-hole/research (redirect to existing /research if that’s the real page)
+
+4) Bias & Calibration (only if an existing page is present)
+   - EN: “Bias & Calibration”
+   - DE: “Bias & Kalibrierung”
+   - Link to existing route if found; otherwise OMIT this card.
+
+5) Method Library / Models (only if an existing page is present)
+   - EN: “Model Library”
+   - DE: “Modellbibliothek”
+   - Link to existing route if found; otherwise OMIT this card.
+
+========================================================
+PART C — STABILIZE ROUTES VIA REDIRECT ALIASES
+========================================================
+
+If existing advanced pages are currently reachable at:
+- /method
+- /background
+- /research
+
+Then implement route aliases:
+- /discover/rabbit-hole/rating-models → redirects to /method
+- /discover/rabbit-hole/statistics → redirects to /background
+- /discover/rabbit-hole/research → redirects to /research
+
+Implementation:
+- Create a small RedirectPage component (wouter navigate) that immediately routes to target.
+- Ensure redirects preserve query params if present.
+
+========================================================
+PART D — PORT ADVANCED PAGES TO CURRENT DESIGN (NO LOGIC LOSS)
+========================================================
+
+D1) Identify the existing advanced page files that correspond to:
+- /method
+- /background
+- /research
+(Use App.tsx routing to find exact file paths.)
+
+D2) For EACH of these pages:
+- Wrap content in the CURRENT layout shell used by the main app (SimpleShell / ApplePage / current dark-warm wrappers).
+- Replace any legacy/unstyled wrappers so typography, spacing, cards, and max-width match the rest of the app.
+- Ensure headings and sections use the same visual rhythm as My Taste pages.
+
+D3) Navigation on these pages:
+- Use PageHeader with ONE back action (BackButton).
+- Remove any duplicate “Return to CaskSense” / “← Back” duplicates.
+  Rule: ONE primary back control per page.
+- Back fallback target:
+  - /discover/rabbit-hole (preferred)
+  - if direct links from My Taste: /my-taste is acceptable fallback
+
+D4) Text + language:
+- Replace any hardcoded English/German UI chrome (buttons, headings like “Return…”, “Back”, section labels) with i18n keys.
+- DO NOT translate long-form scientific content if it already exists and is intentionally English-only; only ensure UI labels and navigation are consistent.
+  HOWEVER: if both DE and EN versions already exist, preserve that and ensure correct language switch mapping.
+
+D5) Visual alignment checklist:
+- Same page max width as My Taste pages
+- Same card component styling used elsewhere (reuse existing CardV2 or current card)
+- Consistent spacing (e.g., py-8, gap-4/6)
+- Link styles match app
+- No “floating” centered buttons that look like a different site
+
+========================================================
+PART E — UPDATE KNOWLEDGE SECTION LINKS (IF NEEDED)
+========================================================
+
+Ensure the Knowledge section still includes:
+- Lexicon
+- Distilleries
+- Independent Bottlers
+- Tasting Guide
+- Tasting Templates
+…and now also “Rabbit Hole” at the bottom.
+
+Do NOT remove anything from Knowledge.
+
+========================================================
+PART F — i18n KEYS TO ADD (MINIMAL)
+========================================================
+
+Add keys (or reuse if existing):
+- knowledge.rabbitHole.title
+- knowledge.rabbitHole.subtitle
+- rabbitHole.title
+- rabbitHole.subtitle
+- rabbitHole.cards.ratingModels.title / desc
+- rabbitHole.cards.statistics.title / desc
+- rabbitHole.cards.research.title / desc
+- common.back (if not existing)
+
+Ensure:
+- DE is natural German
+- EN is natural English
+Keep keys concise and namespaced.
+
+========================================================
+PART G — VERIFICATION (SMOKE TEST)
+========================================================
+
+1) Open /my-taste and find Knowledge → Rabbit Hole card
+2) Click Rabbit Hole → /discover/rabbit-hole loads with current design
+3) Click each Rabbit Hole card → lands on the correct existing advanced page
+4) On each advanced page:
+   - exactly ONE back control
+   - design matches the rest of the app
+   - language toggle changes UI chrome texts (titles/buttons) correctly
+5) Ensure no broken routes and app builds.
+
+========================================================
+DELIVERABLE
+========================================================
+
+After implementation, output a concise CHANGELOG:
+1) New routes added
+2) Files added/modified
+3) Which advanced pages were restyled
+4) i18n keys added
+5) How to test (6 bullets)
+
+Implement now. No additional proposals. No feature removal.
