@@ -1,0 +1,205 @@
+UX Consolidation Pack #1 (KEEP 2-TAB STRUCTURE: “Tasting” + “My Taste”)
+
+You are Replit AI working inside the CaskSense repository. Implement a UX consolidation pass that IMPROVES CONSISTENCY WITHOUT REMOVING FEATURES.
+
+CRITICAL REQUIREMENT:
+- The primary app structure MUST remain exactly two top-level tabs:
+  Tab 1: “Tasting”  → /tasting
+  Tab 2: “My Taste” → /my-taste
+Do NOT add a third primary tab. Do NOT rename these tabs. Do NOT remove any routes or features.
+
+High-level goals (no feature loss):
+1) Standardize page headers and Back navigation across subpages
+2) Clarify “official routes” vs “hidden/legacy” WITHOUT deleting anything
+3) Upgrade empty states to guide users toward the happy path
+4) Centralize navigation labels/links and ensure i18n usage for these labels
+5) Optional performance improvement: lazy-load rarely used pages (safe subset)
+
+===========================================================
+STEP 1 — CREATE A STANDARD PAGE HEADER (Reusable)
+===========================================================
+
+Create a new component:
+
+client/src/components/navigation/PageHeader.tsx
+
+Requirements:
+- Supports: title, subtitle (optional)
+- Left: Back button (optional)
+- Right: actions slot (optional)
+- Uses existing styling system (Tailwind + current theme)
+- Works in “dark-warm” and “simple” skins (don’t hardcode colors; rely on existing classes/vars)
+- i18n friendly: caller passes strings (prefer t() usage in callers)
+
+Create (or reuse if already exists) a BackButton:
+
+client/src/components/navigation/BackButton.tsx
+
+Requirements:
+- Uses wouter to navigate.
+- Behavior:
+  - If window.history.length > 1 → window.history.back()
+  - Else → navigate to a sensible fallback route provided via prop (default: /my-taste)
+- Optional prop: label (defaults to t("common.back") if available else "Back")
+
+===========================================================
+STEP 2 — APPLY PAGE HEADER + BACK NAV TO SUBPAGES
+===========================================================
+
+Add PageHeader with BackButton to all “detail” or “sub” pages where users can get stuck.
+
+At minimum, ensure Back exists on:
+- client/src/pages/tasting-calendar.tsx
+- client/src/pages/tasting-results.tsx
+- client/src/pages/tasting-recap.tsx
+- client/src/pages/tasting-room-simple.tsx (if it has its own header)
+- client/src/pages/naked-tasting.tsx (if it’s not already obvious how to exit)
+- client/src/pages/my-journal.tsx (or the new /my-taste/drams page if present)
+- client/src/pages/flavor-profile.tsx
+- client/src/pages/my-taste-analytics.tsx
+- client/src/pages/my-taste-compare.tsx
+- client/src/pages/my-taste-recommendations.tsx
+- client/src/pages/my-taste-pairings.tsx
+- client/src/pages/my-taste-benchmark.tsx
+- client/src/pages/my-taste-wheel.tsx
+- client/src/pages/whiskybase-collection.tsx
+- client/src/pages/wishlist.tsx
+- client/src/pages/my-taste-settings.tsx
+- client/src/pages/my-taste-export.tsx (if present)
+
+Back target rules (fallbackTarget):
+- For /tasting/* pages → fallbackTarget="/tasting"
+- For /my-taste/* pages → fallbackTarget="/my-taste"
+
+Do NOT remove any existing headers; instead refactor them to use PageHeader where reasonable.
+
+===========================================================
+STEP 3 — CENTRAL NAV CONFIG (Labels + Links)
+===========================================================
+
+Create a single “navigation config” to avoid inconsistent labels and scattered links.
+
+Add file:
+client/src/lib/navConfig.ts
+
+It must define:
+- primaryTabs: [{ key, labelKey, route, icon? }]
+  - Must contain exactly:
+    - Tasting → /tasting
+    - My Taste → /my-taste
+- myTasteQuickLinks: routes inside /my-taste (drams/profile/analytics/cellar/export/settings etc.)
+- tastingQuickLinks: routes inside /tasting (host/sessions/calendar/join etc.)
+
+Rules:
+- Do NOT change primary tabs.
+- Use i18n keys for labels (labelKey), not hardcoded strings.
+- Update existing Tab bar (SimpleShell or AppShellV2 if used) to use navConfig primaryTabs.
+
+If multiple nav shells exist, only update the primary one currently used by “simple mode” (SimpleShell).
+Leave V2/Lab shells untouched unless they share the same file.
+
+===========================================================
+STEP 4 — “OFFICIAL ROUTES” VS “HIDDEN/LEGACY” (NO DELETIONS)
+===========================================================
+
+We want users to experience a coherent app, but we must not delete features.
+
+Implement:
+- A route-grouping comment and a soft guard in App.tsx:
+  - “Official routes” include:
+    - Public: "/", "/tour" (and other public marketing routes you consider primary)
+    - App: "/tasting", "/my-taste", plus their subroutes
+    - Utility: "/support", "/admin", "/impressum", "/privacy"
+  - “Hidden/legacy routes” include:
+    - "/app/*", "/lab-dark/*", legacy pages
+
+Do NOT remove those routes. Instead:
+- Ensure they are not linked from primary navigation.
+- Add a small comment block in App.tsx marking them as “hidden/legacy”.
+- If any primary nav still points to them, update to official equivalents.
+
+===========================================================
+STEP 5 — EMPTY STATES (GUIDED, CONSISTENT)
+===========================================================
+
+Create a reusable empty state component:
+
+client/src/components/ui/EmptyState.tsx (or components/simple/EmptyState.tsx)
+
+Pattern:
+- Icon (optional)
+- Title
+- One sentence “why this matters”
+- Primary action button (label + onClick / href)
+
+Apply to the most user-facing empty states:
+- My Drams / Journal empty
+- Tasting Calendar empty
+- Sessions list empty (if applicable)
+- Collection/Wishlist empty
+- Friends / community empty (if visible)
+
+Important:
+- The primary action should guide to the happy path:
+  - For empty My Drams → “Add Dram”
+  - For empty Tastings → “Join tasting” or “Create tasting”
+  - For empty Collection → “Add bottle” or “Import collection”
+Use i18n for these texts.
+
+===========================================================
+STEP 6 — i18n CONSISTENCY FOR NEW TEXTS
+===========================================================
+
+All new labels must use i18n keys.
+- Prefer existing keys if they exist.
+- If missing, add minimal new keys:
+  - common.back
+  - common.empty.title.* / common.empty.cta.*
+  - nav.tasting / nav.myTaste
+  - nav.calendar / nav.sessions / nav.export / nav.settings etc.
+
+Ensure DE is German and EN is English.
+
+===========================================================
+STEP 7 (OPTIONAL, SAFE) — LAZY LOAD RARE PAGES
+===========================================================
+
+If the app currently imports many pages eagerly in App.tsx, convert a SAFE subset to React.lazy:
+- guided-presentation
+- feature-showcase
+- feature-tour
+- tour
+- admin-panel
+- support-console
+Do NOT lazy-load core flows:
+- /tasting, /my-taste, /host, /join, /tasting-room, /tasting-results
+
+If you implement lazy loading, add a simple fallback (spinner).
+
+===========================================================
+VERIFICATION
+===========================================================
+
+After changes:
+- Run TypeScript build / lint if available
+- Ensure the app compiles
+- Quick manual smoke:
+  1) Navigate between the two tabs: /tasting and /my-taste
+  2) Open Tasting Calendar and verify Back returns to /tasting
+  3) Open a My Taste subpage and verify Back returns to /my-taste
+  4) Check empty states show a clear CTA
+  5) Confirm primary nav does NOT link to /app/* or /lab-dark/*
+
+===========================================================
+DELIVERABLE (IN YOUR RESPONSE)
+===========================================================
+
+Provide a concise CHANGELOG:
+1) Files added/changed
+2) Pages updated with Back/PageHeader
+3) navConfig integration points
+4) Empty states updated
+5) Any routes re-pointed from legacy to official
+6) How to test in 6 bullets
+
+Implement now. Do not propose further refactors. Do not remove features.
