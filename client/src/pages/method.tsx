@@ -4,6 +4,7 @@ import { BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import SimpleShell from "@/components/simple/simple-shell";
 import BackButton from "@/components/back-button";
+import HeroWhiskyBg from "@/components/hero-whisky-bg";
 
 function Section({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -23,7 +24,8 @@ export default function Method() {
 
   return (
     <SimpleShell maxWidth={700}>
-      <div data-testid="method-page">
+      <HeroWhiskyBg />
+      <div data-testid="method-page" style={{ position: "relative", zIndex: 1 }}>
         <BackButton fallback="/discover/rabbit-hole" />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center gap-3 mb-2">
