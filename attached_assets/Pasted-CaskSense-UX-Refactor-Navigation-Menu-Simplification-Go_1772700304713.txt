@@ -1,0 +1,244 @@
+CaskSense UX Refactor – Navigation & Menu Simplification
+
+Goal:
+Improve usability and reduce conceptual complexity by:
+
+1. Implementing consistent Back navigation on all detail pages
+2. Simplifying the My Taste menu structure
+3. Removing redundant terminology (Journal / My Whisky / Diary)
+4. Standardizing naming around "Drams"
+
+The refactor must preserve all existing functionality.
+
+--------------------------------------------------
+
+PART 1 — GLOBAL BACK NAVIGATION
+
+Problem:
+Many pages do not provide an obvious way to navigate back.
+Users must rely on browser navigation.
+
+Solution:
+Introduce a reusable BackButton component and add it to all non-root pages.
+
+Tasks:
+
+1. Create reusable component
+
+File:
+client/src/components/navigation/BackButton.tsx
+
+Implementation:
+
+- Uses wouter navigation
+- Uses browser history fallback
+- Styled consistent with existing UI
+
+Example logic:
+
+import { useLocation } from "wouter";
+
+const BackButton = () => {
+  const [, navigate] = useLocation();
+
+  const goBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      navigate("/my-taste");
+    }
+  };
+
+  return (
+    <button
+      className="text-sm opacity-70 hover:opacity-100 flex items-center gap-2"
+      onClick={goBack}
+    >
+      ← Back
+    </button>
+  );
+};
+
+export default BackButton;
+
+--------------------------------------------------
+
+2. Integrate BackButton in all subpages
+
+Add BackButton at top of page headers for pages including:
+
+/tasting-calendar
+/my-taste/journal
+/my-taste/profile
+/my-taste/analytics
+/my-taste/compare
+/my-taste/recommendations
+/my-taste/pairings
+/my-taste/benchmark
+/my-taste/wheel
+/my-taste/collection
+/my-taste/wishlist
+
+Placement:
+
+Page Header
+
+Example layout:
+
+BackButton
+Page Title
+Subtitle
+
+--------------------------------------------------
+
+PART 2 — MENU STRUCTURE SIMPLIFICATION
+
+Problem:
+Terminology is inconsistent and confusing.
+
+Current terms include:
+- Journal
+- My Whisky
+- Whisky Diary
+- Tasted
+
+These refer to the same concept: recorded whisky tastings.
+
+Solution:
+Standardize around the whisky term "Dram".
+
+--------------------------------------------------
+
+Rename concept:
+
+Journal → My Drams
+
+--------------------------------------------------
+
+New Structure:
+
+My Taste
+
+Add Dram
+
+My Drams
+Flavor Profile
+Analytics
+Collection
+Recommendations
+Wishlist
+Settings
+
+--------------------------------------------------
+
+PART 3 — UPDATE ROUTING
+
+Rename routes where appropriate.
+
+Old:
+
+/my-taste/journal
+
+New:
+
+/my-taste/drams
+
+Add redirect for backward compatibility:
+
+/my-taste/journal → /my-taste/drams
+
+--------------------------------------------------
+
+PART 4 — MY DRAMS PAGE
+
+Rename page:
+
+"My Whisky"
+"My Whisky Diary"
+
+→ "My Drams"
+
+Update headings accordingly.
+
+--------------------------------------------------
+
+Tabs on page should become:
+
+All Drams
+Solo
+Tastings
+
+Remove confusing labels:
+
+- Tasted
+- Whisky Diary
+
+--------------------------------------------------
+
+PART 5 — UPDATE MY TASTE DASHBOARD
+
+Current card:
+
+Journal
+
+Replace with:
+
+My Drams
+
+Description:
+
+Everything you've tasted so far
+
+--------------------------------------------------
+
+PART 6 — TERMINOLOGY STANDARDIZATION
+
+Replace globally:
+
+Journal → Drams
+My Whisky → My Drams
+Whisky Diary → Drams
+Tasted → All Drams
+
+Ensure translations updated accordingly.
+
+--------------------------------------------------
+
+PART 7 — UI CONSISTENCY
+
+Ensure cards follow same pattern:
+
+Icon
+Title
+Short description
+Chevron navigation
+
+Example:
+
+My Drams
+Everything you've tasted so far
+
+--------------------------------------------------
+
+PART 8 — VALIDATION
+
+Verify:
+
+• All existing dram data still loads
+• Solo tastings still work
+• Tasting event drams still work
+• Export still works
+• Navigation does not break
+
+--------------------------------------------------
+
+PART 9 — REPORT
+
+After implementation produce a short report:
+
+Navigation Refactor Summary
+
+Pages updated
+Routes changed
+Components created
+Terminology updated
