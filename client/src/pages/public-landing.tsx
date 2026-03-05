@@ -7,6 +7,7 @@ import {
   FlaskConical, Trophy, FileText, Layers
 } from "lucide-react";
 import { v, alpha } from "@/lib/themeVars";
+import heroImage from "@/assets/images/hero-whisky.png";
 
 const ACCENT_RAW = "#c8a97e";
 const BG_RAW = "#1a1714";
@@ -87,6 +88,27 @@ function HeroSection() {
         background: `radial-gradient(ellipse 80% 60% at 50% 40%, ${ACCENT_RAW}08 0%, transparent 70%)`,
         pointerEvents: "none",
       }} />
+      <motion.div
+        initial={{ opacity: 0, scale: 1.04 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 2, ease: "easeOut" }}
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -55%)",
+          width: "min(560px, 85vw)",
+          height: 380,
+          backgroundImage: `url(${heroImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center 40%",
+          backgroundRepeat: "no-repeat",
+          opacity: 0.28,
+          maskImage: "radial-gradient(ellipse 90% 80% at 50% 45%, black 20%, transparent 70%)",
+          WebkitMaskImage: "radial-gradient(ellipse 90% 80% at 50% 45%, black 20%, transparent 70%)",
+          pointerEvents: "none",
+        }}
+      />
       <motion.div
         style={{
           position: "absolute",

@@ -71,45 +71,25 @@ export default function InternalLandingGlasses() {
         padding: "80px 24px 40px",
       }}>
         <motion.div
-          initial={{ opacity: 0, scale: 1.05 }}
+          initial={{ opacity: 0, scale: 1.04 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 2, ease: "easeOut" }}
           style={{
             position: "absolute",
-            top: 0,
+            top: "50%",
             left: "50%",
-            transform: "translateX(-50%)",
-            width: "min(600px, 90vw)",
-            height: "45%",
+            transform: "translate(-50%, -55%)",
+            width: "min(560px, 85vw)",
+            height: 380,
             backgroundImage: `url(${heroImage})`,
             backgroundSize: "cover",
-            backgroundPosition: "center 35%",
+            backgroundPosition: "center 40%",
             backgroundRepeat: "no-repeat",
-            opacity: 0.35,
+            opacity: 0.28,
+            maskImage: "radial-gradient(ellipse 90% 80% at 50% 45%, black 20%, transparent 70%)",
+            WebkitMaskImage: "radial-gradient(ellipse 90% 80% at 50% 45%, black 20%, transparent 70%)",
           }}
         />
-
-        <div style={{
-          position: "absolute",
-          inset: 0,
-          background: `
-            radial-gradient(ellipse 60% 35% at 50% 20%, transparent 0%, ${BG_RAW}ee 70%),
-            linear-gradient(to top, ${BG_RAW} 0%, transparent 30%),
-            linear-gradient(to bottom, ${BG_RAW}cc 0%, transparent 20%)
-          `,
-          pointerEvents: "none",
-        }}
-        />
-
-        <div style={{
-          position: "absolute",
-          top: "40%",
-          left: 0,
-          right: 0,
-          height: "15%",
-          background: `linear-gradient(to bottom, transparent 0%, ${BG_RAW} 100%)`,
-          pointerEvents: "none",
-        }} />
 
         <motion.div
           style={{
