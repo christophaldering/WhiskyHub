@@ -67,6 +67,7 @@ const FeatureShowcase = lazy(() => import("@/pages/feature-showcase"));
 const FeatureTour = lazy(() => import("@/pages/feature-tour"));
 const Tour = lazy(() => import("@/pages/tour"));
 const Background = lazy(() => import("@/pages/background"));
+const ResearchStandalone = lazy(() => import("@/pages/research-standalone"));
 const News = lazy(() => import("@/pages/news"));
 const Intro = lazy(() => import("@/pages/intro"));
 const AdminPanel = lazy(() => import("@/pages/admin-panel"));
@@ -87,6 +88,7 @@ import FlavorWheel from "@/pages/flavor-wheel";
 import WhiskyDatabase from "@/pages/whisky-database";
 import PhotoTasting from "@/pages/photo-tasting";
 import Method from "@/pages/method";
+import RabbitHole from "@/pages/rabbit-hole";
 import HomeDashboard from "@/pages/home-dashboard";
 import TastingHub from "@/pages/tasting-hub";
 import TastingSessions from "@/pages/tasting-sessions";
@@ -220,6 +222,11 @@ function Router() {
         <Route path="/discover/guide" component={TastingGuide} />
         <Route path="/discover/templates" component={DiscoverTemplates} />
         <Route path="/discover/about" component={AboutDark} />
+        <Route path="/discover/rabbit-hole" component={RabbitHole} />
+        <Route path="/discover/rabbit-hole/rating-models">{() => <Redirect to="/method" />}</Route>
+        <Route path="/discover/rabbit-hole/statistics">{() => <Redirect to="/background" />}</Route>
+        <Route path="/discover/rabbit-hole/research">{() => <Redirect to="/research" />}</Route>
+        <Route path="/research" component={ResearchStandalone} />
         <Route path="/discover/lexicon" component={DiscoverLexicon} />
         <Route path="/discover/community" component={DiscoverCommunityNative} />
         <Route path="/discover/distilleries" component={DiscoverDistilleriesNative} />
@@ -387,7 +394,7 @@ function Router() {
               <Route path="/distilleries">{() => <Redirect to="/discover/distilleries" />}</Route>
               <Route path="/distillery-map">{() => <RedirectWithQuery to="/discover/distilleries" query="tab=map" />}</Route>
               <Route path="/bottlers">{() => <RedirectWithQuery to="/discover/distilleries" query="tab=bottlers" />}</Route>
-              <Route path="/research">{() => <RedirectWithQuery to="/discover" query="section=research" />}</Route>
+              <Route path="/research" component={ResearchStandalone} />
               <Route path="/help">{() => <Redirect to="/profile/help" />}</Route>
               <Route path="/about">{() => <RedirectWithQuery to="/profile/help" query="tab=about" />}</Route>
               <Route path="/features">{() => <RedirectWithQuery to="/profile/help" query="tab=features" />}</Route>

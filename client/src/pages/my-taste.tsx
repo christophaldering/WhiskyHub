@@ -389,6 +389,13 @@ export default function MyTastePage() {
                       href="/discover/templates"
                       testId="link-knowledge-templates"
                     />
+                    <NavCard
+                      icon={FlaskConical}
+                      label={t("myTastePage.rabbitHole")}
+                      description={t("myTastePage.rabbitHoleDesc")}
+                      href="/discover/rabbit-hole"
+                      testId="link-knowledge-rabbit-hole"
+                    />
                   </AppleSection>
 
                   <AppleSection title={t("myTastePage.sectionCommunity")}>
@@ -764,6 +771,7 @@ export default function MyTastePage() {
                     <NavCard icon={Package} label={t("myTastePage.independentBottlers")} description={t("myTastePage.independentBottlersDesc")} href="/discover/bottlers" testId="link-knowledge-bottlers" />
                     <NavCard icon={Map} label={t("myTastePage.tastingGuide")} description={t("myTastePage.tastingGuideDesc")} href="/discover/guide" testId="link-knowledge-guide" />
                     <NavCard icon={FileText} label={t("myTastePage.tastingTemplates")} description={t("myTastePage.tastingTemplatesDesc")} href="/discover/templates" testId="link-knowledge-templates" />
+                    <NavCard icon={FlaskConical} label={t("myTastePage.rabbitHole")} description={t("myTastePage.rabbitHoleDesc")} href="/discover/rabbit-hole" testId="link-knowledge-rabbit-hole" />
                   </div>
                 </div>
 
