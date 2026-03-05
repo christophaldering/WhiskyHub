@@ -227,7 +227,7 @@ export default function MyTastePage() {
                   icon={BookOpen}
                   label={t("myTastePage.journal")}
                   description={t("myTastePage.journalDesc")}
-                  href="/my-taste/drams"
+                  href="/my-taste/drams?from=/my-taste"
                   testId="link-drams"
                   badge={journalCount > 0 ? journalCount : null}
                 />
@@ -271,7 +271,7 @@ export default function MyTastePage() {
                   icon={Radar}
                   label={t("myTastePage.flavorProfile")}
                   description={t("myTastePage.flavorProfileDesc")}
-                  href="/my-taste/profile"
+                  href="/my-taste/profile?from=/my-taste"
                   testId="link-flavor-profile"
                 />
                 <AnalyticsPreviewCard pid={pid} stats={stats} />
@@ -279,21 +279,21 @@ export default function MyTastePage() {
                   icon={GitCompareArrows}
                   label={t("myTastePage.comparison")}
                   description={t("myTastePage.comparisonDesc")}
-                  href="/my-taste/compare"
+                  href="/my-taste/compare?from=/my-taste"
                   testId="link-comparison"
                 />
                 <NavCard
                   icon={Sparkles}
                   label={t("myTastePage.recommendations")}
                   description={t("myTastePage.recommendationsDesc")}
-                  href="/my-taste/recommendations"
+                  href="/my-taste/recommendations?from=/my-taste"
                   testId="link-recommendations"
                 />
                 <NavCard
                   icon={FlaskConical}
                   label={t("myTastePage.benchmarkAnalyzer")}
                   description={t("myTastePage.benchmarkDesc")}
-                  href="/my-taste/benchmark"
+                  href="/my-taste/benchmark?from=/my-taste"
                   testId="link-benchmark"
                 />
               </AppleSection>
@@ -349,14 +349,14 @@ export default function MyTastePage() {
                       icon={Archive}
                       label={t("myTastePage.myCollection")}
                       description={t("myTastePage.collectionDesc")}
-                      href="/my-taste/collection"
+                      href="/my-taste/collection?from=/my-taste"
                       testId="link-collection"
                     />
                     <NavCard
                       icon={Heart}
                       label={t("myTastePage.wishlist")}
                       description={t("myTastePage.wishlistDesc")}
-                      href="/my-taste/wishlist"
+                      href="/my-taste/wishlist?from=/my-taste"
                       testId="link-wishlist"
                     />
                   </AppleSection>
@@ -366,7 +366,7 @@ export default function MyTastePage() {
                       icon={Download}
                       label={t("downloads.title")}
                       description={t("myTastePage.downloadsDesc")}
-                      href="/my-taste/downloads"
+                      href="/my-taste/downloads?from=/my-taste"
                       testId="link-downloads-export"
                     />
                   </AppleSection>
@@ -475,7 +475,7 @@ export default function MyTastePage() {
                   icon={Radar}
                   label={t("myTastePage.flavorProfile")}
                   description={t("myTastePage.flavorProfileDesc")}
-                  href="/my-taste/profile"
+                  href="/my-taste/profile?from=/my-taste"
                   testId="link-flavor-profile"
                 />
               </AppleSection>
@@ -486,21 +486,21 @@ export default function MyTastePage() {
                   icon={GitCompareArrows}
                   label={t("myTastePage.comparison")}
                   description={t("myTastePage.comparisonDesc")}
-                  href="/my-taste/compare"
+                  href="/my-taste/compare?from=/my-taste"
                   testId="link-comparison"
                 />
                 <NavCard
                   icon={Sparkles}
                   label={t("myTastePage.recommendations")}
                   description={t("myTastePage.recommendationsDesc")}
-                  href="/my-taste/recommendations"
+                  href="/my-taste/recommendations?from=/my-taste"
                   testId="link-recommendations"
                 />
                 <NavCard
                   icon={FlaskConical}
                   label={t("myTastePage.benchmarkAnalyzer")}
                   description={t("myTastePage.benchmarkDesc")}
-                  href="/my-taste/benchmark"
+                  href="/my-taste/benchmark?from=/my-taste"
                   testId="link-benchmark"
                 />
               </AppleSection>
@@ -513,7 +513,7 @@ export default function MyTastePage() {
                   icon={BookOpen}
                   label={t("myTastePage.journal")}
                   description={t("myTastePage.journalDesc")}
-                  href="/my-taste/drams"
+                  href="/my-taste/drams?from=/my-taste"
                   testId="link-drams"
                   badge={journalCount > 0 ? journalCount : null}
                 />
@@ -529,7 +529,7 @@ export default function MyTastePage() {
                   icon={Download}
                   label={t("myTastePage.dataExport")}
                   description={t("myTastePage.dataExportDesc")}
-                  href="/my-taste/export"
+                  href="/my-taste/export?from=/my-taste"
                   testId="link-data-export"
                 />
               </AppleSection>
@@ -542,14 +542,14 @@ export default function MyTastePage() {
                   icon={Archive}
                   label={t("myTastePage.myCollection")}
                   description={t("myTastePage.collectionDesc")}
-                  href="/my-taste/collection"
+                  href="/my-taste/collection?from=/my-taste"
                   testId="link-collection"
                 />
                 <NavCard
                   icon={Heart}
                   label={t("myTastePage.wishlist")}
                   description={t("myTastePage.wishlistDesc")}
-                  href="/my-taste/wishlist"
+                  href="/my-taste/wishlist?from=/my-taste"
                   testId="link-wishlist"
                 />
               </AppleSection>
@@ -588,7 +588,7 @@ export default function MyTastePage() {
                   icon={BookOpen}
                   label={t("myTastePage.journal")}
                   description={t("myTastePage.journalDesc")}
-                  href="/my-taste/drams"
+                  href="/my-taste/drams?from=/my-taste"
                   testId="link-drams"
                   badge={journalCount > 0 ? journalCount : null}
                 />
@@ -637,7 +637,7 @@ export default function MyTastePage() {
                   icon={Radar}
                   label={t("myTastePage.flavorProfile")}
                   description={t("myTastePage.flavorProfileDesc")}
-                  href="/my-taste/profile"
+                  href="/my-taste/profile?from=/my-taste"
                   testId="link-flavor-profile"
                 />
                 <AnalyticsPreviewCard pid={pid} stats={stats} />
@@ -645,21 +645,21 @@ export default function MyTastePage() {
                   icon={GitCompareArrows}
                   label={t("myTastePage.comparison")}
                   description={t("myTastePage.comparisonDesc")}
-                  href="/my-taste/compare"
+                  href="/my-taste/compare?from=/my-taste"
                   testId="link-comparison"
                 />
                 <NavCard
                   icon={Sparkles}
                   label={t("myTastePage.recommendations")}
                   description={t("myTastePage.recommendationsDesc")}
-                  href="/my-taste/recommendations"
+                  href="/my-taste/recommendations?from=/my-taste"
                   testId="link-recommendations"
                 />
                 <NavCard
                   icon={FlaskConical}
                   label={t("myTastePage.benchmarkAnalyzer")}
                   description={t("myTastePage.benchmarkDesc")}
-                  href="/my-taste/benchmark"
+                  href="/my-taste/benchmark?from=/my-taste"
                   testId="link-benchmark"
                 />
               </div>
@@ -695,14 +695,14 @@ export default function MyTastePage() {
                       icon={Archive}
                       label={t("myTastePage.myCollection")}
                       description={t("myTastePage.collectionDesc")}
-                      href="/my-taste/collection"
+                      href="/my-taste/collection?from=/my-taste"
                       testId="link-collection"
                     />
                     <NavCard
                       icon={Heart}
                       label={t("myTastePage.wishlist")}
                       description={t("myTastePage.wishlistDesc")}
-                      href="/my-taste/wishlist"
+                      href="/my-taste/wishlist?from=/my-taste"
                       testId="link-wishlist"
                     />
                   </div>
@@ -805,7 +805,7 @@ export default function MyTastePage() {
                   icon={Radar}
                   label={t("myTastePage.flavorProfile")}
                   description={t("myTastePage.flavorProfileDesc")}
-                  href="/my-taste/profile"
+                  href="/my-taste/profile?from=/my-taste"
                   testId="link-flavor-profile"
                 />
               </div>
@@ -821,21 +821,21 @@ export default function MyTastePage() {
                   icon={GitCompareArrows}
                   label={t("myTastePage.comparison")}
                   description={t("myTastePage.comparisonDesc")}
-                  href="/my-taste/compare"
+                  href="/my-taste/compare?from=/my-taste"
                   testId="link-comparison"
                 />
                 <NavCard
                   icon={Sparkles}
                   label={t("myTastePage.recommendations")}
                   description={t("myTastePage.recommendationsDesc")}
-                  href="/my-taste/recommendations"
+                  href="/my-taste/recommendations?from=/my-taste"
                   testId="link-recommendations"
                 />
                 <NavCard
                   icon={FlaskConical}
                   label={t("myTastePage.benchmarkAnalyzer")}
                   description={t("myTastePage.benchmarkDesc")}
-                  href="/my-taste/benchmark"
+                  href="/my-taste/benchmark?from=/my-taste"
                   testId="link-benchmark"
                 />
               </div>
@@ -853,7 +853,7 @@ export default function MyTastePage() {
                   icon={BookOpen}
                   label={t("myTastePage.journal")}
                   description={t("myTastePage.journalDesc")}
-                  href="/my-taste/drams"
+                  href="/my-taste/drams?from=/my-taste"
                   testId="link-drams"
                   badge={journalCount > 0 ? journalCount : null}
                 />
@@ -869,7 +869,7 @@ export default function MyTastePage() {
                   icon={Download}
                   label={t("myTastePage.dataExport")}
                   description={t("myTastePage.dataExportDesc")}
-                  href="/my-taste/export"
+                  href="/my-taste/export?from=/my-taste"
                   testId="link-data-export"
                 />
               </div>
@@ -887,14 +887,14 @@ export default function MyTastePage() {
                   icon={Archive}
                   label={t("myTastePage.myCollection")}
                   description={t("myTastePage.collectionDesc")}
-                  href="/my-taste/collection"
+                  href="/my-taste/collection?from=/my-taste"
                   testId="link-collection"
                 />
                 <NavCard
                   icon={Heart}
                   label={t("myTastePage.wishlist")}
                   description={t("myTastePage.wishlistDesc")}
-                  href="/my-taste/wishlist"
+                  href="/my-taste/wishlist?from=/my-taste"
                   testId="link-wishlist"
                 />
               </div>

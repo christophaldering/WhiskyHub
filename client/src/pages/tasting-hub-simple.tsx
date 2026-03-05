@@ -101,14 +101,14 @@ export default function TastingHubSimple() {
             icon={Wine}
             title={t("tastingHub.joinTitle")}
             description={t("tastingHub.joinDesc")}
-            href="/enter"
+            href="/enter?from=/tasting"
             testId="card-join-tasting"
           />
           <AppleActionCard
             icon={Crown}
             title={t("tastingHub.hostTitle")}
             description={t("tastingHub.hostDesc")}
-            href="/host"
+            href="/host?from=/tasting"
             testId="card-host-tasting"
           />
 
@@ -118,7 +118,7 @@ export default function TastingHubSimple() {
             icon={GlassWater}
             title={t("tastingHub.soloDramTitle")}
             description={t("tastingHub.soloDramDesc")}
-            href="/log-simple"
+            href="/log-simple?from=/tasting"
             testId="card-solo-dram"
           />
 

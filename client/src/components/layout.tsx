@@ -749,7 +749,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         variant="light"
       />
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/40 safe-area-bottom" style={{ paddingLeft: 'env(safe-area-inset-left, 0)', paddingRight: 'env(safe-area-inset-right, 0)' }}>
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl border-t safe-area-bottom" style={{ paddingLeft: 'env(safe-area-inset-left, 0)', paddingRight: 'env(safe-area-inset-right, 0)', background: 'rgba(26, 23, 20, 0.88)', borderTopColor: 'rgba(212, 162, 86, 0.15)' }}>
         <div className="flex items-center justify-around px-1 py-1.5">
           {(() => {
             const tastingMatch = location.match(/^\/tasting\/([a-f0-9-]{8,})/i);

@@ -8,7 +8,11 @@ export default function BackButton({ fallback = "/my-taste" }: { fallback?: stri
   const { t } = useTranslation();
 
   const goBack = () => {
-    if (window.history.length > 1) {
+    const params = new URLSearchParams(window.location.search);
+    const from = params.get("from");
+    if (from && /^\/[a-zA-Z0-9\-_/]*$/.test(from)) {
+      navigate(from);
+    } else if (window.history.length > 1) {
       window.history.back();
     } else {
       navigate(fallback);

@@ -188,13 +188,12 @@ export default function SimpleShell({ children, showBack = false, maxWidth = 600
           display: "flex",
           alignItems: "center",
           justifyContent: "space-around",
-          background: v.bg,
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          borderTop: `1px solid ${v.subtleBorder}`,
+          background: "rgba(26, 23, 20, 0.88)",
+          backdropFilter: "blur(16px) saturate(1.4)",
+          WebkitBackdropFilter: "blur(16px) saturate(1.4)",
+          borderTop: "1px solid rgba(212, 162, 86, 0.15)",
           paddingTop: 8,
           paddingBottom: "max(8px, env(safe-area-inset-bottom))",
-          opacity: 0.97,
         }}
         data-testid="simple-bottom-nav"
       >
@@ -210,7 +209,7 @@ export default function SimpleShell({ children, showBack = false, maxWidth = 600
                   gap: 2,
                   padding: "4px 10px",
                   cursor: "pointer",
-                  color: active ? v.accent : v.mutedLight,
+                  color: active ? "#d4a256" : "rgba(180, 170, 155, 0.7)",
                   transition: "color 0.2s",
                 }}
                 data-testid={`simple-nav-${(item.labelFallback || item.labelKey).toLowerCase().replace(/\s/g, "-")}`}
@@ -219,7 +218,7 @@ export default function SimpleShell({ children, showBack = false, maxWidth = 600
                   style={{ width: 20, height: 20 }}
                   strokeWidth={active ? 2.2 : 1.8}
                 />
-                <span style={{ fontSize: 10, fontWeight: 500 }}>{t(item.labelKey, item.labelFallback)}</span>
+                <span style={{ fontSize: 10, fontWeight: active ? 600 : 500 }}>{t(item.labelKey, item.labelFallback)}</span>
               </div>
             </Link>
           );
