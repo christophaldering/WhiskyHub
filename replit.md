@@ -62,7 +62,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **V2 Dark Warm UI (`/app`)**: Redesigned UI with an Apple-clean aesthetic and a whisky-warm dark color palette, featuring a 5-tab navigation.
 -   **Simple Mode (`/enter`, `/log-simple`, `/my-taste`)**: Minimal UI for first-time users with client-side rate limiting.
 -   **Whisky Identification**: AI-powered identification via photo (GPT-4o Vision OCR) or text description, using fuzzy matching.
--   **Admin Tools**: Features for managing test data, AI kill switch, and platform settings.
+-   **Admin Tools**: Features for managing test data, AI kill switch, and platform settings. Admin panel renders in a dedicated `AdminLayout` shell (no consumer sidebar/bottom-nav), accessible at `/admin` with Dark Warm theme and "Back to App" link.
 
 ## External Dependencies
 

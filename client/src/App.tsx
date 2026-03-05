@@ -18,6 +18,7 @@ import TastingCalendar from "@/pages/tasting-calendar";
 import HostDashboard from "@/pages/host-dashboard";
 import TastingRecap from "@/pages/tasting-recap";
 import AdminPanel from "@/pages/admin-panel";
+import AdminLayout from "@/components/admin/AdminLayout";
 import WhiskyDatabase from "@/pages/whisky-database";
 import PhotoTasting from "@/pages/photo-tasting";
 import Method from "@/pages/method";
@@ -193,6 +194,13 @@ function Router() {
         <Route path="/privacy" component={Privacy} />
         <Route path="/intro" component={Intro} />
 
+        {/* === ADMIN BACKOFFICE (separate layout, no consumer nav) === */}
+        <Route path="/admin">
+          <AdminLayout>
+            <AdminPanel />
+          </AdminLayout>
+        </Route>
+
         {/* === V2 DARK WARM UI (standalone routes, no shell) === */}
         <Route path="/app/join/:code" component={QuickTasting} />
         <Route path="/app/naked/:code" component={NakedTasting} />
@@ -207,7 +215,7 @@ function Router() {
               <Route path="/app/discover" component={V2Discover} />
               <Route path="/app/cellar" component={V2Cellar} />
               <Route path="/app/more" component={V2More} />
-              <Route path="/app/admin" component={AdminPanel} />
+              <Route path="/app/admin">{() => <Redirect to="/admin" />}</Route>
               <Route path="/app/recap/:id" component={TastingRecap} />
               <Route path="/app/invite/:token" component={InviteAccept} />
               <Route path="/app">{() => <Redirect to="/app/home" />}</Route>
@@ -248,7 +256,7 @@ function Router() {
               <Route path="/legacy/profile" component={Profile} />
               <Route path="/legacy/profile/account" component={Account} />
               <Route path="/legacy/profile/help" component={ProfileHelp} />
-              <Route path="/legacy/admin" component={AdminPanel} />
+              <Route path="/legacy/admin">{() => <Redirect to="/admin" />}</Route>
               <Route path="/legacy/news" component={News} />
               <Route path="/legacy/badges" component={Badges} />
               <Route path="/legacy/flavor-profile">{() => <Redirect to="/my-taste/profile" />}</Route>
@@ -303,7 +311,6 @@ function Router() {
               <Route path="/profile/account" component={Account} />
               <Route path="/profile/help" component={ProfileHelp} />
               <Route path="/profile">{() => <Redirect to="/my-taste" />}</Route>
-              <Route path="/admin" component={AdminPanel} />
               <Route path="/news" component={News} />
               <Route path="/badges" component={Badges} />
               <Route path="/flavor-profile" component={FlavorProfile} />
