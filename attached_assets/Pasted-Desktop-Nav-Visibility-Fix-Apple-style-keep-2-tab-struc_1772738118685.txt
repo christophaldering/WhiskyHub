@@ -1,0 +1,79 @@
+Desktop Nav Visibility Fix (Apple-style) — keep 2-tab structure
+
+You are Replit AI in the CaskSense repo.
+
+Problem:
+On desktop, the bottom navigation (“Tasting” / “My Taste”) is too small and easy to miss. It uses a mobile pattern on desktop, causing discoverability issues.
+
+Non-negotiables:
+- Keep the primary structure exactly two top-level tabs:
+  - /tasting
+  - /my-taste
+- Do NOT remove features or routes.
+- Do NOT break mobile UI. Mobile bottom nav stays.
+- Desktop must become clearly navigable and feel Apple-clean.
+
+Goal:
+On desktop (>= md / >= 768px, or using existing useMobile()), replace the tiny bottom bar with a prominent Apple-like segmented control in the top header area. Optionally keep a “floating dock pill” only if top segmented is not feasible — but prefer top segmented.
+
+Implementation Plan:
+
+1) Locate the navigation shell used for the 2-tab app (likely):
+   - client/src/components/simple/simple-shell.tsx
+   - and/or client/src/v2/components/AppShellV2.tsx
+   Identify which shell renders the bottom nav shown in My Taste.
+
+2) Create a reusable DesktopTabSwitcher component:
+   File:
+     client/src/components/navigation/DesktopTabSwitcher.tsx
+
+   It must:
+   - Render a segmented control with exactly two items:
+     - Tasting (route /tasting)
+     - My Taste (route /my-taste)
+   - Highlight active tab based on current location.
+   - Use existing design tokens/classes (dark-warm) and match Apple minimalism:
+     - pill container (rounded-full)
+     - subtle border + subtle background
+     - active segment has stronger contrast, slight glow/shadow, and bolder text
+   - Use i18n keys for labels:
+     - nav.tasting
+     - nav.myTaste
+
+3) Add DesktopTabSwitcher into the desktop header area:
+   - On desktop only.
+   - Place it near the top center (preferred), aligned under the page title OR inside the top bar between logo and user menu.
+   - Ensure it looks intentional and prominent (not tiny).
+
+4) Desktop behavior for bottom nav:
+   - On mobile: keep existing bottom nav exactly as it is.
+   - On desktop: either hide the bottom nav entirely OR increase it significantly.
+   Preferred: hide bottom nav on desktop once the top segmented switcher exists.
+
+5) Ensure the user menu remains top right.
+   Do not move user menu; only add the segmented switcher.
+
+6) Accessibility:
+   - Buttons must be keyboard focusable.
+   - Visible focus ring.
+   - aria-labels for the two tabs.
+
+7) Visual constraints (Apple-like):
+   - Avoid loud colors.
+   - Use subtle contrast.
+   - Increase label size on desktop (min 14–16px) and make it readable.
+   - Maintain generous spacing.
+
+8) Verify:
+   - Desktop: the two primary destinations are immediately obvious without scrolling.
+   - Mobile: bottom nav unchanged and still works.
+   - Switching tabs preserves route correctly.
+   - Works for /my-taste and /tasting and their subroutes (active state should still show correct tab).
+
+Deliverables:
+- New component: DesktopTabSwitcher.tsx
+- Modified shell file to render DesktopTabSwitcher on desktop and hide bottom nav on desktop
+- Any minimal i18n keys added (EN + DE)
+- Short changelog + 6-step manual test instructions
+
+Implement now. No refactors beyond what’s necessary.
