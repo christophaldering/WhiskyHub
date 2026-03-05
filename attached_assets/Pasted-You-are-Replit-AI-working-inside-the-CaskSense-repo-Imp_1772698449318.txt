@@ -1,0 +1,130 @@
+You are Replit AI working inside the CaskSense repo. Implement a CLEAN CONSOLIDATION of all download/export functionality as specified below. This is not a “plan” task — you must actually change the code, run checks, and leave the repo in a working state.
+
+IMPORTANT RULES
+- Do NOT introduce new features. Only consolidate, deduplicate, and improve consistency.
+- Preserve all existing user-visible capabilities (same or better UX).
+- Prefer minimal, safe edits.
+- Keep routes working; if you move something, add redirects.
+- After changes: ensure TypeScript builds, app runs, and no obvious runtime errors.
+- Update any imports/exports and remove dead code.
+- Add short inline comments only where necessary.
+
+============================================================
+TARGET UX / PRODUCT RULES (the “why”)
+============================================================
+- Exports belong to “My Taste”:
+  - Primary export route becomes: /my-taste/export
+  - Old /data-export must continue to work via redirect to /my-taste/export
+- “Exports” (CSV/XLSX/DOCX/JSON from server) should be server-side and consistent.
+- “Printables” (blank sheets, mats, QR PNG) can remain client-side.
+- Eliminate redundancies identified in the audit:
+  R1 Data export duplicated (data-export.tsx vs data-export-dark.tsx)
+  R4 Fake Excel (TSV saved as .xlsx in tasting-results.tsx)
+  R7 QR download duplicated (host-dashboard.tsx vs simple-host.tsx)
+  Reduce PDF generator duplication by centralizing utilities (keep outputs/labels).
+
+============================================================
+SCOPE OF WORK (IMPLEMENT THESE STEPS)
+============================================================
+
+STEP 0 — Create a feature branch-like commit grouping (just in code changes)
+Work in small, reviewable commits in your output notes (even if Replit doesn’t “git commit”, structure your changes as “Step 1 done”, etc.)
+
+------------------------------------------------------------
+STEP 1 — SINGLE SOURCE OF TRUTH: Data Export UI
+------------------------------------------------------------
+Goal: There must be ONLY ONE export UI implementation and it must be the Dark Warm version.
+
+- Keep: client/src/pages/data-export-dark.tsx as the canonical UI implementation.
+- Remove or deprecate: client/src/pages/data-export.tsx
+  - If it is used embedded in my-journal.tsx, replace that usage with the canonical component.
+  - Option A (preferred): Turn data-export.tsx into a thin re-export wrapper of DataExportDark (no duplicate logic).
+  - Option B: Delete data-export.tsx and update all imports to use the canonical one.
+
+- Create a new routed page:
+  - client/src/pages/my-taste-export.tsx (or similar naming) that renders the canonical export UI, within the My Taste context if you have a shell.
+  - Route: /my-taste/export
+
+- Add redirect:
+  - /data-export should redirect to /my-taste/export (client-side). Keep the existing route but make it a redirect component.
+
+- Ensure i18n keys and styling still work.
+
+------------------------------------------------------------
+STEP 2 — FIX “FAKE EXCEL” IN tasting-results.tsx
+------------------------------------------------------------
+Currently: tasting-results.tsx “Excel” export is actually TSV saved as .xlsx with Excel MIME.
+
+Replace it with a REAL XLSX or a correctly named TSV:
+- Preferred solution: Use an existing server-side endpoint to produce an XLSX for tasting results.
+  - If there is no dedicated endpoint, add ONE minimal backend endpoint:
+    GET /api/tastings/:id/results/export?format=csv|xlsx
+    Auth: allow participant in tasting (same policy as analytics download or existing checks).
+    Use server/excel-utils.ts buildExcelBuffer for xlsx and jsonToCsv for csv.
+    Use proper Content-Disposition filenames.
+- Update the frontend dropdown to call the endpoint and download blob for BOTH CSV and XLSX.
+- Keep PDF export client-side (jsPDF) for now.
+
+Make sure the “CSV” export remains valid UTF-8 with BOM as used elsewhere.
+
+------------------------------------------------------------
+STEP 3 — CENTRALIZE QR DOWNLOAD (DEDUP R7)
+------------------------------------------------------------
+Create a tiny helper in client/src/lib/download.ts (or client/src/lib/utils/download.ts):
+- downloadBlob(blob, filename)
+- downloadUrl(url, filename)
+- downloadCanvasAsPng(canvas, filename)  // for QR
+Use this helper in:
+- host-dashboard.tsx
+- simple-host.tsx
+Remove duplicate code blocks.
+
+------------------------------------------------------------
+STEP 4 — CENTRALIZE CLIENT PDF EXPORT UTILITIES (REDUCE R2/R3)
+------------------------------------------------------------
+Create client/src/lib/pdf/ (or client/src/lib/pdf.ts) with reusable functions:
+- exportPdfFromJsPdf(doc, filename) OR a generic `saveJsPdf(doc, filename)`
+- (Minimum) unify the final “Blob → URL.createObjectURL → anchor click” logic via download helper
+- Optionally move shared table layout helpers if they exist; keep risk low.
+
+Refactor these files to use shared helpers (no visual redesign):
+- client/src/pages/tasting-results.tsx exportPdf()
+- client/src/pages/naked-tasting.tsx generatePdf()
+- client/src/pages/tasting-recap.tsx handlePdfDownload()
+- client/src/components/pdf-export-dialog.tsx generate
+- client/src/components/printable-tasting-sheets.tsx (where it saves)
+
+Goal: same outputs, less duplicated save/download code.
+
+------------------------------------------------------------
+STEP 5 — ROUTING / NAV CONSISTENCY
+------------------------------------------------------------
+- Ensure /my-taste/export is reachable from My Taste UI (add a link/button in /my-taste/settings OR /my-taste root).
+  - Minimal: add one “Export” card/button in my-taste.tsx dashboard if exists; otherwise add to settings page.
+- Ensure /data-export still works but redirects.
+- Update any internal links that point to /data-export to point to /my-taste/export.
+
+------------------------------------------------------------
+STEP 6 — CLEANUP + VERIFY
+------------------------------------------------------------
+- Remove dead imports and unused components.
+- Run TypeScript checks/build (or the project’s standard checks).
+- Ensure app compiles.
+- Quick smoke: verify downloads:
+  - My Taste export CSV/XLSX works (calls /api/export/*)
+  - Tasting results CSV/XLSX now downloads real xlsx from server endpoint
+  - QR download works in both host views
+  - PDF exports still download files
+
+============================================================
+DELIVERABLES IN YOUR RESPONSE
+============================================================
+After implementing, print a concise “CHANGELOG”:
+
+1) Files changed (paths)
+2) Routes affected
+3) New endpoints (if any)
+4) What redundancies removed
+5) How to manually test (5 bullet steps)
+
+DO NOT include long explanations. DO NOT propose further refactors. Just implement this consolidation safely and completely.

@@ -356,6 +356,43 @@ export async function registerRoutes(
     sendEmail({ to: ADMIN_NOTIFICATION_EMAIL, ...emailContent }).catch(() => {});
   }
 
+  // ===== SHARED EXPORT HELPERS =====
+
+  const sendExport = async (res: Response, data: any[], filename: string, format: string, sheetName: string) => {
+    if (!data || data.length === 0) {
+      return res.status(404).json({ message: "No data available for export" });
+    }
+    if (format === "csv") {
+      const csv = jsonToCsv(data);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}.csv"`);
+      return res.send("\uFEFF" + csv);
+    }
+    const buf = await buildExcelBuffer([{ name: sheetName.slice(0, 31), data }]);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}.xlsx"`);
+    return res.send(buf);
+  };
+
+  const verifyExportAccess = async (participantId: string, pin: string | undefined, level: "own" | "extended" | "admin") => {
+    if (!participantId) return { ok: false, status: 400, message: "participantId required" };
+    const participant = await storage.getParticipant(participantId);
+    if (!participant) return { ok: false, status: 404, message: "Participant not found" };
+    if (level === "extended") {
+      const tastings = await storage.getTastingsForParticipant(participantId);
+      const isHost = tastings.some((t: any) => t.hostId === participantId);
+      if (participant.role !== "admin" && !isHost) {
+        return { ok: false, status: 403, message: "Host or admin access required" };
+      }
+    }
+    if (level === "admin") {
+      if (participant.role !== "admin") {
+        return { ok: false, status: 403, message: "Admin access required" };
+      }
+    }
+    return { ok: true, participant };
+  };
+
   // ===== HEALTH & VERSION =====
 
   app.get("/health", (_req, res) => {
@@ -2002,6 +2039,49 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("Error fetching results:", err);
       res.status(500).json({ message: "Internal error" });
+    }
+  });
+
+  app.get("/api/tastings/:id/results/export", async (req, res) => {
+    try {
+      const format = (req.query.format as string) || "csv";
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Not found" });
+
+      const [allRatings, allWhiskies] = await Promise.all([
+        storage.getRatingsForTasting(req.params.id),
+        storage.getWhiskiesForTasting(req.params.id),
+      ]);
+
+      const avg = (arr: number[]) => arr.length ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10 : null;
+
+      const rows = allWhiskies
+        .map((w, i) => {
+          const rats = allRatings.filter(r => r.whiskyId === w.id);
+          const overalls = rats.map(r => r.overall).filter((v): v is number => v != null);
+          return {
+            Rank: i + 1,
+            Whisky: w.name ?? "Unknown",
+            Distillery: w.distillery ?? "",
+            Region: w.region ?? "",
+            Age: w.age ?? "",
+            ABV: w.abv ?? "",
+            "Avg Overall": avg(overalls)?.toFixed(1) ?? "",
+            "Avg Nose": avg(rats.map(r => r.nose).filter((v): v is number => v != null))?.toFixed(1) ?? "",
+            "Avg Taste": avg(rats.map(r => r.taste).filter((v): v is number => v != null))?.toFixed(1) ?? "",
+            "Avg Finish": avg(rats.map(r => r.finish).filter((v): v is number => v != null))?.toFixed(1) ?? "",
+            "Avg Balance": avg(rats.map(r => r.balance).filter((v): v is number => v != null))?.toFixed(1) ?? "",
+            Ratings: rats.length,
+          };
+        })
+        .sort((a, b) => parseFloat(b["Avg Overall"] || "0") - parseFloat(a["Avg Overall"] || "0"))
+        .map((row, i) => ({ ...row, Rank: i + 1 }));
+
+      const safeName = (tasting.title || "results").replace(/[^a-zA-Z0-9]/g, "_").slice(0, 40);
+      await sendExport(res, rows, `CaskSense_${safeName}_results`, format, "Results");
+    } catch (err: any) {
+      console.error("Results export error:", err);
+      res.status(500).json({ message: "Export failed" });
     }
   });
 
@@ -8330,41 +8410,6 @@ Important rules:
   });
 
   // ===== DATA EXPORT =====
-
-  const sendExport = async (res: Response, data: any[], filename: string, format: string, sheetName: string) => {
-    if (!data || data.length === 0) {
-      return res.status(404).json({ message: "No data available for export" });
-    }
-    if (format === "csv") {
-      const csv = jsonToCsv(data);
-      res.setHeader("Content-Type", "text/csv; charset=utf-8");
-      res.setHeader("Content-Disposition", `attachment; filename="${filename}.csv"`);
-      return res.send("\uFEFF" + csv);
-    }
-    const buf = await buildExcelBuffer([{ name: sheetName.slice(0, 31), data }]);
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}.xlsx"`);
-    return res.send(buf);
-  };
-
-  const verifyExportAccess = async (participantId: string, pin: string | undefined, level: "own" | "extended" | "admin") => {
-    if (!participantId) return { ok: false, status: 400, message: "participantId required" };
-    const participant = await storage.getParticipant(participantId);
-    if (!participant) return { ok: false, status: 404, message: "Participant not found" };
-    if (level === "extended") {
-      const tastings = await storage.getTastingsForParticipant(participantId);
-      const isHost = tastings.some((t: any) => t.hostId === participantId);
-      if (participant.role !== "admin" && !isHost) {
-        return { ok: false, status: 403, message: "Host or admin access required" };
-      }
-    }
-    if (level === "admin") {
-      if (participant.role !== "admin") {
-        return { ok: false, status: 403, message: "Admin access required" };
-      }
-    }
-    return { ok: true, participant };
-  };
 
   app.get("/api/export/tastings", async (req, res) => {
     try {

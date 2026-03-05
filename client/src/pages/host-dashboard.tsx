@@ -16,6 +16,7 @@ import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components
 import QRCodeLib from "qrcode";
 import SimpleShell from "@/components/simple/simple-shell";
 import { c, cardStyle, inputStyle, pageTitleStyle } from "@/lib/theme";
+import { downloadDataUrl } from "@/lib/download";
 
 interface HostSummary {
   totalTastings: number;
@@ -319,10 +320,7 @@ function InvitationsPanel({ tastings }: { tastings: InviteTasting[] }) {
 
   const handleDownloadQr = useCallback(() => {
     if (!qrDataUrl || !selectedTasting) return;
-    const a = document.createElement("a");
-    a.href = qrDataUrl;
-    a.download = `casksense-qr-${selectedTasting.title.replace(/\s+/g, "-").toLowerCase()}.png`;
-    a.click();
+    downloadDataUrl(qrDataUrl, `casksense-qr-${selectedTasting.title.replace(/\s+/g, "-").toLowerCase()}.png`);
   }, [qrDataUrl, selectedTasting]);
 
   const handleSendEmails = useCallback(async () => {
@@ -841,7 +839,7 @@ export default function HostDashboard() {
                 <div style={{ ...sectionCard, height: "100%" }} data-testid="section-tools">
                   <SectionTitle icon={BarChart3} title={t("hostDashboard.toolsAnalytics")} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <ToolLink href="/data-export" icon={Download} label={t("hostDashboard.dataExport")} desc={t("hostDashboard.dataExportDesc")} />
+                    <ToolLink href="/my-taste/export" icon={Download} label={t("hostDashboard.dataExport")} desc={t("hostDashboard.dataExportDesc")} />
                     <ToolLink href="/sessions" icon={Copy} label={t("hostDashboard.manageTastings")} desc={t("hostDashboard.manageTastingsDesc")} />
                     <ToolLink href="/ai-curation" icon={Sparkles} label={t("hostDashboard.aiCuration")} desc={t("hostDashboard.aiCurationDesc")} />
                   </div>

@@ -3,8 +3,9 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import SimpleShell from "@/components/simple/simple-shell";
-import { Trophy, ChevronDown, Download, ArrowLeft, FileSpreadsheet, FileText, ClipboardList } from "lucide-react";
+import { Trophy, ChevronDown, Download, ArrowLeft, FileSpreadsheet, FileText, ClipboardList, Loader2 } from "lucide-react";
 import { c, cardStyle } from "@/lib/theme";
+import { downloadBlob } from "@/lib/download";
 import jsPDF from "jspdf";
 
 interface WhiskyResult {
@@ -171,66 +172,15 @@ function WhiskyResultCard({ result, rank }: { result: WhiskyResult; rank: number
   );
 }
 
-function exportCsv(data: ResultsData) {
-  const header = "Rank,Whisky,Distillery,Region,Age,ABV,Avg Overall,Avg Nose,Avg Taste,Avg Finish,Avg Balance,Ratings";
-  const rows = data.results.map((r, i) => {
-    const esc = (v: string | null) => v ? `"${v.replace(/"/g, '""')}"` : "";
-    return [
-      i + 1,
-      esc(r.name),
-      esc(r.distillery),
-      esc(r.region),
-      esc(r.age),
-      r.abv ?? "",
-      r.avgOverall?.toFixed(1) ?? "",
-      r.avgNose?.toFixed(1) ?? "",
-      r.avgTaste?.toFixed(1) ?? "",
-      r.avgFinish?.toFixed(1) ?? "",
-      r.avgBalance?.toFixed(1) ?? "",
-      r.ratingCount,
-    ].join(",");
-  });
-
-  const csv = [header, ...rows].join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${data.title.replace(/[^a-zA-Z0-9]/g, "_")}_results.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function exportExcel(data: ResultsData) {
-  const rows = data.results.map((r, i) => ({
-    Rank: i + 1,
-    Whisky: r.name,
-    Distillery: r.distillery ?? "",
-    Region: r.region ?? "",
-    Age: r.age ?? "",
-    ABV: r.abv ?? "",
-    "Avg Overall": r.avgOverall?.toFixed(1) ?? "",
-    "Avg Nose": r.avgNose?.toFixed(1) ?? "",
-    "Avg Taste": r.avgTaste?.toFixed(1) ?? "",
-    "Avg Finish": r.avgFinish?.toFixed(1) ?? "",
-    "Avg Balance": r.avgBalance?.toFixed(1) ?? "",
-    Ratings: r.ratingCount,
-  }));
-
-  const headers = Object.keys(rows[0] || {});
-  const csvContent = [
-    headers.join("\t"),
-    ...rows.map(row => headers.map(h => (row as any)[h]).join("\t")),
-  ].join("\n");
-
-  const BOM = "\uFEFF";
-  const blob = new Blob([BOM + csvContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${data.title.replace(/[^a-zA-Z0-9]/g, "_")}_results.xlsx`;
-  a.click();
-  URL.revokeObjectURL(url);
+async function exportFromServer(tastingId: string, format: "csv" | "xlsx"): Promise<boolean> {
+  const res = await fetch(`/api/tastings/${tastingId}/results/export?format=${format}`);
+  if (!res.ok) return false;
+  const blob = await res.blob();
+  const disp = res.headers.get("Content-Disposition");
+  const filenameMatch = disp?.match(/filename="?([^"]+)"?/);
+  const filename = filenameMatch?.[1] || `results.${format}`;
+  downloadBlob(blob, filename);
+  return true;
 }
 
 function exportPdf(data: ResultsData) {
@@ -323,6 +273,7 @@ function exportPdf(data: ResultsData) {
 
 function ExportDropdown({ data }: { data: ResultsData }) {
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -333,6 +284,16 @@ function ExportDropdown({ data }: { data: ResultsData }) {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
+
+  const handleServerExport = async (format: "csv" | "xlsx") => {
+    setLoading(format);
+    try {
+      await exportFromServer(data.tastingId, format);
+    } finally {
+      setLoading(null);
+      setOpen(false);
+    }
+  };
 
   const menuItemStyle: React.CSSProperties = {
     display: "flex",
@@ -395,23 +356,25 @@ function ExportDropdown({ data }: { data: ResultsData }) {
           data-testid="dropdown-export-menu"
         >
           <button
-            style={menuItemStyle}
+            style={{ ...menuItemStyle, opacity: loading === "csv" ? 0.6 : 1 }}
             onMouseEnter={e => (e.currentTarget.style.background = `${c.accent}15`)}
             onMouseLeave={e => (e.currentTarget.style.background = "none")}
-            onClick={() => { exportCsv(data); setOpen(false); }}
+            onClick={() => handleServerExport("csv")}
+            disabled={!!loading}
             data-testid="button-export-csv"
           >
-            <Download style={{ width: 14, height: 14, color: c.muted }} />
+            {loading === "csv" ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Download style={{ width: 14, height: 14, color: c.muted }} />}
             Export as CSV
           </button>
           <button
-            style={menuItemStyle}
+            style={{ ...menuItemStyle, opacity: loading === "xlsx" ? 0.6 : 1 }}
             onMouseEnter={e => (e.currentTarget.style.background = `${c.accent}15`)}
             onMouseLeave={e => (e.currentTarget.style.background = "none")}
-            onClick={() => { exportExcel(data); setOpen(false); }}
+            onClick={() => handleServerExport("xlsx")}
+            disabled={!!loading}
             data-testid="button-export-excel"
           >
-            <FileSpreadsheet style={{ width: 14, height: 14, color: c.muted }} />
+            {loading === "xlsx" ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <FileSpreadsheet style={{ width: 14, height: 14, color: c.muted }} />}
             Export as Excel
           </button>
           <button

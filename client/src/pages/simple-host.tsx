@@ -6,6 +6,7 @@ import { getSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCodeLib from "qrcode";
 import { c, cardStyle } from "@/lib/theme";
+import { downloadDataUrl } from "@/lib/download";
 import { AiTastingImportDialog } from "@/components/ai-tasting-import";
 import { useTranslation } from "react-i18next";
 
@@ -734,10 +735,7 @@ function InviteStep({ tasting, onDone, onNext }: { tasting: TastingFull; onDone:
 
   const downloadQr = () => {
     if (!qrDataUrl) return;
-    const a = document.createElement("a");
-    a.href = qrDataUrl;
-    a.download = `casksense-${tasting.code}-qr.png`;
-    a.click();
+    downloadDataUrl(qrDataUrl, `casksense-${tasting.code}-qr.png`);
   };
 
   return (

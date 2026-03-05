@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Printer, FileDown, ClipboardList, EyeOff, Download } from "lucide-react";
 import type { Whisky, Tasting } from "@shared/schema";
 import jsPDF from "jspdf";
+import { saveOrPrintJsPdf } from "@/lib/pdf";
 import i18n from "@/lib/i18n";
 
 type RGB = [number, number, number];
@@ -295,13 +296,7 @@ async function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], l
 
   drawFooter(doc, currentPage, totalPages);
 
-  if (mode === "print") {
-    doc.autoPrint();
-    window.open(doc.output("bloburl"), "_blank");
-  } else {
-    const fileName = `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Notizblatt.pdf`;
-    doc.save(fileName);
-  }
+  saveOrPrintJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Notizblatt.pdf`, mode);
 }
 
 async function generateBlindEvaluationSheet(tasting: Tasting, whiskies: Whisky[], lang: string, participant?: ParticipantInfo, mode: "download" | "print" = "download") {
@@ -481,13 +476,7 @@ async function generateBlindEvaluationSheet(tasting: Tasting, whiskies: Whisky[]
 
   drawFooter(doc, currentPage, totalPages);
 
-  if (mode === "print") {
-    doc.autoPrint();
-    window.open(doc.output("bloburl"), "_blank");
-  } else {
-    const fileName = `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Bewertungsbogen.pdf`;
-    doc.save(fileName);
-  }
+  saveOrPrintJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Bewertungsbogen.pdf`, mode);
 }
 
 interface PrintableTastingSheetsProps {

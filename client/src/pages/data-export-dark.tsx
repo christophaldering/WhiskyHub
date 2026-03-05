@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { tastingApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { c, cardStyle } from "@/lib/theme";
+import { downloadBlob } from "@/lib/download";
 import { getSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import SimpleShell from "@/components/simple/simple-shell";
@@ -131,12 +132,7 @@ export default function DataExportDark() {
         }
         if (!res.ok) throw new Error("Export failed");
         const blob = await res.blob();
-        const urlObj = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = urlObj;
-        a.download = `casksense_${type}_${new Date().toISOString().split("T")[0]}.${format === "xlsx" ? "xlsx" : format}`;
-        a.click();
-        URL.revokeObjectURL(urlObj);
+        downloadBlob(blob, `casksense_${type}_${new Date().toISOString().split("T")[0]}.${format === "xlsx" ? "xlsx" : format}`);
         toast({ description: t("dataExport.downloadReady") });
       } catch {
         toast({ description: t("dataExport.noData"), variant: "destructive" });

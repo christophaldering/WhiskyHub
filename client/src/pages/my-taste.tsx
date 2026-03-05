@@ -323,7 +323,7 @@ export default function MyTastePage() {
                   icon={Download}
                   label={t("myTastePage.dataExport")}
                   description={t("myTastePage.dataExportDesc")}
-                  href="/data-export"
+                  href="/my-taste/export"
                   testId="link-data-export"
                 />
               </AppleSection>
@@ -549,7 +549,7 @@ export default function MyTastePage() {
                   icon={Download}
                   label={t("myTastePage.dataExport")}
                   description={t("myTastePage.dataExportDesc")}
-                  href="/data-export"
+                  href="/my-taste/export"
                   testId="link-data-export"
                 />
               </AppleSection>
@@ -718,7 +718,7 @@ export default function MyTastePage() {
                   icon={Download}
                   label={t("myTastePage.dataExport")}
                   description={t("myTastePage.dataExportDesc")}
-                  href="/data-export"
+                  href="/my-taste/export"
                   testId="link-data-export"
                 />
               </div>
@@ -919,7 +919,7 @@ export default function MyTastePage() {
                   icon={Download}
                   label={t("myTastePage.dataExport")}
                   description={t("myTastePage.dataExportDesc")}
-                  href="/data-export"
+                  href="/my-taste/export"
                   testId="link-data-export"
                 />
               </div>

@@ -161,7 +161,8 @@ function Router() {
         <Route path="/tasting-results/:id" component={TastingResultsPage} />
         <Route path="/naked/:code" component={NakedTasting} />
         <Route path="/sessions" component={SessionsDark} />
-        <Route path="/data-export" component={DataExportDark} />
+        <Route path="/my-taste/export" component={DataExportDark} />
+        <Route path="/data-export">{() => <Redirect to="/my-taste/export" />}</Route>
         <Route path="/vocabulary" component={VocabularyDark} />
         <Route path="/ai-curation" component={AICurationDark} />
         <Route path="/guide" component={TastingGuide} />

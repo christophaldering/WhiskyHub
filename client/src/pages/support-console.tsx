@@ -54,7 +54,7 @@ const LINK_GROUPS: LinkGroup[] = [
       { title: "Recommendations", url: "/my-taste/recommendations" },
       { title: "Pairings", url: "/my-taste/pairings" },
       { title: "Settings", url: "/my-taste/settings" },
-      { title: "Data Export", url: "/data-export" },
+      { title: "Data Export", url: "/my-taste/export" },
     ],
   },
   {
