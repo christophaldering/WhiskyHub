@@ -1,0 +1,134 @@
+You are Replit AI working inside the CaskSense repo. I need a DEEP, FILE-AND-LINE-SPECIFIC AUDIT of all “Download / Export” functionality, because I suspect redundancies. Do NOT refactor yet. Do NOT propose improvements yet. Your job is to PRINT the evidence so I can analyze it with ChatGPT afterwards.
+
+OUTPUT MUST BE HIGH SIGNAL: a structured report + a set of copy/paste-ready excerpts (with file paths and line ranges). Be explicit about where each download is triggered and how the file is generated/delivered.
+
+========================
+GOAL
+========================
+Create a complete inventory of every place where the user can download/export something (PDF/XLSX/CSV/JSON/Images/anything) and every backend endpoint that serves downloads, plus any shared utilities that generate export files.
+
+========================
+SCOPE
+========================
+Frontend (client/src):
+- pages: especially
+  - data-export-dark.tsx  (/data-export)
+  - tasting-results.tsx   (/tasting-results/:id)
+  - host-dashboard.tsx    (/host-dashboard)
+  - tasting-recap.tsx
+  - ai-curation-dark.tsx
+  - support-console.tsx
+- components: especially
+  - pdf-export-dialog.tsx
+  - tasting-analytics.tsx
+  - briefing-notes.tsx
+  - reveal-presenter.tsx / reveal-view.tsx (if they export anything)
+  - any component that contains “Export”, “Download”, “PDF”, “Excel”, “CSV”, “saveAs”, “Blob”, “Content-Disposition”
+
+Backend (server):
+- routes.ts (VERY IMPORTANT)
+- excel-utils.ts
+- static.ts
+- storage.ts
+- insight-engine.ts (if it generates export artifacts)
+- lib/* (if it contains export helpers)
+
+Shared:
+- shared/schema.ts only if relevant for exports
+
+Tests:
+- tests/link-integrity.ts only if relevant (probably not)
+
+========================
+TASKS (DO THESE IN ORDER)
+========================
+
+1) FRONTEND SEARCH (global grep)
+Run repository-wide searches and LIST MATCHES WITH FILE PATHS:
+- "download"
+- "export"
+- "pdf"
+- "xlsx"
+- "csv"
+- "ExcelJS"
+- "jsPDF"
+- "saveAs"
+- "Blob"
+- "createObjectURL"
+- "Content-Disposition"
+- "res.download"
+- "res.attachment"
+- "application/pdf"
+- "application/vnd.openxmlformats"
+- "text/csv"
+- "/export"
+- "PDFExport" (or similar)
+- "ExportDialog"
+- "DataExport"
+
+For each match group, output:
+- file path
+- line numbers
+- 1–3 lines of surrounding context
+
+2) INVENTORY: UI TRIGGERS (user-visible download points)
+Build a table:
+- Route (e.g., /tasting-results/:id)
+- Component/Page file
+- Button label / menu item text (exact string)
+- What is downloaded (e.g., “Tasting Results PDF”)
+- File type(s)
+- How it is generated (client-side vs server-side)
+- What API endpoint is called (if any)
+- Permissions / auth requirement (if visible in code)
+
+3) BACKEND INVENTORY: DOWNLOAD/EXPORT ENDPOINTS
+In server/routes.ts and elsewhere, list every endpoint that:
+- sets Content-Disposition
+- returns application/pdf, xlsx, csv, or triggers file download
+- streams or sends a buffer intended as a file
+
+For each endpoint, output:
+- HTTP method + path
+- where it is defined (file + line range)
+- required auth/role
+- parameters
+- what data it uses
+- content-type, filename logic
+
+Include COPY/PASTE excerpts of each endpoint body (keep it concise but complete).
+
+4) GENERATION UTILITIES
+Identify and describe utilities used to generate files:
+- server/excel-utils.ts: list exports and how they are used (with call sites)
+- any PDF generator: where, which library, how rendered
+- any “export to JSON” logic
+For each utility, include:
+- file path + key functions
+- the call sites (where used)
+
+5) REDUNDANCY DETECTOR (EVIDENCE ONLY)
+Based on evidence from steps 1–4, list suspected redundancies WITHOUT suggesting fixes.
+Example output format:
+- “Two separate PDF export implementations: A) … B) …”
+- “Two separate ‘data export’ pages/components …”
+But keep this strictly descriptive, grounded in code references.
+
+6) FINAL DELIVERABLE
+Produce ONE report with:
+A) Executive inventory table (all downloads)
+B) Endpoint list
+C) Utility list
+D) Redundancy list (evidence)
+E) Appendix: copy/paste excerpts with file+line ranges
+
+========================
+OUTPUT FORMAT REQUIREMENTS
+========================
+- Use Markdown
+- Every item must include file paths and line ranges
+- If you don’t know line numbers, approximate but indicate uncertainty, and still include the code excerpt
+- Prefer short excerpts but include enough to identify the flow end-to-end
+- No refactoring and no “recommendations” yet; I only want the factual map of the current state.
+
+Start now.
