@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import SimpleShell from "@/components/simple/simple-shell";
-import { Wine, Crown, ClipboardList, Calendar, LayoutDashboard, ChevronRight } from "lucide-react";
+import { Wine, Crown, GlassWater, Calendar, LayoutDashboard, ChevronRight } from "lucide-react";
 import { ApplePage, AppleSection, AppleActionCard } from "@/components/apple";
 import { c, cardStyle } from "@/lib/theme";
 import { v, alpha } from "@/lib/themeVars";
@@ -43,6 +43,35 @@ function NavCard({ icon: Icon, label, description, href, testId }: NavCardProps)
   );
 }
 
+function OrSeparator({ label }: { label: string }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 16,
+        margin: "4px 0",
+      }}
+      data-testid="separator-or"
+    >
+      <div style={{ flex: 1, height: 1, background: v.subtleBorder }} />
+      <span
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: v.muted,
+          fontFamily: "system-ui, -apple-system, sans-serif",
+        }}
+      >
+        {label}
+      </span>
+      <div style={{ flex: 1, height: 1, background: v.subtleBorder }} />
+    </div>
+  );
+}
+
 export default function TastingHubSimple() {
   const { t } = useTranslation();
   const isTwoTab = NAV_VERSION === "v2_two_tab";
@@ -66,15 +95,18 @@ export default function TastingHubSimple() {
             testId="card-host-tasting"
           />
 
+          <OrSeparator label={t("tastingHub.separator")} />
+
+          <AppleActionCard
+            icon={GlassWater}
+            title={t("tastingHub.soloDramTitle")}
+            description={t("tastingHub.soloDramDesc")}
+            href="/log-simple"
+            testId="card-solo-dram"
+          />
+
           {isTwoTab && (
             <AppleSection title={t("tastingHub.sectionMore")}>
-              <NavCard
-                icon={ClipboardList}
-                label={t("tastingHub.recentTastings")}
-                description={t("tastingHub.recentTastingsDesc")}
-                href="/sessions"
-                testId="link-recent-tastings"
-              />
               <NavCard
                 icon={LayoutDashboard}
                 label={t("tastingHub.hostDashboard")}

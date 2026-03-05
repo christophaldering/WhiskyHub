@@ -21,8 +21,8 @@ const NAV_ITEMS_V1 = [
 ];
 
 const NAV_ITEMS_V2 = [
-  { href: "/tasting", icon: Wine, labelKey: "nav.tasting", labelFallback: "Tasting", match: ["/tasting", "/enter", "/join", "/tasting-room-simple", "/naked/", "/host"] },
-  { href: "/my-taste", icon: User, labelKey: "nav.myTaste", labelFallback: "My Taste", match: ["/my-taste", "/taste", "/log-simple", "/log"] },
+  { href: "/tasting", icon: Wine, labelKey: "nav.tasting", labelFallback: "Tasting", match: ["/tasting", "/enter", "/join", "/tasting-room-simple", "/naked/", "/host", "/log-simple", "/log"] },
+  { href: "/my-taste", icon: User, labelKey: "nav.myTaste", labelFallback: "My Taste", match: ["/my-taste", "/taste"] },
   { href: "/analyze", icon: Compass, labelKey: "nav.discover", labelFallback: "Explore", match: ["/analyze", "/discover"] },
 ];
 

@@ -223,29 +223,6 @@ export default function MyTastePage() {
                 <p style={{ fontSize: 11, color: v.muted, margin: "0 0 12px", lineHeight: 1.5, fontStyle: "italic" }}>
                   {t("myTastePage.dramsExplainer")}
                 </p>
-                <Link href="/log-simple">
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 8,
-                      padding: "14px 20px",
-                      background: v.accent,
-                      color: v.bg,
-                      borderRadius: 14,
-                      fontSize: 15,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      fontFamily: "system-ui, sans-serif",
-                      marginBottom: 12,
-                    }}
-                    data-testid="button-add-dram"
-                  >
-                    <PenLine style={{ width: 18, height: 18 }} strokeWidth={2} />
-                    {t("myTastePage.addDram")}
-                  </div>
-                </Link>
                 <NavCard
                   icon={BookOpen}
                   label={t("myTastePage.journal")}
@@ -256,10 +233,10 @@ export default function MyTastePage() {
                 />
                 <NavCard
                   icon={ClipboardList}
-                  label={t("myTastePage.tastingRecap")}
-                  description={t("myTastePage.tastingRecapDesc")}
+                  label={t("myTastePage.myTastings")}
+                  description={t("myTastePage.myTastingsDesc")}
                   href="/sessions"
-                  testId="link-tasting-recap"
+                  testId="link-my-tastings"
                   badge={tastingCount != null && tastingCount > 0 ? tastingCount : null}
                 />
                 <NavCard
@@ -546,10 +523,10 @@ export default function MyTastePage() {
                 />
                 <NavCard
                   icon={ClipboardList}
-                  label={t("myTastePage.tastingRecap")}
-                  description={t("myTastePage.tastingRecapDesc")}
+                  label={t("myTastePage.myTastings")}
+                  description={t("myTastePage.myTastingsDesc")}
                   href="/sessions"
-                  testId="link-tasting-recap"
+                  testId="link-my-tastings"
                   badge={tastingCount != null && tastingCount > 0 ? tastingCount : null}
                 />
                 <NavCard
@@ -610,29 +587,6 @@ export default function MyTastePage() {
               <p style={{ fontSize: 13, color: v.muted, marginTop: -8, marginBottom: 12, lineHeight: 1.5 }}>
                 {t("myTastePage.dramsSubtitle")}
               </p>
-              <Link href="/log-simple">
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    padding: "14px 20px",
-                    background: v.accent,
-                    color: v.bg,
-                    borderRadius: 12,
-                    fontSize: 15,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    fontFamily: "system-ui, sans-serif",
-                    marginBottom: 12,
-                  }}
-                  data-testid="button-add-dram"
-                >
-                  <PenLine style={{ width: 18, height: 18 }} strokeWidth={2} />
-                  {t("myTastePage.addDram")}
-                </div>
-              </Link>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <NavCard
                   icon={BookOpen}
@@ -644,10 +598,10 @@ export default function MyTastePage() {
                 />
                 <NavCard
                   icon={ClipboardList}
-                  label={t("myTastePage.tastingRecap")}
-                  description={t("myTastePage.tastingRecapDesc")}
+                  label={t("myTastePage.myTastings")}
+                  description={t("myTastePage.myTastingsDesc")}
                   href="/sessions"
-                  testId="link-tasting-recap"
+                  testId="link-my-tastings"
                   badge={tastingCount != null && tastingCount > 0 ? tastingCount : null}
                 />
                 <NavCard
@@ -908,10 +862,10 @@ export default function MyTastePage() {
                 />
                 <NavCard
                   icon={ClipboardList}
-                  label={t("myTastePage.tastingRecap")}
-                  description={t("myTastePage.tastingRecapDesc")}
+                  label={t("myTastePage.myTastings")}
+                  description={t("myTastePage.myTastingsDesc")}
                   href="/sessions"
-                  testId="link-tasting-recap"
+                  testId="link-my-tastings"
                   badge={tastingCount != null && tastingCount > 0 ? tastingCount : null}
                 />
                 <NavCard

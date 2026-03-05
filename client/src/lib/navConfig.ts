@@ -15,14 +15,14 @@ export const primaryTabs: NavItem[] = [
     labelKey: "nav.tasting",
     route: "/tasting",
     icon: Wine,
-    match: ["/tasting", "/enter", "/join", "/tasting-room-simple", "/naked/", "/host", "/host-dashboard", "/sessions", "/tasting-calendar"],
+    match: ["/tasting", "/enter", "/join", "/tasting-room-simple", "/naked/", "/host", "/host-dashboard", "/sessions", "/tasting-calendar", "/log-simple", "/log"],
   },
   {
     key: "myTaste",
     labelKey: "nav.myTaste",
     route: "/my-taste",
     icon: User,
-    match: ["/my-taste", "/taste", "/log-simple", "/log", "/analyze", "/discover"],
+    match: ["/my-taste", "/taste", "/analyze", "/discover"],
   },
 ];
 

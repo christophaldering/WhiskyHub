@@ -157,7 +157,7 @@ export default function HomeDashboard() {
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-serif font-semibold text-muted-foreground uppercase tracking-widest">
             <Clock className="w-4 h-4" />
-            Letzte Tastings
+            {t("tastingHub.recentTastings")}
           </div>
           <div className="space-y-2">
             {recentSessions.map((session: any) => (
