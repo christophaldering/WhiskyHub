@@ -1,0 +1,65 @@
+CaskSense — Hide/Isolate Support Console (PIN screen) + Fix wrong routing
+
+You are Replit AI working inside the CaskSense repo.
+
+Problem:
+A “Support Console” PIN unlock screen appears in normal user flows (e.g. visiting /my-taste/compare). This must never be visible to regular users. It must be isolated as an internal/admin-only tool. Also, /my-taste/compare must render the real Compare page (not the Support Console).
+
+Non-negotiables:
+- Do NOT delete features.
+- Do NOT remove the Support Console; only isolate it.
+- Do NOT change business logic, DB, or API logic except what is needed for access control and routing correctness.
+- /my-taste and /tasting remain the two top-level tabs.
+- Keep existing PIN mechanism if used internally.
+
+Deliverables:
+1) Identify where the Support Console page is implemented (file path) and how it is routed.
+2) Fix routing so /my-taste/compare always renders the real compare page component (my-taste-compare.tsx or equivalent).
+3) Move/alias the Support Console route to: /admin/support
+4) Ensure /admin/support is NOT accessible in production unless user is admin.
+
+Implementation steps:
+
+A) Locate and inventory
+- Search for “Support Console” string and find its component file.
+- Find where it is registered in client/src/App.tsx routes.
+- Identify why /my-taste/compare is mapping to it (route collision, wrong import, fallback route, or copy/paste mistake).
+
+B) Fix Compare route
+- Ensure there is an explicit route definition for /my-taste/compare that points to the correct page component file.
+- Confirm no other route is capturing /my-taste/* and redirecting to support.
+- Add a minimal test: navigating to /my-taste/compare shows Compare UI (not support PIN).
+
+C) Isolate Support Console
+- Register Support Console route ONLY under /admin/support.
+- Remove it from any user-facing navigation (My Taste, Knowledge, etc.).
+- Ensure it is not reachable from any normal pages.
+
+D) Access control (Production-safe)
+Implement gating:
+- If NODE_ENV === "production": block access unless user is admin.
+- If you already have role checks (admin/host), reuse them.
+- If no admin concept exists, implement simplest safe guard:
+  - allow only when a server-provided flag indicates admin, OR
+  - allow only in development mode.
+Preferred:
+- Dev: allow access
+- Prod: deny access (show 404 or “Not available”)
+
+E) UX
+- In production when blocked, show a polite “Not available” or 404.
+- In development, keep the PIN unlock as-is.
+
+F) Verification
+- /my-taste/compare → real Compare page
+- /support or old routes → 404 or redirect to /admin/support (dev only)
+- /admin/support:
+   - dev: shows Support Console
+   - prod: blocked unless admin
+
+Output:
+- List files changed
+- Explain root cause of the wrong routing
+- Provide manual test steps (6–10 bullets)
+
+Now implement all changes.
