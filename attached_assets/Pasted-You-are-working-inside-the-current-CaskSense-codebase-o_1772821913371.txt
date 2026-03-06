@@ -1,0 +1,251 @@
+You are working inside the current CaskSense codebase on Replit.
+
+Mission:
+Integrate the uploaded Excel workbook "20260219 Gesamtübersicht alle Whiskys in Tastings.xlsx" into CaskSense as a first-class HISTORICAL TASTINGS dataset, not as a flat one-off import.
+
+This must be implemented production-style, robustly, idempotently, and in a way that fits the CURRENT CaskSense architecture.
+
+Context you must respect:
+- Frontend: React 18 + Vite + Wouter + TanStack React Query + Zustand + Tailwind + shadcn/ui + Framer Motion + react-i18next
+- Backend: Express 5 + TypeScript + ESM
+- Database: PostgreSQL + Drizzle ORM
+- Existing product language and IA:
+  - Main navigation: Tastings / Taste / Circle / Profile
+  - Top entry actions: Join / Host / Solo
+- The product must remain usable as a simple tasting tool, but now be enhanced by historical intelligence
+- Historical data must not break existing live tasting flows
+- No hacky shortcuts, no dead code, no duplicate routes, no partial scaffolding
+- Desktop-first quality, but responsive on tablet/mobile where realistic
+
+Goal:
+Build the full backend/data layer for importing, normalizing, storing, and exposing the historical tastings workbook.
+
+======================================================================
+A. DATA MODEL
+======================================================================
+
+Create/extend the schema with normalized structures for historical tastings.
+
+Add robust Drizzle schema definitions for at least these tables:
+
+1) historical_tastings
+- id (uuid / text id consistent with project)
+- sourceKey (stable deterministic unique key; e.g. based on workbook source + tasting number)
+- tastingNumber (integer, nullable only if absolutely required)
+- titleDe
+- titleEn
+- tastingDate (nullable if unknown)
+- sourceFileName
+- importBatchId
+- whiskyCount
+- createdAt
+- updatedAt
+
+2) historical_tasting_entries
+- id
+- historicalTastingId (FK)
+- whiskyId (nullable initially if no exact match found)
+- sourceWhiskyKey (stable normalized key from row data)
+- distilleryBottlerRaw
+- whiskyNameRaw
+- ageRaw
+- alcoholRaw
+- priceRaw
+- countryRaw
+- regionRaw
+- typeRaw
+- smokyRaw
+- ppmRaw
+- caskRaw
+- noseScore
+- noseRank
+- tasteScore
+- tasteRank
+- finishScore
+- finishRank
+- totalScore
+- totalRank
+- normalizedAge
+- normalizedAbv
+- normalizedPrice
+- normalizedCountry
+- normalizedRegion
+- normalizedType
+- normalizedIsSmoky
+- normalizedPpm
+- normalizedCask
+- importNotes (json/text)
+- createdAt
+- updatedAt
+
+3) historical_import_runs
+- id
+- sourceFileName
+- sourceType
+- status
+- rowsRead
+- rowsImported
+- rowsSkipped
+- tastingsCreated
+- entriesCreated
+- warningsCount
+- errorsCount
+- summaryJson
+- createdAt
+- completedAt
+
+4) optional but strongly recommended:
+historical_whisky_aliases
+- id
+- normalizedSourceWhiskyKey
+- whiskyId
+- confidence
+- matchMethod
+- createdAt
+
+Important:
+- Do NOT destroy or replace current whisky tables or live tasting structures
+- Historical data must coexist cleanly with current CaskSense entities
+- Add all needed indexes and FKs
+- Add uniqueness constraints to make repeated imports idempotent
+
+======================================================================
+B. IMPORT STRATEGY
+======================================================================
+
+Build a proper import service on the server side.
+
+Requirements:
+- Read the uploaded Excel workbook from the server environment
+- Parse sheet "Gesamtübersicht"
+- Ignore empty trailing columns
+- Support German column names exactly as found in the file
+- Group rows by "Tasting Nr"
+- Each unique tasting number becomes one historical_tastings record
+- Each row becomes one historical_tasting_entries record linked to that tasting
+
+Normalization logic:
+- Trim all text
+- Normalize whitespace
+- Convert decimal commas where necessary
+- Parse alcohol values into numeric ABV if possible
+- Parse age into numeric years if possible
+- Parse price into numeric if possible
+- Normalize smoky field to boolean where possible
+- Parse ppm if possible
+- Preserve original raw text AND store normalized variants
+- Never silently drop ambiguous data; log warnings instead
+
+Create deterministic keys:
+- sourceKey for tastings
+- sourceWhiskyKey for each entry
+These keys must make re-import safe and idempotent.
+
+Matching strategy to existing whiskies:
+- Implement a safe first-pass matcher against the existing whiskies table
+- Matching dimensions may include normalized distillery, name, age, abv, cask
+- Use confidence buckets:
+  - exact
+  - probable
+  - weak
+  - unmatched
+- Only auto-link when confidence is high enough
+- For lower confidence, keep whiskyId null and store match diagnostics
+- Do NOT create garbage duplicate whiskies automatically unless the codebase already has a safe canonical creation flow
+- Prefer conservative linking over wrong linking
+
+======================================================================
+C. IMPORT EXECUTION
+======================================================================
+
+Create:
+1) a reusable import service
+2) a one-time/import-safe script or endpoint to run the workbook import
+3) a dry-run mode
+
+Required capabilities:
+- dry run: parse and report what would happen without DB writes
+- real import: write to DB
+- re-run safe: repeated execution must not duplicate tastings/entries
+- transaction boundaries where sensible
+- good server logging
+- import summary output
+
+Create an internal admin/dev route or script, whichever fits the repo better, for:
+- dry run
+- execute import
+- inspect latest import run
+This is internal only, not public UX.
+
+======================================================================
+D. API LAYER
+======================================================================
+
+Expose clean read APIs for the frontend.
+
+Implement endpoints or backend query functions for at least:
+
+1) GET historical tastings list
+- pagination
+- search
+- sort by tasting number / date / rating summaries
+- filters where useful
+
+2) GET historical tasting detail
+- tasting metadata
+- all entries in ranked order
+- summary stats
+
+3) GET historical whisky insights
+- number of tastings appeared in
+- average total score
+- best rank achieved
+- average nose/taste/finish
+- latest appearance
+- regions/cask/smoky patterns if derivable
+
+4) GET historical analytics overview
+- top rated whiskies
+- most frequently tasted whiskies
+- best average by region
+- smoky vs non-smoky preference
+- average score by cask type
+- data quality counters
+
+======================================================================
+E. IMPLEMENTATION QUALITY
+======================================================================
+
+You must:
+- inspect current repo structure first and integrate into the existing conventions
+- use existing query/service/router patterns
+- add necessary types end-to-end
+- avoid duplicated business logic
+- avoid breaking existing build/dev scripts
+- keep code readable and production-grade
+
+Add tests for:
+- parser behavior
+- normalization helpers
+- idempotent import
+- grouping by tasting number
+- matching confidence logic
+- API response shape where feasible
+
+======================================================================
+F. DELIVERABLES
+======================================================================
+
+At the end, actually implement everything and then provide a concise execution report in the Replit output:
+- files created/changed
+- migrations added
+- commands run
+- dry-run summary
+- import summary
+- open issues / low-confidence matches
+- exact validation performed
+
+Do NOT stop at planning.
+Do NOT give me only pseudo-code.
+Do NOT ask for confirmation.
+Implement the full backend/data-layer now, run the import, validate it, and leave the codebase in a working state.
