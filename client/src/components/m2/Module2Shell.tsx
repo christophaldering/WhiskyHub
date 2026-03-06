@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useCallback, useRef, Component, type ErrorInfo } from "react";
 import { Link, useLocation } from "wouter";
-import { Wine, BarChart3, Users, User, Bell, Download, AlertTriangle, RefreshCw } from "lucide-react";
+import { User, Bell, Download, AlertTriangle, RefreshCw } from "lucide-react";
 import { v } from "@/lib/themeVars";
 import { useTranslation } from "react-i18next";
 import i18next from "i18next";
@@ -95,10 +95,79 @@ class M2ErrorBoundary extends Component<
   }
 }
 
+function GlencairnIcon({ active, color, size = 24 }: { active?: boolean; color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {active ? (
+        <>
+          <path d="M8.5 3h7l-.8 7.5c-.3 2.8-1.6 4.5-2.7 5.3V19h2.5a.75.75 0 0 1 .7.5l.3 1a.5.5 0 0 1-.47.5H9a.5.5 0 0 1-.48-.5l.3-1a.75.75 0 0 1 .7-.5H12v-3.2c-1.1-.8-2.4-2.5-2.7-5.3L8.5 3Z" fill={color} opacity="0.2"/>
+          <path d="M8.5 3h7l-.8 7.5c-.3 2.8-1.6 4.5-2.7 5.3V19h2.5a.75.75 0 0 1 .7.5l.3 1a.5.5 0 0 1-.47.5H9a.5.5 0 0 1-.48-.5l.3-1a.75.75 0 0 1 .7-.5H12v-3.2c-1.1-.8-2.4-2.5-2.7-5.3L8.5 3Z" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M8.8 6h6.4" stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
+        </>
+      ) : (
+        <path d="M8.5 3h7l-.8 7.5c-.3 2.8-1.6 4.5-2.7 5.3V19h2.5a.75.75 0 0 1 .7.5l.3 1a.5.5 0 0 1-.47.5H9a.5.5 0 0 1-.48-.5l.3-1a.75.75 0 0 1 .7-.5H12v-3.2c-1.1-.8-2.4-2.5-2.7-5.3L8.5 3Z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      )}
+    </svg>
+  );
+}
+
+function RadarIcon({ active, color, size = 24 }: { active?: boolean; color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {active ? (
+        <>
+          <polygon points="12,3 20.5,9.5 17.5,19 6.5,19 3.5,9.5" fill={color} opacity="0.15" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+          <polygon points="12,7 17,10.5 15.5,16.5 8.5,16.5 7,10.5" fill={color} opacity="0.25" stroke={color} strokeWidth="1" strokeLinejoin="round"/>
+          <polygon points="12,10 14.5,11.8 13.5,14.5 10.5,14.5 9.5,11.8" fill={color} opacity="0.5"/>
+          <circle cx="12" cy="12" r="1.2" fill={color}/>
+        </>
+      ) : (
+        <>
+          <polygon points="12,3 20.5,9.5 17.5,19 6.5,19 3.5,9.5" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+          <polygon points="12,7 17,10.5 15.5,16.5 8.5,16.5 7,10.5" stroke={color} strokeWidth="1" strokeLinejoin="round" opacity="0.5"/>
+          <circle cx="12" cy="12" r="1.2" fill={color} opacity="0.6"/>
+        </>
+      )}
+    </svg>
+  );
+}
+
+function PeopleIcon({ active, color, size = 24 }: { active?: boolean; color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {active ? (
+        <>
+          <circle cx="12" cy="8" r="3.5" fill={color} opacity="0.2" stroke={color} strokeWidth="1.6"/>
+          <path d="M5.5 20c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6" fill={color} opacity="0.15" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
+          <circle cx="18.5" cy="8.5" r="2" fill={color} opacity="0.15" stroke={color} strokeWidth="1.2"/>
+          <path d="M20 20c0-1.8-1-3.2-2.5-4" stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
+          <circle cx="5.5" cy="8.5" r="2" fill={color} opacity="0.15" stroke={color} strokeWidth="1.2"/>
+          <path d="M4 20c0-1.8 1-3.2 2.5-4" stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
+        </>
+      ) : (
+        <>
+          <circle cx="12" cy="8" r="3.5" stroke={color} strokeWidth="1.5"/>
+          <path d="M5.5 20c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+          <circle cx="18.5" cy="8.5" r="2" stroke={color} strokeWidth="1.2" opacity="0.5"/>
+          <path d="M20 20c0-1.8-1-3.2-2.5-4" stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+          <circle cx="5.5" cy="8.5" r="2" stroke={color} strokeWidth="1.2" opacity="0.5"/>
+          <path d="M4 20c0-1.8 1-3.2 2.5-4" stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+        </>
+      )}
+    </svg>
+  );
+}
+
+const TAB_ICON_MAP = {
+  tastings: GlencairnIcon,
+  taste: RadarIcon,
+  circle: PeopleIcon,
+} as const;
+
 const TABS = [
-  { href: "/m2/tastings", icon: Wine, labelKey: "m2.tabs.tastings", fallback: "Tastings", match: ["/m2/tastings"] },
-  { href: "/m2/taste", icon: BarChart3, labelKey: "m2.tabs.taste", fallback: "Taste", match: ["/m2/taste"] },
-  { href: "/m2/circle", icon: Users, labelKey: "m2.tabs.circle", fallback: "Circle", match: ["/m2/circle"] },
+  { href: "/m2/tastings", iconKey: "tastings" as const, labelKey: "m2.tabs.tastings", fallback: "Tastings", match: ["/m2/tastings"] },
+  { href: "/m2/taste", iconKey: "taste" as const, labelKey: "m2.tabs.taste", fallback: "Taste", match: ["/m2/taste"] },
+  { href: "/m2/circle", iconKey: "circle" as const, labelKey: "m2.tabs.circle", fallback: "Circle", match: ["/m2/circle"] },
 ];
 
 interface Module2ShellProps {
@@ -598,46 +667,65 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
             display: "flex",
             justifyContent: "space-around",
             alignItems: "center",
-            padding: "8px 0 max(8px, env(safe-area-inset-bottom))",
-            background: v.card,
-            borderTop: `1px solid ${v.border}`,
-            backdropFilter: "blur(16px)",
+            padding: "6px 0 max(6px, env(safe-area-inset-bottom))",
+            background: "rgba(26, 23, 20, 0.88)",
+            borderTop: "none",
+            backdropFilter: "saturate(180%) blur(20px)",
+            WebkitBackdropFilter: "saturate(180%) blur(20px)",
+            boxShadow: "0 -1px 20px rgba(0, 0, 0, 0.35), inset 0 0.5px 0 rgba(255,255,255,0.06)",
             zIndex: 50,
           }}
           data-testid="m2-bottom-nav"
         >
           {TABS.map((tab) => {
             const active = isActive(tab);
-            const Icon = tab.icon;
+            const IconComp = TAB_ICON_MAP[tab.iconKey];
+            const tabColor = active ? v.accent : "rgba(214, 203, 189, 0.55)";
             return (
-              <Link key={tab.href} href={tab.href} style={{ textDecoration: "none" }}>
+              <Link key={tab.href} href={tab.href} style={{ textDecoration: "none", WebkitTapHighlightColor: "transparent" }}>
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    gap: 2,
-                    padding: "4px 16px",
-                    minWidth: 64,
+                    gap: 1,
+                    padding: active ? "6px 20px 4px" : "6px 20px 4px",
+                    minWidth: 72,
+                    borderRadius: 16,
+                    background: active ? "rgba(212, 162, 86, 0.1)" : "transparent",
+                    transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                    transform: active ? "scale(1.05)" : "scale(1)",
+                    position: "relative",
                   }}
                   data-testid={`m2-tab-${tab.fallback.toLowerCase()}`}
                 >
-                  <Icon
-                    style={{
-                      width: 22,
-                      height: 22,
-                      color: active ? v.accent : v.textSecondary,
-                      transition: "color 0.15s",
-                    }}
-                    strokeWidth={active ? 2.2 : 1.8}
-                  />
+                  {active && (
+                    <div style={{
+                      position: "absolute",
+                      top: 0,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: 20,
+                      height: 2,
+                      borderRadius: 1,
+                      background: v.accent,
+                      opacity: 0.8,
+                    }} />
+                  )}
+                  <div style={{
+                    transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    transform: active ? "translateY(-1px)" : "translateY(0)",
+                  }}>
+                    <IconComp active={active} color={tabColor} size={24} />
+                  </div>
                   <span
                     style={{
-                      fontSize: 11,
-                      fontWeight: active ? 600 : 400,
-                      color: active ? v.accent : v.textSecondary,
-                      transition: "color 0.15s",
-                      fontFamily: "system-ui, sans-serif",
+                      fontSize: active ? 10.5 : 10,
+                      fontWeight: active ? 600 : 500,
+                      color: tabColor,
+                      transition: "all 0.2s ease",
+                      fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+                      letterSpacing: active ? "0.02em" : "0.01em",
                     }}
                   >
                     {t(tab.labelKey, tab.fallback)}
