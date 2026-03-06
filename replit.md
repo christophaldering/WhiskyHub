@@ -68,6 +68,14 @@ A fully self-contained parallel UI sharing the same backend, auth, and database,
 ### Test Suite
 A comprehensive test framework using Vitest with unit, API, E2E, and smoke tests, covering Module2Shell rendering, authentication flows, API endpoints, route verification, and historical tasting normalization/import helpers (32 unit tests importing real functions from `server/historical-import.ts`).
 
+### Production Auto-Seed (`server/index.ts`)
+On production startup, `seedProductionData()` automatically seeds missing data:
+1. Creates "Aldering Tasting Circle" community if no communities exist
+2. Adds the first admin participant as community member
+3. Imports historical tastings from `attached_assets/` Excel file if `historical_tastings` table is empty
+4. Links all imported tastings to the community with `community_only` visibility
+Only runs when `NODE_ENV === "production"`. Idempotent — skips if data already present.
+
 ### Data Quality & Admin Tools
 -   **Historical Reconciliation** (`server/historical-reconciliation.ts`): Audits imported data for null rates, parse success, duplicates, outliers, orphaned entries. Exposed via `GET /api/admin/historical/reconciliation` (admin-only).
 -   **Admin Historical Import Tab**: Integrated into M2Admin with import run history, dry-run/full import buttons, and reconciliation report display.

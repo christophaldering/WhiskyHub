@@ -15,6 +15,108 @@ declare module "http" {
 let ready = false;
 const port = parseInt(process.env.PORT || "5000", 10);
 
+async function seedProductionData() {
+  if (process.env.NODE_ENV !== "production") {
+    log("Auto-seed: skipping (not production)", "seed");
+    return;
+  }
+
+  try {
+    const { db: dbInst } = await import("./db");
+    const { historicalTastings, communities, communityMemberships, participants } = await import("@shared/schema");
+    const { sql: sqlTag, eq, and, count } = await import("drizzle-orm");
+
+    const [{ cnt }] = await dbInst.select({ cnt: count() }).from(communities);
+    const hasCommunity = Number(cnt) > 0;
+
+    const [{ htCnt }] = await dbInst.select({ htCnt: count() }).from(historicalTastings);
+    const hasHistorical = Number(htCnt) > 0;
+
+    if (hasCommunity && hasHistorical) {
+      log("Auto-seed: data already present, skipping", "seed");
+      return;
+    }
+
+    const [admin] = await dbInst
+      .select()
+      .from(participants)
+      .where(eq(participants.role, "admin"))
+      .limit(1);
+
+    if (!admin) {
+      log("Auto-seed: no admin participant found, skipping", "seed");
+      return;
+    }
+
+    let communityId: string;
+    if (!hasCommunity) {
+      const [community] = await dbInst
+        .insert(communities)
+        .values({
+          slug: "aldering-tasting-circle",
+          name: "Aldering Tasting Circle",
+          description: "The original tasting circle — 32+ blind tastings since the beginning.",
+          archiveVisibility: "community_only",
+          publicAggregatedEnabled: true,
+        })
+        .returning();
+      communityId = community.id;
+      log(`Auto-seed: created community "${community.name}" (${communityId})`, "seed");
+
+      await dbInst.insert(communityMemberships).values({
+        communityId,
+        participantId: admin.id,
+        role: "admin",
+        status: "active",
+      });
+      log(`Auto-seed: added admin ${admin.name} (${admin.id}) as community member`, "seed");
+    } else {
+      const [existing] = await dbInst.select().from(communities).limit(1);
+      communityId = existing.id;
+
+      const [{ memCnt }] = await dbInst
+        .select({ memCnt: count() })
+        .from(communityMemberships)
+        .where(and(
+          eq(communityMemberships.participantId, admin.id),
+          eq(communityMemberships.communityId, communityId),
+        ));
+
+      if (Number(memCnt) === 0) {
+        await dbInst.insert(communityMemberships).values({
+          communityId,
+          participantId: admin.id,
+          role: "admin",
+          status: "active",
+        });
+        log(`Auto-seed: added admin ${admin.name} as community member`, "seed");
+      }
+    }
+
+    if (!hasHistorical) {
+      log("Auto-seed: importing historical tastings from Excel...", "seed");
+      const { importHistoricalTastings } = await import("./historical-import");
+      const result = await importHistoricalTastings({ dryRun: false });
+
+      if (result.errors.length > 0) {
+        log(`Auto-seed: import had ${result.errors.length} error(s): ${result.errors.slice(0, 3).join("; ")}`, "seed");
+        return;
+      }
+
+      log(`Auto-seed: imported ${result.tastingsCreated} tastings, ${result.entriesCreated} entries`, "seed");
+
+      await dbInst.execute(
+        sqlTag`UPDATE historical_tastings SET community_id = ${communityId}, visibility_level = 'community_only' WHERE community_id IS NULL`
+      );
+      log("Auto-seed: linked historical tastings to community", "seed");
+    }
+
+    log("Auto-seed: complete", "seed");
+  } catch (e) {
+    log(`Auto-seed failed: ${(e as Error).message}`, "seed");
+  }
+}
+
 const LOADING_HTML =
   "<!DOCTYPE html><html><head><meta charset='utf-8'><title>CaskSense</title>" +
   "<meta http-equiv='refresh' content='2'></head>" +
@@ -135,6 +237,10 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
     ready = true;
     log("Application fully initialized");
     warmupGmailToken();
+
+    seedProductionData().catch((e) =>
+      log(`Auto-seed error: ${(e as Error).message}`, "seed"),
+    );
 
     setInterval(async () => {
       try {
