@@ -96,16 +96,29 @@ class M2ErrorBoundary extends Component<
 }
 
 function GlencairnIcon({ active, color, size = 24 }: { active?: boolean; color: string; size?: number }) {
+  const glass = "M8.8 2.5 h6.4 l.2 2.5 c.3 2 .5 3.8 .1 5.2 C15 12 13.8 13.2 12.8 14 L12 14.6 l-.8-.6 C10.2 13.2 9 12 8.5 10.2 8 8.8 8.3 7 8.6 5 Z";
+  const stem = "M11 14.6 h2 v4 h-2 Z";
+  const base = "M8.5 18.6 h7 c.4 0 .7.2.8.5 l.2.8 c.1.3-.1.6-.5.6 H8 c-.4 0-.6-.3-.5-.6 l.2-.8 c.1-.3.4-.5.8-.5 Z";
+  const fill = "M9.2 6.5 c-.2 1.5-.1 3 .3 4.2 .5 1.4 1.4 2.4 2.1 3 l.4.3 .4-.3 c.7-.6 1.6-1.6 2.1-3 .4-1.2.5-2.7.3-4.2 Z";
+  const whiskyLine = "M9.4 7.5 h5.2";
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       {active ? (
         <>
-          <path d="M8.5 3h7l-.8 7.5c-.3 2.8-1.6 4.5-2.7 5.3V19h2.5a.75.75 0 0 1 .7.5l.3 1a.5.5 0 0 1-.47.5H9a.5.5 0 0 1-.48-.5l.3-1a.75.75 0 0 1 .7-.5H12v-3.2c-1.1-.8-2.4-2.5-2.7-5.3L8.5 3Z" fill={color} opacity="0.2"/>
-          <path d="M8.5 3h7l-.8 7.5c-.3 2.8-1.6 4.5-2.7 5.3V19h2.5a.75.75 0 0 1 .7.5l.3 1a.5.5 0 0 1-.47.5H9a.5.5 0 0 1-.48-.5l.3-1a.75.75 0 0 1 .7-.5H12v-3.2c-1.1-.8-2.4-2.5-2.7-5.3L8.5 3Z" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M8.8 6h6.4" stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
+          <path d={fill} fill={color} opacity="0.2"/>
+          <path d={glass} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d={stem} fill={color} opacity="0.15"/>
+          <path d={stem} stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+          <path d={base} fill={color} opacity="0.1"/>
+          <path d={base} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d={whiskyLine} stroke={color} strokeWidth="1.1" strokeLinecap="round" opacity="0.45"/>
         </>
       ) : (
-        <path d="M8.5 3h7l-.8 7.5c-.3 2.8-1.6 4.5-2.7 5.3V19h2.5a.75.75 0 0 1 .7.5l.3 1a.5.5 0 0 1-.47.5H9a.5.5 0 0 1-.48-.5l.3-1a.75.75 0 0 1 .7-.5H12v-3.2c-1.1-.8-2.4-2.5-2.7-5.3L8.5 3Z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <>
+          <path d={glass} stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d={stem} stroke={color} strokeWidth="1.4" strokeLinejoin="round"/>
+          <path d={base} stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+        </>
       )}
     </svg>
   );
