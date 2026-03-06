@@ -138,33 +138,29 @@ export default function M2TastingsHome() {
           {([
             { value: "list" as ViewMode, Icon: List },
             { value: "calendar" as ViewMode, Icon: CalendarDays },
-          ]).map((opt) => (
+          ] as const).map(({ value, Icon }) => (
             <button
-              key={opt.value}
-              type="button"
-              onClick={() => setViewMode(opt.value)}
+              key={value}
+              onClick={() => setViewMode(value)}
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 5,
-                padding: "6px 14px",
-                fontSize: 13,
-                fontWeight: 600,
-                fontFamily: "system-ui, sans-serif",
+                padding: "6px 12px",
+                background: viewMode === value ? alpha(v.accent, "15") : "transparent",
                 border: "none",
                 cursor: "pointer",
-                transition: "all 0.2s",
-                background: viewMode === opt.value ? v.pillBg : "transparent",
-                color: viewMode === opt.value ? v.pillText : v.muted,
+                color: viewMode === value ? v.accent : v.muted,
+                display: "flex",
+                alignItems: "center",
               }}
-              data-testid={`button-view-${opt.value}`}
+              data-testid={`button-view-${value}`}
             >
-              <opt.Icon style={{ width: 14, height: 14 }} />
+              <Icon style={{ width: 16, height: 16 }} />
             </button>
           ))}
         </div>
       </div>
+      <p style={{ fontSize: 14, color: v.textSecondary, marginTop: -12, marginBottom: 20 }} data-testid="text-m2-tastings-subtitle">
+        {t("m2.tastings.subtitle", "Your sessions — past and upcoming")}
+      </p>
 
       <div style={{ display: "flex", gap: 10, marginBottom: 28 }}>
         {actions.map((a) => (

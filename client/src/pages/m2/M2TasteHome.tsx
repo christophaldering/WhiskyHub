@@ -1,13 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { v, alpha } from "@/lib/themeVars";
 import { getSession } from "@/lib/session";
 import {
-  Activity, BookOpen, Wine, BarChart3, ChevronRight, Lock,
+  Activity, BookOpen, Wine, BarChart3, ChevronRight, ChevronDown, Lock,
   Radar, Archive, Heart, FlaskConical, Sparkles, GitCompareArrows,
   Download, Library, Building2, Package, Map, Users,
-  Trophy, Info, HandHeart, PieChart, UtensilsCrossed, Star,
+  Trophy, Info, HandHeart, PieChart, UtensilsCrossed, Star, GraduationCap,
 } from "lucide-react";
 import { Link } from "wouter";
 import { participantApi, journalApi, statsApi } from "@/lib/api";
@@ -37,20 +37,75 @@ function StatBox({ label, value, testId }: { label: string; value: number | stri
   );
 }
 
-function SectionHeading({ children }: { children: React.ReactNode }) {
+function AccordionSection({
+  title,
+  icon: Icon,
+  open,
+  onToggle,
+  children,
+  testId,
+}: {
+  title: string;
+  icon: React.ElementType;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  testId: string;
+}) {
   return (
-    <h2
-      style={{
-        fontSize: 13,
-        fontWeight: 600,
-        textTransform: "uppercase",
-        letterSpacing: 1.2,
-        color: v.muted,
-        margin: "24px 0 10px",
-      }}
-    >
-      {children}
-    </h2>
+    <div style={{ marginTop: 16 }} data-testid={testId}>
+      <button
+        type="button"
+        onClick={onToggle}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "12px 4px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          WebkitTapHighlightColor: "transparent",
+        }}
+        data-testid={`${testId}-toggle`}
+      >
+        <Icon style={{ width: 16, height: 16, color: v.accent, flexShrink: 0 }} strokeWidth={2} />
+        <span style={{
+          flex: 1,
+          textAlign: "left",
+          fontSize: 13,
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: 1.2,
+          color: v.muted,
+        }}>
+          {title}
+        </span>
+        <ChevronDown
+          style={{
+            width: 16,
+            height: 16,
+            color: v.muted,
+            flexShrink: 0,
+            transition: "transform 0.25s ease",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+          strokeWidth={2}
+        />
+      </button>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateRows: open ? "1fr" : "0fr",
+          transition: "grid-template-rows 0.3s ease",
+        }}
+      >
+        <div style={{ overflow: "hidden" }}>
+          {children}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -179,6 +234,9 @@ export default function M2TasteHome() {
   const whiskyCount = totalRatings + totalJournal;
   const analyticsLocked = whiskyCount < ANALYTICS_THRESHOLD;
 
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ profile: true });
+  const toggle = (key: string) => setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+
   return (
     <div style={{ padding: "20px 16px", paddingBottom: 100 }} data-testid="m2-taste-home">
       <h1
@@ -303,163 +361,71 @@ export default function M2TasteHome() {
             </div>
           </Link>
 
-          <SectionHeading>{t("m2.taste.sectionProfile", "Profile & Analysis")}</SectionHeading>
-          <NavRow
+          <AccordionSection
+            title={t("m2.taste.sectionProfile", "Profile & Analysis")}
             icon={Radar}
-            label={t("m2.taste.profile", "CaskSense Profile")}
-            description={t("m2.taste.profileDesc", "Flavor radar, style & sweet spot")}
-            href="/m2/taste/profile"
-            testId="m2-taste-link-profile"
-          />
-          <NavRow
-            icon={BarChart3}
-            label={t("m2.taste.analytics", "Analytics")}
-            description={t("m2.taste.analyticsDesc", "Evolution, consistency & stats")}
-            href="/m2/taste/analytics"
-            testId="m2-taste-link-analytics"
-          />
-          <NavRow
-            icon={GitCompareArrows}
-            label={t("m2.taste.compare", "Compare")}
-            description={t("m2.taste.compareDesc", "Your scores vs. community")}
-            href="/m2/taste/compare"
-            testId="m2-taste-link-compare"
-          />
-          <NavRow
-            icon={Sparkles}
-            label={t("m2.taste.recommendations", "Recommendations")}
-            description={t("m2.taste.recommendationsDesc", "Whiskies matched to your taste")}
-            href="/m2/taste/recommendations"
-            testId="m2-taste-link-recommendations"
-          />
-          <NavRow
-            icon={FlaskConical}
-            label={t("m2.taste.benchmark", "Benchmark Analyzer")}
-            description={t("m2.taste.benchmarkDesc", "Extract & compare external reviews")}
-            href="/m2/taste/benchmark"
-            testId="m2-taste-link-benchmark"
-          />
-          <NavRow
-            icon={PieChart}
-            label={t("m2.taste.wheel", "Flavor Wheel")}
-            description={t("m2.taste.wheelDesc", "Aroma categories from your notes")}
-            href="/m2/taste/wheel"
-            testId="m2-taste-link-wheel"
-          />
-          <NavRow
-            icon={UtensilsCrossed}
-            label={t("m2.taste.pairings", "Pairings")}
-            description={t("m2.taste.pairingsDesc", "AI food pairing suggestions")}
-            href="/m2/taste/pairings"
-            testId="m2-taste-link-pairings"
-          />
+            open={!!openSections.profile}
+            onToggle={() => toggle("profile")}
+            testId="m2-taste-section-profile"
+          >
+            <NavRow icon={Radar} label={t("m2.taste.profile", "CaskSense Profile")} description={t("m2.taste.profileDesc", "Flavor radar, style & sweet spot")} href="/m2/taste/profile" testId="m2-taste-link-profile" />
+            <NavRow icon={BarChart3} label={t("m2.taste.analytics", "Analytics")} description={t("m2.taste.analyticsDesc", "Evolution, consistency & stats")} href="/m2/taste/analytics" testId="m2-taste-link-analytics" />
+            <NavRow icon={GitCompareArrows} label={t("m2.taste.compare", "Compare")} description={t("m2.taste.compareDesc", "Your scores vs. community")} href="/m2/taste/compare" testId="m2-taste-link-compare" />
+            <NavRow icon={Sparkles} label={t("m2.taste.recommendations", "Recommendations")} description={t("m2.taste.recommendationsDesc", "Whiskies matched to your taste")} href="/m2/taste/recommendations" testId="m2-taste-link-recommendations" />
+            <NavRow icon={FlaskConical} label={t("m2.taste.benchmark", "Benchmark Analyzer")} description={t("m2.taste.benchmarkDesc", "Extract & compare external reviews")} href="/m2/taste/benchmark" testId="m2-taste-link-benchmark" />
+            <NavRow icon={PieChart} label={t("m2.taste.wheel", "Flavor Wheel")} description={t("m2.taste.wheelDesc", "Aroma categories from your notes")} href="/m2/taste/wheel" testId="m2-taste-link-wheel" />
+            <NavRow icon={UtensilsCrossed} label={t("m2.taste.pairings", "Pairings")} description={t("m2.taste.pairingsDesc", "AI food pairing suggestions")} href="/m2/taste/pairings" testId="m2-taste-link-pairings" />
+          </AccordionSection>
 
-          <SectionHeading>{t("m2.taste.sectionDrams", "Drams")}</SectionHeading>
-          <NavRow
+          <AccordionSection
+            title={t("m2.taste.sectionDrams", "Drams & Collection")}
             icon={BookOpen}
-            label={t("m2.taste.journal", "Drams")}
-            description={t("m2.taste.journalDesc", "Your personal tasting journal")}
-            href="/m2/taste/drams"
-            testId="m2-taste-link-drams"
-            badge={journalCount > 0 ? journalCount : null}
-          />
-          <NavRow
-            icon={Archive}
-            label={t("m2.taste.collection", "Collection")}
-            description={t("m2.taste.collectionDesc", "Whiskybase import & management")}
-            href="/m2/taste/collection"
-            testId="m2-taste-link-collection"
-          />
-          <NavRow
-            icon={Heart}
-            label={t("m2.taste.wishlist", "Wishlist")}
-            description={t("m2.taste.wishlistDesc", "Bottles you want to try")}
-            href="/m2/taste/wishlist"
-            testId="m2-taste-link-wishlist"
-          />
-          <NavRow
-            icon={Download}
-            label={t("m2.taste.downloads", "Downloads & Export")}
-            description={t("m2.taste.downloadsDesc", "Tasting sheets, data export")}
-            href="/m2/taste/downloads"
-            testId="m2-taste-link-downloads"
-          />
+            open={!!openSections.drams}
+            onToggle={() => toggle("drams")}
+            testId="m2-taste-section-drams"
+          >
+            <NavRow icon={BookOpen} label={t("m2.taste.journal", "Drams")} description={t("m2.taste.journalDesc", "Your personal tasting journal")} href="/m2/taste/drams" testId="m2-taste-link-drams" badge={journalCount > 0 ? journalCount : null} />
+            <NavRow icon={Archive} label={t("m2.taste.collection", "Collection")} description={t("m2.taste.collectionDesc", "Whiskybase import & management")} href="/m2/taste/collection" testId="m2-taste-link-collection" />
+            <NavRow icon={Heart} label={t("m2.taste.wishlist", "Wishlist")} description={t("m2.taste.wishlistDesc", "Bottles you want to try")} href="/m2/taste/wishlist" testId="m2-taste-link-wishlist" />
+            <NavRow icon={Download} label={t("m2.taste.downloads", "Downloads & Export")} description={t("m2.taste.downloadsDesc", "Tasting sheets, data export")} href="/m2/taste/downloads" testId="m2-taste-link-downloads" />
+          </AccordionSection>
 
-          <SectionHeading>{t("m2.taste.sectionKnowledge", "Knowledge")}</SectionHeading>
-          <NavRow
-            icon={Library}
-            label={t("m2.taste.lexicon", "Lexicon")}
-            description={t("m2.taste.lexiconDesc", "Searchable whisky dictionary")}
-            href="/m2/discover/lexicon"
-            testId="m2-taste-link-lexicon"
-          />
-          <NavRow
-            icon={Building2}
-            label={t("m2.taste.distilleries", "Distilleries")}
-            description={t("m2.taste.distilleriesDesc", "Encyclopedia & map")}
-            href="/m2/discover/distilleries"
-            testId="m2-taste-link-distilleries"
-          />
-          <NavRow
-            icon={Package}
-            label={t("m2.taste.bottlers", "Bottlers")}
-            description={t("m2.taste.bottlersDesc", "Independent bottlers database")}
-            href="/m2/discover/bottlers"
-            testId="m2-taste-link-bottlers"
-          />
-          <NavRow
-            icon={Map}
-            label={t("m2.taste.guide", "Tasting Guide")}
-            description={t("m2.taste.guideDesc", "Step-by-step tasting guide")}
-            href="/m2/discover/guide"
-            testId="m2-taste-link-guide"
-          />
-          <NavRow
-            icon={Star}
-            label={t("m2.taste.rabbitHole", "Rabbit Hole")}
-            description={t("m2.taste.rabbitHoleDesc", "Rating models & statistics")}
-            href="/m2/discover/rabbit-hole"
-            testId="m2-taste-link-rabbit-hole"
-          />
+          <AccordionSection
+            title={t("m2.taste.sectionKnowledge", "Knowledge")}
+            icon={GraduationCap}
+            open={!!openSections.knowledge}
+            onToggle={() => toggle("knowledge")}
+            testId="m2-taste-section-knowledge"
+          >
+            <NavRow icon={Library} label={t("m2.taste.lexicon", "Lexicon")} description={t("m2.taste.lexiconDesc", "Searchable whisky dictionary")} href="/m2/discover/lexicon" testId="m2-taste-link-lexicon" />
+            <NavRow icon={Building2} label={t("m2.taste.distilleries", "Distilleries")} description={t("m2.taste.distilleriesDesc", "Encyclopedia & map")} href="/m2/discover/distilleries" testId="m2-taste-link-distilleries" />
+            <NavRow icon={Package} label={t("m2.taste.bottlers", "Bottlers")} description={t("m2.taste.bottlersDesc", "Independent bottlers database")} href="/m2/discover/bottlers" testId="m2-taste-link-bottlers" />
+            <NavRow icon={Map} label={t("m2.taste.guide", "Tasting Guide")} description={t("m2.taste.guideDesc", "Step-by-step tasting guide")} href="/m2/discover/guide" testId="m2-taste-link-guide" />
+            <NavRow icon={Star} label={t("m2.taste.rabbitHole", "Rabbit Hole")} description={t("m2.taste.rabbitHoleDesc", "Rating models & statistics")} href="/m2/discover/rabbit-hole" testId="m2-taste-link-rabbit-hole" />
+          </AccordionSection>
 
-          <SectionHeading>{t("m2.taste.sectionCommunity", "Circle")}</SectionHeading>
-          <NavRow
+          <AccordionSection
+            title={t("m2.taste.sectionCommunity", "Circle")}
             icon={Users}
-            label={t("m2.taste.tasteTwins", "Taste Twins")}
-            description={t("m2.taste.tasteTwinsDesc", "Find similar palates")}
-            href="/m2/discover/community?tab=twins"
-            testId="m2-taste-link-twins"
-          />
-          <NavRow
-            icon={Trophy}
-            label={t("m2.taste.whiskyRankings", "Whisky Rankings")}
-            description={t("m2.taste.whiskyRankingsDesc", "Top-rated whiskies by the community")}
-            href="/m2/discover/community?tab=rankings"
-            testId="m2-taste-link-rankings"
-          />
-          <NavRow
-            icon={Activity}
-            label={t("m2.taste.activityFeed", "Activity Feed")}
-            description={t("m2.taste.activityFeedDesc", "Friend activities")}
-            href="/m2/discover/activity"
-            testId="m2-taste-link-activity"
-          />
+            open={!!openSections.circle}
+            onToggle={() => toggle("circle")}
+            testId="m2-taste-section-circle"
+          >
+            <NavRow icon={Users} label={t("m2.taste.tasteTwins", "Taste Twins")} description={t("m2.taste.tasteTwinsDesc", "Find similar palates")} href="/m2/discover/community?tab=twins" testId="m2-taste-link-twins" />
+            <NavRow icon={Trophy} label={t("m2.taste.whiskyRankings", "Whisky Rankings")} description={t("m2.taste.whiskyRankingsDesc", "Top-rated whiskies by the community")} href="/m2/discover/community?tab=rankings" testId="m2-taste-link-rankings" />
+            <NavRow icon={Activity} label={t("m2.taste.activityFeed", "Activity Feed")} description={t("m2.taste.activityFeedDesc", "Friend activities")} href="/m2/discover/activity" testId="m2-taste-link-activity" />
+          </AccordionSection>
 
-          <SectionHeading>{t("m2.taste.sectionAbout", "About")}</SectionHeading>
-          <NavRow
+          <AccordionSection
+            title={t("m2.taste.sectionAbout", "About")}
             icon={Info}
-            label={t("m2.taste.about", "About CaskSense")}
-            description={t("m2.taste.aboutDesc", "Story, founder & contact")}
-            href="/m2/discover/about"
-            testId="m2-taste-link-about"
-          />
-          <NavRow
-            icon={HandHeart}
-            label={t("m2.taste.donate", "Support Us")}
-            description={t("m2.taste.donateDesc", "Help keep CaskSense free")}
-            href="/m2/discover/donate"
-            testId="m2-taste-link-donate"
-          />
+            open={!!openSections.about}
+            onToggle={() => toggle("about")}
+            testId="m2-taste-section-about"
+          >
+            <NavRow icon={Info} label={t("m2.taste.about", "About CaskSense")} description={t("m2.taste.aboutDesc", "Story, founder & contact")} href="/m2/discover/about" testId="m2-taste-link-about" />
+            <NavRow icon={HandHeart} label={t("m2.taste.donate", "Support Us")} description={t("m2.taste.donateDesc", "Help keep CaskSense free")} href="/m2/discover/donate" testId="m2-taste-link-donate" />
+          </AccordionSection>
         </>
       )}
     </div>
