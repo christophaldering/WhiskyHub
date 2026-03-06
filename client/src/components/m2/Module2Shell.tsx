@@ -694,7 +694,40 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
         </div>
       )}
 
-      <main ref={mainRef} style={{ flex: 1, padding: "0 0 80px", overflowY: "auto" }}>
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          pointerEvents: "none",
+          zIndex: 0,
+          overflow: "hidden",
+        }}
+        aria-hidden="true"
+      >
+        <div
+          style={{
+            position: "absolute",
+            width: "60vmax",
+            height: "60vmax",
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(212,162,86,0.045) 0%, rgba(212,162,86,0.015) 40%, transparent 70%)",
+            animation: "m2ambientGlow 20s ease-in-out infinite",
+            willChange: "transform",
+          }}
+        />
+      </div>
+      <style>{`
+        @keyframes m2ambientGlow { 0% { transform: translate(-20%, -20%); } 33% { transform: translate(30%, 10%); } 66% { transform: translate(10%, 40%); } 100% { transform: translate(-20%, -20%); } }
+        @keyframes m2fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes m2livePulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        @keyframes m2badgePulse { 0%, 100% { box-shadow: 0 0 0 0 var(--pulse-color, transparent); } 50% { box-shadow: 0 0 0 4px var(--pulse-color, transparent); } }
+        @media (prefers-reduced-motion: reduce) { * { animation-duration: 0s !important; } }
+      `}</style>
+
+      <main ref={mainRef} style={{ flex: 1, padding: "0 0 80px", overflowY: "auto", position: "relative", zIndex: 1 }}>
         <M2ErrorBoundary>{children}</M2ErrorBoundary>
       </main>
 

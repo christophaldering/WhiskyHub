@@ -448,7 +448,15 @@ function TastingCard({
         }
       }}
     >
-      <div style={{ width: 4, borderRadius: 2, background: colors.color, flexShrink: 0, opacity: 0.7, alignSelf: "stretch" }} />
+      <div style={{
+        width: 4,
+        borderRadius: 2,
+        background: colors.color,
+        flexShrink: 0,
+        opacity: 0.7,
+        alignSelf: "stretch",
+        ...(isOpen ? { animation: "m2livePulse 2.5s ease-in-out infinite" } : {}),
+      }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <span
@@ -525,6 +533,7 @@ function TastingCard({
             padding: "3px 10px",
             borderRadius: 8,
             fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+            ...(isOpen ? { animation: "m2badgePulse 2.5s ease-in-out infinite", "--pulse-color": alpha(colors.color, "15") } as React.CSSProperties : {}),
           }}
           data-testid={`badge-status-${tasting.id}`}
         >
@@ -532,7 +541,6 @@ function TastingCard({
         </span>
         <ChevronRight style={{ width: 16, height: 16, color: v.muted }} />
       </div>
-      <style>{`@keyframes m2fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
     </div>
   );
 }
