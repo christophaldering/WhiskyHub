@@ -4,6 +4,8 @@ import { useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { v, alpha } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
+import M2RatingPanel from "@/components/m2/M2RatingPanel";
+import type { DimKey } from "@/components/m2/M2RatingPanel";
 import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -97,73 +99,6 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function RatingSlider({
-  label,
-  value,
-  onChange,
-  disabled,
-  scale = 100,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  disabled?: boolean;
-  scale?: number;
-}) {
-  const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
-  const display = Number.isInteger(value) ? value : value.toFixed(1);
-  const prevValue = useRef(value);
-
-  const handleChange = (newValue: number) => {
-    const thresholds = [0, 25, 50, 75, 100].map((t) => Math.round((t / 100) * scale));
-    const prev = prevValue.current;
-    for (const t of thresholds) {
-      if ((prev < t && newValue >= t) || (prev > t && newValue <= t)) {
-        if (typeof navigator !== "undefined" && navigator.vibrate) {
-          try { navigator.vibrate(10); } catch {}
-        }
-        break;
-      }
-    }
-    prevValue.current = newValue;
-    onChange(newValue);
-  };
-
-  return (
-    <div style={{ marginBottom: 12, opacity: disabled ? 0.5 : 1 }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 4,
-        }}
-      >
-        <span style={{ fontSize: 13, color: v.textSecondary }}>{label}</span>
-        <span
-          style={{
-            fontSize: 13,
-            color: v.accent,
-            fontWeight: 600,
-            fontFamily: "monospace",
-          }}
-        >
-          {display}/{scale}
-        </span>
-      </div>
-      <input
-        type="range"
-        min={0}
-        max={scale}
-        step={step}
-        value={Math.min(value, scale)}
-        onChange={(e) => handleChange(Number(e.target.value))}
-        disabled={disabled}
-        style={{ width: "100%", accentColor: v.accent, cursor: disabled ? "not-allowed" : "pointer" }}
-        data-testid={`slider-${label.toLowerCase().replace(/\s+/g, "-")}`}
-      />
-    </div>
-  );
-}
 
 function AmbientSoundButton() {
   const LS_KEY = "cs_ambient_enabled";
@@ -670,6 +605,57 @@ export default function M2TastingPlay() {
   const [saving, setSaving] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const overallManual = useRef<Set<string>>(new Set());
+  const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
+  const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
+  const [playChips, setPlayChips] = useState<Record<string, Record<DimKey, string[]>>>({});
+  const [playTexts, setPlayTexts] = useState<Record<string, Record<DimKey, string>>>({});
+
+  const buildScoresBlock = useCallback((wId: string) => {
+    const ch = playChips[wId] || emptyChips;
+    const tx = playTexts[wId] || emptyTexts;
+    const hasDimData = (["nose", "taste", "finish", "balance"] as DimKey[]).some(
+      (d) => ch[d].length > 0 || tx[d].trim()
+    );
+    if (!hasDimData) return "";
+    const parts: string[] = [];
+    for (const d of ["nose", "taste", "finish", "balance"] as DimKey[]) {
+      const chipStr = ch[d].length > 0 ? ch[d].join(", ") : "";
+      const textStr = tx[d].trim();
+      if (chipStr || textStr) {
+        parts.push(`[${d.toUpperCase()}] ${[chipStr, textStr].filter(Boolean).join(" — ")} [/${d.toUpperCase()}]`);
+      }
+    }
+    return parts.length > 0 ? "\n" + parts.join("\n") : "";
+  }, [playChips, playTexts]);
+
+  const parseScoresBlock = useCallback((rawNotes: string) => {
+    const chips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
+    const texts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
+    let cleanNotes = rawNotes;
+    for (const d of ["nose", "taste", "finish", "balance"] as DimKey[]) {
+      const re = new RegExp(`\\[${d.toUpperCase()}\\]\\s*(.*?)\\s*\\[\\/${d.toUpperCase()}\\]`, "s");
+      const m = rawNotes.match(re);
+      if (m) {
+        cleanNotes = cleanNotes.replace(m[0], "");
+        const content = m[1].trim();
+        const parts = content.split(" — ");
+        if (parts.length >= 2) {
+          chips[d] = parts[0].split(",").map(s => s.trim()).filter(Boolean);
+          texts[d] = parts.slice(1).join(" — ");
+        } else if (parts.length === 1) {
+          const maybeChips = parts[0].split(",").map(s => s.trim()).filter(Boolean);
+          if (maybeChips.every(c => c.length < 20)) {
+            chips[d] = maybeChips;
+          } else {
+            texts[d] = parts[0];
+          }
+        }
+      }
+    }
+    const scoresRe = /\[SCORES\].*?\[\/SCORES\]/s;
+    cleanNotes = cleanNotes.replace(scoresRe, "");
+    return { chips, texts, cleanNotes: cleanNotes.trim() };
+  }, []);
 
   const {
     data: tasting,
@@ -741,6 +727,8 @@ export default function M2TastingPlay() {
       .then((r) => (r.ok ? r.json() : null))
       .then((existing) => {
         if (existing && !ratings[whiskyId]) {
+          const rawNotes = existing.notes ?? "";
+          const parsed = parseScoresBlock(rawNotes);
           setRatings((prev) => ({
             ...prev,
             [whiskyId]: {
@@ -749,13 +737,19 @@ export default function M2TastingPlay() {
               finish: existing.finish ?? mid,
               balance: existing.balance ?? mid,
               overall: existing.overall ?? mid,
-              notes: existing.notes ?? "",
+              notes: parsed.cleanNotes,
             },
           }));
+          if (parsed.chips) {
+            setPlayChips((prev) => ({ ...prev, [whiskyId]: parsed.chips }));
+          }
+          if (parsed.texts) {
+            setPlayTexts((prev) => ({ ...prev, [whiskyId]: parsed.texts }));
+          }
         }
       })
       .catch(() => {});
-  }, [pid, whiskyId, mid]);
+  }, [pid, whiskyId, mid, parseScoresBlock]);
 
   const currentRating: RatingData = ratings[whiskyId || ""] || {
     nose: mid,
@@ -801,6 +795,8 @@ export default function M2TastingPlay() {
         if (!pid || !id || !whiskyId) return;
         setRatings((latest) => {
           const r = latest[whiskyId] || currentRating;
+          const scoresBlock = buildScoresBlock(whiskyId);
+          const combinedNotes = (r.notes + scoresBlock).trim();
           setSaving(true);
           fetch("/api/ratings", {
             method: "POST",
@@ -814,7 +810,7 @@ export default function M2TastingPlay() {
               finish: r.finish,
               balance: r.balance,
               overall: r.overall,
-              notes: r.notes,
+              notes: combinedNotes,
             }),
           })
             .then(() => {
@@ -831,7 +827,44 @@ export default function M2TastingPlay() {
         });
       }, 800);
     },
-    [whiskyId, pid, id, currentRating, canRate],
+    [whiskyId, pid, id, currentRating, canRate, buildScoresBlock],
+  );
+
+  const handlePlayChipToggle = useCallback((dim: DimKey, chip: string) => {
+    if (!whiskyId || !canRate) return;
+    setPlayChips((prev) => {
+      const current = prev[whiskyId] || { nose: [], taste: [], finish: [], balance: [] };
+      const dimChips = current[dim];
+      const next = dimChips.includes(chip) ? dimChips.filter(c => c !== chip) : [...dimChips, chip];
+      return { ...prev, [whiskyId]: { ...current, [dim]: next } };
+    });
+  }, [whiskyId, canRate]);
+
+  const handlePlayTextChange = useCallback((dim: DimKey, text: string) => {
+    if (!whiskyId || !canRate) return;
+    setPlayTexts((prev) => {
+      const current = prev[whiskyId] || { nose: "", taste: "", finish: "", balance: "" };
+      return { ...prev, [whiskyId]: { ...current, [dim]: text } };
+    });
+  }, [whiskyId, canRate]);
+
+  const chipTextSaveRef = useRef(0);
+  useEffect(() => {
+    if (!whiskyId || !pid || !id || !canRate) return;
+    chipTextSaveRef.current++;
+    const gen = chipTextSaveRef.current;
+    const timer = setTimeout(() => {
+      if (gen !== chipTextSaveRef.current) return;
+      updateField("notes", currentRating.notes);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [playChips, playTexts]);
+
+  const currentPlayChips = playChips[whiskyId || ""] || emptyChips;
+  const currentPlayTexts = playTexts[whiskyId || ""] || emptyTexts;
+
+  const playCalcOverall = Math.round(
+    (currentRating.nose + currentRating.taste + currentRating.finish + currentRating.balance) / 4
   );
 
   const getWhiskyDisplay = (whisky: WhiskyItem, index: number) => {
@@ -1347,65 +1380,33 @@ export default function M2TastingPlay() {
           </span>
         </div>
 
-        <RatingSlider
-          label={t("m2.play.nose", "Nose")}
-          value={currentRating.nose}
-          onChange={(val) => updateField("nose", val)}
-          disabled={!canRate}
-          scale={scale}
-        />
-        <RatingSlider
-          label={t("m2.play.taste", "Taste")}
-          value={currentRating.taste}
-          onChange={(val) => updateField("taste", val)}
-          disabled={!canRate}
-          scale={scale}
-        />
-        <RatingSlider
-          label={t("m2.play.finish", "Finish")}
-          value={currentRating.finish}
-          onChange={(val) => updateField("finish", val)}
-          disabled={!canRate}
-          scale={scale}
-        />
-        <RatingSlider
-          label={t("m2.play.balance", "Balance")}
-          value={currentRating.balance}
-          onChange={(val) => updateField("balance", val)}
-          disabled={!canRate}
-          scale={scale}
-        />
-
-        <div
-          style={{
-            height: 1,
-            background: v.divider,
-            margin: "8px 0 12px",
+        <M2RatingPanel
+          scores={{ nose: currentRating.nose, taste: currentRating.taste, finish: currentRating.finish, balance: currentRating.balance }}
+          onScoreChange={(dim, val) => updateField(dim, val)}
+          chips={currentPlayChips}
+          onChipToggle={handlePlayChipToggle}
+          texts={currentPlayTexts}
+          onTextChange={handlePlayTextChange}
+          overall={currentRating.overall}
+          onOverallChange={(val) => updateField("overall", val)}
+          overallAuto={playCalcOverall}
+          overrideActive={overallManual.current.has(whiskyId || "")}
+          onResetOverride={() => {
+            if (whiskyId) {
+              overallManual.current.delete(whiskyId);
+              setRatings((prev) => ({
+                ...prev,
+                [whiskyId]: { ...(prev[whiskyId] || currentRating), overall: playCalcOverall },
+              }));
+              if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+              saveTimerRef.current = setTimeout(() => { updateField("notes", currentRating.notes); }, 800);
+            }
           }}
-        />
-
-        <RatingSlider
-          label={t("m2.play.overall", "Overall")}
-          value={currentRating.overall}
-          onChange={(val) => updateField("overall", val)}
-          disabled={!canRate}
           scale={scale}
+          disabled={!canRate}
+          showToggle={false}
+          defaultOpen={true}
         />
-        {!overallManual.current.has(whiskyId || "") && (
-          <div
-            style={{
-              fontSize: 11,
-              color: v.muted,
-              marginTop: -8,
-              marginBottom: 8,
-            }}
-          >
-            {t(
-              "m2.play.overallAuto",
-              "Auto-calculated from average. Slide to override.",
-            )}
-          </div>
-        )}
       </div>
 
       <div

@@ -8,6 +8,7 @@ import M2BackButton from "@/components/m2/M2BackButton";
 import { tastingApi, whiskyApi, ratingApi, blindModeApi, guidedApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { getSession } from "@/lib/session";
+import M2RatingPanel, { type DimKey } from "@/components/m2/M2RatingPanel";
 import {
   Play, Lock, Eye, EyeOff, Archive, ChevronRight, CheckCircle, Clock,
   SkipForward, Users, Wine, Star, BarChart3, Radio, Monitor,
@@ -45,8 +46,56 @@ export default function M2HostingDashboard() {
   const [desktopBannerDismissed, setDesktopBannerDismissed] = useState(false);
   const [hostRatingWhiskyIdx, setHostRatingWhiskyIdx] = useState(0);
   const [hostRatings, setHostRatings] = useState<Record<string, { nose: number; taste: number; finish: number; balance: number; overall: number; overrideOverall: boolean; notes: string }>>({});
+  const [hostChips, setHostChips] = useState<Record<string, Record<DimKey, string[]>>>({});
+  const [hostTexts, setHostTexts] = useState<Record<string, Record<DimKey, string>>>({});
   const [savingRating, setSavingRating] = useState(false);
   const saveTimeoutRef = useRef<any>(null);
+
+  const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
+  const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
+
+  const parseDashScoresBlock = useCallback((rawNotes: string) => {
+    const chips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
+    const texts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
+    let cleanNotes = rawNotes;
+    for (const d of ["nose", "taste", "finish", "balance"] as DimKey[]) {
+      const re = new RegExp(`\\[${d.toUpperCase()}\\]\\s*(.*?)\\s*\\[\\/${d.toUpperCase()}\\]`, "s");
+      const m = rawNotes.match(re);
+      if (m) {
+        cleanNotes = cleanNotes.replace(m[0], "");
+        const content = m[1].trim();
+        const parts = content.split(" — ");
+        if (parts.length >= 2) {
+          chips[d] = parts[0].split(",").map(s => s.trim()).filter(Boolean);
+          texts[d] = parts.slice(1).join(" — ");
+        } else if (parts.length === 1) {
+          const maybeChips = parts[0].split(",").map(s => s.trim()).filter(Boolean);
+          if (maybeChips.every(c => c.length < 20)) chips[d] = maybeChips;
+          else texts[d] = parts[0];
+        }
+      }
+    }
+    cleanNotes = cleanNotes.replace(/\[SCORES\].*?\[\/SCORES\]/s, "");
+    return { chips, texts, cleanNotes: cleanNotes.trim() };
+  }, []);
+
+  const buildDashScoresBlock = useCallback((wId: string) => {
+    const ch = hostChips[wId] || emptyChips;
+    const tx = hostTexts[wId] || emptyTexts;
+    const hasDimData = (["nose", "taste", "finish", "balance"] as DimKey[]).some(
+      (d) => ch[d].length > 0 || tx[d].trim()
+    );
+    if (!hasDimData) return "";
+    const parts: string[] = [];
+    for (const d of ["nose", "taste", "finish", "balance"] as DimKey[]) {
+      const chipStr = ch[d].length > 0 ? ch[d].join(", ") : "";
+      const textStr = tx[d].trim();
+      if (chipStr || textStr) {
+        parts.push(`[${d.toUpperCase()}] ${[chipStr, textStr].filter(Boolean).join(" — ")} [/${d.toUpperCase()}]`);
+      }
+    }
+    return parts.length > 0 ? "\n" + parts.join("\n") : "";
+  }, [hostChips, hostTexts]);
 
   const { data: tasting, isLoading } = useQuery({
     queryKey: ["tasting", id],
@@ -119,6 +168,8 @@ export default function M2HostingDashboard() {
           try {
             const existing = await ratingApi.getMyRating(pid, w.id);
             if (existing) {
+              const rawNotes = existing.notes || "";
+              const parsed = parseDashScoresBlock(rawNotes);
               setHostRatings(prev => ({
                 ...prev,
                 [w.id]: {
@@ -128,31 +179,54 @@ export default function M2HostingDashboard() {
                   balance: existing.balance ?? 50,
                   overall: existing.overall ?? 50,
                   overrideOverall: false,
-                  notes: existing.notes || "",
+                  notes: parsed.cleanNotes,
                 },
               }));
+              setHostChips(prev => ({ ...prev, [w.id]: parsed.chips }));
+              setHostTexts(prev => ({ ...prev, [w.id]: parsed.texts }));
             }
           } catch {}
         }
       };
       loadHostRatings();
     }
-  }, [whiskies.length, pid]);
+  }, [whiskies.length, pid, parseDashScoresBlock]);
 
   const debouncedSaveRating = useCallback((whiskyId: string, vals: any) => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
+      const scoresBlock = buildDashScoresBlock(whiskyId);
+      const combinedNotes = ((vals.notes || "") + scoresBlock).trim();
       setSavingRating(true);
       ratingUpsertMut.mutate({
         participantId: pid,
         whiskyId,
         tastingId: id,
         ...vals,
+        notes: combinedNotes,
       }, {
         onSettled: () => setSavingRating(false),
       });
     }, 800);
-  }, [pid, id]);
+  }, [pid, id, buildDashScoresBlock]);
+
+  const chipTextDashSaveRef = useRef(0);
+  useEffect(() => {
+    if (!whiskies.length) return;
+    const wId = whiskies[hostRatingWhiskyIdx]?.id;
+    if (!wId || !hostRatings[wId]) return;
+    chipTextDashSaveRef.current++;
+    const gen = chipTextDashSaveRef.current;
+    const timer = setTimeout(() => {
+      if (gen !== chipTextDashSaveRef.current) return;
+      const r = hostRatings[wId];
+      debouncedSaveRating(wId, {
+        nose: r.nose, taste: r.taste, finish: r.finish, balance: r.balance,
+        overall: r.overall, notes: r.notes,
+      });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [hostChips, hostTexts]);
 
   if (isLoading || !tasting) {
     return (
@@ -427,6 +501,9 @@ export default function M2HostingDashboard() {
             setHostRatingWhiskyIdx={setHostRatingWhiskyIdx}
             getHostRating={getHostRating}
             updateHostRating={updateHostRating}
+            hostChips={hostChips} setHostChips={setHostChips}
+            hostTexts={hostTexts} setHostTexts={setHostTexts}
+            emptyChips={emptyChips} emptyTexts={emptyTexts}
             savingRating={savingRating}
             id={id} pid={pid}
             t={t} card={card} sectionLabel={sectionLabel} pillStyle={pillStyle}
@@ -966,7 +1043,7 @@ function CenterColumn({ tasting, whiskies, participants, ratings, status, isBlin
   );
 }
 
-function RightColumn({ tasting, whiskies, status, isBlind, isGuided, guidedIdx, revealStep, guidedRevealStep, revealIdx, activeWhisky, ratingScale, scaleMax, scaleStep, scaleDefault, ratingPrompt, hostRatingWhiskyIdx, setHostRatingWhiskyIdx, getHostRating, updateHostRating, savingRating, id, pid, t, card, sectionLabel, pillStyle }: any) {
+function RightColumn({ tasting, whiskies, status, isBlind, isGuided, guidedIdx, revealStep, guidedRevealStep, revealIdx, activeWhisky, ratingScale, scaleMax, scaleStep, scaleDefault, ratingPrompt, hostRatingWhiskyIdx, setHostRatingWhiskyIdx, getHostRating, updateHostRating, hostChips, setHostChips, hostTexts, setHostTexts, emptyChips, emptyTexts, savingRating, id, pid, t, card, sectionLabel, pillStyle }: any) {
   const isLive = status === "open";
   const currentWhisky = whiskies[hostRatingWhiskyIdx] || activeWhisky;
 
@@ -1015,44 +1092,47 @@ function RightColumn({ tasting, whiskies, status, isBlind, isGuided, guidedIdx, 
               {[currentWhisky.distillery, currentWhisky.age ? `${currentWhisky.age}y` : null, currentWhisky.abv ? `${currentWhisky.abv}%` : null].filter(Boolean).join(" · ") || "—"}
             </div>
 
-            {(["nose", "taste", "finish", "balance"] as const).map((dim) => (
-              <RatingSlider
-                key={dim}
-                label={dim.charAt(0).toUpperCase() + dim.slice(1)}
-                value={getHostRating(currentWhisky.id)[dim]}
-                max={scaleMax}
-                step={scaleStep}
-                onChange={(val: number) => updateHostRating(currentWhisky.id, dim, val)}
-              />
-            ))}
-
-            <div style={{ borderTop: `1px solid ${v.border}`, margin: "12px 0", paddingTop: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: v.accent }}>
-                  {t("m2.dashboard.overall", "Overall")}
-                </span>
-                <button
-                  onClick={() => updateHostRating(currentWhisky.id, "overrideOverall", !getHostRating(currentWhisky.id).overrideOverall)}
-                  style={{
-                    fontSize: 10, color: v.muted, background: "none", border: "none",
-                    cursor: "pointer", fontFamily: "system-ui, sans-serif", textDecoration: "underline",
-                  }}
-                >
-                  {getHostRating(currentWhisky.id).overrideOverall
-                    ? t("m2.dashboard.autoCalc", "Auto-calculate")
-                    : t("m2.dashboard.manualOverride", "Override")}
-                </button>
-              </div>
-              <RatingSlider
-                label=""
-                value={getHostRating(currentWhisky.id).overall}
-                max={scaleMax}
-                step={scaleStep}
-                onChange={(val: number) => updateHostRating(currentWhisky.id, "overall", val)}
-                accent
-                disabled={!getHostRating(currentWhisky.id).overrideOverall}
-              />
-            </div>
+            <M2RatingPanel
+              scores={{
+                nose: getHostRating(currentWhisky.id).nose,
+                taste: getHostRating(currentWhisky.id).taste,
+                finish: getHostRating(currentWhisky.id).finish,
+                balance: getHostRating(currentWhisky.id).balance,
+              }}
+              onScoreChange={(dim, val) => updateHostRating(currentWhisky.id, dim, val)}
+              chips={hostChips[currentWhisky.id] || emptyChips}
+              onChipToggle={(dim: DimKey, chip: string) => {
+                const wId = currentWhisky.id;
+                setHostChips((prev: any) => {
+                  const current = prev[wId] || emptyChips;
+                  const dimChips = current[dim];
+                  const next = dimChips.includes(chip) ? dimChips.filter((c: string) => c !== chip) : [...dimChips, chip];
+                  return { ...prev, [wId]: { ...current, [dim]: next } };
+                });
+              }}
+              texts={hostTexts[currentWhisky.id] || emptyTexts}
+              onTextChange={(dim: DimKey, text: string) => {
+                const wId = currentWhisky.id;
+                setHostTexts((prev: any) => {
+                  const current = prev[wId] || emptyTexts;
+                  return { ...prev, [wId]: { ...current, [dim]: text } };
+                });
+              }}
+              overall={getHostRating(currentWhisky.id).overall}
+              onOverallChange={(val) => updateHostRating(currentWhisky.id, "overall", val)}
+              overallAuto={Math.round(
+                (getHostRating(currentWhisky.id).nose +
+                 getHostRating(currentWhisky.id).taste +
+                 getHostRating(currentWhisky.id).finish +
+                 getHostRating(currentWhisky.id).balance) / 4
+              )}
+              overrideActive={getHostRating(currentWhisky.id).overrideOverall}
+              onResetOverride={() => updateHostRating(currentWhisky.id, "overrideOverall", false)}
+              scale={scaleMax}
+              showToggle={false}
+              defaultOpen={true}
+              compact={true}
+            />
 
             <textarea
               value={getHostRating(currentWhisky.id).notes}
@@ -1063,7 +1143,7 @@ function RightColumn({ tasting, whiskies, status, isBlind, isGuided, guidedIdx, 
                 borderRadius: 10, border: `1px solid ${v.inputBorder}`,
                 background: v.inputBg, color: v.inputText, fontSize: 13,
                 fontFamily: "system-ui, sans-serif", resize: "vertical",
-                outline: "none",
+                outline: "none", marginTop: 12,
               }}
               data-testid="host-rating-notes"
             />
@@ -1172,37 +1252,6 @@ function RightColumn({ tasting, whiskies, status, isBlind, isGuided, guidedIdx, 
   );
 }
 
-function RatingSlider({ label, value, max, step, onChange, accent, disabled }: {
-  label: string; value: number; max: number; step: number;
-  onChange: (v: number) => void; accent?: boolean; disabled?: boolean;
-}) {
-  return (
-    <div style={{ marginBottom: 10 }}>
-      {label && (
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-          <span style={{ fontSize: 12, color: v.textSecondary, fontWeight: 500 }}>{label}</span>
-          <span style={{ fontSize: 12, color: accent ? v.accent : v.text, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{value}</span>
-        </div>
-      )}
-      <input
-        type="range"
-        min={0}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
-        disabled={disabled}
-        style={{
-          width: "100%", height: 4,
-          accentColor: accent ? v.accent : v.text,
-          opacity: disabled ? 0.4 : 1,
-          cursor: disabled ? "not-allowed" : "pointer",
-        }}
-        data-testid={`slider-${label.toLowerCase() || "overall"}`}
-      />
-    </div>
-  );
-}
 
 function MobileCompanion({ tasting, whiskies, participants, ratings, pid, id, status, isBlind, isGuided, guidedIdx, revealStep, revealIdx, guidedRevealStep, isDraft, isLive, isEnded, totalParticipants, totalRatings, activeWhisky, activeRatedPids, confirmEnd, setConfirmEnd, desktopBannerDismissed, setDesktopBannerDismissed, handleStartSession, handleEndSession, getRevealActionLabel, getRevealStepLabel, revealNextMut, guidedAdvanceMut, guidedGoToMut, updateStatusMut, navigate, t, card, sectionLabel, pillStyle, btnPrimary, btnSecondary, btnDanger }: any) {
   return (

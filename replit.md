@@ -38,7 +38,7 @@ PostgreSQL serves as the primary database, accessed via Drizzle ORM. The schema 
 -   **Host Wizard (Simple Mode)**: A streamlined 4-step wizard for creating sessions, adding whiskies, inviting participants, and running live tastings.
 -   **Tasting Results**: Displays ranked whiskies by average overall score, with detailed breakdowns and multi-format export options.
 -   **Guest Mode**: Offers "Standard Naked" (persisted identity) and "Ultra Naked" (ephemeral identity) participation.
--   **Rating System**: Dynamic step sizing for rating sliders and auto-calculated overall scores with manual override.
+-   **Rating System**: Unified `M2RatingPanel` component (`client/src/components/m2/M2RatingPanel.tsx`) used across Solo, Live Tasting, and Hosting Dashboard. Features accordion-based dimension rating (nose/taste/finish/balance) with flavor chip selection, per-dimension text notes with voice input, auto-calculated overall with manual override, dynamic scale support, and compact mode for dashboard. Chips/texts are serialized into the notes field using `[NOSE]...[/NOSE]` block format.
 -   **Context Level**: Three-tier data visibility control within active tasting sessions: Naked, Self, and Full.
 -   **Navigation Structure (Simple Mode)**: Features a 2-tab bottom navigation (`v2_two_tab`) with "Tasting" and "Taste" sections, configurable via `NAV_VERSION` flag.
 -   **Taste (Personal Dashboard)**: A personal whisky profile hub requiring sign-in, with sections for drams, analytics, collection, downloads, and knowledge base.
@@ -58,7 +58,7 @@ A fully self-contained parallel UI sharing the same backend, auth, and database,
 -   **Admin (`/m2/admin`)**: Dedicated route for administrative functionalities like user management, AI controls, and platform settings.
 
 #### Hosting Dashboard (`/m2/tastings/session/:id/dashboard`) — 1 page
-- `M2HostingDashboard` — Desktop-first live tasting control center with 3-column layout (Left: session status, live controls, blind reveal, guided navigation, session summary | Center: whisky lineup with per-dram progress, participant status roster with real-time rating indicators | Right: host's own rating panel with 5-dimension sliders and auto-save, participant view preview showing what guests currently see). Mobile companion view with essential controls and "desktop recommended" banner. Entry points from Step4Live and M2HostControl. Host-only access with authorization check.
+- `M2HostingDashboard` — Desktop-first live tasting control center with 3-column layout (Left: session status, live controls, blind reveal, guided navigation, session summary | Center: whisky lineup with per-dram progress, participant status roster with real-time rating indicators | Right: host's own rating via shared `M2RatingPanel` (compact mode) with accordion dimensions, flavor chips, per-dimension notes, and auto-save; participant view preview showing what guests currently see). Mobile companion view with essential controls and "desktop recommended" banner. Entry points from Step4Live and M2HostControl. Host-only access with authorization check.
 
 ### Test Suite
 A comprehensive test framework using Vitest with unit, API, E2E, and smoke tests, covering Module2Shell rendering, authentication flows, API endpoints, and route verification.

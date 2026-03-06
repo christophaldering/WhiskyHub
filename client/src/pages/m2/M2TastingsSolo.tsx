@@ -10,6 +10,8 @@ import { queryClient } from "@/lib/queryClient";
 import {
   Camera, PenLine, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff
 } from "lucide-react";
+import M2RatingPanel from "@/components/m2/M2RatingPanel";
+import type { DimKey } from "@/components/m2/M2RatingPanel";
 
 const OFFLINE_QUEUE_KEY = "cs_offline_queue";
 
@@ -92,14 +94,6 @@ const btnOutline: React.CSSProperties = {
   fontWeight: 500,
 };
 
-const ATTRIBUTES = {
-  nose: ["Fruity", "Floral", "Spicy", "Smoky", "Woody", "Sweet", "Malty", "Sherry", "Citrus", "Peaty"],
-  taste: ["Sweet", "Dry", "Oily", "Spicy", "Fruity", "Nutty", "Chocolate", "Vanilla", "Salty", "Peaty"],
-  finish: ["Short", "Medium", "Long", "Warm", "Dry", "Spicy", "Smoky", "Sweet", "Bitter"],
-  balance: ["Harmonious", "Complex", "Rough", "Elegant", "Powerful", "Thin"],
-} as const;
-
-type DimKey = "nose" | "taste" | "finish" | "balance";
 
 const SpeechRecognitionAPI =
   typeof window !== "undefined"
@@ -133,21 +127,6 @@ function confidenceLabel(conf: number): { text: string; color: string } {
   return { text: "Low", color: v.low };
 }
 
-function chipStyle(selected: boolean): React.CSSProperties {
-  return {
-    padding: "6px 14px",
-    fontSize: 12,
-    fontWeight: 500,
-    borderRadius: 20,
-    border: `1px solid ${selected ? v.accent : v.border}`,
-    background: selected ? alpha(v.accent, "18") : "transparent",
-    color: selected ? v.accent : v.mutedLight,
-    cursor: "pointer",
-    fontFamily: "system-ui, sans-serif",
-    transition: "all 0.15s",
-    whiteSpace: "nowrap" as const,
-  };
-}
 
 type SheetView = "none" | "picker" | "describe" | "candidates" | "identifying" | "onlineSearch" | "barcode" | "fileAnalyzing";
 
@@ -189,13 +168,11 @@ export default function M2TastingsSolo() {
   const [wbLookupLoading, setWbLookupLoading] = useState(false);
   const [wbLookupResult, setWbLookupResult] = useState("");
 
-  const [showDetailed, setShowDetailed] = useState(true);
   const [detailedScores, setDetailedScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50 });
   const [detailTouched, setDetailTouched] = useState(false);
   const [overrideActive, setOverrideActive] = useState(false);
   const [detailChips, setDetailChips] = useState<Record<DimKey, string[]>>({ nose: [], taste: [], finish: [], balance: [] });
   const [detailTexts, setDetailTexts] = useState<Record<DimKey, string>>({ nose: "", taste: "", finish: "", balance: "" });
-  const [expandedModules, setExpandedModules] = useState<Record<DimKey, boolean>>({ nose: true, taste: false, finish: false, balance: false });
 
   const [voiceListening, setVoiceListening] = useState(false);
   const [voiceTarget, setVoiceTarget] = useState<DimKey | "notes" | null>(null);
@@ -328,12 +305,9 @@ export default function M2TastingsSolo() {
     setDetailTexts((prev) => ({ ...prev, [dim]: val }));
   };
 
-  const toggleModule = (dim: DimKey) => {
-    setExpandedModules((prev) => ({ ...prev, [dim]: !prev[dim] }));
-  };
 
   const handleScoreChange = (val: number) => {
-    if (showDetailed && detailTouched) {
+    if (detailTouched) {
       setOverrideActive(true);
     }
     setScore(val);
@@ -546,7 +520,10 @@ export default function M2TastingsSolo() {
   };
 
   const buildScoresBlock = () => {
-    if (!showDetailed) return "";
+    const hasChipsOrTexts = (["nose", "taste", "finish", "balance"] as DimKey[]).some(
+      (d) => detailChips[d].length > 0 || detailTexts[d].trim()
+    );
+    if (!detailTouched && !hasChipsOrTexts) return "";
     const parts = [`\n[SCORES] Nose:${detailedScores.nose} Taste:${detailedScores.taste} Finish:${detailedScores.finish} Balance:${detailedScores.balance} [/SCORES]`];
     const dims: DimKey[] = ["nose", "taste", "finish", "balance"];
     for (const d of dims) {
@@ -565,7 +542,7 @@ export default function M2TastingsSolo() {
         whiskyName: whiskyName.trim(),
         distillery: distillery.trim(),
         score,
-        detailedScores: showDetailed ? { ...detailedScores } : undefined,
+        detailedScores: detailTouched ? { ...detailedScores } : undefined,
         notes: (notes.trim() + buildScoresBlock()).trim(),
         photoUrl,
         age: unknownAge,
@@ -649,7 +626,6 @@ export default function M2TastingsSolo() {
     setOverrideActive(false);
     setDetailChips({ nose: [], taste: [], finish: [], balance: [] });
     setDetailTexts({ nose: "", taste: "", finish: "", balance: "" });
-    setExpandedModules({ nose: true, taste: false, finish: false, balance: false });
     stopVoice();
     setWbLookupResult("");
   };
@@ -890,156 +866,21 @@ export default function M2TastingsSolo() {
           {t("m2.solo.scoreLabel", "Score")}
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowDetailed(!showDetailed)}
-          data-testid="button-toggle-detailed"
-          style={{
-            width: "100%",
-            background: showDetailed ? alpha(v.accent, "10") : v.inputBg,
-            border: `1px solid ${showDetailed ? v.accent : v.inputBorder}`,
-            borderRadius: 12, cursor: "pointer", color: v.text, fontSize: 13,
-            fontFamily: "system-ui, sans-serif", padding: "10px 14px",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            textAlign: "left",
-          }}
-        >
-          <span style={{ fontWeight: 600 }}>{t("m2.solo.rateDetail", "Rate in detail")}</span>
-          <ChevronDown style={{ width: 16, height: 16, color: v.accent, transition: "transform 0.2s", transform: showDetailed ? "rotate(180deg)" : "rotate(0deg)" }} />
-        </button>
-
-        {showDetailed && (
-          <div style={{ paddingTop: 8, marginTop: 4 }} data-testid="section-detailed-scoring">
-            {(["Nose", "Taste", "Finish", "Balance"] as const).map((dim) => {
-              const key = dim.toLowerCase() as DimKey;
-              const attrs = ATTRIBUTES[key];
-              const expanded = expandedModules[key];
-              return (
-                <div key={dim} style={{ borderBottom: `1px solid ${v.border}` }}>
-                  <button
-                    type="button"
-                    onClick={() => toggleModule(key)}
-                    data-testid={`button-expand-${key}`}
-                    style={{
-                      width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                      padding: "12px 0", background: "none", border: "none", cursor: "pointer", fontFamily: "system-ui, sans-serif",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: v.text }}>{dim}</span>
-                      {detailChips[key].length > 0 && (
-                        <span style={{ fontSize: 10, color: v.accent, background: alpha(v.accent, "15"), padding: "2px 8px", borderRadius: 10 }}>
-                          {detailChips[key].length}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: v.accent, fontVariantNumeric: "tabular-nums", width: 24, textAlign: "right" }}>{detailedScores[key]}</span>
-                      <ChevronDown style={{ width: 16, height: 16, color: v.mutedLight, transition: "transform 0.2s", transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }} />
-                    </div>
-                  </button>
-
-                  {expanded && (
-                    <div style={{ paddingTop: 12, paddingBottom: 16 }}>
-                      <input
-                        type="range" min={0} max={100} value={detailedScores[key]}
-                        onChange={(e) => handleDetailScoreChange(key, Number(e.target.value))}
-                        data-testid={`input-score-${key}`}
-                        style={{ width: "100%", accentColor: v.accent, display: "block", marginBottom: 14 }}
-                      />
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }} data-testid={`chips-${key}`}>
-                        {attrs.map((attr) => (
-                          <button
-                            key={attr} type="button"
-                            onClick={() => handleToggleChip(key, attr)}
-                            data-testid={`chip-${key}-${attr.toLowerCase()}`}
-                            style={chipStyle(detailChips[key].includes(attr))}
-                          >
-                            {attr}
-                          </button>
-                        ))}
-                      </div>
-                      <div style={{ position: "relative" }}>
-                        <textarea
-                          value={detailTexts[key]}
-                          onChange={(e) => handleDetailTextChange(key, e.target.value)}
-                          placeholder={`Describe the ${dim.toLowerCase()}...`}
-                          rows={2}
-                          data-testid={`input-text-${key}`}
-                          style={{
-                            ...inputStyle,
-                            resize: "vertical",
-                            minHeight: 56,
-                            paddingRight: hasSpeechAPI ? 40 : 14,
-                            borderColor: (voiceListening && voiceTarget === key) ? v.danger : v.inputBorder,
-                          }}
-                        />
-                        {hasSpeechAPI && (
-                          <button
-                            type="button"
-                            onClick={() => toggleVoice(key)}
-                            data-testid={`button-voice-${key}`}
-                            style={{
-                              position: "absolute", right: 8, top: 8,
-                              background: (voiceListening && voiceTarget === key) ? v.danger : "transparent",
-                              border: "none", borderRadius: "50%", cursor: "pointer",
-                              width: 28, height: 28, padding: 0,
-                              color: (voiceListening && voiceTarget === key) ? v.bg : v.mutedLight,
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                            }}
-                          >
-                            <Mic style={{ width: 14, height: 14 }} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <div style={{ marginTop: showDetailed ? 8 : 16 }}>
-          {detailTouched && (
-            <div style={{ marginBottom: 14, borderTop: `1px solid ${v.border}`, paddingTop: 14 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: v.mutedLight }}>Suggested Score</span>
-                <span style={{ fontSize: 22, fontWeight: 700, color: v.mutedLight, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif" }} data-testid="text-suggested-score">
-                  {calcOverall(detailedScores)}
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: v.text }}>
-              {t("m2.solo.overall", "Overall")}
-              {overrideActive && (
-                <span style={{ fontSize: 10, color: v.accent, background: alpha(v.accent, "15"), padding: "2px 8px", borderRadius: 20, marginLeft: 8 }} data-testid="badge-override">
-                  Manual
-                </span>
-              )}
-            </span>
-            <span style={{ fontSize: 28, fontWeight: 700, color: v.text, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', serif" }} data-testid="text-score-value">
-              {score}
-            </span>
-          </div>
-          <input
-            type="range" min={0} max={100} value={score}
-            onChange={(e) => handleScoreChange(Number(e.target.value))}
-            data-testid="m2-solo-rating"
-            style={{ width: "100%", accentColor: v.accent, display: "block" }}
-          />
-          {overrideActive && (
-            <button
-              type="button" onClick={resetOverride} data-testid="button-reset-override"
-              style={{ background: "none", border: "none", cursor: "pointer", color: v.accent, fontSize: 11, fontFamily: "system-ui, sans-serif", padding: "6px 0 0", textDecoration: "underline", display: "block", margin: "0 auto" }}
-            >
-              Reset to calculated
-            </button>
-          )}
-        </div>
+        <M2RatingPanel
+          scores={detailedScores}
+          onScoreChange={handleDetailScoreChange}
+          chips={detailChips}
+          onChipToggle={handleToggleChip}
+          texts={detailTexts}
+          onTextChange={handleDetailTextChange}
+          overall={score}
+          onOverallChange={handleScoreChange}
+          overallAuto={calcOverall(detailedScores)}
+          overrideActive={overrideActive}
+          onResetOverride={resetOverride}
+          showToggle={true}
+          defaultOpen={true}
+        />
       </div>
 
       {/* SECTION 3: NOTES */}
