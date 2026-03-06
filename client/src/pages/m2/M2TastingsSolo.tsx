@@ -8,8 +8,55 @@ import { participantApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import {
-  Camera, PenLine, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X
+  Camera, PenLine, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff
 } from "lucide-react";
+
+const OFFLINE_QUEUE_KEY = "cs_offline_queue";
+
+interface OfflineQueueItem {
+  pid: string;
+  body: Record<string, any>;
+  timestamp: string;
+}
+
+function getOfflineQueue(): OfflineQueueItem[] {
+  try {
+    return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function addToOfflineQueue(item: OfflineQueueItem) {
+  const queue = getOfflineQueue();
+  queue.push(item);
+  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+}
+
+async function retryOfflineQueue(): Promise<number> {
+  const queue = getOfflineQueue();
+  if (queue.length === 0) return 0;
+  const remaining: OfflineQueueItem[] = [];
+  for (const item of queue) {
+    try {
+      const res = await fetch(`/api/journal/${item.pid}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item.body),
+      });
+      if (!res.ok) {
+        remaining.push(item);
+      }
+    } catch {
+      remaining.push(item);
+    }
+  }
+  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remaining));
+  if (remaining.length < queue.length) {
+    queryClient.invalidateQueries({ queryKey: ["journal"] });
+  }
+  return remaining.length;
+}
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -154,6 +201,18 @@ export default function M2TastingsSolo() {
   const [voiceTarget, setVoiceTarget] = useState<DimKey | "notes" | null>(null);
   const recognitionRef = useRef<any>(null);
   const hasSpeechAPI = !!SpeechRecognitionAPI;
+
+  const [offlineCount, setOfflineCount] = useState(() => getOfflineQueue().length);
+
+  useEffect(() => {
+    const trySync = async () => {
+      const remaining = await retryOfflineQueue();
+      setOfflineCount(remaining);
+    };
+    trySync();
+    window.addEventListener("online", trySync);
+    return () => window.removeEventListener("online", trySync);
+  }, []);
 
   const [scanning, setScanning] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -533,23 +592,23 @@ export default function M2TastingsSolo() {
 
     setSaving(true);
     setError("");
+    const scoresBlock = buildScoresBlock();
+    const body: Record<string, any> = {
+      title: whiskyName.trim(),
+      whiskyName: whiskyName.trim(),
+      distillery: distillery.trim() || undefined,
+      personalScore: score,
+      noseNotes: (notes.trim() + scoresBlock).trim() || undefined,
+      source: "casksense",
+      imageUrl: photoUrl || undefined,
+    };
+
+    if (unknownAge.trim()) body.age = unknownAge.trim();
+    if (unknownAbv.trim()) body.abv = unknownAbv.trim();
+    if (unknownCask.trim()) body.caskType = unknownCask.trim();
+    if (unknownWbId.trim()) body.whiskybaseId = unknownWbId.trim();
+
     try {
-      const scoresBlock = buildScoresBlock();
-      const body: Record<string, any> = {
-        title: whiskyName.trim(),
-        whiskyName: whiskyName.trim(),
-        distillery: distillery.trim() || undefined,
-        personalScore: score,
-        noseNotes: (notes.trim() + scoresBlock).trim() || undefined,
-        source: "casksense",
-        imageUrl: photoUrl || undefined,
-      };
-
-      if (unknownAge.trim()) body.age = unknownAge.trim();
-      if (unknownAbv.trim()) body.abv = unknownAbv.trim();
-      if (unknownCask.trim()) body.caskType = unknownCask.trim();
-      if (unknownWbId.trim()) body.whiskybaseId = unknownWbId.trim();
-
       const res = await fetch(`/api/journal/${pid}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -560,6 +619,8 @@ export default function M2TastingsSolo() {
       setSaved(true);
     } catch {
       persistLocal();
+      addToOfflineQueue({ pid: pid!, body, timestamp: new Date().toISOString() });
+      setOfflineCount(getOfflineQueue().length);
       setSaved(true);
     } finally {
       setSaving(false);
@@ -644,6 +705,27 @@ export default function M2TastingsSolo() {
       <p style={{ fontSize: 14, color: v.textSecondary, marginBottom: 20 }}>
         {t("m2.solo.subtitle", "Log a whisky on your own — take notes, rate, and remember.")}
       </p>
+
+      {offlineCount > 0 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: alpha(v.accent, "12"),
+            border: `1px solid ${alpha(v.accent, "40")}`,
+            borderRadius: 10,
+            padding: "8px 14px",
+            marginBottom: 12,
+            fontSize: 13,
+            color: v.accent,
+          }}
+          data-testid="text-offline-queue"
+        >
+          <WifiOff style={{ width: 14, height: 14, flexShrink: 0 }} />
+          <span>{offlineCount} {offlineCount === 1 ? "dram" : "drams"} waiting to sync</span>
+        </div>
+      )}
 
       {error && (
         <div style={{ background: alpha(v.danger, "15"), border: `1px solid ${v.danger}`, borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: v.danger, display: "flex", alignItems: "center", justifyContent: "space-between" }} data-testid="text-error">

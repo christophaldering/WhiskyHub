@@ -52,20 +52,21 @@ PostgreSQL serves as the primary database, accessed via Drizzle ORM. The schema 
 Fully self-contained parallel UI sharing the same backend, auth, and database. NO cross-links to the old app — all navigation stays within `/m2/*`. 3-tab bottom nav (Tastings | Taste | Circle) with M2-specific profile menu.
 
 #### Core Components
-- `Module2Shell.tsx` — Main layout with header (logo, profile button, notification bell, "What's New" banner, PWA install prompt), 3-tab bottom nav, session-change listener
+- `Module2Shell.tsx` — Main layout with header (logo, profile button, notification bell, "What's New" banner, PWA install prompt), 3-tab bottom nav, session-change listener, ErrorBoundary, pull-to-refresh, Toast provider
 - `M2BackButton.tsx` — Navigation guard ensuring all back-navigation stays within `/m2/*` via `isM2Route()` check
-- `M2ProfileMenu.tsx` — Full auth menu: sign in, register, forgot PIN/reset, email verification, guest mode, theme toggle, language toggle, sign out
+- `M2ProfileMenu.tsx` — Full auth menu: sign in, register, forgot PIN/reset, email verification, guest mode, theme toggle, language toggle, sign out. Admin link only visible for admin role.
+- `M2Feedback.tsx` — Shared `M2Loading` (unified gold spinner) and `M2Error` (error with retry button) components used across all M2 pages
 
 #### Tastings Tab (`/m2/tastings/*`) — 11 pages
 - `M2TastingsHome` — Status filter (Draft/Open/Closed/Archived) with count badges, time filter, HOST badge, calendar view toggle, reveal status badges
 - `M2TastingsJoin` — Code entry + QR code scanner (html5-qrcode camera), direct join via URL
 - `M2TastingsHost` — Full 4-step wizard: Step 1 (title/date/location/blind mode), Step 2 (whisky CRUD + reorder + image upload), Step 3 (QR code/link/email invitations), Step 4 (live control: dram selection, blind reveal, guided mode, results toggle, settings, duplicate/delete/transfer)
-- `M2TastingsSolo` — Full dram logger: AI photo/text identification, barcode scanner, Whiskybase lookup, 5-dimension rating (Nose/Taste/Finish/Balance/Overall) with auto-calculate, flavor chips, dimension notes, metadata fields, multi-photo, confidence badges, offline localStorage
+- `M2TastingsSolo` — Full dram logger: AI photo/text identification, barcode scanner, Whiskybase lookup, 5-dimension rating (Nose/Taste/Finish/Balance/Overall) with auto-calculate, flavor chips, dimension notes, metadata fields, multi-photo, confidence badges, offline localStorage with queue retry
 - `M2TastingSession` — Lobby with cover image, participant list, tasting code + QR display
 - `M2HostControl` — Status control, blind reveal steps (Name→Details→Image), guided mode advance, AI highlights, live whisky management (add/edit/delete)
-- `M2TastingPlay` — Full 5-dimension rating with auto-calculate + manual override, debounced auto-save (800ms), progress pills, rating prompt, group average, guided "Waiting for Host", dynamic scale, whisky image/details, status badge, guest upgrade prompt
-- `M2TastingResults` — Ranked whiskies, Gold/Silver/Bronze medals, score breakdown bars, PDF/Excel/CSV export, link to recap
-- `M2TastingRecap` — Top rated, most divisive, participant highlights, horizontal bar chart (Recharts), share text clipboard, PDF/print
+- `M2TastingPlay` — Full 5-dimension rating with auto-calculate + manual override, debounced auto-save (800ms), progress pills, rating prompt, group average, guided "Waiting for Host", dynamic scale, whisky image/details, status badge, guest upgrade prompt, ambient sound toggle, haptic feedback on slider
+- `M2TastingResults` — Ranked whiskies, Gold/Silver/Bronze medals, score breakdown bars, PDF/Excel/CSV export (branded), link to recap, confetti animation on #1
+- `M2TastingRecap` — Top rated, most divisive, participant highlights, horizontal bar chart (Recharts), share text clipboard, branded PDF/print
 - `M2HostDashboard` — Analytics summary, calendar, top whiskies leaderboard, score charts (Recharts bars), quick links, invitations panel
 
 #### Taste Tab (`/m2/taste/*`) — 13 pages
@@ -109,7 +110,7 @@ Comprehensive test framework using Vitest with 4 tiers:
 -   **API tests** (`tests/api/`): Health endpoint, auth signin, tastings CRUD. Config: `vitest.config.api.ts` (node). Run: `npm run test:api`.
 -   **E2E tests** (`tests/e2e/`): Fetch-based route verification for all `/m2/*` and existing routes, auth flow integration. Config: `vitest.config.e2e.ts` (node). Run: `npm run test:e2e`.
 -   **Smoke tests** (`tests/smoke.ts`): CLI script checking server health, DB, auth, M2 routing. Run: `npm run test:smoke`.
--   **Full suite**: `npm run test:all` (unit + api + e2e + smoke). 49 tests total.
+-   **Full suite**: `npm run test:all` (unit + api + e2e + smoke). 79 tests total.
 -   **Test data**: `npm run db:seed:test` creates test user (`test.m2@casksense.local`) and test tasting with 3 whiskies. Cleanup: `npx tsx server/cleanup-test.ts`.
 
 ## External Dependencies

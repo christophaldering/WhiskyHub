@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
+import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
 import { getSession } from "@/lib/session";
 import { useQuery } from "@tanstack/react-query";
 import { statsApi, flavorProfileApi, journalApi, ratingNotesApi, participantApi } from "@/lib/api";
@@ -348,7 +349,7 @@ export default function M2TasteAnalytics() {
   const session = getSession();
   const pid = session.pid;
 
-  const { data: stats } = useQuery({
+  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery({
     queryKey: ["m2-participant-stats-threshold", pid],
     queryFn: () => statsApi.get(pid!),
     enabled: !!pid,
@@ -372,6 +373,9 @@ export default function M2TasteAnalytics() {
           </p>
         </div>
       </div>
+
+      {statsLoading && pid && <M2Loading />}
+      {statsError && pid && <M2Error onRetry={refetchStats} />}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {!session.signedIn || !pid ? (

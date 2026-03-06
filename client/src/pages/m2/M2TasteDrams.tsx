@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
+import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
 import { getSession } from "@/lib/session";
 import { journalApi, tastingHistoryApi } from "@/lib/api";
 import { useLocation } from "wouter";
@@ -35,7 +36,7 @@ export default function M2TasteDrams() {
   const [deleteTarget, setDeleteTarget] = useState<JournalEntry | null>(null);
   const [search, setSearch] = useState("");
 
-  const { data: journal = [], isLoading } = useQuery<JournalEntry[]>({
+  const { data: journal = [], isLoading, isError, refetch } = useQuery<JournalEntry[]>({
     queryKey: ["journal", session.pid],
     queryFn: () => journalApi.getAll(session.pid!),
     enabled: !!session.pid,
@@ -383,8 +384,10 @@ export default function M2TasteDrams() {
             )}
           </div>
 
-          {isLoading ? (
-            <div style={{ textAlign: "center", padding: 32, color: v.muted }}>{t("common.loading", "Loading...")}</div>
+          {isError ? (
+            <M2Error onRetry={refetch} />
+          ) : isLoading ? (
+            <M2Loading />
           ) : filteredEntries.length === 0 ? (
             <div style={{ background: v.elevated, borderRadius: 14, padding: "32px 20px", textAlign: "center" }}>
               <BookOpen style={{ width: 40, height: 40, color: v.muted, marginBottom: 12 }} />

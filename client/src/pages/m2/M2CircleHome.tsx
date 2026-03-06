@@ -10,6 +10,7 @@ import {
   activityApi,
   friendsApi,
 } from "@/lib/api";
+import { M2Loading } from "@/components/m2/M2Feedback";
 import {
   Trophy,
   Heart,
@@ -227,20 +228,7 @@ export default function M2CircleHome() {
     padding: "14px 16px",
   };
 
-  const loadingSpinner = (
-    <div
-      style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}
-    >
-      <Loader2
-        style={{
-          width: 24,
-          height: 24,
-          color: v.accent,
-          animation: "spin 1s linear infinite",
-        }}
-      />
-    </div>
-  );
+  const loadingSpinner = <M2Loading />;
 
   const emptyState = (text: string) => (
     <div

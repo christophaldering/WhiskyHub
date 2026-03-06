@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
+import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
 import { getSession } from "@/lib/session";
 import { flavorProfileApi } from "@/lib/api";
 import {
@@ -384,7 +385,7 @@ export default function M2TasteProfile() {
   const session = getSession();
   const [compareMode, setCompareMode] = useState<CompareMode>("none");
 
-  const { data: profile, isLoading } = useQuery<FlavorProfileData>({
+  const { data: profile, isLoading, isError, refetch } = useQuery<FlavorProfileData>({
     queryKey: ["flavor-profile", session.pid],
     queryFn: () => flavorProfileApi.get(session.pid!),
     enabled: !!session.pid,
@@ -449,24 +450,16 @@ export default function M2TasteProfile() {
     return (
       <div style={{ padding: "16px" }} data-testid="m2-taste-profile">
         <M2BackButton />
-        <div style={{ padding: "32px 0" }}>
-          <div
-            style={{
-              height: 32,
-              width: 192,
-              background: v.elevated,
-              borderRadius: 8,
-              marginBottom: 16,
-            }}
-          />
-          <div
-            style={{
-              height: 256,
-              background: v.elevated,
-              borderRadius: 12,
-            }}
-          />
-        </div>
+        <M2Loading />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div style={{ padding: "16px" }} data-testid="m2-taste-profile">
+        <M2BackButton />
+        <M2Error onRetry={refetch} />
       </div>
     );
   }

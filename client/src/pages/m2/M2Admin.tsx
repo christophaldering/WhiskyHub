@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getSession } from "@/lib/session";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
+import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
 import {
   ShieldAlert, Users, Wine, Crown, Trash2, Search, UserCog, Shield, User,
   Calendar, Eye, Hash, BarChart3, ChevronDown, ChevronRight, Database,
@@ -79,28 +80,34 @@ export default function M2Admin() {
   const pid = session.pid || "";
   const [activeTab, setActiveTab] = useState<AdminTab>("participants");
 
-  const { data, isLoading } = useQuery<AdminOverview>({
+  const { data, isLoading, isError, refetch } = useQuery<AdminOverview>({
     queryKey: ["/admin/overview", pid],
     queryFn: () => adminApi.getOverview(pid),
     enabled: !!pid,
   });
 
-  if (!pid) {
+  if (!pid || session.role !== "admin") {
     return (
-      <div style={{ padding: 24, textAlign: "center", color: v.muted }}>
+      <div style={{ padding: 24, textAlign: "center", color: v.muted }} data-testid="m2-admin-access-denied">
         <Shield style={{ width: 48, height: 48, margin: "0 auto 16px", color: v.accent }} />
-        <p style={{ fontSize: 16, fontWeight: 600, color: v.text }}>Admin Access Required</p>
-        <p style={{ fontSize: 14, marginTop: 8 }}>Please sign in to access admin features.</p>
+        <p style={{ fontSize: 16, fontWeight: 600, color: v.text }}>
+          {!pid ? "Admin Access Required" : "Access Denied"}
+        </p>
+        <p style={{ fontSize: 14, marginTop: 8, color: v.textSecondary }}>
+          {!pid
+            ? "Please sign in to access admin features."
+            : "You don't have admin privileges."}
+        </p>
       </div>
     );
   }
 
   if (isLoading) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-        <Loader2 style={{ width: 32, height: 32, color: v.accent, animation: "spin 1s linear infinite" }} />
-      </div>
-    );
+    return <M2Loading />;
+  }
+
+  if (isError) {
+    return <M2Error onRetry={refetch} />;
   }
 
   if (!data) {

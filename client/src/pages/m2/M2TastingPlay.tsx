@@ -4,9 +4,11 @@ import { useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { v, alpha } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
+import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { getSession } from "@/lib/session";
+import { playSoundscape, stopSoundscape, setVolume as setAmbientVolume, getState as getAmbientState } from "@/lib/ambient";
 import {
   Star,
   ChevronLeft,
@@ -16,6 +18,8 @@ import {
   EyeOff,
   Users,
   Check,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -107,6 +111,23 @@ function RatingSlider({
 }) {
   const step = scale >= 100 ? 1 : scale >= 20 ? 0.5 : 0.1;
   const display = Number.isInteger(value) ? value : value.toFixed(1);
+  const prevValue = useRef(value);
+
+  const handleChange = (newValue: number) => {
+    const thresholds = [0, 25, 50, 75, 100].map((t) => Math.round((t / 100) * scale));
+    const prev = prevValue.current;
+    for (const t of thresholds) {
+      if ((prev < t && newValue >= t) || (prev > t && newValue <= t)) {
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          try { navigator.vibrate(10); } catch {}
+        }
+        break;
+      }
+    }
+    prevValue.current = newValue;
+    onChange(newValue);
+  };
+
   return (
     <div style={{ marginBottom: 12, opacity: disabled ? 0.5 : 1 }}>
       <div
@@ -134,12 +155,62 @@ function RatingSlider({
         max={scale}
         step={step}
         value={Math.min(value, scale)}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(e) => handleChange(Number(e.target.value))}
         disabled={disabled}
         style={{ width: "100%", accentColor: v.accent, cursor: disabled ? "not-allowed" : "pointer" }}
         data-testid={`slider-${label.toLowerCase().replace(/\s+/g, "-")}`}
       />
     </div>
+  );
+}
+
+function AmbientSoundButton() {
+  const LS_KEY = "cs_ambient_enabled";
+  const [playing, setPlaying] = useState(() => {
+    try { return localStorage.getItem(LS_KEY) === "1"; } catch { return false; }
+  });
+
+  useEffect(() => {
+    if (playing) {
+      playSoundscape("fireplace");
+      setAmbientVolume(0.1);
+    }
+    return () => { if (playing) stopSoundscape(); };
+  }, []);
+
+  const toggle = () => {
+    if (playing) {
+      stopSoundscape();
+      setPlaying(false);
+      try { localStorage.setItem(LS_KEY, "0"); } catch {}
+    } else {
+      playSoundscape("fireplace");
+      setAmbientVolume(0.1);
+      setPlaying(true);
+      try { localStorage.setItem(LS_KEY, "1"); } catch {}
+    }
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      style={{
+        background: playing ? alpha(v.accent, "20") : "transparent",
+        border: `1px solid ${playing ? v.accent : v.border}`,
+        borderRadius: 8,
+        padding: "6px 8px",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: playing ? v.accent : v.muted,
+        transition: "all 0.2s",
+      }}
+      title={playing ? "Mute ambient" : "Play ambient sounds"}
+      data-testid="button-ambient-toggle"
+    >
+      {playing ? <Volume2 style={{ width: 16, height: 16 }} /> : <VolumeX style={{ width: 16, height: 16 }} />}
+    </button>
   );
 }
 
@@ -602,6 +673,8 @@ export default function M2TastingPlay() {
   const {
     data: tasting,
     isLoading: tastingLoading,
+    isError: tastingError,
+    refetch: refetchTasting,
   } = useQuery<TastingState>({
     queryKey: ["tasting", id],
     queryFn: () => tastingApi.get(id),
@@ -612,7 +685,7 @@ export default function M2TastingPlay() {
     },
   });
 
-  const { data: whiskies = [], isLoading: whiskiesLoading } = useQuery<
+  const { data: whiskies = [], isLoading: whiskiesLoading, isError: whiskiesError, refetch: refetchWhiskies } = useQuery<
     WhiskyItem[]
   >({
     queryKey: ["whiskies", id],
@@ -802,19 +875,16 @@ export default function M2TastingPlay() {
     return (
       <div style={{ padding: "16px" }} data-testid="m2-play-page">
         <M2BackButton />
-        <div
-          style={{
-            background: v.card,
-            borderRadius: 12,
-            padding: "24px 16px",
-            textAlign: "center",
-            color: v.muted,
-            fontSize: 14,
-            marginTop: 24,
-          }}
-        >
-          {t("m2.play.loading", "Loading...")}
-        </div>
+        <M2Loading />
+      </div>
+    );
+  }
+
+  if (tastingError || whiskiesError) {
+    return (
+      <div style={{ padding: "16px" }} data-testid="m2-play-page">
+        <M2BackButton />
+        <M2Error onRetry={() => { refetchTasting(); refetchWhiskies(); }} />
       </div>
     );
   }
@@ -1012,6 +1082,7 @@ export default function M2TastingPlay() {
           {t("m2.play.title", "Tasting Room")}
         </h1>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <AmbientSoundButton />
           <StatusBadge status={tasting.status} />
           <span
             style={{

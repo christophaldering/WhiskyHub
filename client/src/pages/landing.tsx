@@ -263,6 +263,79 @@ export default function Landing() {
         </div>
       </motion.div>
 
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.2, duration: 1 }}
+        style={{
+          marginTop: "2.5rem",
+          display: "flex",
+          gap: "1rem",
+          justifyContent: "center",
+          width: "100%",
+          maxWidth: 400,
+        }}
+        data-testid="theme-preview-section"
+      >
+        {[
+          {
+            label: "Dark",
+            bg: "#1a1714",
+            card: "#242018",
+            text: "#f5f0e8",
+            muted: "#8a8070",
+            accent: "#d4a256",
+            border: "#3a3530",
+          },
+          {
+            label: "Light",
+            bg: "#faf8f5",
+            card: "#ffffff",
+            text: "#2c2418",
+            muted: "#9a8e7a",
+            accent: "#b8863e",
+            border: "#e8e2d8",
+          },
+        ].map((theme, ti) => (
+          <motion.div
+            key={theme.label}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.4 + ti * 0.2, duration: 0.6 }}
+            style={{
+              flex: 1,
+              background: theme.bg,
+              border: `1px solid ${theme.border}`,
+              borderRadius: 12,
+              padding: 12,
+              overflow: "hidden",
+            }}
+            data-testid={`theme-card-${theme.label.toLowerCase()}`}
+          >
+            <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: theme.muted, marginBottom: 8, fontFamily: "system-ui, sans-serif" }}>
+              {theme.label}
+            </div>
+            <div style={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 6, padding: "6px 8px", marginBottom: 6 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: theme.text, fontFamily: "'Playfair Display', serif" }}>Tasting Room</div>
+              <div style={{ fontSize: 8, color: theme.muted, marginTop: 2 }}>Lagavulin 16</div>
+            </div>
+            <div style={{ marginBottom: 6 }}>
+              <div style={{ fontSize: 8, color: theme.muted, marginBottom: 2 }}>Nose</div>
+              <div style={{ height: 4, background: theme.border, borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ width: "72%", height: "100%", background: theme.accent, borderRadius: 2 }} />
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-around", borderTop: `1px solid ${theme.border}`, paddingTop: 6 }}>
+              {["Taste", "Tasting", "Discover"].map((tab) => (
+                <div key={tab} style={{ fontSize: 7, color: tab === "Tasting" ? theme.accent : theme.muted, fontWeight: tab === "Tasting" ? 700 : 400, fontFamily: "system-ui, sans-serif" }}>
+                  {tab}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+
     </div>
   );
 }

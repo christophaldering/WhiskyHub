@@ -1639,9 +1639,9 @@ export async function registerRoutes(
         console.log(`[SESSION][AUTH] signin success for "${displayName}" mode=${authMode} (DB match via ${email ? "email" : "name"})`);
         const e = sessionSigninAttempts.get(clientIp);
         if (e) e.count = 0;
-        const result: any = { ok: true, name: displayName, mode: authMode, pid: participant.id };
+        const result: any = { ok: true, name: displayName, mode: authMode, pid: participant.id, role: participant.role || "user" };
         const token = generateResumeToken();
-        sessionResumeTokens.set(token, { mode: authMode, name: displayName, pid: participant.id, expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
+        sessionResumeTokens.set(token, { mode: authMode, name: displayName, pid: participant.id, role: participant.role || "user", expiresAt: now + 14 * 24 * 60 * 60 * 1000 });
         result.resumeToken = token;
         return res.json(result);
       }
@@ -1704,7 +1704,7 @@ export async function registerRoutes(
       if (stored) sessionResumeTokens.delete(resumeToken);
       return res.status(401).json({ ok: false });
     }
-    return res.json({ ok: true, mode: stored.mode, name: stored.name, pid: stored.pid || undefined });
+    return res.json({ ok: true, mode: stored.mode, name: stored.name, pid: stored.pid || undefined, role: (stored as any).role || "user" });
   };
 
   const handleSignout = (req: Request, res: Response) => {

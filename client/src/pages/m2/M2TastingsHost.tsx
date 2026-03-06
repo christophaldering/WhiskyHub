@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
+import { M2Loading } from "@/components/m2/M2Feedback";
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { tastingApi, whiskyApi, inviteApi, guidedApi } from "@/lib/api";
@@ -577,7 +578,7 @@ function Step2Whiskies({ tasting, onNext, onBack }: { tasting: TastingFull; onNe
         </div>
 
         {loading ? (
-          <div style={{ textAlign: "center", color: v.muted, fontSize: 13, padding: "16px 0" }}>Loading…</div>
+          <M2Loading />
         ) : whiskies.length > 0 ? (
           <div style={{ borderTop: `1px solid ${v.border}`, paddingTop: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: v.muted, marginBottom: 10, display: "flex", justifyContent: "space-between" }}>

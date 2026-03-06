@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import QRCodeLib from "qrcode";
 import M2BackButton from "@/components/m2/M2BackButton";
+import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
 import { downloadDataUrl } from "@/lib/download";
 
 interface HostSummary {
@@ -544,23 +545,24 @@ export default function M2HostDashboard() {
   const { t, i18n } = useTranslation();
   const session = getSession();
 
-  const { data: summary, isLoading } = useQuery<HostSummary>({
+  const { data: summary, isLoading, isError, refetch } = useQuery<HostSummary>({
     queryKey: ["host-dashboard", session.pid],
     queryFn: () => hostDashboardApi.getSummary(session.pid!),
     enabled: !!session.pid,
   });
 
-  if ((isLoading && session.pid) || (session.pid && !summary)) {
+  if (isLoading && session.pid) {
     return (
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "20px 16px" }} data-testid="m2-host-dashboard-loading">
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ height: 32, width: 220, background: alpha(v.card, "80"), borderRadius: 8, animation: "pulse 2s infinite" }} />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-            {[1, 2, 3].map(i => <div key={i} style={{ height: 90, background: alpha(v.card, "80"), borderRadius: 12, animation: "pulse 2s infinite" }} />)}
-          </div>
-          <div style={{ height: 240, background: alpha(v.card, "80"), borderRadius: 12, animation: "pulse 2s infinite" }} />
-        </div>
-        <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
+        <M2Loading />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "20px 16px" }} data-testid="m2-host-dashboard-error">
+        <M2Error onRetry={refetch} />
       </div>
     );
   }

@@ -5,6 +5,7 @@ import { queryClient } from "@/lib/queryClient";
 import { collectionApi } from "@/lib/api";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
+import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
 import { getSession } from "@/lib/session";
 import {
   Upload, Search, ExternalLink, Trash2, NotebookPen, Wine, Archive,
@@ -60,7 +61,7 @@ export default function M2TasteCollection() {
 
   const pid = session.pid;
 
-  const { data: items = [], isLoading } = useQuery({
+  const { data: items = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["collection", pid],
     queryFn: () => collectionApi.getAll(pid!),
     enabled: !!pid,
@@ -466,10 +467,10 @@ export default function M2TasteCollection() {
       )}
 
       <div style={{ marginTop: 16 }}>
-        {isLoading ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}>
-            <Loader2 style={{ width: 32, height: 32, color: v.muted, animation: "spin 1s linear infinite" }} />
-          </div>
+        {isError ? (
+          <M2Error onRetry={refetch} />
+        ) : isLoading ? (
+          <M2Loading />
         ) : items.length === 0 ? (
           <div style={{ background: v.elevated, borderRadius: 14, padding: "32px 20px", textAlign: "center" }}>
             <Archive style={{ width: 40, height: 40, color: v.muted, marginBottom: 12 }} />

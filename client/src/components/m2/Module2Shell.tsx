@@ -1,10 +1,95 @@
-import { ReactNode, useState, useEffect, useCallback } from "react";
+import { ReactNode, useState, useEffect, useCallback, useRef, Component, type ErrorInfo } from "react";
 import { Link, useLocation } from "wouter";
-import { Wine, BarChart3, Users, User, Bell, Download } from "lucide-react";
+import { Wine, BarChart3, Users, User, Bell, Download, AlertTriangle, RefreshCw } from "lucide-react";
 import { v } from "@/lib/themeVars";
 import { useTranslation } from "react-i18next";
 import { getSession, tryAutoResume } from "@/lib/session";
 import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
+import { Toaster } from "@/components/ui/toaster";
+import { queryClient } from "@/lib/queryClient";
+
+class M2ErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("[M2ErrorBoundary]", error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "60vh",
+            padding: 32,
+            textAlign: "center",
+          }}
+          data-testid="m2-error-boundary"
+        >
+          <AlertTriangle style={{ width: 48, height: 48, color: v.danger, marginBottom: 16 }} />
+          <h2
+            style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: 20,
+              fontWeight: 700,
+              color: v.text,
+              margin: "0 0 8px",
+            }}
+          >
+            Etwas ist schiefgelaufen
+          </h2>
+          <p style={{ fontSize: 14, color: v.muted, margin: "0 0 24px", maxWidth: 320 }}>
+            Ein unerwarteter Fehler ist aufgetreten. Bitte lade die Seite neu.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "12px 24px",
+              fontSize: 15,
+              fontWeight: 600,
+              background: v.accent,
+              color: v.bg,
+              border: "none",
+              borderRadius: 10,
+              cursor: "pointer",
+              fontFamily: "system-ui, sans-serif",
+            }}
+            data-testid="button-reload"
+          >
+            <RefreshCw style={{ width: 16, height: 16 }} />
+            Seite neu laden
+          </button>
+          {this.state.error && (
+            <details style={{ marginTop: 16, fontSize: 12, color: v.muted, maxWidth: 400, textAlign: "left" }}>
+              <summary style={{ cursor: "pointer" }}>Technische Details</summary>
+              <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", marginTop: 8 }}>
+                {this.state.error.message}
+              </pre>
+            </details>
+          )}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const TABS = [
   { href: "/m2/tastings", icon: Wine, labelKey: "m2.tabs.tastings", fallback: "Tastings", match: ["/m2/tastings"] },
@@ -147,6 +232,64 @@ function NotificationBell() {
   );
 }
 
+function usePullToRefresh(mainRef: React.RefObject<HTMLElement | null>) {
+  const [pullDistance, setPullDistance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const touchStartY = useRef(0);
+  const pulling = useRef(false);
+
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (el.scrollTop === 0 && !refreshing) {
+        touchStartY.current = e.touches[0].clientY;
+        pulling.current = true;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!pulling.current || refreshing) return;
+      const dy = e.touches[0].clientY - touchStartY.current;
+      if (dy > 0 && el.scrollTop === 0) {
+        setPullDistance(Math.min(dy * 0.5, 100));
+      } else {
+        pulling.current = false;
+        setPullDistance(0);
+      }
+    };
+
+    const onTouchEnd = () => {
+      if (!pulling.current) return;
+      pulling.current = false;
+      if (pullDistance > 60) {
+        setRefreshing(true);
+        setPullDistance(60);
+        queryClient.invalidateQueries().then(() => {
+          setTimeout(() => {
+            setRefreshing(false);
+            setPullDistance(0);
+          }, 600);
+        });
+      } else {
+        setPullDistance(0);
+      }
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: true });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [mainRef, pullDistance, refreshing]);
+
+  return { pullDistance, refreshing };
+}
+
 export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
   const [location] = useLocation();
   const { t } = useTranslation();
@@ -154,6 +297,8 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
   const [session, setSession] = useState(getSession());
   const whatsNew = useWhatsNew();
   const pwa = usePwaInstall();
+  const mainRef = useRef<HTMLElement>(null);
+  const { pullDistance, refreshing } = usePullToRefresh(mainRef);
 
   const refreshSession = useCallback(() => {
     setSession(getSession());
@@ -320,7 +465,34 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
         </div>
       )}
 
-      <main style={{ flex: 1, padding: "0 0 80px" }}>{children}</main>
+      {pullDistance > 0 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: pullDistance,
+            overflow: "hidden",
+            transition: pullDistance <= 0 ? "height 0.2s" : "none",
+          }}
+          data-testid="m2-pull-indicator"
+        >
+          <RefreshCw
+            style={{
+              width: 20,
+              height: 20,
+              color: v.accent,
+              opacity: Math.min(pullDistance / 60, 1),
+              transform: `rotate(${pullDistance * 3}deg)`,
+              animation: refreshing ? "spin 0.8s linear infinite" : "none",
+            }}
+          />
+        </div>
+      )}
+
+      <main ref={mainRef} style={{ flex: 1, padding: "0 0 80px", overflowY: "auto" }}>
+        <M2ErrorBoundary>{children}</M2ErrorBoundary>
+      </main>
 
       {!hideNav && (
         <nav
@@ -384,6 +556,7 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
       )}
 
       <M2ProfileMenu open={showSession} onClose={() => setShowSession(false)} />
+      <Toaster />
     </div>
   );
 }
