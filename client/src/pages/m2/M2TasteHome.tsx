@@ -375,6 +375,7 @@ export default function M2TasteHome() {
             <NavRow icon={FlaskConical} label={t("m2.taste.benchmark", "Benchmark Analyzer")} description={t("m2.taste.benchmarkDesc", "Extract & compare external reviews")} href="/m2/taste/benchmark" testId="m2-taste-link-benchmark" />
             <NavRow icon={PieChart} label={t("m2.taste.wheel", "Flavor Wheel")} description={t("m2.taste.wheelDesc", "Aroma categories from your notes")} href="/m2/taste/wheel" testId="m2-taste-link-wheel" />
             <NavRow icon={UtensilsCrossed} label={t("m2.taste.pairings", "Pairings")} description={t("m2.taste.pairingsDesc", "AI food pairing suggestions")} href="/m2/taste/pairings" testId="m2-taste-link-pairings" />
+            <NavRow icon={Library} label={t("m2.taste.collectionAnalysis", "Collection Analysis")} description={t("m2.taste.collectionAnalysisDesc", "Deep insights into your whisky collection")} href="/m2/taste/collection-analysis" testId="m2-taste-link-collection-analysis" />
           </AccordionSection>
 
           <AccordionSection
