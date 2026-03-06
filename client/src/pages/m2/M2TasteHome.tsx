@@ -1,13 +1,13 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { v, alpha } from "@/lib/themeVars";
 import { getSession } from "@/lib/session";
 import {
-  Activity, BookOpen, Wine, BarChart3, ChevronRight, ChevronDown, Lock,
+  BookOpen, BarChart3, ChevronRight, ChevronDown, Lock,
   Radar, Archive, Heart, FlaskConical, Sparkles, GitCompareArrows,
-  Download, Library, Building2, Package, Map, Users,
-  Trophy, Info, HandHeart, PieChart, UtensilsCrossed, Star, GraduationCap,
+  Download, Library, Building2, Package, Map,
+  PieChart, UtensilsCrossed, Star, GraduationCap,
 } from "lucide-react";
 import { Link } from "wouter";
 import { participantApi, journalApi, statsApi } from "@/lib/api";
@@ -402,29 +402,6 @@ export default function M2TasteHome() {
             <NavRow icon={Package} label={t("m2.taste.bottlers", "Bottlers")} description={t("m2.taste.bottlersDesc", "Independent bottlers database")} href="/m2/discover/bottlers" testId="m2-taste-link-bottlers" />
             <NavRow icon={Map} label={t("m2.taste.guide", "Tasting Guide")} description={t("m2.taste.guideDesc", "Step-by-step tasting guide")} href="/m2/discover/guide" testId="m2-taste-link-guide" />
             <NavRow icon={Star} label={t("m2.taste.rabbitHole", "Rabbit Hole")} description={t("m2.taste.rabbitHoleDesc", "Rating models & statistics")} href="/m2/discover/rabbit-hole" testId="m2-taste-link-rabbit-hole" />
-          </AccordionSection>
-
-          <AccordionSection
-            title={t("m2.taste.sectionCommunity", "Circle")}
-            icon={Users}
-            open={!!openSections.circle}
-            onToggle={() => toggle("circle")}
-            testId="m2-taste-section-circle"
-          >
-            <NavRow icon={Users} label={t("m2.taste.tasteTwins", "Taste Twins")} description={t("m2.taste.tasteTwinsDesc", "Find similar palates")} href="/m2/discover/community?tab=twins" testId="m2-taste-link-twins" />
-            <NavRow icon={Trophy} label={t("m2.taste.whiskyRankings", "Whisky Rankings")} description={t("m2.taste.whiskyRankingsDesc", "Top-rated whiskies by the community")} href="/m2/discover/community?tab=rankings" testId="m2-taste-link-rankings" />
-            <NavRow icon={Activity} label={t("m2.taste.activityFeed", "Activity Feed")} description={t("m2.taste.activityFeedDesc", "Friend activities")} href="/m2/discover/activity" testId="m2-taste-link-activity" />
-          </AccordionSection>
-
-          <AccordionSection
-            title={t("m2.taste.sectionAbout", "About")}
-            icon={Info}
-            open={!!openSections.about}
-            onToggle={() => toggle("about")}
-            testId="m2-taste-section-about"
-          >
-            <NavRow icon={Info} label={t("m2.taste.about", "About CaskSense")} description={t("m2.taste.aboutDesc", "Story, founder & contact")} href="/m2/discover/about" testId="m2-taste-link-about" />
-            <NavRow icon={HandHeart} label={t("m2.taste.donate", "Support Us")} description={t("m2.taste.donateDesc", "Help keep CaskSense free")} href="/m2/discover/donate" testId="m2-taste-link-donate" />
           </AccordionSection>
         </>
       )}
