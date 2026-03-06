@@ -29,6 +29,10 @@ interface HistoricalEntry {
   finishRank: number | null;
   totalScore: number | null;
   totalRank: number | null;
+  normalizedNose: number | null;
+  normalizedTaste: number | null;
+  normalizedFinish: number | null;
+  normalizedTotal: number | null;
   normalizedAbv: number | null;
   normalizedAge: number | null;
   normalizedPrice: number | null;
@@ -69,7 +73,7 @@ function formatDate(dateStr: string | null, lang: string): string {
   }
 }
 
-function ScoreBar({ label, value, max = 10 }: { label: string; value: number | null; max?: number }) {
+function ScoreBar({ label, value, max = 100 }: { label: string; value: number | null; max?: number }) {
   if (value == null) return null;
   const pct = Math.min((value / max) * 100, 100);
   const color = pct >= 75 ? "var(--cs-success)" : pct >= 50 ? v.accent : pct >= 25 ? "#f59e0b" : "var(--cs-danger)";
@@ -79,7 +83,7 @@ function ScoreBar({ label, value, max = 10 }: { label: string; value: number | n
       <div style={{ flex: 1, height: 6, background: v.border, borderRadius: 3, overflow: "hidden" }}>
         <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 3, transition: "width 0.4s ease" }} />
       </div>
-      <span style={{ fontSize: 12, fontWeight: 600, color: v.text, fontVariantNumeric: "tabular-nums", minWidth: 32, textAlign: "right" }}>{value.toFixed(1)}</span>
+      <span style={{ fontSize: 12, fontWeight: 600, color: v.text, fontVariantNumeric: "tabular-nums", minWidth: 32, textAlign: "right" }}>{Math.round(value)}</span>
     </div>
   );
 }
@@ -244,10 +248,10 @@ function WhiskyCard({ entry, lang, t, isTied }: { entry: HistoricalEntry; lang: 
               fontVariantNumeric: "tabular-nums",
               lineHeight: 1,
             }}>
-              {entry.totalScore.toFixed(1)}
+              {Math.round(entry.normalizedTotal ?? entry.totalScore * 10)}
             </div>
             <div style={{ fontSize: 10, color: v.muted, marginTop: 2 }}>
-              {t("m2.historicalDetail.total", "Total")}
+              /100
             </div>
           </div>
         )}
@@ -255,9 +259,9 @@ function WhiskyCard({ entry, lang, t, isTied }: { entry: HistoricalEntry; lang: 
 
       {(entry.noseScore != null || entry.tasteScore != null || entry.finishScore != null) && (
         <div style={{ paddingLeft: 52 }}>
-          <ScoreBar label={t("m2.historicalDetail.nose", "Nose")} value={entry.noseScore} />
-          <ScoreBar label={t("m2.historicalDetail.taste", "Taste")} value={entry.tasteScore} />
-          <ScoreBar label={t("m2.historicalDetail.finish", "Finish")} value={entry.finishScore} />
+          <ScoreBar label={t("m2.historicalDetail.nose", "Nose")} value={entry.normalizedNose ?? (entry.noseScore != null ? entry.noseScore * 10 : null)} />
+          <ScoreBar label={t("m2.historicalDetail.taste", "Taste")} value={entry.normalizedTaste ?? (entry.tasteScore != null ? entry.tasteScore * 10 : null)} />
+          <ScoreBar label={t("m2.historicalDetail.finish", "Finish")} value={entry.normalizedFinish ?? (entry.finishScore != null ? entry.finishScore * 10 : null)} />
         </div>
       )}
     </div>
@@ -265,19 +269,21 @@ function WhiskyCard({ entry, lang, t, isTied }: { entry: HistoricalEntry; lang: 
 }
 
 function ScoreDistribution({ entries, t }: { entries: HistoricalEntry[]; t: any }) {
-  const scores = entries.map(e => e.totalScore).filter((s): s is number => s != null);
+  const scores = entries
+    .map(e => e.normalizedTotal ?? (e.totalScore != null ? e.totalScore * 10 : null))
+    .filter((s): s is number => s != null);
   if (scores.length === 0) return null;
 
   const min = Math.floor(Math.min(...scores));
   const max = Math.ceil(Math.max(...scores));
   const range = max - min || 1;
-  const bucketSize = range <= 5 ? 0.5 : 1;
+  const bucketSize = range <= 20 ? 5 : 10;
   const buckets: { label: string; count: number }[] = [];
 
   for (let start = min; start < max + bucketSize; start += bucketSize) {
     const end = start + bucketSize;
     const count = scores.filter(s => s >= start && s < end).length;
-    buckets.push({ label: start.toFixed(1), count });
+    buckets.push({ label: String(Math.round(start)), count });
   }
 
   const maxCount = Math.max(...buckets.map(b => b.count), 1);
@@ -313,8 +319,8 @@ function ScoreDistribution({ entries, t }: { entries: HistoricalEntry[]; t: any 
         })}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-        <span style={{ fontSize: 10, color: v.muted }}>{min.toFixed(1)}</span>
-        <span style={{ fontSize: 10, color: v.muted }}>{max.toFixed(1)}</span>
+        <span style={{ fontSize: 10, color: v.muted }}>{Math.round(min)}</span>
+        <span style={{ fontSize: 10, color: v.muted }}>{Math.round(max)}</span>
       </div>
     </div>
   );
@@ -346,9 +352,9 @@ export default function M2HistoricalTastingDetail() {
   const entries = data?.entries ?? [];
   const sorted = [...entries].sort((a, b) => (a.totalRank ?? 999) - (b.totalRank ?? 999));
 
-  const scoredEntries = entries.filter(e => e.totalScore != null);
+  const scoredEntries = entries.filter(e => e.totalScore != null || e.normalizedTotal != null);
   const avgScore = scoredEntries.length > 0
-    ? scoredEntries.reduce((sum, e) => sum + (e.totalScore ?? 0), 0) / scoredEntries.length
+    ? scoredEntries.reduce((sum, e) => sum + (e.normalizedTotal ?? (e.totalScore ?? 0) * 10), 0) / scoredEntries.length
     : null;
 
   const winner = sorted.length > 0 && sorted[0].totalRank === 1 ? sorted[0] : null;
@@ -483,7 +489,7 @@ export default function M2HistoricalTastingDetail() {
               </span>
               {avgScore != null && !isNaN(avgScore) && (
                 <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <BarChart3 size={13} /> {t("m2.historicalDetail.avgScore", "Avg")} {avgScore.toFixed(1)}
+                  <BarChart3 size={13} /> {t("m2.historicalDetail.avgScore", "Avg")} {Math.round(avgScore)}/100
                 </span>
               )}
             </div>
@@ -520,15 +526,21 @@ export default function M2HistoricalTastingDetail() {
                   {winnerName}
                 </div>
               </div>
-              {winner?.totalScore != null && (
+              {(winner?.normalizedTotal ?? winner?.totalScore) != null && (
                 <div style={{
-                  fontSize: 22,
-                  fontWeight: 700,
-                  color: v.gold,
-                  fontVariantNumeric: "tabular-nums",
+                  textAlign: "center",
                   flexShrink: 0,
                 }}>
-                  {winner.totalScore.toFixed(1)}
+                  <div style={{
+                    fontSize: 22,
+                    fontWeight: 700,
+                    color: v.gold,
+                    fontVariantNumeric: "tabular-nums",
+                    lineHeight: 1,
+                  }}>
+                    {Math.round(winner!.normalizedTotal ?? (winner!.totalScore ?? 0) * 10)}
+                  </div>
+                  <div style={{ fontSize: 10, color: v.muted, marginTop: 2 }}>/100</div>
                 </div>
               )}
             </div>

@@ -27,7 +27,7 @@ interface EnrichedTasting {
 interface AnalyticsData {
   totalTastings: number;
   totalEntries: number;
-  topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; tastingNumber: number }>;
+  topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; normalizedTotal: number | null; tastingNumber: number }>;
   regionBreakdown: Record<string, number>;
   smokyBreakdown: { smoky: number; nonSmoky: number; unknown: number };
   caskBreakdown: Record<string, number>;
@@ -514,7 +514,7 @@ export default function M2HistoricalTastings() {
                           {tasting.avgTotalScore != null && (
                             <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
                               <Sparkles size={11} />
-                              Ø {tasting.avgTotalScore.toFixed(1)}
+                              Ø {tasting.avgTotalScore}/100
                             </span>
                           )}
                         </div>
@@ -541,7 +541,7 @@ export default function M2HistoricalTastings() {
                             </span>
                             {tasting.winnerScore != null && (
                               <span style={{ color: v.muted, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
-                                ({tasting.winnerScore.toFixed(1)})
+                                ({tasting.winnerScore}/100)
                               </span>
                             )}
                           </div>

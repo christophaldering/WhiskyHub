@@ -32,8 +32,9 @@ function TasteEvolutionCard({ pid }: { pid: string }) {
 
   if (Array.isArray(notes)) {
     for (const n of notes) {
-      if (n.overall && n.createdAt) {
-        dataPoints.push({ date: n.createdAt, score: Number(n.overall) });
+      const score = n.normalizedScore ?? n.overall;
+      if (score && n.createdAt) {
+        dataPoints.push({ date: n.createdAt, score: Number(score) });
       }
     }
   }
@@ -130,19 +131,19 @@ function TasteEvolutionCard({ pid }: { pid: string }) {
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
         <span style={{ fontSize: 11, color: v.muted }}>
-          {grouped[0].label}: {t("m2.analytics.avg", "avg")} {grouped[0].avg.toFixed(1)}
+          {grouped[0].label}: {t("m2.analytics.avg", "avg")} {Math.round(grouped[0].avg)}/100
         </span>
         <span style={{ fontSize: 11, color: v.muted }}>
-          {grouped[grouped.length - 1].label}: {t("m2.analytics.avg", "avg")} {grouped[grouped.length - 1].avg.toFixed(1)}
+          {grouped[grouped.length - 1].label}: {t("m2.analytics.avg", "avg")} {Math.round(grouped[grouped.length - 1].avg)}/100
         </span>
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 10, fontSize: 13, color: trendColor }}>
         <TrendIcon style={{ width: 16, height: 16 }} />
         <span>
           {delta > 0.5
-            ? t("m2.analytics.risen", "Your average has risen by {{pts}} pts", { pts: delta.toFixed(1) })
+            ? t("m2.analytics.risen", "Your average has risen by {{pts}} pts", { pts: Math.round(delta) })
             : delta < -0.5
-            ? t("m2.analytics.dropped", "Your average has shifted down by {{pts}} pts", { pts: Math.abs(delta).toFixed(1) })
+            ? t("m2.analytics.dropped", "Your average has shifted down by {{pts}} pts", { pts: Math.round(Math.abs(delta)) })
             : t("m2.analytics.consistent", "Your average has stayed consistent")}
         </span>
       </div>

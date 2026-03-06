@@ -18,7 +18,7 @@ import {
 interface AnalyticsData {
   totalTastings: number;
   totalEntries: number;
-  topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; tastingNumber: number }>;
+  topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; normalizedTotal: number | null; tastingNumber: number }>;
   regionBreakdown: Record<string, number>;
   smokyBreakdown: { smoky: number; nonSmoky: number; unknown: number };
   caskBreakdown: Record<string, number>;
@@ -230,7 +230,7 @@ export default function M2HistoricalInsights() {
   const smokyPct = smokyTotal > 0 ? Math.round((analytics.smokyBreakdown.smoky / smokyTotal) * 100) : 0;
 
   const avgScore = analytics.totalEntries > 0 && topWhiskies.length > 0
-    ? (topWhiskies.reduce((sum, w) => sum + (w.totalScore ?? 0), 0) / topWhiskies.length).toFixed(1)
+    ? Math.round(topWhiskies.reduce((sum, w) => sum + (w.normalizedTotal ?? (w.totalScore ?? 0) * 10), 0) / topWhiskies.length).toString()
     : "—";
 
   const profileData = [
@@ -238,7 +238,7 @@ export default function M2HistoricalInsights() {
     { subject: t("m2.insights.profilePeat", "Peat"), value: smokyPct },
     { subject: t("m2.insights.profileCaskVariety", "Cask Variety"), value: Math.min(Object.keys(analytics.caskBreakdown).length * 12, 100) },
     { subject: t("m2.insights.profileVolume", "Volume"), value: Math.min(analytics.totalEntries * 2, 100) },
-    { subject: t("m2.insights.profileQuality", "Quality"), value: Number(avgScore) * 10 || 50 },
+    { subject: t("m2.insights.profileQuality", "Quality"), value: Number(avgScore) || 50 },
   ];
 
   return (
@@ -260,7 +260,7 @@ export default function M2HistoricalInsights() {
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }} data-testid="insights-stats">
         <StatCard label={t("m2.historical.statTastings", "Tastings")} value={analytics.totalTastings} icon={Wine} />
         <StatCard label={t("m2.historical.statWhiskies", "Whiskies")} value={analytics.totalEntries} icon={Droplets} />
-        <StatCard label={t("m2.insights.avgScore", "Avg Score")} value={avgScore} icon={TrendingUp} />
+        <StatCard label={t("m2.insights.avgScore", "Avg Score")} value={avgScore !== "—" ? `${avgScore}/100` : "—"} icon={TrendingUp} />
       </div>
 
       <SectionHeader icon={Trophy} title={t("m2.insights.topWhiskiesTitle", "Top 20 Whiskies")} />
@@ -300,7 +300,12 @@ export default function M2HistoricalInsights() {
                     </div>
                   </div>
                   <span style={{ color: v.accent, fontWeight: 600, fontVariantNumeric: "tabular-nums", fontSize: 13, flexShrink: 0 }}>
-                    {w.totalScore != null ? w.totalScore.toFixed(1) : "—"}
+                    {(w.normalizedTotal ?? (w.totalScore != null ? w.totalScore * 10 : null)) != null
+                      ? `${Math.round(w.normalizedTotal ?? w.totalScore! * 10)}`
+                      : "—"}
+                    {(w.normalizedTotal ?? w.totalScore) != null && (
+                      <span style={{ fontSize: 10, color: v.muted, fontWeight: 400, marginLeft: 2 }}>/100</span>
+                    )}
                   </span>
                   <span style={{
                     fontSize: 10, color: v.muted,

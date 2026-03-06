@@ -575,9 +575,12 @@ function HistoricalAppearances({ distillery, whiskyName, t }: { distillery: stri
             {t("m2.taste.appearances", "Appearances")}
           </div>
         </div>
-        {data.avgScore != null && (
+        {(data.avgScoreNormalized ?? data.avgScore) != null && (
           <div style={{ background: v.elevated, borderRadius: 10, padding: "10px 12px", textAlign: "center" }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: v.accent, fontFamily: serif }}>{data.avgScore.toFixed(1)}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: v.accent, fontFamily: serif }}>
+              {Math.round(data.avgScoreNormalized ?? (data.avgScore ?? 0) * 10)}
+              <span style={{ fontSize: 12, fontWeight: 400, color: v.muted }}>/100</span>
+            </div>
             <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>
               {t("m2.taste.avgHistScore", "Ø Score")}
             </div>
@@ -627,8 +630,11 @@ function HistoricalAppearances({ distillery, whiskyName, t }: { distillery: stri
               </div>
             </div>
             <div style={{ textAlign: "right", flexShrink: 0 }}>
-              {a.totalScore != null && (
-                <div style={{ fontSize: 14, fontWeight: 700, color: v.accent }}>{a.totalScore.toFixed(1)}</div>
+              {(a.normalizedTotal ?? a.totalScore) != null && (
+                <div style={{ fontSize: 14, fontWeight: 700, color: v.accent }}>
+                  {Math.round(a.normalizedTotal ?? (a.totalScore ?? 0) * 10)}
+                  <span style={{ fontSize: 10, color: v.muted, fontWeight: 400 }}>/100</span>
+                </div>
               )}
               {a.totalRank != null && (
                 <div style={{ fontSize: 10, color: v.muted }}>

@@ -153,7 +153,7 @@ export interface IStorage {
   updateWhiskyFriend(id: string, participantId: string, data: { firstName: string; lastName: string; email: string }): Promise<WhiskyFriend | undefined>;
 
   // Rating Notes
-  getRatingNotes(participantId: string): Promise<Array<{ id: string; notes: string | null }>>;
+  getRatingNotes(participantId: string): Promise<Array<{ id: string; notes: string | null; overall: number | null; normalizedScore: number | null; createdAt: Date | null }>>;
 
   // Tasting History (whiskies tasted via sessions)
   getTastingHistory(participantId: string): Promise<any[]>;
@@ -802,8 +802,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   // --- Rating Notes ---
-  async getRatingNotes(participantId: string): Promise<Array<{ id: string; notes: string | null }>> {
-    return db.select({ id: ratings.id, notes: ratings.notes }).from(ratings).where(eq(ratings.participantId, participantId));
+  async getRatingNotes(participantId: string): Promise<Array<{ id: string; notes: string | null; overall: number | null; normalizedScore: number | null; createdAt: Date | null }>> {
+    return db.select({
+      id: ratings.id,
+      notes: ratings.notes,
+      overall: ratings.overall,
+      normalizedScore: ratings.normalizedScore,
+      createdAt: ratings.createdAt,
+    }).from(ratings).where(eq(ratings.participantId, participantId));
   }
 
   // --- Journal Entries ---
@@ -1879,20 +1885,23 @@ export class DatabaseStorage implements IStorage {
 
     const enriched = base.tastings.map(t => {
       const tEntries = grouped.get(t.id) || [];
-      const scores = tEntries.filter(e => e.totalScore != null).map(e => e.totalScore!);
-      const avgTotalScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+      const normScores = tEntries
+        .map(e => e.normalizedTotal ?? (e.totalScore != null ? e.totalScore * 10 : null))
+        .filter((s): s is number => s != null);
+      const avgTotalScore = normScores.length > 0 ? normScores.reduce((a, b) => a + b, 0) / normScores.length : null;
       const winner = tEntries.reduce<HistoricalTastingEntry | null>((best, e) => {
         if (e.totalRank === 1) return e;
         if (!best && e.totalScore != null) return e;
         if (best && e.totalScore != null && (best.totalScore == null || e.totalScore > best.totalScore)) return e;
         return best;
       }, null);
+      const winnerNorm = winner ? (winner.normalizedTotal ?? (winner.totalScore != null ? winner.totalScore * 10 : null)) : null;
       return {
         ...t,
-        avgTotalScore: avgTotalScore != null ? Math.round(avgTotalScore * 10) / 10 : null,
+        avgTotalScore: avgTotalScore != null ? Math.round(avgTotalScore) : null,
         winnerDistillery: winner?.distilleryRaw ?? null,
         winnerName: winner?.whiskyNameRaw ?? null,
-        winnerScore: winner?.totalScore ?? null,
+        winnerScore: winnerNorm != null ? Math.round(winnerNorm) : null,
       };
     });
 
@@ -1935,10 +1944,10 @@ export class DatabaseStorage implements IStorage {
       totalTastings: 0, totalEntries: 0, topWhiskies: [],
       regionBreakdown: {}, smokyBreakdown: { smoky: 0, nonSmoky: 0, unknown: 0 },
       caskBreakdown: {}, scoreDistribution: [
-        { range: "0-1", count: 0 }, { range: "1-2", count: 0 }, { range: "2-3", count: 0 },
-        { range: "3-4", count: 0 }, { range: "4-5", count: 0 }, { range: "5-6", count: 0 },
-        { range: "6-7", count: 0 }, { range: "7-8", count: 0 }, { range: "8-9", count: 0 },
-        { range: "9-10", count: 0 },
+        { range: "0–10", count: 0 }, { range: "10–20", count: 0 }, { range: "20–30", count: 0 },
+        { range: "30–40", count: 0 }, { range: "40–50", count: 0 }, { range: "50–60", count: 0 },
+        { range: "60–70", count: 0 }, { range: "70–80", count: 0 }, { range: "80–90", count: 0 },
+        { range: "90–100", count: 0 },
       ],
     };
     if (tastingIds && tastingIds.length === 0) return emptyResult;
@@ -1950,8 +1959,8 @@ export class DatabaseStorage implements IStorage {
     const [entryCount] = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastingEntries).where(entryFilter);
 
     const entryScoreFilter = tastingIds
-      ? sql`${historicalTastingEntries.totalScore} IS NOT NULL AND ${historicalTastingEntries.historicalTastingId} IN (${sql.join(tastingIds.map(id => sql`${id}`), sql`,`)})`
-      : sql`${historicalTastingEntries.totalScore} IS NOT NULL`;
+      ? sql`COALESCE(${historicalTastingEntries.normalizedTotal}, ${historicalTastingEntries.totalScore}) IS NOT NULL AND ${historicalTastingEntries.historicalTastingId} IN (${sql.join(tastingIds.map(id => sql`${id}`), sql`,`)})`
+      : sql`COALESCE(${historicalTastingEntries.normalizedTotal}, ${historicalTastingEntries.totalScore}) IS NOT NULL`;
 
     const topWhiskiesRows = await db
       .select({
@@ -1964,7 +1973,7 @@ export class DatabaseStorage implements IStorage {
       .from(historicalTastingEntries)
       .innerJoin(historicalTastings, eq(historicalTastingEntries.historicalTastingId, historicalTastings.id))
       .where(entryScoreFilter)
-      .orderBy(desc(historicalTastingEntries.totalScore))
+      .orderBy(desc(sql`COALESCE(${historicalTastingEntries.normalizedTotal}, ${historicalTastingEntries.totalScore} * 10)`))
       .limit(20);
 
     const topWhiskies = topWhiskiesRows.map(r => ({
@@ -2027,29 +2036,29 @@ export class DatabaseStorage implements IStorage {
     };
 
     const scoreDistFilter = tastingIds
-      ? sql`${historicalTastingEntries.totalScore} IS NOT NULL AND ${historicalTastingEntries.totalScore} >= 0 AND ${historicalTastingEntries.historicalTastingId} IN (${sql.join(tastingIds.map(id => sql`${id}`), sql`,`)})`
-      : sql`${historicalTastingEntries.totalScore} IS NOT NULL AND ${historicalTastingEntries.totalScore} >= 0`;
+      ? sql`COALESCE(${historicalTastingEntries.normalizedTotal}, ${historicalTastingEntries.totalScore} * 10) IS NOT NULL AND COALESCE(${historicalTastingEntries.normalizedTotal}, ${historicalTastingEntries.totalScore} * 10) >= 0 AND ${historicalTastingEntries.historicalTastingId} IN (${sql.join(tastingIds.map(id => sql`${id}`), sql`,`)})`
+      : sql`COALESCE(${historicalTastingEntries.normalizedTotal}, ${historicalTastingEntries.totalScore} * 10) IS NOT NULL AND COALESCE(${historicalTastingEntries.normalizedTotal}, ${historicalTastingEntries.totalScore} * 10) >= 0`;
 
     const scoreDistRows = await db
       .select({
-        bucket: sql<number>`LEAST(FLOOR(${historicalTastingEntries.totalScore})::int, 9)`,
+        bucket: sql<number>`LEAST(FLOOR(COALESCE(${historicalTastingEntries.normalizedTotal}, ${historicalTastingEntries.totalScore} * 10) / 10)::int, 9)`,
         count: sql<number>`count(*)::int`,
       })
       .from(historicalTastingEntries)
       .where(scoreDistFilter)
-      .groupBy(sql`LEAST(FLOOR(${historicalTastingEntries.totalScore})::int, 9)`);
+      .groupBy(sql`LEAST(FLOOR(COALESCE(${historicalTastingEntries.normalizedTotal}, ${historicalTastingEntries.totalScore} * 10) / 10)::int, 9)`);
 
     const scoreRanges = [
-      { range: "0-1", count: 0 },
-      { range: "1-2", count: 0 },
-      { range: "2-3", count: 0 },
-      { range: "3-4", count: 0 },
-      { range: "4-5", count: 0 },
-      { range: "5-6", count: 0 },
-      { range: "6-7", count: 0 },
-      { range: "7-8", count: 0 },
-      { range: "8-9", count: 0 },
-      { range: "9-10", count: 0 },
+      { range: "0–10", count: 0 },
+      { range: "10–20", count: 0 },
+      { range: "20–30", count: 0 },
+      { range: "30–40", count: 0 },
+      { range: "40–50", count: 0 },
+      { range: "50–60", count: 0 },
+      { range: "60–70", count: 0 },
+      { range: "70–80", count: 0 },
+      { range: "80–90", count: 0 },
+      { range: "90–100", count: 0 },
     ];
     for (const r of scoreDistRows) {
       const idx = r.bucket;
