@@ -135,6 +135,13 @@ export default function M2CircleHome() {
     refetchInterval: 30000,
   });
 
+  const { data: onlineData } = useQuery<{ online: any[]; count: number }>({
+    queryKey: ["friends-online", pid],
+    queryFn: () => fetch(`/api/participants/${pid}/friends/online`).then(r => r.json()),
+    enabled: !!pid,
+    refetchInterval: 60000,
+  });
+
   const addFriendMutation = useMutation({
     mutationFn: (data: {
       firstName: string;
@@ -1071,6 +1078,28 @@ export default function M2CircleHome() {
 
       {(session.signedIn || pid) && (
         <>
+          {onlineData && onlineData.count > 0 && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                marginBottom: 16,
+                padding: "8px 16px",
+                borderRadius: 20,
+                background: `color-mix(in srgb, ${v.success} 10%, transparent)`,
+                border: `1px solid color-mix(in srgb, ${v.success} 20%, transparent)`,
+                alignSelf: "center",
+              }}
+              data-testid="m2-circle-online-count"
+            >
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: v.success, display: "inline-block", animation: "pulse 2s infinite" }} />
+              <span style={{ fontSize: 13, color: v.success, fontWeight: 500 }}>
+                {t("m2.circle.friendsOnline", "{{count}} friend online", { count: onlineData.count })}
+              </span>
+            </div>
+          )}
           <div
             style={{
               display: "grid",

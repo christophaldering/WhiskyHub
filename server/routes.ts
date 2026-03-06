@@ -57,6 +57,7 @@ function getDefaultSetting(key: string): string {
     guest_mode_enabled: "true",
     maintenance_mode: "false",
     email_notifications_enabled: "true",
+    friend_online_notifications: "true",
     comparable_weight_region: "0.40",
     comparable_weight_peat: "0.30",
     comparable_weight_cask: "0.20",
@@ -2492,6 +2493,11 @@ export async function registerRoutes(
       } else if (existing) {
         data.photoUrl = existing.photoUrl;
       }
+      if ("friendNotificationsEnabled" in req.body) {
+        data.friendNotificationsEnabled = req.body.friendNotificationsEnabled;
+      } else if (existing) {
+        data.friendNotificationsEnabled = existing.friendNotificationsEnabled;
+      }
       const profile = await storage.upsertProfile(data);
       res.json(profile);
     } catch (e: any) {
@@ -2588,6 +2594,23 @@ export async function registerRoutes(
     try {
       const friends = await storage.getWhiskyFriends(req.params.id);
       res.json(friends);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/participants/:id/friends/online", async (req, res) => {
+    try {
+      const friends = await storage.getWhiskyFriends(req.params.id);
+      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const allParticipants = await Promise.all(
+        friends.map(async (f: any) => {
+          const matches = await storage.getParticipantByEmail(f.email);
+          return matches ? { friendId: f.id, name: `${f.firstName} ${f.lastName}`.trim(), email: f.email, participantId: matches.id, lastSeenAt: matches.lastSeenAt } : null;
+        })
+      );
+      const onlineFriends = allParticipants.filter((p: any) => p && p.lastSeenAt && new Date(p.lastSeenAt) > fiveMinAgo);
+      res.json({ online: onlineFriends, count: onlineFriends.length });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -6635,7 +6658,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
   app.get("/api/app-settings/public", async (_req, res) => {
     try {
       const settings = await storage.getAppSettings();
-      const publicKeys = ["whats_new_enabled", "whats_new_text", "whats_new_version", "guest_mode_enabled", "maintenance_mode", "registration_open", "comparable_weight_region", "comparable_weight_peat", "comparable_weight_cask", "comparable_weight_abv", "comparable_weight_age", "comparable_min_samples", "comparable_abv_band", "comparable_age_band", "comparable_threshold", "comparable_fallback_behavior", "comparable_enable_per_dimension"];
+      const publicKeys = ["whats_new_enabled", "whats_new_text", "whats_new_version", "guest_mode_enabled", "maintenance_mode", "registration_open", "friend_online_notifications", "comparable_weight_region", "comparable_weight_peat", "comparable_weight_cask", "comparable_weight_abv", "comparable_weight_age", "comparable_min_samples", "comparable_abv_band", "comparable_age_band", "comparable_threshold", "comparable_fallback_behavior", "comparable_enable_per_dimension"];
       const result: Record<string, string> = {};
       for (const key of publicKeys) {
         result[key] = settings[key] ?? getDefaultSetting(key);
@@ -6690,7 +6713,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       if (!requester || requester.role !== "admin") {
         return res.status(403).json({ message: "Admin access required" });
       }
-      const allowedKeys = ["whats_new_enabled", "whats_new_text", "whats_new_version", "registration_open", "guest_mode_enabled", "maintenance_mode", "email_notifications_enabled", "comparable_weight_region", "comparable_weight_peat", "comparable_weight_cask", "comparable_weight_abv", "comparable_weight_age", "comparable_min_samples", "comparable_abv_band", "comparable_age_band", "comparable_threshold", "comparable_fallback_behavior", "comparable_enable_per_dimension"];
+      const allowedKeys = ["whats_new_enabled", "whats_new_text", "whats_new_version", "registration_open", "guest_mode_enabled", "maintenance_mode", "email_notifications_enabled", "friend_online_notifications", "comparable_weight_region", "comparable_weight_peat", "comparable_weight_cask", "comparable_weight_abv", "comparable_weight_age", "comparable_min_samples", "comparable_abv_band", "comparable_age_band", "comparable_threshold", "comparable_fallback_behavior", "comparable_enable_per_dimension"];
       const filtered: Record<string, string> = {};
       for (const [key, value] of Object.entries(settings)) {
         if (allowedKeys.includes(key)) {

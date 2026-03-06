@@ -879,6 +879,7 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
             abv: item.abv ? parseFloat(item.abv) : null,
             caskInfluence: item.caskType || item.caskInfluence || null,
             notes: item.notes || null,
+            imageUrl: item.imageUrl || null,
             sortOrder: whiskies.length + count,
           }),
         });

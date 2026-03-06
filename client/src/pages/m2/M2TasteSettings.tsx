@@ -157,6 +157,7 @@ export default function M2TasteSettings() {
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [openaiApiKey, setOpenaiApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
+  const [friendNotificationsEnabled, setFriendNotificationsEnabled] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deletePin, setDeletePin] = useState("");
   const [deletePinError, setDeletePinError] = useState("");
@@ -235,6 +236,11 @@ export default function M2TasteSettings() {
     }
   }, [pid, setExportLoading, toast, t]);
 
+  const { data: appSettings } = useQuery({
+    queryKey: ["app-settings-public"],
+    queryFn: () => fetch("/api/app-settings/public").then(r => r.json()),
+  });
+
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile", pid],
     queryFn: () => profileApi.get(pid!),
@@ -256,6 +262,7 @@ export default function M2TasteSettings() {
       setPreferredPeatLevel(profile.preferredPeatLevel || "");
       setPreferredCaskInfluence(profile.preferredCaskInfluence || "");
       setOpenaiApiKey(profile.openaiApiKey || "");
+      setFriendNotificationsEnabled(profile.friendNotificationsEnabled !== false);
     }
   }, [profile]);
 
@@ -286,6 +293,7 @@ export default function M2TasteSettings() {
         preferredPeatLevel,
         preferredCaskInfluence,
         openaiApiKey: openaiApiKey.trim() || null,
+        friendNotificationsEnabled,
       });
 
       const participantUpdates: any = {};
@@ -771,6 +779,24 @@ export default function M2TasteSettings() {
               </div>
             </label>
           </div>
+
+          {appSettings?.friend_online_notifications !== "false" && (
+            <div style={{ borderTop: `1px solid ${v.border}`, paddingTop: 14 }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={friendNotificationsEnabled}
+                  onChange={(e) => setFriendNotificationsEnabled(e.target.checked)}
+                  style={{ marginTop: 2, accentColor: v.accent }}
+                  data-testid="checkbox-m2-friend-notifications"
+                />
+                <div>
+                  <div style={{ fontSize: 14, color: v.text }}>{t("m2.settings.friendNotifications", "Friend Online Notifications")}</div>
+                  <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>{t("m2.settings.friendNotificationsDesc", "Get notified when friends come online or go offline")}</div>
+                </div>
+              </label>
+            </div>
+          )}
         </div>
       </div>
 

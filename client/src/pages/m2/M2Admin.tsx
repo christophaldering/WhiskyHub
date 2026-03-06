@@ -1099,6 +1099,7 @@ function SettingsTab({ pid }: { pid: string }) {
     { key: "guest_mode_enabled", label: t("m2.admin.guestMode", "Guest Mode"), desc: t("m2.admin.guestModeDesc", "Allow guest access without registration") },
     { key: "registration_open", label: t("m2.admin.registration", "Registration"), desc: t("m2.admin.registrationDesc", "Allow new user registrations") },
     { key: "maintenance_mode", label: t("m2.admin.maintenanceMode", "Maintenance Mode"), desc: t("m2.admin.maintenanceModeDesc", "Show maintenance page to non-admins") },
+    { key: "friend_online_notifications", label: t("m2.admin.friendOnlineNotifications", "Friend Online Notifications"), desc: t("m2.admin.friendOnlineNotificationsDesc", "Allow users to receive friend online/offline notifications") },
   ];
 
   return (

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { v, alpha } from "@/lib/themeVars";
 import { tastingApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
+import { useAppStore } from "@/lib/store";
 import {
   Wine, Crown, PenLine, ChevronRight, ChevronDown,
   Calendar, CalendarDays, List, MapPin, Users, Eye,
@@ -28,7 +29,13 @@ const statusBadgeColors: Record<string, { color: string; bg: string }> = {
 export default function M2TastingsHome() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
-  const session = getSession();
+  const rawSession = getSession();
+  const { currentParticipant } = useAppStore();
+  const session = {
+    ...rawSession,
+    signedIn: rawSession.signedIn || !!currentParticipant,
+    pid: currentParticipant?.id || rawSession.pid,
+  };
 
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");

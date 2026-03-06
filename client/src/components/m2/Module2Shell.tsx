@@ -5,8 +5,11 @@ import { v } from "@/lib/themeVars";
 import { useTranslation } from "react-i18next";
 import i18next from "i18next";
 import { getSession, tryAutoResume } from "@/lib/session";
+import { useAppStore } from "@/lib/store";
+import { participantApi } from "@/lib/api";
 import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
 import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 
 class M2ErrorBoundary extends Component<
@@ -303,6 +306,75 @@ function usePullToRefresh(mainRef: React.RefObject<HTMLElement | null>) {
   return { pullDistance, refreshing };
 }
 
+function useFriendOnlineNotifications() {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const { currentParticipant } = useAppStore();
+  const prevOnlineRef = useRef<Set<string> | null>(null);
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    const pid = currentParticipant?.id;
+    if (!pid) return;
+
+    let cancelled = false;
+
+    const check = async () => {
+      try {
+        const [settingsRes, profileRes, onlineRes] = await Promise.all([
+          fetch("/api/app-settings/public").then(r => r.json()),
+          fetch(`/api/profiles/${pid}`).then(r => r.ok ? r.json() : null),
+          fetch(`/api/participants/${pid}/friends/online`).then(r => r.json()),
+        ]);
+        if (cancelled) return;
+        if (settingsRes.friend_online_notifications === "false") return;
+        if (profileRes && profileRes.friendNotificationsEnabled === false) return;
+
+        const currentOnline = new Set<string>(
+          (onlineRes.online || []).map((f: any) => f.friendId)
+        );
+        const nameMap = new Map<string, string>(
+          (onlineRes.online || []).map((f: any) => [f.friendId, f.name])
+        );
+
+        if (mountedRef.current && prevOnlineRef.current) {
+          const prev = prevOnlineRef.current;
+          for (const id of currentOnline) {
+            if (!prev.has(id)) {
+              toast({
+                title: t("m2.circle.friendOnline", "{{name}} is now online", { name: nameMap.get(id) || "Friend" }),
+                duration: 4000,
+              });
+            }
+          }
+          for (const id of prev) {
+            if (!currentOnline.has(id)) {
+              const allFriends = onlineRes.online || [];
+              let offlineName = "Friend";
+              try {
+                const friendsRes = await fetch(`/api/participants/${pid}/friends`).then(r => r.json());
+                const found = friendsRes.find((f: any) => f.id === id);
+                if (found) offlineName = `${found.firstName} ${found.lastName}`.trim();
+              } catch {}
+              toast({
+                title: t("m2.circle.friendOffline", "{{name}} is now offline", { name: offlineName }),
+                duration: 4000,
+              });
+            }
+          }
+        }
+
+        prevOnlineRef.current = currentOnline;
+        mountedRef.current = true;
+      } catch {}
+    };
+
+    check();
+    const interval = setInterval(check, 60000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [currentParticipant?.id, t, toast]);
+}
+
 export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
   const [location] = useLocation();
   const { t } = useTranslation();
@@ -312,6 +384,7 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
   const pwa = usePwaInstall();
   const mainRef = useRef<HTMLElement>(null);
   const { pullDistance, refreshing } = usePullToRefresh(mainRef);
+  useFriendOnlineNotifications();
 
   const refreshSession = useCallback(() => {
     setSession(getSession());
@@ -325,6 +398,14 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
     window.addEventListener("session-change", refreshSession);
     return () => window.removeEventListener("session-change", refreshSession);
   }, [refreshSession]);
+
+  useEffect(() => {
+    const pid = session.pid;
+    if (!pid) return;
+    participantApi.heartbeat(pid).catch(() => {});
+    const hb = setInterval(() => { participantApi.heartbeat(pid).catch(() => {}); }, 120000);
+    return () => clearInterval(hb);
+  }, [session.pid]);
 
   const isActive = (tab: typeof TABS[number]) =>
     tab.match.some((m) => location === m || location.startsWith(m + "/"));

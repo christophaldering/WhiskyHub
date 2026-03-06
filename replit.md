@@ -54,7 +54,8 @@ A fully self-contained parallel UI sharing the same backend, auth, and database,
 -   **Core Components**: Includes `Module2Shell.tsx` for main layout, `M2BackButton.tsx` for navigation guards, `M2ProfileMenu.tsx` for authentication and settings, and `M2Feedback.tsx` for loading and error states.
 -   **Tastings Tab (`/m2/tastings/*`)**: Manages tasting creation, joining, hosting, solo logging, session play, host controls, and results. Includes a comprehensive 4-step wizard for hosts.
 -   **Taste Tab (`/m2/taste/*`)**: Provides a personal dashboard for users, including taste snapshots, profile analytics, dram management, collection sync, comparison tools, recommendations, and settings.
--   **Circle Tab (`/m2/circle`)**: Features community rankings, "Taste Twins," leaderboards, activity feeds, and friend management.
+-   **Circle Tab (`/m2/circle`)**: Features community rankings, "Taste Twins," leaderboards, activity feeds, friend management, and online friends count indicator.
+-   **Friend Online Notifications**: Real-time toast notifications when friends come online or go offline. Controlled by admin toggle (`friend_online_notifications` app setting) and per-user toggle (`friendNotificationsEnabled` in profiles). Module2Shell includes heartbeat for presence tracking and polling for online status transitions.
 -   **Discover (`/m2/discover/*`)**: Hub for community, knowledge, planning, and information.
 -   **Admin (`/m2/admin`)**: Dedicated route for administrative functionalities like user management, AI controls, and platform settings.
 

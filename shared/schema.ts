@@ -140,6 +140,7 @@ export const profiles = pgTable("profiles", {
   preferredCaskInfluence: text("preferred_cask_influence"),
   photoUrl: text("photo_url"),
   openaiApiKey: text("openai_api_key"),
+  friendNotificationsEnabled: boolean("friend_notifications_enabled").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
