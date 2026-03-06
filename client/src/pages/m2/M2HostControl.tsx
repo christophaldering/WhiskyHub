@@ -10,8 +10,9 @@ import { getSession } from "@/lib/session";
 import {
   Play, Lock, Eye, EyeOff, Archive, ChevronRight, CheckCircle, Clock,
   SkipForward, Sparkles, Plus, Trash2, GripVertical, ImageIcon,
-  FileText, Info, Loader2, RefreshCw, ChevronDown, ChevronUp, Edit3
+  FileText, Info, Loader2, RefreshCw, ChevronDown, ChevronUp, Edit3, Star
 } from "lucide-react";
+import { Link } from "wouter";
 
 export default function M2HostControl() {
   const { t } = useTranslation();
@@ -1001,6 +1002,37 @@ export default function M2HostControl() {
           </div>
         </div>
       )}
+
+      <Link
+        href={`/m2/tastings/session/${id}/play`}
+        style={{ textDecoration: "none" }}
+      >
+        <div
+          style={{
+            position: "fixed",
+            bottom: 80,
+            right: 20,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "12px 20px",
+            background: v.accent,
+            color: v.bg,
+            borderRadius: 24,
+            fontWeight: 700,
+            fontSize: 14,
+            fontFamily: "system-ui, sans-serif",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+            cursor: "pointer",
+            zIndex: 50,
+            transition: "transform 0.2s, box-shadow 0.2s",
+          }}
+          data-testid="button-rate-whiskies-toggle"
+        >
+          <Star style={{ width: 18, height: 18 }} />
+          {t("m2.hostControl.rateWhiskies", "Rate Whiskies")}
+        </div>
+      </Link>
 
       <style>{`
         @keyframes spin {

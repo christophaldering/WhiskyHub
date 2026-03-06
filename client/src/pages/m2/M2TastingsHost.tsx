@@ -13,7 +13,8 @@ import {
   Plus, X, Trash2, ChevronUp, ChevronDown, ChevronRight, ArrowRight, ArrowLeft,
   Copy, Check, EyeOff, Share2, QrCode, Download, Play, Square, Eye,
   Users, BarChart3, Star, Upload, Mail, Settings, Image, Calendar,
-  MapPin, FileText, RefreshCw, Send,
+  MapPin, FileText, RefreshCw, Send, Search, BookOpen, Heart, UserPlus,
+  MessageCircle, ExternalLink,
 } from "lucide-react";
 
 type WizardStep = "list" | "step1" | "step2" | "step3" | "step4";
@@ -357,7 +358,7 @@ function Step1Create({ pid, onCreated }: { pid: string; onCreated: (t: TastingFu
   );
 }
 
-function Step2Whiskies({ tasting, onNext, onBack }: { tasting: TastingFull; onNext: () => void; onBack: () => void }) {
+function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull; pid: string; onNext: () => void; onBack: () => void }) {
   const { t } = useTranslation();
   const [whiskies, setWhiskies] = useState<Whisky[]>([]);
   const [loading, setLoading] = useState(true);
@@ -376,6 +377,12 @@ function Step2Whiskies({ tasting, onNext, onBack }: { tasting: TastingFull; onNe
   const [editAbv, setEditAbv] = useState("");
   const [editCask, setEditCask] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [showImport, setShowImport] = useState<"collection" | "wishlist" | null>(null);
+  const [importSearch, setImportSearch] = useState("");
+  const [importSelected, setImportSelected] = useState<Set<string>>(new Set());
+  const [importItems, setImportItems] = useState<any[]>([]);
+  const [importLoading, setImportLoading] = useState(false);
+  const [addedFeedback, setAddedFeedback] = useState<string | null>(null);
 
   const isBlind = !!tasting.blindMode;
 
@@ -391,6 +398,62 @@ function Step2Whiskies({ tasting, onNext, onBack }: { tasting: TastingFull; onNe
   }, [tasting.id]);
 
   useEffect(() => { fetchWhiskies(); }, [fetchWhiskies]);
+
+  const showFeedback = (msg: string) => {
+    setAddedFeedback(msg);
+    setTimeout(() => setAddedFeedback(null), 2000);
+  };
+
+  const openImport = async (source: "collection" | "wishlist") => {
+    setShowImport(source);
+    setImportSearch("");
+    setImportSelected(new Set());
+    setImportLoading(true);
+    try {
+      const url = source === "collection"
+        ? `/api/collection/${pid}`
+        : `/api/wishlist/${pid}`;
+      const res = await fetch(url);
+      if (res.ok) setImportItems(await res.json());
+      else setImportItems([]);
+    } catch { setImportItems([]); }
+    setImportLoading(false);
+  };
+
+  const handleImportSelected = async () => {
+    if (importSelected.size === 0) return;
+    setAdding(true);
+    let count = 0;
+    for (const item of importItems.filter((i: any) => importSelected.has(i.id))) {
+      try {
+        const res = await fetch("/api/whiskies", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tastingId: tasting.id,
+            name: item.name || item.whiskyName || "Unknown",
+            distillery: item.distillery || null,
+            abv: item.abv ? parseFloat(item.abv) : null,
+            caskInfluence: item.caskType || item.caskInfluence || null,
+            notes: item.notes || null,
+            sortOrder: whiskies.length + count,
+          }),
+        });
+        if (res.ok) count++;
+      } catch {}
+    }
+    setShowImport(null);
+    setImportSelected(new Set());
+    await fetchWhiskies();
+    showFeedback(t("m2.host.importedCount", `${count} whisky(s) imported`));
+    setAdding(false);
+  };
+
+  const filteredImportItems = importItems.filter((item: any) => {
+    if (!importSearch.trim()) return true;
+    const s = importSearch.toLowerCase();
+    return (item.name || item.whiskyName || "").toLowerCase().includes(s) || (item.distillery || "").toLowerCase().includes(s);
+  });
 
   const handleAdd = async () => {
     if (!name.trim() || adding) return;
@@ -413,6 +476,7 @@ function Step2Whiskies({ tasting, onNext, onBack }: { tasting: TastingFull; onNe
       if (!res.ok) throw new Error(t("m2.host.failedAddWhisky", "Failed to add whisky"));
       setName(""); setDistillery(""); setAbv(""); setCask(""); setAge(""); setNotes(""); setShowDetails(false);
       await fetchWhiskies();
+      showFeedback(t("m2.host.whiskyAdded", "Whisky added"));
     } catch (e: any) {
       setError(e.message);
     }
@@ -575,7 +639,75 @@ function Step2Whiskies({ tasting, onNext, onBack }: { tasting: TastingFull; onNe
             <Plus style={{ width: 16, height: 16 }} />
             {adding ? t("m2.host.adding", "Adding...") : t("m2.host.addWhisky", "Add Whisky")}
           </button>
+
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" onClick={() => openImport("collection")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", fontSize: 13, fontWeight: 500, background: "none", color: v.muted, border: `1px solid ${v.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-import-collection">
+              <BookOpen style={{ width: 14, height: 14 }} />
+              {t("m2.host.importCollection", "From Collection")}
+            </button>
+            <button type="button" onClick={() => openImport("wishlist")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", fontSize: 13, fontWeight: 500, background: "none", color: v.muted, border: `1px solid ${v.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-import-wishlist">
+              <Heart style={{ width: 14, height: 14 }} />
+              {t("m2.host.importWishlist", "From Wishlist")}
+            </button>
+          </div>
         </div>
+
+        {addedFeedback && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", background: `color-mix(in srgb, ${v.success} 15%, transparent)`, color: v.success, fontSize: 13, fontWeight: 600, borderRadius: 8 }} data-testid="text-added-feedback">
+            <Check style={{ width: 14, height: 14 }} />
+            {addedFeedback}
+          </div>
+        )}
+
+        {showImport && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={() => setShowImport(null)} data-testid="modal-import-overlay">
+            <div style={{ width: "100%", maxWidth: 480, maxHeight: "80vh", background: v.card, borderRadius: "16px 16px 0 0", display: "flex", flexDirection: "column", overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ padding: "16px 20px", borderBottom: `1px solid ${v.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: v.text, fontFamily: "'Playfair Display', serif" }}>
+                  {showImport === "collection" ? t("m2.host.importFromCollection", "Import from Collection") : t("m2.host.importFromWishlist", "Import from Wishlist")}
+                </h3>
+                <button type="button" onClick={() => setShowImport(null)} style={{ background: "none", border: "none", cursor: "pointer", color: v.muted, padding: 4 }}><X style={{ width: 18, height: 18 }} /></button>
+              </div>
+              <div style={{ padding: "12px 20px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, background: v.inputBg, border: `1px solid ${v.inputBorder}`, borderRadius: 10, padding: "8px 12px" }}>
+                  <Search style={{ width: 14, height: 14, color: v.muted, flexShrink: 0 }} />
+                  <input type="text" value={importSearch} onChange={(e) => setImportSearch(e.target.value)} placeholder={t("m2.host.searchWhiskies", "Search...")} style={{ flex: 1, background: "none", border: "none", outline: "none", color: v.text, fontSize: 14, fontFamily: "system-ui, sans-serif" }} data-testid="input-import-search" />
+                </div>
+              </div>
+              <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 16px" }}>
+                {importLoading ? <M2Loading /> : filteredImportItems.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: 20, color: v.muted, fontSize: 13 }}>{t("m2.host.noItems", "No items found")}</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {filteredImportItems.map((item: any) => {
+                      const iName = item.name || item.whiskyName || "Unknown";
+                      const selected = importSelected.has(item.id);
+                      return (
+                        <button key={item.id} type="button" onClick={() => { const next = new Set(importSelected); if (selected) next.delete(item.id); else next.add(item.id); setImportSelected(next); }} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: selected ? `color-mix(in srgb, ${v.accent} 15%, transparent)` : v.bg, border: `1px solid ${selected ? v.accent : v.border}`, borderRadius: 10, cursor: "pointer", textAlign: "left", fontFamily: "system-ui, sans-serif", width: "100%" }} data-testid={`import-item-${item.id}`}>
+                          <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${selected ? v.accent : v.border}`, background: selected ? v.accent : "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            {selected && <Check style={{ width: 12, height: 12, color: v.bg }} />}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: v.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{iName}</div>
+                            {(item.distillery || item.abv) && <div style={{ fontSize: 11, color: v.muted, marginTop: 2 }}>{[item.distillery, item.abv ? `${item.abv}%` : null].filter(Boolean).join(" · ")}</div>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              {importSelected.size > 0 && (
+                <div style={{ padding: "12px 20px", borderTop: `1px solid ${v.border}` }}>
+                  <button type="button" onClick={handleImportSelected} disabled={adding} style={{ width: "100%", padding: "12px", fontSize: 14, fontWeight: 600, background: v.accent, color: v.bg, border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} data-testid="button-confirm-import">
+                    <Plus style={{ width: 16, height: 16 }} />
+                    {t("m2.host.importSelected", `Add ${importSelected.size} to Lineup`)}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <M2Loading />
@@ -708,21 +840,40 @@ function Step2Whiskies({ tasting, onNext, onBack }: { tasting: TastingFull; onNe
   );
 }
 
-function Step3Invite({ tasting, onNext, onBack }: { tasting: TastingFull; onNext: () => void; onBack: () => void }) {
+function Step3Invite({ tasting, pid, onNext, onBack }: { tasting: TastingFull; pid: string; onNext: () => void; onBack: () => void }) {
   const { t } = useTranslation();
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
   const [emailInput, setEmailInput] = useState("");
-  const [emailNote, setEmailNote] = useState("");
   const [sending, setSending] = useState(false);
   const [emailStatus, setEmailStatus] = useState<string | null>(null);
+  const [showFriends, setShowFriends] = useState(false);
+  const [friends, setFriends] = useState<any[]>([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+  const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
 
   const joinUrl = `${window.location.origin}/enter?code=${tasting.code}`;
+  const shareText = `Join my whisky tasting "${tasting.title}" on CaskSense!\nSession Code: ${tasting.code}`;
+
+  const defaultSubject = `You're invited: ${tasting.title} — CaskSense`;
+  const defaultBody = [
+    `You're invited to "${tasting.title}"!`,
+    "",
+    tasting.date ? `Date: ${tasting.date}` : null,
+    tasting.location ? `Location: ${tasting.location}` : null,
+    "",
+    `Join with code: ${tasting.code}`,
+    `Or use this link: ${joinUrl}`,
+    "",
+    "See you there!",
+  ].filter((l) => l !== null).join("\n");
+
+  const [emailSubject, setEmailSubject] = useState(defaultSubject);
+  const [emailBody, setEmailBody] = useState(defaultBody);
 
   useEffect(() => {
     QRCodeLib.toDataURL(joinUrl, {
-      width: 240,
-      margin: 2,
+      width: 240, margin: 2,
       color: { dark: "#1a1714", light: "#ffffff" },
       errorCorrectionLevel: "M",
     }).then(setQrDataUrl).catch(() => setQrDataUrl(null));
@@ -733,30 +884,70 @@ function Step3Invite({ tasting, onNext, onBack }: { tasting: TastingFull; onNext
     downloadDataUrl(qrDataUrl, `casksense-${tasting.code}-qr.png`);
   };
 
+  const loadFriends = async () => {
+    setShowFriends(!showFriends);
+    if (friends.length > 0) return;
+    setFriendsLoading(true);
+    try {
+      const res = await fetch(`/api/participants/${pid}/friends`);
+      if (res.ok) setFriends(await res.json());
+    } catch {}
+    setFriendsLoading(false);
+  };
+
+  const toggleFriend = (f: any) => {
+    const next = new Set(selectedFriends);
+    const email = f.email || f.friendEmail || "";
+    if (!email) return;
+    if (next.has(email)) next.delete(email);
+    else next.add(email);
+    setSelectedFriends(next);
+    const current = emailInput.split(/[,;\n]/).map((e: string) => e.trim()).filter(Boolean);
+    if (next.has(email) && !current.includes(email)) {
+      setEmailInput([...current, email].join(", "));
+    } else if (!next.has(email)) {
+      setEmailInput(current.filter((e: string) => e !== email).join(", "));
+    }
+  };
+
   const handleSendEmails = async () => {
     const emails = emailInput.split(/[,;\n]/).map(e => e.trim()).filter(e => e.includes("@"));
     if (emails.length === 0) return;
     setSending(true);
     setEmailStatus(null);
     try {
-      await inviteApi.sendInvites(tasting.id, emails, emailNote || undefined);
+      const res = await fetch(`/api/tastings/${tasting.id}/invites`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emails,
+          personalNote: emailBody || undefined,
+          customSubject: emailSubject || undefined,
+          customBody: emailBody || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to send invitations");
       setEmailStatus(t("m2.host.emailsSent", `${emails.length} invitation(s) sent!`));
       setEmailInput("");
-      setEmailNote("");
+      setSelectedFriends(new Set());
     } catch (e: any) {
       setEmailStatus(e.message || "Failed to send");
     }
     setSending(false);
   };
 
+  const socialBtnStyle: React.CSSProperties = {
+    display: "flex", alignItems: "center", justifyContent: "center",
+    width: 44, height: 44, borderRadius: 12, border: `1px solid ${v.border}`,
+    background: v.bg, cursor: "pointer", fontSize: 18, textDecoration: "none",
+    color: v.text,
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={cardStyle}>
         <StepIndicator current={3} total={4} />
-        <h3
-          style={{ fontSize: 18, fontWeight: 700, margin: "0 0 4px", color: v.text, fontFamily: "'Playfair Display', Georgia, serif" }}
-          data-testid="text-step3-title"
-        >
+        <h3 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 4px", color: v.text, fontFamily: "'Playfair Display', Georgia, serif" }} data-testid="text-step3-title">
           {t("m2.host.step3Title", "Invite Guests")}
         </h3>
         <p style={{ fontSize: 13, color: v.muted, margin: "0 0 20px" }}>
@@ -768,13 +959,7 @@ function Step3Invite({ tasting, onNext, onBack }: { tasting: TastingFull; onNext
             <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: v.muted, marginBottom: 6 }}>
               {t("m2.host.sessionCode", "Session Code")}
             </div>
-            <div
-              style={{
-                fontSize: 36, fontWeight: 700, letterSpacing: "0.15em",
-                color: v.accent, fontFamily: "'Playfair Display', monospace", marginBottom: 10,
-              }}
-              data-testid="text-session-code-large"
-            >
+            <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: "0.15em", color: v.accent, fontFamily: "'Playfair Display', monospace", marginBottom: 10 }} data-testid="text-session-code-large">
               {tasting.code}
             </div>
             <CopyBtn text={tasting.code} label={t("m2.host.copyCode", "Copy Code")} />
@@ -784,30 +969,14 @@ function Step3Invite({ tasting, onNext, onBack }: { tasting: TastingFull; onNext
             <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: v.muted, marginBottom: 8 }}>
               {t("m2.host.joinLink", "Join Link")}
             </div>
-            <div
-              style={{
-                fontSize: 13, color: v.text, background: v.card,
-                padding: "10px 12px", borderRadius: 8, border: `1px solid ${v.border}`,
-                wordBreak: "break-all", marginBottom: 10, fontFamily: "monospace",
-              }}
-              data-testid="text-join-link"
-            >
+            <div style={{ fontSize: 13, color: v.text, background: v.card, padding: "10px 12px", borderRadius: 8, border: `1px solid ${v.border}`, wordBreak: "break-all", marginBottom: 10, fontFamily: "monospace" }} data-testid="text-join-link">
               {joinUrl}
             </div>
             <CopyBtn text={joinUrl} label={t("m2.host.copyLink", "Copy Link")} />
           </div>
 
           <div style={{ background: v.bg, borderRadius: 10, padding: 16 }}>
-            <button
-              type="button"
-              onClick={() => setShowQr(!showQr)}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                width: "100%", background: "none", border: "none", cursor: "pointer",
-                color: v.text, fontSize: 14, fontFamily: "system-ui, sans-serif", padding: 0,
-              }}
-              data-testid="button-toggle-qr"
-            >
+            <button type="button" onClick={() => setShowQr(!showQr)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", cursor: "pointer", color: v.text, fontSize: 14, fontFamily: "system-ui, sans-serif", padding: 0 }} data-testid="button-toggle-qr">
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <QrCode style={{ width: 18, height: 18, color: v.accent }} />
                 <span style={{ fontWeight: 600 }}>{t("m2.host.qrCode", "QR Code")}</span>
@@ -819,90 +988,98 @@ function Step3Invite({ tasting, onNext, onBack }: { tasting: TastingFull; onNext
                 <div style={{ background: "#fff", padding: 12, borderRadius: 10 }}>
                   <img src={qrDataUrl} alt="QR Code" style={{ width: 200, height: 200, display: "block" }} data-testid="img-qr-code" />
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    type="button"
-                    onClick={downloadQr}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 6,
-                      background: "none", border: `1px solid ${v.border}`, borderRadius: 8,
-                      padding: "8px 14px", color: v.muted, fontSize: 12, cursor: "pointer", fontFamily: "system-ui, sans-serif",
-                    }}
-                    data-testid="button-download-qr"
-                  >
-                    <Download style={{ width: 14, height: 14 }} />
-                    Save
-                  </button>
-                </div>
+                <button type="button" onClick={downloadQr} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: `1px solid ${v.border}`, borderRadius: 8, padding: "8px 14px", color: v.muted, fontSize: 12, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-download-qr">
+                  <Download style={{ width: 14, height: 14 }} />
+                  Save
+                </button>
               </div>
             )}
           </div>
 
           {typeof navigator.share === "function" && (
-            <button
-              type="button"
-              onClick={() => {
-                navigator.share({
-                  title: `Join: ${tasting.title}`,
-                  text: `Join my whisky tasting "${tasting.title}" on CaskSense!\nSession Code: ${tasting.code}`,
-                  url: joinUrl,
-                }).catch(() => {});
-              }}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                padding: "12px", fontSize: 14, fontWeight: 600,
-                background: `color-mix(in srgb, ${v.accent} 15%, transparent)`,
-                color: v.accent,
-                border: `1px solid color-mix(in srgb, ${v.accent} 40%, transparent)`,
-                borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif",
-              }}
-              data-testid="button-native-share"
-            >
+            <button type="button" onClick={() => { navigator.share({ title: `Join: ${tasting.title}`, text: shareText, url: joinUrl }).catch(() => {}); }} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", fontSize: 14, fontWeight: 600, background: `color-mix(in srgb, ${v.accent} 15%, transparent)`, color: v.accent, border: `1px solid color-mix(in srgb, ${v.accent} 40%, transparent)`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-native-share">
               <Share2 style={{ width: 16, height: 16 }} />
               {t("m2.host.shareVia", "Share via…")}
             </button>
           )}
 
           <div style={{ background: v.bg, borderRadius: 10, padding: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: v.muted, marginBottom: 10 }}>
+              {t("m2.host.shareOn", "Share on")}
+            </div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <a href={`https://wa.me/?text=${encodeURIComponent(shareText + "\n" + joinUrl)}`} target="_blank" rel="noopener noreferrer" style={socialBtnStyle} data-testid="button-share-whatsapp" title="WhatsApp">
+                <MessageCircle style={{ width: 20, height: 20 }} />
+              </a>
+              <a href={`https://t.me/share/url?url=${encodeURIComponent(joinUrl)}&text=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer" style={socialBtnStyle} data-testid="button-share-telegram" title="Telegram">
+                <Send style={{ width: 20, height: 20 }} />
+              </a>
+              <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(joinUrl)}&quote=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer" style={socialBtnStyle} data-testid="button-share-facebook" title="Facebook">
+                <ExternalLink style={{ width: 20, height: 20 }} />
+              </a>
+              <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(joinUrl)}`} target="_blank" rel="noopener noreferrer" style={socialBtnStyle} data-testid="button-share-x" title="X">
+                <span style={{ fontWeight: 700, fontSize: 16 }}>𝕏</span>
+              </a>
+              <a href={`mailto:?subject=${encodeURIComponent(`Join: ${tasting.title}`)}&body=${encodeURIComponent(shareText + "\n\n" + joinUrl)}`} style={socialBtnStyle} data-testid="button-share-email" title="Email">
+                <Mail style={{ width: 20, height: 20 }} />
+              </a>
+            </div>
+          </div>
+
+          <div style={{ background: v.bg, borderRadius: 10, padding: 16 }}>
+            <button type="button" onClick={loadFriends} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", cursor: "pointer", color: v.text, fontSize: 14, fontFamily: "system-ui, sans-serif", padding: 0, marginBottom: showFriends ? 10 : 0 }} data-testid="button-toggle-friends">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Users style={{ width: 16, height: 16, color: v.accent }} />
+                <span style={{ fontWeight: 600 }}>{t("m2.host.inviteFriends", "Invite Friends")}</span>
+              </div>
+              <ChevronDown style={{ width: 14, height: 14, color: v.muted, transform: showFriends ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+            </button>
+            {showFriends && (
+              friendsLoading ? <M2Loading /> : friends.length === 0 ? (
+                <div style={{ fontSize: 13, color: v.muted, textAlign: "center", padding: 10 }}>{t("m2.host.noFriends", "No friends added yet")}</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {friends.map((f: any) => {
+                    const email = f.email || f.friendEmail || "";
+                    const fName = f.name || f.friendName || email;
+                    const selected = selectedFriends.has(email);
+                    return (
+                      <button key={f.id || email} type="button" onClick={() => toggleFriend(f)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: selected ? `color-mix(in srgb, ${v.accent} 15%, transparent)` : "transparent", border: `1px solid ${selected ? v.accent : v.border}`, borderRadius: 8, cursor: "pointer", width: "100%", textAlign: "left", fontFamily: "system-ui, sans-serif" }} data-testid={`friend-item-${f.id || email}`}>
+                        <div style={{ width: 18, height: 18, borderRadius: 5, border: `2px solid ${selected ? v.accent : v.border}`, background: selected ? v.accent : "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          {selected && <Check style={{ width: 10, height: 10, color: v.bg }} />}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: v.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fName}</div>
+                          {email !== fName && <div style={{ fontSize: 11, color: v.muted }}>{email}</div>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )
+            )}
+          </div>
+
+          <div style={{ background: v.bg, borderRadius: 10, padding: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <Mail style={{ width: 16, height: 16, color: v.accent }} />
               <span style={{ fontSize: 14, fontWeight: 600, color: v.text }}>{t("m2.host.emailInvite", "Email Invitations")}</span>
             </div>
-            <textarea
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              placeholder={t("m2.host.emailPlaceholder", "Enter email addresses (comma separated)")}
-              rows={2}
-              style={{ ...inputStyle, fontSize: 13, resize: "vertical", marginBottom: 8 }}
-              data-testid="input-invite-emails"
-            />
-            <input
-              type="text"
-              value={emailNote}
-              onChange={(e) => setEmailNote(e.target.value)}
-              placeholder={t("m2.host.personalNote", "Personal note (optional)")}
-              style={{ ...inputStyle, fontSize: 13, marginBottom: 8 }}
-              data-testid="input-invite-note"
-            />
+            <textarea value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder={t("m2.host.emailPlaceholder", "Enter email addresses (comma separated)")} rows={2} style={{ ...inputStyle, fontSize: 13, resize: "vertical", marginBottom: 8 }} data-testid="input-invite-emails" />
+            <div style={{ marginBottom: 8 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.emailSubjectLabel", "Subject")}</label>
+              <input type="text" value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-email-subject" />
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.emailBodyLabel", "Message")}</label>
+              <textarea value={emailBody} onChange={(e) => setEmailBody(e.target.value)} rows={6} style={{ ...inputStyle, fontSize: 13, resize: "vertical", lineHeight: 1.5 }} data-testid="input-email-body" />
+            </div>
             {emailStatus && (
               <div style={{ fontSize: 12, color: emailStatus.includes("sent") ? v.success : v.danger, marginBottom: 8 }} data-testid="text-email-status">
                 {emailStatus}
               </div>
             )}
-            <button
-              type="button"
-              onClick={handleSendEmails}
-              disabled={sending || !emailInput.trim()}
-              style={{
-                width: "100%", padding: "10px", fontSize: 13, fontWeight: 600,
-                background: emailInput.trim() ? v.accent : v.border,
-                color: emailInput.trim() ? v.bg : v.muted,
-                border: "none", borderRadius: 8, cursor: emailInput.trim() ? "pointer" : "not-allowed",
-                fontFamily: "system-ui, sans-serif",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              }}
-              data-testid="button-send-emails"
-            >
+            <button type="button" onClick={handleSendEmails} disabled={sending || !emailInput.trim()} style={{ width: "100%", padding: "10px", fontSize: 13, fontWeight: 600, background: emailInput.trim() ? v.accent : v.border, color: emailInput.trim() ? v.bg : v.muted, border: "none", borderRadius: 8, cursor: emailInput.trim() ? "pointer" : "not-allowed", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }} data-testid="button-send-emails">
               <Send style={{ width: 14, height: 14 }} />
               {sending ? t("m2.host.sending", "Sending...") : t("m2.host.sendInvites", "Send Invitations")}
             </button>
@@ -911,30 +1088,86 @@ function Step3Invite({ tasting, onNext, onBack }: { tasting: TastingFull; onNext
       </div>
 
       <div style={{ display: "flex", gap: 8 }}>
-        <button
-          type="button"
-          onClick={onBack}
-          style={{
-            padding: "12px 16px", fontSize: 14, background: "none", color: v.muted,
-            border: `1px solid ${v.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif",
-            display: "flex", alignItems: "center", gap: 6,
-          }}
-          data-testid="button-back-step2"
-        >
+        <button type="button" onClick={onBack} style={{ padding: "12px 16px", fontSize: 14, background: "none", color: v.muted, border: `1px solid ${v.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", gap: 6 }} data-testid="button-back-step2">
           <ArrowLeft style={{ width: 14, height: 14 }} />
         </button>
-        <button
-          type="button"
-          onClick={onNext}
-          style={{
-            flex: 1, padding: "12px", fontSize: 15, fontWeight: 600,
-            background: v.accent, color: v.bg, border: "none", borderRadius: 10,
-            cursor: "pointer", fontFamily: "system-ui, sans-serif",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          }}
-          data-testid="button-next-to-live"
-        >
+        <button type="button" onClick={onNext} style={{ flex: 1, padding: "12px", fontSize: 15, fontWeight: 600, background: v.accent, color: v.bg, border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} data-testid="button-next-to-live">
           {t("m2.host.nextLive", "Next: Go Live")}
+          <ArrowRight style={{ width: 16, height: 16 }} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Step1Edit({ tasting, pid, onUpdated }: { tasting: TastingFull; pid: string; onUpdated: (t: TastingFull) => void }) {
+  const { t } = useTranslation();
+  const [title, setTitle] = useState(tasting.title || "");
+  const [date, setDate] = useState(tasting.date ? tasting.date.split("T")[0] : "");
+  const [location, setLocation] = useState(tasting.location || "");
+  const [description, setDescription] = useState(tasting.description || "");
+  const [blindMode, setBlindMode] = useState(!!tasting.blindMode);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const canSubmit = title.trim().length > 0 && !saving;
+
+  const handleSave = async () => {
+    if (!canSubmit) return;
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/tastings/${tasting.id}/details`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hostId: pid,
+          title: title.trim(),
+          date: date || new Date().toISOString().split("T")[0],
+          location: location.trim() || "",
+          description: description.trim() || "",
+          blindMode,
+        }),
+      });
+      if (!res.ok) throw new Error(t("m2.host.failedUpdate", "Failed to update tasting"));
+      onUpdated({ ...tasting, title: title.trim(), date, location: location.trim(), description: description.trim(), blindMode });
+    } catch (e: any) {
+      setError(e.message || "Something went wrong");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div style={cardStyle}>
+      <StepIndicator current={1} total={4} />
+      <h3 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 4px", color: v.text, fontFamily: "'Playfair Display', Georgia, serif" }} data-testid="text-step1-edit-title">
+        {t("m2.host.step1EditTitle", "Edit Tasting Details")}
+      </h3>
+      <p style={{ fontSize: 13, color: v.muted, margin: "0 0 20px" }}>{t("m2.host.step1Desc", "Set up the basics for your tasting session")}</p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>{t("m2.host.titleLabel", "Tasting Title")} *</label>
+          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("m2.host.titlePlaceholder", "e.g. Friday Night Whisky Club")} style={inputStyle} maxLength={200} data-testid="input-edit-tasting-title" />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}><Calendar style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />{t("m2.host.dateLabel", "Date")}</label>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ ...inputStyle, colorScheme: "dark" }} data-testid="input-edit-tasting-date" />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}><MapPin style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />{t("m2.host.locationLabel", "Location")}</label>
+            <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t("m2.host.locationPlaceholder", "e.g. Living room")} style={inputStyle} data-testid="input-edit-tasting-location" />
+          </div>
+        </div>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}><FileText style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />{t("m2.host.descriptionLabel", "Description")}</label>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("m2.host.descriptionPlaceholder", "Optional notes for your guests...")} rows={2} style={{ ...inputStyle, resize: "vertical", minHeight: 48 }} data-testid="input-edit-tasting-description" />
+        </div>
+        <Toggle checked={blindMode} onChange={setBlindMode} label={t("m2.host.blindMode", "Blind Mode")} />
+        {error && <div style={{ fontSize: 13, color: v.danger, background: `color-mix(in srgb, ${v.danger} 15%, transparent)`, padding: "8px 12px", borderRadius: 8 }}>{error}</div>}
+        <button type="button" onClick={handleSave} disabled={!canSubmit} style={{ width: "100%", padding: "14px", fontSize: 15, fontWeight: 600, background: canSubmit ? v.accent : v.border, color: canSubmit ? v.bg : v.muted, border: "none", borderRadius: 10, cursor: canSubmit ? "pointer" : "not-allowed", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} data-testid="button-save-step1">
+          {saving ? t("m2.host.saving", "Saving...") : t("m2.host.nextAddWhiskies", "Create & Add Whiskies")}
           <ArrowRight style={{ width: 16, height: 16 }} />
         </button>
       </div>
@@ -992,6 +1225,8 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
   const [showSettings, setShowSettings] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [localCoverUrl, setLocalCoverUrl] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
   const isBlind = !!tasting.blindMode;
   const isOpen = tasting.status === "open";
@@ -1079,10 +1314,19 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
   };
 
   const handleCoverUpload = async (file: File) => {
+    const previewUrl = URL.createObjectURL(file);
+    setLocalCoverUrl(previewUrl);
     try {
       await tastingApi.uploadCoverImage(tasting.id, file, pid);
       queryClient.invalidateQueries({ queryKey: ["/api/tastings", tasting.id] });
-    } catch {}
+    } catch {
+      setLocalCoverUrl(null);
+    }
+  };
+
+  const showSaved = (msg?: string) => {
+    setSaveStatus(msg || "Saved");
+    setTimeout(() => setSaveStatus(null), 2000);
   };
 
   const activeRatings = activeWhisky ? ratings.filter((r) => r.whiskyId === activeWhisky.id) : [];
@@ -1142,7 +1386,7 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
           </p>
         )}
 
-        <SettingsPanel tasting={tasting} pid={pid} onDuplicate={handleDuplicate} onDelete={handleDelete} duplicating={duplicating} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} onCoverUpload={handleCoverUpload} />
+        <SettingsPanel tasting={tasting} pid={pid} onDuplicate={handleDuplicate} onDelete={handleDelete} duplicating={duplicating} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} onCoverUpload={handleCoverUpload} localCoverUrl={localCoverUrl} saveStatus={saveStatus} onSaved={showSaved} />
 
         <button type="button" onClick={onBack} style={{ width: "100%", padding: "10px", fontSize: 13, background: "none", color: v.muted, border: `1px solid ${v.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }} data-testid="button-back-step3">
           <ArrowLeft style={{ width: 14, height: 14 }} />
@@ -1178,7 +1422,7 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
         >
           {t("m2.host.viewRecap", "View Recap")}
         </button>
-        <SettingsPanel tasting={tasting} pid={pid} onDuplicate={handleDuplicate} onDelete={handleDelete} duplicating={duplicating} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} onCoverUpload={handleCoverUpload} />
+        <SettingsPanel tasting={tasting} pid={pid} onDuplicate={handleDuplicate} onDelete={handleDelete} duplicating={duplicating} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} onCoverUpload={handleCoverUpload} localCoverUrl={localCoverUrl} saveStatus={saveStatus} onSaved={showSaved} />
       </div>
     );
   }
@@ -1417,16 +1661,19 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
         {t("m2.host.endTasting", "End Tasting")}
       </button>
 
-      <SettingsPanel tasting={tasting} pid={pid} onDuplicate={handleDuplicate} onDelete={handleDelete} duplicating={duplicating} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} onCoverUpload={handleCoverUpload} />
+      <SettingsPanel tasting={tasting} pid={pid} onDuplicate={handleDuplicate} onDelete={handleDelete} duplicating={duplicating} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} onCoverUpload={handleCoverUpload} localCoverUrl={localCoverUrl} saveStatus={saveStatus} onSaved={showSaved} />
     </div>
   );
 }
 
-function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confirmDelete, setConfirmDelete, onCoverUpload }: {
+function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confirmDelete, setConfirmDelete, onCoverUpload, localCoverUrl, saveStatus, onSaved }: {
   tasting: TastingFull; pid: string;
   onDuplicate: () => void; onDelete: () => void;
   duplicating: boolean; confirmDelete: boolean; setConfirmDelete: (v: boolean) => void;
   onCoverUpload: (f: File) => void;
+  localCoverUrl?: string | null;
+  saveStatus?: string | null;
+  onSaved?: () => void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -1441,6 +1688,7 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hostId: pid, ratingPrompt: ratingPrompt.trim() || null }),
       });
+      onSaved?.();
     } catch {}
     setSavingPrompt(false);
   };
@@ -1452,6 +1700,7 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hostId: pid, blindMode: !tasting.blindMode }),
       });
+      onSaved?.();
     } catch {}
   };
 
@@ -1462,6 +1711,7 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hostId: pid, guidedMode: !tasting.guidedMode }),
       });
+      onSaved?.();
     } catch {}
   };
 
@@ -1472,6 +1722,7 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hostId: pid, showRanking: !tasting.showRanking }),
       });
+      onSaved?.();
     } catch {}
   };
 
@@ -1482,6 +1733,7 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hostId: pid, showGroupAvg: !tasting.showGroupAvg }),
       });
+      onSaved?.();
     } catch {}
   };
 
@@ -1503,6 +1755,13 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
         </div>
         <ChevronDown style={{ width: 14, height: 14, color: v.muted, transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
       </button>
+
+      {saveStatus && (
+        <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: v.success, fontWeight: 500 }} data-testid="text-save-status">
+          <Check style={{ width: 12, height: 12 }} />
+          {saveStatus}
+        </div>
+      )}
 
       {open && (
         <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -1550,8 +1809,8 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
               {tasting.coverImageUrl ? t("m2.host.changeCover", "Change Cover") : t("m2.host.uploadCover", "Upload Cover Image")}
               <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { if (e.target.files?.[0]) onCoverUpload(e.target.files[0]); }} />
             </label>
-            {tasting.coverImageUrl && (
-              <img src={tasting.coverImageUrl} alt="Cover" style={{ width: "100%", height: 120, objectFit: "cover", borderRadius: 8, marginTop: 8 }} data-testid="img-cover-preview" />
+            {(localCoverUrl || tasting.coverImageUrl) && (
+              <img src={localCoverUrl || tasting.coverImageUrl || ""} alt="Cover" style={{ width: "100%", height: 120, objectFit: "cover", borderRadius: 8, marginTop: 8 }} data-testid="img-cover-preview" />
             )}
           </div>
 
@@ -1622,14 +1881,39 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
   );
 }
 
-export default function M2TastingsHost() {
+export default function M2TastingsHost({ resumeId }: { resumeId?: string } = {}) {
   const { t } = useTranslation();
   const session = getSession();
-  const [step, setStep] = useState<WizardStep>("step1");
+  const [step, setStep] = useState<WizardStep>(resumeId ? "step2" : "step1");
   const [tasting, setTasting] = useState<TastingFull | null>(null);
+  const [resumeLoading, setResumeLoading] = useState(!!resumeId);
   const [, navigate] = useLocation();
 
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!resumeId || !session.pid) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/tastings/${resumeId}`);
+        if (!res.ok) throw new Error("Not found");
+        const data: TastingFull = await res.json();
+        setTasting(data);
+        const wRes = await fetch(`/api/tastings/${resumeId}/whiskies`);
+        const whiskies = wRes.ok ? await wRes.json() : [];
+        if (data.status !== "draft") {
+          setStep("step4");
+        } else if (whiskies.length === 0) {
+          setStep("step2");
+        } else {
+          setStep("step3");
+        }
+      } catch {
+        navigate("/m2/tastings");
+      }
+      setResumeLoading(false);
+    })();
+  }, [resumeId, session.pid]);
 
   const handleCreated = (newTasting: TastingFull) => {
     setTasting(newTasting);
@@ -1660,6 +1944,15 @@ export default function M2TastingsHost() {
     );
   }
 
+  if (resumeLoading) {
+    return (
+      <div style={{ padding: 16 }} data-testid="m2-host-page">
+        <M2BackButton />
+        <M2Loading />
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: 16 }} data-testid="m2-host-page">
       <M2BackButton />
@@ -1676,13 +1969,18 @@ export default function M2TastingsHost() {
         {t("m2.host.title", "Host")}
       </h1>
 
-      {step === "step1" && (
+      {step === "step1" && !tasting && (
         <Step1Create pid={session.pid} onCreated={handleCreated} />
+      )}
+
+      {step === "step1" && tasting && (
+        <Step1Edit tasting={tasting} pid={session.pid} onUpdated={(t) => { setTasting(t); setStep("step2"); }} />
       )}
 
       {step === "step2" && tasting && (
         <Step2Whiskies
           tasting={tasting}
+          pid={session.pid}
           onNext={() => setStep("step3")}
           onBack={() => setStep("step1")}
         />
@@ -1691,6 +1989,7 @@ export default function M2TastingsHost() {
       {step === "step3" && tasting && (
         <Step3Invite
           tasting={tasting}
+          pid={session.pid}
           onNext={() => setStep("step4")}
           onBack={() => setStep("step2")}
         />

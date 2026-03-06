@@ -20,6 +20,7 @@ import {
   Check,
   Volume2,
   VolumeX,
+  Crown,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -1536,6 +1537,39 @@ export default function M2TastingPlay() {
           <Check style={{ width: 14, height: 14 }} />
           {t("m2.play.autoSaving", "Auto-saving...")}
         </div>
+      )}
+
+      {tasting.hostId && pid && tasting.hostId === pid && (
+        <Link
+          href={`/m2/tastings/session/${id}/host`}
+          style={{ textDecoration: "none" }}
+        >
+          <div
+            style={{
+              position: "fixed",
+              bottom: 80,
+              right: 20,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "12px 20px",
+              background: v.accent,
+              color: v.bg,
+              borderRadius: 24,
+              fontWeight: 700,
+              fontSize: 14,
+              fontFamily: "system-ui, sans-serif",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+              cursor: "pointer",
+              zIndex: 50,
+              transition: "transform 0.2s, box-shadow 0.2s",
+            }}
+            data-testid="button-host-control-toggle"
+          >
+            <Crown style={{ width: 18, height: 18 }} />
+            {t("m2.play.hostControl", "Host Control")}
+          </div>
+        </Link>
       )}
 
       <style>{`@keyframes m2pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }`}</style>

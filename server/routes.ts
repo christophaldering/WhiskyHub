@@ -2681,9 +2681,14 @@ export async function registerRoutes(
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
 
-      const { emails, personalNote } = req.body;
+      const { emails, personalNote, customSubject, customBody } = req.body;
       if (!emails || !Array.isArray(emails) || emails.length === 0) {
         return res.status(400).json({ message: "At least one email required" });
+      }
+
+      const callerId = req.headers["x-participant-id"] as string | undefined;
+      if (callerId && callerId !== tasting.hostId) {
+        return res.status(403).json({ message: "Only the host can send invitations" });
       }
 
       const host = await storage.getParticipant(tasting.hostId);
@@ -2717,6 +2722,8 @@ export async function registerRoutes(
             tastingLocation: tasting.location,
             inviteLink: link,
             personalNote: personalNote || undefined,
+            customSubject: customSubject || undefined,
+            customBody: customBody || undefined,
           });
           emailSent = await sendEmail({
             to: trimmed,

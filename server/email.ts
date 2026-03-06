@@ -277,6 +277,8 @@ export function buildInviteEmail(params: {
   tastingLocation: string;
   inviteLink: string;
   personalNote?: string;
+  customSubject?: string;
+  customBody?: string;
 }): { subject: string; html: string } {
   const {
     hostName,
@@ -285,15 +287,47 @@ export function buildInviteEmail(params: {
     tastingLocation,
     inviteLink,
     personalNote,
+    customSubject,
+    customBody,
   } = params;
 
-  const subject = `You're invited: ${tastingTitle} — CaskSense`;
+  const subject = customSubject || `You're invited: ${tastingTitle} — CaskSense`;
 
-  const noteBlock = personalNote
+  const noteBlock = personalNote && !customBody
     ? `<div style="margin:16px 0;padding:12px 16px;background:#f8f7f4;border-left:3px solid #6b7b8d;border-radius:2px;font-style:italic;color:#555;">"${personalNote}"<br/><span style="font-style:normal;font-size:12px;color:#888;">— ${hostName}</span></div>`
     : "";
 
-  const html = `
+  const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const customBodyHtml = customBody
+    ? customBody.split("\n").map((line: string) => line ? `<p style="margin:4px 0;font-size:14px;line-height:1.6;">${escapeHtml(line)}</p>` : `<br/>`).join("")
+    : "";
+
+  const html = customBody ? `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:'Georgia',serif;background:#f9f9f7;color:#333;">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border:1px solid #e5e5e0;border-radius:4px;overflow:hidden;">
+    <div style="padding:32px 32px 16px;border-bottom:1px solid #e5e5e0;">
+      <h1 style="margin:0;font-size:24px;color:#4a5568;font-weight:700;letter-spacing:-0.5px;">CaskSense</h1>
+      <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a0aec0;">The Art of Whisky Analysis</p>
+    </div>
+    <div style="padding:32px;">
+      ${customBodyHtml}
+      <a href="${inviteLink}" style="display:inline-block;margin:24px 0 16px;padding:12px 32px;background:#4a5568;color:#fff;text-decoration:none;border-radius:3px;font-size:14px;font-weight:600;letter-spacing:0.5px;">
+        Accept Invitation
+      </a>
+      <p style="font-size:12px;color:#a0aec0;margin:16px 0 0;line-height:1.5;">
+        Or copy this link:<br/>
+        <a href="${inviteLink}" style="color:#6b7b8d;word-break:break-all;">${inviteLink}</a>
+      </p>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid #e5e5e0;background:#fafaf8;">
+      <p style="margin:0;font-size:11px;color:#a0aec0;text-align:center;">CaskSense — Intimate whisky tasting circles</p>
+    </div>
+  </div>
+</body>
+</html>` : `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>

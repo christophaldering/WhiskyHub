@@ -327,6 +327,9 @@ function Router() {
         <Route path="/m2/tastings/host">
           <Module2Shell><M2TastingsHost /></Module2Shell>
         </Route>
+        <Route path="/m2/tastings/host/:id">
+          {(params: any) => <Module2Shell><M2TastingsHost resumeId={params.id} /></Module2Shell>}
+        </Route>
         <Route path="/m2/tastings/dashboard">
           <Module2Shell><M2HostDashboard /></Module2Shell>
         </Route>

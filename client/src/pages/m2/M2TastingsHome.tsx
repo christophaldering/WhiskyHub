@@ -15,7 +15,7 @@ const TastingCalendar = lazy(() => import("@/pages/tasting-calendar"));
 
 type ViewMode = "list" | "calendar";
 type StatusFilter = "all" | "draft" | "open" | "closed" | "archived";
-type TimeFilter = "30d" | "90d" | "1y" | "all";
+type TimeFilter = "upcoming" | "30d" | "90d" | "1y" | "all";
 
 const statusBadgeColors: Record<string, { color: string; bg: string }> = {
   draft: { color: v.muted, bg: alpha(v.muted, "20") },
@@ -58,13 +58,20 @@ export default function M2TastingsHome() {
       list = list.filter((ta) => ta.status === statusFilter || (statusFilter === "open" && ta.status === "reveal"));
     }
 
-    if (timeFilter !== "all") {
+    if (timeFilter === "upcoming") {
+      const now = Date.now();
+      list = list.filter((ta) => {
+        const d = new Date(ta.date).getTime();
+        return !isNaN(d) && d > now;
+      });
+    } else if (timeFilter !== "all") {
       const now = Date.now();
       const cutoff = timeFilter === "30d" ? 30 : timeFilter === "90d" ? 90 : 365;
       const minDate = now - cutoff * 86400000;
+      const maxDate = now + cutoff * 86400000;
       list = list.filter((ta) => {
         const d = new Date(ta.date).getTime();
-        return !isNaN(d) && d >= minDate;
+        return !isNaN(d) && d >= minDate && d <= maxDate;
       });
     }
 
@@ -256,9 +263,10 @@ export default function M2TastingsHome() {
                 data-testid="select-m2-time-filter"
               >
                 <option value="all">{t("m2.tastings.timeAll", "All Time")}</option>
-                <option value="30d">{t("m2.tastings.time30d", "Last 30 days")}</option>
-                <option value="90d">{t("m2.tastings.time90d", "Last 3 months")}</option>
-                <option value="1y">{t("m2.tastings.time1y", "Last year")}</option>
+                <option value="upcoming">{t("m2.tastings.timeUpcoming", "Upcoming")}</option>
+                <option value="30d">{t("m2.tastings.time30d", "30 days")}</option>
+                <option value="90d">{t("m2.tastings.time90d", "3 months")}</option>
+                <option value="1y">{t("m2.tastings.time1y", "1 year")}</option>
               </select>
               <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: v.muted, pointerEvents: "none" }} />
             </div>
@@ -356,7 +364,13 @@ function TastingCard({
         transition: "border-color 0.2s",
       }}
       data-testid={`m2-tasting-card-${tasting.id}`}
-      onClick={() => navigate(`/m2/tastings/session/${tasting.id}`)}
+      onClick={() => {
+        if (tasting.status === "draft" && host) {
+          navigate(`/m2/tastings/host/${tasting.id}`);
+        } else {
+          navigate(`/m2/tastings/session/${tasting.id}`);
+        }
+      }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
