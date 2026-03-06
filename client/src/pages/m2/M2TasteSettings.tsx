@@ -1,12 +1,13 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
-import { profileApi, participantApi, participantUpdateApi } from "@/lib/api";
+import { profileApi, participantApi, participantUpdateApi, tastingApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import Module2Shell from "@/components/m2/Module2Shell";
 import M2BackButton from "@/components/m2/M2BackButton";
+import { downloadBlob } from "@/lib/download";
 import { v, alpha, getTheme, setTheme, type ThemeName } from "@/lib/themeVars";
 
 const REGIONS = [
@@ -93,6 +94,19 @@ const btnPrimary: React.CSSProperties = {
   transition: "opacity 0.2s",
 };
 
+const exportBtnStyle: React.CSSProperties = {
+  padding: "5px 12px",
+  fontSize: 12,
+  fontWeight: 500,
+  background: "transparent",
+  color: v.text,
+  border: `1px solid ${v.border}`,
+  borderRadius: 6,
+  cursor: "pointer",
+  fontFamily: "system-ui, sans-serif",
+  transition: "all 0.15s",
+};
+
 const btnDanger: React.CSSProperties = {
   padding: "10px 20px",
   fontSize: 14,
@@ -146,8 +160,80 @@ export default function M2TasteSettings() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deletePin, setDeletePin] = useState("");
   const [deletePinError, setDeletePinError] = useState("");
+  const [exportLoadingStates, setExportLoadingStates] = useState<Record<string, boolean>>({});
 
   const pid = currentParticipant?.id;
+
+  const { data: allTastings = [] } = useQuery({
+    queryKey: ["tastings", pid],
+    queryFn: () => tastingApi.getAll(pid!),
+    enabled: !!pid,
+  });
+
+  const isAdmin = currentParticipant?.role === "admin";
+  const isHost = pid && allTastings.some((t: any) => t.hostId === pid);
+
+  const hasExportAccess = useCallback(
+    (level: "own" | "extended" | "admin") => {
+      if (level === "own") return true;
+      if (level === "extended") return isAdmin || !!isHost;
+      if (level === "admin") return isAdmin;
+      return false;
+    },
+    [isAdmin, isHost]
+  );
+
+  const setExportLoading = useCallback((key: string, value: boolean) => {
+    setExportLoadingStates((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const executeExport = useCallback(
+    async (type: string, format: string) => {
+      if (!pid) return;
+      const key = `${type}-${format}`;
+      setExportLoading(key, true);
+      try {
+        const url =
+          type === "all"
+            ? `/api/export/all?participantId=${pid}&format=${format}`
+            : `/api/export/${type}?participantId=${pid}&format=${format}`;
+        const res = await fetch(url);
+        if (res.status === 403) {
+          toast({ description: t("dataExport.noPermission"), variant: "destructive" });
+          return;
+        }
+        if (!res.ok) throw new Error("Export failed");
+        const blob = await res.blob();
+        downloadBlob(blob, `casksense_${type}_${new Date().toISOString().split("T")[0]}.${format === "xlsx" ? "xlsx" : format}`);
+        toast({ description: t("dataExport.downloadReady") });
+      } catch {
+        toast({ description: t("dataExport.noData"), variant: "destructive" });
+      } finally {
+        setExportLoading(key, false);
+      }
+    },
+    [pid, setExportLoading, toast, t]
+  );
+
+  const executeFullBundle = useCallback(async () => {
+    if (!pid) return;
+    setExportLoading("bundle-zip", true);
+    try {
+      const res = await fetch(`/api/export/all?participantId=${pid}&format=zip`);
+      if (res.status === 403) {
+        toast({ description: t("dataExport.noPermission"), variant: "destructive" });
+        return;
+      }
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      downloadBlob(blob, `casksense_full_${new Date().toISOString().split("T")[0]}.zip`);
+      toast({ description: t("dataExport.downloadReady") });
+    } catch {
+      toast({ description: t("dataExport.noData"), variant: "destructive" });
+    } finally {
+      setExportLoading("bundle-zip", false);
+    }
+  }, [pid, setExportLoading, toast, t]);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile", pid],
@@ -761,32 +847,60 @@ export default function M2TasteSettings() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
-            <button
-              onClick={() => navigate("/m2/taste/downloads")}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                width: "100%",
-                padding: "12px 16px",
-                borderRadius: 10,
-                border: `1px solid ${v.border}`,
-                background: v.elevated,
-                color: v.text,
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: "pointer",
-                fontFamily: "system-ui, sans-serif",
-                transition: "background 0.2s",
-                textAlign: "left",
-              }}
-              data-testid="button-m2-export-data"
-            >
-              <span style={{ fontSize: 18 }}>📦</span>
-              <div>
-                <div>{t("profile.exportDataLink", "Downloads & Export")}</div>
-                <div style={{ fontSize: 12, color: v.muted, fontWeight: 400, marginTop: 2 }}>{t("profile.exportDataDesc", "Export your journal, collection & tasting data")}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: v.text, marginBottom: 8 }}>
+              {t("dataExport.title", "Data Export")}
+            </div>
+            <p style={{ fontSize: 12, color: v.muted, margin: "0 0 12px 0" }}>
+              {t("dataExport.subtitle", "Export your data as CSV or Excel.")}
+            </p>
+
+            {isAdmin && (
+              <div style={{ background: v.elevated, border: `1px solid ${v.border}`, borderRadius: 10, padding: 12, marginBottom: 10 }} data-testid="card-m2-export-all">
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: v.text }}>{t("dataExport.exportAll", "Export All")}</span>
+                  <span style={{ fontSize: 10, color: v.muted, padding: "1px 6px", borderRadius: 4, border: `1px solid ${v.border}` }}>Admin</span>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => executeExport("all", "csv")} disabled={!!exportLoadingStates["all-csv"]} style={{ ...exportBtnStyle, opacity: exportLoadingStates["all-csv"] ? 0.6 : 1 }} data-testid="button-export-all-csv">CSV</button>
+                  <button onClick={() => executeExport("all", "xlsx")} disabled={!!exportLoadingStates["all-xlsx"]} style={{ ...exportBtnStyle, opacity: exportLoadingStates["all-xlsx"] ? 0.6 : 1 }} data-testid="button-export-all-xlsx">Excel</button>
+                </div>
               </div>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {([
+                { type: "profile", titleKey: "dataExport.profile", access: "own" as const },
+                { type: "journal", titleKey: "dataExport.journal", access: "own" as const },
+                { type: "wishlist", titleKey: "dataExport.wishlist", access: "own" as const },
+                { type: "collection", titleKey: "dataExport.collection", access: "own" as const },
+                { type: "friends", titleKey: "dataExport.friends", access: "own" as const },
+                { type: "tastings", titleKey: "dataExport.tastings", access: "extended" as const },
+              ]).map((card) => {
+                const accessible = hasExportAccess(card.access);
+                const csvKey = `${card.type}-csv`;
+                const xlsxKey = `${card.type}-xlsx`;
+                return (
+                  <div key={card.type} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: v.elevated, border: `1px solid ${v.border}`, borderRadius: 10, opacity: accessible ? 1 : 0.45 }} data-testid={`card-m2-export-${card.type}`}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: v.text }}>{t(card.titleKey)}</span>
+                    {accessible ? (
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button onClick={() => executeExport(card.type, "csv")} disabled={!!exportLoadingStates[csvKey]} style={{ ...exportBtnStyle, opacity: exportLoadingStates[csvKey] ? 0.6 : 1 }} data-testid={`button-export-${card.type}-csv`}>
+                          {exportLoadingStates[csvKey] ? "..." : "CSV"}
+                        </button>
+                        <button onClick={() => executeExport(card.type, "xlsx")} disabled={!!exportLoadingStates[xlsxKey]} style={{ ...exportBtnStyle, opacity: exportLoadingStates[xlsxKey] ? 0.6 : 1 }} data-testid={`button-export-${card.type}-xlsx`}>
+                          {exportLoadingStates[xlsxKey] ? "..." : "Excel"}
+                        </button>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: 11, color: v.muted }}>🔒</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <button onClick={executeFullBundle} disabled={!!exportLoadingStates["bundle-zip"]} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", marginTop: 12, padding: "10px 16px", borderRadius: 10, border: `1px solid ${v.border}`, background: v.elevated, color: v.text, fontSize: 13, fontWeight: 600, cursor: exportLoadingStates["bundle-zip"] ? "not-allowed" : "pointer", fontFamily: "system-ui, sans-serif", opacity: exportLoadingStates["bundle-zip"] ? 0.6 : 1 }} data-testid="button-export-full-bundle">
+              {t("downloads.downloadZip", "Full Bundle (ZIP)")}
             </button>
           </div>
 

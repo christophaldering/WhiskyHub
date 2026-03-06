@@ -122,7 +122,6 @@ import M2TasteAnalytics from "@/pages/m2/M2TasteAnalytics";
 import M2TasteDrams from "@/pages/m2/M2TasteDrams";
 import M2TasteCollection from "@/pages/m2/M2TasteCollection";
 import M2TasteCompare from "@/pages/m2/M2TasteCompare";
-import M2TasteDownloads from "@/pages/m2/M2TasteDownloads";
 import M2TastePairings from "@/pages/m2/M2TastePairings";
 import M2TasteWheel from "@/pages/m2/M2TasteWheel";
 import M2TasteBenchmark from "@/pages/m2/M2TasteBenchmark";
@@ -368,7 +367,7 @@ function Router() {
           <Module2Shell><M2TasteWheel /></Module2Shell>
         </Route>
         <Route path="/m2/taste/downloads">
-          <Module2Shell><M2TasteDownloads /></Module2Shell>
+          <Redirect to="/m2/taste/settings" />
         </Route>
         <Route path="/m2/taste/recommendations">
           <Module2Shell><M2TasteRecommendations /></Module2Shell>

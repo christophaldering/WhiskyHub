@@ -9,12 +9,14 @@ import { getSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCodeLib from "qrcode";
 import { downloadDataUrl } from "@/lib/download";
+import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
 import {
   Plus, X, Trash2, ChevronUp, ChevronDown, ChevronRight, ArrowRight, ArrowLeft,
   Copy, Check, EyeOff, Share2, QrCode, Download, Play, Square, Eye,
   Users, BarChart3, Star, Upload, Mail, Settings, Image, Calendar,
   MapPin, FileText, RefreshCw, Send, Search, BookOpen, Heart, UserPlus,
   MessageCircle, ExternalLink, Sliders, Video, Lock, Globe, Gauge, Monitor,
+  ClipboardList, Loader2, Printer,
 } from "lucide-react";
 
 type WizardStep = "list" | "step1" | "step2" | "step3" | "step4";
@@ -1541,6 +1543,8 @@ function Step3Invite({ tasting, pid, onNext, onBack }: { tasting: TastingFull; p
         </div>
       </div>
 
+      <PrintableTemplatesSection />
+
       <div style={{ display: "flex", gap: 8 }}>
         <button type="button" onClick={onBack} style={{ padding: "12px 16px", fontSize: 14, background: "none", color: v.muted, border: `1px solid ${v.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", gap: 6 }} data-testid="button-back-step2">
           <ArrowLeft style={{ width: 14, height: 14 }} />
@@ -1548,6 +1552,60 @@ function Step3Invite({ tasting, pid, onNext, onBack }: { tasting: TastingFull; p
         <button type="button" onClick={onNext} style={{ flex: 1, padding: "12px", fontSize: 15, fontWeight: 600, background: v.accent, color: v.bg, border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} data-testid="button-next-to-live">
           {t("m2.host.nextLive", "Next: Go Live")}
           <ArrowRight style={{ width: 16, height: 16 }} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PrintableTemplatesSection() {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language?.startsWith("de") ? "de" : "en";
+  const [loadingSheet, setLoadingSheet] = useState(false);
+  const [loadingMat, setLoadingMat] = useState(false);
+
+  const handleSheet = async () => {
+    setLoadingSheet(true);
+    try { generateBlankTastingSheet(lang); } finally { setLoadingSheet(false); }
+  };
+  const handleMat = async () => {
+    setLoadingMat(true);
+    try { generateBlankTastingMat(lang); } finally { setLoadingMat(false); }
+  };
+
+  const btnStyle: React.CSSProperties = {
+    display: "flex", alignItems: "center", gap: 10, width: "100%",
+    padding: "12px 14px", borderRadius: 10, border: `1px solid ${v.border}`,
+    background: v.card, color: v.text, fontSize: 13, fontWeight: 500,
+    cursor: "pointer", transition: "all 0.2s",
+    fontFamily: "system-ui, -apple-system, sans-serif", textAlign: "left",
+  };
+
+  return (
+    <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 14, padding: "16px", marginBottom: 16 }} data-testid="section-printable-templates">
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <Printer style={{ width: 16, height: 16, color: v.accent }} />
+        <span style={{ fontSize: 15, fontWeight: 600, color: v.text, fontFamily: "'Playfair Display', Georgia, serif" }}>
+          {t("downloads.templates", "Printable Templates")}
+        </span>
+      </div>
+      <p style={{ fontSize: 12, color: v.muted, margin: "0 0 12px 0" }}>
+        {t("downloads.templatesDesc", "Blank tasting sheets and mats for your next session — available in DE & EN.")}
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <button onClick={handleSheet} disabled={loadingSheet} style={{ ...btnStyle, opacity: loadingSheet ? 0.6 : 1, cursor: loadingSheet ? "not-allowed" : "pointer" }} data-testid="button-download-score-sheet">
+          {loadingSheet
+            ? <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite", flexShrink: 0 }} />
+            : <ClipboardList style={{ width: 16, height: 16, color: v.accent, flexShrink: 0 }} />}
+          <span>{t("downloads.scoreSheet", "Blank Score Sheet (PDF)")}</span>
+          <Download style={{ width: 14, height: 14, marginLeft: "auto", color: v.muted, flexShrink: 0 }} />
+        </button>
+        <button onClick={handleMat} disabled={loadingMat} style={{ ...btnStyle, opacity: loadingMat ? 0.6 : 1, cursor: loadingMat ? "not-allowed" : "pointer" }} data-testid="button-download-tasting-mat">
+          {loadingMat
+            ? <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite", flexShrink: 0 }} />
+            : <FileText style={{ width: 16, height: 16, color: v.accent, flexShrink: 0 }} />}
+          <span>{t("downloads.tastingMat", "Tasting Mat (PDF)")}</span>
+          <Download style={{ width: 14, height: 14, marginLeft: "auto", color: v.muted, flexShrink: 0 }} />
         </button>
       </div>
     </div>

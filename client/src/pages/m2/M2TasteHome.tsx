@@ -6,7 +6,7 @@ import { getSession } from "@/lib/session";
 import {
   BookOpen, BarChart3, ChevronRight, ChevronDown, Lock,
   Radar, Archive, Heart, FlaskConical, Sparkles, GitCompareArrows,
-  Download, Library, Building2, Package, Map,
+  Library, Building2, Package, Map,
   PieChart, UtensilsCrossed, Star, GraduationCap,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -387,7 +387,6 @@ export default function M2TasteHome() {
             <NavRow icon={BookOpen} label={t("m2.taste.journal", "Drams")} description={t("m2.taste.journalDesc", "Your personal tasting journal")} href="/m2/taste/drams" testId="m2-taste-link-drams" badge={journalCount > 0 ? journalCount : null} />
             <NavRow icon={Archive} label={t("m2.taste.collection", "Collection")} description={t("m2.taste.collectionDesc", "Whiskybase import & management")} href="/m2/taste/collection" testId="m2-taste-link-collection" />
             <NavRow icon={Heart} label={t("m2.taste.wishlist", "Wishlist")} description={t("m2.taste.wishlistDesc", "Bottles you want to try")} href="/m2/taste/wishlist" testId="m2-taste-link-wishlist" />
-            <NavRow icon={Download} label={t("m2.taste.downloads", "Downloads & Export")} description={t("m2.taste.downloadsDesc", "Tasting sheets, data export")} href="/m2/taste/downloads" testId="m2-taste-link-downloads" />
           </AccordionSection>
 
           <AccordionSection
