@@ -30,7 +30,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Downloads**: Printable templates and data export functionalities integrated into relevant sections (e.g., Host Wizard, Settings).
 -   **Tasting Features**: Includes whisky management, flight board, PDF export, blind mode, discussion panel, tasting note generator, and host-uploadable cover images.
 -   **Personalization & Analytics**: Participant profiles, whisky journal, achievement badges, personal flavor profiles, whisky recommendations, side-by-side comparisons, and privacy-respecting per-tasting analytics.
--   **Internationalization**: Full migration to react-i18next supporting German and English.
+-   **Internationalization**: Full migration to react-i18next supporting German and English. All M2 page headers, subtitles, action card labels, status badges, filter options, and empty states are fully translated in both languages via `client/src/lib/i18n.ts` (EN block starts line ~11, DE block starts line ~5473, M2-specific keys in `m2:` sub-objects at lines ~4255 / ~9683).
 -   **Host Tools**: Host briefing notes, tasting curation wizard, dashboard summary, and tasting management.
 -   **AI Integration**: AI for bottle identification, content generation, market price estimation, tasting suggestions, and Whiskybase ID auto-fill lookup.
 -   **Whiskybase ID Lookup & Barcode Scanner**: Auto-filling whisky details via Whiskybase ID or camera-based barcode scanning with rate limiting and caching.
@@ -45,14 +45,23 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Module 2 (`/m2/*`)**: A fully self-contained parallel UI with a 3-tab bottom navigation (Tasting | Taste | Circle), sharing the same backend, auth, and database.
     -   **Apple-Level Bottom Navigation**: Custom SVG icons with Apple-grade visual polish, including GlencairnIcon, RadarIcon, and CircleIcon.
     -   **Apple-Design-System (M2 UI Polish)**: Comprehensive design upgrades including Playfair Display headers, refined NavRows, dynamic Tasting Cards, enhanced Stat Boxes, iOS-style Segmented Controls, inviting Empty States, and elegant Skeleton Loading.
-    -   **Ambient Warm Glow**: Subtle, slowly drifting radial gradient (amber/gold at ~4% opacity) behind all M2 content via `Module2Shell.tsx`. CSS-only `m2ambientGlow` keyframe animation (20s cycle), GPU-accelerated with `willChange: transform`, `pointer-events: none`. Creates an unconscious warmth like candlelight on dark wood.
-    -   **Live-Tasting Pulse**: Open/reveal tastings "breathe" — left color edge pulses opacity (0.5→1→0.5, 2.5s cycle via `m2livePulse`) and status badge pulses box-shadow (0→4px spread, 2.5s via `m2badgePulse`). Only active for `status === "open" || "reveal"`. Signals "something is happening now."
+    -   **Ambient Warm Glow**: Subtle, slowly drifting radial gradient (amber/gold at ~4% opacity) behind all M2 content via `Module2Shell.tsx`. CSS-only `m2ambientGlow` keyframe animation (20s cycle), GPU-accelerated with `willChange: transform`, `pointer-events: none`. Rendered as a `position: fixed` layer at `zIndex: 0` below content (`main` has `position: relative; zIndex: 1`). Creates an unconscious warmth like candlelight on dark wood. Respects `prefers-reduced-motion`.
+    -   **Live-Tasting Pulse**: Open/reveal tastings "breathe" — left color edge pulses opacity (0.5 to 1 to 0.5, 2.5s cycle via `m2livePulse`) and status badge pulses box-shadow (0 to 4px spread, 2.5s via `m2badgePulse` using CSS custom property `--pulse-color` derived from the tasting's status color). Only active for `status === "open" || "reveal"`. Signals "something is happening now." Keyframes defined centrally in `Module2Shell.tsx`, not per card.
     -   **Action Cards (Joyn/Host/Solo)**: Apple-quality primary action cards with distinctive iconography, gradient backgrounds, and subtle touch feedback.
     -   **Hosting Dashboard**: Desktop-first live tasting control center with a 3-column layout for session status, whisky lineup, participant roster, and host's rating panel.
     -   **Historical Tastings**: Production-grade archive of externally imported tasting data with detailed views, insights, and robust community-gated access control.
     -   **Collection Analysis**: Comprehensive analytics page for user's Whiskybase collection.
     -   **Circle Tab**: Features community rankings, "Taste Twins," leaderboards, activity feeds, and friend management with real-time online notifications.
--   **Admin Tools**: Functionalities for managing test data, AI controls, and platform settings.
+-   **Admin Tools**: Functionalities for managing test data, AI controls, and platform settings. Community member list shows participant names and emails (not UUIDs) via backend JOIN on `participants` table.
+
+### CSS Animation Architecture (M2)
+All M2-specific keyframe animations are defined centrally in a single `<style>` block within `Module2Shell.tsx`:
+-   `m2ambientGlow` — Background glow drift (20s cycle)
+-   `m2fadeInUp` — Card entrance animation (opacity + translateY)
+-   `m2livePulse` — Live tasting edge breathing (opacity cycle)
+-   `m2badgePulse` — Live badge box-shadow pulse (uses `var(--pulse-color)`)
+-   `prefers-reduced-motion` media query disables all animations globally
+Page-specific animations (`m2spin`, `m2shimmer`) remain inline in their respective components.
 
 ### Test Suite
 A comprehensive test framework using Vitest covers unit, API, E2E, and smoke tests, including Module2Shell rendering, authentication flows, API endpoints, and historical tasting helpers.
