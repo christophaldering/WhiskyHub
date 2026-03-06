@@ -205,28 +205,40 @@ function NotificationBell() {
         )}
       </button>
       {open && (
-        <div
-          style={{
-            position: "absolute",
-            top: 42,
-            right: 0,
-            width: 280,
-            background: v.card,
-            border: `1px solid ${v.border}`,
-            borderRadius: 12,
-            padding: 16,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-            zIndex: 100,
-          }}
-          data-testid="m2-notification-dropdown"
-        >
-          <div style={{ fontSize: 14, fontWeight: 600, color: v.text, marginBottom: 8 }}>
-            {t("m2.notifications.title", "Notifications")}
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 99,
+            }}
+          />
+          <div
+            style={{
+              position: "fixed",
+              top: 56,
+              left: 16,
+              right: 16,
+              maxWidth: 340,
+              marginLeft: "auto",
+              background: v.card,
+              border: `1px solid ${v.border}`,
+              borderRadius: 12,
+              padding: 16,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+              zIndex: 100,
+            }}
+            data-testid="m2-notification-dropdown"
+          >
+            <div style={{ fontSize: 14, fontWeight: 600, color: v.text, marginBottom: 8 }}>
+              {t("m2.notifications.title", "Notifications")}
+            </div>
+            <div style={{ fontSize: 13, color: v.muted, textAlign: "center", padding: "12px 0" }}>
+              {t("m2.notifications.empty", "No new notifications")}
+            </div>
           </div>
-          <div style={{ fontSize: 13, color: v.muted, textAlign: "center", padding: "12px 0" }}>
-            {t("m2.notifications.empty", "No new notifications")}
-          </div>
-        </div>
+        </>
       )}
     </div>
   );
