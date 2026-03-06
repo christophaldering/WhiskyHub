@@ -683,7 +683,7 @@ export default function M2TastingsSolo() {
             </button>
             <Link href="/m2/taste/drams" style={{ flex: 1, textDecoration: "none" }}>
               <div style={{ ...btnOutline, textAlign: "center" }} data-testid="button-goto-drams">
-                {t("m2.solo.myDrams", "My Drams")}
+                {t("m2.solo.myDrams", "Drams")}
               </div>
             </Link>
           </div>

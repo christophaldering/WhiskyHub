@@ -311,7 +311,7 @@ export default function M2TasteDrams() {
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "16px 0 12px" }}>
         <h1 style={{ fontFamily: serif, fontSize: 24, fontWeight: 700, color: v.text, margin: 0 }}>
-          {t("m2.taste.journal", "My Drams")}
+          {t("m2.taste.journal", "Drams")}
         </h1>
         <button
           onClick={() => navigate("/m2/tastings/solo")}

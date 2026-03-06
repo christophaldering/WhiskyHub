@@ -41,11 +41,11 @@ const LINK_GROUPS: LinkGroup[] = [
     ],
   },
   {
-    label: "My Taste",
+    label: "Taste",
     links: [
-      { title: "My Taste", url: "/my-taste" },
+      { title: "Taste", url: "/my-taste" },
       { title: "Log Dram", url: "/log-simple" },
-      { title: "My Drams", url: "/my-taste/drams" },
+      { title: "Drams", url: "/my-taste/drams" },
       { title: "Collection", url: "/my-taste/collection" },
       { title: "Wishlist", url: "/my-taste/wishlist" },
       { title: "Flavor Profile", url: "/my-taste/profile" },

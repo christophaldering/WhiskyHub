@@ -425,7 +425,7 @@ export default function M2TasteProfile() {
             margin: "16px 0 12px",
           }}
         >
-          {t("m2.taste.profile", "My CaskSense Profile")}
+          {t("m2.taste.profile", "CaskSense Profile")}
         </h1>
         <div
           style={{
@@ -541,7 +541,7 @@ export default function M2TasteProfile() {
           }}
           data-testid="text-profile-title"
         >
-          {t("m2.taste.profile", "My CaskSense Profile")}
+          {t("m2.taste.profile", "CaskSense Profile")}
         </h1>
       </div>
       <p style={{ fontSize: 14, color: v.muted, margin: "0 0 24px" }}>

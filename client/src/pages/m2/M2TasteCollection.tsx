@@ -319,7 +319,6 @@ export default function M2TasteCollection() {
           <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 24, fontWeight: 700, color: v.text, margin: "0 0 4px" }} data-testid="text-collection-title">
             {t("collection.title", "Collection")}
           </h1>
-          <p style={{ fontSize: 13, color: v.muted, margin: 0 }}>{t("collection.subtitle", "Your Whiskybase collection")}</p>
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
@@ -587,7 +586,7 @@ export default function M2TasteCollection() {
                         <div><span style={{ color: v.muted }}>{t("collection.auctionPrice", "Auction")}:</span> <span style={{ fontWeight: 500, color: v.text }}>{item.auctionPrice.toFixed(2)} {item.auctionCurrency || item.avgPriceCurrency || "EUR"}</span></div>
                       )}
                       {item.personalRating != null && (
-                        <div><span style={{ color: v.muted }}>{t("collection.personalRating", "My Rating")}:</span> <span style={{ fontWeight: 500, color: v.text }}>{item.personalRating}</span></div>
+                        <div><span style={{ color: v.muted }}>{t("collection.personalRating", "Rating")}:</span> <span style={{ fontWeight: 500, color: v.text }}>{item.personalRating}</span></div>
                       )}
                       {item.addedAt && (
                         <div><span style={{ color: v.muted }}>{t("collection.sortAdded", "Added")}:</span> <span style={{ fontWeight: 500, color: v.text }}>{item.addedAt.split(" ")[0]}</span></div>

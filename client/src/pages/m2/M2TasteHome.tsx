@@ -6,28 +6,12 @@ import { getSession } from "@/lib/session";
 import {
   Activity, BookOpen, Wine, BarChart3, ChevronRight, Lock,
   Radar, Archive, Heart, FlaskConical, Sparkles, GitCompareArrows,
-  Download, PenLine, Library, Building2, Package, Map, Users,
-  Trophy, Info, HandHeart, PieChart, UtensilsCrossed, Star, Flame,
+  Download, Library, Building2, Package, Map, Users,
+  Trophy, Info, HandHeart, PieChart, UtensilsCrossed, Star,
 } from "lucide-react";
 import { Link } from "wouter";
 import { participantApi, journalApi, statsApi } from "@/lib/api";
 
-const WOTD_LIST = [
-  { name: "Lagavulin 16", distillery: "Lagavulin", region: "Islay", note: "Rich peat smoke with dried fruit sweetness and a long maritime finish." },
-  { name: "Glenfiddich 18", distillery: "Glenfiddich", region: "Speyside", note: "Baked apple, oak spice and a subtle hint of dried fruit." },
-  { name: "Talisker 10", distillery: "Talisker", region: "Isle of Skye", note: "Sea salt, black pepper and smoky malt with a warming finish." },
-  { name: "Macallan 12 Sherry Oak", distillery: "The Macallan", region: "Speyside", note: "Dried fruits, ginger spice and rich sherry influence." },
-  { name: "Ardbeg Uigeadail", distillery: "Ardbeg", region: "Islay", note: "Deep smoke, espresso, dark chocolate and Christmas cake." },
-  { name: "Highland Park 12", distillery: "Highland Park", region: "Orkney", note: "Heather honey, aromatic smoke and orange peel." },
-  { name: "Springbank 10", distillery: "Springbank", region: "Campbeltown", note: "Briny, nutty with hints of vanilla and gentle peat." },
-  { name: "Oban 14", distillery: "Oban", region: "Highlands", note: "Citrus, sea salt and a smoky-sweet balance." },
-  { name: "Bruichladdich Classic Laddie", distillery: "Bruichladdich", region: "Islay", note: "Floral, barley-forward with maritime minerality. Unpeated Islay." },
-  { name: "GlenDronach 15 Revival", distillery: "GlenDronach", region: "Highlands", note: "Rich sherry, dark chocolate, raisins and walnut." },
-  { name: "Clynelish 14", distillery: "Clynelish", region: "Highlands", note: "Waxy, fruity with coastal brine and honey." },
-  { name: "Bunnahabhain 12", distillery: "Bunnahabhain", region: "Islay", note: "Nutty, slightly sherried with light sea spray. Unpeated." },
-  { name: "Laphroaig Quarter Cask", distillery: "Laphroaig", region: "Islay", note: "Intense peat, coconut and vanilla from small cask maturation." },
-  { name: "Dalmore 12", distillery: "Dalmore", region: "Highlands", note: "Marmalade, chocolate, cinnamon and sherry sweetness." },
-];
 
 const ANALYTICS_THRESHOLD = 10;
 
@@ -231,29 +215,6 @@ export default function M2TasteHome() {
 
       {session.signedIn && (
         <>
-          <Link href="/m2/tastings/solo" style={{ textDecoration: "none" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                padding: "14px 20px",
-                background: v.accent,
-                color: v.bg,
-                borderRadius: 14,
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: "pointer",
-                marginBottom: 20,
-              }}
-              data-testid="button-log-dram"
-            >
-              <PenLine style={{ width: 18, height: 18 }} strokeWidth={2} />
-              {t("m2.taste.logDram", "Log a Dram")}
-            </div>
-          </Link>
-
           <div style={{ display: "flex", gap: 10, marginBottom: 6 }} data-testid="m2-taste-snapshot">
             <StatBox label={t("m2.taste.stability", "Stability")} value={stability} testId="stat-stability" />
             <StatBox label={t("m2.taste.exploration", "Exploration")} value={exploration} testId="stat-exploration" />
@@ -262,39 +223,6 @@ export default function M2TasteHome() {
             <StatBox label={t("m2.taste.smokeAffinity", "Smoke")} value={smoke} testId="stat-smoke" />
             <StatBox label={t("m2.taste.tastingCount", "Tastings")} value={tastingCount} testId="stat-tastings" />
           </div>
-
-          {(() => {
-            const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-            const wotd = WOTD_LIST[dayOfYear % WOTD_LIST.length];
-            return (
-              <div
-                style={{
-                  background: v.card,
-                  border: `1px solid ${alpha("#d4a256", "40")}`,
-                  borderRadius: 12,
-                  padding: "14px 16px",
-                  marginBottom: 20,
-                }}
-                data-testid="card-whisky-of-the-day"
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                  <Flame style={{ width: 16, height: 16, color: "#d4a256" }} />
-                  <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: "#d4a256" }}>
-                    Whisky of the Day
-                  </span>
-                </div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: v.text, fontFamily: "'Playfair Display', serif", marginBottom: 4 }} data-testid="text-wotd-name">
-                  {wotd.name}
-                </div>
-                <div style={{ fontSize: 12, color: v.muted, marginBottom: 6 }}>
-                  {wotd.distillery} · {wotd.region}
-                </div>
-                <p style={{ fontSize: 13, color: v.textSecondary, margin: 0, lineHeight: 1.5, fontStyle: "italic" }} data-testid="text-wotd-note">
-                  {wotd.note}
-                </p>
-              </div>
-            );
-          })()}
 
           {insight && (
             <div
@@ -378,7 +306,7 @@ export default function M2TasteHome() {
           <SectionHeading>{t("m2.taste.sectionProfile", "Profile & Analysis")}</SectionHeading>
           <NavRow
             icon={Radar}
-            label={t("m2.taste.profile", "My CaskSense Profile")}
+            label={t("m2.taste.profile", "CaskSense Profile")}
             description={t("m2.taste.profileDesc", "Flavor radar, style & sweet spot")}
             href="/m2/taste/profile"
             testId="m2-taste-link-profile"
@@ -426,10 +354,10 @@ export default function M2TasteHome() {
             testId="m2-taste-link-pairings"
           />
 
-          <SectionHeading>{t("m2.taste.sectionDrams", "My Drams")}</SectionHeading>
+          <SectionHeading>{t("m2.taste.sectionDrams", "Drams")}</SectionHeading>
           <NavRow
             icon={BookOpen}
-            label={t("m2.taste.journal", "My Drams")}
+            label={t("m2.taste.journal", "Drams")}
             description={t("m2.taste.journalDesc", "Your personal tasting journal")}
             href="/m2/taste/drams"
             testId="m2-taste-link-drams"

@@ -41,7 +41,7 @@ PostgreSQL serves as the primary database, accessed via Drizzle ORM. The schema 
 -   **Rating System**: Dynamic step sizing for rating sliders and auto-calculated overall scores with manual override.
 -   **Context Level**: Three-tier data visibility control within active tasting sessions: Naked, Self, and Full.
 -   **Navigation Structure (Simple Mode)**: Features a 2-tab bottom navigation (`v2_two_tab`) with "Tasting" and "Taste" sections, configurable via `NAV_VERSION` flag.
--   **My Taste (Personal Dashboard)**: A personal whisky profile hub requiring sign-in, with sections for personal drams, analytics, collection, downloads, and knowledge base.
+-   **Taste (Personal Dashboard)**: A personal whisky profile hub requiring sign-in, with sections for drams, analytics, collection, downloads, and knowledge base. Apple-style naming: no possessive "My"/"Mein"/"Meine" in any labels.
 -   **Lazy Loading**: Pages less frequently accessed are lazy-loaded using React.lazy.
 -   **Discover (External World Hub)**: Organized into sections for Community, Knowledge, Planning, and About.
 -   **V2 Dark Warm UI (`/app`)**: Redesigned UI with an Apple-clean aesthetic and a whisky-warm dark color palette.

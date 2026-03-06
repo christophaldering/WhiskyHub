@@ -18,7 +18,7 @@ import {
 type CellarTab = "journal" | "collection" | "wishlist" | "stats" | "badges";
 
 const TABS: { key: CellarTab; label: string }[] = [
-  { key: "journal", label: "My Drams" },
+  { key: "journal", label: "Drams" },
   { key: "collection", label: "Collection" },
   { key: "wishlist", label: "Wishlist" },
   { key: "stats", label: "Stats" },
