@@ -733,6 +733,9 @@ export default function M2CircleHome() {
     if (friendsLoading) return loadingSpinner;
     const friendList = Array.isArray(friends) ? friends : [];
     const pending = Array.isArray(pendingRequests) ? pendingRequests : [];
+    const onlineFriendIds = new Set<string>(
+      (onlineData?.online || []).map((f: any) => f.friendId)
+    );
 
     return (
       <div data-testid="m2-circle-friends">
@@ -958,7 +961,13 @@ export default function M2CircleHome() {
             )
           : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {friendList.map((friend: any, i: number) => (
+              {[...friendList].sort((a: any, b: any) => {
+                const aOn = onlineFriendIds.has(a.id) ? 0 : 1;
+                const bOn = onlineFriendIds.has(b.id) ? 0 : 1;
+                return aOn - bOn;
+              }).map((friend: any, i: number) => {
+                const isOnline = onlineFriendIds.has(friend.id);
+                return (
                 <div
                   key={friend.id || i}
                   style={{
@@ -966,40 +975,83 @@ export default function M2CircleHome() {
                     display: "flex",
                     alignItems: "center",
                     gap: 12,
+                    borderLeft: isOnline ? `3px solid ${v.success}` : undefined,
                   }}
                   data-testid={`card-friend-${i}`}
                 >
-                  <div
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      background: `color-mix(in srgb, ${v.accent} 15%, transparent)`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontFamily: "'Playfair Display', Georgia, serif",
-                      color: v.accent,
-                      fontSize: 14,
-                      fontWeight: 600,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {(friend.firstName || friend.name || "?")[0]}
+                  <div style={{ position: "relative", flexShrink: 0 }}>
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        background: isOnline
+                          ? `color-mix(in srgb, ${v.success} 15%, transparent)`
+                          : `color-mix(in srgb, ${v.accent} 15%, transparent)`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontFamily: "'Playfair Display', Georgia, serif",
+                        color: isOnline ? v.success : v.accent,
+                        fontSize: 14,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {(friend.firstName || friend.name || "?")[0]}
+                    </div>
+                    {isOnline && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: -1,
+                          right: -1,
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          background: v.success,
+                          border: `2px solid ${v.card}`,
+                          animation: "pulse 2s infinite",
+                        }}
+                        data-testid={`online-dot-${i}`}
+                      />
+                    )}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
-                        color: v.text,
-                        fontWeight: 600,
-                        fontSize: 14,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
                       }}
-                      data-testid={`text-friend-name-${i}`}
                     >
-                      {friend.firstName} {friend.lastName}
+                      <span
+                        style={{
+                          color: v.text,
+                          fontWeight: 600,
+                          fontSize: 14,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        data-testid={`text-friend-name-${i}`}
+                      >
+                        {friend.firstName} {friend.lastName}
+                      </span>
+                      {isOnline && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 600,
+                            padding: "1px 6px",
+                            borderRadius: 6,
+                            background: `color-mix(in srgb, ${v.success} 15%, transparent)`,
+                            color: v.success,
+                          }}
+                          data-testid={`badge-online-${i}`}
+                        >
+                          {t("m2.circle.online", "Online")}
+                        </span>
+                      )}
                     </div>
                     {friend.email && (
                       <div
@@ -1035,7 +1087,8 @@ export default function M2CircleHome() {
                     <Trash2 style={{ width: 14, height: 14 }} />
                   </button>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
       </div>
