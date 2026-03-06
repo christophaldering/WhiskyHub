@@ -32,7 +32,7 @@ const LINKS: DiscoverLink[] = [
   { icon: Info, labelKey: "m2.discover.about", labelFallback: "About", descKey: "m2.discover.aboutDesc", descFallback: "Story, founder info & contact", href: "/m2/discover/about", testId: "link-discover-about" },
   { icon: Heart, labelKey: "m2.discover.donate", labelFallback: "Donate", descKey: "m2.discover.donateDesc", descFallback: "Support CaskSense & Hospice", href: "/m2/discover/donate", testId: "link-discover-donate" },
   { icon: Rss, labelKey: "m2.discover.activity", labelFallback: "Activity Feed", descKey: "m2.discover.activityDesc", descFallback: "See what your friends are up to", href: "/m2/discover/activity", testId: "link-discover-activity" },
-  { icon: Users, labelKey: "m2.discover.community", labelFallback: "Community", descKey: "m2.discover.communityDesc", descFallback: "Rankings, taste twins & leaderboard", href: "/m2/discover/community", testId: "link-discover-community" },
+  { icon: Users, labelKey: "m2.discover.community", labelFallback: "Circle", descKey: "m2.discover.communityDesc", descFallback: "Rankings, taste twins & leaderboard", href: "/m2/discover/community", testId: "link-discover-community" },
 ];
 
 const card: React.CSSProperties = {

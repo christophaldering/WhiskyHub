@@ -422,7 +422,7 @@ export default function M2TasteHome() {
             testId="m2-taste-link-rabbit-hole"
           />
 
-          <SectionHeading>{t("m2.taste.sectionCommunity", "Community")}</SectionHeading>
+          <SectionHeading>{t("m2.taste.sectionCommunity", "Circle")}</SectionHeading>
           <NavRow
             icon={Users}
             label={t("m2.taste.tasteTwins", "Taste Twins")}

@@ -29,7 +29,7 @@ PostgreSQL serves as the primary database, accessed via Drizzle ORM. The schema 
 -   **Public Landing Page**: Features an Apple-style landing page with Framer Motion scroll animations and a guided presentation.
 -   **Tasting Features**: Includes comprehensive whisky management, flight board, PDF export, blind mode, discussion panel, tasting note generator, and host-uploadable cover images.
 -   **Personalization & Analytics**: Offers participant profiles, a whisky journal, achievement badges, personal flavor profiles, whisky recommendations, side-by-side comparisons, and privacy-respecting per-tasting analytics.
--   **Internationalization**: Fully migrated to react-i18next, supporting German and English, with all UI strings internationalized.
+-   **Internationalization**: Fully migrated to react-i18next, supporting German and English, with all UI strings internationalized. Full terminology enforcement pass completed: canonical labels (Tastings/Taste/Circle/Profile nav tabs; Joyn/Host/Solo action cards) enforced systemwide in EN+DE. Legacy DE terms replaced: "Gastgeber"→"Host", "Verkostung(en)"→"Tasting(s)", "Beitreten"/"Join"→"Joyn" in all button/label contexts.
 -   **Host Tools**: Provides host briefing notes, a tasting curation wizard, dashboard summary, and manage tastings functionalities.
 -   **AI Integration**: Incorporates AI for bottle identification, content generation, market price estimation, tasting suggestions, and Whiskybase ID auto-fill lookup, supporting user-provided or platform-wide OpenAI API keys.
 -   **Whiskybase ID Lookup & Barcode Scanner**: Enables auto-filling whisky details via Whiskybase ID input or camera-based barcode scanning, with rate limiting and caching.

@@ -290,7 +290,7 @@ function FeatureGrid() {
 
 function ExperienceFlow() {
   const steps = [
-    { icon: QrCode, label: "Join", desc: "Scan a code or enter a PIN." },
+    { icon: QrCode, label: "Joyn", desc: "Scan a code or enter a PIN." },
     { icon: PenLine, label: "Log", desc: "Rate nose, palate, finish." },
     { icon: Star, label: "Rate", desc: "Score each dimension." },
     { icon: GitCompareArrows, label: "Compare", desc: "See how others rated." },

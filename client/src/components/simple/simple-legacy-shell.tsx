@@ -8,7 +8,7 @@ import { c } from "@/lib/theme";
 import { NAV_VERSION } from "@/lib/config";
 
 const NAV_ITEMS_V1 = [
-  { href: "/enter", icon: Wine, label: "Join", match: ["/enter", "/join", "/tasting-room-simple", "/naked/"] },
+  { href: "/enter", icon: Wine, label: "Joyn", match: ["/enter", "/join", "/tasting-room-simple", "/naked/"] },
   { href: "/log-simple", icon: PenLine, label: "Log", match: ["/log-simple", "/log"] },
   { href: "/host", icon: Crown, label: "Host", match: ["/host", "/legacy/tasting"] },
   { href: "/my-taste", icon: User, label: "Taste", match: ["/my-taste", "/taste", "/legacy/profile", "/legacy/my"] },

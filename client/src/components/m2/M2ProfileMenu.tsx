@@ -580,7 +580,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {renderBackButton(t("m2.guest.back", "Back to Sign In"))}
       <h3 style={{ fontSize: 16, fontWeight: 700, color: v.text, margin: "0 0 4px" }}>
-        {t("m2.guest.title", "Join as Guest")}
+        {t("m2.guest.title", "Joyn as Guest")}
       </h3>
       <p style={{ fontSize: 13, color: v.muted, margin: "0 0 4px" }}>
         {t("m2.guest.description", "Enter your name and the tasting code to join without an account.")}
@@ -612,7 +612,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         style={primaryBtnStyle(!guestName.trim() || !guestPin.trim())}
         data-testid="m2-guest-submit"
       >
-        {loading ? t("m2.guest.joining", "Joining...") : t("m2.guest.join", "Join Tasting")}
+        {loading ? t("m2.guest.joining", "Joining...") : t("m2.guest.join", "Joyn Tasting")}
       </button>
     </div>
   );
@@ -927,7 +927,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
               ? t("m2.resetPin.title", "Enter Reset Code")
               : view === "verify-email"
               ? t("m2.verify.title", "Verify Email")
-              : t("m2.guest.title", "Join as Guest")}
+              : t("m2.guest.title", "Joyn as Guest")}
           </h2>
           <button
             onClick={onClose}

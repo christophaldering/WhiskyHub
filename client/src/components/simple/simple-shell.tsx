@@ -42,7 +42,7 @@ function BackButtonBottom() {
 }
 
 const NAV_ITEMS_V1 = [
-  { href: "/enter", icon: Wine, labelKey: "nav.join", labelFallback: "Join", match: ["/enter", "/join", "/tasting-room-simple", "/naked/"] },
+  { href: "/enter", icon: Wine, labelKey: "nav.join", labelFallback: "Joyn", match: ["/enter", "/join", "/tasting-room-simple", "/naked/"] },
   { href: "/log-simple", icon: PenLine, labelKey: "nav.log", labelFallback: "Log", match: ["/log-simple", "/log"] },
   { href: "/host", icon: Crown, labelKey: "nav.host", labelFallback: "Host", match: ["/host"] },
   { href: "/my-taste", icon: User, labelKey: "nav.taste", labelFallback: "Taste", match: ["/my-taste", "/taste", "/my-taste/analytics"] },

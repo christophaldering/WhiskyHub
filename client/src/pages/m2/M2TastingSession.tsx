@@ -175,7 +175,7 @@ export default function M2TastingSession() {
           data-testid="m2-session-code-section"
         >
           <div style={{ fontSize: 12, color: v.muted, marginBottom: 8, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            {t("m2.session.joinCode", "Join Code")}
+            {t("m2.session.joinCode", "Joyn Code")}
           </div>
           <div
             style={{
