@@ -9959,6 +9959,7 @@ Important rules:
           noseScore: hte.noseScore,
           tasteScore: hte.tasteScore,
           finishScore: hte.finishScore,
+          normalizedTotal: hte.normalizedTotal,
         })
         .from(hte)
         .innerJoin(ht, sqlTag`${hte.historicalTastingId} = ${ht.id}`)
@@ -9970,9 +9971,12 @@ Important rules:
         tastingTitle: r.tastingTitle ?? `Tasting #${r.tastingNumber ?? "?"}`,
       }));
 
-      const scoredApps = appearances.filter(a => a.totalScore != null);
+      const scoredApps = appearances.filter(a => a.normalizedTotal != null || a.totalScore != null);
       const avgScore = scoredApps.length > 0
         ? scoredApps.reduce((sum, a) => sum + (a.totalScore || 0), 0) / scoredApps.length
+        : null;
+      const avgScoreNormalized = scoredApps.length > 0
+        ? scoredApps.reduce((sum, a) => sum + (a.normalizedTotal ?? (a.totalScore ?? 0) * 10), 0) / scoredApps.length
         : null;
       const bestPlacement = appearances.reduce<any>((best, a) => {
         if (a.totalRank != null && (best === null || a.totalRank < best.totalRank)) return a;
@@ -9983,6 +9987,8 @@ Important rules:
         appearances,
         count: appearances.length,
         avgScore: avgScore != null ? Math.round(avgScore * 100) / 100 : null,
+        avgScoreNormalized: avgScoreNormalized != null ? Math.round(avgScoreNormalized * 10) / 10 : null,
+        sourceScale: 10,
         bestPlacement: bestPlacement ? {
           rank: bestPlacement.totalRank,
           tastingNumber: bestPlacement.tastingNumber,

@@ -338,7 +338,7 @@ export interface IStorage {
   getHistoricalWhiskyStats(tastingIds?: string[]): Promise<{
     totalTastings: number;
     totalEntries: number;
-    topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; tastingNumber: number }>;
+    topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; normalizedTotal: number | null; tastingNumber: number }>;
     regionBreakdown: Record<string, number>;
     smokyBreakdown: { smoky: number; nonSmoky: number; unknown: number };
     caskBreakdown: Record<string, number>;
@@ -1443,12 +1443,12 @@ export class DatabaseStorage implements IStorage {
         inArray(ratings.whiskyId, myWhiskyIds)
       ));
 
-    const myScores = new Map(myRatings.map(r => [r.whiskyId, r.overall]));
+    const myScores = new Map(myRatings.map(r => [r.whiskyId, r.normalizedScore ?? r.overall]));
 
-    const byParticipant: Record<string, Array<{ whiskyId: string; overall: number }>> = {};
+    const byParticipant: Record<string, Array<{ whiskyId: string; score: number }>> = {};
     for (const r of otherRatings) {
       if (!byParticipant[r.participantId]) byParticipant[r.participantId] = [];
-      byParticipant[r.participantId].push({ whiskyId: r.whiskyId, overall: r.overall });
+      byParticipant[r.participantId].push({ whiskyId: r.whiskyId, score: r.normalizedScore ?? r.overall });
     }
 
     const allParticipants = await db.select().from(participants);
@@ -1460,7 +1460,7 @@ export class DatabaseStorage implements IStorage {
 
       const pairs = pRatings
         .filter(r => myScores.has(r.whiskyId))
-        .map(r => ({ mine: myScores.get(r.whiskyId)!, theirs: r.overall }));
+        .map(r => ({ mine: myScores.get(r.whiskyId)!, theirs: r.score }));
 
       if (pairs.length < 3) continue;
 
@@ -1925,7 +1925,7 @@ export class DatabaseStorage implements IStorage {
   async getHistoricalWhiskyStats(tastingIds?: string[]): Promise<{
     totalTastings: number;
     totalEntries: number;
-    topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; tastingNumber: number }>;
+    topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; normalizedTotal: number | null; tastingNumber: number }>;
     regionBreakdown: Record<string, number>;
     smokyBreakdown: { smoky: number; nonSmoky: number; unknown: number };
     caskBreakdown: Record<string, number>;
@@ -1958,6 +1958,7 @@ export class DatabaseStorage implements IStorage {
         distillery: historicalTastingEntries.distilleryRaw,
         name: historicalTastingEntries.whiskyNameRaw,
         totalScore: historicalTastingEntries.totalScore,
+        normalizedTotal: historicalTastingEntries.normalizedTotal,
         tastingNumber: historicalTastings.tastingNumber,
       })
       .from(historicalTastingEntries)
@@ -1970,6 +1971,7 @@ export class DatabaseStorage implements IStorage {
       distillery: r.distillery,
       name: r.name,
       totalScore: r.totalScore,
+      normalizedTotal: r.normalizedTotal ?? (r.totalScore != null ? r.totalScore * 10 : null),
       tastingNumber: r.tastingNumber,
     }));
 

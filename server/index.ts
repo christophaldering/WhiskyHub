@@ -117,6 +117,46 @@ async function seedProductionData() {
   }
 }
 
+async function backfillNormalizedScores() {
+  try {
+    const { db: dbInst } = await import("./db");
+    const { sql: sqlTag } = await import("drizzle-orm");
+
+    await dbInst.execute(
+      sqlTag`UPDATE historical_tasting_entries SET normalized_nose = nose_score * 10 WHERE normalized_nose IS NULL AND nose_score IS NOT NULL`
+    );
+    await dbInst.execute(
+      sqlTag`UPDATE historical_tasting_entries SET normalized_taste = taste_score * 10 WHERE normalized_taste IS NULL AND taste_score IS NOT NULL`
+    );
+    await dbInst.execute(
+      sqlTag`UPDATE historical_tasting_entries SET normalized_finish = finish_score * 10 WHERE normalized_finish IS NULL AND finish_score IS NOT NULL`
+    );
+    const htResult = await dbInst.execute(
+      sqlTag`UPDATE historical_tasting_entries SET normalized_total = total_score * 10 WHERE normalized_total IS NULL AND total_score IS NOT NULL`
+    );
+    const htCount = (htResult as any)?.rowCount ?? 0;
+
+    const rResult = await dbInst.execute(
+      sqlTag`UPDATE ratings r
+             SET normalized_score = CASE
+               WHEN t.rating_scale = 100 THEN LEAST(GREATEST(r.overall, 0), 100)
+               ELSE ROUND((LEAST(GREATEST(r.overall, 0), t.rating_scale) / t.rating_scale * 100)::numeric, 1)
+             END
+             FROM tastings t
+             WHERE r.tasting_id = t.id
+               AND r.normalized_score IS NULL
+               AND r.overall IS NOT NULL`
+    );
+    const rCount = (rResult as any)?.rowCount ?? 0;
+
+    if (htCount > 0 || rCount > 0) {
+      log(`Backfill: normalized ${htCount} historical entries, ${rCount} ratings to 0-100 scale`, "seed");
+    }
+  } catch (e) {
+    log(`Backfill normalized scores failed: ${(e as Error).message}`, "seed");
+  }
+}
+
 const LOADING_HTML =
   "<!DOCTYPE html><html><head><meta charset='utf-8'><title>CaskSense</title>" +
   "<meta http-equiv='refresh' content='2'></head>" +
@@ -238,9 +278,13 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
     log("Application fully initialized");
     warmupGmailToken();
 
-    seedProductionData().catch((e) =>
-      log(`Auto-seed error: ${(e as Error).message}`, "seed"),
-    );
+    seedProductionData()
+      .catch((e) => log(`Auto-seed error: ${(e as Error).message}`, "seed"))
+      .finally(() =>
+        backfillNormalizedScores().catch((e) =>
+          log(`Backfill error: ${(e as Error).message}`, "seed"),
+        ),
+      );
 
     setInterval(async () => {
       try {
