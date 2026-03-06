@@ -1,0 +1,408 @@
+You are working inside the CURRENT CaskSense codebase on Replit.
+
+MISSION
+Implement a robust COMMUNITY VISIBILITY & ACCESS MODEL for historical tasting data.
+
+Very important:
+The original idea was discussed against an earlier architecture snapshot. The architecture has evolved since then.
+Therefore your FIRST task is NOT to implement immediately, but to:
+1) inspect the current architecture thoroughly,
+2) infer the current domain model, route structure, auth model, data access patterns, and UI composition,
+3) adapt the implementation plan to the CURRENT architecture,
+4) then implement the feature completely and coherently.
+
+Do NOT force old assumptions onto the codebase.
+Do NOT create parallel universes or duplicate structures if the current system already has a better place for this logic.
+Do NOT stop at planning.
+Do NOT leave pseudo-code.
+Actually implement the feature.
+
+======================================================================
+PRODUCT INTENTION
+======================================================================
+
+Historical tasting data comes from a SPECIFIC real-world whisky community and should NOT be fully transparent to every user by default.
+
+The desired product logic is:
+
+A) PUBLIC / GENERAL LEVEL
+General users may see aggregated, anonymized, non-sensitive historical insights such as:
+- top-performing whiskies in historical blind tastings
+- average score patterns
+- region/cask/smoky trends
+- generalized “group taste profile” style insights
+
+But they should NOT automatically see:
+- full historical tasting archives
+- specific historical lineups
+- detailed tasting-by-tasting rankings of that community
+- community-identifying or participant-identifying data unless explicitly allowed
+
+B) COMMUNITY LEVEL
+Users who are assigned to the relevant community may see the detailed historical archive for that community, including:
+- historical tastings
+- lineups
+- rankings
+- tasting detail pages
+- richer insights tied to that community
+
+C) PRIVATE / ADMIN LEVEL
+Admin/internal users should be able to:
+- inspect the imported historical data
+- inspect visibility assignments
+- inspect unmatched/low-confidence imports if that module exists
+- manage community linkage where appropriate
+
+The model should be extensible for future multiple communities, not hardcoded for exactly one.
+
+======================================================================
+PHASE 1 — ARCHITECTURE DISCOVERY FIRST
+======================================================================
+
+Before implementing, inspect the CURRENT codebase and determine:
+
+1) Auth / identity model
+- how users are represented
+- whether there are roles already (admin, host, participant, etc.)
+- whether there is already a notion of groups, circles, communities, workspaces, tastings, teams, memberships, or profiles
+
+2) Information architecture
+- current top-level routes and navigation
+- how Tastings / Taste / Circle / Profile are currently implemented
+- whether historical tastings module already exists and where it lives
+- where public vs authenticated vs privileged routes belong
+
+3) Data architecture
+- current DB schema
+- whether community-like entities already exist
+- whether there is already a membership table or access control model
+- how historical tastings are currently stored, if already implemented
+- how API routes/services/repos are currently structured
+
+4) Frontend architecture
+- route conventions
+- layout/shell patterns
+- query hook patterns
+- i18n structure
+- admin/debug surfaces if any
+
+Then produce an INTERNAL implementation approach aligned to the current codebase and proceed to implementation.
+Do not ask me for confirmation.
+Do not stop after analysis.
+
+======================================================================
+TARGET FEATURE SET
+======================================================================
+
+Implement a clean, extensible COMMUNITY VISIBILITY MODEL for historical tasting data.
+
+======================================================================
+A. DOMAIN / DATA MODEL
+======================================================================
+
+Adapt to the current schema. Reuse existing domain concepts where sensible.
+Only add new entities/fields where genuinely needed.
+
+Preferred conceptual model:
+
+1) communities (or equivalent)
+If the current architecture already has a fitting entity (e.g. circle, group, club, workspace community), reuse/extend it instead of creating unnecessary duplication.
+Otherwise create an appropriate entity.
+
+Minimum conceptual fields:
+- id
+- slug
+- name
+- description (nullable)
+- visibilityPolicy / archiveVisibilityMode
+- createdAt
+- updatedAt
+
+2) community_memberships (or equivalent)
+Reuse existing membership model if one exists.
+Otherwise create one.
+
+Minimum conceptual fields:
+- id
+- communityId
+- userId
+- role (member / moderator / admin or equivalent)
+- status
+- createdAt
+- updatedAt
+
+3) historical_tastings linkage
+Historical tastings must be attributable to a community or equivalent owner scope.
+
+Add/adapt fields such as:
+- communityId (nullable only if necessary for migration compatibility)
+- visibilityLevel
+
+Suggested visibility levels:
+- public_aggregated
+- community_only
+- private_admin
+
+You may represent these via enum/string/type consistent with the existing codebase.
+
+4) Optional configuration model
+If the codebase already uses settings/config entities, store community-specific historical archive policy there instead of inventing a parallel model.
+
+IMPORTANT:
+- Avoid schema sprawl
+- Reuse current “Circle” concepts if that is the natural architectural fit
+- Avoid breaking existing historical import logic
+- Avoid breaking existing live tasting logic
+
+======================================================================
+B. ACCESS CONTROL / VISIBILITY RULES
+======================================================================
+
+Implement access rules for historical tasting data:
+
+1) Public / anonymous / normal users:
+May access:
+- anonymized aggregated historical insights
+Must NOT access:
+- full community archive
+- full tasting detail if restricted
+- detailed lineup/ranking pages for protected community data
+
+2) Community members:
+May access:
+- archive list for their own community
+- historical tasting detail pages for their own community
+- community-specific insights for their own community
+
+3) Admin/internal privileged users:
+May access:
+- everything
+- data quality/admin/debug views if such surfaces exist or are appropriate
+
+Important:
+- Enforce access control on the server side, not only in UI
+- Frontend hiding alone is not sufficient
+- APIs must not leak restricted data
+
+======================================================================
+C. PUBLIC AGGREGATED LAYER
+======================================================================
+
+Implement a public-safe aggregated historical insights layer.
+
+This layer should:
+- remove or avoid community-identifying detail where appropriate
+- avoid exposing full tasting-by-tasting archive unless policy allows
+- expose useful generalized insights
+
+Examples of acceptable public outputs:
+- top-rated whiskies across historical blind tastings
+- average score by region
+- smoky vs non-smoky average
+- cask style performance
+- age/ABV/price tendencies where data quality allows
+
+Examples of NOT acceptable public outputs by default:
+- “Tasting #17 from [specific club] had these exact whiskies ranked 1–8”
+- full archive detail of a restricted community
+- identifiable private comments or participant data
+
+If the current app already has historical analytics pages, split them into:
+- public-safe aggregated mode
+- community-specific detailed mode
+
+======================================================================
+D. COMMUNITY-SPECIFIC ARCHIVE
+======================================================================
+
+Implement community-gated archive access.
+
+For users who belong to the relevant community:
+- show archive entry point in the appropriate place
+- allow archive browsing
+- allow tasting detail access
+- show richer summaries and rankings
+
+For users who are NOT members:
+- do not show restricted archive content
+- show elegant locked/inaccessible states where necessary
+- optionally show a tasteful explanation that some archives are community-specific
+
+Do NOT produce clumsy UX.
+Do NOT expose broken links.
+Do NOT show ugly “403 raw JSON” experiences on the frontend.
+
+======================================================================
+E. UI / IA INTEGRATION
+======================================================================
+
+You must adapt to the CURRENT CaskSense information architecture.
+
+Use the current nav structure and patterns.
+Likely fit:
+- detailed historical archive access belongs under Tastings and/or Circle depending on current architecture
+- public aggregated insights may live under Taste or Tastings depending on current current IA
+But you must decide this based on CURRENT structure after inspection.
+
+Desired UX principles:
+- intuitive
+- elegant
+- Apple-professional
+- warm, calm, premium
+- no “developer appendix” feel
+
+Possible UX outcome:
+- Public users see “Historical Insights”
+- Community members additionally see “Community Archive”
+- Admins additionally see internal archive controls/debug access
+
+Use existing design system, layout shell, cards, tables, filters, tabs, badges, and microcopy conventions.
+
+======================================================================
+F. BACKEND / API LAYER
+======================================================================
+
+Implement or adapt backend endpoints/query services for:
+
+1) Public aggregated historical insights
+- safe for public/general authenticated use
+- no restricted detail leakage
+
+2) Community archive list
+- requires membership/admin authorization
+
+3) Community archive detail
+- requires membership/admin authorization
+
+4) Optional admin/community management endpoints if appropriate
+- assign historical archive to community
+- inspect visibility config
+- inspect counts/access
+
+All server responses must enforce access policy before returning data.
+
+======================================================================
+G. MIGRATION / SEED / TRANSITION LOGIC
+======================================================================
+
+Handle the fact that historical data may already exist.
+
+Required:
+- If historical tasting records already exist, migrate/link them sensibly to the new community visibility model
+- Add a sensible default policy for existing imported data
+- Do not orphan existing historical data
+- Do not duplicate archive records
+
+If there is currently exactly one imported historical dataset, assign it to a clear initial community/container in a sane way, using existing naming conventions where appropriate.
+Keep this extensible for multiple future communities.
+
+If needed, create a migration/seed step that:
+- creates the initial community (or equivalent)
+- links the historical tastings to it
+- sets default visibility to community_only with public aggregated analytics enabled
+unless the current codebase strongly suggests a better convention
+
+======================================================================
+H. ADMIN / INTERNAL VISIBILITY
+======================================================================
+
+If the app has an admin/profile/internal surface, add a minimal but useful way to inspect:
+- which community owns which historical archive
+- current visibility policy
+- member count or access mapping if available
+- whether public aggregated insights are enabled
+- historical dataset counts
+
+This must be internal-facing and not noisy.
+
+======================================================================
+I. I18N / COPY
+======================================================================
+
+Use proper DE/EN localization consistent with the current codebase.
+
+Tone:
+- polished
+- clear
+- premium
+- understated
+
+Potential labels, adapted as needed:
+DE:
+- Historische Einblicke
+- Community-Archiv
+- Nur für Mitglieder sichtbar
+- Aggregierte historische Blind-Tasting-Daten
+EN:
+- Historical Insights
+- Community Archive
+- Visible to members only
+- Aggregated historical blind-tasting data
+
+No mixed-language leftovers.
+No raw enum leakage in UI.
+
+======================================================================
+J. TESTING / VALIDATION
+======================================================================
+
+You must validate thoroughly.
+
+At minimum validate:
+1) public user can access aggregated insights
+2) public user cannot access restricted community archive detail
+3) community member can access own archive
+4) non-member cannot access another community’s restricted archive
+5) admin can access all
+6) no API leaks restricted data
+7) existing live tasting / Join / Host / Solo flows remain unaffected
+8) build passes
+9) typings remain coherent
+10) if historical archive already existed, it still works correctly under the new visibility model
+
+Add/update automated tests where feasible:
+- server access control tests
+- visibility helper tests
+- frontend conditional rendering tests if test setup exists
+
+Also do practical runtime validation.
+
+======================================================================
+K. IMPLEMENTATION QUALITY BAR
+======================================================================
+
+You must:
+- inspect current architecture first
+- adapt the design to CURRENT reality
+- avoid duplicating entities that already exist under another name
+- avoid temporary hacks
+- avoid dead code
+- avoid leaking restricted data via overlooked endpoints
+- maintain clean TypeScript types
+- maintain coherent route structure
+- preserve responsiveness and UX quality
+
+Do not just add superficial UI gating.
+This is a real domain/access-control feature.
+
+======================================================================
+L. FINAL DELIVERABLE
+======================================================================
+
+Actually implement the feature end-to-end.
+
+At the end, provide a precise execution report in Replit output:
+1) what current architecture you found relevant
+2) what you reused vs what you added
+3) DB/schema changes
+4) routes/endpoints changed or added
+5) pages/components changed or added
+6) visibility rules implemented
+7) migration/seed/linking performed for existing historical data
+8) tests/validation performed
+9) remaining known limitations if any
+10) whether the feature is ready for small-circle testing
+
+Do NOT stop at recommendations.
+Do NOT leave partial scaffolding.
+Implement, validate, and report concretely.
