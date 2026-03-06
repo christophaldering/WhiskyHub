@@ -1550,26 +1550,26 @@ export default function M2TastingPlay() {
             style={{
               position: "fixed",
               bottom: 140,
-              right: 16,
+              right: 20,
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              width: 48,
-              height: 48,
+              gap: 8,
+              padding: "12px 20px",
               background: v.accent,
               color: v.bg,
-              borderRadius: "50%",
+              borderRadius: 24,
+              fontWeight: 700,
+              fontSize: 14,
+              fontFamily: "system-ui, sans-serif",
               boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
               cursor: "pointer",
               zIndex: 50,
               transition: "transform 0.2s, box-shadow 0.2s",
             }}
             data-testid="button-host-control-toggle"
-            role="link"
-            aria-label={t("m2.play.hostControl", "Host Control")}
-            title={t("m2.play.hostControl", "Host Control")}
           >
-            <Crown style={{ width: 20, height: 20 }} />
+            <Crown style={{ width: 18, height: 18 }} />
+            {t("m2.play.hostControl", "Host Control")}
           </div>
         </Link>
       )}
