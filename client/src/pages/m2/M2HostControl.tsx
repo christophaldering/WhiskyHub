@@ -10,7 +10,7 @@ import { getSession } from "@/lib/session";
 import {
   Play, Lock, Eye, EyeOff, Archive, ChevronRight, CheckCircle, Clock,
   SkipForward, Sparkles, Plus, Trash2, GripVertical, ImageIcon,
-  FileText, Info, Loader2, RefreshCw, ChevronDown, ChevronUp, Edit3, Star
+  FileText, Info, Loader2, RefreshCw, ChevronDown, ChevronUp, Edit3, Star, Monitor
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -261,9 +261,30 @@ export default function M2HostControl() {
       >
         {t("m2.hostControl.title", "Host Control")}
       </h1>
-      <p style={{ fontSize: 13, color: v.textSecondary, margin: "0 0 20px" }}>
+      <p style={{ fontSize: 13, color: v.textSecondary, margin: "0 0 12px" }}>
         {tasting.title || t("m2.tastings.untitled", "Untitled Tasting")}
       </p>
+
+      <Link href={`/m2/tastings/session/${id}/dashboard`} style={{ textDecoration: "none" }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "12px 16px", borderRadius: 12, marginBottom: 16,
+          background: `color-mix(in srgb, ${v.accent} 12%, transparent)`,
+          border: `1px solid color-mix(in srgb, ${v.accent} 30%, transparent)`,
+          cursor: "pointer",
+        }} data-testid="dashboard-link-banner">
+          <Monitor style={{ width: 18, height: 18, color: v.accent, flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: v.accent }}>
+              {t("m2.hostControl.openDashboard", "Open Hosting Dashboard")}
+            </div>
+            <div style={{ fontSize: 11, color: v.muted }}>
+              {t("m2.hostControl.dashboardDesc", "Full desktop control center for live tastings")}
+            </div>
+          </div>
+          <ChevronRight style={{ width: 16, height: 16, color: v.accent }} />
+        </div>
+      </Link>
 
       {/* Status & Stats */}
       <div style={cardStyle}>

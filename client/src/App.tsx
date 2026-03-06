@@ -112,6 +112,7 @@ import M2TastingsHost from "@/pages/m2/M2TastingsHost";
 import M2TastingsSolo from "@/pages/m2/M2TastingsSolo";
 import M2TastingSession from "@/pages/m2/M2TastingSession";
 import M2HostControl from "@/pages/m2/M2HostControl";
+import M2HostingDashboard from "@/pages/m2/M2HostingDashboard";
 import M2TastingPlay from "@/pages/m2/M2TastingPlay";
 import M2TastingRecap from "@/pages/m2/M2TastingRecap";
 import M2TastingResults from "@/pages/m2/M2TastingResults";
@@ -305,6 +306,9 @@ function Router() {
         {/* === MODULE 2 (parallel UI, same data) === */}
         <Route path="/m2/tastings/session/:id/results">
           <Module2Shell><M2TastingResults /></Module2Shell>
+        </Route>
+        <Route path="/m2/tastings/session/:id/dashboard">
+          <Module2Shell><M2HostingDashboard /></Module2Shell>
         </Route>
         <Route path="/m2/tastings/session/:id/host">
           <Module2Shell><M2HostControl /></Module2Shell>

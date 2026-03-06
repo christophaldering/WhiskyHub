@@ -14,7 +14,7 @@ import {
   Copy, Check, EyeOff, Share2, QrCode, Download, Play, Square, Eye,
   Users, BarChart3, Star, Upload, Mail, Settings, Image, Calendar,
   MapPin, FileText, RefreshCw, Send, Search, BookOpen, Heart, UserPlus,
-  MessageCircle, ExternalLink, Sliders, Video, Lock, Globe, Gauge,
+  MessageCircle, ExternalLink, Sliders, Video, Lock, Globe, Gauge, Monitor,
 } from "lucide-react";
 
 type WizardStep = "list" | "step1" | "step2" | "step3" | "step4";
@@ -1934,6 +1934,22 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
           )}
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => navigate(`/m2/tastings/session/${tasting.id}/dashboard`)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+          padding: "14px", fontSize: 14, fontWeight: 700,
+          background: v.accent, color: v.bg,
+          border: "none", borderRadius: 12,
+          cursor: "pointer", fontFamily: "system-ui, sans-serif",
+        }}
+        data-testid="button-open-dashboard"
+      >
+        <Monitor style={{ width: 18, height: 18 }} />
+        {t("m2.host.openDashboard", "Open Hosting Dashboard")}
+      </button>
 
       <div style={cardStyle} data-testid="section-dram-control">
         <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: v.muted, marginBottom: 14 }}>

@@ -57,6 +57,9 @@ A fully self-contained parallel UI sharing the same backend, auth, and database,
 -   **Discover (`/m2/discover/*`)**: Hub for community, knowledge, planning, and information.
 -   **Admin (`/m2/admin`)**: Dedicated route for administrative functionalities like user management, AI controls, and platform settings.
 
+#### Hosting Dashboard (`/m2/tastings/session/:id/dashboard`) — 1 page
+- `M2HostingDashboard` — Desktop-first live tasting control center with 3-column layout (Left: session status, live controls, blind reveal, guided navigation, session summary | Center: whisky lineup with per-dram progress, participant status roster with real-time rating indicators | Right: host's own rating panel with 5-dimension sliders and auto-save, participant view preview showing what guests currently see). Mobile companion view with essential controls and "desktop recommended" banner. Entry points from Step4Live and M2HostControl. Host-only access with authorization check.
+
 ### Test Suite
 A comprehensive test framework using Vitest with unit, API, E2E, and smoke tests, covering Module2Shell rendering, authentication flows, API endpoints, and route verification.
 
