@@ -8,7 +8,7 @@ import { participantApi } from "@/lib/api";
 import {
   X, LogOut, User, Globe, Settings, Palette, Download,
   ArrowLeftRight, UserPlus, KeyRound, Mail, Eye, EyeOff,
-  Shield, ChevronLeft, Sun, Moon, CheckCircle2
+  Shield, ChevronLeft, Sun, Moon, CheckCircle2, Info, HandHeart
 } from "lucide-react";
 import i18n from "@/lib/i18n";
 
@@ -686,6 +686,21 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         label={t("m2.profile.switchClassic", "Switch to Classic UI")}
         onClick={() => { onClose(); window.location.href = "/tasting"; }}
         testId="m2-profile-classic"
+      />
+
+      <div style={{ height: 1, background: v.border, margin: "8px 0" }} />
+
+      <MenuButton
+        icon={<Info style={{ width: 18, height: 18, color: v.accent }} />}
+        label={t("m2.profile.about", "About CaskSense")}
+        onClick={() => { onClose(); navigate("/m2/discover/about"); }}
+        testId="m2-profile-about"
+      />
+      <MenuButton
+        icon={<HandHeart style={{ width: 18, height: 18, color: v.accent }} />}
+        label={t("m2.profile.support", "Support Us")}
+        onClick={() => { onClose(); navigate("/m2/discover/donate"); }}
+        testId="m2-profile-support"
       />
 
       <div style={{ height: 8 }} />
