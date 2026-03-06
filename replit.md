@@ -31,7 +31,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Tasting Menu Card**: AI-generated cover image + multi-page PDF (cover, participants, whisky lineup). Configurable orientation (portrait/landscape), blind/open mode, optional prompt hint for cover image mood. Backend: `POST /api/tastings/:id/menu-cover` generates context-aware DALL-E image. Frontend: `client/src/components/tasting-menu-pdf.ts` generates jsPDF. UI: `TastingMenuSection` in `M2TastingsHost.tsx` Step 3.
 -   **Tasting Features**: Includes whisky management, flight board, PDF export, blind mode, discussion panel, tasting note generator, and host-uploadable cover images.
 -   **Personalization & Analytics**: Participant profiles, whisky journal, achievement badges, personal flavor profiles, whisky recommendations, side-by-side comparisons, and privacy-respecting per-tasting analytics.
--   **Internationalization**: Full migration to react-i18next supporting German and English. All M2 page headers, subtitles, action card labels, status badges, filter options, and empty states are fully translated in both languages via `client/src/lib/i18n.ts` (EN block starts line ~11, DE block starts line ~5473, M2-specific keys in `m2:` sub-objects at lines ~4255 / ~9683).
+-   **Internationalization**: Full migration to react-i18next supporting German and English. All M2 page headers, subtitles, action card labels, status badges, filter options, and empty states are fully translated in both languages via `client/src/lib/i18n.ts` (EN block starts line ~11, DE block starts line ~5492, M2-specific keys in `m2:` sub-objects at lines ~4255 / ~9702).
 -   **Host Tools**: Host briefing notes, tasting curation wizard, dashboard summary, and tasting management.
 -   **AI Integration**: AI for bottle identification, content generation, market price estimation, tasting suggestions, and Whiskybase ID auto-fill lookup.
 -   **Whiskybase ID Lookup & Barcode Scanner**: Auto-filling whisky details via Whiskybase ID or camera-based barcode scanning with rate limiting and caching.
@@ -82,7 +82,7 @@ Includes historical reconciliation tools (`GET /api/admin/historical/reconciliat
 -   **qrcode**: For QR code generation.
 -   **html5-qrcode**: For camera-based QR/barcode scanning.
 -   **Replit Object Storage**: For image storage.
--   **GPT-4o**: For AI functionalities.
+-   **GPT-4o / gpt-image-1**: For AI functionalities and image generation.
 -   **Recharts**: For data visualization.
 -   **jsPDF**: For PDF generation.
 -   **Framer Motion**: For animations.
