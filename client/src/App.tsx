@@ -127,6 +127,8 @@ import M2TasteWheel from "@/pages/m2/M2TasteWheel";
 import M2TasteBenchmark from "@/pages/m2/M2TasteBenchmark";
 import M2CollectionAnalysis from "@/pages/m2/M2CollectionAnalysis";
 import M2HistoricalTastings from "@/pages/m2/M2HistoricalTastings";
+import M2HistoricalInsights from "@/pages/m2/M2HistoricalInsights";
+import M2HistoricalTastingDetail from "@/pages/m2/M2HistoricalTastingDetail";
 import M2TasteSettings from "@/pages/m2/M2TasteSettings";
 import M2TasteWishlist from "@/pages/m2/M2TasteWishlist";
 import M2CircleHome from "@/pages/m2/M2CircleHome";
@@ -379,6 +381,12 @@ function Router() {
         </Route>
         <Route path="/m2/taste/collection-analysis">
           <Module2Shell><M2CollectionAnalysis /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste/historical/insights">
+          <Module2Shell><M2HistoricalInsights /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste/historical/:id">
+          <Module2Shell><M2HistoricalTastingDetail /></Module2Shell>
         </Route>
         <Route path="/m2/taste/historical">
           <Module2Shell><M2HistoricalTastings /></Module2Shell>

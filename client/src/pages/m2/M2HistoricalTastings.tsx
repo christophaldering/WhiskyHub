@@ -1,51 +1,25 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { v } from "@/lib/themeVars";
+import { Link } from "wouter";
+import { v, alpha } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import {
-  ChevronDown, ChevronRight, Search, Wine, Trophy,
-  MapPin, Flame, Calendar, Hash, BarChart3,
+  Search, Wine, Trophy, Calendar, Hash, BarChart3,
+  ArrowUpDown, ChevronRight, Archive, Sparkles,
 } from "lucide-react";
 
-interface HistoricalTasting {
+interface EnrichedTasting {
   id: string;
   tastingNumber: number;
   titleDe: string | null;
   titleEn: string | null;
   tastingDate: string | null;
   whiskyCount: number;
-}
-
-interface HistoricalEntry {
-  id: string;
-  distilleryRaw: string | null;
-  whiskyNameRaw: string | null;
-  ageRaw: string | null;
-  alcoholRaw: string | null;
-  priceRaw: string | null;
-  countryRaw: string | null;
-  regionRaw: string | null;
-  typeRaw: string | null;
-  smokyRaw: string | null;
-  caskRaw: string | null;
-  noseScore: number | null;
-  noseRank: number | null;
-  tasteScore: number | null;
-  tasteRank: number | null;
-  finishScore: number | null;
-  finishRank: number | null;
-  totalScore: number | null;
-  totalRank: number | null;
-  normalizedAbv: number | null;
-  normalizedAge: number | null;
-  normalizedPrice: number | null;
-  normalizedIsSmoky: boolean | null;
-  normalizedRegion: string | null;
-}
-
-interface TastingDetail extends HistoricalTasting {
-  entries: HistoricalEntry[];
+  avgTotalScore: number | null;
+  winnerDistillery: string | null;
+  winnerName: string | null;
+  winnerScore: number | null;
 }
 
 interface AnalyticsData {
@@ -58,6 +32,8 @@ interface AnalyticsData {
   scoreDistribution: Array<{ range: string; count: number }>;
 }
 
+type SortMode = "number-asc" | "number-desc" | "date-newest" | "date-oldest" | "quality";
+
 async function fetchJSON(url: string) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -68,42 +44,27 @@ function formatDate(dateStr: string | null, lang: string): string {
   if (!dateStr) return "—";
   try {
     const d = new Date(dateStr);
-    return d.toLocaleDateString(lang === "de" ? "de-DE" : "en-US", { year: "numeric", month: "long", day: "numeric" });
+    return d.toLocaleDateString(lang === "de" ? "de-DE" : "en-US", { year: "numeric", month: "short" });
   } catch {
     return dateStr;
   }
 }
 
-function ScoreBar({ value, max = 10 }: { value: number | null; max?: number }) {
-  if (value == null) return <span style={{ color: v.muted }}>—</span>;
-  const pct = Math.min((value / max) * 100, 100);
-  const color = pct >= 75 ? "#4ade80" : pct >= 50 ? v.accent : pct >= 25 ? "#f59e0b" : "#ef4444";
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <div style={{ width: 50, height: 6, background: v.border, borderRadius: 3, overflow: "hidden" }}>
-        <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 3 }} />
-      </div>
-      <span style={{ fontSize: 12, color: v.text, fontVariantNumeric: "tabular-nums", minWidth: 28 }}>{value.toFixed(1)}</span>
-    </div>
-  );
+function getWinnerLabel(t: EnrichedTasting): string {
+  if (!t.winnerDistillery && !t.winnerName) return "—";
+  const parts = [t.winnerDistillery, t.winnerName].filter(Boolean);
+  return parts.join(" — ");
 }
 
 export default function M2HistoricalTastings() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const [search, setSearch] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>("number-desc");
 
-  const { data: tastingsData, isLoading: tastingsLoading, isError: tastingsError } = useQuery<{ tastings: HistoricalTasting[]; total: number }>({
-    queryKey: ["historical-tastings", search],
-    queryFn: () => fetchJSON(`/api/historical/tastings?limit=100&search=${encodeURIComponent(search)}`),
-  });
-
-  const { data: detailData } = useQuery<TastingDetail>({
-    queryKey: ["historical-tasting", expandedId],
-    queryFn: () => fetchJSON(`/api/historical/tastings/${expandedId}`),
-    enabled: !!expandedId,
+  const { data: tastingsData, isLoading, isError } = useQuery<{ tastings: EnrichedTasting[]; total: number }>({
+    queryKey: ["historical-tastings-enriched", search],
+    queryFn: () => fetchJSON(`/api/historical/tastings?limit=200&enriched=true&search=${encodeURIComponent(search)}`),
   });
 
   const { data: analytics } = useQuery<AnalyticsData>({
@@ -112,267 +73,397 @@ export default function M2HistoricalTastings() {
   });
 
   const tastings = tastingsData?.tastings ?? [];
-  const sorted = [...tastings].sort((a, b) => a.tastingNumber - b.tastingNumber);
 
-  const getTitle = (t: HistoricalTasting) => (lang === "de" ? t.titleDe : t.titleEn) || t.titleDe || `Tasting #${t.tastingNumber}`;
+  const sorted = useMemo(() => {
+    const arr = [...tastings];
+    switch (sortMode) {
+      case "number-asc":
+        return arr.sort((a, b) => a.tastingNumber - b.tastingNumber);
+      case "number-desc":
+        return arr.sort((a, b) => b.tastingNumber - a.tastingNumber);
+      case "date-newest":
+        return arr.sort((a, b) => {
+          if (!a.tastingDate && !b.tastingDate) return 0;
+          if (!a.tastingDate) return 1;
+          if (!b.tastingDate) return -1;
+          return new Date(b.tastingDate).getTime() - new Date(a.tastingDate).getTime();
+        });
+      case "date-oldest":
+        return arr.sort((a, b) => {
+          if (!a.tastingDate && !b.tastingDate) return 0;
+          if (!a.tastingDate) return 1;
+          if (!b.tastingDate) return -1;
+          return new Date(a.tastingDate).getTime() - new Date(b.tastingDate).getTime();
+        });
+      case "quality":
+        return arr.sort((a, b) => (b.avgTotalScore ?? 0) - (a.avgTotalScore ?? 0));
+      default:
+        return arr;
+    }
+  }, [tastings, sortMode]);
+
+  const getTitle = (tasting: EnrichedTasting) =>
+    (lang === "de" ? tasting.titleDe : tasting.titleEn) || tasting.titleDe || `Tasting #${tasting.tastingNumber}`;
+
+  const avgGlobalScore = analytics && analytics.totalEntries > 0
+    ? (analytics.topWhiskies.reduce((sum, w) => sum + (w.totalScore ?? 0), 0) / analytics.topWhiskies.length)
+    : null;
+
+  const totalWhiskies = analytics?.totalEntries ?? 0;
+  const totalTastings = analytics?.totalTastings ?? 0;
+  const regionCount = analytics ? Object.keys(analytics.regionBreakdown).length : 0;
+
+  const sortOptions: { value: SortMode; label: string }[] = [
+    { value: "number-desc", label: t("m2.historical.sortNewest", "# Newest first") },
+    { value: "number-asc", label: t("m2.historical.sortOldest", "# Oldest first") },
+    { value: "date-newest", label: t("m2.historical.sortDateNew", "Date ↓") },
+    { value: "date-oldest", label: t("m2.historical.sortDateOld", "Date ↑") },
+    { value: "quality", label: t("m2.historical.sortQuality", "Best rated") },
+  ];
 
   return (
     <div style={{ padding: "16px 16px 100px", maxWidth: 800, margin: "0 auto" }}>
       <M2BackButton />
-      <h1 style={{ fontSize: 22, fontWeight: 700, color: v.text, marginTop: 12 }} data-testid="historical-title">
-        {t("m2.historical.title", "Historical Tastings")}
-      </h1>
-      <p style={{ fontSize: 13, color: v.muted, marginTop: 4, marginBottom: 16 }}>
-        {t("m2.historical.subtitle", "External tasting data from past events")}
-      </p>
+
+      <div style={{ marginTop: 12, marginBottom: 8 }}>
+        <h1
+          style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: 24,
+            fontWeight: 700,
+            color: v.text,
+            margin: 0,
+          }}
+          data-testid="historical-title"
+        >
+          {t("m2.historical.title", "Historical Tastings")}
+        </h1>
+        <p style={{ fontSize: 13, color: v.muted, marginTop: 4, lineHeight: 1.5, maxWidth: 520 }}>
+          {t("m2.historical.archiveIntro", "A curated archive of past tasting events — browse, compare, and rediscover memorable drams.")}
+        </p>
+      </div>
 
       {analytics && (
-        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-          <div style={{ flex: 1, minWidth: 80, background: v.card, border: `1px solid ${v.border}`, borderRadius: 10, padding: "10px 8px", textAlign: "center" }} data-testid="stat-tastings">
-            <div style={{ fontSize: 20, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>{analytics.totalTastings}</div>
-            <div style={{ fontSize: 11, color: v.muted }}>{t("m2.historical.statTastings", "Tastings")}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16, marginTop: 16 }}>
+          <div
+            style={{
+              background: v.card,
+              border: `1px solid ${v.border}`,
+              borderRadius: 12,
+              padding: "14px 8px",
+              textAlign: "center",
+            }}
+            data-testid="stat-tastings"
+          >
+            <div style={{ fontSize: 22, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>
+              {totalTastings}
+            </div>
+            <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              {t("m2.historical.statTastings", "Tastings")}
+            </div>
           </div>
-          <div style={{ flex: 1, minWidth: 80, background: v.card, border: `1px solid ${v.border}`, borderRadius: 10, padding: "10px 8px", textAlign: "center" }} data-testid="stat-whiskies">
-            <div style={{ fontSize: 20, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>{analytics.totalEntries}</div>
-            <div style={{ fontSize: 11, color: v.muted }}>{t("m2.historical.statWhiskies", "Whiskies")}</div>
+          <div
+            style={{
+              background: v.card,
+              border: `1px solid ${v.border}`,
+              borderRadius: 12,
+              padding: "14px 8px",
+              textAlign: "center",
+            }}
+            data-testid="stat-whiskies"
+          >
+            <div style={{ fontSize: 22, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>
+              {totalWhiskies}
+            </div>
+            <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              {t("m2.historical.statWhiskies", "Whiskies")}
+            </div>
           </div>
-          <div style={{ flex: 1, minWidth: 80, background: v.card, border: `1px solid ${v.border}`, borderRadius: 10, padding: "10px 8px", textAlign: "center" }} data-testid="stat-smoky">
-            <div style={{ fontSize: 20, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>
+          <div
+            style={{
+              background: v.card,
+              border: `1px solid ${v.border}`,
+              borderRadius: 12,
+              padding: "14px 8px",
+              textAlign: "center",
+            }}
+            data-testid="stat-regions"
+          >
+            <div style={{ fontSize: 22, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>
+              {regionCount}
+            </div>
+            <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              {t("m2.historical.statRegions", "Regions")}
+            </div>
+          </div>
+          <div
+            style={{
+              background: v.card,
+              border: `1px solid ${v.border}`,
+              borderRadius: 12,
+              padding: "14px 8px",
+              textAlign: "center",
+            }}
+            data-testid="stat-smoky"
+          >
+            <div style={{ fontSize: 22, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>
               {analytics.smokyBreakdown.smoky > 0 ? Math.round((analytics.smokyBreakdown.smoky / analytics.totalEntries) * 100) : 0}%
             </div>
-            <div style={{ fontSize: 11, color: v.muted }}>{t("m2.historical.statSmoky", "Smoky")}</div>
+            <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              {t("m2.historical.statSmoky", "Smoky")}
+            </div>
           </div>
         </div>
       )}
 
-      <button
-        onClick={() => setShowAnalytics(!showAnalytics)}
-        style={{
-          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-          background: v.card, border: `1px solid ${v.border}`, borderRadius: 10,
-          padding: "12px 14px", color: v.text, cursor: "pointer", marginBottom: 12,
-        }}
-        data-testid="toggle-analytics"
-      >
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <BarChart3 size={16} color={v.accent} />
-          <span style={{ fontSize: 14, fontWeight: 600 }}>{t("m2.historical.analyticsTitle", "Cross-Tasting Analytics")}</span>
-        </span>
-        {showAnalytics ? <ChevronDown size={16} color={v.muted} /> : <ChevronRight size={16} color={v.muted} />}
-      </button>
+      <Link href="/m2/taste/historical/insights" style={{ textDecoration: "none" }}>
+        <div
+          style={{
+            background: v.card,
+            border: `1px solid ${v.border}`,
+            borderRadius: 12,
+            padding: "14px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            cursor: "pointer",
+            marginBottom: 16,
+          }}
+          data-testid="link-insights"
+        >
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: alpha(v.accent, "15"),
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <BarChart3 style={{ width: 18, height: 18, color: v.accent }} strokeWidth={1.8} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: v.text }}>
+              {t("m2.historical.insightsLink", "Cross-Tasting Insights")}
+            </div>
+            <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>
+              {t("m2.historical.insightsDesc", "Top whiskies, regions, trends & group profile")}
+            </div>
+          </div>
+          <ChevronRight style={{ width: 16, height: 16, color: v.muted, flexShrink: 0 }} strokeWidth={1.8} />
+        </div>
+      </Link>
 
-      {showAnalytics && analytics && (
-        <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 10, padding: 16, marginBottom: 16 }} data-testid="analytics-panel">
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: v.accent, marginBottom: 12 }}>
-            <Trophy size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />
-            {t("m2.historical.topWhiskies", "Top 10 Whiskies")}
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {analytics.topWhiskies.map((w, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-                <span style={{ width: 22, textAlign: "right", color: i < 3 ? v.accent : v.muted, fontWeight: i < 3 ? 700 : 400, fontVariantNumeric: "tabular-nums" }}>{i + 1}.</span>
-                <span style={{ flex: 1, color: v.text }}>{w.distillery}{w.distillery && w.name ? " — " : ""}{w.name}</span>
-                <span style={{ color: v.accent, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{w.totalScore?.toFixed(1)}</span>
-                <span style={{ fontSize: 11, color: v.muted }}>#{w.tastingNumber}</span>
-              </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "stretch" }}>
+        <div style={{ position: "relative", flex: 1 }}>
+          <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: v.muted }} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("m2.historical.searchPlaceholder", "Search tastings...")}
+            style={{
+              width: "100%",
+              padding: "10px 12px 10px 34px",
+              background: v.card,
+              border: `1px solid ${v.border}`,
+              borderRadius: 10,
+              color: v.text,
+              fontSize: 14,
+              outline: "none",
+              height: "100%",
+              boxSizing: "border-box",
+            }}
+            data-testid="historical-search"
+          />
+        </div>
+        <div style={{ position: "relative" }}>
+          <ArrowUpDown size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: v.muted, pointerEvents: "none" }} />
+          <select
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as SortMode)}
+            style={{
+              appearance: "none",
+              padding: "10px 32px 10px 28px",
+              background: v.card,
+              border: `1px solid ${v.border}`,
+              borderRadius: 10,
+              color: v.text,
+              fontSize: 13,
+              cursor: "pointer",
+              outline: "none",
+              height: "100%",
+            }}
+            data-testid="historical-sort"
+          >
+            {sortOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
-          </div>
+          </select>
+        </div>
+      </div>
 
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: v.accent, marginTop: 20, marginBottom: 10 }}>
-            <MapPin size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />
-            {t("m2.historical.regionBreakdown", "Regions")}
-          </h3>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {Object.entries(analytics.regionBreakdown)
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 15)
-              .map(([region, count]) => (
-                <span key={region} style={{
-                  background: v.bg, border: `1px solid ${v.border}`, borderRadius: 16,
-                  padding: "4px 10px", fontSize: 12, color: v.text,
-                }}>
-                  {region} <span style={{ color: v.muted }}>({count})</span>
-                </span>
-              ))}
+      {isLoading && (
+        <div style={{ textAlign: "center", padding: "60px 16px" }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: "50%",
+            border: `3px solid ${v.border}`,
+            borderTopColor: v.accent,
+            animation: "spin 0.8s linear infinite",
+            margin: "0 auto 16px",
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <div style={{ color: v.muted, fontSize: 14 }}>
+            {t("m2.historical.loading", "Loading archive...")}
           </div>
+        </div>
+      )}
 
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: v.accent, marginTop: 20, marginBottom: 10 }}>
-            <Flame size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />
-            {t("m2.historical.smokyLabel", "Smoky vs Non-Smoky")}
-          </h3>
-          <div style={{ display: "flex", gap: 8, height: 24, borderRadius: 6, overflow: "hidden" }}>
-            <div style={{
-              flex: analytics.smokyBreakdown.smoky,
-              background: "#f59e0b",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 11, fontWeight: 600, color: "#000",
-            }}>
-              {analytics.smokyBreakdown.smoky > 0 && `${analytics.smokyBreakdown.smoky}`}
-            </div>
-            <div style={{
-              flex: analytics.smokyBreakdown.nonSmoky,
-              background: "#60a5fa",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 11, fontWeight: 600, color: "#000",
-            }}>
-              {analytics.smokyBreakdown.nonSmoky > 0 && `${analytics.smokyBreakdown.nonSmoky}`}
-            </div>
+      {isError && (
+        <div style={{
+          textAlign: "center",
+          padding: "48px 16px",
+          background: v.card,
+          border: `1px solid ${v.border}`,
+          borderRadius: 12,
+        }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
+          <div style={{ color: v.danger, fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
+            {t("m2.historical.loadError", "Could not load historical tastings.")}
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: v.muted, marginTop: 4 }}>
-            <span>{t("m2.historical.smoky", "Smoky")}</span>
-            <span>{t("m2.historical.nonSmoky", "Non-Smoky")}</span>
+          <div style={{ color: v.muted, fontSize: 13 }}>
+            {t("m2.historical.loadErrorHint", "Please try again later.")}
           </div>
+        </div>
+      )}
 
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: v.accent, marginTop: 20, marginBottom: 10 }}>
-            {t("m2.historical.scoreDistribution", "Score Distribution")}
-          </h3>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 60 }}>
-            {analytics.scoreDistribution.map((bucket) => {
-              const maxCount = Math.max(...analytics.scoreDistribution.map(s => s.count), 1);
-              const pct = (bucket.count / maxCount) * 100;
+      {!isLoading && !isError && sorted.length === 0 && (
+        <div style={{
+          textAlign: "center",
+          padding: "48px 16px",
+          background: v.card,
+          border: `1px solid ${v.border}`,
+          borderRadius: 12,
+        }}>
+          <Archive style={{ width: 40, height: 40, color: v.muted, margin: "0 auto 12px", display: "block" }} strokeWidth={1.2} />
+          <div style={{ color: v.text, fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
+            {t("m2.historical.emptyTitle", "No historical tastings found")}
+          </div>
+          <div style={{ color: v.muted, fontSize: 13 }}>
+            {search
+              ? t("m2.historical.emptySearch", "Try a different search term.")
+              : t("m2.historical.empty", "No historical tasting data available yet.")}
+          </div>
+        </div>
+      )}
+
+      {!isLoading && !isError && sorted.length > 0 && (
+        <>
+          <div style={{ fontSize: 12, color: v.muted, marginBottom: 8 }}>
+            {sorted.length} {t("m2.historical.tastingsCount", "tastings")}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {sorted.map((tasting) => {
+              const winnerLabel = getWinnerLabel(tasting);
               return (
-                <div key={bucket.range} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{
-                    width: "100%", height: `${Math.max(pct, 2)}%`,
-                    background: bucket.count > 0 ? v.accent : v.border, borderRadius: 2,
-                    minHeight: 2,
-                  }} />
-                  <span style={{ fontSize: 9, color: v.muted, marginTop: 2 }}>{bucket.range}</span>
-                </div>
+                <Link
+                  key={tasting.id}
+                  href={`/m2/taste/historical/${tasting.id}`}
+                  style={{ textDecoration: "none" }}
+                >
+                  <div
+                    style={{
+                      background: v.card,
+                      border: `1px solid ${v.border}`,
+                      borderRadius: 12,
+                      padding: "14px 16px",
+                      cursor: "pointer",
+                      transition: "border-color 0.15s",
+                    }}
+                    data-testid={`tasting-card-${tasting.tastingNumber}`}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                      <div
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          background: alpha(v.accent, "12"),
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          marginTop: 2,
+                        }}
+                      >
+                        <span style={{ fontSize: 14, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>
+                          #{tasting.tastingNumber}
+                        </span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: 15,
+                          fontWeight: 600,
+                          color: v.text,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}>
+                          {getTitle(tasting)}
+                        </div>
+                        <div style={{ display: "flex", gap: 12, fontSize: 12, color: v.muted, marginTop: 3, flexWrap: "wrap" }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                            <Calendar size={11} />
+                            {formatDate(tasting.tastingDate, lang)}
+                          </span>
+                          <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                            <Wine size={11} />
+                            {tasting.whiskyCount}
+                          </span>
+                          {tasting.avgTotalScore != null && (
+                            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                              <Sparkles size={11} />
+                              Ø {tasting.avgTotalScore.toFixed(1)}
+                            </span>
+                          )}
+                        </div>
+                        {winnerLabel !== "—" && (
+                          <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 5,
+                            marginTop: 6,
+                            fontSize: 12,
+                            color: v.accent,
+                          }}>
+                            <Trophy size={11} />
+                            <span style={{
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              maxWidth: "calc(100% - 50px)",
+                            }}>
+                              {winnerLabel}
+                            </span>
+                            {tasting.winnerScore != null && (
+                              <span style={{ color: v.muted, fontVariantNumeric: "tabular-nums" }}>
+                                ({tasting.winnerScore.toFixed(1)})
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <ChevronRight style={{ width: 16, height: 16, color: v.muted, flexShrink: 0, marginTop: 12 }} strokeWidth={1.8} />
+                    </div>
+                  </div>
+                </Link>
               );
             })}
           </div>
-        </div>
-      )}
-
-      <div style={{ position: "relative", marginBottom: 12 }}>
-        <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: v.muted }} />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t("m2.historical.searchPlaceholder", "Search tastings...")}
-          style={{
-            width: "100%", padding: "10px 12px 10px 36px",
-            background: v.card, border: `1px solid ${v.border}`, borderRadius: 10,
-            color: v.text, fontSize: 14, outline: "none",
-          }}
-          data-testid="historical-search"
-        />
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {sorted.map((tasting) => {
-          const isExpanded = expandedId === tasting.id;
-          const entries = isExpanded && detailData?.id === tasting.id ? (detailData.entries ?? []) : [];
-          const sortedEntries = [...entries].sort((a, b) => (a.totalRank ?? 999) - (b.totalRank ?? 999));
-
-          return (
-            <div key={tasting.id} data-testid={`tasting-card-${tasting.tastingNumber}`}>
-              <button
-                onClick={() => setExpandedId(isExpanded ? null : tasting.id)}
-                style={{
-                  width: "100%", display: "flex", alignItems: "center", gap: 12,
-                  background: isExpanded ? v.cardHover : v.card,
-                  border: `1px solid ${isExpanded ? v.accent : v.border}`,
-                  borderRadius: isExpanded ? "10px 10px 0 0" : 10,
-                  padding: "12px 14px", cursor: "pointer", textAlign: "left",
-                }}
-                data-testid={`tasting-toggle-${tasting.tastingNumber}`}
-              >
-                <div style={{
-                  width: 36, height: 36, borderRadius: 8,
-                  background: `${v.accent}22`, display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  <Hash size={16} color={v.accent} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: v.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {tasting.tastingNumber <= 999 ? `#${tasting.tastingNumber}` : ""} {getTitle(tasting)}
-                  </div>
-                  <div style={{ display: "flex", gap: 12, fontSize: 12, color: v.muted, marginTop: 2 }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                      <Calendar size={11} /> {formatDate(tasting.tastingDate, lang)}
-                    </span>
-                    <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                      <Wine size={11} /> {tasting.whiskyCount} {t("m2.historical.whiskies", "Whiskies")}
-                    </span>
-                  </div>
-                </div>
-                {isExpanded ? <ChevronDown size={16} color={v.muted} /> : <ChevronRight size={16} color={v.muted} />}
-              </button>
-
-              {isExpanded && (
-                <div style={{
-                  background: v.card, border: `1px solid ${v.accent}`,
-                  borderTop: "none", borderRadius: "0 0 10px 10px",
-                  padding: 12,
-                }}>
-                  {sortedEntries.length === 0 ? (
-                    <div style={{ color: v.muted, fontSize: 13, textAlign: "center", padding: 16 }}>
-                      {t("m2.historical.loading", "Loading...")}
-                    </div>
-                  ) : (
-                    <div style={{ overflowX: "auto" }}>
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                        <thead>
-                          <tr style={{ borderBottom: `1px solid ${v.border}` }}>
-                            <th style={{ textAlign: "left", padding: "6px 8px", color: v.muted, fontWeight: 500, fontSize: 11 }}>{t("m2.historical.rank", "Rank")}</th>
-                            <th style={{ textAlign: "left", padding: "6px 8px", color: v.muted, fontWeight: 500, fontSize: 11 }}>{t("m2.historical.whisky", "Whisky")}</th>
-                            <th style={{ textAlign: "left", padding: "6px 8px", color: v.muted, fontWeight: 500, fontSize: 11 }}>{t("m2.historical.nose", "Nose")}</th>
-                            <th style={{ textAlign: "left", padding: "6px 8px", color: v.muted, fontWeight: 500, fontSize: 11 }}>{t("m2.historical.taste", "Taste")}</th>
-                            <th style={{ textAlign: "left", padding: "6px 8px", color: v.muted, fontWeight: 500, fontSize: 11 }}>{t("m2.historical.finish", "Finish")}</th>
-                            <th style={{ textAlign: "left", padding: "6px 8px", color: v.muted, fontWeight: 500, fontSize: 11 }}>{t("m2.historical.total", "Total")}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {sortedEntries.map((entry) => (
-                            <tr key={entry.id} style={{ borderBottom: `1px solid ${v.border}22` }} data-testid={`entry-row-${entry.id}`}>
-                              <td style={{ padding: "8px", color: entry.totalRank != null && entry.totalRank <= 3 ? v.accent : v.muted, fontWeight: entry.totalRank != null && entry.totalRank <= 3 ? 700 : 400, fontVariantNumeric: "tabular-nums" }}>
-                                {entry.totalRank ?? "—"}
-                              </td>
-                              <td style={{ padding: "8px" }}>
-                                <div style={{ color: v.text, fontWeight: 500 }}>
-                                  {entry.distilleryRaw}{entry.distilleryRaw && entry.whiskyNameRaw ? " — " : ""}{entry.whiskyNameRaw}
-                                </div>
-                                <div style={{ fontSize: 11, color: v.muted, marginTop: 1 }}>
-                                  {[entry.regionRaw, entry.ageRaw ? `${entry.ageRaw}y` : null, entry.normalizedAbv ? `${entry.normalizedAbv.toFixed(1)}%` : null].filter(Boolean).join(" · ")}
-                                </div>
-                              </td>
-                              <td style={{ padding: "8px" }}><ScoreBar value={entry.noseScore} /></td>
-                              <td style={{ padding: "8px" }}><ScoreBar value={entry.tasteScore} /></td>
-                              <td style={{ padding: "8px" }}><ScoreBar value={entry.finishScore} /></td>
-                              <td style={{ padding: "8px" }}><ScoreBar value={entry.totalScore} /></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {tastingsLoading && (
-        <div style={{ textAlign: "center", padding: "40px 16px", color: v.muted }}>
-          {t("m2.historical.loading", "Loading...")}
-        </div>
-      )}
-
-      {tastingsError && (
-        <div style={{ textAlign: "center", padding: "40px 16px", color: "#ef4444" }}>
-          {t("m2.historical.loadError", "Could not load historical tastings.")}
-        </div>
-      )}
-
-      {!tastingsLoading && !tastingsError && sorted.length === 0 && (
-        <div style={{ textAlign: "center", padding: "40px 16px", color: v.muted }}>
-          {t("m2.historical.empty", "No historical tastings found.")}
-        </div>
+        </>
       )}
     </div>
   );

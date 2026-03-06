@@ -376,7 +376,6 @@ export default function M2TasteHome() {
             <NavRow icon={PieChart} label={t("m2.taste.wheel", "Flavor Wheel")} description={t("m2.taste.wheelDesc", "Aroma categories from your notes")} href="/m2/taste/wheel" testId="m2-taste-link-wheel" />
             <NavRow icon={UtensilsCrossed} label={t("m2.taste.pairings", "Pairings")} description={t("m2.taste.pairingsDesc", "AI food pairing suggestions")} href="/m2/taste/pairings" testId="m2-taste-link-pairings" />
             <NavRow icon={Library} label={t("m2.taste.collectionAnalysis", "Collection Analysis")} description={t("m2.taste.collectionAnalysisDesc", "Deep insights into your whisky collection")} href="/m2/taste/collection-analysis" testId="m2-taste-link-collection-analysis" />
-            <NavRow icon={ScrollText} label={t("m2.taste.historical", "Historical Tastings")} description={t("m2.taste.historicalDesc", "External tasting data from past events")} href="/m2/taste/historical" testId="m2-taste-link-historical" />
           </AccordionSection>
 
           <AccordionSection
@@ -388,6 +387,7 @@ export default function M2TasteHome() {
           >
             <NavRow icon={BookOpen} label={t("m2.taste.journal", "Drams")} description={t("m2.taste.journalDesc", "Your personal tasting journal")} href="/m2/taste/drams" testId="m2-taste-link-drams" badge={journalCount > 0 ? journalCount : null} />
             <NavRow icon={Archive} label={t("m2.taste.collection", "Collection")} description={t("m2.taste.collectionDesc", "Whiskybase import & management")} href="/m2/taste/collection" testId="m2-taste-link-collection" />
+            <NavRow icon={ScrollText} label={t("m2.taste.historical", "Historical Tastings")} description={t("m2.taste.historicalDesc", "External tasting data from past events")} href="/m2/taste/historical" testId="m2-taste-link-historical" />
             <NavRow icon={Heart} label={t("m2.taste.wishlist", "Wishlist")} description={t("m2.taste.wishlistDesc", "Bottles you want to try")} href="/m2/taste/wishlist" testId="m2-taste-link-wishlist" />
           </AccordionSection>
 

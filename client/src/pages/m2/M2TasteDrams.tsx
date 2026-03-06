@@ -11,7 +11,7 @@ import { useLocation } from "wouter";
 import type { JournalEntry } from "@shared/schema";
 import {
   BookOpen, Star, Plus, ArrowLeft, Pencil, Trash2,
-  Wine, Calendar, MapPin, X, Search,
+  Wine, Calendar, MapPin, X, Search, ScrollText, Trophy, Award,
 } from "lucide-react";
 
 const serif = "'Playfair Display', Georgia, serif";
@@ -248,6 +248,12 @@ export default function M2TasteDrams() {
               {t("m2.taste.fromTasting", "From tasting:")} {(selectedEntry as any).tastingTitle}
             </div>
           )}
+
+          <HistoricalAppearances
+            distillery={selectedEntry.distillery || ""}
+            whiskyName={selectedEntry.whiskyName || selectedEntry.title || ""}
+            t={t}
+          />
         </div>
 
         {deleteTarget && (
@@ -529,6 +535,104 @@ function EditTextarea({ label, value, onChange, testId }: { label: string; value
         }}
         data-testid={testId}
       />
+    </div>
+  );
+}
+
+function HistoricalAppearances({ distillery, whiskyName, t }: { distillery: string; whiskyName: string; t: any }) {
+  const [, navigate] = useLocation();
+  const query = new URLSearchParams();
+  if (distillery) query.set("distillery", distillery);
+  if (whiskyName) query.set("name", whiskyName);
+
+  const { data, isLoading } = useQuery<any>({
+    queryKey: ["historical-appearances", distillery, whiskyName],
+    queryFn: () => fetch(`/api/historical/whisky-appearances?${query.toString()}`).then(r => r.json()),
+    enabled: !!(distillery || whiskyName),
+  });
+
+  if (isLoading || !data || data.count === 0) return null;
+
+  return (
+    <div style={{ marginTop: 20 }} data-testid="historical-appearances">
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <ScrollText style={{ width: 16, height: 16, color: v.accent }} />
+        <span style={{ fontFamily: serif, fontSize: 15, fontWeight: 700, color: v.text }}>
+          {t("m2.taste.historicalAppearances", "Historical Appearances")}
+        </span>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+        <div style={{ background: v.elevated, borderRadius: 10, padding: "10px 12px", textAlign: "center" }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: v.accent, fontFamily: serif }}>{data.count}</div>
+          <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            {t("m2.taste.appearances", "Appearances")}
+          </div>
+        </div>
+        {data.avgScore != null && (
+          <div style={{ background: v.elevated, borderRadius: 10, padding: "10px 12px", textAlign: "center" }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: v.accent, fontFamily: serif }}>{data.avgScore.toFixed(1)}</div>
+            <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              {t("m2.taste.avgHistScore", "Ø Score")}
+            </div>
+          </div>
+        )}
+        {data.bestPlacement && (
+          <div style={{ background: v.elevated, borderRadius: 10, padding: "10px 12px", textAlign: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+              <Trophy style={{ width: 14, height: 14, color: "#d4a256" }} />
+              <span style={{ fontSize: 20, fontWeight: 700, color: v.accent, fontFamily: serif }}>#{data.bestPlacement.rank}</span>
+            </div>
+            <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              {t("m2.taste.bestRank", "Best Rank")}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {data.appearances.slice(0, 5).map((a: any, i: number) => (
+          <button
+            key={i}
+            onClick={() => navigate(`/m2/taste/historical/${a.tastingId}`)}
+            style={{
+              display: "flex", alignItems: "center", gap: 10,
+              background: v.elevated, border: `1px solid ${v.border}`,
+              borderRadius: 10, padding: "10px 12px",
+              cursor: "pointer", textAlign: "left", width: "100%",
+              transition: "all 0.15s",
+            }}
+            data-testid={`historical-appearance-${i}`}
+          >
+            <div style={{
+              width: 28, height: 28, borderRadius: 8,
+              background: `color-mix(in srgb, ${v.accent} 15%, transparent)`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 11, fontWeight: 700, color: v.accent, flexShrink: 0,
+            }}>
+              #{a.tastingNumber}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: v.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {a.whiskyName || a.distillery}
+              </div>
+              <div style={{ fontSize: 11, color: v.muted }}>
+                {a.tastingTitle}
+              </div>
+            </div>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              {a.totalScore != null && (
+                <div style={{ fontSize: 14, fontWeight: 700, color: v.accent }}>{a.totalScore.toFixed(1)}</div>
+              )}
+              {a.totalRank != null && (
+                <div style={{ fontSize: 10, color: v.muted }}>
+                  {t("m2.taste.rank", "Rank")} {a.totalRank}
+                </div>
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

@@ -315,6 +315,7 @@ export interface IStorage {
 
   // Historical Tastings
   getHistoricalTastings(options?: { limit?: number; offset?: number; search?: string }): Promise<{ tastings: HistoricalTasting[]; total: number }>;
+  getHistoricalTastingsEnriched(options?: { limit?: number; offset?: number; search?: string }): Promise<{ tastings: Array<HistoricalTasting & { avgTotalScore: number | null; winnerDistillery: string | null; winnerName: string | null; winnerScore: number | null }>; total: number }>;
   getHistoricalTasting(id: string): Promise<(HistoricalTasting & { entries: HistoricalTastingEntry[] }) | undefined>;
   getHistoricalTastingEntries(tastingId: string): Promise<HistoricalTastingEntry[]>;
   getHistoricalWhiskyStats(): Promise<{
@@ -326,6 +327,7 @@ export interface IStorage {
     caskBreakdown: Record<string, number>;
     scoreDistribution: Array<{ range: string; count: number }>;
   }>;
+  getAllHistoricalTastingEntries(): Promise<HistoricalTastingEntry[]>;
   createHistoricalTasting(data: InsertHistoricalTasting): Promise<HistoricalTasting>;
   createHistoricalTastingEntry(data: InsertHistoricalTastingEntry): Promise<HistoricalTastingEntry>;
   createHistoricalImportRun(data: InsertHistoricalImportRun): Promise<HistoricalImportRun>;
@@ -1744,6 +1746,42 @@ export class DatabaseStorage implements IStorage {
     return { tastings: dataQuery, total: countQuery[0]?.count ?? 0 };
   }
 
+  async getHistoricalTastingsEnriched(options?: { limit?: number; offset?: number; search?: string }): Promise<{ tastings: Array<HistoricalTasting & { avgTotalScore: number | null; winnerDistillery: string | null; winnerName: string | null; winnerScore: number | null }>; total: number }> {
+    const base = await this.getHistoricalTastings(options);
+    if (base.tastings.length === 0) return { tastings: [], total: base.total };
+
+    const ids = base.tastings.map(t => t.id);
+    const entries = await db.select().from(historicalTastingEntries).where(inArray(historicalTastingEntries.historicalTastingId, ids));
+
+    const grouped = new Map<string, HistoricalTastingEntry[]>();
+    for (const e of entries) {
+      const arr = grouped.get(e.historicalTastingId) || [];
+      arr.push(e);
+      grouped.set(e.historicalTastingId, arr);
+    }
+
+    const enriched = base.tastings.map(t => {
+      const tEntries = grouped.get(t.id) || [];
+      const scores = tEntries.filter(e => e.totalScore != null).map(e => e.totalScore!);
+      const avgTotalScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+      const winner = tEntries.reduce<HistoricalTastingEntry | null>((best, e) => {
+        if (e.totalRank === 1) return e;
+        if (!best && e.totalScore != null) return e;
+        if (best && e.totalScore != null && (best.totalScore == null || e.totalScore > best.totalScore)) return e;
+        return best;
+      }, null);
+      return {
+        ...t,
+        avgTotalScore: avgTotalScore != null ? Math.round(avgTotalScore * 10) / 10 : null,
+        winnerDistillery: winner?.distilleryRaw ?? null,
+        winnerName: winner?.whiskyNameRaw ?? null,
+        winnerScore: winner?.totalScore ?? null,
+      };
+    });
+
+    return { tastings: enriched, total: base.total };
+  }
+
   async getHistoricalTasting(id: string): Promise<(HistoricalTasting & { entries: HistoricalTastingEntry[] }) | undefined> {
     const [tasting] = await db.select().from(historicalTastings).where(eq(historicalTastings.id, id));
     if (!tasting) return undefined;
@@ -1757,6 +1795,10 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(historicalTastingEntries)
       .where(eq(historicalTastingEntries.historicalTastingId, tastingId))
       .orderBy(asc(historicalTastingEntries.totalRank));
+  }
+
+  async getAllHistoricalTastingEntries(): Promise<HistoricalTastingEntry[]> {
+    return db.select().from(historicalTastingEntries);
   }
 
   async getHistoricalWhiskyStats(): Promise<{

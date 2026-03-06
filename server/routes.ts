@@ -9664,6 +9664,11 @@ Important rules:
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
       const search = req.query.search as string | undefined;
+      const enriched = req.query.enriched === "true";
+      if (enriched) {
+        const result = await storage.getHistoricalTastingsEnriched({ limit, offset, search });
+        return res.json(result);
+      }
       const result = await storage.getHistoricalTastings({ limit, offset, search });
       res.json(result);
     } catch (e: any) {
@@ -9676,6 +9681,68 @@ Important rules:
       const tasting = await storage.getHistoricalTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Historical tasting not found" });
       res.json(tasting);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/historical/whisky-appearances", async (req: Request, res: Response) => {
+    try {
+      const distillery = (req.query.distillery as string || "").trim().toLowerCase();
+      const name = (req.query.name as string || "").trim().toLowerCase();
+      if (!distillery && !name) return res.json({ appearances: [], count: 0 });
+
+      const { tastings: allTastings } = await storage.getHistoricalTastings({ limit: 10000 });
+      const tastingMap = new Map(allTastings.map(t => [t.id, t]));
+      const allEntries = await storage.getAllHistoricalTastingEntries();
+
+      const matches = allEntries.filter((e: any) => {
+        const d = (e.distilleryRaw || "").toLowerCase();
+        const n = (e.whiskyNameRaw || "").toLowerCase();
+        if (distillery && name) {
+          return d.includes(distillery) && n.includes(name);
+        }
+        if (distillery) return d.includes(distillery);
+        if (name) return n.includes(name);
+        return false;
+      });
+
+      const appearances = matches.map((e: any) => {
+        const tasting = tastingMap.get(e.historicalTastingId);
+        return {
+          tastingId: e.historicalTastingId,
+          tastingNumber: tasting?.tastingNumber ?? 0,
+          tastingTitle: tasting?.titleDe ?? `Tasting #${tasting?.tastingNumber ?? "?"}`,
+          tastingDate: tasting?.tastingDate,
+          distillery: e.distilleryRaw,
+          whiskyName: e.whiskyNameRaw,
+          totalScore: e.totalScore,
+          totalRank: e.totalRank,
+          noseScore: e.noseScore,
+          tasteScore: e.tasteScore,
+          finishScore: e.finishScore,
+        };
+      }).sort((a: any, b: any) => (a.tastingNumber || 0) - (b.tastingNumber || 0));
+
+      const scoredApps = appearances.filter((a: any) => a.totalScore != null);
+      const avgScore = scoredApps.length > 0
+        ? scoredApps.reduce((sum: number, a: any) => sum + (a.totalScore || 0), 0) / scoredApps.length
+        : null;
+      const bestPlacement = appearances.reduce((best: any, a: any) => {
+        if (a.totalRank != null && (best === null || a.totalRank < best.totalRank)) return a;
+        return best;
+      }, null);
+
+      res.json({
+        appearances,
+        count: appearances.length,
+        avgScore: avgScore != null ? Math.round(avgScore * 100) / 100 : null,
+        bestPlacement: bestPlacement ? {
+          rank: bestPlacement.totalRank,
+          tastingNumber: bestPlacement.tastingNumber,
+          tastingId: bestPlacement.tastingId,
+        } : null,
+      });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
