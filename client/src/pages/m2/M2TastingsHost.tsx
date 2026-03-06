@@ -14,7 +14,7 @@ import {
   Copy, Check, EyeOff, Share2, QrCode, Download, Play, Square, Eye,
   Users, BarChart3, Star, Upload, Mail, Settings, Image, Calendar,
   MapPin, FileText, RefreshCw, Send, Search, BookOpen, Heart, UserPlus,
-  MessageCircle, ExternalLink,
+  MessageCircle, ExternalLink, Sliders, Video, Lock, Globe, Gauge,
 } from "lucide-react";
 
 type WizardStep = "list" | "step1" | "step2" | "step3" | "step4";
@@ -34,9 +34,17 @@ interface TastingFull {
   guidedRevealStep?: number;
   showRanking?: boolean;
   showGroupAvg?: boolean;
+  showReveal?: boolean;
   ratingPrompt?: string | null;
   coverImageUrl?: string | null;
   hostId?: string;
+  ratingScale?: number;
+  sessionUiMode?: string | null;
+  guestMode?: string;
+  reflectionEnabled?: boolean;
+  reflectionMode?: string;
+  reflectionVisibility?: string;
+  videoLink?: string | null;
 }
 
 interface Rating {
@@ -197,6 +205,396 @@ function CopyBtn({ text, label }: { text: string; label: string }) {
   );
 }
 
+const RATING_SCALES = [
+  { value: 5, label: "5", desc: "Simple 5-star" },
+  { value: 10, label: "10", desc: "Classic 10-point" },
+  { value: 20, label: "20", desc: "Detailed 20-point" },
+  { value: 100, label: "100", desc: "Professional 100-point" },
+];
+
+const SESSION_UI_MODES = [
+  { value: "flow", label: "Flow", desc: "Free navigation between drams" },
+  { value: "focus", label: "Focus", desc: "One dram at a time" },
+  { value: "journal", label: "Journal", desc: "Guided note-taking style" },
+];
+
+function RatingScaleSelector({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const { t } = useTranslation();
+  return (
+    <div>
+      <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 8 }}>
+        <Gauge style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+        {t("m2.host.ratingScale", "Rating Scale")}
+      </label>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+        {RATING_SCALES.map((s) => {
+          const active = value === s.value;
+          return (
+            <button
+              key={s.value}
+              type="button"
+              onClick={() => onChange(s.value)}
+              style={{
+                padding: "10px 4px",
+                textAlign: "center",
+                background: active ? `color-mix(in srgb, ${v.accent} 18%, transparent)` : v.bg,
+                border: `1.5px solid ${active ? v.accent : v.border}`,
+                borderRadius: 10,
+                cursor: "pointer",
+                fontFamily: "system-ui, sans-serif",
+                transition: "all 0.15s",
+              }}
+              data-testid={`button-scale-${s.value}`}
+            >
+              <div style={{ fontSize: 18, fontWeight: 700, color: active ? v.accent : v.text, marginBottom: 2 }}>{s.label}</div>
+              <div style={{ fontSize: 10, color: v.muted, lineHeight: 1.2 }}>{s.desc}</div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SegmentedSelect({ value, options, onChange }: { value: string; options: { value: string; label: string; desc?: string }[]; onChange: (v: string) => void }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(${options.length}, 1fr)`, gap: 6 }}>
+      {options.map((opt) => {
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            style={{
+              padding: "8px 4px",
+              textAlign: "center",
+              background: active ? `color-mix(in srgb, ${v.accent} 18%, transparent)` : v.bg,
+              border: `1.5px solid ${active ? v.accent : v.border}`,
+              borderRadius: 8,
+              cursor: "pointer",
+              fontFamily: "system-ui, sans-serif",
+              transition: "all 0.15s",
+            }}
+            data-testid={`button-opt-${opt.value}`}
+          >
+            <div style={{ fontSize: 13, fontWeight: active ? 700 : 500, color: active ? v.accent : v.text }}>{opt.label}</div>
+            {opt.desc && <div style={{ fontSize: 10, color: v.muted, lineHeight: 1.2, marginTop: 2 }}>{opt.desc}</div>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function AdvancedConfigSection({
+  guidedMode, setGuidedMode,
+  guestMode, setGuestMode,
+  sessionUiMode, setSessionUiMode,
+  reflectionEnabled, setReflectionEnabled,
+  reflectionMode, setReflectionMode,
+  reflectionVisibility, setReflectionVisibility,
+  videoLink, setVideoLink,
+}: {
+  guidedMode: boolean; setGuidedMode: (v: boolean) => void;
+  guestMode: string; setGuestMode: (v: string) => void;
+  sessionUiMode: string; setSessionUiMode: (v: string) => void;
+  reflectionEnabled: boolean; setReflectionEnabled: (v: boolean) => void;
+  reflectionMode: string; setReflectionMode: (v: string) => void;
+  reflectionVisibility: string; setReflectionVisibility: (v: string) => void;
+  videoLink: string; setVideoLink: (v: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div style={{ background: v.bg, borderRadius: 10, border: `1px solid ${v.border}` }}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          width: "100%", background: "none", border: "none", cursor: "pointer",
+          color: v.text, fontSize: 13, fontFamily: "system-ui, sans-serif", padding: "12px 14px",
+        }}
+        data-testid="button-toggle-advanced"
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Sliders style={{ width: 14, height: 14, color: v.muted }} />
+          <span style={{ fontWeight: 600 }}>{t("m2.host.advancedOptions", "Advanced Options")}</span>
+        </div>
+        <ChevronDown style={{ width: 14, height: 14, color: v.muted, transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+      </button>
+
+      {open && (
+        <div style={{ padding: "0 14px 14px", display: "flex", flexDirection: "column", gap: 14 }}>
+          <Toggle checked={guidedMode} onChange={setGuidedMode} label={t("m2.host.guidedMode", "Guided Mode")} />
+          <div style={{ fontSize: 11, color: v.muted, marginTop: -10 }}>
+            {t("m2.host.guidedModeDesc", "Host controls the pace — one dram at a time for all participants")}
+          </div>
+
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
+              <Globe style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+              {t("m2.host.guestModeLabel", "Guest Mode")}
+            </label>
+            <SegmentedSelect
+              value={guestMode}
+              options={[
+                { value: "standard", label: t("m2.host.guestStandard", "Standard"), desc: t("m2.host.guestStandardDesc", "Sign-in required") },
+                { value: "ultra", label: t("m2.host.guestUltra", "Ultra Naked"), desc: t("m2.host.guestUltraDesc", "No sign-in needed") },
+              ]}
+              onChange={setGuestMode}
+            />
+          </div>
+
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
+              <Sliders style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+              {t("m2.host.sessionUiModeLabel", "Session UI Mode")}
+            </label>
+            <SegmentedSelect
+              value={sessionUiMode}
+              options={SESSION_UI_MODES.map((m) => ({ value: m.value, label: t(`m2.host.uiMode${m.label}`, m.label), desc: t(`m2.host.uiMode${m.label}Desc`, m.desc) }))}
+              onChange={setSessionUiMode}
+            />
+          </div>
+
+          <div style={{ borderTop: `1px solid ${v.border}`, paddingTop: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 8 }}>
+              <MessageCircle style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+              {t("m2.host.reflectionLabel", "Reflection")}
+            </label>
+            <Toggle checked={reflectionEnabled} onChange={setReflectionEnabled} label={t("m2.host.reflectionEnabled", "Enable Reflection")} />
+            {reflectionEnabled && (
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>
+                    {t("m2.host.reflectionModeLabel", "Mode")}
+                  </label>
+                  <SegmentedSelect
+                    value={reflectionMode}
+                    options={[
+                      { value: "standard", label: t("m2.host.reflectionStandard", "Standard") },
+                      { value: "custom", label: t("m2.host.reflectionCustom", "Custom") },
+                    ]}
+                    onChange={setReflectionMode}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>
+                    {t("m2.host.reflectionVisibilityLabel", "Visibility")}
+                  </label>
+                  <SegmentedSelect
+                    value={reflectionVisibility}
+                    options={[
+                      { value: "named", label: t("m2.host.reflectionNamed", "Named") },
+                      { value: "anonymous", label: t("m2.host.reflectionAnonymous", "Anonymous") },
+                      { value: "optional", label: t("m2.host.reflectionOptional", "Optional") },
+                    ]}
+                    onChange={setReflectionVisibility}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
+              <Video style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+              {t("m2.host.videoLinkLabel", "Video Link")}
+            </label>
+            <input
+              type="url"
+              value={videoLink}
+              onChange={(e) => setVideoLink(e.target.value)}
+              placeholder={t("m2.host.videoLinkPlaceholder", "https://zoom.us/j/...")}
+              style={inputStyle}
+              data-testid="input-video-link"
+            />
+            <div style={{ fontSize: 11, color: v.muted, marginTop: 4 }}>
+              {t("m2.host.videoLinkDesc", "Optional link to a video stream or recording")}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HostOverview({ pid, onNewTasting, onResume }: { pid: string; onNewTasting: () => void; onResume: (id: string) => void }) {
+  const { t } = useTranslation();
+  const [, navigate] = useLocation();
+
+  const { data: allTastings = [], isLoading } = useQuery<TastingFull[]>({
+    queryKey: ["/api/tastings", "host-overview", pid],
+    queryFn: async () => {
+      const res = await fetch(`/api/tastings?participantId=${pid}`);
+      if (!res.ok) return [];
+      const list = await res.json();
+      return list.filter((t: TastingFull) => t.hostId === pid);
+    },
+  });
+
+  const drafts = allTastings.filter((t) => t.status === "draft");
+  const opens = allTastings.filter((t) => t.status === "open");
+  const closed = allTastings.filter((t) => t.status === "closed" || t.status === "reveal" || t.status === "archived");
+
+  const statusColor = (status: string) => {
+    switch (status) {
+      case "draft": return v.muted;
+      case "open": return v.success;
+      case "closed": case "reveal": return v.accent;
+      case "archived": return v.muted;
+      default: return v.muted;
+    }
+  };
+
+  const TastingCard = ({ tasting, action, actionLabel, actionIcon }: { tasting: TastingFull; action: () => void; actionLabel: string; actionIcon: React.ReactNode }) => (
+    <div
+      style={{
+        background: v.bg,
+        border: `1px solid ${v.border}`,
+        borderRadius: 10,
+        padding: "12px 14px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 10,
+      }}
+      data-testid={`host-tasting-card-${tasting.id}`}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: v.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {tasting.title}
+          </span>
+          <span style={{
+            fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
+            color: statusColor(tasting.status),
+            background: `color-mix(in srgb, ${statusColor(tasting.status)} 15%, transparent)`,
+            padding: "2px 6px", borderRadius: 4, flexShrink: 0,
+          }}>
+            {tasting.status}
+          </span>
+        </div>
+        <div style={{ fontSize: 11, color: v.muted, display: "flex", gap: 10 }}>
+          {tasting.date && <span>{tasting.date.split("T")[0]}</span>}
+          <span>Code: {tasting.code}</span>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={action}
+        style={{
+          padding: "8px 14px",
+          fontSize: 12,
+          fontWeight: 600,
+          background: `color-mix(in srgb, ${v.accent} 12%, transparent)`,
+          color: v.accent,
+          border: `1px solid color-mix(in srgb, ${v.accent} 30%, transparent)`,
+          borderRadius: 8,
+          cursor: "pointer",
+          fontFamily: "system-ui, sans-serif",
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          flexShrink: 0,
+          whiteSpace: "nowrap",
+        }}
+        data-testid={`button-action-${tasting.id}`}
+      >
+        {actionIcon}
+        {actionLabel}
+      </button>
+    </div>
+  );
+
+  if (isLoading) return <M2Loading />;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <button
+        type="button"
+        onClick={onNewTasting}
+        style={{
+          width: "100%",
+          padding: "16px",
+          fontSize: 16,
+          fontWeight: 700,
+          background: v.accent,
+          color: v.bg,
+          border: "none",
+          borderRadius: 12,
+          cursor: "pointer",
+          fontFamily: "system-ui, sans-serif",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 10,
+        }}
+        data-testid="button-new-tasting"
+      >
+        <Plus style={{ width: 20, height: 20 }} />
+        {t("m2.host.newTasting", "New Tasting")}
+      </button>
+
+      {allTastings.length === 0 ? (
+        <div style={{ ...cardStyle, textAlign: "center", padding: "32px 20px" }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🥃</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: v.text, marginBottom: 6 }}>
+            {t("m2.host.noTastingsYet", "No tastings yet")}
+          </div>
+          <div style={{ fontSize: 13, color: v.muted }}>
+            {t("m2.host.createFirstPrompt", "Create your first tasting to get started")}
+          </div>
+        </div>
+      ) : (
+        <>
+          {drafts.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: v.muted, marginBottom: 8 }}>
+                {t("m2.host.draftSection", "Drafts")} ({drafts.length})
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {drafts.map((t) => (
+                  <TastingCard key={t.id} tasting={t} action={() => onResume(t.id)} actionLabel="Continue" actionIcon={<ArrowRight style={{ width: 12, height: 12 }} />} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {opens.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: v.muted, marginBottom: 8 }}>
+                {t("m2.host.activeSection", "Active")} ({opens.length})
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {opens.map((t) => (
+                  <TastingCard key={t.id} tasting={t} action={() => navigate(`/m2/tastings/host/${t.id}`)} actionLabel="Control" actionIcon={<Play style={{ width: 12, height: 12 }} />} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {closed.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: v.muted, marginBottom: 8 }}>
+                {t("m2.host.closedSection", "Completed")} ({closed.length})
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {closed.map((t) => (
+                  <TastingCard key={t.id} tasting={t} action={() => navigate(`/m2/tastings/session/${t.id}/results`)} actionLabel="Results" actionIcon={<BarChart3 style={{ width: 12, height: 12 }} />} />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function Step1Create({ pid, onCreated }: { pid: string; onCreated: (t: TastingFull) => void }) {
   const { t } = useTranslation();
   const [title, setTitle] = useState("");
@@ -204,6 +602,14 @@ function Step1Create({ pid, onCreated }: { pid: string; onCreated: (t: TastingFu
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [blindMode, setBlindMode] = useState(false);
+  const [ratingScale, setRatingScale] = useState(100);
+  const [guidedMode, setGuidedMode] = useState(false);
+  const [guestMode, setGuestMode] = useState("standard");
+  const [sessionUiMode, setSessionUiMode] = useState("flow");
+  const [reflectionEnabled, setReflectionEnabled] = useState(false);
+  const [reflectionMode, setReflectionMode] = useState("standard");
+  const [reflectionVisibility, setReflectionVisibility] = useState("named");
+  const [videoLink, setVideoLink] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -225,6 +631,14 @@ function Step1Create({ pid, onCreated }: { pid: string; onCreated: (t: TastingFu
           code: generateCode(),
           status: "draft",
           blindMode,
+          ratingScale,
+          guidedMode,
+          guestMode,
+          sessionUiMode: sessionUiMode || null,
+          reflectionEnabled,
+          reflectionMode,
+          reflectionVisibility,
+          videoLink: videoLink.trim() || null,
         }),
       });
       if (!res.ok) {
@@ -321,6 +735,18 @@ function Step1Create({ pid, onCreated }: { pid: string; onCreated: (t: TastingFu
         </div>
 
         <Toggle checked={blindMode} onChange={setBlindMode} label={t("m2.host.blindMode", "Blind Mode")} />
+
+        <RatingScaleSelector value={ratingScale} onChange={setRatingScale} />
+
+        <AdvancedConfigSection
+          guidedMode={guidedMode} setGuidedMode={setGuidedMode}
+          guestMode={guestMode} setGuestMode={setGuestMode}
+          sessionUiMode={sessionUiMode} setSessionUiMode={setSessionUiMode}
+          reflectionEnabled={reflectionEnabled} setReflectionEnabled={setReflectionEnabled}
+          reflectionMode={reflectionMode} setReflectionMode={setReflectionMode}
+          reflectionVisibility={reflectionVisibility} setReflectionVisibility={setReflectionVisibility}
+          videoLink={videoLink} setVideoLink={setVideoLink}
+        />
 
         {error && (
           <div style={{ fontSize: 13, color: v.danger, background: `color-mix(in srgb, ${v.danger} 15%, transparent)`, padding: "8px 12px", borderRadius: 8 }} data-testid="text-create-error">
@@ -1107,6 +1533,14 @@ function Step1Edit({ tasting, pid, onUpdated }: { tasting: TastingFull; pid: str
   const [location, setLocation] = useState(tasting.location || "");
   const [description, setDescription] = useState(tasting.description || "");
   const [blindMode, setBlindMode] = useState(!!tasting.blindMode);
+  const [ratingScale, setRatingScale] = useState(tasting.ratingScale ?? 100);
+  const [guidedMode, setGuidedMode] = useState(!!tasting.guidedMode);
+  const [guestMode, setGuestMode] = useState(tasting.guestMode || "standard");
+  const [sessionUiMode, setSessionUiMode] = useState(tasting.sessionUiMode || "flow");
+  const [reflectionEnabled, setReflectionEnabled] = useState(!!tasting.reflectionEnabled);
+  const [reflectionMode, setReflectionMode] = useState(tasting.reflectionMode || "standard");
+  const [reflectionVisibility, setReflectionVisibility] = useState(tasting.reflectionVisibility || "named");
+  const [videoLink, setVideoLink] = useState(tasting.videoLink || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -1127,10 +1561,18 @@ function Step1Edit({ tasting, pid, onUpdated }: { tasting: TastingFull; pid: str
           location: location.trim() || "",
           description: description.trim() || "",
           blindMode,
+          ratingScale,
+          guidedMode,
+          guestMode,
+          sessionUiMode: sessionUiMode || null,
+          reflectionEnabled,
+          reflectionMode,
+          reflectionVisibility,
+          videoLink: videoLink.trim() || null,
         }),
       });
       if (!res.ok) throw new Error(t("m2.host.failedUpdate", "Failed to update tasting"));
-      onUpdated({ ...tasting, title: title.trim(), date, location: location.trim(), description: description.trim(), blindMode });
+      onUpdated({ ...tasting, title: title.trim(), date, location: location.trim(), description: description.trim(), blindMode, ratingScale, guidedMode, guestMode, sessionUiMode, reflectionEnabled, reflectionMode, reflectionVisibility, videoLink });
     } catch (e: any) {
       setError(e.message || "Something went wrong");
     }
@@ -1165,6 +1607,16 @@ function Step1Edit({ tasting, pid, onUpdated }: { tasting: TastingFull; pid: str
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("m2.host.descriptionPlaceholder", "Optional notes for your guests...")} rows={2} style={{ ...inputStyle, resize: "vertical", minHeight: 48 }} data-testid="input-edit-tasting-description" />
         </div>
         <Toggle checked={blindMode} onChange={setBlindMode} label={t("m2.host.blindMode", "Blind Mode")} />
+        <RatingScaleSelector value={ratingScale} onChange={setRatingScale} />
+        <AdvancedConfigSection
+          guidedMode={guidedMode} setGuidedMode={setGuidedMode}
+          guestMode={guestMode} setGuestMode={setGuestMode}
+          sessionUiMode={sessionUiMode} setSessionUiMode={setSessionUiMode}
+          reflectionEnabled={reflectionEnabled} setReflectionEnabled={setReflectionEnabled}
+          reflectionMode={reflectionMode} setReflectionMode={setReflectionMode}
+          reflectionVisibility={reflectionVisibility} setReflectionVisibility={setReflectionVisibility}
+          videoLink={videoLink} setVideoLink={setVideoLink}
+        />
         {error && <div style={{ fontSize: 13, color: v.danger, background: `color-mix(in srgb, ${v.danger} 15%, transparent)`, padding: "8px 12px", borderRadius: 8 }}>{error}</div>}
         <button type="button" onClick={handleSave} disabled={!canSubmit} style={{ width: "100%", padding: "14px", fontSize: 15, fontWeight: 600, background: canSubmit ? v.accent : v.border, color: canSubmit ? v.bg : v.muted, border: "none", borderRadius: 10, cursor: canSubmit ? "pointer" : "not-allowed", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} data-testid="button-save-step1">
           {saving ? t("m2.host.saving", "Saving...") : t("m2.host.nextAddWhiskies", "Create & Add Whiskies")}
@@ -1679,29 +2131,32 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
   const [open, setOpen] = useState(false);
   const [ratingPrompt, setRatingPrompt] = useState(tasting.ratingPrompt || "");
   const [savingPrompt, setSavingPrompt] = useState(false);
+  const [videoLinkLocal, setVideoLinkLocal] = useState(tasting.videoLink || "");
+  const [savingVideo, setSavingVideo] = useState(false);
+
+  const patchDetails = async (body: Record<string, any>) => {
+    await fetch(`/api/tastings/${tasting.id}/details`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hostId: pid, ...body }),
+    });
+    onSaved?.();
+  };
 
   const handleSavePrompt = async () => {
     setSavingPrompt(true);
-    try {
-      await fetch(`/api/tastings/${tasting.id}/details`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostId: pid, ratingPrompt: ratingPrompt.trim() || null }),
-      });
-      onSaved?.();
-    } catch {}
+    try { await patchDetails({ ratingPrompt: ratingPrompt.trim() || null }); } catch {}
     setSavingPrompt(false);
   };
 
-  const handleToggleBlind = async () => {
-    try {
-      await fetch(`/api/tastings/${tasting.id}/details`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostId: pid, blindMode: !tasting.blindMode }),
-      });
-      onSaved?.();
-    } catch {}
+  const handleSaveVideo = async () => {
+    setSavingVideo(true);
+    try { await patchDetails({ videoLink: videoLinkLocal.trim() || null }); } catch {}
+    setSavingVideo(false);
+  };
+
+  const handleToggle = async (field: string, currentVal: boolean) => {
+    try { await patchDetails({ [field]: !currentVal }); } catch {}
   };
 
   const handleToggleGuided = async () => {
@@ -1715,27 +2170,37 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
     } catch {}
   };
 
-  const handleToggleRanking = async () => {
-    try {
-      await fetch(`/api/tastings/${tasting.id}/details`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostId: pid, showRanking: !tasting.showRanking }),
-      });
-      onSaved?.();
-    } catch {}
+  const handleChangeScale = async (scale: number) => {
+    try { await patchDetails({ ratingScale: scale }); } catch {}
   };
 
-  const handleToggleGroupAvg = async () => {
-    try {
-      await fetch(`/api/tastings/${tasting.id}/details`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostId: pid, showGroupAvg: !tasting.showGroupAvg }),
-      });
-      onSaved?.();
-    } catch {}
+  const handleChangeGuestMode = async (mode: string) => {
+    try { await patchDetails({ guestMode: mode }); } catch {}
   };
+
+  const handleChangeSessionUi = async (mode: string) => {
+    try { await patchDetails({ sessionUiMode: mode || null }); } catch {}
+  };
+
+  const handleToggleReflection = async () => {
+    try { await patchDetails({ reflectionEnabled: !tasting.reflectionEnabled }); } catch {}
+  };
+
+  const handleChangeReflectionMode = async (mode: string) => {
+    try { await patchDetails({ reflectionMode: mode }); } catch {}
+  };
+
+  const handleChangeReflectionVis = async (vis: string) => {
+    try { await patchDetails({ reflectionVisibility: vis }); } catch {}
+  };
+
+  const sectionLabel = (text: string) => (
+    <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: v.muted, marginTop: 4, marginBottom: -4 }}>
+      {text}
+    </div>
+  );
+
+  const isDraft = tasting.status === "draft";
 
   return (
     <div style={cardStyle}>
@@ -1765,32 +2230,129 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
 
       {open && (
         <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
-          <Toggle checked={!!tasting.blindMode} onChange={handleToggleBlind} label={t("m2.host.blindMode", "Blind Mode")} />
+          {sectionLabel(t("m2.host.sectionSession", "Session"))}
+
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "flex", alignItems: "center", gap: 4, marginBottom: 8 }}>
+              <Gauge style={{ width: 12, height: 12 }} />
+              {t("m2.host.ratingScale", "Rating Scale")}
+              {!isDraft && <Lock style={{ width: 10, height: 10, color: v.muted }} />}
+            </label>
+            {isDraft ? (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4 }}>
+                {RATING_SCALES.map((s) => {
+                  const active = (tasting.ratingScale ?? 100) === s.value;
+                  return (
+                    <button key={s.value} type="button" onClick={() => handleChangeScale(s.value)} style={{ padding: "6px 2px", textAlign: "center", background: active ? `color-mix(in srgb, ${v.accent} 18%, transparent)` : v.bg, border: `1.5px solid ${active ? v.accent : v.border}`, borderRadius: 8, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid={`settings-scale-${s.value}`}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: active ? v.accent : v.text }}>{s.label}</div>
+                      <div style={{ fontSize: 9, color: v.muted }}>{s.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ fontSize: 13, color: v.text, padding: "8px 12px", background: v.bg, borderRadius: 8 }}>
+                {RATING_SCALES.find((s) => s.value === (tasting.ratingScale ?? 100))?.desc || `${tasting.ratingScale}-point`}
+                <span style={{ fontSize: 11, color: v.muted, marginLeft: 8 }}>(locked while session is active)</span>
+              </div>
+            )}
+          </div>
+
+          <Toggle checked={!!tasting.blindMode} onChange={() => handleToggle("blindMode", !!tasting.blindMode)} label={t("m2.host.blindMode", "Blind Mode")} />
           <Toggle checked={!!tasting.guidedMode} onChange={handleToggleGuided} label={t("m2.host.guidedMode", "Guided Mode")} />
-          <Toggle checked={!!tasting.showRanking} onChange={handleToggleRanking} label={t("m2.host.showRanking", "Show Ranking")} />
-          <Toggle checked={!!tasting.showGroupAvg} onChange={handleToggleGroupAvg} label={t("m2.host.showGroupAvg", "Show Group Average")} />
+
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
+              {t("m2.host.sessionUiModeLabel", "Session UI Mode")}
+            </label>
+            <SegmentedSelect
+              value={tasting.sessionUiMode || "flow"}
+              options={SESSION_UI_MODES.map((m) => ({ value: m.value, label: m.label, desc: m.desc }))}
+              onChange={handleChangeSessionUi}
+            />
+          </div>
+
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
+              {t("m2.host.guestModeLabel", "Guest Mode")}
+            </label>
+            <SegmentedSelect
+              value={tasting.guestMode || "standard"}
+              options={[
+                { value: "standard", label: t("m2.host.guestStandard", "Standard"), desc: t("m2.host.guestStandardDesc", "Sign-in required") },
+                { value: "ultra", label: t("m2.host.guestUltra", "Ultra Naked"), desc: t("m2.host.guestUltraDesc", "No sign-in needed") },
+              ]}
+              onChange={handleChangeGuestMode}
+            />
+          </div>
+
+          {sectionLabel(t("m2.host.sectionDisplay", "Display"))}
+
+          <Toggle checked={!!tasting.showRanking} onChange={() => handleToggle("showRanking", !!tasting.showRanking)} label={t("m2.host.showRanking", "Show Ranking")} />
+          <Toggle checked={!!tasting.showGroupAvg} onChange={() => handleToggle("showGroupAvg", !!tasting.showGroupAvg)} label={t("m2.host.showGroupAvg", "Show Group Average")} />
+          <Toggle checked={tasting.showReveal !== false} onChange={() => handleToggle("showReveal", tasting.showReveal !== false)} label={t("m2.host.showReveal", "Show Reveal")} />
 
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
               {t("m2.host.ratingPrompt", "Rating Prompt")}
             </label>
             <div style={{ display: "flex", gap: 8 }}>
-              <input
-                type="text"
-                value={ratingPrompt}
-                onChange={(e) => setRatingPrompt(e.target.value)}
-                placeholder={t("m2.host.ratingPromptPlaceholder", "e.g. Rate this whisky on your overall impression")}
-                style={{ ...inputStyle, flex: 1 }}
-                data-testid="input-rating-prompt"
-              />
-              <button
-                type="button"
-                onClick={handleSavePrompt}
-                disabled={savingPrompt}
-                style={{ padding: "8px 14px", fontSize: 13, fontWeight: 600, background: v.accent, color: v.bg, border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "system-ui, sans-serif" }}
-                data-testid="button-save-prompt"
-              >
+              <input type="text" value={ratingPrompt} onChange={(e) => setRatingPrompt(e.target.value)} placeholder={t("m2.host.ratingPromptPlaceholder", "e.g. Rate this whisky on your overall impression")} style={{ ...inputStyle, flex: 1 }} data-testid="input-rating-prompt" />
+              <button type="button" onClick={handleSavePrompt} disabled={savingPrompt} style={{ padding: "8px 14px", fontSize: 13, fontWeight: 600, background: v.accent, color: v.bg, border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-save-prompt">
                 {savingPrompt ? "…" : t("m2.host.save", "Save")}
+              </button>
+            </div>
+          </div>
+
+          {sectionLabel(t("m2.host.sectionExtras", "Extras"))}
+
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
+              {t("m2.host.reflectionLabel", "Reflection")}
+            </label>
+            <Toggle checked={!!tasting.reflectionEnabled} onChange={handleToggleReflection} label={t("m2.host.reflectionEnabled", "Enable Reflection")} />
+            {tasting.reflectionEnabled && (
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>
+                    {t("m2.host.reflectionModeLabel", "Mode")}
+                  </label>
+                  <SegmentedSelect
+                    value={tasting.reflectionMode || "standard"}
+                    options={[
+                      { value: "standard", label: t("m2.host.reflectionStandard", "Standard") },
+                      { value: "custom", label: t("m2.host.reflectionCustom", "Custom") },
+                    ]}
+                    onChange={handleChangeReflectionMode}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>
+                    {t("m2.host.reflectionVisibilityLabel", "Visibility")}
+                  </label>
+                  <SegmentedSelect
+                    value={tasting.reflectionVisibility || "named"}
+                    options={[
+                      { value: "named", label: t("m2.host.reflectionNamed", "Named") },
+                      { value: "anonymous", label: t("m2.host.reflectionAnonymous", "Anonymous") },
+                      { value: "optional", label: t("m2.host.reflectionOptional", "Optional") },
+                    ]}
+                    onChange={handleChangeReflectionVis}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
+              <Video style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+              {t("m2.host.videoLinkLabel", "Video Link")}
+            </label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input type="url" value={videoLinkLocal} onChange={(e) => setVideoLinkLocal(e.target.value)} placeholder={t("m2.host.videoLinkPlaceholder", "https://zoom.us/j/...")} style={{ ...inputStyle, flex: 1 }} data-testid="input-settings-video-link" />
+              <button type="button" onClick={handleSaveVideo} disabled={savingVideo} style={{ padding: "8px 14px", fontSize: 13, fontWeight: 600, background: v.accent, color: v.bg, border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-save-video">
+                {savingVideo ? "…" : t("m2.host.save", "Save")}
               </button>
             </div>
           </div>
@@ -1884,7 +2446,7 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
 export default function M2TastingsHost({ resumeId }: { resumeId?: string } = {}) {
   const { t } = useTranslation();
   const session = getSession();
-  const [step, setStep] = useState<WizardStep>(resumeId ? "step2" : "step1");
+  const [step, setStep] = useState<WizardStep>(resumeId ? "step2" : "list");
   const [tasting, setTasting] = useState<TastingFull | null>(null);
   const [resumeLoading, setResumeLoading] = useState(!!resumeId);
   const [, navigate] = useLocation();
@@ -1919,6 +2481,10 @@ export default function M2TastingsHost({ resumeId }: { resumeId?: string } = {})
     setTasting(newTasting);
     setStep("step2");
     queryClient.invalidateQueries({ queryKey: ["/api/tastings"] });
+  };
+
+  const handleResume = (id: string) => {
+    navigate(`/m2/tastings/host/${id}`);
   };
 
   if (!session.signedIn || !session.pid) {
@@ -1968,6 +2534,14 @@ export default function M2TastingsHost({ resumeId }: { resumeId?: string } = {})
       >
         {t("m2.host.title", "Host")}
       </h1>
+
+      {step === "list" && (
+        <HostOverview
+          pid={session.pid}
+          onNewTasting={() => { setTasting(null); setStep("step1"); }}
+          onResume={handleResume}
+        />
+      )}
 
       {step === "step1" && !tasting && (
         <Step1Create pid={session.pid} onCreated={handleCreated} />

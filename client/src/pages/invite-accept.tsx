@@ -8,12 +8,15 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
-export default function InviteAccept() {
+export default function InviteAccept({ m2 }: { m2?: boolean } = {}) {
   const { token } = useParams<{ token: string }>();
   const [, navigate] = useLocation();
   const { t } = useTranslation();
   const { currentParticipant } = useAppStore();
   const [accepted, setAccepted] = useState(false);
+
+  const isM2 = m2 || window.location.pathname.startsWith("/m2/");
+  const lobbyPath = isM2 ? "/m2/tastings" : "/tasting";
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["invite", token],
@@ -25,7 +28,10 @@ export default function InviteAccept() {
     mutationFn: () => inviteApi.accept(token!, currentParticipant!.id),
     onSuccess: (result: any) => {
       setAccepted(true);
-      setTimeout(() => navigate(`/tasting/${result.tastingId}`), 1500);
+      const target = isM2
+        ? `/m2/tastings/session/${result.tastingId}/play`
+        : `/tasting/${result.tastingId}`;
+      setTimeout(() => navigate(target), 1500);
     },
   });
 
@@ -53,7 +59,7 @@ export default function InviteAccept() {
             <p className="text-sm text-muted-foreground mb-4">
               This invitation link may have expired or already been used.
             </p>
-            <Button onClick={() => navigate("/tasting")} data-testid="button-go-home">
+            <Button onClick={() => navigate(lobbyPath)} data-testid="button-go-home">
               Go to Lobby
             </Button>
           </CardContent>
@@ -77,7 +83,7 @@ export default function InviteAccept() {
             <p className="text-sm text-muted-foreground">
               Please log in from the lobby first, then return to this link.
             </p>
-            <Button onClick={() => navigate("/tasting")} data-testid="button-go-lobby">
+            <Button onClick={() => navigate(lobbyPath)} data-testid="button-go-lobby">
               Go to Lobby
             </Button>
           </CardContent>

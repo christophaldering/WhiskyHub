@@ -318,6 +318,9 @@ function Router() {
         <Route path="/m2/tastings/session/:id">
           <Module2Shell><M2TastingSession /></Module2Shell>
         </Route>
+        <Route path="/m2/invite/:token">
+          <Module2Shell><InviteAccept m2 /></Module2Shell>
+        </Route>
         <Route path="/m2/tastings/join/:code">
           <Module2Shell><M2TastingsJoin /></Module2Shell>
         </Route>
