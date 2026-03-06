@@ -267,8 +267,10 @@ function BreakdownSection({
           >
             <div style={{ padding: "0 20px 20px" }}>
               {entries.map(([name, data], idx) => {
-                const maxScore = entries[0]?.[1]?.avgScore || 100;
-                const pct = maxScore > 0 ? (data.avgScore / maxScore) * 100 : 0;
+                const score = typeof data?.avgScore === "number" ? data.avgScore : 0;
+                const count = typeof data?.count === "number" ? data.count : 0;
+                const maxScore = typeof entries[0]?.[1]?.avgScore === "number" ? entries[0][1].avgScore : 100;
+                const pct = maxScore > 0 ? (score / maxScore) * 100 : 0;
                 return (
                   <div
                     key={name}
@@ -328,10 +330,10 @@ function BreakdownSection({
                           fontVariantNumeric: "tabular-nums",
                         }}
                       >
-                        {data.avgScore.toFixed(1)}
+                        {score.toFixed(1)}
                       </div>
                       <div style={{ fontSize: 11, color: v.muted }}>
-                        {data.count} {t("m2.profile.rated", "rated")}
+                        {count} {t("m2.profile.rated", "rated")}
                       </div>
                     </div>
                   </div>
@@ -468,13 +470,13 @@ export default function M2TasteProfile() {
   const hasData =
     totalRatings > 0 || (profile?.sources?.journalEntries || 0) > 0;
   const stabilityInfo = getStabilityInfo(
-    whiskyProfile?.ratingStyle?.nRatings || totalRatings
+    typeof whiskyProfile?.ratingStyle?.nRatings === "number" ? whiskyProfile.ratingStyle.nRatings : totalRatings
   );
   const styleLabel = profile
-    ? deriveStyle(profile.regionBreakdown, profile.peatBreakdown)
+    ? deriveStyle(profile.regionBreakdown || {}, profile.peatBreakdown || {})
     : null;
   const sweetSpotLabel = profile
-    ? deriveSweetSpot(profile.regionBreakdown, profile.caskBreakdown)
+    ? deriveSweetSpot(profile.regionBreakdown || {}, profile.caskBreakdown || {})
     : null;
 
   const dims = ["nose", "taste", "finish", "balance", "overall"];
@@ -615,7 +617,7 @@ export default function M2TasteProfile() {
                     marginLeft: 8,
                   }}
                 >
-                  N = {whiskyProfile?.ratingStyle?.nRatings || totalRatings}
+                  N = {Number(whiskyProfile?.ratingStyle?.nRatings) || totalRatings}
                 </span>
               </div>
             </div>
@@ -678,8 +680,7 @@ export default function M2TasteProfile() {
                 }}
               >
                 {t("m2.profile.radarSubtitle", "Based on {{count}} ratings", {
-                  count:
-                    whiskyProfile?.ratingStyle?.nRatings || totalRatings,
+                  count: Number(whiskyProfile?.ratingStyle?.nRatings) || totalRatings,
                 })}
               </p>
               <div style={{ height: 280 }}>
@@ -763,12 +764,12 @@ export default function M2TasteProfile() {
                 >
                   {whiskyProfile.comparisonData.mode === "friends"
                     ? t("m2.profile.friendsBasis", "Based on {{n}} friends, {{r}} ratings", {
-                        n: whiskyProfile.comparisonData.nFriends,
-                        r: whiskyProfile.comparisonData.nRatings,
+                        n: Number(whiskyProfile.comparisonData.nFriends) || 0,
+                        r: Number(whiskyProfile.comparisonData.nRatings) || 0,
                       })
                     : t("m2.profile.platformBasis", "Based on {{n}} tasters, {{r}} ratings", {
-                        n: whiskyProfile.comparisonData.nParticipants,
-                        r: whiskyProfile.comparisonData.nRatings,
+                        n: Number(whiskyProfile.comparisonData.nParticipants) || 0,
+                        r: Number(whiskyProfile.comparisonData.nRatings) || 0,
                       })}
                 </p>
               )}
@@ -934,12 +935,12 @@ export default function M2TasteProfile() {
                       fontVariantNumeric: "tabular-nums",
                     }}
                   >
-                    {whiskyProfile.ratingStyle.nRatings}
+                    {Number(whiskyProfile.ratingStyle.nRatings) || 0}
                   </div>
                 </div>
               </div>
 
-              {whiskyProfile.ratingStyle.systematicDeviation && (
+              {whiskyProfile.ratingStyle.systematicDeviation && typeof whiskyProfile.ratingStyle.systematicDeviation.avgDelta === "number" && (
                 <div
                   style={{
                     marginTop: 16,
@@ -970,8 +971,8 @@ export default function M2TasteProfile() {
                   </div>
                   <div style={{ fontSize: 11, color: v.muted }}>
                     {t("m2.profile.comparedWhiskies", "Compared across {{n}} whiskies", {
-                      n: whiskyProfile.ratingStyle.systematicDeviation
-                        .nWhiskiesCompared,
+                      n: Number(whiskyProfile.ratingStyle.systematicDeviation
+                        .nWhiskiesCompared) || 0,
                     })}
                   </div>
                 </div>
@@ -1097,7 +1098,7 @@ export default function M2TasteProfile() {
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              {w.whiskyName}
+                              {String(w.whiskyName || "—")}
                             </td>
                             <td
                               style={{
@@ -1109,7 +1110,7 @@ export default function M2TasteProfile() {
                                 fontVariantNumeric: "tabular-nums",
                               }}
                             >
-                              {w.userScore.toFixed(1)}
+                              {typeof w.userScore === "number" ? w.userScore.toFixed(1) : "—"}
                             </td>
                             <td
                               style={{
@@ -1120,7 +1121,7 @@ export default function M2TasteProfile() {
                                 fontVariantNumeric: "tabular-nums",
                               }}
                             >
-                              {w.platformMedian.toFixed(1)}
+                              {typeof w.platformMedian === "number" ? w.platformMedian.toFixed(1) : "—"}
                             </td>
                             <td
                               style={{
@@ -1129,14 +1130,13 @@ export default function M2TasteProfile() {
                                 fontWeight: 600,
                                 borderBottom: `1px solid ${v.border}`,
                                 color:
-                                  w.delta >= 0
+                                  (typeof w.delta === "number" ? w.delta : 0) >= 0
                                     ? v.deltaPositive
                                     : v.deltaNegative,
                                 fontVariantNumeric: "tabular-nums",
                               }}
                             >
-                              {w.delta >= 0 ? "+" : ""}
-                              {w.delta.toFixed(1)}
+                              {typeof w.delta === "number" ? `${w.delta >= 0 ? "+" : ""}${w.delta.toFixed(1)}` : "—"}
                             </td>
                           </tr>
                         ))}

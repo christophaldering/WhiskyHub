@@ -636,7 +636,7 @@ function LeftColumn({ tasting, whiskies, ratings, participants, status, isBlind,
               data-testid="button-start-reveal"
             >
               <Eye style={{ width: 16, height: 16 }} />
-              {t("m2.dashboard.startReveal", "Start Reveal")}
+              {t("m2.dashboard.startReveal", "Begin Unveiling")}
             </button>
           )}
 
@@ -657,11 +657,14 @@ function LeftColumn({ tasting, whiskies, ratings, participants, status, isBlind,
         <div style={card} data-testid="blind-reveal-panel">
           <div style={sectionLabel}>
             <EyeOff style={{ width: 12, height: 12, display: "inline", verticalAlign: "-2px", marginRight: 4 }} />
-            {t("m2.dashboard.blindReveal", "Blind Reveal")}
+            {t("m2.dashboard.blindReveal", "Unveil Whiskies")}
           </div>
 
+          <div style={{ fontSize: 11, color: v.muted, marginBottom: 6, lineHeight: 1.4 }}>
+            {t("m2.dashboard.blindRevealDesc", "Reveal whisky identities step by step — guests only see what you show.")}
+          </div>
           <div style={{ fontSize: 12, color: v.textSecondary, marginBottom: 10 }}>
-            {t("m2.dashboard.revealed", "Revealed")}: {revealIdx} / {whiskies.length}
+            {t("m2.dashboard.unveiled", "Unveiled")}: {revealIdx} / {whiskies.length}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 12 }}>
@@ -1075,7 +1078,10 @@ function RightColumn({ tasting, whiskies, status, isBlind, isGuided, guidedIdx, 
       <div style={card} data-testid="participant-preview">
         <div style={sectionLabel}>
           <Monitor style={{ width: 12, height: 12, display: "inline", verticalAlign: "-2px", marginRight: 4 }} />
-          {t("m2.dashboard.participantPreview", "Participants See This")}
+          {t("m2.dashboard.participantPreview", "Guest View — Current Dram")}
+        </div>
+        <div style={{ fontSize: 11, color: v.muted, marginBottom: 10, lineHeight: 1.4 }}>
+          {t("m2.dashboard.participantPreviewDesc", "Shows what guests see for the dram you're currently discussing.")}
         </div>
 
         <div style={{

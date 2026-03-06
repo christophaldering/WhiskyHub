@@ -328,69 +328,82 @@ function AdvancedConfigSection({
 
       {open && (
         <div style={{ padding: "0 14px 14px", display: "flex", flexDirection: "column", gap: 14 }}>
-          <Toggle checked={guidedMode} onChange={setGuidedMode} label={t("m2.host.guidedMode", "Guided Mode")} />
-          <div style={{ fontSize: 11, color: v.muted, marginTop: -10 }}>
-            {t("m2.host.guidedModeDesc", "Host controls the pace — one dram at a time for all participants")}
+          <Toggle checked={guidedMode} onChange={setGuidedMode} label={t("m2.host.guidedMode", "Host Controls the Pace")} />
+          <div style={{ fontSize: 11, color: v.muted, marginTop: -10, lineHeight: 1.4 }}>
+            {t("m2.host.guidedModeDesc", "When enabled, you guide all guests through each dram together. When off, guests can taste at their own pace.")}
           </div>
 
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>
               <Globe style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
-              {t("m2.host.guestModeLabel", "Guest Mode")}
+              {t("m2.host.guestModeLabel", "How Guests Join")}
             </label>
+            <div style={{ fontSize: 11, color: v.muted, marginBottom: 6, lineHeight: 1.4 }}>
+              {t("m2.host.guestModeDesc", "Choose whether guests need an account or can join instantly")}
+            </div>
             <SegmentedSelect
               value={guestMode}
               options={[
-                { value: "standard", label: t("m2.host.guestStandard", "Standard"), desc: t("m2.host.guestStandardDesc", "Sign-in required") },
-                { value: "ultra", label: t("m2.host.guestUltra", "Ultra Naked"), desc: t("m2.host.guestUltraDesc", "No sign-in needed") },
+                { value: "standard", label: t("m2.host.guestStandard", "With Account"), desc: t("m2.host.guestStandardDesc", "Guests sign in — ratings are saved") },
+                { value: "ultra", label: t("m2.host.guestUltra", "Instant Join"), desc: t("m2.host.guestUltraDesc", "No sign-in needed — anonymous") },
               ]}
               onChange={setGuestMode}
             />
           </div>
 
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>
               <Sliders style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
-              {t("m2.host.sessionUiModeLabel", "Session UI Mode")}
+              {t("m2.host.sessionUiModeLabel", "Tasting Experience")}
             </label>
+            <div style={{ fontSize: 11, color: v.muted, marginBottom: 6, lineHeight: 1.4 }}>
+              {t("m2.host.sessionUiModeDesc", "How guests navigate through the whiskies")}
+            </div>
             <SegmentedSelect
               value={sessionUiMode}
-              options={SESSION_UI_MODES.map((m) => ({ value: m.value, label: t(`m2.host.uiMode${m.label}`, m.label), desc: t(`m2.host.uiMode${m.label}Desc`, m.desc) }))}
+              options={[
+                { value: "flow", label: t("m2.host.uiModeFlow", "Free Tasting"), desc: t("m2.host.uiModeFlowDesc", "Guests explore all drams freely") },
+                { value: "focus", label: t("m2.host.uiModeFocus", "One at a Time"), desc: t("m2.host.uiModeFocusDesc", "Focus on one dram before the next") },
+                { value: "journal", label: t("m2.host.uiModeJournal", "Tasting Journal"), desc: t("m2.host.uiModeJournalDesc", "Step-by-step guided notes") },
+              ]}
               onChange={setSessionUiMode}
             />
           </div>
 
           <div style={{ borderTop: `1px solid ${v.border}`, paddingTop: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 8 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>
               <MessageCircle style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
-              {t("m2.host.reflectionLabel", "Reflection")}
+              {t("m2.host.reflectionLabel", "Group Discussion")}
             </label>
-            <Toggle checked={reflectionEnabled} onChange={setReflectionEnabled} label={t("m2.host.reflectionEnabled", "Enable Reflection")} />
+            <div style={{ fontSize: 11, color: v.muted, marginBottom: 8, lineHeight: 1.4 }}>
+              {t("m2.host.reflectionDesc", "Let guests share thoughts and comments on each whisky after tasting")}
+            </div>
+            <Toggle checked={reflectionEnabled} onChange={setReflectionEnabled} label={t("m2.host.reflectionEnabled", "Enable Discussion Round")} />
             {reflectionEnabled && (
               <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
                 <div>
                   <label style={{ fontSize: 11, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>
-                    {t("m2.host.reflectionModeLabel", "Mode")}
+                    {t("m2.host.reflectionModeLabel", "Discussion Format")}
                   </label>
                   <SegmentedSelect
                     value={reflectionMode}
                     options={[
-                      { value: "standard", label: t("m2.host.reflectionStandard", "Standard") },
-                      { value: "custom", label: t("m2.host.reflectionCustom", "Custom") },
+                      { value: "standard", label: t("m2.host.reflectionStandard", "Standard"), desc: t("m2.host.reflectionStandardDesc", "Pre-set questions") },
+                      { value: "custom", label: t("m2.host.reflectionCustom", "Custom"), desc: t("m2.host.reflectionCustomDesc", "Your own questions") },
                     ]}
                     onChange={setReflectionMode}
                   />
                 </div>
                 <div>
                   <label style={{ fontSize: 11, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>
-                    {t("m2.host.reflectionVisibilityLabel", "Visibility")}
+                    {t("m2.host.reflectionVisibilityLabel", "Show Names in Discussion")}
                   </label>
                   <SegmentedSelect
                     value={reflectionVisibility}
                     options={[
-                      { value: "named", label: t("m2.host.reflectionNamed", "Named") },
-                      { value: "anonymous", label: t("m2.host.reflectionAnonymous", "Anonymous") },
-                      { value: "optional", label: t("m2.host.reflectionOptional", "Optional") },
+                      { value: "named", label: t("m2.host.reflectionNamed", "Named"), desc: t("m2.host.reflectionNamedDesc", "Names shown") },
+                      { value: "anonymous", label: t("m2.host.reflectionAnonymous", "Anonymous"), desc: t("m2.host.reflectionAnonDesc", "Names hidden") },
+                      { value: "optional", label: t("m2.host.reflectionOptional", "Optional"), desc: t("m2.host.reflectionOptDesc", "Guest decides") },
                     ]}
                     onChange={setReflectionVisibility}
                   />
@@ -402,7 +415,7 @@ function AdvancedConfigSection({
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
               <Video style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
-              {t("m2.host.videoLinkLabel", "Video Link")}
+              {t("m2.host.videoLinkLabel", "Video Call Link")}
             </label>
             <input
               type="url"
@@ -412,8 +425,8 @@ function AdvancedConfigSection({
               style={inputStyle}
               data-testid="input-video-link"
             />
-            <div style={{ fontSize: 11, color: v.muted, marginTop: 4 }}>
-              {t("m2.host.videoLinkDesc", "Optional link to a video stream or recording")}
+            <div style={{ fontSize: 11, color: v.muted, marginTop: 4, lineHeight: 1.4 }}>
+              {t("m2.host.videoLinkDesc", "Add a Zoom, Teams or Google Meet link for remote guests")}
             </div>
           </div>
         </div>
@@ -1281,17 +1294,29 @@ function Step3Invite({ tasting, pid, onNext, onBack }: { tasting: TastingFull; p
   const joinUrl = `${window.location.origin}/enter?code=${tasting.code}`;
   const shareText = `Join my whisky tasting "${tasting.title}" on CaskSense!\nSession Code: ${tasting.code}`;
 
-  const defaultSubject = `You're invited: ${tasting.title} — CaskSense`;
+  const hostName = (() => {
+    try { const s = getSession(); return s.name || s.email?.split("@")[0] || ""; } catch { return ""; }
+  })();
+  const defaultSubject = `Du bist eingeladen: ${tasting.title} — CaskSense`;
   const defaultBody = [
-    `You're invited to "${tasting.title}"!`,
+    `Hey!`,
     "",
-    tasting.date ? `Date: ${tasting.date}` : null,
-    tasting.location ? `Location: ${tasting.location}` : null,
+    `Ich lade dich herzlich zu einem Whisky Tasting ein — "${tasting.title}".`,
     "",
-    `Join with code: ${tasting.code}`,
-    `Or use this link: ${joinUrl}`,
+    tasting.date ? `Wann: ${new Date(tasting.date).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}` : null,
+    tasting.location ? `Wo: ${tasting.location}` : null,
     "",
-    "See you there!",
+    `Wir nutzen CaskSense — eine elegante Web-App für gemeinsame Whisky Tastings. Damit bewerten wir blind, vergleichen unsere Eindrücke und sehen am Ende, welcher Dram das Rennen macht. Alles direkt im Browser, kein Download nötig.`,
+    "",
+    `So machst du mit:`,
+    `1. Öffne casksense.com`,
+    `2. Gib den Code ein: ${tasting.code}`,
+    `   Oder nutze direkt diesen Link: ${joinUrl}`,
+    "",
+    `Ich freue mich auf einen großartigen Abend mit dir!`,
+    "",
+    hostName ? `Cheers,` : `Cheers!`,
+    hostName || null,
   ].filter((l) => l !== null).join("\n");
 
   const [emailSubject, setEmailSubject] = useState(defaultSubject);
@@ -2274,39 +2299,50 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
             )}
           </div>
 
-          <Toggle checked={!!tasting.blindMode} onChange={() => handleToggle("blindMode", !!tasting.blindMode)} label={t("m2.host.blindMode", "Blind Mode")} />
-          <Toggle checked={!!tasting.guidedMode} onChange={handleToggleGuided} label={t("m2.host.guidedMode", "Guided Mode")} />
+          <Toggle checked={!!tasting.blindMode} onChange={() => handleToggle("blindMode", !!tasting.blindMode)} label={t("m2.host.blindMode", "Blind Tasting")} />
+          <div style={{ fontSize: 11, color: v.muted, marginTop: -10, lineHeight: 1.4 }}>{t("m2.host.blindModeDesc", "Hide whisky names until you choose to reveal them")}</div>
+          <Toggle checked={!!tasting.guidedMode} onChange={handleToggleGuided} label={t("m2.host.guidedMode", "Host Controls the Pace")} />
+          <div style={{ fontSize: 11, color: v.muted, marginTop: -10, lineHeight: 1.4 }}>{t("m2.host.guidedModeSettingsDesc", "You decide when guests move to the next dram")}</div>
 
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
-              {t("m2.host.sessionUiModeLabel", "Session UI Mode")}
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>
+              {t("m2.host.sessionUiModeLabel", "Tasting Experience")}
             </label>
+            <div style={{ fontSize: 11, color: v.muted, marginBottom: 6, lineHeight: 1.4 }}>{t("m2.host.sessionUiModeSettingsDesc", "How guests navigate through the whiskies")}</div>
             <SegmentedSelect
               value={tasting.sessionUiMode || "flow"}
-              options={SESSION_UI_MODES.map((m) => ({ value: m.value, label: m.label, desc: m.desc }))}
+              options={[
+                { value: "flow", label: t("m2.host.uiModeFlow", "Free Tasting"), desc: t("m2.host.uiModeFlowDesc", "Guests explore all drams freely") },
+                { value: "focus", label: t("m2.host.uiModeFocus", "One at a Time"), desc: t("m2.host.uiModeFocusDesc", "Focus on one dram before the next") },
+                { value: "journal", label: t("m2.host.uiModeJournal", "Tasting Journal"), desc: t("m2.host.uiModeJournalDesc", "Step-by-step guided notes") },
+              ]}
               onChange={handleChangeSessionUi}
             />
           </div>
 
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
-              {t("m2.host.guestModeLabel", "Guest Mode")}
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>
+              {t("m2.host.guestModeLabel", "How Guests Join")}
             </label>
+            <div style={{ fontSize: 11, color: v.muted, marginBottom: 6, lineHeight: 1.4 }}>{t("m2.host.guestModeSettingsDesc", "Choose whether guests need an account or can join instantly")}</div>
             <SegmentedSelect
               value={tasting.guestMode || "standard"}
               options={[
-                { value: "standard", label: t("m2.host.guestStandard", "Standard"), desc: t("m2.host.guestStandardDesc", "Sign-in required") },
-                { value: "ultra", label: t("m2.host.guestUltra", "Ultra Naked"), desc: t("m2.host.guestUltraDesc", "No sign-in needed") },
+                { value: "standard", label: t("m2.host.guestStandard", "With Account"), desc: t("m2.host.guestStandardDesc", "Guests sign in — ratings are saved") },
+                { value: "ultra", label: t("m2.host.guestUltra", "Instant Join"), desc: t("m2.host.guestUltraDesc", "No sign-in needed — anonymous") },
               ]}
               onChange={handleChangeGuestMode}
             />
           </div>
 
-          {sectionLabel(t("m2.host.sectionDisplay", "Display"))}
+          {sectionLabel(t("m2.host.sectionDisplay", "What Guests See"))}
 
-          <Toggle checked={!!tasting.showRanking} onChange={() => handleToggle("showRanking", !!tasting.showRanking)} label={t("m2.host.showRanking", "Show Ranking")} />
-          <Toggle checked={!!tasting.showGroupAvg} onChange={() => handleToggle("showGroupAvg", !!tasting.showGroupAvg)} label={t("m2.host.showGroupAvg", "Show Group Average")} />
-          <Toggle checked={tasting.showReveal !== false} onChange={() => handleToggle("showReveal", tasting.showReveal !== false)} label={t("m2.host.showReveal", "Show Reveal")} />
+          <Toggle checked={!!tasting.showRanking} onChange={() => handleToggle("showRanking", !!tasting.showRanking)} label={t("m2.host.showRanking", "Show Ranking to Guests")} />
+          <div style={{ fontSize: 11, color: v.muted, marginTop: -10, lineHeight: 1.4 }}>{t("m2.host.showRankingDesc", "Guests can see how whiskies rank against each other")}</div>
+          <Toggle checked={!!tasting.showGroupAvg} onChange={() => handleToggle("showGroupAvg", !!tasting.showGroupAvg)} label={t("m2.host.showGroupAvg", "Show Group Scores")} />
+          <div style={{ fontSize: 11, color: v.muted, marginTop: -10, lineHeight: 1.4 }}>{t("m2.host.showGroupAvgDesc", "Guests can see the average score from all participants")}</div>
+          <Toggle checked={tasting.showReveal !== false} onChange={() => handleToggle("showReveal", tasting.showReveal !== false)} label={t("m2.host.showReveal", "Show Results After Tasting")} />
+          <div style={{ fontSize: 11, color: v.muted, marginTop: -10, lineHeight: 1.4 }}>{t("m2.host.showRevealDesc", "Guests can access the results page when the tasting ends")}</div>
 
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
@@ -2323,35 +2359,36 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
           {sectionLabel(t("m2.host.sectionExtras", "Extras"))}
 
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
-              {t("m2.host.reflectionLabel", "Reflection")}
+            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>
+              {t("m2.host.reflectionLabel", "Group Discussion")}
             </label>
-            <Toggle checked={!!tasting.reflectionEnabled} onChange={handleToggleReflection} label={t("m2.host.reflectionEnabled", "Enable Reflection")} />
+            <div style={{ fontSize: 11, color: v.muted, marginBottom: 8, lineHeight: 1.4 }}>{t("m2.host.reflectionSettingsDesc", "Let guests share thoughts after tasting each whisky")}</div>
+            <Toggle checked={!!tasting.reflectionEnabled} onChange={handleToggleReflection} label={t("m2.host.reflectionEnabled", "Enable Discussion Round")} />
             {tasting.reflectionEnabled && (
               <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
                 <div>
                   <label style={{ fontSize: 11, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>
-                    {t("m2.host.reflectionModeLabel", "Mode")}
+                    {t("m2.host.reflectionModeLabel", "Discussion Format")}
                   </label>
                   <SegmentedSelect
                     value={tasting.reflectionMode || "standard"}
                     options={[
-                      { value: "standard", label: t("m2.host.reflectionStandard", "Standard") },
-                      { value: "custom", label: t("m2.host.reflectionCustom", "Custom") },
+                      { value: "standard", label: t("m2.host.reflectionStandard", "Standard"), desc: t("m2.host.reflectionStandardDesc", "Pre-set questions") },
+                      { value: "custom", label: t("m2.host.reflectionCustom", "Custom"), desc: t("m2.host.reflectionCustomDesc", "Your own questions") },
                     ]}
                     onChange={handleChangeReflectionMode}
                   />
                 </div>
                 <div>
                   <label style={{ fontSize: 11, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>
-                    {t("m2.host.reflectionVisibilityLabel", "Visibility")}
+                    {t("m2.host.reflectionVisibilityLabel", "Show Names in Discussion")}
                   </label>
                   <SegmentedSelect
                     value={tasting.reflectionVisibility || "named"}
                     options={[
-                      { value: "named", label: t("m2.host.reflectionNamed", "Named") },
-                      { value: "anonymous", label: t("m2.host.reflectionAnonymous", "Anonymous") },
-                      { value: "optional", label: t("m2.host.reflectionOptional", "Optional") },
+                      { value: "named", label: t("m2.host.reflectionNamed", "Named"), desc: t("m2.host.reflectionNamedDesc", "Names shown") },
+                      { value: "anonymous", label: t("m2.host.reflectionAnonymous", "Anonymous"), desc: t("m2.host.reflectionAnonDesc", "Names hidden") },
+                      { value: "optional", label: t("m2.host.reflectionOptional", "Optional"), desc: t("m2.host.reflectionOptDesc", "Guest decides") },
                     ]}
                     onChange={handleChangeReflectionVis}
                   />
@@ -2363,7 +2400,7 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
               <Video style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
-              {t("m2.host.videoLinkLabel", "Video Link")}
+              {t("m2.host.videoLinkLabel", "Video Call Link")}
             </label>
             <div style={{ display: "flex", gap: 8 }}>
               <input type="url" value={videoLinkLocal} onChange={(e) => setVideoLinkLocal(e.target.value)} placeholder={t("m2.host.videoLinkPlaceholder", "https://zoom.us/j/...")} style={{ ...inputStyle, flex: 1 }} data-testid="input-settings-video-link" />
