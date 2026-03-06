@@ -1,7 +1,7 @@
 # CaskSense - Whisky Tasting Application
 
 ## Overview
-CaskSense is a web application designed to facilitate collaborative whisky tastings. It enables users to create events, manage participants, and conduct structured whisky evaluations. Key features include tasting progression, multi-act reveals with analytics, and personalized tools like a whisky journal. The project aims to establish a leading platform for structured whisky tasting, fostering a global community and providing advanced tools for whisky enthusiasts.
+CaskSense is a web application designed to facilitate collaborative whisky tastings. It enables users to create events, manage participants, and conduct structured whisky evaluations with features like tasting progression, multi-act reveals with analytics, and personalized tools such as a whisky journal. The project aims to establish a leading platform for structured whisky tasting, fostering a global community and providing advanced tools for whisky enthusiasts. Key capabilities include comprehensive whisky management, personalized analytics, and AI-powered integrations.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -9,90 +9,69 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Full-Stack Structure
-The application is built as a TypeScript monorepo, separating client, server, and shared code using ESM modules. Data consistency is maintained through a shared `schema.ts` for Drizzle ORM and Zod validation.
+The application is a TypeScript monorepo with separate client, server, and shared code using ESM modules. Data consistency is ensured via a shared `schema.ts` for Drizzle ORM and Zod validation.
 
 ### Frontend (`client/`)
-The frontend is a React application utilizing Vite, Wouter for routing, TanStack React Query for server state management, and Zustand for client-side state. UI components are built with shadcn/ui (New York style) based on Radix UI and Tailwind CSS, featuring a Dark Warm theme with centralized color tokens and support for a Light Warm theme via CSS custom properties. It includes Framer Motion for animations, Recharts for data visualization, and react-i18next for internationalization (English and German). The application supports PWA features.
+The frontend is a React application built with Vite, Wouter for routing, TanStack React Query for server state, and Zustand for client state. UI components leverage shadcn/ui (New York style) based on Radix UI and Tailwind CSS, featuring a Dark Warm theme with centralized color tokens and support for a Light Warm theme. It incorporates Framer Motion for animations, Recharts for data visualization, and react-i18next for internationalization (English and German), supporting PWA features.
 
 ### Backend (`server/`)
-The backend is an Express 5 HTTP server, providing RESTful API endpoints and serving frontend assets in production.
+The backend is an Express 5 HTTP server providing RESTful API endpoints and serving frontend assets in production.
 
 ### Database
-PostgreSQL serves as the primary database, accessed via Drizzle ORM. The schema includes tables for participants, tastings, whiskies, ratings, profiles, journal entries, communities, and community memberships, identified by UUIDs.
+PostgreSQL is the primary database, accessed via Drizzle ORM. The schema includes tables for participants, tastings, whiskies, ratings, profiles, journal entries, communities, and community memberships, all identified by UUIDs.
 
 ### Key Design Decisions
--   **Authentication**: Email and password login with session persistence, account management, and password reset functionality. Supports guest mode participation.
--   **Data Access Security**: Enforces `x-participant-id` header validation for personal data and limits field exposure for non-owner requests.
--   **Shared Schema**: Ensures consistent data definitions across the frontend and backend.
+-   **Authentication**: Email/password login with session persistence, account management, and guest mode.
+-   **Data Access Security**: Enforces `x-participant-id` header validation and limits non-owner data exposure.
+-   **Shared Schema**: Ensures consistent data definitions across client and server.
 -   **Session State Machine**: Tastings transition through defined stages (draft, open, closed, reveal, archived) managed by the host.
--   **Asynchronous Updates**: Utilizes React Query polling for near real-time updates of session data.
--   **Public Landing Page**: Features an Apple-style landing page with Framer Motion scroll animations and a guided presentation.
--   **Downloads Restructured (Apple-style)**: Printable templates (score sheets, tasting mats) moved to Host Wizard Step 3; data export (CSV, Excel, ZIP) moved inline into Settings page; dedicated Downloads page removed, route redirects to Settings.
--   **Tasting Features**: Includes comprehensive whisky management, flight board, PDF export, blind mode, discussion panel, tasting note generator, and host-uploadable cover images.
--   **Personalization & Analytics**: Offers participant profiles, a whisky journal, achievement badges, personal flavor profiles, whisky recommendations, side-by-side comparisons, and privacy-respecting per-tasting analytics.
--   **Internationalization**: Fully migrated to react-i18next, supporting German and English, with all UI strings internationalized.
--   **Host Tools**: Provides host briefing notes, a tasting curation wizard, dashboard summary, and manage tastings functionalities.
--   **AI Integration**: Incorporates AI for bottle identification, content generation, market price estimation, tasting suggestions, and Whiskybase ID auto-fill lookup, supporting user-provided or platform-wide OpenAI API keys.
--   **Whiskybase ID Lookup & Barcode Scanner**: Enables auto-filling whisky details via Whiskybase ID input or camera-based barcode scanning, with rate limiting and caching.
--   **Collection Sync**: Supports smart synchronization of Whiskybase collections via CSV re-upload.
--   **Tasting Hub (`/tasting`)**: Central hub for joining, hosting, or logging solo drams, displaying active tastings.
--   **Host Wizard (Simple Mode)**: A streamlined 4-step wizard for creating sessions, adding whiskies, inviting participants, and running live tastings.
--   **Tasting Results**: Displays ranked whiskies by average overall score, with detailed breakdowns and multi-format export options.
+-   **Asynchronous Updates**: Uses React Query polling for near real-time session data updates.
+-   **Public Landing Page**: Apple-style landing page with Framer Motion scroll animations.
+-   **Downloads**: Printable templates and data export functionalities integrated into relevant sections (e.g., Host Wizard, Settings).
+-   **Tasting Features**: Includes whisky management, flight board, PDF export, blind mode, discussion panel, tasting note generator, and host-uploadable cover images.
+-   **Personalization & Analytics**: Participant profiles, whisky journal, achievement badges, personal flavor profiles, whisky recommendations, side-by-side comparisons, and privacy-respecting per-tasting analytics.
+-   **Internationalization**: Full migration to react-i18next supporting German and English.
+-   **Host Tools**: Host briefing notes, tasting curation wizard, dashboard summary, and tasting management.
+-   **AI Integration**: AI for bottle identification, content generation, market price estimation, tasting suggestions, and Whiskybase ID auto-fill lookup.
+-   **Whiskybase ID Lookup & Barcode Scanner**: Auto-filling whisky details via Whiskybase ID or camera-based barcode scanning with rate limiting and caching.
+-   **Collection Sync**: Smart synchronization of Whiskybase collections via CSV re-upload.
+-   **Tasting Hub (`/tasting`)**: Central hub for joining, hosting, or logging solo drams.
+-   **Host Wizard (Simple Mode)**: Streamlined 4-step wizard for creating and managing tastings.
+-   **Tasting Results**: Displays ranked whiskies by average overall score with detailed breakdowns and export options.
 -   **Guest Mode**: Offers "Standard Naked" (persisted identity) and "Ultra Naked" (ephemeral identity) participation.
--   **Rating System**: Unified `M2RatingPanel` component (`client/src/components/m2/M2RatingPanel.tsx`) used across Solo, Live Tasting, and Hosting Dashboard. Features accordion-based dimension rating (nose/taste/finish/balance) with flavor chip selection, per-dimension text notes with voice input, auto-calculated overall with manual override, dynamic scale support, and compact mode for dashboard. Chips/texts are serialized into the notes field using `[NOSE]...[/NOSE]` block format.
--   **Score Normalization**: All scores are normalized to a 0–100 scale for cross-source comparison. Live ratings: `normalizedScore = overall × (100 / ratingScale)`. Historical entries: `normalizedTotal = totalScore × 10` (original 0–10 scale). Normalization is set at write-time (rating save, historical import) and backfilled on startup via `backfillNormalizedScores()`. Taste Twins uses `normalizedScore` for Pearson correlation. APIs return both raw and normalized scores (`avgScoreNormalized`, `sourceScale`). All cross-tasting UIs consistently display scores on the 100-point scale with "/100" suffix (Historical Insights, Historical Detail, Historical Tasting list, Dram appearances, Taste Evolution).
+-   **Rating System**: Unified `M2RatingPanel` component for detailed, multi-dimensional ratings with flavor chip selection, voice input, and score normalization.
+-   **Score Normalization**: All scores normalized to a 0–100 scale for cross-source comparison, with normalization applied at write-time and backfilled on startup.
 -   **Context Level**: Three-tier data visibility control within active tasting sessions: Naked, Self, and Full.
--   **Navigation Structure (Simple Mode)**: Features a 2-tab bottom navigation (`v2_two_tab`) with "Tasting" and "Taste" sections, configurable via `NAV_VERSION` flag.
--   **Taste (Personal Dashboard)**: A personal whisky profile hub requiring sign-in, with sections for drams, analytics, collection, downloads, and knowledge base.
--   **Lazy Loading**: Pages less frequently accessed are lazy-loaded using React.lazy.
--   **Discover (External World Hub)**: Organized into sections for Community, Knowledge, Planning, and About.
--   **V2 Dark Warm UI (`/app`)**: Redesigned UI with an Apple-clean aesthetic and a whisky-warm dark color palette.
--   **Simple Mode (`/enter`, `/log-simple`, `/my-taste`)**: Minimalist UI for new users, featuring AI-powered whisky identification via photo or text, and file import.
--   **Admin Tools**: Provides functionalities for managing test data, AI kill switch, and platform settings, accessible via a dedicated `/admin` route.
-
-### Module 2 (`/m2/*`) — Full Feature Parity
-A fully self-contained parallel UI sharing the same backend, auth, and database, with a 3-tab bottom navigation (Tasting | Taste | People) and M2-specific profile menu.
--   **Core Components**: Includes `Module2Shell.tsx` for main layout, `M2BackButton.tsx` for navigation guards, `M2ProfileMenu.tsx` for authentication and settings, and `M2Feedback.tsx` for loading and error states.
--   **Tastings Tab (`/m2/tastings/*`)**: Manages tasting creation, joining, hosting, solo logging, session play, host controls, and results. Includes a comprehensive 4-step wizard for hosts.
--   **Taste Tab (`/m2/taste/*`)**: Provides a personal dashboard for users, including taste snapshots, profile analytics, dram management, collection sync, comparison tools, recommendations, collection analysis, historical tastings, and settings.
--   **Historical Tastings (`/m2/taste/historical`, `/m2/taste/historical/:id`, `/m2/taste/historical/insights`)**: Production-grade archive of externally imported tasting data (Excel), located under "Drams & Collection" in Taste tab. Three pages: (1) Archive with searchable card list, sort/filter controls (by number, date, quality), enriched cards showing winner and avg score; (2) Detail page per tasting with ranked whisky cards, winner podium, score bars, score distribution mini-viz; (3) Insights/Analytics page with Recharts (top whiskies, regions, smoky/non-smoky, cask comparison, score distribution, group taste profile radar). Whisky Detail Integration: dram detail view shows historical appearances (count, avg score, best rank, links to tastings) via `GET /api/historical/whisky-appearances?distillery=X&name=Y`. Data stored in `historical_tastings`, `historical_tasting_entries`, `historical_import_runs` tables. Import via `POST /api/admin/historical/import` (admin only, idempotent). Service: `server/historical-import.ts`.
--   **Community Visibility & Access Model**: Historical tasting data is gated by community membership. Tables: `communities` (slug, name, visibility settings), `community_memberships` (participant-community links with roles). Historical tastings have `communityId` and `visibilityLevel` (`community_only`, `public_aggregated`, `public_full`, `private_admin`). **Access control hardened**: `getAccessibleHistoricalTastingIds()` helper computes per-user tasting access based on admin role + community memberships. ALL historical API endpoints (`/tastings`, `/analytics`, `/whisky-appearances`, `/public-insights`) enforce visibility filtering at storage layer via `tastingIds` parameter. Admin endpoints (`PUT /communities/:id`, `POST /communities/:id/members`) use Zod validation. Frontend: locked states for non-members, `enabled: isMember` on all queries, `x-participant-id` header on all fetches, public insights page with empty state at `/m2/discover/historical-insights`, community management tab in M2Admin. 67 tests (13 access control tests). Seed endpoint: `POST /api/admin/communities/seed`.
--   **Collection Analysis (`/m2/taste/collection-analysis`)**: Comprehensive analytics page for the user's Whiskybase collection with 8 sections: Overview (total bottles, value, status distribution), Region & Distillery distribution (derived from distillery-to-region mapping), Age Distribution (NAS/0-10/10-15/15-20/20-30/30+), Cask Type Analysis, Price Analysis (min/max/median, top 10 most valuable), Rating Comparison (personal vs community, hidden gems, delta), ABV Distribution, and Vintage Timeline. Uses horizontal bar charts and stat cards in M2 dark warm theme.
--   **Circle Tab (`/m2/circle`)**: Features community rankings, "Taste Twins," leaderboards, activity feeds, friend management, and online friends count indicator.
--   **Friend Online Notifications**: Real-time toast notifications when friends come online or go offline. Controlled by admin toggle (`friend_online_notifications` app setting) and per-user toggle (`friendNotificationsEnabled` in profiles). Module2Shell includes heartbeat for presence tracking and polling for online status transitions.
--   **Discover (`/m2/discover/*`)**: Hub for community, knowledge, planning, and information.
--   **Admin (`/m2/admin`)**: Dedicated route for administrative functionalities like user management, AI controls, and platform settings.
-
-#### Hosting Dashboard (`/m2/tastings/session/:id/dashboard`) — 1 page
-- `M2HostingDashboard` — Desktop-first live tasting control center with 3-column layout (Left: session status, live controls, blind reveal, guided navigation, session summary | Center: whisky lineup with per-dram progress, participant status roster with real-time rating indicators | Right: host's own rating via shared `M2RatingPanel` (compact mode) with accordion dimensions, flavor chips, per-dimension notes, and auto-save; participant view preview showing what guests currently see). Mobile companion view with essential controls and "desktop recommended" banner. Entry points from Step4Live and M2HostControl. Host-only access with authorization check.
+-   **Module 2 (`/m2/*`)**: A fully self-contained parallel UI with a 3-tab bottom navigation (Tasting | Taste | Circle), sharing the same backend, auth, and database.
+    -   **Apple-Level Bottom Navigation**: Custom SVG icons with Apple-grade visual polish, including GlencairnIcon, RadarIcon, and CircleIcon.
+    -   **Apple-Design-System (M2 UI Polish)**: Comprehensive design upgrades including Playfair Display headers, refined NavRows, dynamic Tasting Cards, enhanced Stat Boxes, iOS-style Segmented Controls, inviting Empty States, and elegant Skeleton Loading.
+    -   **Action Cards (Joyn/Host/Solo)**: Apple-quality primary action cards with distinctive iconography, gradient backgrounds, and subtle touch feedback.
+    -   **Hosting Dashboard**: Desktop-first live tasting control center with a 3-column layout for session status, whisky lineup, participant roster, and host's rating panel.
+    -   **Historical Tastings**: Production-grade archive of externally imported tasting data with detailed views, insights, and robust community-gated access control.
+    -   **Collection Analysis**: Comprehensive analytics page for user's Whiskybase collection.
+    -   **Circle Tab**: Features community rankings, "Taste Twins," leaderboards, activity feeds, and friend management with real-time online notifications.
+-   **Admin Tools**: Functionalities for managing test data, AI controls, and platform settings.
 
 ### Test Suite
-A comprehensive test framework using Vitest with unit, API, E2E, and smoke tests, covering Module2Shell rendering, authentication flows, API endpoints, route verification, and historical tasting normalization/import helpers (32 unit tests importing real functions from `server/historical-import.ts`).
+A comprehensive test framework using Vitest covers unit, API, E2E, and smoke tests, including Module2Shell rendering, authentication flows, API endpoints, and historical tasting helpers.
 
-### Production Auto-Seed (`server/index.ts`)
-On production startup, `seedProductionData()` automatically seeds missing data:
-1. Creates "Aldering Tasting Circle" community if no communities exist
-2. Adds the first admin participant as community member
-3. Imports historical tastings from `attached_assets/` Excel file if `historical_tastings` table is empty
-4. Links all imported tastings to the community with `community_only` visibility
-Only runs when `NODE_ENV === "production"`. Idempotent — skips if data already present.
+### Production Auto-Seed
+On production startup, `seedProductionData()` automatically seeds missing data like the default community and historical tastings from an Excel file, linking them with `community_only` visibility.
 
 ### Data Quality & Admin Tools
--   **Historical Reconciliation** (`server/historical-reconciliation.ts`): Audits imported data for null rates, parse success, duplicates, outliers, orphaned entries. Exposed via `GET /api/admin/historical/reconciliation` (admin-only).
--   **Admin Historical Import Tab**: Integrated into M2Admin with import run history, dry-run/full import buttons, and reconciliation report display.
--   **DB Indexes**: `idx_historical_tastings_tasting_number` and `idx_historical_entries_tasting_id` for optimized queries.
+Includes historical reconciliation tools (`GET /api/admin/historical/reconciliation`) for auditing imported data and optimized DB indexes (`idx_historical_tastings_tasting_number`, `idx_historical_entries_tasting_id`).
 
 ## External Dependencies
 
 -   **PostgreSQL**: Primary database.
 -   **Google Fonts**: For typography.
--   **Nodemailer**: For sending email notifications.
+-   **Nodemailer**: For email notifications.
 -   **ExcelJS**: For Excel file processing.
--   **qrcode**: For generating QR codes.
+-   **qrcode**: For QR code generation.
 -   **html5-qrcode**: For camera-based QR/barcode scanning.
 -   **Replit Object Storage**: For image storage.
 -   **GPT-4o**: For AI functionalities.
--   **Recharts**: For data visualization (radar charts, bar charts, pie charts, line charts).
--   **jsPDF**: For PDF generation (results, recap, tasting sheets).
+-   **Recharts**: For data visualization.
+-   **jsPDF**: For PDF generation.
 -   **Framer Motion**: For animations.
 -   **Capacitor**: For native mobile application wrapping.
