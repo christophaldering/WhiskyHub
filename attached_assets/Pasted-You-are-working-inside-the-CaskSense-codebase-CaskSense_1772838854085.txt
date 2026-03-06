@@ -1,0 +1,502 @@
+You are working inside the **CaskSense codebase**.
+
+CaskSense is a **production-grade whisky tasting platform** built as a TypeScript monorepo.
+
+Frontend stack:
+React + Vite
+Wouter routing
+TanStack React Query
+Zustand
+Tailwind CSS
+shadcn/ui
+Framer Motion
+Recharts
+
+Backend:
+Express 5
+Drizzle ORM
+PostgreSQL
+
+Theme:
+Dark Warm whisky aesthetic.
+
+Your task is to implement a **new premium landing page for whisky enthusiasts and connoisseurs**.
+
+The design must feel **Apple-level refined, elegant and calm** — not like a SaaS marketing page.
+
+This landing page must feel like **entering a quiet whisky tasting room**.
+
+Minimal text.
+Beautiful spacing.
+Elegant motion.
+
+Audience:
+
+Whisky enthusiasts
+Tasting hosts
+Experienced connoisseurs
+Whisky club members.
+
+The goal:
+
+Make them immediately want to use CaskSense for their next tasting.
+
+---
+
+# 1 PRESERVE EXISTING LANDING PAGE
+
+The current landing page must NOT be deleted.
+
+Move it to:
+
+/landing-old
+
+Ensure the page works exactly as before.
+
+---
+
+# 2 NEW LANDING PAGE
+
+Create a new landing page at:
+
+/
+
+The **existing hero section must remain EXACTLY as it is**.
+
+Do not modify:
+
+hero image
+headline
+subheadline
+typography
+spacing
+
+Hero text remains:
+
+WHISKY TASTING PLATFORM
+CaskSense
+
+Where tasting becomes reflection.
+
+The most thoughtful way to explore whisky — alone or together.
+
+All new sections must appear **below the hero**.
+
+---
+
+# 3 DESIGN PRINCIPLES
+
+The page must feel:
+
+calm
+premium
+minimal
+elegant
+reflective
+
+Use:
+
+large typography
+warm gold accents
+dark warm backgrounds
+subtle animations
+
+Use Framer Motion for scroll animations.
+
+Animations must be slow and refined.
+
+Respect prefers-reduced-motion.
+
+---
+
+# 4 SECTION
+
+THE QUIET TABLE
+
+Headline:
+
+Every whisky tasting deserves structure.
+
+Text:
+
+Most tastings drift.
+
+Notes are lost.
+Opinions fade.
+Great bottles disappear into memory.
+
+CaskSense turns a tasting into an experience worth remembering.
+
+Visual concept:
+
+Elegant table scene:
+
+Glencairn glasses
+tasting notes
+tablet with CaskSense
+
+Use subtle fade-in animation.
+
+---
+
+# 5 SECTION
+
+THE CASKSENSE TASTING FLOW
+
+Headline:
+
+What happens in a CaskSense tasting
+
+Create a **horizontal storytelling timeline** with five stages.
+
+Stage 1
+Gather
+
+Invite your friends.
+Everyone joins the tasting.
+
+QR code entry supported.
+
+---
+
+Stage 2
+Pour
+
+The host pours the dram.
+
+Blind.
+
+No labels.
+No expectations.
+
+---
+
+Stage 3
+Reflect
+
+Participants rate the whisky.
+
+Aroma
+Flavor
+Balance
+Finish
+Overall
+
+---
+
+Stage 4
+Reveal
+
+The host reveals the bottle.
+
+Gasps.
+Laughter.
+Debate.
+
+---
+
+Stage 5
+Discover
+
+The ranking appears.
+
+Sometimes the legend wins.
+Sometimes the outsider.
+
+Use elegant step animations.
+
+---
+
+# 6 SECTION
+
+THE MOMENT OF TRUTH
+
+Headline:
+
+The reveal changes everything.
+
+Text:
+
+Great tastings are not about being right.
+
+They are about discovering how different our perceptions are.
+
+CaskSense captures that moment
+and turns it into insight.
+
+Include a refined whisky visual element.
+
+---
+
+# 7 SECTION
+
+TASTE INTELLIGENCE
+
+Headline:
+
+Understand your whisky taste.
+
+Visual components:
+
+Recharts radar chart
+ranking list
+flavor profile
+
+Text:
+
+Over time CaskSense learns your palate.
+
+Which distilleries you love.
+Which casks surprise you.
+Which friends share your taste.
+
+---
+
+# 8 SECTION
+
+DESIGNED FOR CONNOISSEURS
+
+Create a **feature grid**.
+
+Features:
+
+Blind Flight Engine
+Structure tastings into flights.
+
+Multi-Stage Reveal
+Reveal information step by step.
+
+Deep Tasting Notes
+Capture aroma, flavor, balance and finish.
+
+Personal Whisky Journal
+Build a long-term tasting archive.
+
+Community Insights
+Compare results with your tasting group.
+
+Each card includes icon + subtle hover motion.
+
+---
+
+# 9 SECTION
+
+GUIDED TASTING TOUR
+
+Headline:
+
+Walk through a tasting.
+
+Create a **scroll-driven guided tour**.
+
+Step 1
+Create a tasting.
+
+Step 2
+Participants rate the dram.
+
+Step 3
+Host reveals the bottle.
+
+Step 4
+Ranking appears.
+
+Use subtle animated transitions between steps.
+
+---
+
+# 10 SECTION
+
+INTERACTIVE TASTING DEMO
+
+Create a small interactive demo.
+
+User can rate a sample dram.
+
+Three sliders:
+
+Aroma
+Flavor
+Finish
+
+After rating:
+
+Reveal a fictional whisky.
+
+Show how results appear.
+
+Purpose:
+
+Allow visitors to experience the platform immediately.
+
+---
+
+# 11 SECTION
+
+THE CASKSENSE COMPANION
+
+Headline:
+
+Explore whisky alone.
+
+Text:
+
+Not every whisky needs a tasting.
+
+Sometimes it is just you.
+
+A quiet evening.
+A single dram.
+
+CaskSense captures those moments too.
+
+---
+
+# 12 SECTION
+
+THE CIRCLE
+
+Headline:
+
+Taste together.
+
+Features:
+
+Taste Twins
+Community Rankings
+Shared Tastings
+
+Visual: subtle community network graphic.
+
+---
+
+# 13 SECTION
+
+DOWNLOAD THE TASTING KIT
+
+Create a download section.
+
+Headline:
+
+Download the CaskSense Tasting Kit.
+
+Contents of downloadable PDF:
+
+Tasting guide
+Blind label templates
+Flight structure templates
+Host checklist
+
+Use a simple PDF placeholder.
+
+---
+
+# 14 SECTION
+
+HOST PRESENTATION DOWNLOAD
+
+Headline:
+
+Introduce CaskSense to your tasting group.
+
+Offer downloadable presentation PDF.
+
+Presentation includes:
+
+What CaskSense is
+How a tasting works
+How participants join
+How scoring works
+What insights appear
+
+---
+
+# 15 SECTION
+
+FEATURE GUIDE BY USER TYPE
+
+Headline:
+
+Designed for every role in a tasting.
+
+Create three columns.
+
+For Tasting Hosts
+Organize flights
+Control reveals
+Manage the session
+
+For Participants
+Rate drams
+Capture notes
+Compare results
+
+For Whisky Enthusiasts
+Track taste profile
+Build a whisky journal
+Discover new preferences
+
+---
+
+# 16 SECTION
+
+PHILOSOPHY
+
+Headline:
+
+Where tasting becomes reflection.
+
+Text:
+
+Whisky invites attention.
+
+Aroma.
+Texture.
+Memory.
+
+CaskSense helps you slow down
+and notice what you taste.
+
+---
+
+# 17 FINAL CTA
+
+Headline:
+
+Start your next tasting.
+
+Buttons:
+
+Host a tasting
+Join a tasting
+Log a dram
+
+These buttons must link to the existing Tasting Hub.
+
+---
+
+# 18 PERFORMANCE
+
+Ensure:
+
+mobile responsive layout
+clean desktop layout
+smooth animations
+fast loading time
+
+Use existing Tailwind tokens.
+
+---
+
+# 19 VALIDATION
+
+After implementation verify:
+
+old landing page works at /landing-old
+new landing page loads at /
+hero section unchanged
+all sections render correctly
+interactive demo works
+download placeholders work
+CTA buttons route correctly
+mobile layout is clean

@@ -26,7 +26,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 -   **Shared Schema**: Ensures consistent data definitions across client and server.
 -   **Session State Machine**: Tastings transition through defined stages (draft, open, closed, reveal, archived) managed by the host.
 -   **Asynchronous Updates**: Uses React Query polling for near real-time session data updates.
--   **Public Landing Page**: Apple-style landing page with Framer Motion scroll animations.
+-   **Public Landing Page**: Premium Apple-level landing page (`client/src/pages/landing-new.tsx`) with 14 sections: Hero, Quiet Table, 5-Stage Tasting Flow, Reveal Moment, Taste Intelligence (Recharts radar/ranking/flavors), Connoisseur Features, Guided Tour, Interactive Demo (sliders + reveal), Companion (solo), Circle (community), Downloads, User Roles, Philosophy, Final CTA. Old landing page preserved at `/landing-old` (`client/src/pages/public-landing.tsx`).
 -   **Downloads**: Printable templates and data export functionalities integrated into relevant sections (e.g., Host Wizard, Settings).
 -   **Tasting Menu Card**: AI-generated cover image + multi-page PDF (cover, participants, whisky lineup). Configurable orientation (portrait/landscape), blind/open mode, optional prompt hint for cover image mood. Backend: `POST /api/tastings/:id/menu-cover` generates context-aware DALL-E image. Frontend: `client/src/components/tasting-menu-pdf.ts` generates jsPDF. UI: `TastingMenuSection` in `M2TastingsHost.tsx` Step 3.
 -   **Tasting Features**: Includes whisky management, flight board, PDF export, blind mode, discussion panel, tasting note generator, and host-uploadable cover images.
