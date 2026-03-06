@@ -47,15 +47,69 @@ PostgreSQL serves as the primary database, accessed via Drizzle ORM. The schema 
 -   **V2 Dark Warm UI (`/app`)**: Redesigned UI with an Apple-clean aesthetic and a whisky-warm dark color palette.
 -   **Simple Mode (`/enter`, `/log-simple`, `/my-taste`)**: Minimalist UI for new users, featuring AI-powered whisky identification via photo or text, and file import.
 -   **Admin Tools**: Provides functionalities for managing test data, AI kill switch, and platform settings, accessible via a dedicated `/admin` route.
--   **Module 2 (`/m2/*`)**: Fully self-contained parallel UI sharing the same backend, auth, and database. NO cross-links to the old app — all navigation stays within `/m2/*`. 3-tab bottom nav (Tastings | Taste | Circle) with M2-specific profile menu (`M2ProfileMenu.tsx`, not SessionSheet). Components: `Module2Shell.tsx`, `M2BackButton.tsx` (enforces M2-only navigation via `isM2Route` guard), `M2ProfileMenu.tsx`. Pages: `M2TastingsHome`, `M2TastingsJoin`, `M2TastingsHost`, `M2TastingsSolo` (inline dram logger), `M2TastingSession`, `M2HostControl`, `M2TastingPlay` (inline rating UI), `M2TasteHome`, `M2TasteProfile`, `M2TasteAnalytics`, `M2TasteDrams`, `M2TasteCollection`, `M2CircleHome`. All use `v.*` theme tokens, i18n under `m2.*` namespace. Landing page has secondary CTA linking to `/m2`.
+
+### Module 2 (`/m2/*`) — Full Feature Parity
+Fully self-contained parallel UI sharing the same backend, auth, and database. NO cross-links to the old app — all navigation stays within `/m2/*`. 3-tab bottom nav (Tastings | Taste | Circle) with M2-specific profile menu.
+
+#### Core Components
+- `Module2Shell.tsx` — Main layout with header (logo, profile button, notification bell, "What's New" banner, PWA install prompt), 3-tab bottom nav, session-change listener
+- `M2BackButton.tsx` — Navigation guard ensuring all back-navigation stays within `/m2/*` via `isM2Route()` check
+- `M2ProfileMenu.tsx` — Full auth menu: sign in, register, forgot PIN/reset, email verification, guest mode, theme toggle, language toggle, sign out
+
+#### Tastings Tab (`/m2/tastings/*`) — 11 pages
+- `M2TastingsHome` — Status filter (Draft/Open/Closed/Archived) with count badges, time filter, HOST badge, calendar view toggle, reveal status badges
+- `M2TastingsJoin` — Code entry + QR code scanner (html5-qrcode camera), direct join via URL
+- `M2TastingsHost` — Full 4-step wizard: Step 1 (title/date/location/blind mode), Step 2 (whisky CRUD + reorder + image upload), Step 3 (QR code/link/email invitations), Step 4 (live control: dram selection, blind reveal, guided mode, results toggle, settings, duplicate/delete/transfer)
+- `M2TastingsSolo` — Full dram logger: AI photo/text identification, barcode scanner, Whiskybase lookup, 5-dimension rating (Nose/Taste/Finish/Balance/Overall) with auto-calculate, flavor chips, dimension notes, metadata fields, multi-photo, confidence badges, offline localStorage
+- `M2TastingSession` — Lobby with cover image, participant list, tasting code + QR display
+- `M2HostControl` — Status control, blind reveal steps (Name→Details→Image), guided mode advance, AI highlights, live whisky management (add/edit/delete)
+- `M2TastingPlay` — Full 5-dimension rating with auto-calculate + manual override, debounced auto-save (800ms), progress pills, rating prompt, group average, guided "Waiting for Host", dynamic scale, whisky image/details, status badge, guest upgrade prompt
+- `M2TastingResults` — Ranked whiskies, Gold/Silver/Bronze medals, score breakdown bars, PDF/Excel/CSV export, link to recap
+- `M2TastingRecap` — Top rated, most divisive, participant highlights, horizontal bar chart (Recharts), share text clipboard, PDF/print
+- `M2HostDashboard` — Analytics summary, calendar, top whiskies leaderboard, score charts (Recharts bars), quick links, invitations panel
+
+#### Taste Tab (`/m2/taste/*`) — 13 pages
+- `M2TasteHome` — Taste Snapshot (Stability/Exploration/Smoke Affinity/Tastings), AI insight, analytics preview with unlock progression, links to ALL sub-pages, Log Dram button, Knowledge/Community/About sections
+- `M2TasteProfile` — Radar chart (Recharts), "Your Style" + "Sweet Spot", Stability Badge, benchmarking (Friends/Global), breakdown by Region/Cask/Peat
+- `M2TasteAnalytics` — Taste Evolution line chart, Rating Consistency/Stability Score, statistical breakdown (Avg/StdDev/Range/Count), unlock progression
+- `M2TasteDrams` — Filter tabs (All/Solo/Tasting), search, Add Dram button, detail view, edit/delete entries
+- `M2TasteCollection` — CSV/Excel import, collection sync (diff preview), AI price estimation, statistics (count/value/status), search/filter/sort, status filter, "Tasted it" shortcut
+- `M2TasteCompare` — Community delta table (Your Score vs Platform Median), radar chart overlay (up to 3), CSV export, filters/pagination
+- `M2TasteBenchmark` — AI document extraction (PDF/Excel/image/text), library categorization, bulk-add to Library/Wishlist/Journal
+- `M2TasteWheel` — Multi-layered aroma wheel (8 categories + subcategories, Recharts pie), NLP text mining from journal, flavor stats
+- `M2TasteRecommendations` — Weighted matching (Region 35%/Cask 25%/Peat 25%/Community 15%), interactive filter toggles, match percentages
+- `M2TastePairings` — AI food pairing per tasting, pairing scores + "Why" reasons, tasting selection
+- `M2TasteWishlist` — Priority management (High/Medium/Low), AI bottle scanner, AI "Why Interesting", one-click transfer to Journal
+- `M2TasteDownloads` — Printable tasting sheets/mats (PDF), data export (CSV/Excel/ZIP), multilingual templates
+- `M2TasteSettings` — Account management (email/PIN), theme toggle, language switch, profile (name/photo/bio), taste defaults, AI key config, account deletion
+
+#### Circle Tab (`/m2/circle`) — 1 page with 5 tabs
+- Rankings (live community scores), Taste Twins (match percentages), Leaderboard, Activity Feed, Friends (CRUD)
+
+#### Discover (`/m2/discover/*`) — 14 pages
+- Hub, Lexicon, Distilleries (list+map), Bottlers, Templates, Guide, AI Curation, Research, Rabbit Hole, Vocabulary, About, Donate, Activity, Community
+
+#### Admin (`/m2/admin`) — 1 page with 10 tabs
+- Participants/roles, Tastings/sessions, Online users, AI controls (kill switch), Newsletter (AI-generated), Changelog, Cleanup, Analytics, Settings, Feedback
+
+#### Legal (`/m2/impressum`, `/m2/privacy`)
+- Impressum and Privacy Policy pages
+
+#### All M2 pages use:
+- `v.*` CSS variable theme tokens (no hardcoded colors)
+- `Module2Shell` wrapper with 3-tab bottom nav
+- `M2BackButton` with M2-only navigation guard
+- i18n translations with `m2.*` namespace + fallback strings
+- `data-testid` attributes on all interactive/display elements
+- Same backend API endpoints as classic app
 
 ### Test Suite
 Comprehensive test framework using Vitest with 4 tiers:
--   **Unit tests** (`tests/unit/`): Module2Shell rendering, M2BackButton fallback logic, theme token validation, i18n coverage. Config: `vitest.config.ts` (jsdom, @vitejs/plugin-react). Run: `npm run test:unit`.
+-   **Unit tests** (`tests/unit/`): Module2Shell rendering, M2BackButton fallback logic, M2ProfileMenu auth flow, theme token validation, i18n coverage. Config: `vitest.config.ts` (jsdom, @vitejs/plugin-react). Run: `npm run test:unit`.
 -   **API tests** (`tests/api/`): Health endpoint, auth signin, tastings CRUD. Config: `vitest.config.api.ts` (node). Run: `npm run test:api`.
 -   **E2E tests** (`tests/e2e/`): Fetch-based route verification for all `/m2/*` and existing routes, auth flow integration. Config: `vitest.config.e2e.ts` (node). Run: `npm run test:e2e`.
 -   **Smoke tests** (`tests/smoke.ts`): CLI script checking server health, DB, auth, M2 routing. Run: `npm run test:smoke`.
--   **Full suite**: `npm run test:all` (unit + api + e2e + smoke). 39 tests total.
+-   **Full suite**: `npm run test:all` (unit + api + e2e + smoke). 49 tests total.
 -   **Test data**: `npm run db:seed:test` creates test user (`test.m2@casksense.local`) and test tasting with 3 whiskies. Cleanup: `npx tsx server/cleanup-test.ts`.
 
 ## External Dependencies
@@ -65,6 +119,10 @@ Comprehensive test framework using Vitest with 4 tiers:
 -   **Nodemailer**: For sending email notifications.
 -   **ExcelJS**: For Excel file processing.
 -   **qrcode**: For generating QR codes.
+-   **html5-qrcode**: For camera-based QR/barcode scanning.
 -   **Replit Object Storage**: For image storage.
 -   **GPT-4o**: For AI functionalities.
+-   **Recharts**: For data visualization (radar charts, bar charts, pie charts, line charts).
+-   **jsPDF**: For PDF generation (results, recap, tasting sheets).
+-   **Framer Motion**: For animations.
 -   **Capacitor**: For native mobile application wrapping.

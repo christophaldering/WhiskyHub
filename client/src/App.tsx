@@ -113,12 +113,40 @@ import M2TastingsSolo from "@/pages/m2/M2TastingsSolo";
 import M2TastingSession from "@/pages/m2/M2TastingSession";
 import M2HostControl from "@/pages/m2/M2HostControl";
 import M2TastingPlay from "@/pages/m2/M2TastingPlay";
+import M2TastingRecap from "@/pages/m2/M2TastingRecap";
+import M2TastingResults from "@/pages/m2/M2TastingResults";
 import M2TasteHome from "@/pages/m2/M2TasteHome";
 import M2TasteProfile from "@/pages/m2/M2TasteProfile";
 import M2TasteAnalytics from "@/pages/m2/M2TasteAnalytics";
 import M2TasteDrams from "@/pages/m2/M2TasteDrams";
 import M2TasteCollection from "@/pages/m2/M2TasteCollection";
+import M2TasteCompare from "@/pages/m2/M2TasteCompare";
+import M2TasteDownloads from "@/pages/m2/M2TasteDownloads";
+import M2TastePairings from "@/pages/m2/M2TastePairings";
+import M2TasteWheel from "@/pages/m2/M2TasteWheel";
+import M2TasteBenchmark from "@/pages/m2/M2TasteBenchmark";
+import M2TasteSettings from "@/pages/m2/M2TasteSettings";
+import M2TasteWishlist from "@/pages/m2/M2TasteWishlist";
 import M2CircleHome from "@/pages/m2/M2CircleHome";
+import M2Admin from "@/pages/m2/M2Admin";
+import M2HostDashboard from "@/pages/m2/M2HostDashboard";
+import M2TasteRecommendations from "@/pages/m2/M2TasteRecommendations";
+import M2Impressum from "@/pages/m2/M2Impressum";
+import M2Privacy from "@/pages/m2/M2Privacy";
+import M2DiscoverHub from "@/pages/m2/M2DiscoverHub";
+import M2DiscoverLexicon from "@/pages/m2/M2DiscoverLexicon";
+import M2DiscoverDistilleries from "@/pages/m2/M2DiscoverDistilleries";
+import M2DiscoverBottlers from "@/pages/m2/M2DiscoverBottlers";
+import M2DiscoverTemplates from "@/pages/m2/M2DiscoverTemplates";
+import M2DiscoverGuide from "@/pages/m2/M2DiscoverGuide";
+import M2DiscoverAICuration from "@/pages/m2/M2DiscoverAICuration";
+import M2DiscoverResearch from "@/pages/m2/M2DiscoverResearch";
+import M2DiscoverRabbitHole from "@/pages/m2/M2DiscoverRabbitHole";
+import M2DiscoverVocabulary from "@/pages/m2/M2DiscoverVocabulary";
+import M2DiscoverAbout from "@/pages/m2/M2DiscoverAbout";
+import M2DiscoverDonate from "@/pages/m2/M2DiscoverDonate";
+import M2DiscoverActivity from "@/pages/m2/M2DiscoverActivity";
+import M2DiscoverCommunity from "@/pages/m2/M2DiscoverCommunity";
 
 // ── V2 Dark Warm UI ──
 import LabDarkLayout from "@/lab-dark/LabDarkLayout";
@@ -275,8 +303,14 @@ function Router() {
         <Route path="/intro" component={Intro} />
 
         {/* === MODULE 2 (parallel UI, same data) === */}
+        <Route path="/m2/tastings/session/:id/results">
+          <Module2Shell><M2TastingResults /></Module2Shell>
+        </Route>
         <Route path="/m2/tastings/session/:id/host">
           <Module2Shell><M2HostControl /></Module2Shell>
+        </Route>
+        <Route path="/m2/tastings/session/:id/recap">
+          <Module2Shell><M2TastingRecap /></Module2Shell>
         </Route>
         <Route path="/m2/tastings/session/:id/play">
           <Module2Shell><M2TastingPlay /></Module2Shell>
@@ -284,11 +318,17 @@ function Router() {
         <Route path="/m2/tastings/session/:id">
           <Module2Shell><M2TastingSession /></Module2Shell>
         </Route>
+        <Route path="/m2/tastings/join/:code">
+          <Module2Shell><M2TastingsJoin /></Module2Shell>
+        </Route>
         <Route path="/m2/tastings/join">
           <Module2Shell><M2TastingsJoin /></Module2Shell>
         </Route>
         <Route path="/m2/tastings/host">
           <Module2Shell><M2TastingsHost /></Module2Shell>
+        </Route>
+        <Route path="/m2/tastings/dashboard">
+          <Module2Shell><M2HostDashboard /></Module2Shell>
         </Route>
         <Route path="/m2/tastings/solo">
           <Module2Shell><M2TastingsSolo /></Module2Shell>
@@ -308,11 +348,86 @@ function Router() {
         <Route path="/m2/taste/collection">
           <Module2Shell><M2TasteCollection /></Module2Shell>
         </Route>
+        <Route path="/m2/taste/compare">
+          <Module2Shell><M2TasteCompare /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste/pairings">
+          <Module2Shell><M2TastePairings /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste/wheel">
+          <Module2Shell><M2TasteWheel /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste/downloads">
+          <Module2Shell><M2TasteDownloads /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste/recommendations">
+          <Module2Shell><M2TasteRecommendations /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste/benchmark">
+          <Module2Shell><M2TasteBenchmark /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste/settings">
+          <Module2Shell><M2TasteSettings /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste/wishlist">
+          <Module2Shell><M2TasteWishlist /></Module2Shell>
+        </Route>
         <Route path="/m2/taste">
           <Module2Shell><M2TasteHome /></Module2Shell>
         </Route>
+        <Route path="/m2/discover/lexicon">
+          <Module2Shell><M2DiscoverLexicon /></Module2Shell>
+        </Route>
+        <Route path="/m2/discover/distilleries">
+          <Module2Shell><M2DiscoverDistilleries /></Module2Shell>
+        </Route>
+        <Route path="/m2/discover/bottlers">
+          <Module2Shell><M2DiscoverBottlers /></Module2Shell>
+        </Route>
+        <Route path="/m2/discover/templates">
+          <Module2Shell><M2DiscoverTemplates /></Module2Shell>
+        </Route>
+        <Route path="/m2/discover/guide">
+          <Module2Shell><M2DiscoverGuide /></Module2Shell>
+        </Route>
+        <Route path="/m2/discover/ai-curation">
+          <Module2Shell><M2DiscoverAICuration /></Module2Shell>
+        </Route>
+        <Route path="/m2/discover/research">
+          <Module2Shell><M2DiscoverResearch /></Module2Shell>
+        </Route>
+        <Route path="/m2/discover/rabbit-hole">
+          <Module2Shell><M2DiscoverRabbitHole /></Module2Shell>
+        </Route>
+        <Route path="/m2/discover/vocabulary">
+          <Module2Shell><M2DiscoverVocabulary /></Module2Shell>
+        </Route>
+        <Route path="/m2/discover/about">
+          <Module2Shell><M2DiscoverAbout /></Module2Shell>
+        </Route>
+        <Route path="/m2/discover/donate">
+          <Module2Shell><M2DiscoverDonate /></Module2Shell>
+        </Route>
+        <Route path="/m2/discover/activity">
+          <Module2Shell><M2DiscoverActivity /></Module2Shell>
+        </Route>
+        <Route path="/m2/discover/community">
+          <Module2Shell><M2DiscoverCommunity /></Module2Shell>
+        </Route>
+        <Route path="/m2/discover">
+          <Module2Shell><M2DiscoverHub /></Module2Shell>
+        </Route>
         <Route path="/m2/circle">
           <Module2Shell><M2CircleHome /></Module2Shell>
+        </Route>
+        <Route path="/m2/impressum">
+          <Module2Shell><M2Impressum /></Module2Shell>
+        </Route>
+        <Route path="/m2/privacy">
+          <Module2Shell><M2Privacy /></Module2Shell>
+        </Route>
+        <Route path="/m2/admin">
+          <Module2Shell><M2Admin /></Module2Shell>
         </Route>
         <Route path="/m2">{() => <Redirect to="/m2/tastings" />}</Route>
 

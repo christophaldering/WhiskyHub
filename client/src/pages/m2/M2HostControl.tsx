@@ -1,20 +1,32 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
-import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
+import { tastingApi, whiskyApi, ratingApi, blindModeApi, guidedApi, recapApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { getSession } from "@/lib/session";
-import { Play, Lock, Eye, Archive, ChevronRight, CheckCircle, Clock } from "lucide-react";
+import {
+  Play, Lock, Eye, EyeOff, Archive, ChevronRight, CheckCircle, Clock,
+  SkipForward, Sparkles, Plus, Trash2, GripVertical, ImageIcon,
+  FileText, Info, Loader2, RefreshCw, ChevronDown, ChevronUp, Edit3
+} from "lucide-react";
 
 export default function M2HostControl() {
   const { t } = useTranslation();
   const [, params] = useRoute("/m2/tastings/session/:id/host");
+  const [, navigate] = useLocation();
   const id = params?.id || "";
   const session = getSession();
   const [showEndConfirm, setShowEndConfirm] = useState(false);
+  const [showWhiskyManager, setShowWhiskyManager] = useState(false);
+  const [aiHighlights, setAiHighlights] = useState<any>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [editingWhisky, setEditingWhisky] = useState<any>(null);
+  const [newWhisky, setNewWhisky] = useState({ name: "", distillery: "", abv: "", age: "", caskType: "", notes: "" });
+  const [showAddWhisky, setShowAddWhisky] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<string | null>("status");
 
   const { data: tasting, isLoading } = useQuery({
     queryKey: ["tasting", id],
@@ -27,6 +39,7 @@ export default function M2HostControl() {
     queryKey: ["whiskies", id],
     queryFn: () => whiskyApi.getForTasting(id),
     enabled: !!id,
+    refetchInterval: 5000,
   });
 
   const { data: ratings = [] } = useQuery({
@@ -52,6 +65,52 @@ export default function M2HostControl() {
     },
   });
 
+  const revealNextMutation = useMutation({
+    mutationFn: () => blindModeApi.revealNext(id, session.pid),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", id] });
+    },
+  });
+
+  const guidedAdvanceMutation = useMutation({
+    mutationFn: () => guidedApi.advance(id, session.pid),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", id] });
+    },
+  });
+
+  const guidedGoToMutation = useMutation({
+    mutationFn: (params: { whiskyIndex: number; revealStep?: number }) =>
+      guidedApi.goTo(id, session.pid, params.whiskyIndex, params.revealStep),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasting", id] });
+    },
+  });
+
+  const createWhiskyMutation = useMutation({
+    mutationFn: (data: any) => whiskyApi.create({ ...data, tastingId: id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", id] });
+      setShowAddWhisky(false);
+      setNewWhisky({ name: "", distillery: "", abv: "", age: "", caskType: "", notes: "" });
+    },
+  });
+
+  const updateWhiskyMutation = useMutation({
+    mutationFn: (params: { id: string; data: any }) => whiskyApi.update(params.id, params.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", id] });
+      setEditingWhisky(null);
+    },
+  });
+
+  const deleteWhiskyMutation = useMutation({
+    mutationFn: (whiskyId: string) => whiskyApi.delete(whiskyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", id] });
+    },
+  });
+
   if (isLoading || !tasting) {
     return (
       <div style={{ padding: 16, textAlign: "center", color: v.muted }}>
@@ -62,6 +121,11 @@ export default function M2HostControl() {
 
   const status = tasting.status;
   const currentAct = tasting.currentAct || "act1";
+  const revealIndex = tasting.revealIndex ?? 0;
+  const revealStep = tasting.revealStep ?? 0;
+  const guidedWhiskyIndex = tasting.guidedWhiskyIndex ?? -1;
+  const isBlind = tasting.blindMode;
+  const isGuided = tasting.guidedMode;
 
   const handleNextState = () => {
     if (status === "draft") updateStatus.mutate({ status: "open" });
@@ -100,12 +164,88 @@ export default function M2HostControl() {
   };
 
   const ActionIcon = getActionIcon();
-
   const uniqueRaters = new Set(ratings.map((r: any) => r.participantId));
   const totalParticipants = participants.length || 1;
 
+  const getRevealStepLabel = (step: number) => {
+    if (step === 0) return t("m2.hostControl.revealHidden", "Hidden");
+    if (step === 1) return t("m2.hostControl.revealName", "Name");
+    if (step === 2) return t("m2.hostControl.revealDetails", "Details");
+    if (step === 3) return t("m2.hostControl.revealImage", "Image");
+    return "";
+  };
+
+  const handleGenerateHighlights = async () => {
+    setAiLoading(true);
+    try {
+      const data = await recapApi.get(id);
+      setAiHighlights(data);
+    } catch {
+      setAiHighlights({ error: true });
+    }
+    setAiLoading(false);
+  };
+
+  const toggleSection = (section: string) => {
+    setExpandedSection(expandedSection === section ? null : section);
+  };
+
+  const sectionHeaderStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "14px 16px",
+    background: v.card,
+    border: `1px solid ${v.border}`,
+    borderRadius: 14,
+    marginBottom: 8,
+    cursor: "pointer",
+    userSelect: "none",
+  };
+
+  const sectionTitleStyle: React.CSSProperties = {
+    fontSize: 12,
+    color: v.muted,
+    textTransform: "uppercase",
+    fontWeight: 600,
+    letterSpacing: "0.05em",
+  };
+
+  const cardStyle: React.CSSProperties = {
+    background: v.card,
+    border: `1px solid ${v.border}`,
+    borderRadius: 14,
+    padding: "16px",
+    marginBottom: 12,
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "10px 12px",
+    borderRadius: 8,
+    border: `1px solid ${v.inputBorder}`,
+    background: v.inputBg,
+    color: v.inputText,
+    fontSize: 14,
+    fontFamily: "system-ui, sans-serif",
+    outline: "none",
+  };
+
+  const smallBtnStyle: React.CSSProperties = {
+    padding: "8px 14px",
+    borderRadius: 8,
+    border: "none",
+    fontWeight: 600,
+    fontSize: 13,
+    cursor: "pointer",
+    fontFamily: "system-ui, sans-serif",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+  };
+
   return (
-    <div style={{ padding: "16px" }} data-testid="m2-host-control-page">
+    <div style={{ padding: "16px", paddingBottom: 100 }} data-testid="m2-host-control-page">
       <M2BackButton />
 
       <h1
@@ -124,77 +264,642 @@ export default function M2HostControl() {
         {tasting.title || t("m2.tastings.untitled", "Untitled Tasting")}
       </p>
 
-      <div
-        style={{
-          background: v.card,
-          border: `1px solid ${v.border}`,
-          borderRadius: 14,
-          padding: "16px",
-          marginBottom: 16,
-        }}
-      >
-        <div style={{ fontSize: 12, color: v.muted, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.05em", marginBottom: 8 }}>
-          {t("m2.hostControl.status", "Status")}
+      {/* Status & Stats */}
+      <div style={cardStyle}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <div>
+            <div style={{ ...sectionTitleStyle, marginBottom: 4 }}>
+              {t("m2.hostControl.status", "Status")}
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: v.text }}>
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+              {status === "reveal" && ` — Act ${currentAct.replace("act", "")}`}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            {isBlind && (
+              <span style={{ padding: "4px 8px", borderRadius: 6, background: v.pillBg, color: v.pillText, fontSize: 11, fontWeight: 600 }}>
+                <EyeOff style={{ width: 12, height: 12, display: "inline", verticalAlign: "-2px", marginRight: 3 }} />
+                {t("m2.hostControl.blind", "Blind")}
+              </span>
+            )}
+            {isGuided && (
+              <span style={{ padding: "4px 8px", borderRadius: 6, background: v.pillBg, color: v.pillText, fontSize: 11, fontWeight: 600 }}>
+                <SkipForward style={{ width: 12, height: 12, display: "inline", verticalAlign: "-2px", marginRight: 3 }} />
+                {t("m2.hostControl.guided", "Guided")}
+              </span>
+            )}
+          </div>
         </div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: v.text }}>
-          {status.charAt(0).toUpperCase() + status.slice(1)}
-          {status === "reveal" && ` — Act ${currentAct.replace("act", "")}`}
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ flex: 1, background: v.elevated, borderRadius: 10, padding: "10px", textAlign: "center" }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>{whiskies.length}</div>
+            <div style={{ fontSize: 11, color: v.muted }}>{t("m2.hostControl.drams", "Drams")}</div>
+          </div>
+          <div style={{ flex: 1, background: v.elevated, borderRadius: 10, padding: "10px", textAlign: "center" }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>{totalParticipants}</div>
+            <div style={{ fontSize: 11, color: v.muted }}>{t("m2.hostControl.participants", "Participants")}</div>
+          </div>
+          <div style={{ flex: 1, background: v.elevated, borderRadius: 10, padding: "10px", textAlign: "center" }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>{ratings.length}</div>
+            <div style={{ fontSize: 11, color: v.muted }}>{t("m2.hostControl.ratings", "Ratings")}</div>
+          </div>
         </div>
       </div>
 
-      <div
-        style={{
-          background: v.card,
-          border: `1px solid ${v.border}`,
-          borderRadius: 14,
-          padding: "16px",
-          marginBottom: 16,
-        }}
-      >
-        <div style={{ fontSize: 12, color: v.muted, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.05em", marginBottom: 12 }}>
-          {t("m2.hostControl.participants", "Participants")} ({totalParticipants})
+      {/* Blind Reveal Controls */}
+      {isBlind && status === "open" && (
+        <div style={cardStyle} data-testid="m2-blind-reveal-section">
+          <div
+            style={{ ...sectionTitleStyle, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <Eye style={{ width: 14, height: 14 }} />
+            {t("m2.hostControl.blindReveal", "Blind Reveal")}
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 13, color: v.textSecondary, marginBottom: 8 }}>
+              {t("m2.hostControl.revealProgress", "Reveal Progress")}: {revealIndex} / {whiskies.length} {t("m2.hostControl.whiskies", "whiskies")}
+            </div>
+            <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+              {whiskies.map((_: any, idx: number) => (
+                <div
+                  key={idx}
+                  style={{
+                    flex: 1,
+                    height: 6,
+                    borderRadius: 3,
+                    background: idx < revealIndex ? v.accent : v.elevated,
+                    transition: "background 0.3s",
+                  }}
+                />
+              ))}
+            </div>
+            {revealIndex < whiskies.length && (
+              <div style={{ fontSize: 12, color: v.muted, marginBottom: 4 }}>
+                {t("m2.hostControl.currentStep", "Current step")}: {getRevealStepLabel(revealStep)}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {whiskies.map((w: any, idx: number) => {
+              const isRevealed = idx < revealIndex;
+              const isCurrent = idx === revealIndex;
+              return (
+                <div
+                  key={w.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 10px",
+                    borderRadius: 8,
+                    background: isCurrent ? v.elevated : "transparent",
+                    border: isCurrent ? `1px solid ${v.accent}` : `1px solid transparent`,
+                  }}
+                  data-testid={`m2-blind-whisky-${idx}`}
+                >
+                  <div style={{
+                    width: 24, height: 24, borderRadius: 12,
+                    background: isRevealed ? v.success : isCurrent ? v.accent : v.border,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 11, fontWeight: 700, color: "#fff",
+                  }}>
+                    {isRevealed ? "✓" : idx + 1}
+                  </div>
+                  <span style={{ flex: 1, fontSize: 13, color: isRevealed ? v.text : v.muted }}>
+                    {isRevealed ? (w.name || `Whisky ${idx + 1}`) : `Whisky ${idx + 1}`}
+                  </span>
+                  {isRevealed && (
+                    <span style={{ fontSize: 10, color: v.success, fontWeight: 600 }}>
+                      {t("m2.hostControl.revealed", "Revealed")}
+                    </span>
+                  )}
+                  {isCurrent && (
+                    <span style={{ fontSize: 10, color: v.accent, fontWeight: 600 }}>
+                      {getRevealStepLabel(revealStep)}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {revealIndex < whiskies.length && (
+            <button
+              onClick={() => revealNextMutation.mutate()}
+              disabled={revealNextMutation.isPending}
+              style={{
+                ...smallBtnStyle,
+                width: "100%",
+                justifyContent: "center",
+                marginTop: 12,
+                padding: "12px",
+                background: v.accent,
+                color: v.bg,
+              }}
+              data-testid="m2-reveal-next-button"
+            >
+              {revealNextMutation.isPending ? (
+                <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+              ) : (
+                <Eye style={{ width: 16, height: 16 }} />
+              )}
+              {revealStep === 0
+                ? t("m2.hostControl.revealNameBtn", "Reveal Name")
+                : revealStep === 1
+                ? t("m2.hostControl.revealDetailsBtn", "Reveal Details")
+                : revealStep === 2
+                ? t("m2.hostControl.revealImageBtn", "Reveal Image")
+                : t("m2.hostControl.revealNextWhisky", "Next Whisky")}
+            </button>
+          )}
+
+          {revealIndex >= whiskies.length && (
+            <div style={{ textAlign: "center", padding: "12px", color: v.success, fontSize: 13, fontWeight: 600 }}>
+              <CheckCircle style={{ width: 16, height: 16, display: "inline", verticalAlign: "-3px", marginRight: 4 }} />
+              {t("m2.hostControl.allRevealed", "All whiskies revealed!")}
+            </div>
+          )}
         </div>
-        {participants.map((p: any) => {
-          const hasRated = uniqueRaters.has(p.id);
-          return (
+      )}
+
+      {/* Guided Mode Controls */}
+      {isGuided && (status === "open" || status === "reveal") && (
+        <div style={cardStyle} data-testid="m2-guided-mode-section">
+          <div
+            style={{ ...sectionTitleStyle, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <SkipForward style={{ width: 14, height: 14 }} />
+            {t("m2.hostControl.guidedMode", "Guided Mode")}
+          </div>
+
+          <div style={{ fontSize: 13, color: v.textSecondary, marginBottom: 12 }}>
+            {guidedWhiskyIndex < 0
+              ? t("m2.hostControl.guidedWaiting", "Participants are waiting. Advance to the first whisky.")
+              : `${t("m2.hostControl.guidedCurrent", "Current whisky")}: ${guidedWhiskyIndex + 1} / ${whiskies.length}`}
+          </div>
+
+          <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
+            {whiskies.map((_: any, idx: number) => (
+              <button
+                key={idx}
+                onClick={() => guidedGoToMutation.mutate({ whiskyIndex: idx })}
+                style={{
+                  flex: 1,
+                  height: 32,
+                  borderRadius: 6,
+                  border: idx === guidedWhiskyIndex ? `2px solid ${v.accent}` : `1px solid ${v.border}`,
+                  background: idx < guidedWhiskyIndex ? v.success : idx === guidedWhiskyIndex ? v.elevated : "transparent",
+                  color: idx <= guidedWhiskyIndex ? v.text : v.muted,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "system-ui, sans-serif",
+                  transition: "all 0.2s",
+                }}
+                data-testid={`m2-guided-whisky-${idx}`}
+              >
+                {idx + 1}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => guidedAdvanceMutation.mutate()}
+            disabled={guidedAdvanceMutation.isPending || guidedWhiskyIndex >= whiskies.length - 1}
+            style={{
+              ...smallBtnStyle,
+              width: "100%",
+              justifyContent: "center",
+              padding: "12px",
+              background: guidedWhiskyIndex >= whiskies.length - 1 ? v.border : v.accent,
+              color: guidedWhiskyIndex >= whiskies.length - 1 ? v.muted : v.bg,
+              opacity: guidedAdvanceMutation.isPending ? 0.6 : 1,
+            }}
+            data-testid="m2-guided-advance-button"
+          >
+            {guidedAdvanceMutation.isPending ? (
+              <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+            ) : (
+              <SkipForward style={{ width: 16, height: 16 }} />
+            )}
+            {guidedWhiskyIndex < 0
+              ? t("m2.hostControl.guidedStart", "Start First Whisky")
+              : guidedWhiskyIndex >= whiskies.length - 1
+              ? t("m2.hostControl.guidedAllDone", "All Whiskies Done")
+              : t("m2.hostControl.guidedNext", "Next Whisky")}
+          </button>
+        </div>
+      )}
+
+      {/* Participants */}
+      <div
+        style={sectionHeaderStyle}
+        onClick={() => toggleSection("participants")}
+        data-testid="m2-participants-toggle"
+      >
+        <span style={sectionTitleStyle}>
+          {t("m2.hostControl.participants", "Participants")} ({totalParticipants})
+        </span>
+        {expandedSection === "participants" ? (
+          <ChevronUp style={{ width: 16, height: 16, color: v.muted }} />
+        ) : (
+          <ChevronDown style={{ width: 16, height: 16, color: v.muted }} />
+        )}
+      </div>
+      {expandedSection === "participants" && (
+        <div style={{ ...cardStyle, marginTop: -4, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+          {participants.map((p: any) => {
+            const hasRated = uniqueRaters.has(p.id);
+            return (
+              <div
+                key={p.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "8px 0",
+                  borderBottom: `1px solid ${v.border}`,
+                }}
+                data-testid={`m2-participant-${p.id}`}
+              >
+                {hasRated ? (
+                  <CheckCircle style={{ width: 16, height: 16, color: v.success }} />
+                ) : (
+                  <Clock style={{ width: 16, height: 16, color: v.muted }} />
+                )}
+                <span style={{ fontSize: 14, color: v.text, flex: 1 }}>
+                  {p.name || p.email || "Anonymous"}
+                </span>
+                <span style={{ fontSize: 11, color: hasRated ? v.success : v.muted }}>
+                  {hasRated ? t("m2.hostControl.rated", "Rated") : t("m2.hostControl.pending", "Pending")}
+                </span>
+              </div>
+            );
+          })}
+          {participants.length === 0 && (
+            <div style={{ fontSize: 13, color: v.muted, textAlign: "center", padding: 12 }}>
+              {t("m2.hostControl.noParticipants", "No participants yet")}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Whisky Management */}
+      <div
+        style={{ ...sectionHeaderStyle, marginTop: 4 }}
+        onClick={() => toggleSection("whiskies")}
+        data-testid="m2-whiskies-toggle"
+      >
+        <span style={sectionTitleStyle}>
+          {t("m2.hostControl.manageWhiskies", "Manage Whiskies")} ({whiskies.length})
+        </span>
+        {expandedSection === "whiskies" ? (
+          <ChevronUp style={{ width: 16, height: 16, color: v.muted }} />
+        ) : (
+          <ChevronDown style={{ width: 16, height: 16, color: v.muted }} />
+        )}
+      </div>
+      {expandedSection === "whiskies" && (
+        <div style={{ ...cardStyle, marginTop: -4, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+          {whiskies.map((w: any, idx: number) => (
             <div
-              key={p.id}
+              key={w.id}
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                padding: "6px 0",
-                borderBottom: `1px solid ${v.border}`,
+                padding: "10px 0",
+                borderBottom: idx < whiskies.length - 1 ? `1px solid ${v.border}` : "none",
               }}
-              data-testid={`m2-participant-${p.id}`}
+              data-testid={`m2-whisky-item-${w.id}`}
             >
-              {hasRated ? (
-                <CheckCircle style={{ width: 16, height: 16, color: v.success }} />
-              ) : (
-                <Clock style={{ width: 16, height: 16, color: v.muted }} />
+              <div style={{
+                width: 28, height: 28, borderRadius: 8,
+                background: v.elevated,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 12, fontWeight: 700, color: v.accent,
+              }}>
+                {idx + 1}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: v.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {w.name || t("m2.hostControl.unnamed", "Unnamed")}
+                </div>
+                {(w.distillery || w.abv) && (
+                  <div style={{ fontSize: 11, color: v.muted }}>
+                    {[w.distillery, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ")}
+                  </div>
+                )}
+              </div>
+              {editingWhisky?.id !== w.id && (
+                <div style={{ display: "flex", gap: 4 }}>
+                  <button
+                    onClick={() => setEditingWhisky({ ...w })}
+                    style={{ ...smallBtnStyle, padding: "6px 8px", background: v.elevated, color: v.text }}
+                    data-testid={`m2-edit-whisky-${w.id}`}
+                  >
+                    <Edit3 style={{ width: 14, height: 14 }} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm(t("m2.hostControl.deleteConfirm", "Delete this whisky?"))) {
+                        deleteWhiskyMutation.mutate(w.id);
+                      }
+                    }}
+                    style={{ ...smallBtnStyle, padding: "6px 8px", background: v.elevated, color: v.danger }}
+                    data-testid={`m2-delete-whisky-${w.id}`}
+                  >
+                    <Trash2 style={{ width: 14, height: 14 }} />
+                  </button>
+                </div>
               )}
-              <span style={{ fontSize: 14, color: v.text, flex: 1 }}>
-                {p.name || p.email || "Anonymous"}
-              </span>
-              <span style={{ fontSize: 11, color: hasRated ? v.success : v.muted }}>
-                {hasRated ? t("m2.hostControl.rated", "Rated") : t("m2.hostControl.pending", "Pending")}
-              </span>
             </div>
-          );
-        })}
-      </div>
+          ))}
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        <div style={{ flex: 1, background: v.elevated, borderRadius: 10, padding: "12px", textAlign: "center" }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>{whiskies.length}</div>
-          <div style={{ fontSize: 11, color: v.muted }}>{t("m2.hostControl.drams", "Drams")}</div>
-        </div>
-        <div style={{ flex: 1, background: v.elevated, borderRadius: 10, padding: "12px", textAlign: "center" }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>{ratings.length}</div>
-          <div style={{ fontSize: 11, color: v.muted }}>{t("m2.hostControl.ratings", "Ratings")}</div>
-        </div>
-      </div>
+          {editingWhisky && (
+            <div style={{ padding: "12px 0", borderTop: `1px solid ${v.border}` }} data-testid="m2-edit-whisky-form">
+              <div style={{ fontSize: 12, fontWeight: 600, color: v.accent, marginBottom: 8 }}>
+                {t("m2.hostControl.editWhisky", "Edit Whisky")}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <input
+                  style={inputStyle}
+                  placeholder={t("m2.hostControl.whiskyName", "Name")}
+                  value={editingWhisky.name || ""}
+                  onChange={(e) => setEditingWhisky({ ...editingWhisky, name: e.target.value })}
+                  data-testid="input-edit-whisky-name"
+                />
+                <input
+                  style={inputStyle}
+                  placeholder={t("m2.hostControl.distillery", "Distillery")}
+                  value={editingWhisky.distillery || ""}
+                  onChange={(e) => setEditingWhisky({ ...editingWhisky, distillery: e.target.value })}
+                  data-testid="input-edit-whisky-distillery"
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    style={{ ...inputStyle, flex: 1 }}
+                    placeholder={t("m2.hostControl.abv", "ABV %")}
+                    value={editingWhisky.abv || ""}
+                    onChange={(e) => setEditingWhisky({ ...editingWhisky, abv: e.target.value })}
+                    data-testid="input-edit-whisky-abv"
+                  />
+                  <input
+                    style={{ ...inputStyle, flex: 1 }}
+                    placeholder={t("m2.hostControl.age", "Age")}
+                    value={editingWhisky.age || ""}
+                    onChange={(e) => setEditingWhisky({ ...editingWhisky, age: e.target.value })}
+                    data-testid="input-edit-whisky-age"
+                  />
+                </div>
+                <input
+                  style={inputStyle}
+                  placeholder={t("m2.hostControl.caskType", "Cask Type")}
+                  value={editingWhisky.caskType || ""}
+                  onChange={(e) => setEditingWhisky({ ...editingWhisky, caskType: e.target.value })}
+                  data-testid="input-edit-whisky-cask"
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => setEditingWhisky(null)}
+                    style={{ ...smallBtnStyle, flex: 1, justifyContent: "center", background: v.elevated, color: v.text, border: `1px solid ${v.border}` }}
+                    data-testid="button-cancel-edit-whisky"
+                  >
+                    {t("common.cancel", "Cancel")}
+                  </button>
+                  <button
+                    onClick={() => updateWhiskyMutation.mutate({
+                      id: editingWhisky.id,
+                      data: {
+                        name: editingWhisky.name,
+                        distillery: editingWhisky.distillery,
+                        abv: editingWhisky.abv,
+                        age: editingWhisky.age,
+                        caskType: editingWhisky.caskType,
+                      }
+                    })}
+                    style={{ ...smallBtnStyle, flex: 1, justifyContent: "center", background: v.accent, color: v.bg }}
+                    data-testid="button-save-edit-whisky"
+                  >
+                    {t("common.save", "Save")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
+          {showAddWhisky ? (
+            <div style={{ padding: "12px 0", borderTop: `1px solid ${v.border}` }} data-testid="m2-add-whisky-form">
+              <div style={{ fontSize: 12, fontWeight: 600, color: v.accent, marginBottom: 8 }}>
+                {t("m2.hostControl.addWhisky", "Add Whisky")}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <input
+                  style={inputStyle}
+                  placeholder={t("m2.hostControl.whiskyName", "Name") + " *"}
+                  value={newWhisky.name}
+                  onChange={(e) => setNewWhisky({ ...newWhisky, name: e.target.value })}
+                  data-testid="input-new-whisky-name"
+                />
+                <input
+                  style={inputStyle}
+                  placeholder={t("m2.hostControl.distillery", "Distillery")}
+                  value={newWhisky.distillery}
+                  onChange={(e) => setNewWhisky({ ...newWhisky, distillery: e.target.value })}
+                  data-testid="input-new-whisky-distillery"
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    style={{ ...inputStyle, flex: 1 }}
+                    placeholder={t("m2.hostControl.abv", "ABV %")}
+                    value={newWhisky.abv}
+                    onChange={(e) => setNewWhisky({ ...newWhisky, abv: e.target.value })}
+                    data-testid="input-new-whisky-abv"
+                  />
+                  <input
+                    style={{ ...inputStyle, flex: 1 }}
+                    placeholder={t("m2.hostControl.age", "Age")}
+                    value={newWhisky.age}
+                    onChange={(e) => setNewWhisky({ ...newWhisky, age: e.target.value })}
+                    data-testid="input-new-whisky-age"
+                  />
+                </div>
+                <input
+                  style={inputStyle}
+                  placeholder={t("m2.hostControl.caskType", "Cask Type")}
+                  value={newWhisky.caskType}
+                  onChange={(e) => setNewWhisky({ ...newWhisky, caskType: e.target.value })}
+                  data-testid="input-new-whisky-cask"
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => { setShowAddWhisky(false); setNewWhisky({ name: "", distillery: "", abv: "", age: "", caskType: "", notes: "" }); }}
+                    style={{ ...smallBtnStyle, flex: 1, justifyContent: "center", background: v.elevated, color: v.text, border: `1px solid ${v.border}` }}
+                    data-testid="button-cancel-add-whisky"
+                  >
+                    {t("common.cancel", "Cancel")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!newWhisky.name.trim()) return;
+                      createWhiskyMutation.mutate({
+                        name: newWhisky.name,
+                        distillery: newWhisky.distillery || undefined,
+                        abv: newWhisky.abv || undefined,
+                        age: newWhisky.age || undefined,
+                        caskType: newWhisky.caskType || undefined,
+                        notes: newWhisky.notes || undefined,
+                        sortOrder: whiskies.length,
+                      });
+                    }}
+                    disabled={!newWhisky.name.trim() || createWhiskyMutation.isPending}
+                    style={{
+                      ...smallBtnStyle,
+                      flex: 1,
+                      justifyContent: "center",
+                      background: newWhisky.name.trim() ? v.accent : v.border,
+                      color: newWhisky.name.trim() ? v.bg : v.muted,
+                      opacity: createWhiskyMutation.isPending ? 0.6 : 1,
+                    }}
+                    data-testid="button-save-add-whisky"
+                  >
+                    {createWhiskyMutation.isPending ? (
+                      <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />
+                    ) : (
+                      <Plus style={{ width: 14, height: 14 }} />
+                    )}
+                    {t("common.add", "Add")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAddWhisky(true)}
+              style={{
+                ...smallBtnStyle,
+                width: "100%",
+                justifyContent: "center",
+                marginTop: 8,
+                padding: "10px",
+                background: "transparent",
+                color: v.accent,
+                border: `1px dashed ${v.border}`,
+              }}
+              data-testid="button-add-whisky"
+            >
+              <Plus style={{ width: 14, height: 14 }} />
+              {t("m2.hostControl.addWhisky", "Add Whisky")}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* AI Highlights */}
+      {(status === "closed" || status === "reveal" || status === "archived") && (
+        <div style={cardStyle} data-testid="m2-ai-highlights-section">
+          <div style={{ ...sectionTitleStyle, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+            <Sparkles style={{ width: 14, height: 14 }} />
+            {t("m2.hostControl.aiHighlights", "AI Highlights")}
+          </div>
+
+          {!aiHighlights && !aiLoading && (
+            <button
+              onClick={handleGenerateHighlights}
+              style={{
+                ...smallBtnStyle,
+                width: "100%",
+                justifyContent: "center",
+                padding: "12px",
+                background: v.elevated,
+                color: v.accent,
+                border: `1px solid ${v.border}`,
+              }}
+              data-testid="button-generate-highlights"
+            >
+              <Sparkles style={{ width: 16, height: 16 }} />
+              {t("m2.hostControl.generateHighlights", "Generate AI Highlights")}
+            </button>
+          )}
+
+          {aiLoading && (
+            <div style={{ textAlign: "center", padding: 16 }}>
+              <Loader2 style={{ width: 24, height: 24, color: v.accent, animation: "spin 1s linear infinite", margin: "0 auto 8px" }} />
+              <div style={{ fontSize: 13, color: v.muted }}>
+                {t("m2.hostControl.generatingHighlights", "Generating highlights...")}
+              </div>
+            </div>
+          )}
+
+          {aiHighlights && !aiHighlights.error && (
+            <div data-testid="m2-highlights-content">
+              {aiHighlights.topRated && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: v.accent, marginBottom: 4 }}>
+                    🏆 {t("m2.hostControl.topRated", "Top Rated")}
+                  </div>
+                  <div style={{ fontSize: 14, color: v.text }}>
+                    {aiHighlights.topRated.name || "—"}
+                  </div>
+                  {aiHighlights.topRated.avgScore && (
+                    <div style={{ fontSize: 12, color: v.muted }}>
+                      {t("m2.hostControl.avgScore", "Avg Score")}: {Number(aiHighlights.topRated.avgScore).toFixed(1)}
+                    </div>
+                  )}
+                </div>
+              )}
+              {aiHighlights.mostDivisive && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: v.accent, marginBottom: 4 }}>
+                    🔥 {t("m2.hostControl.mostDivisive", "Most Divisive")}
+                  </div>
+                  <div style={{ fontSize: 14, color: v.text }}>
+                    {aiHighlights.mostDivisive.name || "—"}
+                  </div>
+                </div>
+              )}
+              {aiHighlights.participantHighlights?.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: v.accent, marginBottom: 4 }}>
+                    👥 {t("m2.hostControl.participantHighlights", "Participant Highlights")}
+                  </div>
+                  {aiHighlights.participantHighlights.slice(0, 3).map((h: any, i: number) => (
+                    <div key={i} style={{ fontSize: 13, color: v.textSecondary, padding: "2px 0" }}>
+                      {h.name}: {h.label}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={handleGenerateHighlights}
+                style={{
+                  ...smallBtnStyle,
+                  padding: "6px 10px",
+                  background: "transparent",
+                  color: v.muted,
+                  border: `1px solid ${v.border}`,
+                }}
+                data-testid="button-refresh-highlights"
+              >
+                <RefreshCw style={{ width: 12, height: 12 }} />
+                {t("m2.hostControl.refresh", "Refresh")}
+              </button>
+            </div>
+          )}
+
+          {aiHighlights?.error && (
+            <div style={{ fontSize: 13, color: v.danger, textAlign: "center", padding: 8 }}>
+              {t("m2.hostControl.highlightsError", "Could not generate highlights. Try again later.")}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Main Action Button */}
       {status !== "archived" && (
         <button
           onClick={handleNextState}
@@ -215,6 +920,7 @@ export default function M2HostControl() {
             cursor: updateStatus.isPending ? "wait" : "pointer",
             fontFamily: "system-ui, sans-serif",
             opacity: updateStatus.isPending ? 0.6 : 1,
+            marginTop: 8,
           }}
           data-testid="m2-host-action-button"
         >
@@ -223,6 +929,7 @@ export default function M2HostControl() {
         </button>
       )}
 
+      {/* End Confirm Modal */}
       {showEndConfirm && (
         <div
           style={{
@@ -294,6 +1001,13 @@ export default function M2HostControl() {
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

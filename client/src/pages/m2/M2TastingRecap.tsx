@@ -1,0 +1,575 @@
+import { useParams } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { recapApi } from "@/lib/api";
+import { v } from "@/lib/themeVars";
+import M2BackButton from "@/components/m2/M2BackButton";
+import { Trophy, Copy, Printer, AlertTriangle, Users, Wine, Star, FileDown } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+
+interface RecapData {
+  tasting: { id: string; title: string; date: string; location: string; status: string; hostId: string; ratingScale?: number };
+  hostName: string;
+  participantCount: number;
+  whiskyCount: number;
+  topRated: { name: string; distillery: string; avgScore: number; imageUrl: string | null }[];
+  mostDivisive: { name: string; stddev: number } | null;
+  overallAverages: { nose: number; taste: number; finish: number; balance: number; overall: number };
+  participantHighlights: { name: string; ratingsCount: number; avgScore: number }[];
+}
+
+const MEDAL_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"];
+const BAR_COLORS = ["#c8a864", "#a8845c", "#8b6f47", "#d4a853", "#b8934a"];
+
+export default function M2TastingRecap() {
+  const { t, i18n } = useTranslation();
+  const params = useParams<{ id: string }>();
+  const { toast } = useToast();
+  const tastingId = params.id;
+
+  const { data: recap, isLoading, isError } = useQuery<RecapData>({
+    queryKey: ["recap", tastingId],
+    queryFn: () => recapApi.get(tastingId!),
+    enabled: !!tastingId,
+  });
+
+  const formatDate = (dateStr: string) => {
+    try {
+      return new Date(dateStr).toLocaleDateString(i18n.language === "de" ? "de-DE" : "en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const buildShareText = () => {
+    if (!recap) return "";
+    const lines: string[] = [];
+    lines.push(`🥃 ${recap.tasting.title}`);
+    lines.push(`📅 ${formatDate(recap.tasting.date)}`);
+    if (recap.tasting.location) lines.push(`📍 ${recap.tasting.location}`);
+    lines.push(`👤 ${t("recap.host")}: ${recap.hostName}`);
+    lines.push(`👥 ${recap.participantCount} ${t("recap.participants")}`);
+    lines.push("");
+    lines.push(`🏆 ${t("recap.topRated")}:`);
+    recap.topRated.slice(0, 5).forEach((w, i) => {
+      const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
+      lines.push(`  ${medal} ${w.name}${w.distillery ? ` (${w.distillery})` : ""} — ${w.avgScore.toFixed(1)}`);
+    });
+    if (recap.mostDivisive) {
+      lines.push("");
+      lines.push(`⚡ ${t("recap.mostDivisive")}: ${recap.mostDivisive.name} (σ ${recap.mostDivisive.stddev.toFixed(2)})`);
+    }
+    lines.push("");
+    lines.push(`📊 ${t("recap.overallAverages")}:`);
+    const avg = recap.overallAverages;
+    lines.push(`  ${t("evaluation.nose")}: ${avg.nose.toFixed(1)} | ${t("evaluation.taste")}: ${avg.taste.toFixed(1)} | ${t("evaluation.finish")}: ${avg.finish.toFixed(1)} | ${t("evaluation.balance")}: ${avg.balance.toFixed(1)} | ${t("evaluation.overall")}: ${avg.overall.toFixed(1)}`);
+    lines.push("");
+    lines.push("— CaskSense");
+    return lines.join("\n");
+  };
+
+  const handleCopy = async () => {
+    const text = buildShareText();
+    await navigator.clipboard.writeText(text);
+    toast({ title: t("recap.copied") });
+  };
+
+  const handlePrint = () => window.print();
+
+  const handlePdfDownload = () => {
+    if (!recap) return;
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pw = doc.internal.pageSize.getWidth();
+    const margin = 18;
+    const cw = pw - margin * 2;
+    let y = 20;
+    const gold: [number, number, number] = [200, 168, 100];
+    const dark: [number, number, number] = [30, 30, 32];
+    const muted: [number, number, number] = [120, 120, 125];
+    const bg: [number, number, number] = [245, 243, 240];
+
+    const addPage = () => { doc.addPage(); y = 20; };
+    const checkSpace = (need: number) => { if (y + need > 275) addPage(); };
+
+    doc.setFillColor(...bg);
+    doc.rect(0, 0, pw, doc.internal.pageSize.getHeight(), "F");
+
+    doc.setFontSize(22);
+    doc.setTextColor(...dark);
+    doc.text(recap.tasting.title, pw / 2, y, { align: "center" });
+    y += 10;
+
+    doc.setFontSize(9);
+    doc.setTextColor(...muted);
+    const meta: string[] = [];
+    if (recap.tasting.date) meta.push(formatDate(recap.tasting.date));
+    if (recap.tasting.location) meta.push(recap.tasting.location);
+    meta.push(`${t("recap.host")}: ${recap.hostName}`);
+    meta.push(`${recap.participantCount} ${t("recap.participants")}`);
+    meta.push(`${recap.whiskyCount} ${t("recap.whiskies")}`);
+    doc.text(meta.join("  ·  "), pw / 2, y, { align: "center" });
+    y += 12;
+
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pw - margin, y);
+    y += 10;
+
+    if (recap.topRated.length > 0) {
+      doc.setFontSize(14);
+      doc.setTextColor(...dark);
+      doc.text(`🏆 ${t("recap.topRated")}`, margin, y);
+      y += 8;
+
+      recap.topRated.slice(0, 5).forEach((w, i) => {
+        checkSpace(10);
+        const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
+        doc.setFontSize(11);
+        doc.setTextColor(...dark);
+        doc.text(`${medal}  ${w.name}`, margin + 4, y);
+        doc.setFontSize(11);
+        doc.setTextColor(...gold);
+        doc.text(w.avgScore.toFixed(1), pw - margin, y, { align: "right" });
+        if (w.distillery) {
+          y += 4.5;
+          doc.setFontSize(8);
+          doc.setTextColor(...muted);
+          doc.text(w.distillery, margin + 12, y);
+        }
+        y += 7;
+      });
+      y += 4;
+    }
+
+    if (recap.mostDivisive) {
+      checkSpace(16);
+      doc.setFontSize(14);
+      doc.setTextColor(...dark);
+      doc.text(`⚡ ${t("recap.mostDivisive")}`, margin, y);
+      y += 7;
+      doc.setFontSize(10);
+      doc.setTextColor(...muted);
+      doc.text(`${recap.mostDivisive.name}  (σ ${recap.mostDivisive.stddev.toFixed(2)})`, margin + 4, y);
+      y += 10;
+    }
+
+    checkSpace(50);
+    doc.setFontSize(14);
+    doc.setTextColor(...dark);
+    doc.text(`📊 ${t("recap.overallAverages")}`, margin, y);
+    y += 8;
+
+    const dims = [
+      { label: t("evaluation.nose"), value: recap.overallAverages.nose },
+      { label: t("evaluation.taste"), value: recap.overallAverages.taste },
+      { label: t("evaluation.finish"), value: recap.overallAverages.finish },
+      { label: t("evaluation.balance"), value: recap.overallAverages.balance },
+      { label: t("evaluation.overall"), value: recap.overallAverages.overall },
+    ];
+    const barMaxW = cw - 40;
+    dims.forEach((d) => {
+      checkSpace(10);
+      doc.setFontSize(9);
+      doc.setTextColor(...muted);
+      doc.text(d.label, margin + 4, y);
+      const bw = (d.value / (recap.tasting.ratingScale || 100)) * barMaxW;
+      doc.setFillColor(...gold);
+      doc.roundedRect(margin + 36, y - 3.5, bw, 4.5, 1, 1, "F");
+      doc.setFontSize(8);
+      doc.setTextColor(...dark);
+      doc.text(d.value.toFixed(1), margin + 38 + bw, y, { align: "left" });
+      y += 7;
+    });
+    y += 6;
+
+    if (recap.participantHighlights.length > 0) {
+      checkSpace(20);
+      doc.setFontSize(14);
+      doc.setTextColor(...dark);
+      doc.text(`⭐ ${t("recap.participantHighlights")}`, margin, y);
+      y += 8;
+
+      recap.participantHighlights.forEach((p) => {
+        checkSpace(8);
+        doc.setFontSize(9);
+        doc.setTextColor(...dark);
+        doc.text(p.name, margin + 4, y);
+        doc.setTextColor(...muted);
+        doc.text(`${p.ratingsCount} ${t("recap.ratings")}  ·  Ø ${p.avgScore.toFixed(1)}`, pw - margin, y, { align: "right" });
+        y += 6;
+      });
+    }
+
+    doc.setFontSize(7);
+    doc.setTextColor(...muted);
+    doc.text("CaskSense", pw / 2, 288, { align: "center" });
+
+    const slug = recap.tasting.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+    doc.save(`casksense-${slug}-recap.pdf`);
+  };
+
+  const card = (children: React.ReactNode, testId?: string) => (
+    <div
+      style={{
+        background: v.card,
+        border: `1px solid ${v.border}`,
+        borderRadius: 12,
+        padding: 20,
+        marginBottom: 16,
+      }}
+      data-testid={testId}
+    >
+      {children}
+    </div>
+  );
+
+  const actionBtn = (onClick: () => void, icon: React.ReactNode, label: string, testId: string) => (
+    <button
+      onClick={onClick}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "8px 14px",
+        fontSize: 13,
+        fontFamily: "system-ui, sans-serif",
+        fontWeight: 500,
+        color: v.accent,
+        background: v.elevated,
+        border: `1px solid ${v.border}`,
+        borderRadius: 8,
+        cursor: "pointer",
+      }}
+      data-testid={testId}
+    >
+      {icon}
+      <span style={{ display: "none", ...(typeof window !== "undefined" && window.innerWidth > 640 ? { display: "inline" } : {}) }}>{label}</span>
+    </button>
+  );
+
+  if (isLoading) {
+    return (
+      <div style={{ padding: 16, maxWidth: 800, margin: "0 auto" }} data-testid="m2-recap-page">
+        <M2BackButton />
+        <div style={{ height: 32, width: 200, background: v.elevated, borderRadius: 8, marginBottom: 16 }} />
+        <div style={{ height: 200, background: v.elevated, borderRadius: 12, marginBottom: 16 }} />
+        <div style={{ height: 150, background: v.elevated, borderRadius: 12 }} />
+      </div>
+    );
+  }
+
+  if (isError || !recap) {
+    return (
+      <div style={{ padding: 16, maxWidth: 800, margin: "0 auto", textAlign: "center" }} data-testid="m2-recap-page">
+        <M2BackButton />
+        <p style={{ color: v.muted, fontFamily: "'Playfair Display', Georgia, serif", marginTop: 40 }} data-testid="text-recap-error">
+          {t("recap.error")}
+        </p>
+      </div>
+    );
+  }
+
+  const avgData = [
+    { dimension: t("evaluation.nose"), value: recap.overallAverages.nose },
+    { dimension: t("evaluation.taste"), value: recap.overallAverages.taste },
+    { dimension: t("evaluation.finish"), value: recap.overallAverages.finish },
+    { dimension: t("evaluation.balance"), value: recap.overallAverages.balance },
+    { dimension: t("evaluation.overall"), value: recap.overallAverages.overall },
+  ];
+
+  const mostRatings = recap.participantHighlights.length > 0
+    ? [...recap.participantHighlights].sort((a, b) => b.ratingsCount - a.ratingsCount)[0]
+    : null;
+  const highestAvg = recap.participantHighlights.length > 0
+    ? [...recap.participantHighlights].sort((a, b) => b.avgScore - a.avgScore)[0]
+    : null;
+
+  return (
+    <div style={{ padding: 16, maxWidth: 800, margin: "0 auto" }} data-testid="m2-recap-page">
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          [data-testid="m2-recap-page"], [data-testid="m2-recap-page"] * { visibility: visible; }
+          [data-testid="m2-recap-page"] { position: absolute; left: 0; top: 0; width: 100%; }
+          .m2-recap-actions { display: none !important; }
+        }
+      `}</style>
+
+      <M2BackButton />
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginTop: 8, marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Trophy style={{ width: 24, height: 24, color: v.accent }} />
+          <h1
+            style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: 22,
+              fontWeight: 700,
+              color: v.text,
+              margin: 0,
+            }}
+            data-testid="text-m2-recap-title"
+          >
+            {t("recap.title")}
+          </h1>
+        </div>
+        <div className="m2-recap-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {actionBtn(handlePdfDownload, <FileDown style={{ width: 16, height: 16 }} />, t("recap.pdfExport"), "button-m2-pdf-recap")}
+          {actionBtn(handleCopy, <Copy style={{ width: 16, height: 16 }} />, t("recap.copyRecap"), "button-m2-copy-recap")}
+          {actionBtn(handlePrint, <Printer style={{ width: 16, height: 16 }} />, t("recap.printRecap"), "button-m2-print-recap")}
+        </div>
+      </div>
+
+      {card(
+        <>
+          <h2
+            style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: 20,
+              fontWeight: 700,
+              color: v.text,
+              margin: "0 0 6px",
+            }}
+            data-testid="text-m2-recap-tasting-title"
+          >
+            {recap.tasting.title}
+          </h2>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", fontSize: 13, color: v.muted }}>
+            {recap.tasting.date && <span data-testid="text-m2-recap-date">📅 {formatDate(recap.tasting.date)}</span>}
+            {recap.tasting.location && <span data-testid="text-m2-recap-location">📍 {recap.tasting.location}</span>}
+            <span data-testid="text-m2-recap-host">👤 {recap.hostName}</span>
+            <span data-testid="text-m2-recap-participants">
+              <Users style={{ width: 14, height: 14, display: "inline", verticalAlign: "text-bottom", marginRight: 4 }} />
+              {recap.participantCount} {t("recap.participants")}
+            </span>
+            <span data-testid="text-m2-recap-whisky-count">
+              <Wine style={{ width: 14, height: 14, display: "inline", verticalAlign: "text-bottom", marginRight: 4 }} />
+              {recap.whiskyCount} {t("recap.whiskies")}
+            </span>
+          </div>
+        </>,
+        "card-m2-recap-header"
+      )}
+
+      {recap.topRated.length > 0 &&
+        card(
+          <>
+            <h2
+              style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: 17,
+                fontWeight: 600,
+                color: v.text,
+                margin: "0 0 14px",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+              data-testid="text-m2-recap-top-rated-heading"
+            >
+              <Trophy style={{ width: 18, height: 18, color: v.accent }} />
+              {t("recap.topRated")}
+            </h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {recap.topRated.slice(0, 5).map((w, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "8px 0",
+                    borderBottom: i < Math.min(recap.topRated.length, 5) - 1 ? `1px solid ${v.border}` : "none",
+                  }}
+                  data-testid={`card-m2-top-rated-${i}`}
+                >
+                  <div style={{ width: 32, textAlign: "center" }}>
+                    {i < 3 ? (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 28,
+                          height: 28,
+                          borderRadius: "50%",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          backgroundColor: MEDAL_COLORS[i],
+                          color: i === 0 ? "#78350f" : i === 1 ? "#1f2937" : "#451a03",
+                        }}
+                      >
+                        {i + 1}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 16, fontWeight: 700, color: v.muted, fontFamily: "'Playfair Display', Georgia, serif" }}>{i + 1}</span>
+                    )}
+                  </div>
+                  {w.imageUrl && (
+                    <img src={w.imageUrl} alt={w.name} style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover" }} />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: v.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} data-testid={`text-m2-top-rated-name-${i}`}>
+                      {w.name}
+                    </p>
+                    {w.distillery && (
+                      <p style={{ fontSize: 12, color: v.muted, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {w.distillery}
+                      </p>
+                    )}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: v.accent,
+                      fontFamily: "'Playfair Display', Georgia, serif",
+                    }}
+                    data-testid={`text-m2-top-rated-score-${i}`}
+                  >
+                    {w.avgScore.toFixed(1)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>,
+          "card-m2-top-rated"
+        )}
+
+      {recap.mostDivisive &&
+        card(
+          <>
+            <h2
+              style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: 17,
+                fontWeight: 600,
+                color: v.text,
+                margin: "0 0 10px",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+              data-testid="text-m2-recap-most-divisive-heading"
+            >
+              <AlertTriangle style={{ width: 18, height: 18, color: "#d4a256" }} />
+              {t("recap.mostDivisive")}
+            </h2>
+            <p style={{ fontSize: 15, fontWeight: 600, color: v.text, margin: "0 0 4px" }} data-testid="text-m2-most-divisive-name">
+              {recap.mostDivisive.name}
+            </p>
+            <p style={{ fontSize: 12, color: v.muted, margin: 0 }}>
+              {t("recap.stddev")}: {recap.mostDivisive.stddev.toFixed(2)}
+            </p>
+          </>,
+          "card-m2-most-divisive"
+        )}
+
+      {card(
+        <>
+          <h2
+            style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: 17,
+              fontWeight: 600,
+              color: v.text,
+              margin: "0 0 14px",
+            }}
+            data-testid="text-m2-recap-averages-heading"
+          >
+            {t("recap.overallAverages")}
+          </h2>
+          <div style={{ height: 220 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={avgData} layout="vertical" margin={{ left: 70 }}>
+                <XAxis type="number" domain={[0, recap.tasting.ratingScale || 100]} tick={{ fill: v.muted, fontSize: 10 }} />
+                <YAxis type="category" dataKey="dimension" tick={{ fill: v.muted, fontSize: 12 }} width={65} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: v.card, border: `1px solid ${v.border}`, borderRadius: 8 }}
+                  labelStyle={{ color: v.text }}
+                  formatter={(value: number) => [value.toFixed(1), ""]}
+                />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  {avgData.map((_, i) => <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </>,
+        "card-m2-averages"
+      )}
+
+      {recap.participantHighlights.length > 0 &&
+        card(
+          <>
+            <h2
+              style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: 17,
+                fontWeight: 600,
+                color: v.text,
+                margin: "0 0 14px",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+              data-testid="text-m2-recap-highlights-heading"
+            >
+              <Star style={{ width: 18, height: 18, color: v.accent }} />
+              {t("recap.participantHighlights")}
+            </h2>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+              {mostRatings && (
+                <div
+                  style={{ padding: 14, borderRadius: 10, background: v.elevated, border: `1px solid ${v.border}` }}
+                  data-testid="card-m2-most-ratings"
+                >
+                  <p style={{ fontSize: 11, color: v.muted, margin: "0 0 4px" }}>{t("recap.mostRatings")}</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: v.text, margin: "0 0 2px", fontFamily: "'Playfair Display', Georgia, serif" }}>{mostRatings.name}</p>
+                  <p style={{ fontSize: 13, color: v.accent, margin: 0 }}>{mostRatings.ratingsCount} {t("recap.ratings")}</p>
+                </div>
+              )}
+              {highestAvg && (
+                <div
+                  style={{ padding: 14, borderRadius: 10, background: v.elevated, border: `1px solid ${v.border}` }}
+                  data-testid="card-m2-highest-avg"
+                >
+                  <p style={{ fontSize: 11, color: v.muted, margin: "0 0 4px" }}>{t("recap.highestAvg")}</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: v.text, margin: "0 0 2px", fontFamily: "'Playfair Display', Georgia, serif" }}>{highestAvg.name}</p>
+                  <p style={{ fontSize: 13, color: v.accent, margin: 0 }}>{highestAvg.avgScore.toFixed(1)}</p>
+                </div>
+              )}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {recap.participantHighlights.map((p, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "8px 0",
+                    borderBottom: i < recap.participantHighlights.length - 1 ? `1px solid ${v.border}` : "none",
+                  }}
+                  data-testid={`row-m2-participant-${i}`}
+                >
+                  <span style={{ fontSize: 13, color: v.text }}>{p.name}</span>
+                  <div style={{ display: "flex", gap: 16, fontSize: 12, color: v.muted }}>
+                    <span>{p.ratingsCount} {t("recap.ratings")}</span>
+                    <span>Ø {p.avgScore.toFixed(1)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>,
+          "card-m2-highlights"
+        )}
+    </div>
+  );
+}

@@ -7,6 +7,7 @@ import { popRoute } from "@/lib/navStack";
 function getM2Fallback(currentPath: string): string {
   if (currentPath.startsWith("/m2/tastings")) return "/m2/tastings";
   if (currentPath.startsWith("/m2/taste")) return "/m2/taste";
+  if (currentPath.startsWith("/m2/discover")) return "/m2/discover";
   if (currentPath.startsWith("/m2/circle")) return "/m2/circle";
   return "/m2/tastings";
 }

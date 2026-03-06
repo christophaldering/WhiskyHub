@@ -1,23 +1,77 @@
+import { useState, useMemo, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { v } from "@/lib/themeVars";
+import { v, alpha } from "@/lib/themeVars";
 import { tastingApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
-import { Wine, Crown, PenLine, ChevronRight } from "lucide-react";
+import {
+  Wine, Crown, PenLine, ChevronRight, ChevronDown,
+  Calendar, CalendarDays, List, MapPin, Users, Eye,
+  Play, BarChart3,
+} from "lucide-react";
+
+const TastingCalendar = lazy(() => import("@/pages/tasting-calendar"));
+
+type ViewMode = "list" | "calendar";
+type StatusFilter = "all" | "draft" | "open" | "closed" | "archived";
+type TimeFilter = "30d" | "90d" | "1y" | "all";
+
+const statusBadgeColors: Record<string, { color: string; bg: string }> = {
+  draft: { color: v.muted, bg: alpha(v.muted, "20") },
+  open: { color: v.success, bg: alpha(v.success, "20") },
+  closed: { color: v.accent, bg: alpha(v.accent, "20") },
+  reveal: { color: v.accent, bg: alpha(v.accent, "12") },
+  archived: { color: v.mutedLight, bg: alpha(v.mutedLight, "20") },
+};
 
 export default function M2TastingsHome() {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const session = getSession();
+
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
 
   const { data: tastings = [], isLoading } = useQuery({
     queryKey: ["tastings", session.pid],
     queryFn: () => tastingApi.getAll(session.pid),
     enabled: !!session.pid,
+    staleTime: 0,
+    refetchOnMount: "always" as const,
   });
 
-  const activeTastings = tastings.filter((s: any) => s.status === "open" || s.status === "reveal" || s.status === "closed");
-  const pastTastings = tastings.filter((s: any) => s.status === "archived");
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: tastings.length, draft: 0, open: 0, closed: 0, archived: 0 };
+    for (const ta of tastings) {
+      const s = (ta as any).status === "reveal" ? "open" : (ta as any).status;
+      if (counts[s] !== undefined) counts[s]++;
+    }
+    return counts;
+  }, [tastings]);
+
+  const filtered = useMemo(() => {
+    let list = tastings as any[];
+
+    if (statusFilter !== "all") {
+      list = list.filter((ta) => ta.status === statusFilter || (statusFilter === "open" && ta.status === "reveal"));
+    }
+
+    if (timeFilter !== "all") {
+      const now = Date.now();
+      const cutoff = timeFilter === "30d" ? 30 : timeFilter === "90d" ? 90 : 365;
+      const minDate = now - cutoff * 86400000;
+      list = list.filter((ta) => {
+        const d = new Date(ta.date).getTime();
+        return !isNaN(d) && d >= minDate;
+      });
+    }
+
+    return [...list].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [tastings, statusFilter, timeFilter]);
+
+  const isHost = (ta: any) => session.pid && ta.hostId === session.pid;
 
   const actions = [
     { href: "/m2/tastings/join", icon: Wine, labelKey: "m2.tastings.join", fallback: "Join Tasting", color: v.accent },
@@ -25,20 +79,85 @@ export default function M2TastingsHome() {
     { href: "/m2/tastings/solo", icon: PenLine, labelKey: "m2.tastings.solo", fallback: "Solo Dram", color: v.textSecondary },
   ];
 
+  const selectStyle: React.CSSProperties = {
+    padding: "7px 30px 7px 12px",
+    borderRadius: 10,
+    border: `1px solid ${v.border}`,
+    background: v.card,
+    color: v.text,
+    fontSize: 13,
+    fontWeight: 500,
+    fontFamily: "system-ui, sans-serif",
+    appearance: "none" as const,
+    WebkitAppearance: "none" as const,
+    cursor: "pointer",
+    outline: "none",
+    minWidth: 0,
+  };
+
+  const formatDate = (dateStr: string) => {
+    try {
+      return new Date(dateStr).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <div style={{ padding: "20px 16px" }} data-testid="m2-tastings-home">
-      <h1
-        style={{
-          fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: 26,
-          fontWeight: 700,
-          color: v.text,
-          margin: "0 0 20px",
-        }}
-        data-testid="text-m2-tastings-title"
-      >
-        {t("m2.tastings.title", "Tastings")}
-      </h1>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 20 }}>
+        <h1
+          style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: 26,
+            fontWeight: 700,
+            color: v.text,
+            margin: 0,
+          }}
+          data-testid="text-m2-tastings-title"
+        >
+          {t("m2.tastings.title", "Tastings")}
+        </h1>
+
+        <div
+          style={{
+            display: "inline-flex",
+            borderRadius: 10,
+            border: `1px solid ${v.border}`,
+            overflow: "hidden",
+          }}
+          data-testid="toggle-view-mode"
+        >
+          {([
+            { value: "list" as ViewMode, Icon: List },
+            { value: "calendar" as ViewMode, Icon: CalendarDays },
+          ]).map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setViewMode(opt.value)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 5,
+                padding: "6px 14px",
+                fontSize: 13,
+                fontWeight: 600,
+                fontFamily: "system-ui, sans-serif",
+                border: "none",
+                cursor: "pointer",
+                transition: "all 0.2s",
+                background: viewMode === opt.value ? v.pillBg : "transparent",
+                color: viewMode === opt.value ? v.pillText : v.muted,
+              }}
+              data-testid={`button-view-${opt.value}`}
+            >
+              <opt.Icon style={{ width: 14, height: 14 }} />
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div style={{ display: "flex", gap: 10, marginBottom: 28 }}>
         {actions.map((a) => (
@@ -78,52 +197,128 @@ export default function M2TastingsHome() {
         </div>
       )}
 
-      {session.signedIn && (
+      {session.signedIn && viewMode === "calendar" && (
+        <Suspense
+          fallback={
+            <div style={{ textAlign: "center", padding: 60 }}>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  border: `3px solid ${v.border}`,
+                  borderTopColor: v.accent,
+                  borderRadius: "50%",
+                  animation: "m2spin 0.8s linear infinite",
+                  margin: "0 auto",
+                }}
+              />
+              <style>{`@keyframes m2spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+          }
+        >
+          <TastingCalendar embedded />
+        </Suspense>
+      )}
+
+      {session.signedIn && viewMode === "list" && (
         <>
-          {activeTastings.length > 0 && (
-            <section style={{ marginBottom: 24 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, color: v.text, marginBottom: 12 }}>
-                {t("m2.tastings.active", "Active Tastings")}
-              </h2>
-              {activeTastings.map((s: any) => (
-                <TastingCard key={s.id} tasting={s} />
-              ))}
-            </section>
-          )}
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              marginBottom: 16,
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+            data-testid="m2-filter-bar"
+          >
+            <div style={{ position: "relative" }}>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                style={selectStyle}
+                data-testid="select-m2-status-filter"
+              >
+                <option value="all">{t("m2.tastings.filterAll", "All Status")} ({statusCounts.all})</option>
+                <option value="draft">{t("m2.tastings.filterDraft", "Draft")} ({statusCounts.draft})</option>
+                <option value="open">{t("m2.tastings.filterOpen", "Open")} ({statusCounts.open})</option>
+                <option value="closed">{t("m2.tastings.filterClosed", "Closed")} ({statusCounts.closed})</option>
+                <option value="archived">{t("m2.tastings.filterArchived", "Archived")} ({statusCounts.archived})</option>
+              </select>
+              <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: v.muted, pointerEvents: "none" }} />
+            </div>
+
+            <div style={{ position: "relative" }}>
+              <select
+                value={timeFilter}
+                onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
+                style={selectStyle}
+                data-testid="select-m2-time-filter"
+              >
+                <option value="all">{t("m2.tastings.timeAll", "All Time")}</option>
+                <option value="30d">{t("m2.tastings.time30d", "Last 30 days")}</option>
+                <option value="90d">{t("m2.tastings.time90d", "Last 3 months")}</option>
+                <option value="1y">{t("m2.tastings.time1y", "Last year")}</option>
+              </select>
+              <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: v.muted, pointerEvents: "none" }} />
+            </div>
+
+            <span style={{ fontSize: 12, color: v.muted, marginLeft: "auto" }} data-testid="text-m2-result-count">
+              {filtered.length} {filtered.length === 1 ? t("m2.tastings.session", "session") : t("m2.tastings.sessions", "sessions")}
+            </span>
+          </div>
 
           {isLoading && (
             <div style={{ textAlign: "center", padding: 32, color: v.muted }}>
-              {t("common.loading", "Loading...")}
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  border: `3px solid ${v.border}`,
+                  borderTopColor: v.accent,
+                  borderRadius: "50%",
+                  animation: "m2spin 0.8s linear infinite",
+                  margin: "0 auto",
+                }}
+              />
+              <style>{`@keyframes m2spin { to { transform: rotate(360deg); } }`}</style>
             </div>
           )}
 
-          {!isLoading && activeTastings.length === 0 && (
+          {!isLoading && filtered.length === 0 && (
             <div
               style={{
                 background: v.card,
                 borderRadius: 12,
-                padding: "24px 16px",
+                padding: "32px 16px",
                 textAlign: "center",
                 color: v.textSecondary,
                 fontSize: 14,
-                marginBottom: 24,
                 border: `1px solid ${v.border}`,
               }}
-              data-testid="m2-no-active"
+              data-testid="m2-no-results"
             >
-              {t("m2.tastings.noActive", "No active tastings")}
+              <Wine style={{ width: 36, height: 36, color: v.mutedLight, margin: "0 auto 10px" }} />
+              <p style={{ margin: 0, color: v.muted }}>
+                {statusFilter === "all" && timeFilter === "all"
+                  ? t("m2.tastings.noTastings", "No tastings yet")
+                  : t("m2.tastings.noMatch", "No matching tastings")}
+              </p>
             </div>
           )}
 
-          {pastTastings.length > 0 && (
-            <section>
-              <h2 style={{ fontSize: 16, fontWeight: 600, color: v.text, marginBottom: 12 }}>
-                {t("m2.tastings.past", "Past Tastings")}
-              </h2>
-              {pastTastings.slice(0, 5).map((s: any) => (
-                <TastingCard key={s.id} tasting={s} />
+          {!isLoading && filtered.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {filtered.map((tasting: any) => (
+                <TastingCard
+                  key={tasting.id}
+                  tasting={tasting}
+                  host={isHost(tasting)}
+                  formatDate={formatDate}
+                  navigate={navigate}
+                />
               ))}
-            </section>
+            </div>
           )}
         </>
       )}
@@ -131,54 +326,113 @@ export default function M2TastingsHome() {
   );
 }
 
-function TastingCard({ tasting }: { tasting: any }) {
+function TastingCard({
+  tasting,
+  host,
+  formatDate,
+  navigate,
+}: {
+  tasting: any;
+  host: boolean;
+  formatDate: (d: string) => string;
+  navigate: (to: string) => void;
+}) {
   const { t } = useTranslation();
-  const statusColors: Record<string, string> = {
-    open: v.success,
-    closed: v.accent,
-    reveal: v.accent,
-    archived: v.muted,
-    draft: v.muted,
-  };
+
+  const colors = statusBadgeColors[tasting.status] || { color: v.muted, bg: alpha(v.muted, "20") };
+
+  const statusLabel = tasting.status === "reveal"
+    ? t("m2.tastings.statusReveal", "Reveal")
+    : tasting.status;
 
   return (
-    <Link href={`/m2/tastings/session/${tasting.id}`} style={{ textDecoration: "none" }}>
-      <div
-        style={{
-          background: v.card,
-          border: `1px solid ${v.border}`,
-          borderRadius: 12,
-          padding: "14px 16px",
-          marginBottom: 8,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          cursor: "pointer",
-          transition: "background 0.15s",
-        }}
-        data-testid={`m2-tasting-card-${tasting.id}`}
-      >
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: v.text }}>{tasting.title || t("m2.tastings.untitled", "Untitled Tasting")}</div>
-          <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>
-            {tasting.date ? new Date(tasting.date).toLocaleDateString() : ""}
-            {tasting.status && (
+    <div
+      style={{
+        background: v.card,
+        border: `1px solid ${v.border}`,
+        borderRadius: 12,
+        padding: "14px 16px",
+        cursor: "pointer",
+        transition: "border-color 0.2s",
+      }}
+      data-testid={`m2-tasting-card-${tasting.id}`}
+      onClick={() => navigate(`/m2/tastings/session/${tasting.id}`)}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <span
+              style={{
+                fontSize: 15,
+                fontWeight: 600,
+                color: v.text,
+                fontFamily: "'Playfair Display', Georgia, serif",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                flex: 1,
+                minWidth: 0,
+              }}
+              data-testid={`text-m2-tasting-title-${tasting.id}`}
+            >
+              {tasting.title || t("m2.tastings.untitled", "Untitled Tasting")}
+            </span>
+            {host && (
               <span
                 style={{
-                  marginLeft: 8,
-                  fontSize: 10,
-                  fontWeight: 600,
+                  fontSize: 9,
+                  color: v.accent,
+                  fontWeight: 700,
                   textTransform: "uppercase",
-                  color: statusColors[tasting.status] || v.muted,
+                  letterSpacing: "0.06em",
+                  flexShrink: 0,
                 }}
+                data-testid={`badge-host-${tasting.id}`}
               >
-                {tasting.status}
+                HOST
+              </span>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            {tasting.date && (
+              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted }}>
+                <Calendar style={{ width: 11, height: 11 }} />
+                {formatDate(tasting.date)}
+              </span>
+            )}
+            {tasting.location && tasting.location !== "—" && (
+              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted }}>
+                <MapPin style={{ width: 11, height: 11 }} />
+                {tasting.location}
+              </span>
+            )}
+            {tasting.participantCount != null && (
+              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted }}>
+                <Users style={{ width: 11, height: 11 }} />
+                {tasting.participantCount}
               </span>
             )}
           </div>
         </div>
-        <ChevronRight style={{ width: 18, height: 18, color: v.muted }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              color: colors.color,
+              background: colors.bg,
+              padding: "2px 8px",
+              borderRadius: 6,
+            }}
+            data-testid={`badge-status-${tasting.id}`}
+          >
+            {statusLabel}
+          </span>
+          <ChevronRight style={{ width: 18, height: 18, color: v.muted }} />
+        </div>
       </div>
-    </Link>
+    </div>
   );
 }
