@@ -147,7 +147,12 @@ export default function M2TastingSession() {
             }}
             data-testid="text-session-status"
           >
-            {tasting.status}
+            {tasting.status === "open" ? t("m2.session.statusLive", "Live")
+              : tasting.status === "draft" ? t("m2.session.statusDraft", "Draft")
+              : tasting.status === "closed" ? t("m2.session.statusClosed", "Closed")
+              : tasting.status === "reveal" ? t("m2.session.statusReveal", "Reveal")
+              : tasting.status === "archived" ? t("m2.session.statusArchived", "Archived")
+              : tasting.status}
           </span>
           {tasting.date && (
             <span style={{ fontSize: 12, color: v.muted }}>
@@ -223,7 +228,7 @@ export default function M2TastingSession() {
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
               <img
                 src={qrDataUrl}
-                alt="QR Code"
+                alt={t("m2.session.qrCode", "QR Code")}
                 style={{ width: 160, height: 160, borderRadius: 10 }}
                 data-testid="img-session-qr"
               />

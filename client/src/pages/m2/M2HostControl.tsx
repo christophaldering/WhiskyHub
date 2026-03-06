@@ -295,7 +295,7 @@ export default function M2HostControl() {
             </div>
             <div style={{ fontSize: 18, fontWeight: 700, color: v.text }}>
               {status.charAt(0).toUpperCase() + status.slice(1)}
-              {status === "reveal" && ` — Act ${currentAct.replace("act", "")}`}
+              {status === "reveal" && ` — ${t("m2.hostControl.act", "Act")} ${currentAct.replace("act", "")}`}
             </div>
           </div>
           <div style={{ display: "flex", gap: 6 }}>
@@ -392,7 +392,7 @@ export default function M2HostControl() {
                     {isRevealed ? "✓" : idx + 1}
                   </div>
                   <span style={{ flex: 1, fontSize: 13, color: isRevealed ? v.text : v.muted }}>
-                    {isRevealed ? (w.name || `Whisky ${idx + 1}`) : `Whisky ${idx + 1}`}
+                    {isRevealed ? (w.name || t("m2.hostControl.whiskyN", "Whisky {{n}}", { n: idx + 1 })) : t("m2.hostControl.whiskyN", "Whisky {{n}}", { n: idx + 1 })}
                   </span>
                   {isRevealed && (
                     <span style={{ fontSize: 10, color: v.success, fontWeight: 600 }}>
@@ -554,7 +554,7 @@ export default function M2HostControl() {
                   <Clock style={{ width: 16, height: 16, color: v.muted }} />
                 )}
                 <span style={{ fontSize: 14, color: v.text, flex: 1 }}>
-                  {p.name || p.email || "Anonymous"}
+                  {p.name || p.email || t("m2.hostControl.anonymous", "Anonymous")}
                 </span>
                 <span style={{ fontSize: 11, color: hasRated ? v.success : v.muted }}>
                   {hasRated ? t("m2.hostControl.rated", "Rated") : t("m2.hostControl.pending", "Pending")}

@@ -1,5 +1,6 @@
 import { v } from "@/lib/themeVars";
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function M2Loading({ message }: { message?: string }) {
   return (
@@ -33,6 +34,7 @@ export function M2Loading({ message }: { message?: string }) {
 }
 
 export function M2Error({ message, onRetry }: { message?: string; onRetry?: () => void }) {
+  const { t } = useTranslation();
   return (
     <div
       style={{
@@ -48,7 +50,7 @@ export function M2Error({ message, onRetry }: { message?: string; onRetry?: () =
     >
       <AlertCircle style={{ width: 32, height: 32, color: v.danger, opacity: 0.7 }} />
       <p style={{ fontSize: 14, color: v.muted, margin: 0, maxWidth: 280 }}>
-        {message || "Laden fehlgeschlagen"}
+        {message || t("m2.feedback.loadFailed", "Loading failed")}
       </p>
       {onRetry && (
         <button
@@ -71,7 +73,7 @@ export function M2Error({ message, onRetry }: { message?: string; onRetry?: () =
           data-testid="button-retry"
         >
           <RefreshCw style={{ width: 14, height: 14 }} />
-          Erneut versuchen
+          {t("m2.feedback.retry", "Try again")}
         </button>
       )}
     </div>

@@ -244,7 +244,7 @@ function DashboardCalendar() {
               >
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 600, color: v.text, margin: 0 }}>{ev.title}</p>
-                  <p style={{ fontSize: 11, color: v.muted, margin: "2px 0 0" }}>{ev.whiskyCount} whiskies · {ev.participantCount} {t("hostDashboard.calParticipants")}</p>
+                  <p style={{ fontSize: 11, color: v.muted, margin: "2px 0 0" }}>{ev.whiskyCount} {t("m2.hostDash.whiskies")} · {ev.participantCount} {t("hostDashboard.calParticipants")}</p>
                 </div>
                 <StatusBadge status={ev.status} label={t(`session.status.${ev.status}`)} />
               </div>
@@ -427,7 +427,7 @@ function InvitationsPanel({ tastings }: { tastings: InviteTasting[] }) {
                 data-testid={`invite-tasting-option-${ta.id}`}
               >
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ta.title}</span>
-                <StatusBadge status={ta.status} label={ta.status} />
+                <StatusBadge status={ta.status} label={t(`session.status.${ta.status}`)} />
               </button>
             ))}
           </div>
@@ -444,7 +444,7 @@ function InvitationsPanel({ tastings }: { tastings: InviteTasting[] }) {
             {qrDataUrl ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
                 <div style={{ background: "#f5f0e8", borderRadius: 10, padding: 8, display: "inline-block" }}>
-                  <img src={qrDataUrl} alt="QR Code" style={{ width: 160, height: 160 }} data-testid="invite-qr-image" />
+                  <img src={qrDataUrl} alt={t("m2.hostDash.qrCodeAlt")} style={{ width: 160, height: 160 }} data-testid="invite-qr-image" />
                 </div>
                 <div style={{ display: "flex", gap: 8, width: "100%" }}>
                   <button onClick={handleDownloadQr} style={btnSmall} data-testid="invite-download-qr">
@@ -521,7 +521,7 @@ function InvitationsPanel({ tastings }: { tastings: InviteTasting[] }) {
                         : <Mail style={{ width: 13, height: 13, color: v.error, flexShrink: 0 }} />
                       }
                       <span style={{ color: v.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{r.email}</span>
-                      <StatusBadge status={ok ? "open" : "closed"} label={r.status} />
+                      <StatusBadge status={ok ? "open" : "closed"} label={t(`m2.hostDash.inviteStatus.${r.status}`)} />
                     </div>
                   );
                 })}

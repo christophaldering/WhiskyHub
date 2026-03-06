@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Wine, BarChart3, Users, User, Bell, Download, AlertTriangle, RefreshCw } from "lucide-react";
 import { v } from "@/lib/themeVars";
 import { useTranslation } from "react-i18next";
+import i18next from "i18next";
 import { getSession, tryAutoResume } from "@/lib/session";
 import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
 import { Toaster } from "@/components/ui/toaster";
@@ -50,10 +51,10 @@ class M2ErrorBoundary extends Component<
               margin: "0 0 8px",
             }}
           >
-            Etwas ist schiefgelaufen
+            {i18next.t("m2.error.title", "Something went wrong")}
           </h2>
           <p style={{ fontSize: 14, color: v.muted, margin: "0 0 24px", maxWidth: 320 }}>
-            Ein unerwarteter Fehler ist aufgetreten. Bitte lade die Seite neu.
+            {i18next.t("m2.error.message", "An unexpected error occurred. Please reload the page.")}
           </p>
           <button
             onClick={() => window.location.reload()}
@@ -74,11 +75,11 @@ class M2ErrorBoundary extends Component<
             data-testid="button-reload"
           >
             <RefreshCw style={{ width: 16, height: 16 }} />
-            Seite neu laden
+            {i18next.t("m2.error.reload", "Reload page")}
           </button>
           {this.state.error && (
             <details style={{ marginTop: 16, fontSize: 12, color: v.muted, maxWidth: 400, textAlign: "left" }}>
-              <summary style={{ cursor: "pointer" }}>Technische Details</summary>
+              <summary style={{ cursor: "pointer" }}>{i18next.t("m2.error.technicalDetails", "Technical details")}</summary>
               <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", marginTop: 8 }}>
                 {this.state.error.message}
               </pre>
@@ -387,7 +388,7 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
             data-testid="m2-profile-button"
           >
             <User style={{ width: 16, height: 16 }} />
-            {session.name || t("m2.profile", "Profile")}
+            {session.name || t("m2.profile.label", "Profile")}
           </button>
         </div>
       </header>

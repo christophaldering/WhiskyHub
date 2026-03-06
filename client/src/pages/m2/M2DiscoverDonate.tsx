@@ -55,7 +55,7 @@ export default function M2DiscoverDonate() {
 
       <div style={{ display: "flex", justifyContent: "center", width: "100%", marginTop: 20 }} data-testid="m2-donate-paypal">
         <div style={{ width: "100%", maxWidth: 382 }}>
-          <iframe src="https://www.paypal.com/giving/campaigns?campaign_id=XGB4YN3CQEMFE" title="PayPal donate" frameBorder="0" width="100%" height={550} scrolling="no" style={{ borderRadius: 14, border: "none" }} />
+          <iframe src="https://www.paypal.com/giving/campaigns?campaign_id=XGB4YN3CQEMFE" title={t("m2.discover.donatePaypalTitle", "PayPal donate")} frameBorder="0" width="100%" height={550} scrolling="no" style={{ borderRadius: 14, border: "none" }} />
         </div>
       </div>
 

@@ -585,7 +585,7 @@ export default function M2TasteSettings() {
             <div style={{ display: "flex", gap: 8 }}>
               {(["dark-warm", "light-warm"] as ThemeName[]).map((th) => {
                 const active = getTheme() === th;
-                const label = th === "dark-warm" ? "Dark Warm" : "Light Warm";
+                const label = th === "dark-warm" ? t("m2.taste.themeDarkWarm", "Dark Warm") : t("m2.taste.themeLightWarm", "Light Warm");
                 return (
                   <button
                     key={th}
@@ -632,7 +632,7 @@ export default function M2TasteSettings() {
                     }}
                     data-testid={`badge-m2-region-${region.toLowerCase()}`}
                   >
-                    {region}
+                    {t(`m2.taste.region${region}`, region)}
                   </span>
                 );
               })}
@@ -650,7 +650,7 @@ export default function M2TasteSettings() {
               >
                 <option value="">{t("profile.selectPeat", "Select peat level")}</option>
                 {PEAT_LEVELS.map((level) => (
-                  <option key={level} value={level}>{level}</option>
+                  <option key={level} value={level}>{t(`m2.taste.peat${level}`, level)}</option>
                 ))}
               </select>
             </div>
@@ -664,7 +664,7 @@ export default function M2TasteSettings() {
               >
                 <option value="">{t("profile.selectCask", "Select cask type")}</option>
                 {CASK_TYPES.map((cask) => (
-                  <option key={cask} value={cask}>{cask}</option>
+                  <option key={cask} value={cask}>{t(`m2.taste.cask${cask}`, cask)}</option>
                 ))}
               </select>
             </div>
@@ -695,7 +695,7 @@ export default function M2TasteSettings() {
         <p style={sectionDescStyle}>{t("profile.sectionAIDesc", "Configure your personal AI settings")}</p>
 
         <div>
-          <label style={labelStyle}>OpenAI API Key</label>
+          <label style={labelStyle}>{t("m2.settings.openaiApiKeyLabel", "OpenAI API Key")}</label>
           <div style={{ position: "relative" }}>
             <input
               type={showApiKey ? "text" : "password"}

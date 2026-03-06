@@ -59,7 +59,7 @@ export default function M2DiscoverActivity() {
       {!pid && (
         <div style={{ ...card, textAlign: "center", padding: 40 }}>
           <Rss style={{ width: 40, height: 40, color: v.mutedLight, margin: "0 auto 12px", opacity: 0.3 }} />
-          <p style={{ fontSize: 14, color: v.muted }} data-testid="m2-activity-signin">Sign in to see your friends' activity.</p>
+          <p style={{ fontSize: 14, color: v.muted }} data-testid="m2-activity-signin">{t("m2.discover.activitySignInPrompt", "Sign in to see your friends' activity.")}</p>
         </div>
       )}
 

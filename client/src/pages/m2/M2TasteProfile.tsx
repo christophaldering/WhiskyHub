@@ -125,10 +125,10 @@ function StabilityBadge({ level, t }: { level: string; t: any }) {
   const colors = colorMap[level] || colorMap.preliminary;
   const label =
     level === "stable"
-      ? t("m2.profile.stabilityHigh", "Stable")
+      ? t("m2.taste.stabilityHigh", "Stable")
       : level === "tendency"
-        ? t("m2.profile.stabilityMedium", "Tendency")
-        : t("m2.profile.stabilityLow", "Preliminary");
+        ? t("m2.taste.stabilityMedium", "Tendency")
+        : t("m2.taste.stabilityLow", "Preliminary");
   return (
     <span
       style={{

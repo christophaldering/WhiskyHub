@@ -101,6 +101,7 @@ function StatusBadge({ status }: { status: string }) {
 
 
 function AmbientSoundButton() {
+  const { t } = useTranslation();
   const LS_KEY = "cs_ambient_enabled";
   const [playing, setPlaying] = useState(() => {
     try { return localStorage.getItem(LS_KEY) === "1"; } catch { return false; }
@@ -142,7 +143,7 @@ function AmbientSoundButton() {
         color: playing ? v.accent : v.muted,
         transition: "all 0.2s",
       }}
-      title={playing ? "Mute ambient" : "Play ambient sounds"}
+      title={playing ? t("m2.play.muteAmbient", "Mute ambient") : t("m2.play.playAmbient", "Play ambient sounds")}
       data-testid="button-ambient-toggle"
     >
       {playing ? <Volume2 style={{ width: 16, height: 16 }} /> : <VolumeX style={{ width: 16, height: 16 }} />}
@@ -274,7 +275,7 @@ function AccountUpgradePrompt({ pid }: { pid: string }) {
       }
       setDone(true);
     } catch (err: any) {
-      setError(err.message || "Something went wrong");
+      setError(err.message || t("m2.play.somethingWrong", "Something went wrong"));
     } finally {
       setSaving(false);
     }

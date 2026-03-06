@@ -228,7 +228,7 @@ export default function M2TasteCollection() {
   }, [syncDiff, newItemChecked, removeActions, changeDecisions, syncApplyMutation]);
 
   const downloadCsv = (itemsToExport: WhiskybaseCollectionItem[]) => {
-    const headers = ["Name", "Brand", "Distillery", "Age", "ABV", "Status", "Series", "Cask", "Size", "Rating", "Price Paid", "Currency", "Estimated Price", "Added"];
+    const headers = [t("m2.taste.exportHeaderName", "Name"), t("m2.taste.exportHeaderBrand", "Brand"), t("m2.taste.exportHeaderDistillery", "Distillery"), t("m2.taste.exportHeaderAge", "Age"), t("m2.taste.exportHeaderAbv", "ABV"), t("m2.taste.exportHeaderStatus", "Status"), t("m2.taste.exportHeaderSeries", "Series"), t("m2.taste.exportHeaderCask", "Cask"), t("m2.taste.exportHeaderSize", "Size"), t("m2.taste.exportHeaderRating", "Rating"), t("m2.taste.exportHeaderPricePaid", "Price Paid"), t("m2.taste.exportHeaderCurrency", "Currency"), t("m2.taste.exportHeaderEstPrice", "Estimated Price"), t("m2.taste.exportHeaderAdded", "Added")];
     const rows = itemsToExport.map(i => [
       i.name, i.brand || "", i.distillery || "", i.statedAge || "", i.abv || "",
       i.status || "", i.bottlingSeries || "", i.caskType || "", i.size || "",
@@ -246,21 +246,21 @@ export default function M2TasteCollection() {
   const downloadExcel = async (itemsToExport: WhiskybaseCollectionItem[]) => {
     const ExcelJS = (await import("exceljs")).default;
     const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet("Whisky-Sammlung");
+    const ws = wb.addWorksheet(t("m2.taste.collectionTitle", "Whisky Collection"));
     ws.columns = [
-      { header: "Name", key: "name", width: 35 },
-      { header: "Brand", key: "brand", width: 20 },
-      { header: "Distillery", key: "distillery", width: 20 },
-      { header: "Age", key: "age", width: 8 },
-      { header: "ABV", key: "abv", width: 10 },
-      { header: "Status", key: "status", width: 12 },
-      { header: "Series", key: "series", width: 20 },
-      { header: "Cask", key: "cask", width: 20 },
-      { header: "Rating", key: "rating", width: 10 },
-      { header: "Price Paid", key: "pricePaid", width: 12 },
-      { header: "Est. Price", key: "estPrice", width: 12 },
-      { header: "Currency", key: "currency", width: 10 },
-      { header: "Added", key: "added", width: 14 },
+      { header: t("m2.taste.exportHeaderName", "Name"), key: "name", width: 35 },
+      { header: t("m2.taste.exportHeaderBrand", "Brand"), key: "brand", width: 20 },
+      { header: t("m2.taste.exportHeaderDistillery", "Distillery"), key: "distillery", width: 20 },
+      { header: t("m2.taste.exportHeaderAge", "Age"), key: "age", width: 8 },
+      { header: t("m2.taste.exportHeaderAbv", "ABV"), key: "abv", width: 10 },
+      { header: t("m2.taste.exportHeaderStatus", "Status"), key: "status", width: 12 },
+      { header: t("m2.taste.exportHeaderSeries", "Series"), key: "series", width: 20 },
+      { header: t("m2.taste.exportHeaderCask", "Cask"), key: "cask", width: 20 },
+      { header: t("m2.taste.exportHeaderRating", "Rating"), key: "rating", width: 10 },
+      { header: t("m2.taste.exportHeaderPricePaid", "Price Paid"), key: "pricePaid", width: 12 },
+      { header: t("m2.taste.exportHeaderEstPrice", "Estimated Price"), key: "estPrice", width: 12 },
+      { header: t("m2.taste.exportHeaderCurrency", "Currency"), key: "currency", width: 10 },
+      { header: t("m2.taste.exportHeaderAdded", "Added"), key: "added", width: 14 },
     ];
     ws.getRow(1).font = { bold: true };
     itemsToExport.forEach(i => {
@@ -285,12 +285,12 @@ export default function M2TasteCollection() {
     const { jsPDF } = await import("jspdf");
     const doc = new jsPDF({ orientation: "landscape" });
     doc.setFontSize(18);
-    doc.text("Whisky-Sammlung", 14, 20);
+    doc.text(t("m2.taste.collectionTitle", "Whisky Collection"), 14, 20);
     doc.setFontSize(10);
     doc.setTextColor(120);
-    doc.text(`${itemsToExport.length} Flaschen · Exportiert am ${new Date().toLocaleDateString("de-DE")}`, 14, 28);
+    doc.text(t("m2.taste.exportSubtitle", "{{count}} bottles · Exported on {{date}}", { count: itemsToExport.length, date: new Date().toLocaleDateString() }), 14, 28);
     doc.setTextColor(0);
-    const headers = ["Name", "Distillery", "Age", "ABV", "Status", "Rating", "Price"];
+    const headers = [t("m2.taste.exportHeaderName", "Name"), t("m2.taste.exportHeaderDistillery", "Distillery"), t("m2.taste.exportHeaderAge", "Age"), t("m2.taste.exportHeaderAbv", "ABV"), t("m2.taste.exportHeaderStatus", "Status"), t("m2.taste.exportHeaderRating", "Rating"), t("m2.taste.exportHeaderPrice", "Price")];
     const colWidths = [80, 45, 15, 18, 20, 18, 25];
     let y = 38;
     doc.setFontSize(9);
@@ -443,7 +443,7 @@ export default function M2TasteCollection() {
         {items.length > 0 && (
           <p style={{ fontSize: 14, color: v.muted, margin: 0 }}>
             {items.length} {t("collection.totalBottles", { count: items.length }).includes(" ") ? t("collection.totalBottles", { count: items.length }).split(" ").slice(1).join(" ") : "Flaschen"}
-            {uniqueExpressions < items.length && <span> · {uniqueExpressions} Expressions</span>}
+            {uniqueExpressions < items.length && <span> · {uniqueExpressions} {t("m2.taste.expressions", "Expressions")}</span>}
           </p>
         )}
       </div>
@@ -1057,7 +1057,7 @@ export default function M2TasteCollection() {
           <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 16, padding: 28, maxWidth: 560, width: "100%", maxHeight: "80vh", overflowY: "auto" }} data-testid="dialog-sync">
             <h3 style={{ fontSize: 20, fontWeight: 600, color: v.text, margin: "0 0 6px" }}>{t("collection.syncDialogTitle", "Sync-Vorschau")}</h3>
             <p style={{ fontSize: 13, color: v.muted, margin: "0 0 20px" }}>
-              {syncDiff.totalUploaded} hochgeladen · {syncDiff.totalExisting} vorhanden · {syncDiff.unchangedCount} unveraendert
+              {t("m2.taste.syncSummary", "{{uploaded}} uploaded · {{existing}} existing · {{unchanged}} unchanged", { uploaded: syncDiff.totalUploaded, existing: syncDiff.totalExisting, unchanged: syncDiff.unchangedCount })}
             </p>
 
             {syncDiff.newItems.length > 0 && (

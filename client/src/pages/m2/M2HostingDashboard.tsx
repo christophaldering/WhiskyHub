@@ -539,10 +539,10 @@ function SessionHeader({ tasting, whiskies, participants, ratings, status, isBli
                 color: v.success, fontSize: 12, fontWeight: 700,
               }} data-testid="badge-live">
                 <span style={{ width: 8, height: 8, borderRadius: 4, background: v.success, animation: "pulse 2s infinite" }} />
-                LIVE
+                {t("m2.dashboard.live", "LIVE")}
               </span>
             )}
-            {isDraft && <span style={pillStyle()}>DRAFT</span>}
+            {isDraft && <span style={pillStyle()}>{t("m2.dashboard.draft", "DRAFT")}</span>}
             {isEnded && (
               <span style={{
                 ...pillStyle(),
@@ -558,12 +558,12 @@ function SessionHeader({ tasting, whiskies, participants, ratings, status, isBli
             {isGuided && <span style={pillStyle(true)}><SkipForward style={{ width: 12, height: 12 }} />{t("m2.dashboard.guided", "Guided")}</span>}
             {tasting.code && (
               <span style={{ fontSize: 13, color: v.muted }}>
-                Code: <strong style={{ color: v.accent, letterSpacing: "0.06em" }}>{tasting.code}</strong>
+                {t("m2.dashboard.code", "Code:")}{" "}<strong style={{ color: v.accent, letterSpacing: "0.06em" }}>{tasting.code}</strong>
               </span>
             )}
             {isGuided && guidedIdx >= 0 && (
               <span style={{ fontSize: 13, color: v.textSecondary }}>
-                Dram {guidedIdx + 1} / {whiskies.length}
+                {t("m2.dashboard.dramProgress", "Dram {{current}} / {{total}}", { current: guidedIdx + 1, total: whiskies.length })}
               </span>
             )}
           </div>
@@ -764,7 +764,7 @@ function LeftColumn({ tasting, whiskies, ratings, participants, status, isBlind,
                     {done ? "✓" : blindLabel(idx)}
                   </div>
                   <span style={{ flex: 1, fontSize: 12, color: done ? v.textSecondary : current ? v.text : v.muted }}>
-                    {w.name || `Whisky ${idx + 1}`}
+                    {w.name || t("m2.hostControl.whiskyN", "Whisky {{n}}", { n: idx + 1 })}
                   </span>
                   {current && (
                     <span style={{ fontSize: 9, color: v.accent, fontWeight: 700 }}>
@@ -808,9 +808,9 @@ function LeftColumn({ tasting, whiskies, ratings, participants, status, isBlind,
               {t("m2.dashboard.participantsSee", "Participants see")}
             </div>
             <div>
-              {isGuided && guidedRevealStep === 0 ? `Dram ${blindLabel(Math.max(0, guidedIdx))}` :
+              {isGuided && guidedRevealStep === 0 ? t("m2.dashboard.dramLabel", "Dram {{label}}", { label: blindLabel(Math.max(0, guidedIdx)) }) :
                isGuided && guidedRevealStep === 1 ? (activeWhisky?.name || "—") :
-               isGuided && guidedRevealStep >= 2 ? `${activeWhisky?.name || "—"} (+ details)` :
+               isGuided && guidedRevealStep >= 2 ? `${activeWhisky?.name || "—"} (+ ${t("m2.dashboard.details", "details")})` :
                activeWhisky?.name || "—"}
             </div>
           </div>
@@ -883,7 +883,7 @@ function CenterColumn({ tasting, whiskies, participants, ratings, status, isBlin
   const avgOverall = activeRatings.length > 0
     ? Math.round(activeRatings.reduce((s: number, r: any) => s + (r.overall ?? 0), 0) / activeRatings.length * 10) / 10
     : null;
-  const pName = (p: any) => p.participant?.name || p.participant?.email || p.name || p.email || "Anonymous";
+  const pName = (p: any) => p.participant?.name || p.participant?.email || p.name || p.email || t("m2.hostControl.anonymous", "Anonymous");
   const pId = (p: any) => p.participantId || p.id;
 
   return (
@@ -937,14 +937,14 @@ function CenterColumn({ tasting, whiskies, participants, ratings, status, isBlin
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: isCurrent ? v.text : v.textSecondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {w.name || `Whisky ${idx + 1}`}
+                      {w.name || t("m2.hostControl.whiskyN", "Whisky {{n}}", { n: idx + 1 })}
                     </div>
                     <div style={{ fontSize: 11, color: v.muted, marginTop: 2 }}>
                       {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ") || "—"}
                     </div>
                     {isBlind && (
                       <div style={{ fontSize: 10, color: v.accent, marginTop: 2 }}>
-                        {t("m2.dashboard.participantsLabel", "Guests see")}: {isGuided && guidedRevealStep < 1 ? `Dram ${blindLabel(idx)}` : w.name}
+                        {t("m2.dashboard.participantsLabel", "Guests see")}: {isGuided && guidedRevealStep < 1 ? t("m2.dashboard.dramLabel", "Dram {{label}}", { label: blindLabel(idx) }) : w.name}
                       </div>
                     )}
                   </div>
@@ -956,7 +956,7 @@ function CenterColumn({ tasting, whiskies, participants, ratings, status, isBlin
                       </span>
                     )}
                     <span style={{ fontSize: 10, color: v.muted }}>
-                      {ratedCount}/{participants.length} rated
+                      {ratedCount}/{participants.length} {t("m2.dashboard.rated", "rated")}
                     </span>
                   </div>
                 </div>
@@ -1086,7 +1086,7 @@ function RightColumn({ tasting, whiskies, status, isBlind, isGuided, guidedIdx, 
         {currentWhisky ? (
           <>
             <div style={{ fontSize: 14, fontWeight: 600, color: v.text, marginBottom: 4 }}>
-              {currentWhisky.name || `Whisky ${hostRatingWhiskyIdx + 1}`}
+              {currentWhisky.name || t("m2.hostControl.whiskyN", "Whisky {{n}}", { n: hostRatingWhiskyIdx + 1 })}
             </div>
             <div style={{ fontSize: 11, color: v.muted, marginBottom: 16 }}>
               {[currentWhisky.distillery, currentWhisky.age ? `${currentWhisky.age}y` : null, currentWhisky.abv ? `${currentWhisky.abv}%` : null].filter(Boolean).join(" · ") || "—"}
@@ -1189,7 +1189,7 @@ function RightColumn({ tasting, whiskies, status, isBlind, isGuided, guidedIdx, 
               <div style={{ textAlign: "center", padding: 20, color: v.muted }}>
                 <Radio style={{ width: 24, height: 24, margin: "0 auto 8px", display: "block", animation: "pulse 2s infinite" }} />
                 <div style={{ fontSize: 13 }}>{t("m2.dashboard.waitingForDram", "Waiting for host...")}</div>
-                <div style={{ fontSize: 11, marginTop: 4 }}>Listening for updates</div>
+                <div style={{ fontSize: 11, marginTop: 4 }}>{t("m2.dashboard.listening", "Listening for updates")}</div>
               </div>
             ) : (
               <>
@@ -1212,7 +1212,7 @@ function RightColumn({ tasting, whiskies, status, isBlind, isGuided, guidedIdx, 
                 <div style={{ textAlign: "center", marginBottom: 12 }}>
                   <div style={{ fontSize: 16, fontWeight: 700, color: v.text }}>
                     {isBlind && guidedRevealStep < 1
-                      ? `Dram ${blindLabel(Math.max(0, guidedIdx))}`
+                      ? t("m2.dashboard.dramLabel", "Dram {{label}}", { label: blindLabel(Math.max(0, guidedIdx)) })
                       : activeWhisky?.name || "—"}
                   </div>
                   {activeWhisky && (!isBlind || guidedRevealStep >= 2) && (
@@ -1229,14 +1229,20 @@ function RightColumn({ tasting, whiskies, status, isBlind, isGuided, guidedIdx, 
                     fontSize: 12, color: v.accent, fontStyle: "italic",
                     marginBottom: 12,
                   }}>
-                    Host: {ratingPrompt}
+                    {t("m2.dashboard.hostLabel", "Host")}: {ratingPrompt}
                   </div>
                 )}
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {["Nose", "Taste", "Finish", "Balance", "Overall"].map((dim) => (
-                    <div key={dim} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 10, color: v.muted, width: 40, textAlign: "right" }}>{dim}</span>
+                  {[
+                    { key: "nose", label: t("m2.rating.nose", "Nose") },
+                    { key: "taste", label: t("m2.rating.taste", "Taste") },
+                    { key: "finish", label: t("m2.rating.finish", "Finish") },
+                    { key: "balance", label: t("m2.rating.balance", "Balance") },
+                    { key: "overall", label: t("m2.rating.overall", "Overall") },
+                  ].map((dim) => (
+                    <div key={dim.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 10, color: v.muted, width: 40, textAlign: "right" }}>{dim.label}</span>
                       <div style={{ flex: 1, height: 4, borderRadius: 2, background: v.elevated }}>
                         <div style={{ width: "50%", height: "100%", borderRadius: 2, background: v.accent, opacity: 0.4 }} />
                       </div>
@@ -1286,7 +1292,7 @@ function MobileCompanion({ tasting, whiskies, participants, ratings, pid, id, st
             fontFamily: "'Playfair Display', Georgia, serif",
             color: v.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
-            {tasting.title || "Untitled"}
+            {tasting.title || t("m2.tastings.untitled", "Untitled Tasting")}
           </h1>
           {isLive && (
             <span style={{
@@ -1296,25 +1302,25 @@ function MobileCompanion({ tasting, whiskies, participants, ratings, pid, id, st
               color: v.success, fontSize: 11, fontWeight: 700,
             }}>
               <span style={{ width: 6, height: 6, borderRadius: 3, background: v.success, animation: "pulse 2s infinite" }} />
-              LIVE
+              {t("m2.dashboard.live", "LIVE")}
             </span>
           )}
-          {isDraft && <span style={pillStyle()}>DRAFT</span>}
+          {isDraft && <span style={pillStyle()}>{t("m2.dashboard.draft", "DRAFT")}</span>}
           {isEnded && <span style={pillStyle()}>{status.toUpperCase()}</span>}
         </div>
 
         <div style={{ display: "flex", gap: 8 }}>
           <div style={{ flex: 1, background: v.elevated, borderRadius: 10, padding: 10, textAlign: "center" }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: v.accent }}>{totalParticipants}</div>
-            <div style={{ fontSize: 10, color: v.muted }}>Guests</div>
+            <div style={{ fontSize: 10, color: v.muted }}>{t("m2.dashboard.guests", "Guests")}</div>
           </div>
           <div style={{ flex: 1, background: v.elevated, borderRadius: 10, padding: 10, textAlign: "center" }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: v.accent }}>{whiskies.length}</div>
-            <div style={{ fontSize: 10, color: v.muted }}>Drams</div>
+            <div style={{ fontSize: 10, color: v.muted }}>{t("m2.dashboard.drams", "Drams")}</div>
           </div>
           <div style={{ flex: 1, background: v.elevated, borderRadius: 10, padding: 10, textAlign: "center" }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: v.accent }}>{totalRatings}</div>
-            <div style={{ fontSize: 10, color: v.muted }}>Ratings</div>
+            <div style={{ fontSize: 10, color: v.muted }}>{t("m2.dashboard.ratings", "Ratings")}</div>
           </div>
         </div>
       </div>
@@ -1323,7 +1329,7 @@ function MobileCompanion({ tasting, whiskies, participants, ratings, pid, id, st
         <div style={{ ...card, marginBottom: 16 }}>
           <div style={sectionLabel}>{t("m2.dashboard.currentDram", "Current Dram")}</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: v.text, marginBottom: 4 }}>
-            {isBlind ? `Dram ${blindLabel(guidedIdx)}` : activeWhisky.name}
+            {isBlind ? t("m2.dashboard.dramLabel", "Dram {{label}}", { label: blindLabel(guidedIdx) }) : activeWhisky.name}
           </div>
           {!isBlind && (
             <div style={{ fontSize: 12, color: v.muted }}>
@@ -1332,7 +1338,7 @@ function MobileCompanion({ tasting, whiskies, participants, ratings, pid, id, st
           )}
           {isBlind && (
             <div style={{ fontSize: 11, color: v.accent, marginTop: 4 }}>
-              Host: {activeWhisky.name} — Guests: Dram {blindLabel(guidedIdx)}
+              {t("m2.dashboard.hostLabel", "Host")}: {activeWhisky.name} — {t("m2.dashboard.guests", "Guests")}: {t("m2.dashboard.dramLabel", "Dram {{label}}", { label: blindLabel(guidedIdx) })}
             </div>
           )}
           <div style={{ fontSize: 11, color: v.muted, marginTop: 6 }}>
@@ -1355,7 +1361,7 @@ function MobileCompanion({ tasting, whiskies, participants, ratings, pid, id, st
             data-testid="mobile-start-tasting"
           >
             <Play style={{ width: 16, height: 16 }} />
-            Start Tasting
+            {t("m2.dashboard.startTasting", "Start Tasting")}
           </button>
         )}
 
@@ -1370,8 +1376,8 @@ function MobileCompanion({ tasting, whiskies, participants, ratings, pid, id, st
             data-testid="mobile-next-dram"
           >
             <SkipForward style={{ width: 16, height: 16 }} />
-            {guidedIdx < 0 ? "Start First Dram" :
-             guidedIdx >= whiskies.length - 1 ? "All Drams Done" : "Next Dram"}
+            {guidedIdx < 0 ? t("m2.dashboard.startFirst", "Start First Dram") :
+             guidedIdx >= whiskies.length - 1 ? t("m2.dashboard.allDramsDone", "All Drams Done") : t("m2.dashboard.nextDram", "Next Dram")}
           </button>
         )}
 
@@ -1392,11 +1398,11 @@ function MobileCompanion({ tasting, whiskies, participants, ratings, pid, id, st
             {!confirmEnd ? (
               <button onClick={handleEndSession} style={btnSecondary} data-testid="mobile-end">
                 <Lock style={{ width: 14, height: 14 }} />
-                Close Ratings
+                {t("m2.dashboard.endTasting", "Close Ratings")}
               </button>
             ) : (
               <button onClick={handleEndSession} style={btnDanger} data-testid="mobile-confirm-end">
-                Confirm Close
+                {t("m2.dashboard.confirmEnd", "Confirm Close")}
               </button>
             )}
           </>
@@ -1409,7 +1415,7 @@ function MobileCompanion({ tasting, whiskies, participants, ratings, pid, id, st
               color: v.accent, width: "100%",
             }} data-testid="mobile-rate-btn">
               <Star style={{ width: 14, height: 14 }} />
-              Rate Whiskies
+              {t("m2.hostControl.rateWhiskies", "Rate Whiskies")}
             </div>
           </Link>
         )}
@@ -1417,7 +1423,7 @@ function MobileCompanion({ tasting, whiskies, participants, ratings, pid, id, st
         {status === "closed" && (
           <button onClick={() => updateStatusMut.mutate("reveal")} style={btnPrimary} data-testid="mobile-start-reveal">
             <Eye style={{ width: 16, height: 16 }} />
-            Start Reveal
+            {t("m2.dashboard.startReveal", "Begin Unveiling")}
           </button>
         )}
 
@@ -1428,7 +1434,7 @@ function MobileCompanion({ tasting, whiskies, participants, ratings, pid, id, st
             data-testid="mobile-view-results"
           >
             <BarChart3 style={{ width: 16, height: 16 }} />
-            View Results
+            {t("m2.dashboard.viewResults", "View Results")}
           </button>
         )}
       </div>

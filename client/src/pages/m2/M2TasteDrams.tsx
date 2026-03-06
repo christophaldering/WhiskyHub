@@ -215,7 +215,7 @@ export default function M2TasteDrams() {
             {selectedEntry.personalScore != null && (
               <div style={{ textAlign: "right", flexShrink: 0 }}>
                 <div style={{ fontSize: 28, fontWeight: 700, color: v.accent, fontFamily: serif }}>{Number(selectedEntry.personalScore).toFixed(1)}</div>
-                <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.1em" }}>Score</div>
+                <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.1em" }}>{t("m2.taste.score", "Score")}</div>
               </div>
             )}
           </div>

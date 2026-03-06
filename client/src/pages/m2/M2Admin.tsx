@@ -91,12 +91,12 @@ export default function M2Admin() {
       <div style={{ padding: 24, textAlign: "center", color: v.muted }} data-testid="m2-admin-access-denied">
         <Shield style={{ width: 48, height: 48, margin: "0 auto 16px", color: v.accent }} />
         <p style={{ fontSize: 16, fontWeight: 600, color: v.text }}>
-          {!pid ? "Admin Access Required" : "Access Denied"}
+          {!pid ? t("m2.admin.accessRequired", "Admin Access Required") : t("m2.admin.accessDenied", "Access Denied")}
         </p>
         <p style={{ fontSize: 14, marginTop: 8, color: v.textSecondary }}>
           {!pid
-            ? "Please sign in to access admin features."
-            : "You don't have admin privileges."}
+            ? t("m2.admin.pleaseSignIn", "Please sign in to access admin features.")
+            : t("m2.admin.noAdminPrivileges", "You don't have admin privileges.")}
         </p>
       </div>
     );
@@ -114,8 +114,8 @@ export default function M2Admin() {
     return (
       <div style={{ padding: 24, textAlign: "center", color: v.muted }}>
         <AlertTriangle style={{ width: 48, height: 48, margin: "0 auto 16px", color: v.danger }} />
-        <p style={{ fontSize: 16, fontWeight: 600, color: v.text }}>Access Denied</p>
-        <p style={{ fontSize: 14, marginTop: 8 }}>You don't have admin privileges.</p>
+        <p style={{ fontSize: 16, fontWeight: 600, color: v.text }}>{t("m2.admin.accessDenied", "Access Denied")}</p>
+        <p style={{ fontSize: 14, marginTop: 8 }}>{t("m2.admin.noAdminPrivileges", "You don't have admin privileges.")}</p>
       </div>
     );
   }
@@ -127,15 +127,15 @@ export default function M2Admin() {
       </div>
 
       <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 24, fontWeight: 700, color: v.text, marginBottom: 8 }} data-testid="text-admin-title">
-        Admin Panel
+        {t("m2.admin.adminPanel", "Admin Panel")}
       </h1>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 20 }}>
         {[
-          { label: "Users", value: data.stats.totalParticipants, icon: Users },
-          { label: "Hosts", value: data.stats.totalHosts, icon: Crown },
-          { label: "Tastings", value: data.stats.totalTastings, icon: Wine },
-          { label: "Admins", value: data.stats.totalAdmins, icon: Shield },
+          { label: t("m2.admin.statUsers", "Users"), value: data.stats.totalParticipants, icon: Users },
+          { label: t("m2.admin.statHosts", "Hosts"), value: data.stats.totalHosts, icon: Crown },
+          { label: t("m2.admin.statTastings", "Tastings"), value: data.stats.totalTastings, icon: Wine },
+          { label: t("m2.admin.statAdmins", "Admins"), value: data.stats.totalAdmins, icon: Shield },
         ].map(s => (
           <div key={s.label} style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: "12px 8px", textAlign: "center" }} data-testid={`stat-${s.label.toLowerCase()}`}>
             <s.icon style={{ width: 16, height: 16, color: v.accent, margin: "0 auto 4px" }} />
@@ -198,7 +198,7 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
       adminApi.updateRole(participantId, role, pid),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/admin/overview"] });
-      toast({ title: "Role updated" });
+      toast({ title: t("m2.admin.roleUpdated", "Role updated") });
     },
   });
 
@@ -206,7 +206,7 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
     mutationFn: (participantId: string) => adminApi.deleteParticipant(participantId, pid),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/admin/overview"] });
-      toast({ title: "Participant deleted" });
+      toast({ title: t("m2.admin.participantDeleted", "Participant deleted") });
     },
   });
 
@@ -215,7 +215,7 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
       adminApi.updateWhiskyDbAccess(participantId, canAccess, pid),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/admin/overview"] });
-      toast({ title: "DB access updated" });
+      toast({ title: t("m2.admin.dbAccessUpdated", "DB access updated") });
     },
   });
 
@@ -234,7 +234,7 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search participants..."
+            placeholder={t("m2.admin.searchParticipants", "Search participants...")}
             style={{ width: "100%", padding: "8px 8px 8px 30px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 13, fontFamily: "system-ui, sans-serif" }}
             data-testid="input-search-participants"
           />
@@ -245,16 +245,16 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
           style={{ padding: "8px 12px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 13, fontFamily: "system-ui, sans-serif" }}
           data-testid="select-filter-role"
         >
-          <option value="all">All Roles</option>
-          <option value="admin">Admin</option>
-          <option value="host">Host</option>
-          <option value="user">User</option>
+          <option value="all">{t("m2.admin.allRoles", "All Roles")}</option>
+          <option value="admin">{t("m2.admin.roleAdmin", "Admin")}</option>
+          <option value="host">{t("m2.admin.roleHost", "Host")}</option>
+          <option value="user">{t("m2.admin.roleUser", "User")}</option>
         </select>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {filtered.length === 0 ? (
-          <div style={{ textAlign: "center", padding: 32, color: v.muted }}>No results</div>
+          <div style={{ textAlign: "center", padding: 32, color: v.muted }}>{t("m2.admin.noResults", "No results")}</div>
         ) : filtered.map(p => (
           <div key={p.id} style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 14 }} data-testid={`participant-row-${p.id}`}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -264,10 +264,10 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
                    p.role === "host" ? <Crown style={{ width: 14, height: 14, color: "#60a5fa" }} /> :
                    <User style={{ width: 14, height: 14, color: v.muted }} />}
                   <span style={{ fontWeight: 600, fontSize: 14, color: v.text }}>{p.name}</span>
-                  {p.id === pid && <span style={{ fontSize: 10, background: `${v.accent}20`, color: v.accent, padding: "1px 6px", borderRadius: 8 }}>You</span>}
+                  {p.id === pid && <span style={{ fontSize: 10, background: `${v.accent}20`, color: v.accent, padding: "1px 6px", borderRadius: 8 }}>{t("m2.admin.you", "You")}</span>}
                 </div>
                 <div style={{ fontSize: 11, color: v.muted, marginTop: 2 }}>
-                  {p.email || "No email"} · {p.hostedTastings} tastings hosted
+                  {p.email || t("m2.admin.noEmail", "No email")} · {p.hostedTastings} {t("m2.admin.tastingsHosted", "tastings hosted")}
                   {p.createdAt && ` · ${new Date(p.createdAt).toLocaleDateString()}`}
                 </div>
               </div>
@@ -279,13 +279,13 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
                   style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 11, fontFamily: "system-ui, sans-serif" }}
                   data-testid={`select-role-${p.id}`}
                 >
-                  <option value="user">User</option>
-                  <option value="host">Host</option>
-                  <option value="admin">Admin</option>
+                  <option value="user">{t("m2.admin.roleUser", "User")}</option>
+                  <option value="host">{t("m2.admin.roleHost", "Host")}</option>
+                  <option value="admin">{t("m2.admin.roleAdmin", "Admin")}</option>
                 </select>
                 {p.id !== pid && (
                   <button
-                    onClick={() => { if (confirm(`Delete ${p.name}?`)) deleteMutation.mutate(p.id); }}
+                    onClick={() => { if (confirm(t("m2.admin.confirmDeleteParticipant", "Delete {{name}}?", { name: p.name }))) deleteMutation.mutate(p.id); }}
                     style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}
                     data-testid={`btn-delete-participant-${p.id}`}
                   >
@@ -302,6 +302,7 @@ function ParticipantsTab({ data, pid }: { data: AdminOverview; pid: string }) {
 }
 
 function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -311,7 +312,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
     mutationFn: (tastingId: string) => adminApi.deleteTasting(tastingId, pid),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/admin/overview"] });
-      toast({ title: "Tasting deleted" });
+      toast({ title: t("m2.admin.tastingDeleted", "Tasting deleted") });
     },
   });
 
@@ -322,13 +323,13 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/admin/overview"] });
-      toast({ title: "Test flag updated" });
+      toast({ title: t("m2.admin.testFlagUpdated", "Test flag updated") });
     },
   });
 
-  const filtered = data.tastings.filter(t => {
-    if (filterStatus !== "all" && t.status !== filterStatus) return false;
-    if (search && !t.title.toLowerCase().includes(search.toLowerCase()) && !t.hostName.toLowerCase().includes(search.toLowerCase())) return false;
+  const filtered = data.tastings.filter(ta => {
+    if (filterStatus !== "all" && ta.status !== filterStatus) return false;
+    if (search && !ta.title.toLowerCase().includes(search.toLowerCase()) && !ta.hostName.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
@@ -345,7 +346,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search tastings..."
+            placeholder={t("m2.admin.searchTastings", "Search tastings...")}
             style={{ width: "100%", padding: "8px 8px 8px 30px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 13, fontFamily: "system-ui, sans-serif" }}
             data-testid="input-search-tastings"
           />
@@ -356,18 +357,18 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
           style={{ padding: "8px 12px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 13, fontFamily: "system-ui, sans-serif" }}
           data-testid="select-filter-status"
         >
-          <option value="all">All Statuses</option>
-          <option value="draft">Draft</option>
-          <option value="open">Open</option>
-          <option value="closed">Closed</option>
-          <option value="reveal">Reveal</option>
-          <option value="archived">Archived</option>
+          <option value="all">{t("m2.admin.allStatuses", "All Statuses")}</option>
+          <option value="draft">{t("m2.admin.statusDraft", "Draft")}</option>
+          <option value="open">{t("m2.admin.statusOpen", "Open")}</option>
+          <option value="closed">{t("m2.admin.statusClosed", "Closed")}</option>
+          <option value="reveal">{t("m2.admin.statusReveal", "Reveal")}</option>
+          <option value="archived">{t("m2.admin.statusArchived", "Archived")}</option>
         </select>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {filtered.length === 0 ? (
-          <div style={{ textAlign: "center", padding: 32, color: v.muted }}>No results</div>
+          <div style={{ textAlign: "center", padding: 32, color: v.muted }}>{t("m2.admin.noResults", "No results")}</div>
         ) : filtered.map(tasting => (
           <div key={tasting.id} style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 14 }} data-testid={`tasting-row-${tasting.id}`}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -399,7 +400,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
                   <FlaskConical style={{ width: 14, height: 14, color: tasting.isTestData ? v.accent : v.muted }} />
                 </button>
                 <button
-                  onClick={() => { if (confirm(`Delete "${tasting.title}"?`)) deleteMutation.mutate(tasting.id); }}
+                  onClick={() => { if (confirm(t("m2.admin.confirmDeleteTasting", 'Delete "{{title}}"?', { title: tasting.title }))) deleteMutation.mutate(tasting.id); }}
                   style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}
                   data-testid={`btn-delete-tasting-${tasting.id}`}
                 >
@@ -415,6 +416,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
 }
 
 function OnlineTab() {
+  const { t } = useTranslation();
   const { data: onlineUsers = [], isLoading } = useQuery({
     queryKey: ["/api/admin/online-users"],
     queryFn: async () => {
@@ -428,8 +430,8 @@ function OnlineTab() {
   const formatTime = (ts: string) => {
     const d = new Date(ts);
     const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
-    if (diffMin < 1) return "just now";
-    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffMin < 1) return t("m2.admin.justNow", "just now");
+    if (diffMin < 60) return t("m2.admin.minutesAgo", "{{min}}m ago", { min: diffMin });
     return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
   };
 
@@ -438,11 +440,11 @@ function OnlineTab() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Wifi style={{ width: 18, height: 18, color: v.success }} />
-          <span style={{ fontWeight: 600, fontSize: 16, color: v.text }}>Online Users</span>
+          <span style={{ fontWeight: 600, fontSize: 16, color: v.text }}>{t("m2.admin.onlineUsers", "Online Users")}</span>
           <span style={{ fontSize: 12, background: v.elevated, padding: "2px 8px", borderRadius: 10, color: v.textSecondary }}>{onlineUsers.length}</span>
         </div>
         <span style={{ fontSize: 11, color: v.muted, display: "flex", alignItems: "center", gap: 4 }}>
-          <Clock style={{ width: 12, height: 12 }} /> Auto-refresh 15s
+          <Clock style={{ width: 12, height: 12 }} /> {t("m2.admin.autoRefresh", "Auto-refresh 15s")}
         </span>
       </div>
 
@@ -451,7 +453,7 @@ function OnlineTab() {
           <Loader2 style={{ width: 24, height: 24, color: v.accent, animation: "spin 1s linear infinite" }} />
         </div>
       ) : onlineUsers.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 48, color: v.muted }}>No users currently online.</div>
+        <div style={{ textAlign: "center", padding: 48, color: v.muted }}>{t("m2.admin.noUsersOnline", "No users currently online.")}</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {onlineUsers.map((u: any) => {
@@ -482,6 +484,7 @@ function OnlineTab() {
 }
 
 function AITab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -514,7 +517,7 @@ function AITab({ pid }: { pid: string }) {
       return res.json();
     },
     onSuccess: () => {
-      toast({ title: "AI settings saved" });
+      toast({ title: t("m2.admin.aiSettingsSaved", "AI settings saved") });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-settings"] });
     },
     onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
@@ -540,13 +543,13 @@ function AITab({ pid }: { pid: string }) {
       <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16, marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
           <ShieldAlert style={{ width: 20, height: 20, color: v.accent }} />
-          <span style={{ fontWeight: 700, fontSize: 16, color: v.text }}>AI Kill Switch</span>
+          <span style={{ fontWeight: 700, fontSize: 16, color: v.text }}>{t("m2.admin.aiKillSwitch", "AI Kill Switch")}</span>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 14, borderRadius: 10, border: `2px solid ${masterDisabled ? v.danger : v.success}`, background: `${masterDisabled ? v.danger : v.success}10`, marginBottom: 16 }} data-testid="ai-master-toggle">
           <div>
-            <div style={{ fontWeight: 600, fontSize: 14, color: v.text }}>Master Kill Switch</div>
-            <div style={{ fontSize: 12, color: v.muted }}>{masterDisabled ? "All AI features disabled" : "AI features active"}</div>
+            <div style={{ fontWeight: 600, fontSize: 14, color: v.text }}>{t("m2.admin.masterKillSwitch", "Master Kill Switch")}</div>
+            <div style={{ fontSize: 12, color: v.muted }}>{masterDisabled ? t("m2.admin.allAiDisabled", "All AI features disabled") : t("m2.admin.aiFeaturesActive", "AI features active")}</div>
           </div>
           <button
             onClick={() => setMasterDisabled(!masterDisabled)}
@@ -610,7 +613,7 @@ function AITab({ pid }: { pid: string }) {
             data-testid="ai-settings-save"
           >
             {saveMutation.isPending && <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />}
-            Save Changes
+            {t("m2.admin.saveChanges", "Save Changes")}
           </button>
         </div>
       </div>
@@ -619,7 +622,7 @@ function AITab({ pid }: { pid: string }) {
         <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <Database style={{ width: 16, height: 16, color: v.textSecondary }} />
-            <span style={{ fontWeight: 600, fontSize: 14, color: v.text }}>Audit Log</span>
+            <span style={{ fontWeight: 600, fontSize: 14, color: v.text }}>{t("m2.admin.auditLog", "Audit Log")}</span>
           </div>
           <div style={{ maxHeight: 300, overflowY: "auto" }}>
             {auditLog.map((entry: any, i: number) => (
@@ -637,6 +640,7 @@ function AITab({ pid }: { pid: string }) {
 }
 
 function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]; pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { masterDisabled: aiDisabled } = useAIStatus();
@@ -669,7 +673,7 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
       const result = await adminApi.generateNewsletter(pid, type);
       setSubject(result.subject || "");
       setContentHtml(result.body || "");
-      toast({ title: "Newsletter generated" });
+      toast({ title: t("m2.admin.newsletterGenerated", "Newsletter generated") });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
@@ -682,7 +686,7 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
     setSending(true);
     try {
       const result = await adminApi.sendNewsletter(pid, subject, contentHtml, Array.from(selectedIds));
-      toast({ title: `Newsletter sent to ${result.sent} recipients` });
+      toast({ title: t("m2.admin.newsletterSent", "Newsletter sent to {{count}} recipients", { count: result.sent }) });
       setSubject(""); setContentHtml(""); setSelectedIds(new Set());
       queryClient.invalidateQueries({ queryKey: ["/admin/newsletters"] });
     } catch (e: any) {
@@ -697,17 +701,17 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
       <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16, marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
           <Send style={{ width: 16, height: 16, color: v.accent }} />
-          <span style={{ fontWeight: 600, fontSize: 16, color: v.text }}>Compose Newsletter</span>
+          <span style={{ fontWeight: 600, fontSize: 16, color: v.text }}>{t("m2.admin.composeNewsletter", "Compose Newsletter")}</span>
         </div>
 
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           <button onClick={() => handleGenerate("welcome")} disabled={generating || aiDisabled} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${v.border}`, background: v.elevated, color: v.text, fontSize: 12, cursor: generating ? "wait" : "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "system-ui, sans-serif" }} data-testid="button-generate-welcome">
             {generating ? <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} /> : <Sparkles style={{ width: 12, height: 12 }} />}
-            Welcome
+            {t("m2.admin.welcome", "Welcome")}
           </button>
           <button onClick={() => handleGenerate("update")} disabled={generating || aiDisabled} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${v.border}`, background: v.elevated, color: v.text, fontSize: 12, cursor: generating ? "wait" : "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "system-ui, sans-serif" }} data-testid="button-generate-update">
             {generating ? <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} /> : <Sparkles style={{ width: 12, height: 12 }} />}
-            Update
+            {t("m2.admin.update", "Update")}
           </button>
         </div>
 
@@ -715,7 +719,7 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
           type="text"
           value={subject}
           onChange={e => setSubject(e.target.value)}
-          placeholder="Subject..."
+          placeholder={t("m2.admin.subject", "Subject...")}
           style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 13, marginBottom: 8, fontFamily: "system-ui, sans-serif" }}
           data-testid="input-newsletter-subject"
         />
@@ -723,7 +727,7 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
         <textarea
           value={contentHtml}
           onChange={e => setContentHtml(e.target.value)}
-          placeholder="Newsletter content (HTML)..."
+          placeholder={t("m2.admin.newsletterContent", "Newsletter content (HTML)...")}
           rows={6}
           style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 13, resize: "vertical", fontFamily: "system-ui, sans-serif" }}
           data-testid="input-newsletter-content"
@@ -731,10 +735,10 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
 
         <div style={{ marginTop: 12, border: `1px solid ${v.border}`, borderRadius: 8, padding: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: 11, color: v.muted, textTransform: "uppercase", letterSpacing: 1 }}>Recipients ({selectedIds.size} selected)</span>
+            <span style={{ fontSize: 11, color: v.muted, textTransform: "uppercase", letterSpacing: 1 }}>{t("m2.admin.recipientsSelected", "Recipients ({{count}} selected)", { count: selectedIds.size })}</span>
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setSelectedIds(new Set(subscribers.map(s => s.id)))} style={{ fontSize: 11, color: v.accent, background: "none", border: "none", cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-select-all">Select subscribers</button>
-              <button onClick={() => setSelectedIds(new Set())} style={{ fontSize: 11, color: v.muted, background: "none", border: "none", cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-deselect-all">Clear</button>
+              <button onClick={() => setSelectedIds(new Set(subscribers.map(s => s.id)))} style={{ fontSize: 11, color: v.accent, background: "none", border: "none", cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-select-all">{t("m2.admin.selectSubscribers", "Select subscribers")}</button>
+              <button onClick={() => setSelectedIds(new Set())} style={{ fontSize: 11, color: v.muted, background: "none", border: "none", cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-deselect-all">{t("m2.admin.clear", "Clear")}</button>
             </div>
           </div>
           <div style={{ maxHeight: 180, overflowY: "auto" }}>
@@ -743,7 +747,7 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
                 {selectedIds.has(p.id) ? <CheckSquare style={{ width: 14, height: 14, color: v.accent }} /> : <Square style={{ width: 14, height: 14, color: v.muted }} />}
                 <span style={{ fontSize: 12, color: v.text }}>{p.name}</span>
                 <span style={{ fontSize: 10, color: v.muted }}>{p.email}</span>
-                {p.newsletterOptIn && <span style={{ fontSize: 9, padding: "0 4px", borderRadius: 4, background: `${v.success}15`, color: v.success }}>Opt-in</span>}
+                {p.newsletterOptIn && <span style={{ fontSize: 9, padding: "0 4px", borderRadius: 4, background: `${v.success}15`, color: v.success }}>{t("m2.admin.optIn", "Opt-in")}</span>}
               </div>
             ))}
           </div>
@@ -762,7 +766,7 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
           data-testid="button-send-newsletter"
         >
           {sending ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Send style={{ width: 14, height: 14 }} />}
-          {sending ? "Sending..." : "Send Newsletter"}
+          {sending ? t("m2.admin.sending", "Sending...") : t("m2.admin.sendNewsletter", "Send Newsletter")}
         </button>
       </div>
 
@@ -770,13 +774,13 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
         <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <Archive style={{ width: 16, height: 16, color: v.textSecondary }} />
-            <span style={{ fontWeight: 600, fontSize: 14, color: v.text }}>Archive</span>
+            <span style={{ fontWeight: 600, fontSize: 14, color: v.text }}>{t("m2.admin.archive", "Archive")}</span>
           </div>
           {(newsletters as any[]).map((nl: any) => (
             <div key={nl.id} style={{ padding: "8px 0", borderBottom: `1px solid ${v.border}` }} data-testid={`card-newsletter-${nl.id}`}>
               <div style={{ fontWeight: 500, fontSize: 13, color: v.text }}>{nl.subject}</div>
               <div style={{ fontSize: 11, color: v.muted, marginTop: 2 }}>
-                Sent: {nl.sentAt ? new Date(nl.sentAt).toLocaleDateString() : "-"} · Recipients: {nl.recipientCount || 0}
+                {t("m2.admin.sent", "Sent")}: {nl.sentAt ? new Date(nl.sentAt).toLocaleDateString() : "-"} · {t("m2.admin.recipientsLabel", "Recipients")}: {nl.recipientCount || 0}
               </div>
             </div>
           ))}
@@ -787,6 +791,7 @@ function NewsletterTab({ participants, pid }: { participants: AdminParticipant[]
 }
 
 function ChangelogTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -798,11 +803,11 @@ function ChangelogTab({ pid }: { pid: string }) {
   const [visible, setVisible] = useState(true);
 
   const CATEGORIES = [
-    { value: "feature", label: "Feature", emoji: "🚀" },
-    { value: "improvement", label: "Improvement", emoji: "🔧" },
-    { value: "bugfix", label: "Bugfix", emoji: "🐛" },
-    { value: "security", label: "Security", emoji: "🛡️" },
-    { value: "design", label: "Design/UX", emoji: "🎨" },
+    { value: "feature", label: t("m2.admin.catFeature", "Feature"), emoji: "🚀" },
+    { value: "improvement", label: t("m2.admin.catImprovement", "Improvement"), emoji: "🔧" },
+    { value: "bugfix", label: t("m2.admin.catBugfix", "Bugfix"), emoji: "🐛" },
+    { value: "security", label: t("m2.admin.catSecurity", "Security"), emoji: "🛡️" },
+    { value: "design", label: t("m2.admin.catDesign", "Design/UX"), emoji: "🎨" },
   ];
 
   const { data: entries = [], isLoading } = useQuery({
@@ -819,7 +824,7 @@ function ChangelogTab({ pid }: { pid: string }) {
       const res = await apiRequest("POST", "/api/admin/changelog", { participantId: pid, title, description, category, date, visible });
       return res.json();
     },
-    onSuccess: () => { toast({ title: "Entry created" }); queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] }); resetForm(); },
+    onSuccess: () => { toast({ title: t("m2.admin.entryCreated", "Entry created") }); queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] }); resetForm(); },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -828,7 +833,7 @@ function ChangelogTab({ pid }: { pid: string }) {
       const res = await apiRequest("PATCH", `/api/admin/changelog/${editingId}`, { participantId: pid, title, description, category, date, visible });
       return res.json();
     },
-    onSuccess: () => { toast({ title: "Entry updated" }); queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] }); resetForm(); },
+    onSuccess: () => { toast({ title: t("m2.admin.entryUpdated", "Entry updated") }); queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] }); resetForm(); },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -838,7 +843,7 @@ function ChangelogTab({ pid }: { pid: string }) {
       if (!res.ok) throw new Error("Delete failed");
       return res.json();
     },
-    onSuccess: () => { toast({ title: "Entry deleted" }); queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] }); },
+    onSuccess: () => { toast({ title: t("m2.admin.entryDeleted", "Entry deleted") }); queryClient.invalidateQueries({ queryKey: ["/api/admin/changelog"] }); },
   });
 
   const resetForm = () => { setShowForm(false); setEditingId(null); setTitle(""); setDescription(""); setCategory("feature"); setDate(new Date().toISOString().split("T")[0]); setVisible(true); };
@@ -850,16 +855,16 @@ function ChangelogTab({ pid }: { pid: string }) {
   return (
     <div data-testid="admin-changelog-tab">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <span style={{ fontSize: 12, color: v.muted }}>{entries.length} entries</span>
+        <span style={{ fontSize: 12, color: v.muted }}>{entries.length} {t("m2.admin.entries", "entries")}</span>
         <button onClick={() => { resetForm(); setShowForm(true); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: v.accent, color: v.bg, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "system-ui, sans-serif" }} data-testid="changelog-add">
-          <MessageSquarePlus style={{ width: 12, height: 12 }} /> New Entry
+          <MessageSquarePlus style={{ width: 12, height: 12 }} /> {t("m2.admin.newEntry", "New Entry")}
         </button>
       </div>
 
       {showForm && (
         <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16, marginBottom: 16 }}>
-          <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Title..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 13, marginBottom: 8, fontFamily: "system-ui, sans-serif" }} data-testid="changelog-input-title" />
-          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description..." rows={3} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 13, resize: "vertical", marginBottom: 8, fontFamily: "system-ui, sans-serif" }} data-testid="changelog-input-description" />
+          <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={t("m2.admin.titlePlaceholder", "Title...")} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 13, marginBottom: 8, fontFamily: "system-ui, sans-serif" }} data-testid="changelog-input-title" />
+          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t("m2.admin.descriptionPlaceholder", "Description...")} rows={3} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 13, resize: "vertical", marginBottom: 8, fontFamily: "system-ui, sans-serif" }} data-testid="changelog-input-description" />
           <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
             <select value={category} onChange={e => setCategory(e.target.value)} style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 12, fontFamily: "system-ui, sans-serif" }} data-testid="changelog-input-category">
               {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>)}
@@ -867,14 +872,14 @@ function ChangelogTab({ pid }: { pid: string }) {
             <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 12, fontFamily: "system-ui, sans-serif" }} data-testid="changelog-input-date" />
             <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: v.text, cursor: "pointer" }}>
               <input type="checkbox" checked={visible} onChange={e => setVisible(e.target.checked)} />
-              Visible
+              {t("m2.admin.visible", "Visible")}
             </label>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={() => editingId ? updateMutation.mutate() : createMutation.mutate()} disabled={!title || !description} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: v.accent, color: v.bg, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="changelog-save">
-              {editingId ? "Update" : "Create"}
+              {editingId ? t("m2.admin.update", "Update") : t("m2.admin.create", "Create")}
             </button>
-            <button onClick={resetForm} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${v.border}`, background: "transparent", color: v.text, fontSize: 12, cursor: "pointer", fontFamily: "system-ui, sans-serif" }}>Cancel</button>
+            <button onClick={resetForm} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${v.border}`, background: "transparent", color: v.text, fontSize: 12, cursor: "pointer", fontFamily: "system-ui, sans-serif" }}>{t("m2.admin.cancel", "Cancel")}</button>
           </div>
         </div>
       )}
@@ -889,7 +894,7 @@ function ChangelogTab({ pid }: { pid: string }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                     <span style={{ fontSize: 12 }}>{cat?.emoji || "📝"}</span>
                     <span style={{ fontSize: 11, color: v.muted }}>{new Date(entry.date).toLocaleDateString("de-DE")}</span>
-                    {!entry.visible && <span style={{ fontSize: 9, color: v.muted, padding: "0 4px", borderRadius: 4, border: `1px solid ${v.border}` }}>Hidden</span>}
+                    {!entry.visible && <span style={{ fontSize: 9, color: v.muted, padding: "0 4px", borderRadius: 4, border: `1px solid ${v.border}` }}>{t("m2.admin.hidden", "Hidden")}</span>}
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 500, color: v.text }}>{entry.title}</div>
                   <div style={{ fontSize: 11, color: v.muted, marginTop: 2 }}>{entry.description}</div>
@@ -898,7 +903,7 @@ function ChangelogTab({ pid }: { pid: string }) {
                   <button onClick={() => startEdit(entry)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} data-testid={`changelog-edit-${entry.id}`}>
                     <Eye style={{ width: 12, height: 12, color: v.muted }} />
                   </button>
-                  <button onClick={() => { if (confirm(`Delete "${entry.title}"?`)) deleteMutation.mutate(entry.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} data-testid={`changelog-delete-${entry.id}`}>
+                  <button onClick={() => { if (confirm(t("m2.admin.confirmDeleteEntry", 'Delete "{{title}}"?', { title: entry.title }))) deleteMutation.mutate(entry.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }} data-testid={`changelog-delete-${entry.id}`}>
                     <Trash2 style={{ width: 12, height: 12, color: v.danger }} />
                   </button>
                 </div>
@@ -912,11 +917,12 @@ function ChangelogTab({ pid }: { pid: string }) {
 }
 
 function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const testTastings = data.tastings.filter(t => t.isTestData);
+  const testTastings = data.tastings.filter(ta => ta.isTestData);
 
   const deleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -926,7 +932,7 @@ function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/admin/overview"] });
-      toast({ title: `${selectedIds.size} tastings deleted` });
+      toast({ title: t("m2.admin.tastingsDeleted", "{{count}} tastings deleted", { count: selectedIds.size }) });
       setSelectedIds(new Set());
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -945,35 +951,35 @@ function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
       <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
           <Trash2 style={{ width: 18, height: 18, color: v.danger }} />
-          <span style={{ fontWeight: 600, fontSize: 16, color: v.text }}>Bulk Cleanup</span>
+          <span style={{ fontWeight: 600, fontSize: 16, color: v.text }}>{t("m2.admin.bulkCleanup", "Bulk Cleanup")}</span>
         </div>
 
         <div style={{ marginBottom: 12, fontSize: 13, color: v.muted }}>
-          {testTastings.length} test tastings found · {selectedIds.size} selected
+          {t("m2.admin.testTastingsFound", "{{count}} test tastings found", { count: testTastings.length })} · {t("m2.admin.selectedCount", "{{count}} selected", { count: selectedIds.size })}
         </div>
 
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          <button onClick={() => setSelectedIds(new Set(testTastings.map(t => t.id)))} style={{ fontSize: 11, color: v.accent, background: "none", border: "none", cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="cleanup-select-all">Select all test</button>
-          <button onClick={() => setSelectedIds(new Set())} style={{ fontSize: 11, color: v.muted, background: "none", border: "none", cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="cleanup-deselect-all">Clear</button>
+          <button onClick={() => setSelectedIds(new Set(testTastings.map(tt => tt.id)))} style={{ fontSize: 11, color: v.accent, background: "none", border: "none", cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="cleanup-select-all">{t("m2.admin.selectAllTest", "Select all test")}</button>
+          <button onClick={() => setSelectedIds(new Set())} style={{ fontSize: 11, color: v.muted, background: "none", border: "none", cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="cleanup-deselect-all">{t("m2.admin.clear", "Clear")}</button>
         </div>
 
         <div style={{ maxHeight: 300, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4, marginBottom: 12 }}>
-          {data.tastings.map(t => (
-            <div key={t.id} onClick={() => toggleId(t.id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: 8, borderRadius: 8, cursor: "pointer", background: selectedIds.has(t.id) ? `${v.danger}15` : "transparent" }} data-testid={`cleanup-item-${t.id}`}>
-              {selectedIds.has(t.id) ? <CheckSquare style={{ width: 14, height: 14, color: v.danger }} /> : <Square style={{ width: 14, height: 14, color: v.muted }} />}
+          {data.tastings.map(ta => (
+            <div key={ta.id} onClick={() => toggleId(ta.id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: 8, borderRadius: 8, cursor: "pointer", background: selectedIds.has(ta.id) ? `${v.danger}15` : "transparent" }} data-testid={`cleanup-item-${ta.id}`}>
+              {selectedIds.has(ta.id) ? <CheckSquare style={{ width: 14, height: 14, color: v.danger }} /> : <Square style={{ width: 14, height: 14, color: v.muted }} />}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 500, color: v.text, display: "flex", alignItems: "center", gap: 4 }}>
-                  {t.title}
-                  {t.isTestData && <span style={{ fontSize: 9, padding: "0 4px", borderRadius: 4, background: `${v.accent}15`, color: v.accent }}>TEST</span>}
+                  {ta.title}
+                  {ta.isTestData && <span style={{ fontSize: 9, padding: "0 4px", borderRadius: 4, background: `${v.accent}15`, color: v.accent }}>TEST</span>}
                 </div>
-                <div style={{ fontSize: 10, color: v.muted }}>{t.hostName} · {t.date} · {t.status}</div>
+                <div style={{ fontSize: 10, color: v.muted }}>{ta.hostName} · {ta.date} · {ta.status}</div>
               </div>
             </div>
           ))}
         </div>
 
         <button
-          onClick={() => { if (selectedIds.size > 0 && confirm(`Delete ${selectedIds.size} tastings?`)) deleteMutation.mutate(Array.from(selectedIds)); }}
+          onClick={() => { if (selectedIds.size > 0 && confirm(t("m2.admin.confirmDeleteTastings", "Delete {{count}} tastings?", { count: selectedIds.size }))) deleteMutation.mutate(Array.from(selectedIds)); }}
           disabled={selectedIds.size === 0 || deleteMutation.isPending}
           style={{
             width: "100%", padding: "10px 0", borderRadius: 8, border: "none",
@@ -985,7 +991,7 @@ function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
           data-testid="cleanup-delete-btn"
         >
           {deleteMutation.isPending ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Trash2 style={{ width: 14, height: 14 }} />}
-          Delete {selectedIds.size} Selected
+          {t("m2.admin.deleteSelected", "Delete {{count}} Selected", { count: selectedIds.size })}
         </button>
       </div>
     </div>
@@ -993,6 +999,7 @@ function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
 }
 
 function AnalyticsTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ["/admin/analytics", pid],
     queryFn: () => adminApi.getAnalytics(pid),
@@ -1001,7 +1008,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
 
   if (isLoading) return <div style={{ display: "flex", justifyContent: "center", padding: 48 }}><Loader2 style={{ width: 24, height: 24, color: v.accent, animation: "spin 1s linear infinite" }} /></div>;
 
-  if (!data) return <div style={{ textAlign: "center", padding: 32, color: v.muted }}>No analytics data available.</div>;
+  if (!data) return <div style={{ textAlign: "center", padding: 32, color: v.muted }}>{t("m2.admin.noAnalyticsData", "No analytics data available.")}</div>;
 
   const analytics = data as any;
 
@@ -1009,10 +1016,10 @@ function AnalyticsTab({ pid }: { pid: string }) {
     <div data-testid="admin-analytics-tab">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 16 }}>
         {[
-          { label: "Total Ratings", value: analytics.totalRatings || 0 },
-          { label: "Total Whiskies", value: analytics.totalWhiskies || 0 },
-          { label: "Total Tastings", value: analytics.totalTastings || 0 },
-          { label: "Total Participants", value: analytics.totalParticipants || 0 },
+          { label: t("m2.admin.totalRatings", "Total Ratings"), value: analytics.totalRatings || 0 },
+          { label: t("m2.admin.totalWhiskies", "Total Whiskies"), value: analytics.totalWhiskies || 0 },
+          { label: t("m2.admin.totalTastings", "Total Tastings"), value: analytics.totalTastings || 0 },
+          { label: t("m2.admin.totalParticipants", "Total Participants"), value: analytics.totalParticipants || 0 },
         ].map(s => (
           <div key={s.label} style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 10, padding: 12, textAlign: "center" }} data-testid={`analytics-${s.label.toLowerCase().replace(/\s/g, "-")}`}>
             <div style={{ fontSize: 22, fontWeight: 700, color: v.text, fontFamily: "'Playfair Display', serif" }}>{s.value}</div>
@@ -1023,7 +1030,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
 
       {analytics.topWhiskies?.length > 0 && (
         <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
-          <span style={{ fontWeight: 600, fontSize: 14, color: v.text, display: "block", marginBottom: 10 }}>Top Whiskies</span>
+          <span style={{ fontWeight: 600, fontSize: 14, color: v.text, display: "block", marginBottom: 10 }}>{t("m2.admin.topWhiskies", "Top Whiskies")}</span>
           {analytics.topWhiskies.slice(0, 10).map((w: any, i: number) => (
             <div key={w.id || i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${v.border}` }}>
               <div>
@@ -1038,7 +1045,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
 
       {analytics.regionCounts?.length > 0 && (
         <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16 }}>
-          <span style={{ fontWeight: 600, fontSize: 14, color: v.text, display: "block", marginBottom: 10 }}>Regions</span>
+          <span style={{ fontWeight: 600, fontSize: 14, color: v.text, display: "block", marginBottom: 10 }}>{t("m2.admin.regions", "Regions")}</span>
           {analytics.regionCounts.map(([region, count]: [string, number]) => (
             <div key={region} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0" }}>
               <span style={{ fontSize: 12, color: v.text }}>{region}</span>
@@ -1052,6 +1059,7 @@ function AnalyticsTab({ pid }: { pid: string }) {
 }
 
 function SettingsTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -1069,7 +1077,7 @@ function SettingsTab({ pid }: { pid: string }) {
       const res = await apiRequest("POST", "/api/admin/app-settings", { requesterId: pid, settings: updates });
       return res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-app-settings"] }); toast({ title: "Settings saved" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-app-settings"] }); toast({ title: t("m2.admin.settingsSaved", "Settings saved") }); },
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -1087,10 +1095,10 @@ function SettingsTab({ pid }: { pid: string }) {
   };
 
   const settingItems = [
-    { key: "whats_new_enabled", label: "What's New Banner", desc: "Show announcement banner to users" },
-    { key: "guest_mode_enabled", label: "Guest Mode", desc: "Allow guest access without registration" },
-    { key: "registration_enabled", label: "Registration", desc: "Allow new user registrations" },
-    { key: "maintenance_mode", label: "Maintenance Mode", desc: "Show maintenance page to non-admins" },
+    { key: "whats_new_enabled", label: t("m2.admin.whatsNewBanner", "What's New Banner"), desc: t("m2.admin.whatsNewBannerDesc", "Show announcement banner to users") },
+    { key: "guest_mode_enabled", label: t("m2.admin.guestMode", "Guest Mode"), desc: t("m2.admin.guestModeDesc", "Allow guest access without registration") },
+    { key: "registration_enabled", label: t("m2.admin.registration", "Registration"), desc: t("m2.admin.registrationDesc", "Allow new user registrations") },
+    { key: "maintenance_mode", label: t("m2.admin.maintenanceMode", "Maintenance Mode"), desc: t("m2.admin.maintenanceModeDesc", "Show maintenance page to non-admins") },
   ];
 
   return (
@@ -1098,7 +1106,7 @@ function SettingsTab({ pid }: { pid: string }) {
       <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
           <Settings style={{ width: 18, height: 18, color: v.accent }} />
-          <span style={{ fontWeight: 600, fontSize: 16, color: v.text }}>App Settings</span>
+          <span style={{ fontWeight: 600, fontSize: 16, color: v.text }}>{t("m2.admin.appSettings", "App Settings")}</span>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1129,13 +1137,13 @@ function SettingsTab({ pid }: { pid: string }) {
 
         {settings.whats_new_enabled === "true" && (
           <div style={{ marginTop: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 500, color: v.text, display: "block", marginBottom: 4 }}>Banner Text</label>
+            <label style={{ fontSize: 12, fontWeight: 500, color: v.text, display: "block", marginBottom: 4 }}>{t("m2.admin.bannerText", "Banner Text")}</label>
             <input
               type="text"
               value={bannerText}
               onChange={e => setBannerText(e.target.value)}
               onBlur={() => updateSetting.mutate({ whats_new_text: bannerText })}
-              placeholder="What's new message..."
+              placeholder={t("m2.admin.whatsNewPlaceholder", "What's new message...")}
               style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 13, fontFamily: "system-ui, sans-serif" }}
               data-testid="input-whats-new-text"
             />
@@ -1147,6 +1155,7 @@ function SettingsTab({ pid }: { pid: string }) {
 }
 
 function FeedbackTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
   const { data: feedback = [], isLoading } = useQuery({
     queryKey: ["/feedback", pid],
     queryFn: () => feedbackApi.getAll(pid),
@@ -1163,12 +1172,12 @@ function FeedbackTab({ pid }: { pid: string }) {
     <div data-testid="admin-feedback-tab">
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
         <MessageSquarePlus style={{ width: 18, height: 18, color: v.accent }} />
-        <span style={{ fontWeight: 600, fontSize: 16, color: v.text }}>User Feedback</span>
+        <span style={{ fontWeight: 600, fontSize: 16, color: v.text }}>{t("m2.admin.userFeedback", "User Feedback")}</span>
         <span style={{ fontSize: 12, color: v.muted }}>({(feedback as any[]).length})</span>
       </div>
 
       {(feedback as any[]).length === 0 ? (
-        <div style={{ textAlign: "center", padding: 48, color: v.muted }}>No feedback yet.</div>
+        <div style={{ textAlign: "center", padding: 48, color: v.muted }}>{t("m2.admin.noFeedbackYet", "No feedback yet.")}</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {(feedback as any[]).map((fb: any) => (

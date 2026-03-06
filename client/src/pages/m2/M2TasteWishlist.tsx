@@ -258,7 +258,7 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId, t }: {
 
   const applyWhisky = (w: any) => {
     setScanResult(w);
-    if (w.whiskyName && w.whiskyName !== "Unknown Whisky") {
+    if (w.whiskyName && w.whiskyName !== "Unknown Whisky" && w.whiskyName !== t("m2.taste.unknownWhisky", "Unknown Whisky")) {
       setWhiskyName(w.whiskyName);
       if (w.distillery) setDistillery(w.distillery);
       if (w.region) setRegion(w.region);
@@ -308,13 +308,13 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId, t }: {
               const response = await wishlistScanApi.identify(file, participantId);
               const whiskies = response.whiskies || (response.whiskyName ? [response] : []);
               if (whiskies.length === 0) setScanError(t("wishlist.scanFailed", "Could not identify"));
-              else if (whiskies.length === 1) { applyWhisky(whiskies[0]); if (!whiskies[0].whiskyName || whiskies[0].whiskyName === "Unknown Whisky") setScanError(t("wishlist.scanFailed", "Could not identify")); }
+              else if (whiskies.length === 1) { applyWhisky(whiskies[0]); if (!whiskies[0].whiskyName || whiskies[0].whiskyName === "Unknown Whisky" || whiskies[0].whiskyName === t("m2.taste.unknownWhisky", "Unknown Whisky")) setScanError(t("wishlist.scanFailed", "Could not identify")); }
               else setScanResult({ multipleWhiskies: whiskies });
             } catch (err: any) { setScanError(err.message || t("wishlist.scanFailed", "Could not identify")); } finally { setScanning(false); }
           }} />
         </label>
         {scanError && <div style={{ marginTop: 12, fontSize: 12, color: v.danger, background: "rgba(229,115,115,0.1)", border: "1px solid rgba(229,115,115,0.2)", borderRadius: 10, padding: "8px 12px" }}>{scanError}</div>}
-        {scanResult && !scanResult.multipleWhiskies && scanResult.whiskyName && scanResult.whiskyName !== "Unknown Whisky" && (
+        {scanResult && !scanResult.multipleWhiskies && scanResult.whiskyName && scanResult.whiskyName !== "Unknown Whisky" && scanResult.whiskyName !== t("m2.taste.unknownWhisky", "Unknown Whisky") && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ marginTop: 12, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#4ade80", display: "flex", alignItems: "center", gap: 6 }}>
             <Check style={{ width: 14, height: 14 }} /> {t("wishlist.scanSuccess", { name: scanResult.whiskyName })}
             {scanResult.whiskybaseUrl && scanResult.whiskybaseUrl.startsWith("http") && (
@@ -330,7 +330,7 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId, t }: {
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {scanResult.multipleWhiskies.map((w: any, idx: number) => (
                 <button key={idx} type="button" onClick={() => applyWhisky(w)} style={{ width: "100%", textAlign: "left", padding: "8px 12px", borderRadius: 8, background: v.inputBg, border: `1px solid ${v.border}`, cursor: "pointer", fontSize: 12, color: v.text }} data-testid={`button-m2-select-scan-${idx}`}>
-                  <span style={{ fontWeight: 500 }}>{w.whiskyName || "Unknown"}</span>
+                  <span style={{ fontWeight: 500 }}>{w.whiskyName || t("m2.taste.unknown", "Unknown")}</span>
                   {(w.distillery || w.age || w.region) && <span style={{ color: v.muted, marginLeft: 6 }}>{[w.distillery, w.age ? `${w.age}y` : null, w.region].filter(Boolean).join(" · ")}</span>}
                 </button>
               ))}
@@ -352,7 +352,7 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId, t }: {
               setExtracting(true); setScanError("");
               try {
                 const result = await textExtractApi.extract(extractText.trim(), participantId);
-                if (result.whiskyName && result.whiskyName !== "Unknown Whisky") { applyWhisky(result); setShowTextExtract(false); setExtractText(""); }
+                if (result.whiskyName && result.whiskyName !== "Unknown Whisky" && result.whiskyName !== t("m2.taste.unknownWhisky", "Unknown Whisky")) { applyWhisky(result); setShowTextExtract(false); setExtractText(""); }
                 else setScanError(t("wishlist.scanFailed", "Could not identify"));
               } catch (err: any) { setScanError(err.message || t("wishlist.scanFailed", "Could not identify")); } finally { setExtracting(false); }
             }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 500, border: "none", cursor: extracting || extractText.trim().length < 3 ? "not-allowed" : "pointer", opacity: extracting || extractText.trim().length < 3 ? 0.5 : 1, background: v.accent, color: v.bg }} data-testid="button-m2-extract-submit">

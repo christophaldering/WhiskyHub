@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { bottlers, type Bottler } from "@/data/bottlers";
@@ -6,7 +7,7 @@ import { Package, MapPin, Calendar, Star, ChevronDown, ExternalLink } from "luci
 
 const COUNTRIES = ["All", ...Array.from(new Set(bottlers.map((b) => b.country))).sort()];
 
-function Card({ b }: { b: Bottler }) {
+function Card({ b, t }: { b: Bottler; t: any }) {
   const [open, setOpen] = useState(false);
   return (
     <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, overflow: "hidden" }} data-testid={`m2-bottler-${b.name.toLowerCase().replace(/\s+/g, "-")}`}>
@@ -18,7 +19,7 @@ function Card({ b }: { b: Bottler }) {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11, color: v.muted }}>
             <span style={{ display: "flex", alignItems: "center", gap: 3 }}><MapPin style={{ width: 10, height: 10 }} />{b.region}, {b.country}</span>
-            <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Calendar style={{ width: 10, height: 10 }} />Est. {b.founded}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Calendar style={{ width: 10, height: 10 }} />{t("m2.discover.bottlersEstablished", "Est.")} {b.founded}</span>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
@@ -37,7 +38,7 @@ function Card({ b }: { b: Bottler }) {
           </div>
           {b.notableReleases && b.notableReleases.length > 0 && (
             <div style={{ marginTop: 10 }}>
-              <span style={{ fontSize: 10, fontWeight: 600, color: v.accent, textTransform: "uppercase", letterSpacing: 0.5 }}>Notable Releases</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: v.accent, textTransform: "uppercase", letterSpacing: 0.5 }}>{t("m2.discover.bottlersNotableReleases", "Notable Releases")}</span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
                 {b.notableReleases.map((r) => <span key={r} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 6, background: v.elevated, color: v.text, border: `1px solid ${v.border}` }}>{r}</span>)}
               </div>
@@ -50,6 +51,7 @@ function Card({ b }: { b: Bottler }) {
 }
 
 export default function M2DiscoverBottlers() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [country, setCountry] = useState("All");
   const [sortBy, setSortBy] = useState<"name" | "founded">("name");
@@ -66,26 +68,26 @@ export default function M2DiscoverBottlers() {
   return (
     <div style={{ padding: "16px 16px 32px", maxWidth: 600, margin: "0 auto" }} data-testid="m2-discover-bottlers-page">
       <M2BackButton />
-      <h1 style={{ fontSize: 22, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: v.text, margin: "12px 0 4px" }} data-testid="text-m2-bottlers-title">Independent Bottlers</h1>
-      <p style={{ fontSize: 12, color: v.muted, margin: "0 0 16px" }}>Explore {bottlers.length} independent bottlers worldwide</p>
+      <h1 style={{ fontSize: 22, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: v.text, margin: "12px 0 4px" }} data-testid="text-m2-bottlers-title">{t("m2.discover.bottlersTitle", "Independent Bottlers")}</h1>
+      <p style={{ fontSize: 12, color: v.muted, margin: "0 0 16px" }}>{t("m2.discover.bottlersSubtitle", "Explore {{count}} independent bottlers worldwide", { count: bottlers.length })}</p>
 
-      <input type="text" placeholder="Search bottlers..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} data-testid="m2-input-search-bottlers" />
+      <input type="text" placeholder={t("m2.discover.bottlersSearchPlaceholder", "Search bottlers...")} value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.text, fontSize: 14, outline: "none", boxSizing: "border-box" }} data-testid="m2-input-search-bottlers" />
       <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "12px 0" }}>
         {COUNTRIES.map((c) => (
           <button key={c} onClick={() => setCountry(c)} style={{ padding: "5px 12px", borderRadius: 20, border: `1px solid ${country === c ? v.accent : v.border}`, background: country === c ? v.accent : "transparent", color: country === c ? v.bg : v.muted, fontSize: 11, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }} data-testid={`m2-chip-bottler-${c.toLowerCase()}`}>{c}</button>
         ))}
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <span style={{ fontSize: 11, color: v.muted }}>{filtered.length} found</span>
+        <span style={{ fontSize: 11, color: v.muted }}>{t("m2.discover.bottlersFound", "{{count}} found", { count: filtered.length })}</span>
         <div style={{ display: "flex", gap: 4 }}>
           {(["name", "founded"] as const).map((s) => (
-            <button key={s} onClick={() => setSortBy(s)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: sortBy === s ? v.elevated : "transparent", color: sortBy === s ? v.accent : v.muted, fontSize: 10, fontWeight: 500, cursor: "pointer" }} data-testid={`m2-sort-${s}`}>{s === "name" ? "A–Z" : "Founded"}</button>
+            <button key={s} onClick={() => setSortBy(s)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: sortBy === s ? v.elevated : "transparent", color: sortBy === s ? v.accent : v.muted, fontSize: 10, fontWeight: 500, cursor: "pointer" }} data-testid={`m2-sort-${s}`}>{s === "name" ? t("m2.discover.bottlersSortAZ", "A–Z") : t("m2.discover.bottlersSortFounded", "Founded")}</button>
           ))}
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {filtered.map((b) => <Card key={b.name} b={b} />)}
-        {filtered.length === 0 && <div style={{ textAlign: "center", padding: 40, color: v.muted }}>No bottlers match your search.</div>}
+        {filtered.map((b) => <Card key={b.name} b={b} t={t} />)}
+        {filtered.length === 0 && <div style={{ textAlign: "center", padding: 40, color: v.muted }}>{t("m2.discover.bottlersNoResults", "No bottlers match your search.")}</div>}
       </div>
     </div>
   );

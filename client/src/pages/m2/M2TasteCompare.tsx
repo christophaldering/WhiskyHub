@@ -27,12 +27,12 @@ interface WhiskyComparisonItem {
   platformN: number;
 }
 
-const DIMENSIONS = [
-  { key: "nose", label: "Nose" },
-  { key: "taste", label: "Taste" },
-  { key: "finish", label: "Finish" },
-  { key: "balance", label: "Balance" },
-  { key: "overall", label: "Overall" },
+const DIMENSION_KEYS = [
+  { key: "nose", labelKey: "m2.rating.nose", fallback: "Nose" },
+  { key: "taste", labelKey: "m2.rating.taste", fallback: "Taste" },
+  { key: "finish", labelKey: "m2.rating.finish", fallback: "Finish" },
+  { key: "balance", labelKey: "m2.rating.balance", fallback: "Balance" },
+  { key: "overall", labelKey: "m2.rating.overall", fallback: "Overall" },
 ];
 
 type SortOption = "delta_desc" | "delta_asc" | "your_desc" | "platform_desc" | "name_az";
@@ -164,8 +164,8 @@ export default function M2TasteCompare() {
       (r.whisky.distillery || "").toLowerCase().includes(radarSearch.toLowerCase())
   );
 
-  const radarData = DIMENSIONS.map((dim) => {
-    const entry: Record<string, any> = { dimension: dim.label };
+  const radarData = DIMENSION_KEYS.map((dim) => {
+    const entry: Record<string, any> = { dimension: t(dim.labelKey, dim.fallback) };
     selected.forEach((item, i) => {
       entry[`whisky${i}`] = (item.rating as any)[dim.key];
     });
@@ -174,7 +174,7 @@ export default function M2TasteCompare() {
 
   const handleExportCsv = () => {
     if (filteredComparison.length === 0) return;
-    const header = ["Whisky", "Distillery", "Your Score", "Platform Median", "Delta", "N"];
+    const header = [t("m2.taste.exportHeaderWhisky", "Whisky"), t("m2.taste.exportHeaderDistillery", "Distillery"), t("m2.taste.exportHeaderYourScore", "Your Score"), t("m2.taste.exportHeaderPlatformMedian", "Platform Median"), t("m2.taste.exportHeaderDelta", "Delta"), "N"];
     const rows = filteredComparison.map((item) => [
       `"${item.whiskyName}"`,
       `"${item.distillery || ""}"`,
@@ -304,7 +304,7 @@ export default function M2TasteCompare() {
                 </div>
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                  <span style={{ fontSize: 12, color: v.muted, fontWeight: 600 }}>Delta:</span>
+                  <span style={{ fontSize: 12, color: v.muted, fontWeight: 600 }}>{t("m2.taste.deltaLabel", "Delta")}:</span>
                   {(["all", "positive", "negative"] as DirectionFilter[]).map((dir) => (
                     <button
                       key={dir}
@@ -320,7 +320,7 @@ export default function M2TasteCompare() {
 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <span style={{ fontSize: 12, color: v.muted }}>
-                  {filteredComparison.length} {filteredComparison.length === 1 ? "whisky" : "whiskies"}
+                  {filteredComparison.length} {filteredComparison.length === 1 ? t("m2.taste.whiskySingular", "whisky") : t("m2.taste.whiskyPlural", "whiskies")}
                 </span>
                 <button
                   onClick={handleExportCsv}
@@ -686,12 +686,12 @@ export default function M2TasteCompare() {
                         </tr>
                       </thead>
                       <tbody>
-                        {DIMENSIONS.map((dim) => {
+                        {DIMENSION_KEYS.map((dim) => {
                           const vals = selected.map((s) => (s.rating as any)[dim.key] as number);
                           const maxVal = Math.max(...vals);
                           return (
                             <tr key={dim.key} style={{ borderBottom: `1px solid ${v.border}` }}>
-                              <td style={{ padding: "8px 14px", color: v.text, fontWeight: 500 }}>{dim.label}</td>
+                              <td style={{ padding: "8px 14px", color: v.text, fontWeight: 500 }}>{t(dim.labelKey, dim.fallback)}</td>
                               {selected.map((item, i) => {
                                 const val = (item.rating as any)[dim.key] as number;
                                 return (

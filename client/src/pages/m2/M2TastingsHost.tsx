@@ -148,6 +148,7 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (val
 }
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
       {Array.from({ length: total }, (_, i) => (
@@ -164,13 +165,14 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
         />
       ))}
       <span style={{ fontSize: 12, color: v.muted, marginLeft: 8 }}>
-        Step {current} / {total}
+        {t("m2.host.stepIndicator", {defaultValue: "Step {{current}} / {{total}}", current, total})}
       </span>
     </div>
   );
 }
 
 function CopyBtn({ text, label }: { text: string; label: string }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
     try {
@@ -200,22 +202,22 @@ function CopyBtn({ text, label }: { text: string; label: string }) {
       data-testid={`button-copy-${label.toLowerCase().replace(/\s+/g, "-")}`}
     >
       {copied ? <Check style={{ width: 14, height: 14 }} /> : <Copy style={{ width: 14, height: 14 }} />}
-      {copied ? "Copied!" : label}
+      {copied ? t("m2.host.copied", "Copied!") : label}
     </button>
   );
 }
 
 const RATING_SCALES = [
-  { value: 5, label: "5", desc: "Simple 5-star" },
-  { value: 10, label: "10", desc: "Classic 10-point" },
-  { value: 20, label: "20", desc: "Detailed 20-point" },
-  { value: 100, label: "100", desc: "Professional 100-point" },
+  { value: 5, label: "5", descKey: "m2.host.ratingScaleDesc5", descFallback: "Simple 5-star" },
+  { value: 10, label: "10", descKey: "m2.host.ratingScaleDesc10", descFallback: "Classic 10-point" },
+  { value: 20, label: "20", descKey: "m2.host.ratingScaleDesc20", descFallback: "Detailed 20-point" },
+  { value: 100, label: "100", descKey: "m2.host.ratingScaleDesc100", descFallback: "Professional 100-point" },
 ];
 
 const SESSION_UI_MODES = [
-  { value: "flow", label: "Flow", desc: "Free navigation between drams" },
-  { value: "focus", label: "Focus", desc: "One dram at a time" },
-  { value: "journal", label: "Journal", desc: "Guided note-taking style" },
+  { value: "flow", labelKey: "m2.host.sessionUiFlow", labelFallback: "Flow", descKey: "m2.host.sessionUiFlowDesc", descFallback: "Free navigation between drams" },
+  { value: "focus", labelKey: "m2.host.sessionUiFocus", labelFallback: "Focus", descKey: "m2.host.sessionUiFocusDesc", descFallback: "One dram at a time" },
+  { value: "journal", labelKey: "m2.host.sessionUiJournal", labelFallback: "Journal", descKey: "m2.host.sessionUiJournalDesc", descFallback: "Guided note-taking style" },
 ];
 
 function RatingScaleSelector({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -247,7 +249,7 @@ function RatingScaleSelector({ value, onChange }: { value: number; onChange: (v:
               data-testid={`button-scale-${s.value}`}
             >
               <div style={{ fontSize: 18, fontWeight: 700, color: active ? v.accent : v.text, marginBottom: 2 }}>{s.label}</div>
-              <div style={{ fontSize: 10, color: v.muted, lineHeight: 1.2 }}>{s.desc}</div>
+              <div style={{ fontSize: 10, color: v.muted, lineHeight: 1.2 }}>{t(s.descKey, s.descFallback)}</div>
             </button>
           );
         })}
@@ -436,7 +438,7 @@ function AdvancedConfigSection({
 }
 
 function HostOverview({ pid, onNewTasting, onResume }: { pid: string; onNewTasting: () => void; onResume: (id: string) => void }) {
-  const { t } = useTranslation();
+  const { t, t: t2 } = useTranslation();
   const [, navigate] = useLocation();
 
   const { data: allTastings = [], isLoading } = useQuery<TastingFull[]>({
@@ -488,12 +490,12 @@ function HostOverview({ pid, onNewTasting, onResume }: { pid: string; onNewTasti
             background: `color-mix(in srgb, ${statusColor(tasting.status)} 15%, transparent)`,
             padding: "2px 6px", borderRadius: 4, flexShrink: 0,
           }}>
-            {tasting.status}
+            {t("m2.tastings.status" + tasting.status.charAt(0).toUpperCase() + tasting.status.slice(1), tasting.status)}
           </span>
         </div>
         <div style={{ fontSize: 11, color: v.muted, display: "flex", gap: 10 }}>
           {tasting.date && <span>{tasting.date.split("T")[0]}</span>}
-          <span>Code: {tasting.code}</span>
+          <span>{t("m2.host.codeLabel", "Code:")}{" "}{tasting.code}</span>
         </div>
       </div>
       <button
@@ -571,7 +573,7 @@ function HostOverview({ pid, onNewTasting, onResume }: { pid: string; onNewTasti
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {drafts.map((t) => (
-                  <TastingCard key={t.id} tasting={t} action={() => onResume(t.id)} actionLabel="Continue" actionIcon={<ArrowRight style={{ width: 12, height: 12 }} />} />
+                  <TastingCard key={t.id} tasting={t} action={() => onResume(t.id)} actionLabel={t2("m2.host.actionContinue", "Continue")} actionIcon={<ArrowRight style={{ width: 12, height: 12 }} />} />
                 ))}
               </div>
             </div>
@@ -584,7 +586,7 @@ function HostOverview({ pid, onNewTasting, onResume }: { pid: string; onNewTasti
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {opens.map((t) => (
-                  <TastingCard key={t.id} tasting={t} action={() => navigate(`/m2/tastings/host/${t.id}`)} actionLabel="Control" actionIcon={<Play style={{ width: 12, height: 12 }} />} />
+                  <TastingCard key={t.id} tasting={t} action={() => navigate(`/m2/tastings/host/${t.id}`)} actionLabel={t2("m2.host.actionControl", "Control")} actionIcon={<Play style={{ width: 12, height: 12 }} />} />
                 ))}
               </div>
             </div>
@@ -597,7 +599,7 @@ function HostOverview({ pid, onNewTasting, onResume }: { pid: string; onNewTasti
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {closed.map((t) => (
-                  <TastingCard key={t.id} tasting={t} action={() => navigate(`/m2/tastings/session/${t.id}/results`)} actionLabel="Results" actionIcon={<BarChart3 style={{ width: 12, height: 12 }} />} />
+                  <TastingCard key={t.id} tasting={t} action={() => navigate(`/m2/tastings/session/${t.id}/results`)} actionLabel={t2("m2.host.actionResults", "Results")} actionIcon={<BarChart3 style={{ width: 12, height: 12 }} />} />
                 ))}
               </div>
             </div>
@@ -661,7 +663,7 @@ function Step1Create({ pid, onCreated }: { pid: string; onCreated: (t: TastingFu
       const tasting = await res.json();
       onCreated(tasting);
     } catch (e: any) {
-      setError(e.message || "Something went wrong");
+      setError(e.message || t("m2.host.genericError", "Something went wrong"));
       setSubmitting(false);
     }
   };
@@ -1029,27 +1031,27 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
             <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingLeft: 4 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
-                  <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>Distillery</label>
-                  <input type="text" value={distillery} onChange={(e) => setDistillery(e.target.value)} placeholder="e.g. Lagavulin" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-distillery" />
+                  <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.distilleryLabel", "Distillery")}</label>
+                  <input type="text" value={distillery} onChange={(e) => setDistillery(e.target.value)} placeholder={t("m2.host.distilleryPlaceholder", "e.g. Lagavulin")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-distillery" />
                 </div>
                 <div>
-                  <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>ABV %</label>
-                  <input type="number" value={abv} onChange={(e) => setAbv(e.target.value)} placeholder="e.g. 43" step="0.1" min="0" max="100" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-abv" />
+                  <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.abvLabel", "ABV %")}</label>
+                  <input type="number" value={abv} onChange={(e) => setAbv(e.target.value)} placeholder={t("m2.host.abvPlaceholder", "e.g. 43")} step="0.1" min="0" max="100" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-abv" />
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
-                  <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>Cask Type</label>
-                  <input type="text" value={cask} onChange={(e) => setCask(e.target.value)} placeholder="e.g. Ex-Bourbon" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-cask" />
+                  <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.caskTypeLabel", "Cask Type")}</label>
+                  <input type="text" value={cask} onChange={(e) => setCask(e.target.value)} placeholder={t("m2.host.caskTypePlaceholder", "e.g. Ex-Bourbon")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-cask" />
                 </div>
                 <div>
-                  <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>Age</label>
-                  <input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="e.g. 16" min="0" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-age" />
+                  <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.ageLabel", "Age")}</label>
+                  <input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder={t("m2.host.agePlaceholder", "e.g. 16")} min="0" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-age" />
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>Notes</label>
-                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Host notes about this whisky" rows={2} style={{ ...inputStyle, fontSize: 13, resize: "vertical", minHeight: 40 }} data-testid="input-whisky-notes" />
+                <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.notesLabel", "Notes")}</label>
+                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("m2.host.notesPlaceholder", "Host notes about this whisky")} rows={2} style={{ ...inputStyle, fontSize: 13, resize: "vertical", minHeight: 40 }} data-testid="input-whisky-notes" />
               </div>
             </div>
           )}
@@ -1153,11 +1155,11 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
         ) : whiskies.length > 0 ? (
           <div style={{ borderTop: `1px solid ${v.border}`, paddingTop: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: v.muted, marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
-              <span>{whiskies.length} {whiskies.length === 1 ? "whisky" : "whiskies"} added</span>
+              <span>{whiskies.length} {whiskies.length === 1 ? t("m2.host.whiskyCount", "whisky") : t("m2.host.whiskiesCount", "whiskies")} {t("m2.host.added", "added")}</span>
               {isBlind && (
                 <span style={{ color: v.accent, fontSize: 11 }}>
                   <EyeOff style={{ width: 11, height: 11, display: "inline", verticalAlign: "middle", marginRight: 3 }} />
-                  Blind labels active
+                  {t("m2.host.blindLabelsActive", "Blind labels active")}
                 </span>
               )}
             </div>
@@ -1169,11 +1171,11 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} style={{ ...inputStyle, fontSize: 13 }} data-testid={`input-edit-name-${w.id}`} />
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                          <input type="text" value={editDistillery} onChange={(e) => setEditDistillery(e.target.value)} placeholder="Distillery" style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-distillery-${w.id}`} />
-                          <input type="number" value={editAbv} onChange={(e) => setEditAbv(e.target.value)} placeholder="ABV %" style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-abv-${w.id}`} />
+                          <input type="text" value={editDistillery} onChange={(e) => setEditDistillery(e.target.value)} placeholder={t("m2.host.distilleryLabel", "Distillery")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-distillery-${w.id}`} />
+                          <input type="number" value={editAbv} onChange={(e) => setEditAbv(e.target.value)} placeholder={t("m2.host.abvLabel", "ABV %")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-abv-${w.id}`} />
                         </div>
-                        <input type="text" value={editCask} onChange={(e) => setEditCask(e.target.value)} placeholder="Cask type" style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-cask-${w.id}`} />
-                        <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="Notes" rows={2} style={{ ...inputStyle, fontSize: 12, resize: "vertical" }} data-testid={`input-edit-notes-${w.id}`} />
+                        <input type="text" value={editCask} onChange={(e) => setEditCask(e.target.value)} placeholder={t("m2.host.caskTypeLabel", "Cask type")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-cask-${w.id}`} />
+                        <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder={t("m2.host.notesLabel", "Notes")} rows={2} style={{ ...inputStyle, fontSize: 12, resize: "vertical" }} data-testid={`input-edit-notes-${w.id}`} />
                         <div style={{ display: "flex", gap: 8 }}>
                           <button type="button" onClick={handleSaveEdit} style={{ flex: 1, padding: "8px", fontSize: 13, fontWeight: 600, background: v.accent, color: v.bg, border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid={`button-save-edit-${w.id}`}>
                             {t("m2.host.save", "Save")}
@@ -1292,30 +1294,31 @@ function Step3Invite({ tasting, pid, onNext, onBack }: { tasting: TastingFull; p
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
 
   const joinUrl = `${window.location.origin}/enter?code=${tasting.code}`;
-  const shareText = `Join my whisky tasting "${tasting.title}" on CaskSense!\nSession Code: ${tasting.code}`;
+  const shareText = t("m2.host.shareText", {defaultValue: 'Join my whisky tasting "{{title}}" on CaskSense!\nSession Code: {{code}}', title: tasting.title, code: tasting.code});
 
   const hostName = (() => {
     try { const s = getSession(); return s.name || s.email?.split("@")[0] || ""; } catch { return ""; }
   })();
-  const defaultSubject = `Du bist eingeladen: ${tasting.title} — CaskSense`;
+  const dateFormatted = tasting.date ? new Date(tasting.date).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "";
+  const defaultSubject = t("m2.host.emailDefaultSubject", {defaultValue: "You're invited: {{title}} — CaskSense", title: tasting.title});
   const defaultBody = [
-    `Hey!`,
+    t("m2.host.emailGreeting", "Hey!"),
     "",
-    `Ich lade dich herzlich zu einem Whisky Tasting ein — "${tasting.title}".`,
+    t("m2.host.emailInviteLine", {defaultValue: 'I\'d like to invite you to a whisky tasting — "{{title}}".', title: tasting.title}),
     "",
-    tasting.date ? `Wann: ${new Date(tasting.date).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}` : null,
-    tasting.location ? `Wo: ${tasting.location}` : null,
+    tasting.date ? t("m2.host.emailWhen", {defaultValue: "When: {{date}}", date: dateFormatted}) : null,
+    tasting.location ? t("m2.host.emailWhere", {defaultValue: "Where: {{location}}", location: tasting.location}) : null,
     "",
-    `Wir nutzen CaskSense — eine elegante Web-App für gemeinsame Whisky Tastings. Damit bewerten wir blind, vergleichen unsere Eindrücke und sehen am Ende, welcher Dram das Rennen macht. Alles direkt im Browser, kein Download nötig.`,
+    t("m2.host.emailAppDescription", "We're using CaskSense — an elegant web app for shared whisky tastings. We rate blind, compare impressions and see which dram wins. Everything in the browser, no download needed."),
     "",
-    `So machst du mit:`,
-    `1. Öffne casksense.com`,
-    `2. Gib den Code ein: ${tasting.code}`,
-    `   Oder nutze direkt diesen Link: ${joinUrl}`,
+    t("m2.host.emailHowToJoin", "How to join:"),
+    t("m2.host.emailStep1", "1. Open casksense.com"),
+    t("m2.host.emailStep2", {defaultValue: "2. Enter the code: {{code}}", code: tasting.code}),
+    t("m2.host.emailStep2Alt", {defaultValue: "   Or use this link: {{link}}", link: joinUrl}),
     "",
-    `Ich freue mich auf einen großartigen Abend mit dir!`,
+    t("m2.host.emailClosing", "Looking forward to a great evening with you!"),
     "",
-    hostName ? `Cheers,` : `Cheers!`,
+    hostName ? t("m2.host.emailCheersComma", "Cheers,") : t("m2.host.emailCheers", "Cheers!"),
     hostName || null,
   ].filter((l) => l !== null).join("\n");
 
@@ -1377,12 +1380,12 @@ function Step3Invite({ tasting, pid, onNext, onBack }: { tasting: TastingFull; p
           customBody: emailBody || undefined,
         }),
       });
-      if (!res.ok) throw new Error("Failed to send invitations");
+      if (!res.ok) throw new Error(t("m2.host.failedSendInvites", "Failed to send invitations"));
       setEmailStatus(t("m2.host.emailsSent", `${emails.length} invitation(s) sent!`));
       setEmailInput("");
       setSelectedFriends(new Set());
     } catch (e: any) {
-      setEmailStatus(e.message || "Failed to send");
+      setEmailStatus(e.message || t("m2.host.failedSend", "Failed to send"));
     }
     setSending(false);
   };
@@ -1441,14 +1444,14 @@ function Step3Invite({ tasting, pid, onNext, onBack }: { tasting: TastingFull; p
                 </div>
                 <button type="button" onClick={downloadQr} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: `1px solid ${v.border}`, borderRadius: 8, padding: "8px 14px", color: v.muted, fontSize: 12, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-download-qr">
                   <Download style={{ width: 14, height: 14 }} />
-                  Save
+                  {t("m2.host.saveQr", "Save")}
                 </button>
               </div>
             )}
           </div>
 
           {typeof navigator.share === "function" && (
-            <button type="button" onClick={() => { navigator.share({ title: `Join: ${tasting.title}`, text: shareText, url: joinUrl }).catch(() => {}); }} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", fontSize: 14, fontWeight: 600, background: `color-mix(in srgb, ${v.accent} 15%, transparent)`, color: v.accent, border: `1px solid color-mix(in srgb, ${v.accent} 40%, transparent)`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-native-share">
+            <button type="button" onClick={() => { navigator.share({ title: t("m2.host.shareTitle", {defaultValue: "Join: {{title}}", title: tasting.title}), text: shareText, url: joinUrl }).catch(() => {}); }} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", fontSize: 14, fontWeight: 600, background: `color-mix(in srgb, ${v.accent} 15%, transparent)`, color: v.accent, border: `1px solid color-mix(in srgb, ${v.accent} 40%, transparent)`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-native-share">
               <Share2 style={{ width: 16, height: 16 }} />
               {t("m2.host.shareVia", "Share via…")}
             </button>
@@ -1471,7 +1474,7 @@ function Step3Invite({ tasting, pid, onNext, onBack }: { tasting: TastingFull; p
               <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(joinUrl)}`} target="_blank" rel="noopener noreferrer" style={socialBtnStyle} data-testid="button-share-x" title="X">
                 <span style={{ fontWeight: 700, fontSize: 16 }}>𝕏</span>
               </a>
-              <a href={`mailto:?subject=${encodeURIComponent(`Join: ${tasting.title}`)}&body=${encodeURIComponent(shareText + "\n\n" + joinUrl)}`} style={socialBtnStyle} data-testid="button-share-email" title="Email">
+              <a href={`mailto:?subject=${encodeURIComponent(t("m2.host.shareTitle", {defaultValue: "Join: {{title}}", title: tasting.title}))}&body=${encodeURIComponent(shareText + "\n\n" + joinUrl)}`} style={socialBtnStyle} data-testid="button-share-email" title="Email">
                 <Mail style={{ width: 20, height: 20 }} />
               </a>
             </div>
@@ -1599,7 +1602,7 @@ function Step1Edit({ tasting, pid, onUpdated }: { tasting: TastingFull; pid: str
       if (!res.ok) throw new Error(t("m2.host.failedUpdate", "Failed to update tasting"));
       onUpdated({ ...tasting, title: title.trim(), date, location: location.trim(), description: description.trim(), blindMode, ratingScale, guidedMode, guestMode, sessionUiMode, reflectionEnabled, reflectionMode, reflectionVisibility, videoLink });
     } catch (e: any) {
-      setError(e.message || "Something went wrong");
+      setError(e.message || t("m2.host.genericError", "Something went wrong"));
     }
     setSaving(false);
   };
@@ -1802,7 +1805,7 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
   };
 
   const showSaved = (msg?: string) => {
-    setSaveStatus(msg || "Saved");
+    setSaveStatus(msg || t("m2.host.saved", "Saved"));
     setTimeout(() => setSaveStatus(null), 2000);
   };
 
@@ -1825,16 +1828,16 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
             {tasting.title}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: v.muted }}>
-            <span>Code: <strong style={{ color: v.accent, letterSpacing: "0.08em" }}>{tasting.code}</strong></span>
+            <span>{t("m2.host.codeLabel", "Code:")}{" "}<strong style={{ color: v.accent, letterSpacing: "0.08em" }}>{tasting.code}</strong></span>
             {isBlind && (
               <span style={{ fontSize: 10, color: v.accent, background: `color-mix(in srgb, ${v.accent} 20%, transparent)`, padding: "2px 6px", borderRadius: 6 }}>
                 <EyeOff style={{ width: 10, height: 10, display: "inline", verticalAlign: "middle", marginRight: 3 }} />
-                Blind
+                {t("m2.host.blindBadge", "Blind")}
               </span>
             )}
           </div>
           <div style={{ fontSize: 13, color: v.muted, marginTop: 8 }}>
-            {whiskies.length === 0 ? "No whiskies added yet" : `${whiskies.length} ${whiskies.length === 1 ? "whisky" : "whiskies"} ready`}
+            {whiskies.length === 0 ? t("m2.host.noWhiskiesAddedYet", "No whiskies added yet") : `${whiskies.length} ${whiskies.length === 1 ? t("m2.host.whiskyCount", "whisky") : t("m2.host.whiskiesCount", "whiskies")} ${t("m2.host.ready", "ready")}`}
           </div>
         </div>
 
@@ -1879,7 +1882,7 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
         <div style={cardStyle}>
           <div style={{ fontSize: 20, fontWeight: 700, color: v.text, fontFamily: "'Playfair Display', serif", marginBottom: 6 }}>{tasting.title}</div>
           <div style={{ fontSize: 13, color: v.muted }}>
-            Status: <strong style={{ color: v.text }}>{tasting.status}</strong>
+            {t("m2.host.statusLabel", "Status:")}{" "}<strong style={{ color: v.text }}>{t("m2.tastings.status" + tasting.status.charAt(0).toUpperCase() + tasting.status.slice(1), tasting.status)}</strong>
           </div>
         </div>
         <button
@@ -1914,7 +1917,7 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 13, color: v.muted }}>
-                Code: <strong style={{ color: v.accent, letterSpacing: "0.08em", fontSize: 15 }}>{tasting.code}</strong>
+                {t("m2.host.codeLabel", "Code:")}{" "}<strong style={{ color: v.accent, letterSpacing: "0.08em", fontSize: 15 }}>{tasting.code}</strong>
               </span>
             </div>
           </div>
@@ -1922,11 +1925,11 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
             {isBlind && (
               <span style={{ fontSize: 10, fontWeight: 600, color: v.accent, background: `color-mix(in srgb, ${v.accent} 20%, transparent)`, padding: "3px 8px", borderRadius: 6 }}>
                 <EyeOff style={{ width: 10, height: 10, display: "inline", verticalAlign: "middle", marginRight: 3 }} />
-                Blind
+                {t("m2.host.blindBadge", "Blind")}
               </span>
             )}
             <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: v.success, background: `color-mix(in srgb, ${v.success} 20%, transparent)`, padding: "3px 8px", borderRadius: 6 }} data-testid="badge-session-status">
-              LIVE
+              {t("m2.host.liveBadge", "LIVE")}
             </span>
           </div>
         </div>
@@ -1935,26 +1938,26 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
             <div style={{ fontSize: 24, fontWeight: 700, color: v.text, fontFamily: "'Playfair Display', serif" }} data-testid="text-participant-count">
               {guestParticipants.length}
             </div>
-            <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Guests</div>
+            <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("m2.host.guestsLabel", "Guests")}</div>
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 24, fontWeight: 700, color: v.text, fontFamily: "'Playfair Display', serif" }}>
               {whiskies.length}
             </div>
-            <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Whiskies</div>
+            <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("m2.host.whiskiesLabel", "Whiskies")}</div>
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 24, fontWeight: 700, color: v.text, fontFamily: "'Playfair Display', serif" }} data-testid="text-rating-count">
               {activeRatings.length}
             </div>
-            <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Ratings</div>
+            <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("m2.host.ratingsLabel", "Ratings")}</div>
           </div>
           {avgScore !== null && showResults && (
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 24, fontWeight: 700, color: v.accent, fontFamily: "'Playfair Display', serif" }} data-testid="text-avg-score">
                 {avgScore}
               </div>
-              <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Avg</div>
+              <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("m2.host.avgLabel", "Avg")}</div>
             </div>
           )}
         </div>
@@ -1992,7 +1995,7 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
               )}
               <div>
                 <div style={{ fontSize: 24, fontWeight: 700, color: v.accent, fontFamily: "'Playfair Display', serif", marginBottom: 2 }} data-testid="text-active-whisky">
-                  {isBlind ? `Whisky ${blindLabel(activeIndex)}` : activeWhisky.name}
+                  {isBlind ? t("m2.host.whiskyBlindLabel", {defaultValue: "Whisky {{label}}", label: blindLabel(activeIndex)}) : activeWhisky.name}
                 </div>
                 {isBlind && (
                   <div style={{ fontSize: 13, color: v.muted, display: "flex", alignItems: "center", gap: 6 }}>
@@ -2123,13 +2126,13 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
                     hasRated ? (
                       <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: v.success, fontWeight: 600 }}>
                         <Check style={{ width: 14, height: 14 }} />
-                        Rated
+                        {t("m2.host.rated", "Rated")}
                       </span>
                     ) : (
                       <span style={{ fontSize: 12, color: v.muted }}>…</span>
                     )
                   ) : (
-                    <span style={{ fontSize: 12, color: v.muted }}>Joined</span>
+                    <span style={{ fontSize: 12, color: v.muted }}>{t("m2.host.joined", "Joined")}</span>
                   )}
                 </div>
               );
@@ -2286,15 +2289,15 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
                   return (
                     <button key={s.value} type="button" onClick={() => handleChangeScale(s.value)} style={{ padding: "6px 2px", textAlign: "center", background: active ? `color-mix(in srgb, ${v.accent} 18%, transparent)` : v.bg, border: `1.5px solid ${active ? v.accent : v.border}`, borderRadius: 8, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid={`settings-scale-${s.value}`}>
                       <div style={{ fontSize: 14, fontWeight: 700, color: active ? v.accent : v.text }}>{s.label}</div>
-                      <div style={{ fontSize: 9, color: v.muted }}>{s.desc}</div>
+                      <div style={{ fontSize: 9, color: v.muted }}>{t(s.descKey, s.descFallback)}</div>
                     </button>
                   );
                 })}
               </div>
             ) : (
               <div style={{ fontSize: 13, color: v.text, padding: "8px 12px", background: v.bg, borderRadius: 8 }}>
-                {RATING_SCALES.find((s) => s.value === (tasting.ratingScale ?? 100))?.desc || `${tasting.ratingScale}-point`}
-                <span style={{ fontSize: 11, color: v.muted, marginLeft: 8 }}>(locked while session is active)</span>
+                {t(RATING_SCALES.find((s) => s.value === (tasting.ratingScale ?? 100))?.descKey || "m2.host.ratingScaleDesc100", RATING_SCALES.find((s) => s.value === (tasting.ratingScale ?? 100))?.descFallback || `${tasting.ratingScale}-point`)}
+                <span style={{ fontSize: 11, color: v.muted, marginLeft: 8 }}>{t("m2.host.lockedWhileActive", "(locked while session is active)")}</span>
               </div>
             )}
           </div>

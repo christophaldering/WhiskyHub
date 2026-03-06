@@ -24,7 +24,7 @@ export default function M2DiscoverAbout() {
           {t("about.title", "About CaskSense")}
         </h1>
       </div>
-      <p style={{ fontSize: 13, color: v.muted, margin: "0 0 20px" }}>The story behind CaskSense</p>
+      <p style={{ fontSize: 13, color: v.muted, margin: "0 0 20px" }}>{t("m2.discover.aboutSubtitle", "The story behind CaskSense")}</p>
 
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
         <div style={{ maxWidth: 280, width: "100%", borderRadius: 16, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
@@ -60,7 +60,7 @@ export default function M2DiscoverAbout() {
         style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "12px 18px", background: alpha(v.accent, "15"), border: `1px solid ${alpha(v.accent, "30")}`, borderRadius: 12, color: v.accent, fontSize: 13, fontWeight: 600, cursor: "pointer", marginTop: 16 }}
         data-testid="m2-about-donate"
       >
-        <Heart style={{ width: 15, height: 15 }} />Spende / Hospiz
+        <Heart style={{ width: 15, height: 15 }} />{t("m2.discover.aboutDonateButton", "Donate / Hospice")}
       </button>
     </div>
   );

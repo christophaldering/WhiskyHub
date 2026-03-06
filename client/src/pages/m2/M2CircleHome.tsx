@@ -67,7 +67,7 @@ interface ActivityItem {
   details: Record<string, any>;
 }
 
-function formatRelativeTime(timestamp: string, language: string): string {
+function formatRelativeTime(timestamp: string, language: string, t: (key: string, fallback: string) => string): string {
   const now = Date.now();
   const then = new Date(timestamp).getTime();
   const diffMs = now - then;
@@ -75,7 +75,7 @@ function formatRelativeTime(timestamp: string, language: string): string {
   const diffHrs = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMin < 1) return language === "de" ? "Gerade eben" : "Just now";
+  if (diffMin < 1) return t("m2.circle.justNow", "Just now");
   if (diffMin < 60) return `${diffMin}m`;
   if (diffHrs < 24) return `${diffHrs}h`;
   if (diffDays < 7) return `${diffDays}d`;
@@ -194,7 +194,7 @@ export default function M2CircleHome() {
     {
       key: "friends",
       icon: Users,
-      label: t("m2.circle.friends", "Freunde"),
+      label: t("m2.circle.friends", "Friends"),
       description: t("m2.circle.friendsDesc", "Find and manage your connections"),
     },
   ];
@@ -672,7 +672,7 @@ export default function M2CircleHome() {
                   }}
                   data-testid={`text-activity-time-${index}`}
                 >
-                  {formatRelativeTime(activity.timestamp, i18n.language)}
+                  {formatRelativeTime(activity.timestamp, i18n.language, t)}
                 </span>
               </div>
               {activity.details && (

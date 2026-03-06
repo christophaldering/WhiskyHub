@@ -67,7 +67,7 @@ export default function M2DiscoverAICuration() {
             <div style={{ position: "relative" }}>
               <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} style={{ width: "100%", background: v.inputBg, border: `1px solid ${v.inputBorder}`, borderRadius: 10, color: v.text, padding: "12px 36px 12px 14px", fontSize: 14, outline: "none", boxSizing: "border-box" as const, appearance: "none" as const, WebkitAppearance: "none" as const, cursor: "pointer" }} data-testid="m2-select-ai-tasting">
                 <option value="" disabled>{t("aiCuration.selectPlaceholder", "Choose a tasting…")}</option>
-                {tL && <option value="" disabled>Loading…</option>}
+                {tL && <option value="" disabled>{t("m2.discover.aiCurationLoading", "Loading…")}</option>}
                 {!tL && tastings?.map((t: any) => <option key={t.id} value={t.id}>{t.title || t.name || t.id}</option>)}
               </select>
               <ChevronDown style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: v.muted, pointerEvents: "none" }} />
@@ -78,7 +78,7 @@ export default function M2DiscoverAICuration() {
 
           {selectedId && !pL && lineup && (
             <div style={{ ...card, marginBottom: 16 }} data-testid="m2-lineup-summary">
-              <h2 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: v.muted, margin: "0 0 12px" }}>Lineup</h2>
+              <h2 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: v.muted, margin: "0 0 12px" }}>{t("m2.discover.aiCurationLineup", "Lineup")}</h2>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
                 {lineup.regions.length > 0 && <div>{lineup.regions.map((r) => <Tag key={r} icon={MapPin} label={r} variant="accent" />)}</div>}
                 {lineup.caskTypes.length > 0 && <div>{lineup.caskTypes.map((c) => <Tag key={c} icon={Package} label={c} variant="gold" />)}</div>}
@@ -104,7 +104,7 @@ export default function M2DiscoverAICuration() {
                           {s.peatLevel && <Tag icon={Flame} label={s.peatLevel} variant="red" />}
                         </div>
                         <div style={{ marginTop: 8, fontSize: 11, color: v.muted, borderLeft: `2px solid ${alpha(v.accent, "40")}`, paddingLeft: 8, lineHeight: 1.5 }}>
-                          <span style={{ fontWeight: 600, color: v.mutedLight }}>Why: </span>{s.reason}
+                          <span style={{ fontWeight: 600, color: v.mutedLight }}>{t("m2.discover.aiCurationWhy", "Why: ")}</span>{s.reason}
                         </div>
                       </div>
                     </div>

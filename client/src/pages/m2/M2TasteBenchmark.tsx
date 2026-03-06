@@ -535,7 +535,7 @@ export default function M2TasteBenchmark() {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                               <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 600, fontSize: 13, color: v.accent }}>{entry.whiskyName}</span>
-                              {entry.distillery && <span style={{ fontSize: 12, color: v.muted }}>by {entry.distillery}</span>}
+                              {entry.distillery && <span style={{ fontSize: 12, color: v.muted }}>{t("m2.taste.by", "by")} {entry.distillery}</span>}
                               {entry.score != null && (
                                 <span style={badgeAccentStyle}>
                                   {entry.score}{entry.scoreScale ? ` (${entry.scoreScale})` : "/100"}

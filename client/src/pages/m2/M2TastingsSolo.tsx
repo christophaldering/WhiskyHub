@@ -121,10 +121,11 @@ interface IdentifyResult {
   };
 }
 
-function confidenceLabel(conf: number): { text: string; color: string } {
-  if (conf >= 0.78) return { text: "High", color: v.high };
-  if (conf >= 0.55) return { text: "Medium", color: v.medium };
-  return { text: "Low", color: v.low };
+function confidenceLabel(conf: number, t?: (key: string, fallback: string) => string): { text: string; color: string } {
+  const tr = t || ((k: string, f: string) => f);
+  if (conf >= 0.78) return { text: tr("m2.solo.confidenceHigh", "High"), color: v.high };
+  if (conf >= 0.55) return { text: tr("m2.solo.confidenceMedium", "Medium"), color: v.medium };
+  return { text: tr("m2.solo.confidenceLow", "Low"), color: v.low };
 }
 
 
@@ -339,8 +340,8 @@ export default function M2TastingsSolo() {
         const res = await fetch("/api/whisky/identify", { method: "POST", body: formData });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          if (res.status === 429) throw new Error("Too many requests. Please wait.");
-          throw new Error(err.message || "Identification failed");
+          if (res.status === 429) throw new Error(t("m2.solo.tooManyRequests", "Too many requests. Please wait."));
+          throw new Error(err.message || t("m2.solo.identificationFailed", "Identification failed."));
         }
         const data: IdentifyResult = await res.json();
         if (data.candidates.length > (bestResult.candidates?.length || 0) ||
@@ -355,7 +356,7 @@ export default function M2TastingsSolo() {
       setOnlineQuery(bestResult.debug?.ocrText || whiskyName || "");
       setSheetView("candidates");
     } catch (err: any) {
-      setError(err?.message || "Identification failed.");
+      setError(err?.message || t("m2.solo.identificationFailed", "Identification failed."));
       setSheetView("none");
     } finally {
       setScanning(false);
@@ -389,7 +390,7 @@ export default function M2TastingsSolo() {
         headers: pid ? { "x-participant-id": pid } : {},
         body: formData,
       });
-      if (!res.ok) throw new Error("Import failed");
+      if (!res.ok) throw new Error(t("m2.solo.importFailed", "File import failed"));
       const data = await res.json();
       if (data.whiskies && data.whiskies.length > 0) {
         const first = data.whiskies[0];
@@ -403,11 +404,11 @@ export default function M2TastingsSolo() {
         setShowManual(true);
         setSheetView("none");
       } else {
-        setError("No whiskies found in the uploaded file.");
+        setError(t("m2.solo.noWhiskiesInFile", "No whiskies found in the uploaded file."));
         setSheetView("none");
       }
     } catch (err: any) {
-      setError(err.message || "File import failed");
+      setError(err.message || t("m2.solo.importFailed", "File import failed"));
       setSheetView("none");
     }
   };
@@ -424,8 +425,8 @@ export default function M2TastingsSolo() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        if (res.status === 429) throw new Error("Too many requests.");
-        throw new Error(err.message || "Search failed");
+        if (res.status === 429) throw new Error(t("m2.solo.tooManyRequests", "Too many requests. Please wait."));
+        throw new Error(err.message || t("m2.solo.searchFailed", "Search failed."));
       }
       const data: IdentifyResult = await res.json();
       setCandidates(data.candidates || []);
@@ -435,7 +436,7 @@ export default function M2TastingsSolo() {
       setOnlineQuery(data.debug?.ocrText || query);
       setSheetView("candidates");
     } catch (err: any) {
-      setError(err?.message || "Search failed.");
+      setError(err?.message || t("m2.solo.searchFailed", "Search failed."));
       setSheetView("none");
     } finally {
       setDescribeLoading(false);
@@ -475,7 +476,7 @@ export default function M2TastingsSolo() {
       const res = await fetch(`/api/barcode-lookup/${encodeURIComponent(code.trim())}`, { headers });
       if (!res.ok) {
         if (res.status === 404) { setBarcodeStatus("not_found"); setBarcodeError(code); barcodeProcessedRef.current = false; return; }
-        setBarcodeStatus("error"); setBarcodeError("Lookup failed"); barcodeProcessedRef.current = false; return;
+        setBarcodeStatus("error"); setBarcodeError(t("m2.solo.lookupFailed", "Lookup failed")); barcodeProcessedRef.current = false; return;
       }
       const data = await res.json();
       if (data.name) setWhiskyName(data.name);
@@ -489,7 +490,7 @@ export default function M2TastingsSolo() {
       setSheetView("none");
     } catch {
       setBarcodeStatus("error");
-      setBarcodeError("Connection error");
+      setBarcodeError(t("m2.solo.connectionError", "Connection error"));
       barcodeProcessedRef.current = false;
     }
   }, [pid]);
@@ -504,15 +505,15 @@ export default function M2TastingsSolo() {
         body: JSON.stringify({ query: onlineQuery }),
       });
       if (!res.ok) {
-        if (res.status === 429) throw new Error("Too many requests.");
-        throw new Error("Online search failed");
+        if (res.status === 429) throw new Error(t("m2.solo.tooManyRequests", "Too many requests. Please wait."));
+        throw new Error(t("m2.solo.onlineSearchFailed", "Online search failed"));
       }
       const data = await res.json();
       setOnlineCandidates(data.candidates || []);
       setOnlineSearched(true);
-      if (data.candidates.length === 0) setOnlineError("No results found online.");
+      if (data.candidates.length === 0) setOnlineError(t("m2.solo.noResultsOnline", "No results found online."));
     } catch (err: any) {
-      setOnlineError(err?.message || "Online search failed.");
+      setOnlineError(err?.message || t("m2.solo.onlineSearchFailed", "Online search failed"));
       setOnlineSearched(true);
     } finally {
       setOnlineSearching(false);
@@ -699,7 +700,7 @@ export default function M2TastingsSolo() {
           data-testid="text-offline-queue"
         >
           <WifiOff style={{ width: 14, height: 14, flexShrink: 0 }} />
-          <span>{offlineCount} {offlineCount === 1 ? "dram" : "drams"} waiting to sync</span>
+          <span>{t("m2.solo.offlineSync", {defaultValue: "{{count}} dram(s) waiting to sync", count: offlineCount})}</span>
         </div>
       )}
 
@@ -726,7 +727,7 @@ export default function M2TastingsSolo() {
               {distillery && <div style={{ fontSize: 13, color: v.mutedLight, marginTop: 2 }} data-testid="text-whisky-distillery">{distillery}</div>}
               {selectedCandidate && (
                 <span style={{ fontSize: 11, fontWeight: 600, color: confidenceLabel(selectedCandidate.confidence).color, background: `${confidenceLabel(selectedCandidate.confidence).color}20`, padding: "2px 8px", borderRadius: 6, marginTop: 4, display: "inline-block" }} data-testid="badge-confidence">
-                  {confidenceLabel(selectedCandidate.confidence).text} match
+                  {confidenceLabel(selectedCandidate.confidence, t).text} {t("m2.solo.match", "match")}
                 </span>
               )}
             </div>
@@ -736,7 +737,7 @@ export default function M2TastingsSolo() {
               style={{ background: "none", border: "none", cursor: "pointer", color: v.mutedLight, fontSize: 12, fontFamily: "system-ui, sans-serif", textDecoration: "underline" }}
               data-testid="button-change-whisky"
             >
-              Change
+              {t("m2.solo.change", "Change")}
             </button>
           </div>
         ) : (
@@ -787,8 +788,8 @@ export default function M2TastingsSolo() {
             {showManual && (
               <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 14 }} data-testid="section-manual">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 11, fontWeight: 500, color: v.accent, background: alpha(v.accent, "18"), padding: "3px 10px", borderRadius: 20 }}>✎ Manual entry</span>
-                  <button type="button" onClick={() => setShowManual(false)} style={{ background: "none", border: "none", cursor: "pointer", color: v.muted, fontSize: 11, fontFamily: "system-ui, sans-serif" }} data-testid="button-hide-manual">Collapse</button>
+                  <span style={{ fontSize: 11, fontWeight: 500, color: v.accent, background: alpha(v.accent, "18"), padding: "3px 10px", borderRadius: 20 }}>✎ {t("m2.solo.manualEntry", "Manual entry")}</span>
+                  <button type="button" onClick={() => setShowManual(false)} style={{ background: "none", border: "none", cursor: "pointer", color: v.muted, fontSize: 11, fontFamily: "system-ui, sans-serif" }} data-testid="button-hide-manual">{t("m2.solo.collapse", "Collapse")}</button>
                 </div>
                 <div>
                   <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 2 }}>{t("m2.solo.distillery", "Distillery")}</label>
@@ -840,12 +841,12 @@ export default function M2TastingsSolo() {
                     </div>
                     {wbLookupResult && (
                       <p style={{ fontSize: 10, margin: "4px 0 0", color: wbLookupResult === "collection" || wbLookupResult === "ai" ? v.success : v.error }} data-testid="text-wb-result">
-                        {wbLookupResult === "collection" ? "✓ From collection" :
-                         wbLookupResult === "ai" ? "✓ AI recognized" :
-                         wbLookupResult === "not_found" ? "Not found" :
-                         wbLookupResult === "rate_limit" ? "Rate limited, please wait" :
-                         wbLookupResult === "ai_unavailable" ? "AI unavailable" :
-                         wbLookupResult === "invalid" ? "Invalid ID" : "Error"}
+                        {wbLookupResult === "collection" ? t("m2.solo.wbFromCollection", "✓ From collection") :
+                         wbLookupResult === "ai" ? t("m2.solo.wbAiRecognized", "✓ AI recognized") :
+                         wbLookupResult === "not_found" ? t("m2.solo.wbNotFound", "Not found") :
+                         wbLookupResult === "rate_limit" ? t("m2.solo.wbRateLimit", "Rate limited, please wait") :
+                         wbLookupResult === "ai_unavailable" ? t("m2.solo.wbAiUnavailable", "AI unavailable") :
+                         wbLookupResult === "invalid" ? t("m2.solo.wbInvalidId", "Invalid ID") : t("m2.solo.wbError", "Error")}
                       </p>
                     )}
                   </div>
@@ -1052,7 +1053,7 @@ export default function M2TastingsSolo() {
           padding: "40px 20px 60px", zIndex: 100, textAlign: "center",
         }} data-testid="sheet-file-analyzing">
           <div style={{ width: 32, height: 32, border: `3px solid ${v.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
-          <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>Analyzing file...</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>{t("m2.solo.analyzingFile", "Analyzing file...")}</p>
         </div>
       )}
 
@@ -1072,7 +1073,7 @@ export default function M2TastingsSolo() {
           <textarea
             value={describeQuery}
             onChange={(e) => setDescribeQuery(e.target.value)}
-            placeholder="Type whisky name / distillery / age ..."
+            placeholder={t("m2.solo.describePlaceholder", "Type whisky name / distillery / age ...")}
             rows={3}
             style={{ ...inputStyle, resize: "vertical", marginBottom: 12 }}
             data-testid="input-describe-query"
@@ -1084,9 +1085,9 @@ export default function M2TastingsSolo() {
             data-testid="button-find-matches"
             style={{ ...btnPrimary, opacity: !describeQuery.trim() ? 0.5 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
           >
-            {describeLoading ? "Searching..." : t("m2.solo.findMatches", "Find matches")}
+            {describeLoading ? t("m2.solo.searching", "Searching...") : t("m2.solo.findMatches", "Find matches")}
           </button>
-          <button onClick={() => setSheetView("none")} style={{ ...btnOutline, marginTop: 8, color: v.muted, fontSize: 13 }}>Cancel</button>
+          <button onClick={() => setSheetView("none")} style={{ ...btnOutline, marginTop: 8, color: v.muted, fontSize: 13 }}>{t("m2.solo.cancel", "Cancel")}</button>
         </div>
       )}
 
@@ -1135,7 +1136,7 @@ export default function M2TastingsSolo() {
                       <div style={{ fontSize: 12, color: v.muted }}>{cand.distillery}</div>
                     </div>
                     <span style={{ fontSize: 11, fontWeight: 600, color: isOnline ? "#6ba3d6" : badge.color, background: isOnline ? "#6ba3d620" : `${badge.color}20`, padding: "3px 8px", borderRadius: 6, flexShrink: 0 }}>
-                      {isOnline ? "Online" : badge.text}
+                      {isOnline ? t("m2.solo.online", "Online") : badge.text}
                     </span>
                   </button>
                 );
@@ -1145,14 +1146,14 @@ export default function M2TastingsSolo() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {candidates.length === 0 && (
-              <button onClick={handleCreateUnknown} data-testid="button-add-manually-sheet" style={btnPrimary}>Add manually</button>
+              <button onClick={handleCreateUnknown} data-testid="button-add-manually-sheet" style={btnPrimary}>{t("m2.solo.addManually", "Add manually")}</button>
             )}
             <button onClick={() => { setOnlineSearched(false); setOnlineCandidates([]); setOnlineError(""); setSheetView("onlineSearch"); }} data-testid="button-search-online" style={{ ...btnOutline, color: "#6ba3d6", borderColor: "#6ba3d640" }}>
-              Search online (Beta)
+              {t("m2.solo.searchOnline", "Search online (Beta)")}
             </button>
-            <button onClick={handleRetake} data-testid="button-retake" style={btnOutline}>Try again</button>
+            <button onClick={handleRetake} data-testid="button-retake" style={btnOutline}>{t("m2.solo.tryAgain", "Try again")}</button>
             {candidates.length > 0 && (
-              <button onClick={handleCreateUnknown} data-testid="button-add-manually-alt" style={{ ...btnOutline, color: v.mutedLight }}>Add manually</button>
+              <button onClick={handleCreateUnknown} data-testid="button-add-manually-alt" style={{ ...btnOutline, color: v.mutedLight }}>{t("m2.solo.addManually", "Add manually")}</button>
             )}
           </div>
         </div>
@@ -1165,9 +1166,9 @@ export default function M2TastingsSolo() {
           padding: "20px 20px 40px", zIndex: 100, maxHeight: "80vh", overflowY: "auto",
         }} data-testid="sheet-online-search">
           <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 16px" }} />
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: "0 0 8px" }}>Search online (Beta)</h3>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: "0 0 8px" }}>{t("m2.solo.searchOnline", "Search online (Beta)")}</h3>
           <p style={{ fontSize: 12, color: v.muted, margin: "0 0 16px" }}>
-            Searching for: <span style={{ color: v.text }}>{onlineQuery.substring(0, 60)}</span>
+            {t("m2.solo.searchingFor", "Searching for:")} <span style={{ color: v.text }}>{onlineQuery.substring(0, 60)}</span>
           </p>
 
           {!onlineSearched && (
@@ -1177,7 +1178,7 @@ export default function M2TastingsSolo() {
               data-testid="button-run-online-search"
               style={{ ...btnPrimary, background: "#6ba3d6", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
             >
-              {onlineSearching ? "Searching..." : "Search now"}
+              {onlineSearching ? t("m2.solo.searching", "Searching...") : t("m2.solo.searchNow", "Search now")}
             </button>
           )}
 
@@ -1200,7 +1201,7 @@ export default function M2TastingsSolo() {
                     <div style={{ fontSize: 14, fontWeight: 600, color: v.text }}>{cand.name}</div>
                     <div style={{ fontSize: 12, color: v.muted }}>{cand.distillery}</div>
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: "#6ba3d6", background: "#6ba3d620", padding: "3px 8px", borderRadius: 6 }}>Online</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "#6ba3d6", background: "#6ba3d620", padding: "3px 8px", borderRadius: 6 }}>{t("m2.solo.online", "Online")}</span>
                 </button>
               ))}
             </div>
@@ -1211,7 +1212,7 @@ export default function M2TastingsSolo() {
           )}
 
           <button onClick={() => setSheetView("candidates")} style={{ ...btnOutline, marginTop: 8, color: v.muted, fontSize: 13 }}>
-            Back
+            {t("m2.solo.back", "Back")}
           </button>
         </div>
       )}
@@ -1222,30 +1223,30 @@ export default function M2TastingsSolo() {
           display: "flex", flexDirection: "column",
         }} data-testid="sheet-barcode-scanner">
           <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: 0 }}>Scan Barcode</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: 0 }}>{t("m2.solo.barcodeTitle", "Scan Barcode")}</h3>
             <button onClick={() => setSheetView("none")} data-testid="button-close-barcode" style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 14, fontFamily: "system-ui" }}>
-              Cancel
+              {t("m2.solo.cancel", "Cancel")}
             </button>
           </div>
 
           {barcodeStatus === "looking_up" && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
               <div style={{ width: 32, height: 32, border: `3px solid ${v.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-              <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>Looking up...</p>
+              <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>{t("m2.solo.lookingUp", "Looking up...")}</p>
             </div>
           )}
 
           {(barcodeStatus === "scanning" || barcodeStatus === "camera_error") && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }}>
               <p style={{ fontSize: 13, color: v.muted, textAlign: "center", margin: "0 0 16px" }}>
-                Enter the barcode number manually
+                {t("m2.solo.enterBarcode", "Enter the barcode number manually")}
               </p>
               <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 320 }}>
                 <input
                   type="text"
                   value={barcodeManual}
                   onChange={(e) => setBarcodeManual(e.target.value.replace(/\D/g, ""))}
-                  placeholder="Barcode number..."
+                  placeholder={t("m2.solo.barcodePlaceholder", "Barcode number...")}
                   style={{ ...inputStyle, flex: 1, fontSize: 13 }}
                   data-testid="input-barcode-manual"
                   inputMode="numeric"
@@ -1256,7 +1257,7 @@ export default function M2TastingsSolo() {
                   data-testid="button-barcode-submit"
                   style={{ ...btnPrimary, width: "auto", padding: "10px 16px", fontSize: 13, opacity: barcodeManual.trim().length >= 8 ? 1 : 0.4 }}
                 >
-                  Search
+                  {t("m2.solo.search", "Search")}
                 </button>
               </div>
             </div>
@@ -1265,18 +1266,18 @@ export default function M2TastingsSolo() {
           {barcodeStatus === "not_found" && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 20 }}>
               <p style={{ fontSize: 40, margin: 0 }}>🔍</p>
-              <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>Not found: {barcodeError}</p>
-              <button onClick={() => { setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }}>Try again</button>
-              <button onClick={() => setSheetView("none")} style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui" }}>Cancel</button>
+              <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>{t("m2.solo.barcodeNotFound", "Not found")}: {barcodeError}</p>
+              <button onClick={() => { setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }}>{t("m2.solo.tryAgain", "Try again")}</button>
+              <button onClick={() => setSheetView("none")} style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui" }}>{t("m2.solo.cancel", "Cancel")}</button>
             </div>
           )}
 
           {barcodeStatus === "error" && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 20 }}>
               <p style={{ fontSize: 40, margin: 0 }}>⚠️</p>
-              <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>{barcodeError || "Error"}</p>
-              <button onClick={() => { setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }}>Try again</button>
-              <button onClick={() => setSheetView("none")} style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui" }}>Cancel</button>
+              <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>{barcodeError || t("m2.solo.wbError", "Error")}</p>
+              <button onClick={() => { setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }}>{t("m2.solo.tryAgain", "Try again")}</button>
+              <button onClick={() => setSheetView("none")} style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui" }}>{t("m2.solo.cancel", "Cancel")}</button>
             </div>
           )}
         </div>
@@ -1286,6 +1287,7 @@ export default function M2TastingsSolo() {
 }
 
 function SignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, pid?: string) => void; onCancel: () => void }) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [remember, setRemember] = useState(true);
@@ -1300,10 +1302,10 @@ function SignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, pid?:
     try {
       const result = await signIn({ pin: pin.trim(), name: name.trim() || undefined, mode: "log", remember });
       if (!result.ok) {
-        setError(result.error || "Something went wrong.");
+        setError(result.error || t("m2.solo.somethingWrong", "Something went wrong."));
         return;
       }
-      const displayName = result.name || name.trim() || "Guest";
+      const displayName = result.name || name.trim() || t("m2.solo.guest", "Guest");
       if (name.trim() && pin.trim()) {
         try {
           const pResult = await participantApi.loginOrCreate(name.trim(), pin.trim());
@@ -1316,7 +1318,7 @@ function SignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, pid?:
       }
       onSignedIn(displayName);
     } catch (err: any) {
-      setError(err?.message || "Something went wrong.");
+      setError(err?.message || t("m2.solo.somethingWrong", "Something went wrong."));
     } finally {
       setLoading(false);
     }
@@ -1324,21 +1326,21 @@ function SignInCard({ onSignedIn, onCancel }: { onSignedIn: (name: string, pid?:
 
   return (
     <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 14, padding: "20px 20px 24px", marginBottom: 12 }} data-testid="card-unlock">
-      <h3 style={{ fontSize: 15, fontWeight: 600, color: v.text, margin: "0 0 12px" }}>Sign in to save</h3>
+      <h3 style={{ fontSize: 15, fontWeight: 600, color: v.text, margin: "0 0 12px" }}>{t("m2.solo.signInToSave", "Sign in to save")}</h3>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }} autoComplete="off">
-        <input type="text" placeholder="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} style={{ ...inputStyle, fontSize: 13, padding: "10px 12px" }} data-testid="input-unlock-name" autoComplete="off" />
-        <input type="password" placeholder="PIN" value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, fontSize: 13, padding: "10px 12px", letterSpacing: 3 }} data-testid="input-unlock-pin" autoComplete="new-password" />
+        <input type="text" placeholder={t("m2.solo.namePlaceholder", "Name (optional)")} value={name} onChange={(e) => setName(e.target.value)} style={{ ...inputStyle, fontSize: 13, padding: "10px 12px" }} data-testid="input-unlock-name" autoComplete="off" />
+        <input type="password" placeholder={t("m2.solo.pinPlaceholder", "PIN")} value={pin} onChange={(e) => setPin(e.target.value)} style={{ ...inputStyle, fontSize: 13, padding: "10px 12px", letterSpacing: 3 }} data-testid="input-unlock-pin" autoComplete="new-password" />
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: v.mutedLight, cursor: "pointer" }}>
           <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} style={{ accentColor: v.accent }} data-testid="checkbox-remember" />
-          Stay signed in
+          {t("m2.solo.staySignedIn", "Stay signed in")}
         </label>
         <button type="submit" disabled={loading || !pin.trim()} data-testid="button-unlock-submit" style={{ ...btnPrimary, fontSize: 14, padding: 12, opacity: !pin.trim() ? 0.5 : 1 }}>
-          {loading ? "Signing in…" : "Sign in"}
+          {loading ? t("m2.solo.signingIn", "Signing in…") : t("m2.solo.signIn", "Sign in")}
         </button>
         {error && <p style={{ fontSize: 12, color: v.error, margin: 0, textAlign: "center" }}>{error}</p>}
       </form>
       <button type="button" onClick={onCancel} style={{ background: "none", border: "none", cursor: "pointer", color: v.mutedLight, fontSize: 12, fontFamily: "system-ui, sans-serif", width: "100%", textAlign: "center", marginTop: 10 }} data-testid="button-unlock-cancel">
-        Cancel
+        {t("m2.solo.cancel", "Cancel")}
       </button>
     </div>
   );

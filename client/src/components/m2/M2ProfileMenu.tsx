@@ -253,7 +253,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
       await participantApi.resendVerification(pid);
       setError("");
     } catch (e: any) {
-      setError(e.message || "Failed to resend");
+      setError(e.message || t("m2.profile.resendFailed", "Failed to resend"));
     } finally {
       setLoading(false);
     }
@@ -933,7 +933,7 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: v.text, margin: 0 }}>
             {view === "main"
-              ? t("m2.profile", "Profile")
+              ? t("m2.profile.label", "Profile")
               : view === "register"
               ? t("m2.register.title", "Create Account")
               : view === "forgot-pin"

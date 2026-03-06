@@ -62,7 +62,12 @@ function TasteEvolutionCard({ pid }: { pid: string }) {
       const scores = monthMap.get(key)!;
       const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
       const [y, m] = key.split("-");
-      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const monthNames = [
+        t("m2.months.jan", "Jan"), t("m2.months.feb", "Feb"), t("m2.months.mar", "Mar"),
+        t("m2.months.apr", "Apr"), t("m2.months.may", "May"), t("m2.months.jun", "Jun"),
+        t("m2.months.jul", "Jul"), t("m2.months.aug", "Aug"), t("m2.months.sep", "Sep"),
+        t("m2.months.oct", "Oct"), t("m2.months.nov", "Nov"), t("m2.months.dec", "Dec"),
+      ];
       grouped.push({ label: `${monthNames[parseInt(m) - 1]} ${y.slice(2)}`, avg, count: scores.length });
     }
   }

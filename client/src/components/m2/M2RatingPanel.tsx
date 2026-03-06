@@ -72,7 +72,7 @@ export default function M2RatingPanel({
   defaultOpen = true,
   compact = false,
 }: M2RatingPanelProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [showDetailed, setShowDetailed] = useState(true);
   const [expandedModules, setExpandedModules] = useState<Record<DimKey, boolean>>({
@@ -103,7 +103,7 @@ export default function M2RatingPanel({
     }
     if (!SpeechRecognitionAPI) return;
     const recognition = new SpeechRecognitionAPI();
-    recognition.lang = "en-US";
+    recognition.lang = i18n.language === "de" ? "de-DE" : "en-US";
     recognition.continuous = true;
     recognition.interimResults = false;
     recognition.onresult = (event: any) => {
@@ -145,6 +145,8 @@ export default function M2RatingPanel({
     finish: t("m2.rating.finish", "Finish"),
     balance: t("m2.rating.balance", "Balance"),
   };
+
+  const chipLabel = (attr: string) => t(`m2.chips.${attr}`, attr);
 
   const fontSize = compact ? { label: 11, chip: 11, score: 12, overall: 22, section: 10 } : { label: 13, chip: 12, score: 14, overall: 28, section: 12 };
   const spacing = compact ? { dimPad: "8px 0", chipGap: 4, chipPad: "4px 10px", textRows: 1, sliderMb: 8 } : { dimPad: "12px 0", chipGap: 6, chipPad: "6px 14px", textRows: 2, sliderMb: 14 };
@@ -229,7 +231,7 @@ export default function M2RatingPanel({
                           cursor: disabled ? "default" : "pointer",
                         }}
                       >
-                        {attr}
+                        {chipLabel(attr)}
                       </button>
                     );
                   })}

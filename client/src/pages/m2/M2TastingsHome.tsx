@@ -345,9 +345,7 @@ function TastingCard({
 
   const colors = statusBadgeColors[tasting.status] || { color: v.muted, bg: alpha(v.muted, "20") };
 
-  const statusLabel = tasting.status === "reveal"
-    ? t("m2.tastings.statusReveal", "Reveal")
-    : tasting.status;
+  const statusLabel = t("m2.tastings.status" + tasting.status.charAt(0).toUpperCase() + tasting.status.slice(1), tasting.status);
 
   return (
     <div
@@ -399,7 +397,7 @@ function TastingCard({
                 }}
                 data-testid={`badge-host-${tasting.id}`}
               >
-                HOST
+                {t("m2.tastings.hostBadge", "HOST")}
               </span>
             )}
           </div>

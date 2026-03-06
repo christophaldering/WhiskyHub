@@ -98,19 +98,21 @@ const lexiconData: Record<string, LexiconCategory[]> = {
   ],
 };
 
-const categoryLabels: Record<string, Record<string, string>> = {
-  en: { tastingTerms: "Tasting Terms", flavorCategories: "Flavor Categories", regions: "Regions", productionMethods: "Production Methods", caskTypes: "Cask Types" },
-  de: { tastingTerms: "Verkostungsbegriffe", flavorCategories: "Aromakategorien", regions: "Regionen", productionMethods: "Herstellungsverfahren", caskTypes: "Fasstypen" },
-};
-
 export default function M2DiscoverLexicon() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
   const lang = i18n.language?.startsWith("de") ? "de" : "en";
   const categories = lexiconData[lang] ?? lexiconData.en;
-  const labels = categoryLabels[lang] ?? categoryLabels.en;
+
+  const categoryLabels: Record<string, string> = {
+    tastingTerms: t("m2.discover.lexiconCatTastingTerms", "Tasting Terms"),
+    flavorCategories: t("m2.discover.lexiconCatFlavorCategories", "Flavor Categories"),
+    regions: t("m2.discover.lexiconCatRegions", "Regions"),
+    productionMethods: t("m2.discover.lexiconCatProductionMethods", "Production Methods"),
+    caskTypes: t("m2.discover.lexiconCatCaskTypes", "Cask Types"),
+  };
 
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return categories;
@@ -126,17 +128,17 @@ export default function M2DiscoverLexicon() {
       <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0 4px" }}>
         <BookOpen style={{ width: 22, height: 22, color: v.accent }} />
         <h1 style={{ fontSize: 22, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: v.text, margin: 0 }} data-testid="text-m2-lexicon-title">
-          {lang === "de" ? "Lexikon" : "Lexicon"}
+          {t("m2.discover.lexiconTitle", "Lexicon")}
         </h1>
       </div>
-      <p style={{ fontSize: 13, color: v.muted, margin: "0 0 16px" }}>{lang === "de" ? "Durchsuchbares Whisky-Wörterbuch" : "Searchable whisky dictionary"}</p>
+      <p style={{ fontSize: 13, color: v.muted, margin: "0 0 16px" }}>{t("m2.discover.lexiconSubtitle", "Searchable whisky dictionary")}</p>
 
       <div style={{ position: "relative", marginBottom: 16 }}>
         <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: v.muted }} />
         <input
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={lang === "de" ? "Begriffe suchen…" : "Search terms…"}
+          placeholder={t("m2.discover.lexiconSearchPlaceholder", "Search terms…")}
           style={{ width: "100%", padding: "10px 12px 10px 36px", background: v.inputBg, border: `1px solid ${v.inputBorder}`, borderRadius: 10, color: v.text, fontSize: 14, outline: "none", boxSizing: "border-box" }}
           data-testid="input-m2-lexicon-search"
         />
@@ -145,7 +147,7 @@ export default function M2DiscoverLexicon() {
       {filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: 60 }}>
           <BookOpen style={{ width: 40, height: 40, color: v.muted, opacity: 0.3, margin: "0 auto 12px" }} />
-          <p style={{ color: v.muted }} data-testid="text-m2-lexicon-no-results">{lang === "de" ? "Keine Ergebnisse" : "No results found"}</p>
+          <p style={{ color: v.muted }} data-testid="text-m2-lexicon-no-results">{t("m2.discover.lexiconNoResults", "No results found")}</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -159,7 +161,7 @@ export default function M2DiscoverLexicon() {
                   style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", background: "none", border: "none", cursor: "pointer", color: v.text, textAlign: "left" }}
                 >
                   <Icon style={{ width: 16, height: 16, color: v.accent, flexShrink: 0 }} />
-                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, fontFamily: "'Playfair Display', serif" }}>{labels[cat.key]}</span>
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, fontFamily: "'Playfair Display', serif" }}>{categoryLabels[cat.key]}</span>
                   <span style={{ fontSize: 11, color: v.muted }}>{cat.entries.length}</span>
                   <ChevronDown style={{ width: 16, height: 16, color: v.muted, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
                 </button>
