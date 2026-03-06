@@ -1822,7 +1822,10 @@ function CommunitiesTab({ pid }: { pid: string }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <User style={{ width: 14, height: 14, color: v.muted }} />
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: v.text }}>{m.participantId}</div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: v.text }}>{m.participantName || m.participantEmail || m.participantId}</div>
+                    {m.participantEmail && m.participantName && (
+                      <div style={{ fontSize: 11, color: v.muted, marginTop: 1 }}>{m.participantEmail}</div>
+                    )}
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <span style={{
                         fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 6,
