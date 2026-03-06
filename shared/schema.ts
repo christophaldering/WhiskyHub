@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, timestamp, boolean, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -545,7 +545,9 @@ export const historicalTastings = pgTable("historical_tastings", {
   whiskyCount: integer("whisky_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_historical_tastings_tasting_number").on(table.tastingNumber),
+]);
 
 export const insertHistoricalTastingSchema = createInsertSchema(historicalTastings).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertHistoricalTasting = z.infer<typeof insertHistoricalTastingSchema>;
@@ -586,7 +588,9 @@ export const historicalTastingEntries = pgTable("historical_tasting_entries", {
   normalizedCask: text("normalized_cask"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_historical_entries_tasting_id").on(table.historicalTastingId),
+]);
 
 export const insertHistoricalTastingEntrySchema = createInsertSchema(historicalTastingEntries).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertHistoricalTastingEntry = z.infer<typeof insertHistoricalTastingEntrySchema>;

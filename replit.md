@@ -65,7 +65,12 @@ A fully self-contained parallel UI sharing the same backend, auth, and database,
 - `M2HostingDashboard` — Desktop-first live tasting control center with 3-column layout (Left: session status, live controls, blind reveal, guided navigation, session summary | Center: whisky lineup with per-dram progress, participant status roster with real-time rating indicators | Right: host's own rating via shared `M2RatingPanel` (compact mode) with accordion dimensions, flavor chips, per-dimension notes, and auto-save; participant view preview showing what guests currently see). Mobile companion view with essential controls and "desktop recommended" banner. Entry points from Step4Live and M2HostControl. Host-only access with authorization check.
 
 ### Test Suite
-A comprehensive test framework using Vitest with unit, API, E2E, and smoke tests, covering Module2Shell rendering, authentication flows, API endpoints, and route verification.
+A comprehensive test framework using Vitest with unit, API, E2E, and smoke tests, covering Module2Shell rendering, authentication flows, API endpoints, route verification, and historical tasting normalization/import helpers (32 unit tests importing real functions from `server/historical-import.ts`).
+
+### Data Quality & Admin Tools
+-   **Historical Reconciliation** (`server/historical-reconciliation.ts`): Audits imported data for null rates, parse success, duplicates, outliers, orphaned entries. Exposed via `GET /api/admin/historical/reconciliation` (admin-only).
+-   **Admin Historical Import Tab**: Integrated into M2Admin with import run history, dry-run/full import buttons, and reconciliation report display.
+-   **DB Indexes**: `idx_historical_tastings_tasting_number` and `idx_historical_entries_tasting_id` for optimized queries.
 
 ## External Dependencies
 

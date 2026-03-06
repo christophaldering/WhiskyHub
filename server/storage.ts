@@ -1813,21 +1813,76 @@ export class DatabaseStorage implements IStorage {
     const [tastingCount] = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastings);
     const [entryCount] = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastingEntries);
 
-    const allEntries = await db.select().from(historicalTastingEntries);
-    const allTastings = await db.select().from(historicalTastings);
-    const tastingMap = new Map(allTastings.map(t => [t.id, t.tastingNumber]));
+    const topWhiskiesRows = await db
+      .select({
+        distillery: historicalTastingEntries.distilleryRaw,
+        name: historicalTastingEntries.whiskyNameRaw,
+        totalScore: historicalTastingEntries.totalScore,
+        tastingNumber: historicalTastings.tastingNumber,
+      })
+      .from(historicalTastingEntries)
+      .innerJoin(historicalTastings, eq(historicalTastingEntries.historicalTastingId, historicalTastings.id))
+      .where(sql`${historicalTastingEntries.totalScore} IS NOT NULL`)
+      .orderBy(desc(historicalTastingEntries.totalScore))
+      .limit(20);
 
-    const sorted = [...allEntries].filter(e => e.totalScore != null).sort((a, b) => (b.totalScore ?? 0) - (a.totalScore ?? 0));
-    const topWhiskies = sorted.slice(0, 10).map(e => ({
-      distillery: e.distilleryRaw,
-      name: e.whiskyNameRaw,
-      totalScore: e.totalScore,
-      tastingNumber: tastingMap.get(e.historicalTastingId) ?? 0,
+    const topWhiskies = topWhiskiesRows.map(r => ({
+      distillery: r.distillery,
+      name: r.name,
+      totalScore: r.totalScore,
+      tastingNumber: r.tastingNumber,
     }));
 
+    const regionRows = await db
+      .select({
+        region: sql<string>`COALESCE(${historicalTastingEntries.normalizedRegion}, ${historicalTastingEntries.regionRaw})`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(historicalTastingEntries)
+      .where(sql`COALESCE(${historicalTastingEntries.normalizedRegion}, ${historicalTastingEntries.regionRaw}) IS NOT NULL`)
+      .groupBy(sql`COALESCE(${historicalTastingEntries.normalizedRegion}, ${historicalTastingEntries.regionRaw})`);
+
     const regionBreakdown: Record<string, number> = {};
+    for (const r of regionRows) {
+      regionBreakdown[r.region] = r.count;
+    }
+
+    const caskRows = await db
+      .select({
+        cask: sql<string>`COALESCE(${historicalTastingEntries.normalizedCask}, ${historicalTastingEntries.caskRaw})`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(historicalTastingEntries)
+      .where(sql`COALESCE(${historicalTastingEntries.normalizedCask}, ${historicalTastingEntries.caskRaw}) IS NOT NULL`)
+      .groupBy(sql`COALESCE(${historicalTastingEntries.normalizedCask}, ${historicalTastingEntries.caskRaw})`);
+
     const caskBreakdown: Record<string, number> = {};
-    let smoky = 0, nonSmoky = 0, unknown = 0;
+    for (const r of caskRows) {
+      caskBreakdown[r.cask] = r.count;
+    }
+
+    const smokyRows = await db
+      .select({
+        smoky: sql<number>`count(*) FILTER (WHERE ${historicalTastingEntries.normalizedIsSmoky} = true)::int`,
+        nonSmoky: sql<number>`count(*) FILTER (WHERE ${historicalTastingEntries.normalizedIsSmoky} = false)::int`,
+        unknown: sql<number>`count(*) FILTER (WHERE ${historicalTastingEntries.normalizedIsSmoky} IS NULL)::int`,
+      })
+      .from(historicalTastingEntries);
+
+    const smokyBreakdown = {
+      smoky: smokyRows[0]?.smoky ?? 0,
+      nonSmoky: smokyRows[0]?.nonSmoky ?? 0,
+      unknown: smokyRows[0]?.unknown ?? 0,
+    };
+
+    const scoreDistRows = await db
+      .select({
+        bucket: sql<number>`LEAST(FLOOR(${historicalTastingEntries.totalScore})::int, 9)`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(historicalTastingEntries)
+      .where(sql`${historicalTastingEntries.totalScore} IS NOT NULL AND ${historicalTastingEntries.totalScore} >= 0`)
+      .groupBy(sql`LEAST(FLOOR(${historicalTastingEntries.totalScore})::int, 9)`);
 
     const scoreRanges = [
       { range: "0-1", count: 0 },
@@ -1841,22 +1896,9 @@ export class DatabaseStorage implements IStorage {
       { range: "8-9", count: 0 },
       { range: "9-10", count: 0 },
     ];
-
-    for (const entry of allEntries) {
-      const region = entry.normalizedRegion || entry.regionRaw;
-      if (region) regionBreakdown[region] = (regionBreakdown[region] || 0) + 1;
-
-      const cask = entry.normalizedCask || entry.caskRaw;
-      if (cask) caskBreakdown[cask] = (caskBreakdown[cask] || 0) + 1;
-
-      if (entry.normalizedIsSmoky === true) smoky++;
-      else if (entry.normalizedIsSmoky === false) nonSmoky++;
-      else unknown++;
-
-      if (entry.totalScore != null) {
-        const idx = Math.min(Math.floor(entry.totalScore), 9);
-        if (idx >= 0 && idx < 10) scoreRanges[idx].count++;
-      }
+    for (const r of scoreDistRows) {
+      const idx = r.bucket;
+      if (idx >= 0 && idx < 10) scoreRanges[idx].count = r.count;
     }
 
     return {
@@ -1864,7 +1906,7 @@ export class DatabaseStorage implements IStorage {
       totalEntries: entryCount?.count ?? 0,
       topWhiskies,
       regionBreakdown,
-      smokyBreakdown: { smoky, nonSmoky, unknown },
+      smokyBreakdown,
       caskBreakdown,
       scoreDistribution: scoreRanges,
     };

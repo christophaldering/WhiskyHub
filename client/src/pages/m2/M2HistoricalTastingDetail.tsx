@@ -5,7 +5,7 @@ import { v, alpha } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import {
   Trophy, Wine, Calendar, Hash, Flame, MapPin,
-  Droplets, Sparkles, BarChart3,
+  Droplets, Sparkles, BarChart3, RefreshCw,
 } from "lucide-react";
 
 interface HistoricalEntry {
@@ -67,7 +67,7 @@ function ScoreBar({ label, value, max = 10 }: { label: string; value: number | n
   const color = pct >= 75 ? "var(--cs-success)" : pct >= 50 ? v.accent : pct >= 25 ? "#f59e0b" : "var(--cs-danger)";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-      <span style={{ fontSize: 11, color: v.muted, width: 40, textAlign: "right", flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 11, color: v.muted, width: 48, textAlign: "right", flexShrink: 0 }}>{label}</span>
       <div style={{ flex: 1, height: 6, background: v.border, borderRadius: 3, overflow: "hidden" }}>
         <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 3, transition: "width 0.4s ease" }} />
       </div>
@@ -77,24 +77,25 @@ function ScoreBar({ label, value, max = 10 }: { label: string; value: number | n
 }
 
 function MedalBadge({ rank }: { rank: number }) {
-  const colors: Record<number, { bg: string; text: string; label: string }> = {
-    1: { bg: "var(--cs-gold)", text: "#1a1714", label: "🥇" },
-    2: { bg: "var(--cs-silver)", text: "#1a1714", label: "🥈" },
-    3: { bg: "var(--cs-bronze)", text: "#fff", label: "🥉" },
+  const medals: Record<number, string> = {
+    1: "🥇",
+    2: "🥈",
+    3: "🥉",
   };
-  const medal = colors[rank];
+  const medal = medals[rank];
   if (!medal) return null;
   return (
-    <span style={{
-      fontSize: 20,
-      lineHeight: 1,
-    }}>
-      {medal.label}
+    <span style={{ fontSize: 20, lineHeight: 1 }}>
+      {medal}
     </span>
   );
 }
 
-function WhiskyCard({ entry, lang, t }: { entry: HistoricalEntry; lang: string; t: any }) {
+function hasTies(entries: HistoricalEntry[], rank: number): boolean {
+  return entries.filter(e => e.totalRank === rank).length > 1;
+}
+
+function WhiskyCard({ entry, lang, t, isTied }: { entry: HistoricalEntry; lang: string; t: any; isTied: boolean }) {
   const rank = entry.totalRank;
   const isTop3 = rank != null && rank <= 3;
   const isWinner = rank === 1;
@@ -111,7 +112,7 @@ function WhiskyCard({ entry, lang, t }: { entry: HistoricalEntry; lang: string; 
     <div
       style={{
         background: v.card,
-        border: `1px solid ${isWinner ? v.gold : isTop3 ? v.border : v.border}`,
+        border: `1px solid ${isWinner ? v.gold : v.border}`,
         borderRadius: 14,
         padding: "16px",
         position: "relative",
@@ -140,6 +141,7 @@ function WhiskyCard({ entry, lang, t }: { entry: HistoricalEntry; lang: string; 
           alignItems: "center",
           justifyContent: "center",
           flexShrink: 0,
+          flexDirection: "column",
         }}>
           {isTop3 && rank != null ? (
             <MedalBadge rank={rank} />
@@ -161,8 +163,26 @@ function WhiskyCard({ entry, lang, t }: { entry: HistoricalEntry; lang: string; 
             fontWeight: 600,
             color: v.text,
             lineHeight: 1.3,
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
           }}>
             {title}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+            {isTied && (
+              <span style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: v.accent,
+                background: alpha(v.accent, "12"),
+                padding: "1px 6px",
+                borderRadius: 6,
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+              }}>
+                {t("m2.historicalDetail.tiedRank", "Tied")}
+              </span>
+            )}
           </div>
           {details.length > 0 && (
             <div style={{
@@ -178,6 +198,10 @@ function WhiskyCard({ entry, lang, t }: { entry: HistoricalEntry; lang: string; 
                   background: alpha(v.muted, "08"),
                   padding: "2px 8px",
                   borderRadius: 10,
+                  maxWidth: 180,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}>
                   {d}
                 </span>
@@ -294,7 +318,7 @@ export default function M2HistoricalTastingDetail() {
   const params = useParams<{ id: string }>();
   const tastingId = params.id;
 
-  const { data, isLoading, isError } = useQuery<TastingDetail>({
+  const { data, isLoading, isError, refetch } = useQuery<TastingDetail>({
     queryKey: ["historical-tasting", tastingId],
     queryFn: () => fetchJSON(`/api/historical/tastings/${tastingId}`),
     enabled: !!tastingId,
@@ -307,8 +331,9 @@ export default function M2HistoricalTastingDetail() {
   const entries = data?.entries ?? [];
   const sorted = [...entries].sort((a, b) => (a.totalRank ?? 999) - (b.totalRank ?? 999));
 
-  const avgScore = entries.length > 0
-    ? entries.reduce((sum, e) => sum + (e.totalScore ?? 0), 0) / entries.filter(e => e.totalScore != null).length
+  const scoredEntries = entries.filter(e => e.totalScore != null);
+  const avgScore = scoredEntries.length > 0
+    ? scoredEntries.reduce((sum, e) => sum + (e.totalScore ?? 0), 0) / scoredEntries.length
     : null;
 
   const winner = sorted.length > 0 && sorted[0].totalRank === 1 ? sorted[0] : null;
@@ -316,12 +341,23 @@ export default function M2HistoricalTastingDetail() {
     ? [winner.distilleryRaw, winner.whiskyNameRaw].filter(Boolean).join(" — ")
     : null;
 
+  const tiedRanks = new Set<number>();
+  const rankCounts: Record<number, number> = {};
+  entries.forEach(e => {
+    if (e.totalRank != null) {
+      rankCounts[e.totalRank] = (rankCounts[e.totalRank] || 0) + 1;
+    }
+  });
+  Object.entries(rankCounts).forEach(([rank, count]) => {
+    if (count > 1) tiedRanks.add(Number(rank));
+  });
+
   return (
     <div style={{ padding: "16px 16px 100px", maxWidth: 800, margin: "0 auto" }}>
       <M2BackButton />
 
       {isLoading && (
-        <div style={{ textAlign: "center", padding: "60px 16px" }}>
+        <div style={{ textAlign: "center", padding: "60px 16px" }} data-testid="detail-loading">
           <div style={{
             width: 28,
             height: 28,
@@ -331,6 +367,7 @@ export default function M2HistoricalTastingDetail() {
             animation: "spin 0.8s linear infinite",
             margin: "0 auto 12px",
           }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           <p style={{ color: v.muted, fontSize: 14 }}>
             {t("m2.historicalDetail.loading", "Loading tasting...")}
           </p>
@@ -341,11 +378,36 @@ export default function M2HistoricalTastingDetail() {
         <div style={{
           textAlign: "center",
           padding: "60px 16px",
-          color: "var(--cs-danger)",
+          background: v.card,
+          border: `1px solid ${v.border}`,
+          borderRadius: 12,
+          marginTop: 16,
         }} data-testid="detail-error">
-          <p style={{ fontSize: 14 }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
+          <p style={{ fontSize: 14, color: "var(--cs-danger)", fontWeight: 600, marginBottom: 4 }}>
             {t("m2.historicalDetail.loadError", "Could not load this tasting.")}
           </p>
+          <button
+            onClick={() => refetch()}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 16px",
+              background: v.accent,
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              marginTop: 12,
+            }}
+            data-testid="detail-retry"
+          >
+            <RefreshCw size={13} />
+            {t("common.retry", "Retry")}
+          </button>
         </div>
       )}
 
@@ -373,6 +435,8 @@ export default function M2HistoricalTastingDetail() {
               color: v.text,
               margin: "8px 0 8px",
               lineHeight: 1.2,
+              wordBreak: "break-word",
+              overflowWrap: "break-word",
             }} data-testid="detail-title">
               {title}
             </h1>
@@ -406,8 +470,19 @@ export default function M2HistoricalTastingDetail() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: v.muted, marginBottom: 2 }}>
                   {t("m2.historicalDetail.winner", "Winner")}
+                  {tiedRanks.has(1) && (
+                    <span style={{ marginLeft: 6, fontSize: 10, color: v.accent, fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>
+                      ({t("m2.historicalDetail.tiedRank", "Tied")})
+                    </span>
+                  )}
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: v.text }}>
+                <div style={{
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: v.text,
+                  wordBreak: "break-word",
+                  overflowWrap: "break-word",
+                }}>
                   {winnerName}
                 </div>
               </div>
@@ -417,6 +492,7 @@ export default function M2HistoricalTastingDetail() {
                   fontWeight: 700,
                   color: v.gold,
                   fontVariantNumeric: "tabular-nums",
+                  flexShrink: 0,
                 }}>
                   {winner.totalScore.toFixed(1)}
                 </div>
@@ -438,7 +514,13 @@ export default function M2HistoricalTastingDetail() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {sorted.map((entry) => (
-              <WhiskyCard key={entry.id} entry={entry} lang={lang} t={t} />
+              <WhiskyCard
+                key={entry.id}
+                entry={entry}
+                lang={lang}
+                t={t}
+                isTied={entry.totalRank != null && tiedRanks.has(entry.totalRank)}
+              />
             ))}
           </div>
 
@@ -446,10 +528,14 @@ export default function M2HistoricalTastingDetail() {
             <div style={{
               textAlign: "center",
               padding: "40px 16px",
-              color: v.muted,
-              fontSize: 14,
-            }}>
-              {t("m2.historicalDetail.noEntries", "No whisky entries found for this tasting.")}
+              background: v.card,
+              border: `1px solid ${v.border}`,
+              borderRadius: 12,
+            }} data-testid="detail-empty">
+              <Wine style={{ width: 36, height: 36, color: v.muted, margin: "0 auto 12px", display: "block" }} strokeWidth={1.2} />
+              <div style={{ color: v.text, fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+                {t("m2.historicalDetail.noEntries", "No whisky entries found for this tasting.")}
+              </div>
             </div>
           )}
         </>

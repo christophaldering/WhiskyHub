@@ -6,7 +6,7 @@ import { v, alpha } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import {
   Search, Wine, Trophy, Calendar, Hash, BarChart3,
-  ArrowUpDown, ChevronRight, Archive, Sparkles,
+  ArrowUpDown, ChevronRight, Archive, Sparkles, RefreshCw,
 } from "lucide-react";
 
 interface EnrichedTasting {
@@ -56,13 +56,28 @@ function getWinnerLabel(t: EnrichedTasting): string {
   return parts.join(" — ");
 }
 
+function Spinner() {
+  return (
+    <div style={{ textAlign: "center", padding: "60px 16px" }}>
+      <div style={{
+        width: 32, height: 32, borderRadius: "50%",
+        border: `3px solid ${v.border}`,
+        borderTopColor: v.accent,
+        animation: "spin 0.8s linear infinite",
+        margin: "0 auto 16px",
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
 export default function M2HistoricalTastings() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("number-desc");
 
-  const { data: tastingsData, isLoading, isError } = useQuery<{ tastings: EnrichedTasting[]; total: number }>({
+  const { data: tastingsData, isLoading, isError, refetch } = useQuery<{ tastings: EnrichedTasting[]; total: number }>({
     queryKey: ["historical-tastings-enriched", search],
     queryFn: () => fetchJSON(`/api/historical/tastings?limit=200&enriched=true&search=${encodeURIComponent(search)}`),
   });
@@ -105,10 +120,6 @@ export default function M2HistoricalTastings() {
   const getTitle = (tasting: EnrichedTasting) =>
     (lang === "de" ? tasting.titleDe : tasting.titleEn) || tasting.titleDe || `Tasting #${tasting.tastingNumber}`;
 
-  const avgGlobalScore = analytics && analytics.totalEntries > 0
-    ? (analytics.topWhiskies.reduce((sum, w) => sum + (w.totalScore ?? 0), 0) / analytics.topWhiskies.length)
-    : null;
-
   const totalWhiskies = analytics?.totalEntries ?? 0;
   const totalTastings = analytics?.totalTastings ?? 0;
   const regionCount = analytics ? Object.keys(analytics.regionBreakdown).length : 0;
@@ -144,7 +155,13 @@ export default function M2HistoricalTastings() {
       </div>
 
       {analytics && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16, marginTop: 16 }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))",
+          gap: 8,
+          marginBottom: 16,
+          marginTop: 16,
+        }}>
           <div
             style={{
               background: v.card,
@@ -257,8 +274,8 @@ export default function M2HistoricalTastings() {
         </div>
       </Link>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "stretch" }}>
-        <div style={{ position: "relative", flex: 1 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "stretch", flexWrap: "wrap" }}>
+        <div style={{ position: "relative", flex: "1 1 200px", minWidth: 0 }}>
           <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: v.muted }} />
           <input
             type="text"
@@ -280,7 +297,7 @@ export default function M2HistoricalTastings() {
             data-testid="historical-search"
           />
         </div>
-        <div style={{ position: "relative" }}>
+        <div style={{ position: "relative", flexShrink: 0 }}>
           <ArrowUpDown size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: v.muted, pointerEvents: "none" }} />
           <select
             value={sortMode}
@@ -307,16 +324,9 @@ export default function M2HistoricalTastings() {
       </div>
 
       {isLoading && (
-        <div style={{ textAlign: "center", padding: "60px 16px" }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: "50%",
-            border: `3px solid ${v.border}`,
-            borderTopColor: v.accent,
-            animation: "spin 0.8s linear infinite",
-            margin: "0 auto 16px",
-          }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          <div style={{ color: v.muted, fontSize: 14 }}>
+        <div data-testid="historical-loading">
+          <Spinner />
+          <div style={{ textAlign: "center", color: v.muted, fontSize: 14 }}>
             {t("m2.historical.loading", "Loading archive...")}
           </div>
         </div>
@@ -329,14 +339,34 @@ export default function M2HistoricalTastings() {
           background: v.card,
           border: `1px solid ${v.border}`,
           borderRadius: 12,
-        }}>
+        }} data-testid="historical-error">
           <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
           <div style={{ color: v.danger, fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
             {t("m2.historical.loadError", "Could not load historical tastings.")}
           </div>
-          <div style={{ color: v.muted, fontSize: 13 }}>
+          <div style={{ color: v.muted, fontSize: 13, marginBottom: 16 }}>
             {t("m2.historical.loadErrorHint", "Please try again later.")}
           </div>
+          <button
+            onClick={() => refetch()}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 16px",
+              background: v.accent,
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+            data-testid="historical-retry"
+          >
+            <RefreshCw size={13} />
+            {t("common.retry", "Retry")}
+          </button>
         </div>
       )}
 
@@ -347,14 +377,14 @@ export default function M2HistoricalTastings() {
           background: v.card,
           border: `1px solid ${v.border}`,
           borderRadius: 12,
-        }}>
+        }} data-testid="historical-empty">
           <Archive style={{ width: 40, height: 40, color: v.muted, margin: "0 auto 12px", display: "block" }} strokeWidth={1.2} />
           <div style={{ color: v.text, fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
             {t("m2.historical.emptyTitle", "No historical tastings found")}
           </div>
           <div style={{ color: v.muted, fontSize: 13 }}>
             {search
-              ? t("m2.historical.emptySearch", "Try a different search term.")
+              ? t("m2.historical.emptySearch", "No results — try a different search term.")
               : t("m2.historical.empty", "No historical tasting data available yet.")}
           </div>
         </div>
@@ -411,6 +441,7 @@ export default function M2HistoricalTastings() {
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
+                          maxWidth: "100%",
                         }}>
                           {getTitle(tasting)}
                         </div>
@@ -438,18 +469,21 @@ export default function M2HistoricalTastings() {
                             marginTop: 6,
                             fontSize: 12,
                             color: v.accent,
+                            maxWidth: "100%",
+                            overflow: "hidden",
                           }}>
-                            <Trophy size={11} />
+                            <Trophy size={11} style={{ flexShrink: 0 }} />
                             <span style={{
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap",
-                              maxWidth: "calc(100% - 50px)",
+                              flex: 1,
+                              minWidth: 0,
                             }}>
                               {winnerLabel}
                             </span>
                             {tasting.winnerScore != null && (
-                              <span style={{ color: v.muted, fontVariantNumeric: "tabular-nums" }}>
+                              <span style={{ color: v.muted, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                                 ({tasting.winnerScore.toFixed(1)})
                               </span>
                             )}

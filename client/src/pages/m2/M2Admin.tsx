@@ -14,10 +14,11 @@ import {
   Calendar, Eye, Hash, BarChart3, ChevronDown, ChevronRight, Database,
   Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2,
   Brain, Clock, Settings, FlaskConical, Wifi, XCircle, CheckCircle,
-  MessageSquarePlus, Megaphone, Rocket, Filter, AlertTriangle
+  MessageSquarePlus, Megaphone, Rocket, Filter, AlertTriangle,
+  FileArchive, Play, FileWarning
 } from "lucide-react";
 
-type AdminTab = "participants" | "tastings" | "online" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "settings" | "feedback";
+type AdminTab = "participants" | "tastings" | "online" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "settings" | "feedback";
 
 const TAB_CONFIG: { id: AdminTab; labelKey: string; fallback: string; icon: any }[] = [
   { id: "participants", labelKey: "m2.admin.participants", fallback: "Participants", icon: Users },
@@ -28,6 +29,7 @@ const TAB_CONFIG: { id: AdminTab; labelKey: string; fallback: string; icon: any 
   { id: "changelog", labelKey: "m2.admin.changelog", fallback: "Changelog", icon: Rocket },
   { id: "cleanup", labelKey: "m2.admin.cleanup", fallback: "Cleanup", icon: Trash2 },
   { id: "analytics", labelKey: "m2.admin.analytics", fallback: "Analytics", icon: BarChart3 },
+  { id: "historical", labelKey: "m2.admin.historical", fallback: "Historical Import", icon: FileArchive },
   { id: "settings", labelKey: "m2.admin.settings", fallback: "Settings", icon: Settings },
   { id: "feedback", labelKey: "m2.admin.feedback", fallback: "Feedback", icon: MessageSquarePlus },
 ];
@@ -180,6 +182,7 @@ export default function M2Admin() {
       {activeTab === "changelog" && <ChangelogTab pid={pid} />}
       {activeTab === "cleanup" && <CleanupTab data={data} pid={pid} />}
       {activeTab === "analytics" && <AnalyticsTab pid={pid} />}
+      {activeTab === "historical" && <HistoricalImportTab pid={pid} />}
       {activeTab === "settings" && <SettingsTab pid={pid} />}
       {activeTab === "feedback" && <FeedbackTab pid={pid} />}
     </div>
@@ -993,6 +996,426 @@ function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
           {deleteMutation.isPending ? <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> : <Trash2 style={{ width: 14, height: 14 }} />}
           {t("m2.admin.deleteSelected", "Delete {{count}} Selected", { count: selectedIds.size })}
         </button>
+      </div>
+    </div>
+  );
+}
+
+function HistoricalImportTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const [showReconciliation, setShowReconciliation] = useState(false);
+  const [dryRunResult, setDryRunResult] = useState<any>(null);
+
+  const { data: importRuns, isLoading: runsLoading } = useQuery({
+    queryKey: ["/admin/historical/import-runs", pid],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/historical/import-runs", {
+        headers: { "x-participant-id": pid },
+      });
+      if (!res.ok) throw new Error("Failed to load import runs");
+      return res.json();
+    },
+    enabled: !!pid,
+  });
+
+  const { data: reconciliation, isLoading: reconLoading, refetch: refetchRecon } = useQuery({
+    queryKey: ["/admin/historical/reconciliation", pid],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/historical/reconciliation", {
+        headers: { "x-participant-id": pid },
+      });
+      if (!res.ok) throw new Error("Failed to load reconciliation");
+      return res.json();
+    },
+    enabled: !!pid && showReconciliation,
+  });
+
+  const dryRunMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/historical/import?dryRun=true", {
+        method: "POST",
+        headers: { "x-participant-id": pid, "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setDryRunResult(data);
+      toast({ title: t("m2.admin.dryRunComplete", "Dry-run complete") });
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/historical/import", {
+        method: "POST",
+        headers: { "x-participant-id": pid, "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: t("m2.admin.importComplete", "Import complete") });
+      setDryRunResult(null);
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const latestRun = importRuns?.[0] || null;
+
+  const statusColor = (status: string) => {
+    if (status === "completed") return v.success;
+    if (status === "failed") return v.danger;
+    if (status === "running") return v.accent;
+    return v.muted;
+  };
+
+  return (
+    <div data-testid="admin-historical-tab">
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+        <FileArchive style={{ width: 18, height: 18, color: v.accent }} />
+        <span style={{ fontWeight: 600, fontSize: 16, color: v.text }}>
+          {t("m2.admin.historicalImport", "Historical Import")}
+        </span>
+      </div>
+
+      <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+        <div style={{ fontWeight: 600, fontSize: 14, color: v.text, marginBottom: 10 }}>
+          {t("m2.admin.latestImportRun", "Latest Import Run")}
+        </div>
+        {runsLoading ? (
+          <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
+            <Loader2 style={{ width: 20, height: 20, color: v.accent, animation: "spin 1s linear infinite" }} />
+          </div>
+        ) : latestRun ? (
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{
+                fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 8,
+                background: `${statusColor(latestRun.status)}20`, color: statusColor(latestRun.status),
+                textTransform: "uppercase",
+              }} data-testid="text-import-status">
+                {latestRun.status}
+              </span>
+              {latestRun.createdAt && (
+                <span style={{ fontSize: 11, color: v.muted }} data-testid="text-import-date">
+                  {new Date(latestRun.createdAt).toLocaleString()}
+                </span>
+              )}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+              {[
+                { label: t("m2.admin.rowsRead", "Rows Read"), value: latestRun.rowsRead ?? 0 },
+                { label: t("m2.admin.rowsImported", "Imported"), value: latestRun.rowsImported ?? 0 },
+                { label: t("m2.admin.rowsSkipped", "Skipped"), value: latestRun.rowsSkipped ?? 0 },
+              ].map(s => (
+                <div key={s.label} style={{ background: v.elevated, borderRadius: 8, padding: 8, textAlign: "center" }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: v.text }}>{s.value}</div>
+                  <div style={{ fontSize: 10, color: v.muted }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+            {latestRun.warningsCount > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 11, color: v.accent }}>
+                <AlertTriangle style={{ width: 12, height: 12 }} />
+                {latestRun.warningsCount} {t("m2.admin.warnings", "warnings")}
+              </div>
+            )}
+            {latestRun.errorsCount > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 11, color: v.danger }}>
+                <XCircle style={{ width: 12, height: 12 }} />
+                {latestRun.errorsCount} {t("m2.admin.errors", "errors")}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ textAlign: "center", padding: 16, color: v.muted, fontSize: 13 }}>
+            {t("m2.admin.noImportRuns", "No import runs yet.")}
+          </div>
+        )}
+      </div>
+
+      {importRuns && importRuns.length > 1 && (
+        <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontWeight: 600, fontSize: 14, color: v.text, marginBottom: 10 }}>
+            {t("m2.admin.importHistory", "Import History")}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {importRuns.slice(0, 10).map((run: any) => (
+              <div key={run.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${v.border}` }} data-testid={`import-run-${run.id}`}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 6,
+                    background: `${statusColor(run.status)}20`, color: statusColor(run.status),
+                  }}>
+                    {run.status}
+                  </span>
+                  <span style={{ fontSize: 11, color: v.muted }}>
+                    {run.createdAt ? new Date(run.createdAt).toLocaleString() : "—"}
+                  </span>
+                </div>
+                <span style={{ fontSize: 11, color: v.textSecondary }}>
+                  {run.rowsImported ?? 0} / {run.rowsRead ?? 0}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        <button
+          onClick={() => dryRunMutation.mutate()}
+          disabled={dryRunMutation.isPending}
+          style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            padding: "10px 16px", borderRadius: 10, border: `1px solid ${v.border}`,
+            background: v.elevated, color: v.text, fontSize: 13, fontWeight: 500,
+            cursor: dryRunMutation.isPending ? "not-allowed" : "pointer",
+            fontFamily: "system-ui, sans-serif", opacity: dryRunMutation.isPending ? 0.6 : 1,
+          }}
+          data-testid="btn-dry-run-import"
+        >
+          {dryRunMutation.isPending ? (
+            <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />
+          ) : (
+            <Play style={{ width: 14, height: 14 }} />
+          )}
+          {t("m2.admin.dryRunImport", "Dry-Run Import")}
+        </button>
+        <button
+          onClick={() => {
+            if (confirm(t("m2.admin.confirmImport", "Run full import? This will update the database."))) {
+              importMutation.mutate();
+            }
+          }}
+          disabled={importMutation.isPending}
+          style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            padding: "10px 16px", borderRadius: 10, border: "none",
+            background: v.accent, color: v.bg, fontSize: 13, fontWeight: 600,
+            cursor: importMutation.isPending ? "not-allowed" : "pointer",
+            fontFamily: "system-ui, sans-serif", opacity: importMutation.isPending ? 0.6 : 1,
+          }}
+          data-testid="btn-full-import"
+        >
+          {importMutation.isPending ? (
+            <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />
+          ) : (
+            <Database style={{ width: 14, height: 14 }} />
+          )}
+          {t("m2.admin.fullImport", "Full Import")}
+        </button>
+      </div>
+
+      {dryRunResult && (
+        <div style={{ background: v.card, border: `1px solid ${v.accent}40`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+            <Play style={{ width: 14, height: 14, color: v.accent }} />
+            <span style={{ fontWeight: 600, fontSize: 14, color: v.text }}>
+              {t("m2.admin.dryRunResults", "Dry-Run Results")}
+            </span>
+            <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 6, background: `${v.accent}20`, color: v.accent, fontWeight: 600 }}>
+              DRY RUN
+            </span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 8 }}>
+            {[
+              { label: t("m2.admin.rowsRead", "Rows Read"), value: dryRunResult.rowsRead },
+              { label: t("m2.admin.wouldImport", "Would Import"), value: dryRunResult.rowsImported },
+              { label: t("m2.admin.tastingsFound", "Tastings Found"), value: dryRunResult.tastingsCreated },
+              { label: t("m2.admin.entriesFound", "Entries Found"), value: dryRunResult.entriesCreated },
+            ].map(s => (
+              <div key={s.label} style={{ background: v.elevated, borderRadius: 8, padding: 8, textAlign: "center" }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: v.text }}>{s.value}</div>
+                <div style={{ fontSize: 10, color: v.muted }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+          {dryRunResult.warnings?.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: v.accent, marginBottom: 4 }}>
+                <AlertTriangle style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+                {dryRunResult.warnings.length} {t("m2.admin.warnings", "warnings")}
+              </div>
+              <div style={{ maxHeight: 160, overflowY: "auto", fontSize: 11, color: v.muted }}>
+                {dryRunResult.warnings.slice(0, 20).map((w: any, i: number) => (
+                  <div key={i} style={{ padding: "2px 0", borderBottom: `1px solid ${v.border}` }}>
+                    Row {w.row}: {w.field} — {w.message} {w.value && `(${w.value})`}
+                  </div>
+                ))}
+                {dryRunResult.warnings.length > 20 && (
+                  <div style={{ padding: "4px 0", fontStyle: "italic" }}>
+                    +{dryRunResult.warnings.length - 20} more...
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {dryRunResult.errors?.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: v.danger, marginBottom: 4 }}>
+                <XCircle style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+                {dryRunResult.errors.length} {t("m2.admin.errors", "errors")}
+              </div>
+              <div style={{ fontSize: 11, color: v.danger }}>
+                {dryRunResult.errors.map((e: string, i: number) => (
+                  <div key={i} style={{ padding: "2px 0" }}>{e}</div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16 }}>
+        <button
+          onClick={() => { setShowReconciliation(true); if (showReconciliation) refetchRecon(); }}
+          style={{
+            display: "flex", alignItems: "center", gap: 6, width: "100%",
+            padding: 0, border: "none", background: "none", cursor: "pointer",
+            fontFamily: "system-ui, sans-serif",
+          }}
+          data-testid="btn-show-reconciliation"
+        >
+          <FileWarning style={{ width: 16, height: 16, color: v.accent }} />
+          <span style={{ fontWeight: 600, fontSize: 14, color: v.text, flex: 1, textAlign: "left" }}>
+            {t("m2.admin.reconciliationReport", "Reconciliation Report")}
+          </span>
+          {reconLoading && <Loader2 style={{ width: 14, height: 14, color: v.accent, animation: "spin 1s linear infinite" }} />}
+          <ChevronRight style={{ width: 14, height: 14, color: v.muted, transform: showReconciliation ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
+        </button>
+
+        {showReconciliation && reconciliation && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+              {[
+                { label: t("m2.admin.totalTastings", "Tastings"), value: reconciliation.summary?.totalTastings ?? 0 },
+                { label: t("m2.admin.totalEntries", "Entries"), value: reconciliation.summary?.totalEntries ?? 0 },
+                { label: t("m2.admin.importRuns", "Import Runs"), value: reconciliation.summary?.totalImportRuns ?? 0 },
+              ].map(s => (
+                <div key={s.label} style={{ background: v.elevated, borderRadius: 8, padding: 8, textAlign: "center" }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: v.text }}>{s.value}</div>
+                  <div style={{ fontSize: 10, color: v.muted }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {reconciliation.parseSuccessRates && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: v.text, marginBottom: 6 }}>
+                  {t("m2.admin.parseRates", "Parse Success Rates")}
+                </div>
+                {Object.entries(reconciliation.parseSuccessRates).map(([field, stats]: [string, any]) => (
+                  <div key={field} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0", borderBottom: `1px solid ${v.border}` }}>
+                    <span style={{ fontSize: 12, color: v.text, textTransform: "capitalize" }}>{field}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 11, color: v.muted }}>{stats.parsed}/{stats.total}</span>
+                      <span style={{
+                        fontSize: 11, fontWeight: 600,
+                        color: stats.rate >= 90 ? v.success : stats.rate >= 70 ? v.accent : v.danger,
+                      }}>
+                        {stats.rate}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {reconciliation.duplicates && (reconciliation.duplicates.duplicateSourceKeys > 0 || reconciliation.duplicates.duplicateWhiskyKeys > 0) && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: v.accent, marginBottom: 4 }}>
+                  {t("m2.admin.duplicates", "Duplicates")}
+                </div>
+                <div style={{ fontSize: 11, color: v.muted }}>
+                  {reconciliation.duplicates.duplicateSourceKeys > 0 && (
+                    <div>{reconciliation.duplicates.duplicateSourceKeys} duplicate tasting keys</div>
+                  )}
+                  {reconciliation.duplicates.duplicateWhiskyKeys > 0 && (
+                    <div>{reconciliation.duplicates.duplicateWhiskyKeys} duplicate whisky keys</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {reconciliation.outliers && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: v.text, marginBottom: 4 }}>
+                  {t("m2.admin.outliers", "Outliers")}
+                </div>
+                <div style={{ fontSize: 11, color: v.muted }}>
+                  {[
+                    { label: "Scores out of range", count: reconciliation.outliers.scoresOutOfRange?.length ?? 0 },
+                    { label: "Extreme ABV", count: reconciliation.outliers.extremeAbv?.length ?? 0 },
+                    { label: "Extreme Age", count: reconciliation.outliers.extremeAge?.length ?? 0 },
+                    { label: "Extreme Price", count: reconciliation.outliers.extremePrice?.length ?? 0 },
+                  ].map(o => (
+                    <div key={o.label} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                      <span>{o.label}</span>
+                      <span style={{ fontWeight: 600, color: o.count > 0 ? v.accent : v.success }}>
+                        {o.count === 0 ? <CheckCircle style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle" }} /> : o.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {reconciliation.malformedRows?.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: v.danger, marginBottom: 4 }}>
+                  {reconciliation.malformedRows.length} {t("m2.admin.malformedRows", "Malformed Rows")}
+                </div>
+                <div style={{ maxHeight: 120, overflowY: "auto", fontSize: 11, color: v.muted }}>
+                  {reconciliation.malformedRows.slice(0, 10).map((row: any, i: number) => (
+                    <div key={i} style={{ padding: "2px 0", borderBottom: `1px solid ${v.border}` }}>
+                      {row.distillery || "?"} — {row.whiskyName || "?"}: {row.issues.join(", ")}
+                    </div>
+                  ))}
+                  {reconciliation.malformedRows.length > 10 && (
+                    <div style={{ fontStyle: "italic", padding: "4px 0" }}>+{reconciliation.malformedRows.length - 10} more</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {reconciliation.warnings?.length > 0 && (
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: v.accent, marginBottom: 4 }}>
+                  {reconciliation.warnings.length} {t("m2.admin.warnings", "warnings")}
+                </div>
+                <div style={{ fontSize: 11, color: v.muted }}>
+                  {reconciliation.warnings.map((w: string, i: number) => (
+                    <div key={i} style={{ padding: "2px 0" }}>{w}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {reconciliation.nullFieldRates && (
+              <details style={{ marginTop: 8 }}>
+                <summary style={{ fontSize: 12, fontWeight: 600, color: v.textSecondary, cursor: "pointer" }}>
+                  {t("m2.admin.nullFieldRates", "Null Field Rates")}
+                </summary>
+                <div style={{ marginTop: 4, fontSize: 11, color: v.muted }}>
+                  {Object.entries(reconciliation.nullFieldRates).map(([field, stats]: [string, any]) => (
+                    <div key={field} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", borderBottom: `1px solid ${v.border}` }}>
+                      <span>{field}</span>
+                      <span>{stats.rate}% null ({stats.nullCount}/{stats.totalCount})</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+
+            <div style={{ fontSize: 10, color: v.muted, marginTop: 8, textAlign: "right" }} data-testid="text-reconciliation-date">
+              {t("m2.admin.generatedAt", "Generated")}: {reconciliation.generatedAt ? new Date(reconciliation.generatedAt).toLocaleString() : "—"}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

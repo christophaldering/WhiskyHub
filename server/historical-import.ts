@@ -110,24 +110,24 @@ function cellToInt(val: any): number | null {
   return n != null ? Math.round(n) : null;
 }
 
-function normalizeText(s: string | null): string | null {
+export function normalizeText(s: string | null): string | null {
   if (!s) return null;
   return s.trim().replace(/\s+/g, " ");
 }
 
-function normalizeKey(s: string | null): string {
+export function normalizeKey(s: string | null): string {
   if (!s) return "";
   return s.trim().toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
 }
 
-function parseAge(raw: string | null): number | null {
+export function parseAge(raw: string | null): number | null {
   if (!raw) return null;
   const s = String(raw).trim();
   const m = s.match(/(\d+)/);
   return m ? parseInt(m[1], 10) : null;
 }
 
-function parseAbv(raw: string | null | number): number | null {
+export function parseAbv(raw: string | null | number): number | null {
   if (raw == null) return null;
   let n: number;
   if (typeof raw === "number") {
@@ -141,7 +141,7 @@ function parseAbv(raw: string | null | number): number | null {
   return n;
 }
 
-function parsePrice(raw: string | null | number): number | null {
+export function parsePrice(raw: string | null | number): number | null {
   if (raw == null) return null;
   if (typeof raw === "number") return raw;
   const s = String(raw).trim().replace(",", ".").replace(/[€$£]/g, "");
@@ -149,7 +149,7 @@ function parsePrice(raw: string | null | number): number | null {
   return isNaN(n) ? null : n;
 }
 
-function parseSmoky(raw: string | null): boolean | null {
+export function parseSmoky(raw: string | null): boolean | null {
   if (!raw) return null;
   const s = raw.trim().toLowerCase();
   if (s === "ja" || s === "yes" || s === "j") return true;

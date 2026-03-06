@@ -4,7 +4,7 @@ import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import {
   Trophy, MapPin, Flame, BarChart3, Wine,
-  Droplets, TrendingUp,
+  Droplets, TrendingUp, RefreshCw,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -42,7 +42,7 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: 
 function StatCard({ label, value, icon: Icon }: { label: string; value: string | number; icon: React.ElementType }) {
   return (
     <div style={{
-      flex: 1, minWidth: 100,
+      flex: "1 1 100px", minWidth: 90,
       background: v.card, border: `1px solid ${v.border}`, borderRadius: 12,
       padding: "16px 12px", textAlign: "center",
     }}>
@@ -56,7 +56,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: string |
 export default function M2HistoricalInsights() {
   const { t } = useTranslation();
 
-  const { data: analytics, isLoading, isError } = useQuery<AnalyticsData>({
+  const { data: analytics, isLoading, isError, refetch } = useQuery<AnalyticsData>({
     queryKey: ["historical-analytics"],
     queryFn: async () => {
       const res = await fetch("/api/historical/analytics");
@@ -69,8 +69,20 @@ export default function M2HistoricalInsights() {
     return (
       <div style={{ padding: "16px 16px 100px", maxWidth: 800, margin: "0 auto" }}>
         <M2BackButton />
-        <div style={{ textAlign: "center", padding: "60px 16px", color: v.muted }} data-testid="insights-loading">
-          {t("m2.historical.loading", "Loading...")}
+        <div style={{ textAlign: "center", padding: "60px 16px" }} data-testid="insights-loading">
+          <div style={{
+            width: 28,
+            height: 28,
+            border: `2px solid ${v.border}`,
+            borderTopColor: v.accent,
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+            margin: "0 auto 12px",
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <div style={{ color: v.muted, fontSize: 14 }}>
+            {t("m2.historical.loading", "Loading...")}
+          </div>
         </div>
       </div>
     );
@@ -80,8 +92,39 @@ export default function M2HistoricalInsights() {
     return (
       <div style={{ padding: "16px 16px 100px", maxWidth: 800, margin: "0 auto" }}>
         <M2BackButton />
-        <div style={{ textAlign: "center", padding: "60px 16px", color: "#ef4444" }} data-testid="insights-error">
-          {t("m2.historical.loadError", "Could not load historical tastings.")}
+        <div style={{
+          textAlign: "center",
+          padding: "60px 16px",
+          background: v.card,
+          border: `1px solid ${v.border}`,
+          borderRadius: 12,
+          marginTop: 16,
+        }} data-testid="insights-error">
+          <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
+          <div style={{ color: "var(--cs-danger)", fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
+            {t("m2.historical.loadError", "Could not load historical tastings.")}
+          </div>
+          <button
+            onClick={() => refetch()}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 16px",
+              background: v.accent,
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              marginTop: 12,
+            }}
+            data-testid="insights-retry"
+          >
+            <RefreshCw size={13} />
+            {t("common.retry", "Retry")}
+          </button>
         </div>
       </div>
     );
@@ -113,7 +156,7 @@ export default function M2HistoricalInsights() {
   const topCasks = Object.entries(analytics.caskBreakdown).sort((a, b) => b[1] - a[1]).slice(0, 6);
   const smokyPct = smokyTotal > 0 ? Math.round((analytics.smokyBreakdown.smoky / smokyTotal) * 100) : 0;
 
-  const avgScore = analytics.totalEntries > 0
+  const avgScore = analytics.totalEntries > 0 && topWhiskies.length > 0
     ? (topWhiskies.reduce((sum, w) => sum + (w.totalScore ?? 0), 0) / topWhiskies.length).toFixed(1)
     : "—";
 
@@ -128,7 +171,13 @@ export default function M2HistoricalInsights() {
   return (
     <div style={{ padding: "16px 16px 100px", maxWidth: 800, margin: "0 auto" }} data-testid="historical-insights-page">
       <M2BackButton />
-      <h1 style={{ fontSize: 22, fontWeight: 700, color: v.text, marginTop: 12 }} data-testid="insights-title">
+      <h1 style={{
+        fontFamily: "'Playfair Display', Georgia, serif",
+        fontSize: 22,
+        fontWeight: 700,
+        color: v.text,
+        marginTop: 12,
+      }} data-testid="insights-title">
         {t("m2.insights.title", "Historical Insights")}
       </h1>
       <p style={{ fontSize: 13, color: v.muted, marginTop: 4, marginBottom: 20 }}>
@@ -143,45 +192,59 @@ export default function M2HistoricalInsights() {
 
       <SectionHeader icon={Trophy} title={t("m2.insights.topWhiskiesTitle", "Top 20 Whiskies")} />
       <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16 }} data-testid="insights-top-whiskies">
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {topWhiskies.map((w, i) => {
-            const isTop3 = i < 3;
-            const medalColor = i === 0 ? v.gold : i === 1 ? v.silver : i === 2 ? v.bronze : v.muted;
-            return (
-              <div key={i} style={{
-                display: "flex", alignItems: "center", gap: 10, fontSize: 13,
-                padding: "8px 6px",
-                background: isTop3 ? `color-mix(in srgb, ${v.accent} 5%, transparent)` : "transparent",
-                borderRadius: 8,
-              }} data-testid={`insights-top-whisky-${i}`}>
-                <span style={{
-                  width: 26, textAlign: "right",
-                  color: medalColor,
-                  fontWeight: isTop3 ? 700 : 400,
-                  fontVariantNumeric: "tabular-nums",
-                  fontSize: isTop3 ? 15 : 13,
-                }}>
-                  {i + 1}.
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: v.text, fontWeight: isTop3 ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {w.distillery}{w.distillery && w.name ? " — " : ""}{w.name}
+        {topWhiskies.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {topWhiskies.map((w, i) => {
+              const isTop3 = i < 3;
+              const medalColor = i === 0 ? v.gold : i === 1 ? v.silver : i === 2 ? v.bronze : v.muted;
+              const whiskyLabel = [w.distillery, w.name].filter(Boolean).join(" — ") || "—";
+              return (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 10, fontSize: 13,
+                  padding: "8px 6px",
+                  background: isTop3 ? `color-mix(in srgb, ${v.accent} 5%, transparent)` : "transparent",
+                  borderRadius: 8,
+                }} data-testid={`insights-top-whisky-${i}`}>
+                  <span style={{
+                    width: 26, textAlign: "right",
+                    color: medalColor,
+                    fontWeight: isTop3 ? 700 : 400,
+                    fontVariantNumeric: "tabular-nums",
+                    fontSize: isTop3 ? 15 : 13,
+                    flexShrink: 0,
+                  }}>
+                    {i + 1}.
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      color: v.text,
+                      fontWeight: isTop3 ? 600 : 400,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}>
+                      {whiskyLabel}
+                    </div>
                   </div>
+                  <span style={{ color: v.accent, fontWeight: 600, fontVariantNumeric: "tabular-nums", fontSize: 13, flexShrink: 0 }}>
+                    {w.totalScore != null ? w.totalScore.toFixed(1) : "—"}
+                  </span>
+                  <span style={{
+                    fontSize: 10, color: v.muted,
+                    background: `color-mix(in srgb, ${v.accent} 10%, transparent)`,
+                    padding: "2px 6px", borderRadius: 8, flexShrink: 0,
+                  }}>
+                    #{w.tastingNumber}
+                  </span>
                 </div>
-                <span style={{ color: v.accent, fontWeight: 600, fontVariantNumeric: "tabular-nums", fontSize: 13 }}>
-                  {w.totalScore?.toFixed(1)}
-                </span>
-                <span style={{
-                  fontSize: 10, color: v.muted,
-                  background: `color-mix(in srgb, ${v.accent} 10%, transparent)`,
-                  padding: "2px 6px", borderRadius: 8,
-                }}>
-                  #{w.tastingNumber}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ textAlign: "center", padding: 24, color: v.muted, fontSize: 13 }}>
+            {t("m2.insights.noData", "No data available")}
+          </div>
+        )}
       </div>
 
       <SectionHeader icon={MapPin} title={t("m2.insights.regionsTitle", "Best-Performing Regions")} />
@@ -208,67 +271,74 @@ export default function M2HistoricalInsights() {
 
       <SectionHeader icon={Flame} title={t("m2.insights.smokyTitle", "Smoky vs. Non-Smoky")} />
       <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16 }} data-testid="insights-smoky">
-        <div style={{ display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
-          <div style={{ width: 180, height: 180, flexShrink: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={smokyPieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={45}
-                  outerRadius={75}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {smokyPieData.map((_, i) => (
-                    <Cell key={i} fill={smokyColors[i % smokyColors.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 8, fontSize: 12 }}
-                  itemStyle={{ color: v.text }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+        {smokyPieData.length > 0 ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
+            <div style={{ width: 180, height: 180, flexShrink: 0, margin: "0 auto" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={smokyPieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={75}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {smokyPieData.map((_, i) => (
+                      <Cell key={i} fill={smokyColors[i % smokyColors.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 8, fontSize: 12 }}
+                    itemStyle={{ color: v.text }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ flex: 1, minWidth: 120 }}>
+              {smokyPieData.map((d, i) => (
+                <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: smokyColors[i], flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: v.text, flex: 1 }}>{d.name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: v.accent, fontVariantNumeric: "tabular-nums" }}>{d.value}</span>
+                  <span style={{ fontSize: 11, color: v.muted }}>
+                    ({smokyTotal > 0 ? Math.round((d.value / smokyTotal) * 100) : 0}%)
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div style={{ flex: 1, minWidth: 120 }}>
-            {smokyPieData.map((d, i) => (
-              <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: smokyColors[i], flexShrink: 0 }} />
-                <span style={{ fontSize: 13, color: v.text, flex: 1 }}>{d.name}</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: v.accent, fontVariantNumeric: "tabular-nums" }}>{d.value}</span>
-                <span style={{ fontSize: 11, color: v.muted }}>
-                  ({smokyTotal > 0 ? Math.round((d.value / smokyTotal) * 100) : 0}%)
-                </span>
-              </div>
-            ))}
+        ) : (
+          <div style={{ textAlign: "center", padding: 24, color: v.muted, fontSize: 13 }}>
+            {t("m2.insights.noData", "No data available")}
           </div>
-        </div>
+        )}
       </div>
 
       <SectionHeader icon={Wine} title={t("m2.insights.caskTitle", "Cask Type Comparison")} />
       <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16 }} data-testid="insights-cask">
         {caskData.length > 0 ? (
-          <>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {caskData.map((c, i) => {
-                const maxVal = caskData[0]?.value || 1;
-                const pct = (c.value / maxVal) * 100;
-                return (
-                  <div key={c.name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ width: 90, fontSize: 12, color: v.text, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0 }}>
-                      {c.name}
-                    </span>
-                    <div style={{ flex: 1, height: 8, background: v.border, borderRadius: 4, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${pct}%`, background: CHART_COLORS[i % CHART_COLORS.length], borderRadius: 4 }} />
-                    </div>
-                    <span style={{ fontSize: 12, color: v.muted, fontVariantNumeric: "tabular-nums", width: 28, textAlign: "right" }}>{c.value}</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {caskData.map((c, i) => {
+              const maxVal = caskData[0]?.value || 1;
+              const pct = (c.value / maxVal) * 100;
+              return (
+                <div key={c.name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{
+                    width: 90, fontSize: 12, color: v.text, textAlign: "right",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0,
+                  }}>
+                    {c.name}
+                  </span>
+                  <div style={{ flex: 1, height: 8, background: v.border, borderRadius: 4, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: CHART_COLORS[i % CHART_COLORS.length], borderRadius: 4 }} />
                   </div>
-                );
-              })}
-            </div>
-          </>
+                  <span style={{ fontSize: 12, color: v.muted, fontVariantNumeric: "tabular-nums", width: 28, textAlign: "right" }}>{c.value}</span>
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <div style={{ textAlign: "center", padding: 24, color: v.muted, fontSize: 13 }}>
             {t("m2.insights.noData", "No data available")}
@@ -316,7 +386,7 @@ export default function M2HistoricalInsights() {
 
         <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 8 }}>
           <div style={{
-            flex: 1, minWidth: 140,
+            flex: "1 1 140px", minWidth: 120,
             background: `color-mix(in srgb, ${v.accent} 8%, transparent)`,
             borderRadius: 10, padding: "12px 14px",
           }}>
@@ -324,7 +394,7 @@ export default function M2HistoricalInsights() {
             <div style={{ fontSize: 14, fontWeight: 600, color: v.text }}>{topRegions[0]?.[0] ?? "—"}</div>
           </div>
           <div style={{
-            flex: 1, minWidth: 140,
+            flex: "1 1 140px", minWidth: 120,
             background: `color-mix(in srgb, ${v.accent} 8%, transparent)`,
             borderRadius: 10, padding: "12px 14px",
           }}>
@@ -332,7 +402,7 @@ export default function M2HistoricalInsights() {
             <div style={{ fontSize: 14, fontWeight: 600, color: v.text }}>{topCasks[0]?.[0] ?? "—"}</div>
           </div>
           <div style={{
-            flex: 1, minWidth: 140,
+            flex: "1 1 140px", minWidth: 120,
             background: `color-mix(in srgb, ${v.accent} 8%, transparent)`,
             borderRadius: 10, padding: "12px 14px",
           }}>

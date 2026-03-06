@@ -9688,47 +9688,53 @@ Important rules:
 
   app.get("/api/historical/whisky-appearances", async (req: Request, res: Response) => {
     try {
+      const { historicalTastingEntries: hte, historicalTastings: ht } = await import("@shared/schema");
+      const { db } = await import("./db");
+      const { sql: sqlTag, and, asc } = await import("drizzle-orm");
+
       const distillery = (req.query.distillery as string || "").trim().toLowerCase();
       const name = (req.query.name as string || "").trim().toLowerCase();
       if (!distillery && !name) return res.json({ appearances: [], count: 0 });
 
-      const { tastings: allTastings } = await storage.getHistoricalTastings({ limit: 10000 });
-      const tastingMap = new Map(allTastings.map(t => [t.id, t]));
-      const allEntries = await storage.getAllHistoricalTastingEntries();
+      const conditions = [];
+      if (distillery) {
+        conditions.push(sqlTag`lower(${hte.distilleryRaw}) LIKE ${'%' + distillery + '%'}`);
+      }
+      if (name) {
+        conditions.push(sqlTag`lower(${hte.whiskyNameRaw}) LIKE ${'%' + name + '%'}`);
+      }
 
-      const matches = allEntries.filter((e: any) => {
-        const d = (e.distilleryRaw || "").toLowerCase();
-        const n = (e.whiskyNameRaw || "").toLowerCase();
-        if (distillery && name) {
-          return d.includes(distillery) && n.includes(name);
-        }
-        if (distillery) return d.includes(distillery);
-        if (name) return n.includes(name);
-        return false;
-      });
+      const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
 
-      const appearances = matches.map((e: any) => {
-        const tasting = tastingMap.get(e.historicalTastingId);
-        return {
-          tastingId: e.historicalTastingId,
-          tastingNumber: tasting?.tastingNumber ?? 0,
-          tastingTitle: tasting?.titleDe ?? `Tasting #${tasting?.tastingNumber ?? "?"}`,
-          tastingDate: tasting?.tastingDate,
-          distillery: e.distilleryRaw,
-          whiskyName: e.whiskyNameRaw,
-          totalScore: e.totalScore,
-          totalRank: e.totalRank,
-          noseScore: e.noseScore,
-          tasteScore: e.tasteScore,
-          finishScore: e.finishScore,
-        };
-      }).sort((a: any, b: any) => (a.tastingNumber || 0) - (b.tastingNumber || 0));
+      const rows = await db
+        .select({
+          tastingId: hte.historicalTastingId,
+          tastingNumber: ht.tastingNumber,
+          tastingTitle: ht.titleDe,
+          tastingDate: ht.tastingDate,
+          distillery: hte.distilleryRaw,
+          whiskyName: hte.whiskyNameRaw,
+          totalScore: hte.totalScore,
+          totalRank: hte.totalRank,
+          noseScore: hte.noseScore,
+          tasteScore: hte.tasteScore,
+          finishScore: hte.finishScore,
+        })
+        .from(hte)
+        .innerJoin(ht, sqlTag`${hte.historicalTastingId} = ${ht.id}`)
+        .where(whereClause)
+        .orderBy(asc(ht.tastingNumber));
 
-      const scoredApps = appearances.filter((a: any) => a.totalScore != null);
+      const appearances = rows.map(r => ({
+        ...r,
+        tastingTitle: r.tastingTitle ?? `Tasting #${r.tastingNumber ?? "?"}`,
+      }));
+
+      const scoredApps = appearances.filter(a => a.totalScore != null);
       const avgScore = scoredApps.length > 0
-        ? scoredApps.reduce((sum: number, a: any) => sum + (a.totalScore || 0), 0) / scoredApps.length
+        ? scoredApps.reduce((sum, a) => sum + (a.totalScore || 0), 0) / scoredApps.length
         : null;
-      const bestPlacement = appearances.reduce((best: any, a: any) => {
+      const bestPlacement = appearances.reduce<any>((best, a) => {
         if (a.totalRank != null && (best === null || a.totalRank < best.totalRank)) return a;
         return best;
       }, null);
@@ -9772,6 +9778,22 @@ Important rules:
       res.status(statusCode).json(result);
     } catch (e: any) {
       console.error("Historical import error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/historical/reconciliation", async (req: Request, res: Response) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const { runReconciliation } = await import("./historical-reconciliation.js");
+      const report = await runReconciliation();
+      res.json(report);
+    } catch (e: any) {
+      console.error("Historical reconciliation error:", e);
       res.status(500).json({ message: e.message });
     }
   });
