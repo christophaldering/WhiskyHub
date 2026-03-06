@@ -1,417 +1,328 @@
-# CaskSense v2.0.0 — Projekt- & Menüstruktur für ChatGPT
+# CaskSense v2.0.0 — Systemstatus
 
-**Stand:** 5. März 2026  
-**Stack:** React 19 + Vite 7 · Express 5 · PostgreSQL + Drizzle ORM · TypeScript  
-**Domain:** casksense.com (Replit Hosting)  
-**Admin:** Christoph Aldering
+> Stand: 06. Maerz 2026
+> Plattform: Replit (Node.js, PostgreSQL)
 
 ---
 
-## 1. Verzeichnisstruktur (komplett)
+## 1. Was ist CaskSense?
+
+Eine Web-App fuer strukturierte, kollaborative Whisky-Tastings. Nutzer koennen Sessions erstellen, Teilnehmer einladen, Whiskys blind bewerten und Ergebnisse analysieren. Die App richtet sich an Whisky-Enthusiasten, die ihre Tastings professionell dokumentieren moechten.
+
+**Sole Admin/User:** Christoph Aldering (`christoph.aldering@googlemail.com`)
+
+---
+
+## 2. Tech-Stack
+
+| Schicht       | Technologie                                                              |
+|---------------|--------------------------------------------------------------------------|
+| Frontend      | React 19, Vite 7, TypeScript, Wouter (Routing), TanStack React Query    |
+| UI            | shadcn/ui + Radix UI + Tailwind CSS, Dark Warm Theme (`#d4a256` Accent)  |
+| State         | Zustand (Client), React Query (Server State)                             |
+| Backend       | Express 5, TypeScript, ESM Modules                                      |
+| Datenbank     | PostgreSQL, Drizzle ORM, Zod Validation                                 |
+| i18n          | react-i18next (Deutsch + Englisch)                                       |
+| AI            | OpenAI GPT-4o (Flaschen-ID, Content, Preise, Vorschlaege)               |
+| Speicher      | Replit Object Storage (Bilder)                                           |
+| Charts        | Recharts (Radar, Bar, Pie, Line)                                         |
+| PDF           | jsPDF                                                                    |
+| E-Mail        | Nodemailer                                                               |
+| Excel         | ExcelJS                                                                  |
+| Mobile        | Capacitor (iOS/Android Wrapper)                                          |
+| Tests         | Vitest (67 Tests, alle gruen)                                            |
+| Animationen   | Framer Motion                                                            |
+
+---
+
+## 3. Projektstruktur
 
 ```
-casksense/
-├── client/                          # React SPA
+/
+├── client/                    # Frontend (React/Vite)
 │   └── src/
-│       ├── App.tsx                  # Router (alle Routen, 3 UI-Schichten)
-│       ├── main.tsx                 # Einstiegspunkt
-│       ├── index.css                # Globales CSS (Tailwind)
-│       │
-│       ├── pages/                   # 103 Seiten-Dateien
-│       │   ├── public-landing.tsx       # "/" — Premium Landing (8 Sektionen)
-│       │   ├── guided-presentation.tsx  # "/presentation" — 18-Slide Deck
-│       │   ├── landing-v2.tsx           # "/landing-v2" — Interaktive Landing
-│       │   ├── feature-showcase.tsx     # "/feature-showcase" — 11 Feature-Demos
-│       │   ├── feature-tour.tsx         # "/feature-tour"
-│       │   ├── tour.tsx                 # "/tour"
-│       │   ├── intro.tsx                # "/intro"
-│       │   │
-│       │   ├── simple-enter.tsx         # "/enter" — Login/Registrierung
-│       │   ├── tasting-hub-simple.tsx   # "/tasting" — Tasting-Hub (Tab 1)
-│       │   ├── simple-host.tsx          # "/host" — Tasting erstellen
-│       │   ├── host-dashboard.tsx       # "/host-dashboard" — Host-Cockpit
-│       │   ├── tasting-room-simple.tsx  # "/tasting-room-simple/:id" — Live-Raum
-│       │   ├── tasting-results.tsx      # "/tasting-results/:id" — Ergebnisse
-│       │   ├── sessions-dark.tsx        # "/sessions" — Tasting-Liste
-│       │   ├── tasting-calendar.tsx     # "/tasting-calendar"
-│       │   ├── naked-tasting.tsx        # "/naked/:code" — Gast-Modus
-│       │   ├── quick-tasting.tsx        # "/join/:code" — Schnellbeitritt
-│       │   │
-│       │   ├── my-taste.tsx             # "/my-taste" — Persönl. Dashboard (Tab 2)
-│       │   ├── simple-log.tsx           # "/my-taste/log" — Dram loggen
-│       │   ├── my-journal.tsx           # "/my-taste/journal" — Tagebuch
-│       │   ├── flavor-profile.tsx       # "/my-taste/profile" — Geschmacksprofil
-│       │   ├── my-taste-analytics.tsx   # "/my-taste/analytics"
-│       │   ├── my-taste-compare.tsx     # "/my-taste/compare"
-│       │   ├── my-taste-recommendations.tsx  # "/my-taste/recommendations"
-│       │   ├── my-taste-pairings.tsx    # "/my-taste/pairings"
-│       │   ├── my-taste-benchmark.tsx   # "/my-taste/benchmark"
-│       │   ├── my-taste-wheel.tsx       # "/my-taste/wheel" — Aroma-Rad
-│       │   ├── my-taste-settings.tsx    # "/my-taste/settings" — Einstellungen
-│       │   ├── whiskybase-collection.tsx # "/my-taste/collection"
-│       │   ├── wishlist.tsx             # "/my-taste/wishlist"
-│       │   │
-│       │   ├── data-export-dark.tsx     # "/data-export"
-│       │   ├── ai-curation-dark.tsx     # "/ai-curation"
-│       │   ├── simple-analyze.tsx       # "/analyze"
-│       │   ├── vocabulary-dark.tsx      # "/vocabulary" — Lexikon
-│       │   ├── tasting-guide.tsx        # "/guide" & "/discover/guide"
-│       │   ├── discover-templates.tsx   # "/discover/templates"
-│       │   ├── discover-lexicon.tsx     # "/discover/lexicon"
-│       │   ├── discover-distilleries-native.tsx  # "/discover/distilleries"
-│       │   ├── discover-bottlers-native.tsx      # "/discover/bottlers"
-│       │   ├── discover-community-native.tsx     # "/discover/community"
-│       │   ├── activity-feed.tsx        # "/discover/activity"
-│       │   ├── about-dark.tsx           # "/discover/about"
-│       │   ├── donate-dark.tsx          # "/discover/donate"
-│       │   ├── support-console.tsx      # "/support"
-│       │   ├── tasting-recap.tsx        # Tasting-Rückblick
-│       │   ├── invite-accept.tsx        # Einladungs-Annahme
-│       │   │
-│       │   ├── admin-panel.tsx          # "/admin" — Admin-Bereich
-│       │   ├── impressum.tsx            # "/impressum"
-│       │   ├── privacy.tsx              # "/privacy"
-│       │   │
-│       │   ├── landing.tsx              # "/app-entry" (alter Landing)
-│       │   ├── home-dashboard.tsx       # Legacy Home
-│       │   ├── tasting-hub.tsx          # Legacy Tasting Hub
-│       │   ├── tasting-room.tsx         # Legacy Tasting Room
-│       │   ├── discover-hub.tsx         # Legacy Discover
-│       │   ├── profile.tsx              # Legacy Profile
-│       │   └── ... (weitere Legacy/Hilfsdateien)
-│       │
-│       ├── components/
-│       │   ├── simple/
-│       │   │   ├── simple-shell.tsx      # Layout-Wrapper Simple Mode (Header + Bottom Nav)
-│       │   │   └── simple-legacy-shell.tsx # Legacy-Wrapper
-│       │   ├── apple/
-│       │   │   └── index.tsx            # Apple-Style Komponenten (ApplePage, AppleSection, etc.)
-│       │   ├── admin/
-│       │   │   └── AdminLayout.tsx      # Admin-Bereich Layout
-│       │   ├── landing/
-│       │   │   ├── DemoDramLogger.tsx    # Interaktive Demo (Landing V2)
-│       │   │   └── DemoPanelCompare.tsx  # Interaktive Demo (Landing V2)
-│       │   ├── ui/                      # shadcn/ui Basis-Komponenten (~50 Dateien)
-│       │   ├── layout.tsx               # Legacy Layout mit Sidebar
-│       │   ├── session-sheet.tsx         # User/Session Menu (Drawer)
-│       │   ├── session-control.tsx       # Host-Steuerung
-│       │   ├── evaluation-form.tsx       # Bewertungsformular
-│       │   ├── guided-tasting.tsx        # Guided-Modus Komponente
-│       │   ├── flight-board.tsx          # Flight Board
-│       │   ├── discussion-panel.tsx      # Diskussions-Panel
-│       │   ├── invite-panel.tsx          # Einladungs-Panel
-│       │   ├── tasting-note-generator.tsx # KI-Notiz-Generator
-│       │   ├── tasting-analytics.tsx     # Analyse-Visualisierungen
-│       │   ├── reveal-presenter.tsx      # Reveal-Show
-│       │   ├── reveal-view.tsx           # Reveal-Ansicht
-│       │   ├── pdf-export-dialog.tsx     # PDF-Export
-│       │   ├── briefing-notes.tsx        # Host Briefing
-│       │   ├── curation-wizard.tsx       # KI-Kuratierung
-│       │   ├── feedback-button.tsx       # Feedback-Button
-│       │   ├── language-toggle.tsx       # Sprachumschaltung
-│       │   ├── theme-toggle.tsx          # Theme-Umschaltung
-│       │   └── ... (weitere Feature-Komponenten)
-│       │
-│       ├── v2/                          # V2 Dark Warm UI (/app/*)
-│       │   ├── components/
-│       │   │   ├── AppShellV2.tsx        # V2 Layout (5-Tab Bottom Nav)
-│       │   │   ├── CardV2.tsx
-│       │   │   ├── ListRowV2.tsx
-│       │   │   ├── PageHeaderV2.tsx
-│       │   │   ├── SearchBarV2.tsx
-│       │   │   └── SegmentedControlV2.tsx
-│       │   └── pages/
-│       │       ├── V2Home.tsx            # /app/home
-│       │       ├── V2Sessions.tsx        # /app/sessions
-│       │       ├── V2SessionDetail.tsx   # /app/session/:id
-│       │       ├── V2Discover.tsx        # /app/discover
-│       │       ├── V2Cellar.tsx          # /app/cellar
-│       │       └── V2More.tsx            # /app/more
-│       │
-│       ├── lab-dark/                    # Lab Experimental (/lab-dark/*)
-│       │   ├── LabDarkLayout.tsx
-│       │   └── pages/
-│       │       ├── LabHome.tsx
-│       │       ├── LabSessions.tsx
-│       │       ├── LabDiscover.tsx
-│       │       └── LabSessionDetail.tsx
-│       │
-│       ├── lib/
-│       │   ├── config.ts               # Feature Flags (NAV_VERSION, UI_SKIN, etc.)
-│       │   ├── themeVars.ts            # Theme-System (dark-warm / light-warm)
-│       │   ├── theme.ts               # Legacy Theme
-│       │   ├── i18n.ts                # Internationalisierung (~7.900 Keys, DE/EN)
-│       │   ├── api.ts                 # API-Client Funktionen
-│       │   ├── store.ts               # Zustand Store (Auth, State)
-│       │   ├── session.ts             # Session-Handling
-│       │   ├── simple-auth.ts         # Simple Mode Auth
-│       │   ├── demoMath.ts            # Demo-Berechnung (Landing V2)
-│       │   ├── queryClient.ts         # React Query Client
-│       │   ├── ambient.ts             # Ambient-Effekte
-│       │   ├── comparable-baseline.ts # Benchmark-Basisdaten
-│       │   ├── utils.ts               # Hilfsfunktionen
-│       │   └── translations/          # Zusätzliche Sprachen (ES, FR, IT, NL, ZH)
-│       │
-│       ├── hooks/
-│       │   ├── use-toast.ts
-│       │   ├── use-mobile.tsx
-│       │   ├── use-ai-status.ts
-│       │   ├── use-upload.ts
-│       │   ├── use-unsaved-changes.ts
-│       │   └── use-input-focused.ts
-│       │
-│       └── data/
-│           ├── distilleries.ts        # Destillerien-Daten
-│           └── bottlers.ts            # Abfüller-Daten
-│
-├── server/                            # Express 5 Backend
-│   ├── index.ts                       # Server-Einstiegspunkt
-│   ├── routes.ts                      # Alle API-Endpunkte (~6.000 Zeilen)
-│   ├── storage.ts                     # IStorage Interface + Drizzle-Implementierung
-│   ├── db.ts                          # PostgreSQL-Verbindung
-│   ├── ai-client.ts                   # OpenAI GPT-4o Integration
-│   ├── ai-settings.ts                 # KI Kill-Switch
-│   ├── email.ts                       # Nodemailer (Gmail)
-│   ├── excel-utils.ts                 # ExcelJS Helper
-│   ├── insight-engine.ts              # Analyse-Engine
-│   ├── static.ts                      # Statische Dateien
-│   ├── vite.ts                        # Vite Dev-Server Integration
-│   ├── lib/
-│   │   ├── auth.ts                    # Auth-Logik
-│   │   ├── cache.ts                   # Caching
-│   │   ├── matching.ts               # Fuzzy Matching
-│   │   ├── ocr.ts                     # OCR/Bilderkennung
-│   │   ├── onlineSearch.ts            # Online-Suche
-│   │   └── whiskyIndex.ts             # Whisky-Index
-│   └── replit_integrations/           # Replit-Integrationen
-│       ├── object_storage/            # Bildupload (Flaschen, Avatare)
-│       ├── chat/                      # KI-Chat
-│       ├── audio/                     # Audio
-│       ├── image/                     # Bildgenerierung
-│       └── batch/                     # Batch-Verarbeitung
-│
-├── shared/                            # Geteilter Code (Client + Server)
-│   ├── schema.ts                      # Drizzle ORM Schema (26 Tabellen) + Zod
-│   ├── version.ts                     # Build-Version
-│   └── models/
-│       └── chat.ts                    # Chat-Modelle
-│
-├── tests/                             # Tests
-│   └── link-integrity.ts             # Route-Integritäts-Test (43/43)
-│
-├── docs/                              # Dokumentation
-├── scripts/                           # Build/Migration-Scripts
-├── dist/                              # Build-Output
-├── uploads/                           # Lokale Uploads (Dev)
-│
-├── package.json                       # Dependencies
-├── vite.config.ts                     # Vite-Konfiguration
-├── drizzle.config.ts                  # Drizzle-Konfiguration
-├── tsconfig.json                      # TypeScript
-├── capacitor.config.ts                # Capacitor (Mobile)
-└── replit.md                          # Projekt-Dokumentation
+│       ├── components/        # Wiederverwendbare Komponenten
+│       │   ├── m2/            # Module 2 spezifische Komponenten
+│       │   ├── simple/        # Simple Mode Layout (Header + Bottom Nav)
+│       │   ├── apple/         # Apple-Style Komponenten
+│       │   ├── admin/         # Admin-Bereich Layout
+│       │   ├── landing/       # Landing Page Demos
+│       │   └── ui/            # shadcn/ui Basis-Komponenten (~50 Dateien)
+│       ├── pages/             # Seiten (~130 Dateien)
+│       │   └── m2/            # Module 2 Seiten (~50 Dateien)
+│       ├── v2/                # V2 Dark Warm UI (/app/*)
+│       ├── lab-dark/          # Lab Experimental (/lab-dark/*)
+│       ├── lib/               # Utilities, API, i18n, Theme, Config
+│       │   ├── config.ts      # Feature Flags (NAV_VERSION, UI_SKIN, etc.)
+│       │   ├── themeVars.ts   # Theme-System (dark-warm / light-warm)
+│       │   ├── i18n.ts        # Internationalisierung (~11.000 Zeilen, DE/EN)
+│       │   ├── api.ts         # API-Client Funktionen
+│       │   ├── store.ts       # Zustand Store (Auth, State)
+│       │   └── session.ts     # Session-Handling
+│       ├── hooks/             # Custom React Hooks
+│       └── data/              # Statische Daten (Destillerien, Abfueller)
+├── server/                    # Backend (Express)
+│   ├── routes.ts              # ~10.100 Zeilen, alle API Endpoints
+│   ├── storage.ts             # ~2.100 Zeilen, DB-Zugriff (IStorage Interface)
+│   ├── historical-import.ts   # Excel-Import fuer historische Tastings
+│   ├── historical-reconciliation.ts  # Datenqualitaets-Audit
+│   ├── ai-client.ts           # OpenAI Integration
+│   ├── ai-settings.ts         # KI Kill-Switch
+│   ├── email.ts               # E-Mail Versand (Nodemailer/Gmail)
+│   ├── excel-utils.ts         # ExcelJS Helper
+│   ├── insight-engine.ts      # Analyse-Engine
+│   ├── db.ts                  # PostgreSQL-Verbindung
+│   ├── static.ts              # Statische Dateien
+│   ├── vite.ts                # Vite Dev-Server Integration
+│   └── lib/                   # Auth, Cache, Matching, OCR, Whisky-Index
+├── shared/                    # Geteilter Code (Client + Server)
+│   ├── schema.ts              # Drizzle ORM Schema (35+ Tabellen) + Zod Schemas
+│   └── version.ts             # Build-Version
+└── tests/
+    └── unit/                  # Vitest Tests (7 Dateien, 67 Tests)
 ```
 
 ---
 
-## 2. Aktive Feature Flags
+## 4. Datenbank-Schema (PostgreSQL)
+
+### Kern-Tabellen
+| Tabelle                    | Zweck                                          |
+|----------------------------|-------------------------------------------------|
+| `participants`             | Benutzer (UUID, Name, E-Mail, Rolle, Passwort)  |
+| `profiles`                 | Geschmacksprofil, Praeferenzen, Einstellungen    |
+| `tastings`                 | Tasting-Sessions (Status: draft/open/closed/reveal/archived) |
+| `tasting_participants`     | Teilnehmer pro Session                           |
+| `whiskies`                 | Whiskys pro Session                              |
+| `ratings`                  | Bewertungen (Nase/Geschmack/Finish/Balance/Gesamt) |
+| `journal_entries`          | Persoenliches Whisky-Tagebuch                    |
+| `whiskybase_collection`    | Importierte Whiskybase-Sammlung (CSV)            |
+
+### Historisches Archiv
+| Tabelle                        | Zweck                                      |
+|--------------------------------|--------------------------------------------|
+| `historical_tastings`          | 32 importierte Tastings (aus Excel)        |
+| `historical_tasting_entries`   | 384 Whisky-Eintraege mit Scores            |
+| `historical_import_runs`       | Import-Protokoll                           |
+
+### Community & Zugriffskontrolle
+| Tabelle                    | Zweck                                          |
+|----------------------------|-------------------------------------------------|
+| `communities`              | Community-Gruppen (Slug, Name, Sichtbarkeit)    |
+| `community_memberships`    | Mitgliedschaften (Participant + Community + Rolle) |
+
+### Social & Interaktion
+| Tabelle                    | Zweck                                          |
+|----------------------------|-------------------------------------------------|
+| `whisky_friends`           | Freundschaften zwischen Teilnehmern             |
+| `wishlist_entries`         | Persoenliche Wunschliste                        |
+| `session_invites`          | Einladungen zu Sessions                         |
+| `session_presence`         | Online-Status (Heartbeat)                       |
+| `notifications`            | Benachrichtigungen                              |
+| `discussion_entries`       | Diskussionsbeitraege in Sessions                |
+| `tasting_photos`           | Fotos pro Session                               |
+| `tasting_reminders`        | Erinnerungen                                    |
+
+### Admin & System
+| Tabelle                    | Zweck                                          |
+|----------------------------|-------------------------------------------------|
+| `admin_audit_log`          | Audit-Protokoll (Admin-Aktionen)                |
+| `app_settings`             | Feature-Toggles (z.B. Friend Notifications)     |
+| `system_settings`          | System-Konfiguration                            |
+| `user_feedback`            | Nutzerfeedback                                  |
+| `newsletter_recipients`    | Newsletter-Empfaenger                           |
+| `newsletters`              | Newsletter-Inhalte                              |
+
+### Weitere
+`benchmark_entries`, `changelog_entries`, `encyclopedia_suggestions`, `reflection_entries`, `reminder_log`
+
+---
+
+## 5. Wichtigste Features
+
+### Tasting-System
+- **Live Tastings**: Host erstellt Session, laedt Teilnehmer ein (QR/Link), Blind-Modus, Fortschrittsanzeige
+- **Solo Drams**: Einzelbewertung mit AI-gestuetzter Whisky-Erkennung (Foto/Text)
+- **Rating-System**: 5 Dimensionen (Nase/Geschmack/Finish/Balance/Gesamt), Flavor-Chips, Sprach-Notizen
+- **Hosting Dashboard**: Desktop-first 3-Spalten-Layout fuer Live-Kontrolle
+- **Context Level**: Naked (blind) / Self (eigene Bewertung) / Full (alle sehen alles)
+- **Ergebnisse**: Ranking, Podium, Statistiken, Export (PDF/CSV/Excel/ZIP)
+- **Guest Mode**: "Standard Naked" (persistente Identitaet) und "Ultra Naked" (ephemere Identitaet)
+
+### Persoenlicher Bereich ("Taste")
+- Geschmacksprofil & Analytics, Flavor Wheel
+- Whisky-Sammlung (Whiskybase CSV-Sync), Collection Analysis (8 Sektionen)
+- Journal, Badges, Vergleichstool, Empfehlungen, Wunschliste
+
+### Historisches Archiv
+- 32 Tastings, 384 Whisky-Eintraege (Excel-Import)
+- Durchsuchbar, sortierbar, mit Winner-Podium und Score-Verteilung
+- Insights: Top-Whiskys, Regionen, Rauchig/Nicht-Rauchig, Fasstypen, Radar-Charts
+
+### Community & Social
+- Freundschaften, Taste Twins, Leaderboards, Activity Feed
+- Online-Status mit Benachrichtigungen (Toggle per User und Admin)
+- Community-Rankings
+
+### AI-Features
+- Flaschen-Identifikation (Foto)
+- Tasting-Vorschlaege, Content-Generierung
+- Marktpreis-Schaetzung
+- Whiskybase ID Auto-Fill
+
+### Oeffentliche Seiten
+- Premium Landing Page (8 Sektionen, Scroll-Animationen)
+- Guided Presentation (18 Slides)
+- Feature Showcase (11 interaktive Demos)
+
+---
+
+## 6. Community Visibility & Access Model (AKTUELL)
+
+### Architektur
+Historische Tasting-Daten sind durch Community-Mitgliedschaft geschuetzt.
+
+### Sichtbarkeitsstufen
+| Level                  | Wer sieht was?                                      |
+|------------------------|------------------------------------------------------|
+| `community_only`       | Nur Mitglieder der zugehoerigen Community (STANDARD) |
+| `public_aggregated`    | Oeffentlich, aber nur aggregierte Daten               |
+| `public_full`          | Oeffentlich, volle Details                            |
+| `private_admin`        | Nur Admins                                            |
+
+### Aktueller Zustand
+- 1 Community: "Christoph, Rudi & Friends-Circle" (ID: `d1d8fd17-c63f-42e2-8524-7503803c625b`)
+- 32 Tastings, alle `community_only`
+- 1 Admin-Mitglied (Christoph)
+- Anonyme User sehen: 0 Tastings, 0 Analytics, 0 Appearances
+- Admin sieht: alle 32 Tastings, volle Analytics
+
+### Zugriffskontrolle (gehaertet, Stand 06.03.2026)
+- Zentraler Helper: `getAccessibleHistoricalTastingIds(communityIds, isAdmin)` in `server/storage.ts`
+- Alle Endpoints gefiltert: `/tastings`, `/analytics`, `/whisky-appearances`, `/public-insights`
+- `private_admin` explizit von Nicht-Admin-Mitgliedern ausgeschlossen
+- Zod-Validation auf Admin-Endpoints (Community-Update, Mitglieder-Hinzufuegen)
+- Frontend: `enabled: isMember` auf allen Queries, `x-participant-id` Header auf allen Fetches
+
+### Zugriffs-Matrix
+| Benutzertyp              | `/tastings` | `/analytics` | `/tastings/:id` | `/whisky-appearances` | `/public-insights` |
+|--------------------------|-------------|---------------|------------------|------------------------|---------------------|
+| Anonym                   | 0 Ergebnisse | 0 Stats      | 403              | 0 Ergebnisse           | Nur public_*       |
+| Nicht-Mitglied (authed)  | 0 Ergebnisse | 0 Stats      | 403              | 0 Ergebnisse           | Nur public_*       |
+| Community-Mitglied       | Eigene Community + public | Eigene + public | Eigene + public  | Eigene + public        | Nur public_*       |
+| Admin                    | Alles       | Alles         | Alles            | Alles                  | Nur public_*       |
+
+---
+
+## 7. API-Endpunkte (wichtigste)
+
+### Historische Tastings (zugriffskontrolliert)
+```
+GET  /api/historical/tastings              # Liste (gefiltert nach Zugriff)
+GET  /api/historical/tastings/:id          # Detail (403 wenn kein Zugriff)
+GET  /api/historical/analytics             # Statistiken (gefiltert)
+GET  /api/historical/whisky-appearances    # Whisky-Auftritte (gefiltert)
+GET  /api/historical/public-insights       # Nur public_full/public_aggregated
+```
+
+### Community-Management (Admin-only)
+```
+GET    /api/admin/communities              # Alle Communities
+PUT    /api/admin/communities/:id          # Update (Zod-validiert)
+POST   /api/admin/communities/:id/members  # Mitglied hinzufuegen (Zod-validiert)
+DELETE /api/admin/communities/:id/members/:pid  # Mitglied entfernen
+POST   /api/admin/communities/seed         # Initial-Daten erstellen
+GET    /api/communities/mine               # Eigene Mitgliedschaften
+```
+
+### Kern-API
+```
+POST   /api/participants/login             # Anmeldung
+GET    /api/participants/:id               # Profil
+POST   /api/tastings                       # Session erstellen
+GET    /api/tastings/:id                   # Session-Details
+POST   /api/ratings                        # Bewertung abgeben
+GET    /api/journal                        # Journal-Eintraege
+POST   /api/admin/historical/import        # Excel-Import (Admin)
+GET    /api/admin/historical/reconciliation # Datenqualitaet (Admin)
+```
+
+---
+
+## 8. Navigation & Routing
+
+### Simple Mode (aktiv, 2-Tab Bottom Nav)
+- **Tab 1 — Tasting** (`/tasting`): Hub zum Beitreten, Hosten, Sessions-Liste, Host Dashboard
+- **Tab 2 — My Taste** (`/my-taste`): Persoenliches Dashboard mit Drams, Analytics, Collection, Wissen, Community
+
+### Module 2 (Haupt-UI: `/m2/*`)
+- **3-Tab Bottom Nav**: Tasting | Taste | People
+- **Tasting Tab**: `/m2/tastings/*` — Sessions, Host-Wizard, Live Play, Ergebnisse
+- **Taste Tab**: `/m2/taste/*` — Dashboard, Drams, Analytics, Collection, Historical
+- **Circle Tab**: `/m2/circle` — Community, Friends, Leaderboards
+- **Discover**: `/m2/discover/*` — Wissen, Templates, Destillerien
+- **Admin**: `/m2/admin` — Verwaltung, AI, Communities, Import
+
+### Weitere UI-Schichten (nicht primaer aktiv)
+- **V2 Dark Warm** (`/app/*`): 5-Tab Bottom Nav (Home, Sessions, Discover, Cellar, More)
+- **Lab Experimental** (`/lab-dark/*`): Experimentelle Ansichten
+- **Legacy** (`/legacy/*`): Alte Sidebar-Navigation
+
+### Design-Regeln (M2)
+- Inline Styles mit `v.*` CSS-Tokens (NICHT shadcn/ui)
+- Dark Warm Theme, Accent: `#d4a256` (Gold)
+- `M2BackButton` ist Default Export
+- `session.pid` (nicht `session?.participantId`)
+- `Array.from()` fuer Map-Iteration
+
+---
+
+## 9. Aktive Feature Flags
 
 | Flag | Wert | Bedeutung |
 |------|------|-----------|
 | `NAV_VERSION` | `"v2_two_tab"` | 2-Tab Bottom Navigation |
 | `UI_SKIN` | `"apple_dark_warm"` | Apple-Style Dark Warm Design |
-| `MY_TASTE_STRUCTURE` | `"v2_experience_first"` | Drams-Sektion primär, Collection sekundär |
+| `MY_TASTE_STRUCTURE` | `"v2_experience_first"` | Drams-Sektion primaer, Collection sekundaer |
 | `DISCOVER_STRUCTURE` | `"v2_simplified"` | Discover-Inhalte in My Taste integriert |
 | `LANDING_VERSION` | `"two_screen_start"` | 3 Primary + 2 Secondary Actions |
 
 ---
 
-## 3. Menü- & Navigationsarchitektur (Simple Mode — aktiv)
+## 10. Tests
 
-### 3.1 Bottom Navigation (2 Tabs)
+7 Test-Dateien, 67 Tests (alle gruen):
 
-```
-┌──────────────────────────────────────────┐
-│           [Tasting]    [My Taste]        │
-└──────────────────────────────────────────┘
-     Tab 1: /tasting       Tab 2: /my-taste
-```
-
-### 3.2 Tab 1: Tasting (`/tasting` → tasting-hub-simple.tsx)
-
-```
-TASTING HUB
-├── 🟢 Primary Actions (große Karten)
-│   ├── "Tasting beitreten" → /enter (Session-Code eingeben)
-│   └── "Tasting hosten" → /host (neues Tasting erstellen)
-│
-└── 📋 Mehr-Bereich (Listenzeilen)
-    ├── "Letzte Tastings" → /sessions
-    ├── "Host Dashboard" → /host-dashboard
-    └── "Tasting Kalender" → /tasting-calendar
-```
-
-### 3.3 Host Dashboard (`/host-dashboard` → host-dashboard.tsx)
-
-```
-HOST DASHBOARD
-├── 📊 Statistik-Karten (oben)
-│   ├── Tastings gesamt (Zahl)
-│   ├── Teilnehmer gesamt (Zahl)
-│   └── Whiskys gesamt (Zahl)
-│
-├── ⚡ Schnellzugriff
-│   ├── "Neues Tasting" → /host
-│   └── "Tastings" → /sessions
-│   └── [Entwürfe fortsetzen] (falls vorhanden, Badges mit Tasting-Namen)
-│
-├── 📈 Durchschnittliche Bewertungen
-│   └── Balkendiagramm (Nose, Taste, Finish, Balance, Overall)
-│
-├── 📄 Dokumente
-│   ├── "Bewertungsbogen" (PDF Download)
-│   └── "Tasting-Unterlage" (PDF Download)
-│
-├── 🏆 Top Whiskys
-│   └── Rangliste (Name, Destillerie, Score, Bild)
-│
-├── 🛠 Tools & Analyse
-│   ├── "Datenexport" → /data-export (CSV, Excel, kompletter Export)
-│   ├── "Tastings verwalten" → /sessions (Duplizieren, archivieren, bearbeiten)
-│   └── "KI-Kuratierung" → /ai-curation (KI-gestützte Vorschläge)
-│
-├── 📅 Letzte Tastings
-│   └── Liste (Name, Datum, Status-Badge, Teilnehmerzahl)
-│
-└── 📨 Einladungen
-    ├── Tasting-Auswahl (Dropdown)
-    ├── QR-Code anzeigen
-    ├── Einladungs-Link kopieren
-    └── Per E-Mail einladen (mit persönlicher Nachricht)
-```
-
-### 3.4 Tab 2: My Taste (`/my-taste` → my-taste.tsx)
-
-```
-MY TASTE (v2_experience_first Layout)
-├── 🥃 Drams (primäre Sektion)
-│   ├── [+ Dram hinzufügen] → /log-simple (Primary CTA)
-│   ├── "Journal" → /my-taste/journal (Anzahl Einträge)
-│   ├── "Tasting Recap" → /sessions (Anzahl Sessions)
-│   └── "Flavor Profile" → /my-taste/profile
-│
-├── 🎯 Taste Snapshot
-│   ├── Stability-Score
-│   ├── Exploration-Index
-│   ├── Smoke Affinity
-│   └── KI-Insight Text
-│
-├── 📊 Auswertungen
-│   ├── "Analytics" → /my-taste/analytics (ab 10 Bewertungen)
-│   ├── "Vergleich" → /my-taste/compare
-│   ├── "Empfehlungen" → /my-taste/recommendations
-│   ├── "Benchmark" → /my-taste/benchmark
-│   └── "Datenexport" → /data-export
-│
-├── 📦 Sammlung
-│   ├── "Meine Sammlung" → /my-taste/collection (Whiskybase CSV)
-│   └── "Wunschliste" → /my-taste/wishlist
-│
-├── 📚 Wissen (in My Taste integriert, da v2_two_tab)
-│   ├── "Lexikon" → /discover/lexicon
-│   ├── "Destillerien" → /discover/distilleries
-│   ├── "Unabhängige Abfüller" → /discover/bottlers
-│   ├── "Tasting Guide" → /discover/guide
-│   └── "Vorlagen" → /discover/templates
-│
-├── 👥 Community
-│   ├── "Taste Twins" → /discover/community?tab=twins
-│   ├── "Community Rankings" → /discover/community?tab=rankings
-│   └── "Aktivitäts-Feed" → /discover/activity
-│
-├── ℹ️ Über
-│   ├── "Über CaskSense" → /discover/about
-│   └── "Spenden" → /discover/donate
-│
-└── ⚙️ Einstellungen (erreichbar über Profil-Icon)
-    → /my-taste/settings
-    ├── Foto hochladen
-    ├── Name & E-Mail
-    ├── PIN ändern
-    ├── Newsletter Opt-in
-    ├── Bio & Lieblingswhisky
-    ├── Bevorzugte Regionen
-    ├── Peat Level & Fass-Einfluss
-    ├── OpenAI API Key
-    ├── Theme (Dark Warm / Light Warm)
-    ├── Sprache (Deutsch / English)
-    └── Account löschen (Danger Zone)
-```
-
-### 3.5 Unterseiten-Tiefe
-
-```
-/my-taste
-├── /my-taste/journal          Whisky-Tagebuch (Einträge)
-├── /my-taste/profile          Geschmacksprofil (Radar-Chart)
-├── /my-taste/analytics        Persönliche Analysen
-├── /my-taste/compare          Side-by-Side Vergleich
-├── /my-taste/recommendations  KI-Empfehlungen
-├── /my-taste/pairings         Food Pairings
-├── /my-taste/benchmark        Benchmark-Vergleich
-├── /my-taste/wheel            Aroma-Rad
-├── /my-taste/collection       Flaschensammlung
-├── /my-taste/wishlist          Wunschliste
-└── /my-taste/settings          Einstellungen
-```
+| Datei | Tests | Inhalt |
+|-------|-------|--------|
+| `community-access.test.ts` | 13 | Access Control (anonym, admin, member, Zod validation) |
+| `historical-normalization.test.ts` | 32 | Normalisierung, Parsing, Source Keys |
+| `i18n-coverage.test.ts` | 2 | i18n-Abdeckung EN/DE |
+| `Module2Shell.test.tsx` | 4 | M2 Layout Rendering |
+| `M2BackButton.test.tsx` | 4 | Navigation Guards |
+| `M2ProfileMenu.test.tsx` | 8 | Auth-Flow Tests |
+| `theme-tokens.test.ts` | 4 | Theme-Token Konsistenz |
 
 ---
 
-## 4. Weitere UI-Schichten (nicht primär aktiv)
+## 11. Bekannte Einschraenkungen / Offene Punkte
 
-### V2 Dark Warm UI (`/app/*`)
-5-Tab Bottom Navigation: Home | Sessions | Discover | Cellar | More
-
-### Lab Experimental (`/lab-dark/*`)
-Experimentelle Ansichten: Home | Sessions | Discover
-
-### Legacy UI (`/legacy/*`)
-Alte Sidebar-Navigation: Home | Tasting | Discover | Profile
+- Doppelter "nav" Key in `i18n.ts` (harmlos, nicht fixen)
+- Null-Safety TS-Fehler in `server/storage.ts` (pre-existing, nicht fixen)
+- `routes.ts` ist ~10.100 Zeilen (koennte aufgeteilt werden)
+- Kein DB-FK-Constraint auf `community_memberships` (funktioniert, aber kein Referential Integrity)
+- Kein Unique Index auf `(communityId, participantId)` in `community_memberships`
 
 ---
 
-## 5. Header-Menü (SessionSheet)
+## 12. Deployment
 
-```
-HEADER (alle Seiten in Simple Mode)
-├── Links: "CaskSense" Logo → /tasting
-└── Rechts: [Christoph Al...] ▾ (SessionSheet öffnen)
-    ├── Profil-Info (Name, E-Mail)
-    ├── "Einstellungen" → /my-taste/settings
-    ├── "Admin" → /admin (nur für role=admin)
-    └── "Abmelden"
-```
+- Hosting: Replit
+- Build: `npm run dev` (Development), Vite Production Build fuer Deployment
+- DB: Replit PostgreSQL (automatisch provisioniert)
+- Bilder: Replit Object Storage
+- Domain: `.replit.app` oder Custom Domain (casksense.com)
 
 ---
 
-## 6. Öffentliche Seiten (kein Login)
-
-| Route | Seite | Beschreibung |
-|-------|-------|-------------|
-| `/` | Public Landing | 8 Sektionen, Scroll-Animationen, CTAs |
-| `/presentation` | Guided Presentation | 18 Slides, Keyboard/Swipe Nav |
-| `/landing-v2` | Landing V2 | Interaktive Demos (Dram Logger, Panel Compare) |
-| `/feature-showcase` | Feature Showcase | 11 klickbare Feature-Demos |
-| `/impressum` | Impressum | Rechtliche Infos |
-| `/privacy` | Datenschutz | Datenschutzerklärung |
-
----
-
-## 7. Admin-Bereich (`/admin`)
-
-Eigenes Layout (AdminLayout), kein Bottom-Nav, "Back to App" Link.
-Funktionen: Test-Daten, KI Kill-Switch, Platform Settings, Audit Log, Feedback.
-
----
-
-*Dieses Dokument enthält die vollständige Verzeichnis- und Menüstruktur von CaskSense und kann direkt an ChatGPT weitergegeben werden, um über Menü-Architektur, Navigation und Seitenstruktur zu diskutieren.*
+*Dieses Dokument enthaelt den vollstaendigen Systemstatus von CaskSense und kann direkt an ChatGPT oder andere Tools weitergegeben werden, um ueber Architektur, Features, Security und naechste Schritte zu diskutieren.*
