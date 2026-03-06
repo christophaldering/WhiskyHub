@@ -12,7 +12,6 @@ import {
 } from "@/lib/api";
 import { M2Loading } from "@/components/m2/M2Feedback";
 import {
-  Trophy,
   Heart,
   Star,
   Activity,
@@ -20,16 +19,18 @@ import {
   Target,
   UserPlus,
   Trash2,
-  Loader2,
   Rss,
   HeartHandshake,
   Wine,
   NotebookPen,
+  Users,
+  Check,
+  X,
 } from "lucide-react";
 
-type Tab = "rankings" | "twins" | "leaderboard" | "activity" | "friends";
+type Tab = "twins" | "leaderboard" | "activity" | "friends";
 
-const MEDALS = ["🥇", "🥈", "🥉"];
+const MEDALS = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
 
 interface TasteTwin {
   participantId: string;
@@ -89,7 +90,7 @@ export default function M2CircleHome() {
   const session = getSession();
   const { currentParticipant } = useAppStore();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<Tab>("rankings");
+  const [activeTab, setActiveTab] = useState<Tab>("twins");
 
   const [addFriendOpen, setAddFriendOpen] = useState(false);
   const [friendFirstName, setFriendFirstName] = useState("");
@@ -98,12 +99,6 @@ export default function M2CircleHome() {
   const [lbTab, setLbTab] = useState<string>("mostActive");
 
   const pid = currentParticipant?.id || session.pid;
-
-  const { data: rankings = [], isLoading: rankingsLoading } = useQuery<any[]>({
-    queryKey: ["community-scores"],
-    queryFn: () => communityApi.getScores(),
-    enabled: activeTab === "rankings",
-  });
 
   const { data: twins = [], isLoading: twinsLoading } = useQuery<TasteTwin[]>({
     queryKey: ["taste-twins", pid],
@@ -179,11 +174,6 @@ export default function M2CircleHome() {
 
   const tabs: { key: Tab; icon: any; label: string }[] = [
     {
-      key: "rankings",
-      icon: Trophy,
-      label: t("m2.circle.rankings", "Rankings"),
-    },
-    {
       key: "twins",
       icon: HeartHandshake,
       label: t("m2.circle.tasteTwins", "Twins"),
@@ -200,32 +190,17 @@ export default function M2CircleHome() {
     },
     {
       key: "friends",
-      icon: Heart,
-      label: t("m2.circle.friends", "Friends"),
+      icon: Users,
+      label: t("m2.circle.friends", "Freunde"),
     },
   ];
-
-  const pillStyle = (active: boolean): React.CSSProperties => ({
-    padding: "7px 14px",
-    borderRadius: 20,
-    border: "none",
-    cursor: "pointer",
-    fontSize: 13,
-    fontWeight: 600,
-    background: active ? v.accent : v.card,
-    color: active ? "#1a1714" : v.muted,
-    transition: "all 0.2s",
-    display: "flex",
-    alignItems: "center",
-    gap: 5,
-    whiteSpace: "nowrap",
-  });
 
   const cardBase: React.CSSProperties = {
     background: v.card,
     border: `1px solid ${v.border}`,
-    borderRadius: 12,
-    padding: "14px 16px",
+    borderRadius: 14,
+    padding: "16px",
+    boxShadow: `0 1px 3px rgba(0,0,0,0.08)`,
   };
 
   const loadingSpinner = <M2Loading />;
@@ -234,95 +209,15 @@ export default function M2CircleHome() {
     <div
       style={{
         textAlign: "center",
-        padding: "40px 16px",
+        padding: "48px 16px",
         color: v.muted,
         fontSize: 14,
+        lineHeight: 1.6,
       }}
     >
       {text}
     </div>
   );
-
-  function renderRankings() {
-    if (rankingsLoading) return loadingSpinner;
-    const items = Array.isArray(rankings) ? rankings : [];
-    if (items.length === 0)
-      return emptyState(
-        t("m2.circle.noRankings", "No community rankings yet.")
-      );
-
-    return (
-      <div
-        style={{ display: "flex", flexDirection: "column", gap: 8 }}
-        data-testid="m2-circle-rankings-list"
-      >
-        {items.map((item: any, i: number) => (
-          <div
-            key={i}
-            style={{
-              ...cardBase,
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
-            data-testid={`row-ranking-${i}`}
-          >
-            <span
-              style={{ fontSize: 20, width: 28, textAlign: "center" }}
-            >
-              {i < 3 ? (
-                MEDALS[i]
-              ) : (
-                <span style={{ color: v.muted, fontSize: 14 }}>
-                  {i + 1}
-                </span>
-              )}
-            </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  color: v.text,
-                  fontWeight: 600,
-                  fontSize: 14,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-                data-testid={`text-ranking-name-${i}`}
-              >
-                {item.whiskyName}
-              </div>
-              {item.distillery && (
-                <div style={{ color: v.muted, fontSize: 12 }}>
-                  {item.distillery}
-                </div>
-              )}
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div
-                style={{
-                  color: v.accent,
-                  fontWeight: 700,
-                  fontSize: 16,
-                  fontFamily: "'Playfair Display', Georgia, serif",
-                }}
-                data-testid={`text-ranking-score-${i}`}
-              >
-                {typeof item.avgScore === "number"
-                  ? item.avgScore.toFixed(1)
-                  : item.avgScore}
-              </div>
-              {item.count != null && (
-                <div style={{ color: v.muted, fontSize: 11 }}>
-                  {item.count} {t("m2.circle.ratings", "ratings")}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
 
   function renderTwins() {
     if (!pid)
@@ -362,7 +257,7 @@ export default function M2CircleHome() {
           return (
             <div
               key={twin.participantId || i}
-              style={{ ...cardBase }}
+              style={cardBase}
               data-testid={`card-twin-${i}`}
             >
               <div
@@ -370,14 +265,14 @@ export default function M2CircleHome() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  marginBottom: 8,
+                  marginBottom: 10,
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div
                     style={{
-                      width: 32,
-                      height: 32,
+                      width: 36,
+                      height: 36,
                       borderRadius: "50%",
                       background: `color-mix(in srgb, ${v.accent} 15%, transparent)`,
                       display: "flex",
@@ -385,7 +280,7 @@ export default function M2CircleHome() {
                       justifyContent: "center",
                       fontFamily: "'Playfair Display', Georgia, serif",
                       color: v.accent,
-                      fontSize: 13,
+                      fontSize: 15,
                       fontWeight: 600,
                     }}
                   >
@@ -402,7 +297,7 @@ export default function M2CircleHome() {
                   style={{
                     color: v.accent,
                     fontWeight: 700,
-                    fontSize: 16,
+                    fontSize: 18,
                     fontFamily: "'Playfair Display', Georgia, serif",
                   }}
                   data-testid={`text-twin-similarity-${i}`}
@@ -412,8 +307,8 @@ export default function M2CircleHome() {
               </div>
               <div
                 style={{
-                  height: 4,
-                  borderRadius: 2,
+                  height: 5,
+                  borderRadius: 3,
                   background: `color-mix(in srgb, ${v.border} 50%, transparent)`,
                   overflow: "hidden",
                 }}
@@ -422,7 +317,7 @@ export default function M2CircleHome() {
                   style={{
                     height: "100%",
                     width: `${matchValue}%`,
-                    borderRadius: 2,
+                    borderRadius: 3,
                     background: barColor,
                     transition: "width 0.5s ease",
                   }}
@@ -430,7 +325,7 @@ export default function M2CircleHome() {
               </div>
               {twin.sharedWhiskies != null && (
                 <span
-                  style={{ color: v.muted, fontSize: 12, marginTop: 6, display: "block" }}
+                  style={{ color: v.muted, fontSize: 12, marginTop: 8, display: "block" }}
                 >
                   {twin.sharedWhiskies}{" "}
                   {t("m2.circle.sharedWhiskies", "shared whiskies")}
@@ -482,7 +377,7 @@ export default function M2CircleHome() {
           icon: Star,
           entries: structured.highestRated || [],
           format: (e) =>
-            typeof e.avgScore === "number" ? e.avgScore.toFixed(1) : "—",
+            typeof e.avgScore === "number" ? e.avgScore.toFixed(1) : "\u2014",
         },
         {
           key: "mostConsistent",
@@ -492,7 +387,7 @@ export default function M2CircleHome() {
           format: (e) =>
             typeof e.consistency === "number"
               ? `${Math.round(e.consistency * 100)}%`
-              : "—",
+              : "\u2014",
         },
       ];
 
@@ -503,29 +398,42 @@ export default function M2CircleHome() {
         <div data-testid="m2-circle-leaderboard">
           <div
             style={{
-              display: "flex",
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
               gap: 6,
               marginBottom: 16,
-              overflowX: "auto",
             }}
           >
-            {categories.map((cat) => (
-              <button
-                key={cat.key}
-                onClick={() => setLbTab(cat.key)}
-                style={{
-                  ...pillStyle(lbTab === cat.key),
-                  fontSize: 12,
-                  padding: "5px 10px",
-                }}
-                data-testid={`btn-lb-${cat.key}`}
-              >
-                <cat.icon style={{ width: 12, height: 12 }} />
-                {cat.label}
-              </button>
-            ))}
+            {categories.map((cat) => {
+              const isActive = lbTab === cat.key;
+              return (
+                <button
+                  key={cat.key}
+                  onClick={() => setLbTab(cat.key)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 3,
+                    padding: "8px 4px",
+                    borderRadius: 10,
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 10,
+                    fontWeight: isActive ? 700 : 500,
+                    background: isActive ? `color-mix(in srgb, ${v.accent} 12%, transparent)` : "transparent",
+                    color: isActive ? v.accent : v.muted,
+                    transition: "all 0.2s",
+                  }}
+                  data-testid={`btn-lb-${cat.key}`}
+                >
+                  <cat.icon style={{ width: 16, height: 16 }} />
+                  <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{cat.label}</span>
+                </button>
+              );
+            })}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {activeCat.entries.length === 0
               ? emptyState(
                   t("m2.circle.noLeaderboard", "No leaderboard data yet.")
@@ -538,21 +446,28 @@ export default function M2CircleHome() {
                       display: "flex",
                       alignItems: "center",
                       gap: 12,
-                      padding: "12px 16px",
                     }}
                     data-testid={`row-leaderboard-${i}`}
                   >
-                    <span
+                    <div
                       style={{
-                        fontSize: i < 3 ? 20 : 14,
-                        width: 28,
-                        textAlign: "center",
-                        color: i >= 3 ? v.muted : undefined,
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        background: i < 3
+                          ? `color-mix(in srgb, ${v.accent} 15%, transparent)`
+                          : `color-mix(in srgb, ${v.border} 40%, transparent)`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: i < 3 ? 16 : 13,
                         fontWeight: 700,
+                        color: i < 3 ? v.accent : v.muted,
+                        flexShrink: 0,
                       }}
                     >
                       {i < 3 ? MEDALS[i] : i + 1}
-                    </span>
+                    </div>
                     <span
                       style={{
                         flex: 1,
@@ -560,18 +475,22 @@ export default function M2CircleHome() {
                           entry.id === pid ? v.accent : v.text,
                         fontWeight: entry.id === pid ? 700 : 600,
                         fontSize: 14,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
                       }}
                       data-testid={`text-leaderboard-name-${i}`}
                     >
                       {entry.name}
-                      {entry.id === pid ? " ★" : ""}
+                      {entry.id === pid ? " \u2605" : ""}
                     </span>
                     <span
                       style={{
                         color: v.accent,
                         fontWeight: 700,
-                        fontSize: 14,
+                        fontSize: 15,
                         fontFamily: "'Playfair Display', Georgia, serif",
+                        whiteSpace: "nowrap",
                       }}
                       data-testid={`text-leaderboard-value-${i}`}
                     >
@@ -592,7 +511,7 @@ export default function M2CircleHome() {
 
     return (
       <div
-        style={{ display: "flex", flexDirection: "column", gap: 6 }}
+        style={{ display: "flex", flexDirection: "column", gap: 8 }}
         data-testid="m2-circle-leaderboard"
       >
         {flatList.map((entry: any, i: number) => (
@@ -603,21 +522,28 @@ export default function M2CircleHome() {
               display: "flex",
               alignItems: "center",
               gap: 12,
-              padding: "12px 16px",
             }}
             data-testid={`row-leaderboard-${i}`}
           >
-            <span
+            <div
               style={{
-                fontSize: i < 3 ? 20 : 14,
-                width: 28,
-                textAlign: "center",
-                color: i >= 3 ? v.muted : undefined,
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                background: i < 3
+                  ? `color-mix(in srgb, ${v.accent} 15%, transparent)`
+                  : `color-mix(in srgb, ${v.border} 40%, transparent)`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: i < 3 ? 16 : 13,
                 fontWeight: 700,
+                color: i < 3 ? v.accent : v.muted,
+                flexShrink: 0,
               }}
             >
               {i < 3 ? MEDALS[i] : i + 1}
-            </span>
+            </div>
             <span
               style={{ flex: 1, color: v.text, fontWeight: 600, fontSize: 14 }}
               data-testid={`text-leaderboard-name-${i}`}
@@ -665,7 +591,7 @@ export default function M2CircleHome() {
 
     return (
       <div
-        style={{ display: "flex", flexDirection: "column", gap: 8 }}
+        style={{ display: "flex", flexDirection: "column", gap: 10 }}
         data-testid="m2-circle-activity-list"
       >
         {activities.map((activity, index) => (
@@ -680,8 +606,8 @@ export default function M2CircleHome() {
           >
             <div
               style={{
-                width: 36,
-                height: 36,
+                width: 40,
+                height: 40,
                 borderRadius: "50%",
                 background: `color-mix(in srgb, ${v.accent} 12%, transparent)`,
                 display: "flex",
@@ -692,10 +618,10 @@ export default function M2CircleHome() {
             >
               {activity.type === "journal" ? (
                 <NotebookPen
-                  style={{ width: 16, height: 16, color: v.accent }}
+                  style={{ width: 18, height: 18, color: v.accent }}
                 />
               ) : (
-                <Wine style={{ width: 16, height: 16, color: v.accent }} />
+                <Wine style={{ width: 18, height: 18, color: v.accent }} />
               )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -704,89 +630,69 @@ export default function M2CircleHome() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  marginBottom: 2,
+                  marginBottom: 4,
                 }}
               >
                 <span
                   style={{
                     fontSize: 14,
-                    fontWeight: 600,
+                    fontWeight: 700,
                     color: v.text,
-                    fontFamily: "'Playfair Display', Georgia, serif",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                   }}
+                  data-testid={`text-activity-name-${index}`}
                 >
                   {activity.participantName}
                 </span>
-                <span style={{ fontSize: 11, color: v.muted }}>
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: v.muted,
+                    flexShrink: 0,
+                    marginLeft: 8,
+                  }}
+                  data-testid={`text-activity-time-${index}`}
+                >
                   {formatRelativeTime(activity.timestamp, i18n.language)}
                 </span>
               </div>
-              {activity.type === "journal" ? (
-                <div>
-                  <p
-                    style={{
-                      fontSize: 13,
-                      color: v.textSecondary,
-                      margin: 0,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {activity.details.whiskyName || activity.details.title}
-                  </p>
-                  {activity.details.personalScore && (
-                    <div
+              {activity.details && (
+                <>
+                  {activity.type === "journal" && activity.details.whiskyName && (
+                    <p
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4,
-                        marginTop: 4,
+                        fontSize: 13,
+                        color: v.textSecondary,
+                        margin: 0,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        lineHeight: 1.4,
                       }}
                     >
-                      <Star
-                        style={{
-                          width: 12,
-                          height: 12,
-                          color: v.accent,
-                          fill: v.accent,
-                        }}
-                      />
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: v.accent,
-                          fontFamily: "'Playfair Display', Georgia, serif",
-                        }}
-                      >
-                        {activity.details.personalScore}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  <p
-                    style={{
-                      fontSize: 13,
-                      color: v.textSecondary,
-                      margin: 0,
-                    }}
-                  >
-                    {activity.details.title}
-                  </p>
-                  {activity.details.date && (
-                    <p
-                      style={{ fontSize: 11, color: v.muted, margin: "2px 0 0" }}
-                    >
-                      {activity.details.date}
-                      {activity.details.location
-                        ? ` · ${activity.details.location}`
-                        : ""}
+                      {t("m2.circle.loggedDram", "Logged")}: {activity.details.whiskyName}
+                      {activity.details.score != null && (
+                        <span style={{ color: v.accent, fontWeight: 600, marginLeft: 6 }}>
+                          {activity.details.score}/100
+                        </span>
+                      )}
                     </p>
                   )}
-                </div>
+                  {activity.type === "tasting" && activity.details.tastingName && (
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: v.textSecondary,
+                        margin: 0,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {t("m2.circle.joinedTasting", "Joined")}: {activity.details.tastingName}
+                    </p>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -801,128 +707,34 @@ export default function M2CircleHome() {
         t("m2.circle.signInForFriends", "Sign in to manage your friends.")
       );
     if (friendsLoading) return loadingSpinner;
-
-    const pending = Array.isArray(pendingRequests) ? pendingRequests : [];
     const friendList = Array.isArray(friends) ? friends : [];
+    const pending = Array.isArray(pendingRequests) ? pendingRequests : [];
 
     return (
-      <div data-testid="m2-circle-friends-list">
-        {pending.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <h3
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: v.accent,
-                marginBottom: 8,
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-              }}
-            >
-              {t("m2.circle.pendingRequests", "Pending Requests")} ({pending.length})
-            </h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {pending.map((req: any, i: number) => (
-                <div
-                  key={req.id || i}
-                  style={{
-                    ...cardBase,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    borderColor: v.accent,
-                  }}
-                  data-testid={`card-pending-${i}`}
-                >
-                  <div
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      background: `color-mix(in srgb, ${v.accent} 15%, transparent)`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: v.accent,
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {(req.firstName || req.name || "?")[0]}
-                  </div>
-                  <span
-                    style={{ flex: 1, color: v.text, fontWeight: 500, fontSize: 14 }}
-                  >
-                    {req.firstName} {req.lastName}
-                  </span>
-                  <button
-                    onClick={() => acceptFriendMutation.mutate(req.id)}
-                    style={{
-                      background: v.accent,
-                      color: "#1a1714",
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "6px 12px",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                    data-testid={`btn-accept-${i}`}
-                  >
-                    {t("m2.circle.accept", "Accept")}
-                  </button>
-                  <button
-                    onClick={() => declineFriendMutation.mutate(req.id)}
-                    style={{
-                      background: "transparent",
-                      color: v.muted,
-                      border: `1px solid ${v.border}`,
-                      borderRadius: 8,
-                      padding: "6px 10px",
-                      fontSize: 12,
-                      cursor: "pointer",
-                    }}
-                    data-testid={`btn-decline-${i}`}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 12,
-          }}
-        >
-          <span style={{ fontSize: 13, color: v.muted }}>
-            {friendList.length}{" "}
-            {t("m2.circle.friendsCount", "friends")}
-          </span>
+      <div data-testid="m2-circle-friends">
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
           <button
             onClick={() => setAddFriendOpen(!addFriendOpen)}
             style={{
-              background: v.accent,
-              color: "#1a1714",
-              border: "none",
-              borderRadius: 8,
-              padding: "7px 14px",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: addFriendOpen ? v.card : v.accent,
+              color: addFriendOpen ? v.text : "#1a1714",
+              border: addFriendOpen ? `1px solid ${v.border}` : "none",
+              borderRadius: 10,
+              padding: "8px 14px",
               fontSize: 13,
               fontWeight: 600,
               cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
+              transition: "all 0.2s",
             }}
             data-testid="btn-add-friend"
           >
-            <UserPlus style={{ width: 14, height: 14 }} />
-            {t("m2.circle.addFriend", "Add Friend")}
+            <UserPlus style={{ width: 15, height: 15 }} />
+            {addFriendOpen
+              ? t("m2.circle.cancel", "Cancel")
+              : t("m2.circle.addFriend", "Add Friend")}
           </button>
         </div>
 
@@ -930,60 +742,55 @@ export default function M2CircleHome() {
           <div
             style={{
               ...cardBase,
-              marginBottom: 12,
               display: "flex",
               flexDirection: "column",
               gap: 10,
+              marginBottom: 16,
             }}
-            data-testid="m2-circle-add-friend-form"
           >
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                type="text"
-                placeholder={t("m2.circle.firstName", "First name")}
-                value={friendFirstName}
-                onChange={(e) => setFriendFirstName(e.target.value)}
-                style={{
-                  flex: 1,
-                  background: v.inputBg,
-                  border: `1px solid ${v.inputBorder}`,
-                  borderRadius: 8,
-                  padding: "8px 12px",
-                  color: v.inputText,
-                  fontSize: 14,
-                  outline: "none",
-                }}
-                data-testid="input-friend-firstname"
-              />
-              <input
-                type="text"
-                placeholder={t("m2.circle.lastName", "Last name")}
-                value={friendLastName}
-                onChange={(e) => setFriendLastName(e.target.value)}
-                style={{
-                  flex: 1,
-                  background: v.inputBg,
-                  border: `1px solid ${v.inputBorder}`,
-                  borderRadius: 8,
-                  padding: "8px 12px",
-                  color: v.inputText,
-                  fontSize: 14,
-                  outline: "none",
-                }}
-                data-testid="input-friend-lastname"
-              />
-            </div>
+            <input
+              type="text"
+              placeholder={t("m2.circle.firstName", "First name")}
+              value={friendFirstName}
+              onChange={(e) => setFriendFirstName(e.target.value)}
+              style={{
+                background: v.elevated,
+                border: `1px solid ${v.border}`,
+                borderRadius: 10,
+                padding: "10px 14px",
+                color: v.text,
+                fontSize: 14,
+                outline: "none",
+              }}
+              data-testid="input-friend-first-name"
+            />
+            <input
+              type="text"
+              placeholder={t("m2.circle.lastName", "Last name (optional)")}
+              value={friendLastName}
+              onChange={(e) => setFriendLastName(e.target.value)}
+              style={{
+                background: v.elevated,
+                border: `1px solid ${v.border}`,
+                borderRadius: 10,
+                padding: "10px 14px",
+                color: v.text,
+                fontSize: 14,
+                outline: "none",
+              }}
+              data-testid="input-friend-last-name"
+            />
             <input
               type="email"
               placeholder={t("m2.circle.email", "Email")}
               value={friendEmail}
               onChange={(e) => setFriendEmail(e.target.value)}
               style={{
-                background: v.inputBg,
-                border: `1px solid ${v.inputBorder}`,
-                borderRadius: 8,
-                padding: "8px 12px",
-                color: v.inputText,
+                background: v.elevated,
+                border: `1px solid ${v.border}`,
+                borderRadius: 10,
+                padding: "10px 14px",
+                color: v.text,
                 fontSize: 14,
                 outline: "none",
               }}
@@ -1014,21 +821,107 @@ export default function M2CircleHome() {
                     ? "#1a1714"
                     : v.muted,
                 border: "none",
-                borderRadius: 8,
-                padding: "10px",
+                borderRadius: 10,
+                padding: "11px",
                 fontSize: 14,
                 fontWeight: 600,
                 cursor:
                   friendFirstName.trim() && friendEmail.trim()
                     ? "pointer"
                     : "default",
+                transition: "all 0.2s",
               }}
               data-testid="btn-submit-friend"
             >
               {addFriendMutation.isPending
-                ? "…"
+                ? "\u2026"
                 : t("m2.circle.sendInvite", "Send Invite")}
             </button>
+          </div>
+        )}
+
+        {pending.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: v.muted, marginBottom: 8 }}>
+              {t("m2.circle.pendingRequests", "Pending Requests")} ({pending.length})
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {pending.map((req: any, i: number) => (
+                <div
+                  key={req.id || i}
+                  style={{
+                    ...cardBase,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    borderLeft: `3px solid ${v.accent}`,
+                  }}
+                  data-testid={`card-pending-${i}`}
+                >
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: "50%",
+                      background: `color-mix(in srgb, ${v.accent} 15%, transparent)`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontFamily: "'Playfair Display', Georgia, serif",
+                      color: v.accent,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {(req.firstName || req.name || "?")[0]}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: v.text, fontWeight: 600, fontSize: 14 }}>
+                      {req.firstName} {req.lastName}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      onClick={() => acceptFriendMutation.mutate(req.id)}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        border: "none",
+                        background: `color-mix(in srgb, ${v.success} 15%, transparent)`,
+                        color: v.success,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      data-testid={`btn-accept-${i}`}
+                    >
+                      <Check style={{ width: 16, height: 16 }} />
+                    </button>
+                    <button
+                      onClick={() => declineFriendMutation.mutate(req.id)}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        border: "none",
+                        background: `color-mix(in srgb, ${v.muted} 10%, transparent)`,
+                        color: v.muted,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      data-testid={`btn-decline-${i}`}
+                    >
+                      <X style={{ width: 16, height: 16 }} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -1040,7 +933,7 @@ export default function M2CircleHome() {
               )
             )
           : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {friendList.map((friend: any, i: number) => (
                 <div
                   key={friend.id || i}
@@ -1054,8 +947,8 @@ export default function M2CircleHome() {
                 >
                   <div
                     style={{
-                      width: 32,
-                      height: 32,
+                      width: 36,
+                      height: 36,
                       borderRadius: "50%",
                       background: `color-mix(in srgb, ${v.accent} 15%, transparent)`,
                       display: "flex",
@@ -1063,8 +956,9 @@ export default function M2CircleHome() {
                       justifyContent: "center",
                       fontFamily: "'Playfair Display', Georgia, serif",
                       color: v.accent,
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: 600,
+                      flexShrink: 0,
                     }}
                   >
                     {(friend.firstName || friend.name || "?")[0]}
@@ -1100,15 +994,21 @@ export default function M2CircleHome() {
                   <button
                     onClick={() => deleteFriendMutation.mutate(friend.id)}
                     style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
                       background: "transparent",
-                      border: "none",
+                      border: `1px solid ${v.border}`,
                       cursor: "pointer",
-                      padding: 4,
                       color: v.muted,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.2s",
                     }}
                     data-testid={`btn-delete-friend-${i}`}
                   >
-                    <Trash2 style={{ width: 16, height: 16 }} />
+                    <Trash2 style={{ width: 14, height: 14 }} />
                   </button>
                 </div>
               ))}
@@ -1126,13 +1026,13 @@ export default function M2CircleHome() {
           fontSize: 26,
           fontWeight: 700,
           color: v.text,
-          margin: "0 0 8px",
+          margin: "0 0 6px",
         }}
         data-testid="text-m2-circle-title"
       >
         {t("m2.circle.title", "Circle")}
       </h1>
-      <p style={{ fontSize: 14, color: v.textSecondary, marginBottom: 16 }}>
+      <p style={{ fontSize: 14, color: v.textSecondary, marginBottom: 20, lineHeight: 1.4 }}>
         {t("m2.circle.subtitle", "Connect with fellow whisky enthusiasts")}
       </p>
 
@@ -1140,8 +1040,8 @@ export default function M2CircleHome() {
         <div
           style={{
             background: v.elevated,
-            borderRadius: 12,
-            padding: "24px 16px",
+            borderRadius: 14,
+            padding: "32px 16px",
             textAlign: "center",
             color: v.textSecondary,
             fontSize: 14,
@@ -1156,28 +1056,47 @@ export default function M2CircleHome() {
         <>
           <div
             style={{
-              display: "flex",
-              gap: 6,
-              marginBottom: 20,
-              overflowX: "auto",
-              paddingBottom: 4,
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              marginBottom: 24,
+              background: v.card,
+              borderRadius: 14,
+              border: `1px solid ${v.border}`,
+              overflow: "hidden",
             }}
             data-testid="m2-circle-tabs"
           >
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                style={pillStyle(activeTab === tab.key)}
-                data-testid={`tab-${tab.key}`}
-              >
-                <tab.icon style={{ width: 14, height: 14 }} />
-                {tab.label}
-              </button>
-            ))}
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 4,
+                    padding: "12px 4px 10px",
+                    border: "none",
+                    borderBottom: isActive ? `2.5px solid ${v.accent}` : "2.5px solid transparent",
+                    cursor: "pointer",
+                    fontSize: 11,
+                    fontWeight: isActive ? 700 : 500,
+                    background: isActive ? `color-mix(in srgb, ${v.accent} 8%, transparent)` : "transparent",
+                    color: isActive ? v.accent : v.muted,
+                    transition: "all 0.2s ease",
+                  }}
+                  data-testid={`tab-${tab.key}`}
+                >
+                  <tab.icon style={{ width: 20, height: 20 }} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
 
-          {activeTab === "rankings" && renderRankings()}
           {activeTab === "twins" && renderTwins()}
           {activeTab === "leaderboard" && renderLeaderboard()}
           {activeTab === "activity" && renderActivity()}

@@ -504,8 +504,8 @@ export default function M2TasteHome() {
           />
           <NavRow
             icon={Trophy}
-            label={t("m2.taste.rankings", "Rankings")}
-            description={t("m2.taste.rankingsDesc", "Community leaderboard")}
+            label={t("m2.taste.whiskyRankings", "Whisky Rankings")}
+            description={t("m2.taste.whiskyRankingsDesc", "Top-rated whiskies by the community")}
             href="/m2/discover/community?tab=rankings"
             testId="m2-taste-link-rankings"
           />
