@@ -402,6 +402,12 @@ function TastingCard({
             )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            {tasting.hostName && !host && (
+              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted }}>
+                <Crown style={{ width: 11, height: 11 }} />
+                {tasting.hostName}
+              </span>
+            )}
             {tasting.date && (
               <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted }}>
                 <Calendar style={{ width: 11, height: 11 }} />

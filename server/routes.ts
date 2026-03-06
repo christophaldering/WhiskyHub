@@ -952,12 +952,25 @@ export async function registerRoutes(
     if (!participant) {
       return res.json([]);
     }
+    let tastings: any[];
     if (participant.role === "admin") {
-      const all = await storage.getAllTastings();
-      return res.json(all);
+      tastings = await storage.getAllTastings();
+    } else {
+      tastings = await storage.getTastingsForParticipant(participantId);
     }
-    const filtered = await storage.getTastingsForParticipant(participantId);
-    return res.json(filtered);
+    const hostIds = [...new Set(tastings.map((t: any) => t.hostId).filter(Boolean))];
+    const hostMap: Record<string, string> = {};
+    await Promise.all(
+      hostIds.map(async (hid) => {
+        const p = await storage.getParticipant(hid);
+        if (p) hostMap[hid] = p.name || p.email || "";
+      })
+    );
+    const enriched = tastings.map((t: any) => ({
+      ...t,
+      hostName: hostMap[t.hostId] || null,
+    }));
+    return res.json(enriched);
   });
 
   app.get("/api/tastings/:id", async (req, res) => {
