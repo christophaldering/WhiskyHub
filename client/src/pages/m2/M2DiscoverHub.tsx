@@ -5,7 +5,7 @@ import M2BackButton from "@/components/m2/M2BackButton";
 import {
   Compass, BookOpen, Building2, Package, FileText, Map,
   Sparkles, FlaskConical, BookMarked, MessageSquare, Info,
-  Heart, Rss, Users, ChevronRight,
+  Heart, Rss, Users, ChevronRight, Eye,
 } from "lucide-react";
 import type { ElementType } from "react";
 
@@ -32,6 +32,7 @@ const LINKS: DiscoverLink[] = [
   { icon: Info, labelKey: "m2.discover.about", labelFallback: "About", descKey: "m2.discover.aboutDesc", descFallback: "Story, founder info & contact", href: "/m2/discover/about", testId: "link-discover-about" },
   { icon: Heart, labelKey: "m2.discover.donate", labelFallback: "Donate", descKey: "m2.discover.donateDesc", descFallback: "Support CaskSense & Hospice", href: "/m2/discover/donate", testId: "link-discover-donate" },
   { icon: Rss, labelKey: "m2.discover.activity", labelFallback: "Activity Feed", descKey: "m2.discover.activityDesc", descFallback: "See what your friends are up to", href: "/m2/discover/activity", testId: "link-discover-activity" },
+  { icon: Eye, labelKey: "m2.discover.historicalInsights", labelFallback: "Tasting Insights", descKey: "m2.discover.historicalInsightsDesc", descFallback: "Aggregated data from blind tastings", href: "/m2/discover/historical-insights", testId: "link-discover-historical-insights" },
   { icon: Users, labelKey: "m2.discover.community", labelFallback: "Circle", descKey: "m2.discover.communityDesc", descFallback: "Rankings, taste twins & leaderboard", href: "/m2/discover/community", testId: "link-discover-community" },
 ];
 

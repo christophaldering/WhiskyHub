@@ -532,6 +532,40 @@ export const appSettings = pgTable("app_settings", {
 
 export type AppSetting = typeof appSettings.$inferSelect;
 
+// --- Communities (organizational groups for community-scoped content) ---
+export const communities = pgTable("communities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  description: text("description"),
+  archiveVisibility: text("archive_visibility").notNull().default("community_only"),
+  publicAggregatedEnabled: boolean("public_aggregated_enabled").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCommunitySchema = createInsertSchema(communities).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCommunity = z.infer<typeof insertCommunitySchema>;
+export type Community = typeof communities.$inferSelect;
+
+// --- Community Memberships (links participants to communities) ---
+export const communityMemberships = pgTable("community_memberships", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  communityId: varchar("community_id").notNull(),
+  participantId: varchar("participant_id").notNull(),
+  role: text("role").notNull().default("member"),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_community_memberships_community").on(table.communityId),
+  index("idx_community_memberships_participant").on(table.participantId),
+]);
+
+export const insertCommunityMembershipSchema = createInsertSchema(communityMemberships).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCommunityMembership = z.infer<typeof insertCommunityMembershipSchema>;
+export type CommunityMembership = typeof communityMemberships.$inferSelect;
+
 // --- Historical Tastings (imported external tasting data, independent from CaskSense live tastings) ---
 export const historicalTastings = pgTable("historical_tastings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -543,10 +577,13 @@ export const historicalTastings = pgTable("historical_tastings", {
   sourceFileName: text("source_file_name"),
   importBatchId: varchar("import_batch_id"),
   whiskyCount: integer("whisky_count").default(0),
+  communityId: varchar("community_id"),
+  visibilityLevel: text("visibility_level").notNull().default("community_only"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("idx_historical_tastings_tasting_number").on(table.tastingNumber),
+  index("idx_historical_tastings_community").on(table.communityId),
 ]);
 
 export const insertHistoricalTastingSchema = createInsertSchema(historicalTastings).omit({ id: true, createdAt: true, updatedAt: true });

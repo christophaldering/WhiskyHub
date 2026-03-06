@@ -541,13 +541,19 @@ function EditTextarea({ label, value, onChange, testId }: { label: string; value
 
 function HistoricalAppearances({ distillery, whiskyName, t }: { distillery: string; whiskyName: string; t: any }) {
   const [, navigate] = useLocation();
+  const session = getSession();
+  const pid = session?.pid || "";
   const query = new URLSearchParams();
   if (distillery) query.set("distillery", distillery);
   if (whiskyName) query.set("name", whiskyName);
 
   const { data, isLoading } = useQuery<any>({
     queryKey: ["historical-appearances", distillery, whiskyName],
-    queryFn: () => fetch(`/api/historical/whisky-appearances?${query.toString()}`).then(r => r.json()),
+    queryFn: () => {
+      const headers: Record<string, string> = {};
+      if (pid) headers["x-participant-id"] = pid;
+      return fetch(`/api/historical/whisky-appearances?${query.toString()}`, { headers }).then(r => r.json());
+    },
     enabled: !!(distillery || whiskyName),
   });
 

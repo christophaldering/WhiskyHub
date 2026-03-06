@@ -1,10 +1,13 @@
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { v } from "@/lib/themeVars";
+import { getParticipantId } from "@/lib/api";
+import { getSession } from "@/lib/session";
 import M2BackButton from "@/components/m2/M2BackButton";
 import {
   Trophy, MapPin, Flame, BarChart3, Wine,
-  Droplets, TrendingUp, RefreshCw,
+  Droplets, TrendingUp, RefreshCw, Lock, LogIn, Globe,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -56,16 +59,86 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: string |
 export default function M2HistoricalInsights() {
   const { t } = useTranslation();
 
+  const session = getSession();
+  const pid = getParticipantId();
+
+  const { data: myCommunities, isLoading: commLoading } = useQuery<{ communities: Array<{ id: string; communityId: string; role: string }> }>({
+    queryKey: ["my-communities", pid],
+    queryFn: async () => {
+      if (!pid) return { communities: [] };
+      const res = await fetch("/api/communities/mine", { headers: { "x-participant-id": pid } });
+      if (!res.ok) return { communities: [] };
+      return res.json();
+    },
+    enabled: !!pid,
+  });
+
+  const isMember = session.role === "admin" || (myCommunities?.communities?.length ?? 0) > 0;
+
   const { data: analytics, isLoading, isError, refetch } = useQuery<AnalyticsData>({
     queryKey: ["historical-analytics"],
     queryFn: async () => {
-      const res = await fetch("/api/historical/analytics");
+      const headers: Record<string, string> = {};
+      if (pid) headers["x-participant-id"] = pid;
+      const res = await fetch("/api/historical/analytics", { headers });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     },
+    enabled: isMember,
   });
 
-  if (isLoading) {
+  if (!isMember && !commLoading) {
+    return (
+      <div style={{ padding: "16px 16px 100px", maxWidth: 800, margin: "0 auto" }}>
+        <M2BackButton />
+        <h1 style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontSize: 22,
+          fontWeight: 700,
+          color: v.text,
+          marginTop: 12,
+        }}>
+          {t("m2.insights.title", "Historical Insights")}
+        </h1>
+        <div style={{
+          textAlign: "center",
+          padding: "48px 20px",
+          background: v.card,
+          border: `1px solid ${v.border}`,
+          borderRadius: 14,
+          marginTop: 16,
+        }} data-testid="insights-locked">
+          <Lock style={{ width: 40, height: 40, color: v.muted, margin: "0 auto 16px", display: "block" }} strokeWidth={1.2} />
+          <div style={{ fontSize: 16, fontWeight: 600, color: v.text, marginBottom: 6 }}>
+            {t("m2.community.membersOnly", "Community Members Only")}
+          </div>
+          <div style={{ fontSize: 13, color: v.muted, lineHeight: 1.5, maxWidth: 360, margin: "0 auto", marginBottom: 20 }}>
+            {t("m2.community.insightsRestricted", "Full community insights are available to members. You can explore aggregated public data instead.")}
+          </div>
+          <Link href="/m2/discover/historical-insights" style={{ textDecoration: "none" }}>
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "10px 20px",
+              background: v.accent,
+              color: "#fff",
+              border: "none",
+              borderRadius: 10,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+            }} data-testid="link-public-insights">
+              <Globe size={14} />
+              {t("m2.community.viewPublicInsights", "View Public Insights")}
+            </div>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || commLoading) {
     return (
       <div style={{ padding: "16px 16px 100px", maxWidth: 800, margin: "0 auto" }}>
         <M2BackButton />

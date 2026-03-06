@@ -3,10 +3,12 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { v, alpha } from "@/lib/themeVars";
+import { getParticipantId } from "@/lib/api";
+import { getSession } from "@/lib/session";
 import M2BackButton from "@/components/m2/M2BackButton";
 import {
   Search, Wine, Trophy, Calendar, Hash, BarChart3,
-  ArrowUpDown, ChevronRight, Archive, Sparkles, RefreshCw,
+  ArrowUpDown, ChevronRight, Archive, Sparkles, RefreshCw, Lock, LogIn,
 } from "lucide-react";
 
 interface EnrichedTasting {
@@ -34,8 +36,10 @@ interface AnalyticsData {
 
 type SortMode = "number-asc" | "number-desc" | "date-newest" | "date-oldest" | "quality";
 
-async function fetchJSON(url: string) {
-  const res = await fetch(url);
+async function fetchJSON(url: string, pid?: string) {
+  const headers: Record<string, string> = {};
+  if (pid) headers["x-participant-id"] = pid;
+  const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -77,14 +81,33 @@ export default function M2HistoricalTastings() {
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("number-desc");
 
+  const session = getSession();
+  const pid = getParticipantId();
+
+  const { data: myCommunities, isLoading: commLoading } = useQuery<{ communities: Array<{ id: string; communityId: string; role: string }> }>({
+    queryKey: ["my-communities", pid],
+    queryFn: async () => {
+      if (!pid) return { communities: [] };
+      const res = await fetch("/api/communities/mine", { headers: { "x-participant-id": pid } });
+      if (!res.ok) return { communities: [] };
+      return res.json();
+    },
+    enabled: !!pid,
+  });
+
+  const isMember = session.role === "admin" || (myCommunities?.communities?.length ?? 0) > 0;
+  const isSignedIn = session.signedIn;
+
   const { data: tastingsData, isLoading, isError, refetch } = useQuery<{ tastings: EnrichedTasting[]; total: number }>({
     queryKey: ["historical-tastings-enriched", search],
-    queryFn: () => fetchJSON(`/api/historical/tastings?limit=200&enriched=true&search=${encodeURIComponent(search)}`),
+    queryFn: () => fetchJSON(`/api/historical/tastings?limit=200&enriched=true&search=${encodeURIComponent(search)}`, pid),
+    enabled: isMember,
   });
 
   const { data: analytics } = useQuery<AnalyticsData>({
     queryKey: ["historical-analytics"],
-    queryFn: () => fetchJSON("/api/historical/analytics"),
+    queryFn: () => fetchJSON("/api/historical/analytics", pid),
+    enabled: isMember,
   });
 
   const tastings = tastingsData?.tastings ?? [];
@@ -154,7 +177,40 @@ export default function M2HistoricalTastings() {
         </p>
       </div>
 
-      {analytics && (
+      {!isMember && !commLoading && (
+        <div style={{
+          textAlign: "center",
+          padding: "48px 20px",
+          background: v.card,
+          border: `1px solid ${v.border}`,
+          borderRadius: 14,
+          marginTop: 16,
+        }} data-testid="historical-locked">
+          {!isSignedIn ? (
+            <>
+              <LogIn style={{ width: 40, height: 40, color: v.muted, margin: "0 auto 16px", display: "block" }} strokeWidth={1.2} />
+              <div style={{ fontSize: 16, fontWeight: 600, color: v.text, marginBottom: 6 }}>
+                {t("m2.community.signInToView", "Sign in to access the archive")}
+              </div>
+              <div style={{ fontSize: 13, color: v.muted, lineHeight: 1.5, maxWidth: 360, margin: "0 auto" }}>
+                {t("m2.community.signInHint", "Sign in to see if you have access to this community's tasting archive.")}
+              </div>
+            </>
+          ) : (
+            <>
+              <Lock style={{ width: 40, height: 40, color: v.muted, margin: "0 auto 16px", display: "block" }} strokeWidth={1.2} />
+              <div style={{ fontSize: 16, fontWeight: 600, color: v.text, marginBottom: 6 }}>
+                {t("m2.community.membersOnly", "Community Members Only")}
+              </div>
+              <div style={{ fontSize: 13, color: v.muted, lineHeight: 1.5, maxWidth: 360, margin: "0 auto" }}>
+                {t("m2.community.archiveRestricted", "This archive is available to community members. Contact the community admin to request access.")}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {isMember && analytics && (
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))",
@@ -233,7 +289,7 @@ export default function M2HistoricalTastings() {
         </div>
       )}
 
-      <Link href="/m2/taste/historical/insights" style={{ textDecoration: "none" }}>
+      {isMember && <Link href="/m2/taste/historical/insights" style={{ textDecoration: "none" }}>
         <div
           style={{
             background: v.card,
@@ -272,8 +328,9 @@ export default function M2HistoricalTastings() {
           </div>
           <ChevronRight style={{ width: 16, height: 16, color: v.muted, flexShrink: 0 }} strokeWidth={1.8} />
         </div>
-      </Link>
+      </Link>}
 
+      {isMember && <>
       <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "stretch", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: "1 1 200px", minWidth: 0 }}>
           <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: v.muted }} />
@@ -499,6 +556,7 @@ export default function M2HistoricalTastings() {
           </div>
         </>
       )}
+      </>}
     </div>
   );
 }

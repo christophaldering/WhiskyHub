@@ -2,10 +2,11 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { v, alpha } from "@/lib/themeVars";
+import { getParticipantId } from "@/lib/api";
 import M2BackButton from "@/components/m2/M2BackButton";
 import {
   Trophy, Wine, Calendar, Hash, Flame, MapPin,
-  Droplets, Sparkles, BarChart3, RefreshCw,
+  Droplets, Sparkles, BarChart3, RefreshCw, Lock,
 } from "lucide-react";
 
 interface HistoricalEntry {
@@ -45,8 +46,15 @@ interface TastingDetail {
   entries: HistoricalEntry[];
 }
 
-async function fetchJSON(url: string) {
-  const res = await fetch(url);
+class ForbiddenError extends Error {
+  constructor() { super("Forbidden"); this.name = "ForbiddenError"; }
+}
+
+async function fetchJSON(url: string, pid?: string) {
+  const headers: Record<string, string> = {};
+  if (pid) headers["x-participant-id"] = pid;
+  const res = await fetch(url, { headers });
+  if (res.status === 403) throw new ForbiddenError();
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -317,12 +325,19 @@ export default function M2HistoricalTastingDetail() {
   const lang = i18n.language;
   const params = useParams<{ id: string }>();
   const tastingId = params.id;
+  const pid = getParticipantId();
 
-  const { data, isLoading, isError, refetch } = useQuery<TastingDetail>({
+  const { data, isLoading, isError, error, refetch } = useQuery<TastingDetail>({
     queryKey: ["historical-tasting", tastingId],
-    queryFn: () => fetchJSON(`/api/historical/tastings/${tastingId}`),
+    queryFn: () => fetchJSON(`/api/historical/tastings/${tastingId}`, pid),
     enabled: !!tastingId,
+    retry: (failureCount, err) => {
+      if (err instanceof ForbiddenError) return false;
+      return failureCount < 3;
+    },
   });
+
+  const isForbidden = error instanceof ForbiddenError;
 
   const title = data
     ? (lang === "de" ? data.titleDe : data.titleEn) || data.titleDe || `Tasting #${data.tastingNumber}`
@@ -374,7 +389,26 @@ export default function M2HistoricalTastingDetail() {
         </div>
       )}
 
-      {isError && (
+      {isError && isForbidden && (
+        <div style={{
+          textAlign: "center",
+          padding: "48px 20px",
+          background: v.card,
+          border: `1px solid ${v.border}`,
+          borderRadius: 14,
+          marginTop: 16,
+        }} data-testid="detail-forbidden">
+          <Lock style={{ width: 40, height: 40, color: v.muted, margin: "0 auto 16px", display: "block" }} strokeWidth={1.2} />
+          <div style={{ fontSize: 16, fontWeight: 600, color: v.text, marginBottom: 6 }}>
+            {t("m2.community.membersOnly", "Community Members Only")}
+          </div>
+          <div style={{ fontSize: 13, color: v.muted, lineHeight: 1.5, maxWidth: 360, margin: "0 auto" }}>
+            {t("m2.community.joinToView", "This tasting belongs to a community archive. Join the community to view full details.")}
+          </div>
+        </div>
+      )}
+
+      {isError && !isForbidden && (
         <div style={{
           textAlign: "center",
           padding: "60px 16px",

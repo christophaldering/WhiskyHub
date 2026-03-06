@@ -151,6 +151,7 @@ import M2DiscoverAbout from "@/pages/m2/M2DiscoverAbout";
 import M2DiscoverDonate from "@/pages/m2/M2DiscoverDonate";
 import M2DiscoverActivity from "@/pages/m2/M2DiscoverActivity";
 import M2DiscoverCommunity from "@/pages/m2/M2DiscoverCommunity";
+import M2PublicHistoricalInsights from "@/pages/m2/M2PublicHistoricalInsights";
 
 // ── V2 Dark Warm UI ──
 import LabDarkLayout from "@/lab-dark/LabDarkLayout";
@@ -435,6 +436,9 @@ function Router() {
         </Route>
         <Route path="/m2/discover/activity">
           <Module2Shell><M2DiscoverActivity /></Module2Shell>
+        </Route>
+        <Route path="/m2/discover/historical-insights">
+          <Module2Shell><M2PublicHistoricalInsights /></Module2Shell>
         </Route>
         <Route path="/m2/discover/community">
           <Module2Shell><M2DiscoverCommunity /></Module2Shell>

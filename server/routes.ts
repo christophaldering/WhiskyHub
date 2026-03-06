@@ -9657,20 +9657,207 @@ Important rules:
     }
   });
 
-  // ===== HISTORICAL TASTINGS =====
+  // ===== COMMUNITY MANAGEMENT (T005) =====
+
+  app.get("/api/communities/mine", async (req: Request, res: Response) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string;
+      if (!participantId) return res.json({ communities: [] });
+      const myCommunities = await storage.getParticipantCommunities(participantId);
+      res.json({ communities: myCommunities });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/communities", async (req: Request, res: Response) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const allCommunities = await storage.getCommunities();
+      const result = await Promise.all(allCommunities.map(async (c) => {
+        const members = await storage.getCommunityMemberships(c.id);
+        const { db: dbInst } = await import("./db");
+        const { historicalTastings: htTable } = await import("@shared/schema");
+        const { eq: eqOp, count } = await import("drizzle-orm");
+        const [tastingCount] = await dbInst.select({ count: count() }).from(htTable).where(eqOp(htTable.communityId, c.id));
+        return { ...c, memberCount: members.length, tastingCount: tastingCount?.count ?? 0 };
+      }));
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/communities/:id", async (req: Request, res: Response) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const community = await storage.getCommunityById(req.params.id);
+      if (!community) return res.status(404).json({ message: "Community not found" });
+      const members = await storage.getCommunityMemberships(community.id);
+      res.json({ ...community, members });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.put("/api/admin/communities/:id", async (req: Request, res: Response) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const { name, description, archiveVisibility, publicAggregatedEnabled } = req.body;
+      const updated = await storage.updateCommunity(req.params.id, { name, description, archiveVisibility, publicAggregatedEnabled });
+      if (!updated) return res.status(404).json({ message: "Community not found" });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/admin/communities/:id/members", async (req: Request, res: Response) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const community = await storage.getCommunityById(req.params.id);
+      if (!community) return res.status(404).json({ message: "Community not found" });
+
+      const { participantId, email, role } = req.body;
+      let targetId = participantId;
+      if (!targetId && email) {
+        const { db: dbInst } = await import("./db");
+        const { participants: pTable } = await import("@shared/schema");
+        const { eq: eqOp, sql: sqlTag } = await import("drizzle-orm");
+        const [found] = await dbInst.select().from(pTable).where(sqlTag`lower(${pTable.email}) = ${email.toLowerCase().trim()}`).limit(1);
+        if (!found) return res.status(404).json({ message: "No participant found with that email" });
+        targetId = found.id;
+      }
+      if (!targetId) return res.status(400).json({ message: "participantId or email required" });
+
+      const membership = await storage.addCommunityMember({
+        communityId: community.id,
+        participantId: targetId,
+        role: role || "member",
+        status: "active",
+      });
+      res.json(membership);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/admin/communities/:id/members/:participantId", async (req: Request, res: Response) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      await storage.removeCommunityMember(req.params.id, req.params.participantId);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== COMMUNITY SEED (T003) =====
+
+  app.post("/api/admin/communities/seed", async (req: Request, res: Response) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      let community = await storage.getCommunityBySlug("aldering-tasting-circle");
+      if (!community) {
+        community = await storage.createCommunity({
+          slug: "aldering-tasting-circle",
+          name: "Aldering Tasting Circle",
+          description: "The original tasting circle — 32+ blind tastings since the beginning.",
+          archiveVisibility: "community_only",
+          publicAggregatedEnabled: true,
+        });
+      }
+
+      const { db: dbInst } = await import("./db");
+      const { historicalTastings: htTable } = await import("@shared/schema");
+      const { sql: sqlTag } = await import("drizzle-orm");
+      const updateResult = await dbInst.execute(
+        sqlTag`UPDATE historical_tastings SET community_id = ${community.id}, visibility_level = 'community_only' WHERE community_id IS NULL`
+      );
+
+      const isMember = await storage.isCommunityMember(community.id, requester.id);
+      if (!isMember) {
+        await storage.addCommunityMember({
+          communityId: community.id,
+          participantId: requester.id,
+          role: "admin",
+          status: "active",
+        });
+      }
+
+      res.json({
+        success: true,
+        community,
+        tastingsLinked: (updateResult as any)?.rowCount ?? "all unlinked",
+        adminMember: true,
+      });
+    } catch (e: any) {
+      console.error("Community seed error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ===== HISTORICAL TASTINGS (with access control — T004) =====
+
+  async function getRequesterInfo(req: Request) {
+    const participantId = req.headers["x-participant-id"] as string;
+    if (!participantId) return { participantId: null, isAdmin: false, communityIds: [] as string[] };
+    const participant = await storage.getParticipant(participantId);
+    if (!participant) return { participantId: null, isAdmin: false, communityIds: [] as string[] };
+    const isAdmin = participant.role === "admin";
+    const myCommunities = await storage.getParticipantCommunities(participantId);
+    return { participantId, isAdmin, communityIds: myCommunities.map(c => c.id) };
+  }
 
   app.get("/api/historical/tastings", async (req: Request, res: Response) => {
     try {
+      const { isAdmin, communityIds } = await getRequesterInfo(req);
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
       const search = req.query.search as string | undefined;
       const enriched = req.query.enriched === "true";
-      if (enriched) {
-        const result = await storage.getHistoricalTastingsEnriched({ limit, offset, search });
+
+      if (isAdmin || communityIds.length > 0) {
+        if (enriched) {
+          const result = await storage.getHistoricalTastingsEnriched({ limit, offset, search });
+          return res.json(result);
+        }
+        const result = await storage.getHistoricalTastings({ limit, offset, search });
         return res.json(result);
       }
-      const result = await storage.getHistoricalTastings({ limit, offset, search });
-      res.json(result);
+
+      const { db: dbInst } = await import("./db");
+      const { historicalTastings: htTable } = await import("@shared/schema");
+      const { inArray, count, sql: sqlTag } = await import("drizzle-orm");
+
+      const publicFilter = inArray(htTable.visibilityLevel, ["public_full", "public_aggregated"]);
+      const [totalRow] = await dbInst.select({ count: count() }).from(htTable).where(publicFilter);
+      const tastings = await dbInst.select().from(htTable).where(publicFilter).orderBy(htTable.tastingNumber).limit(limit).offset(offset);
+      res.json({ tastings, total: totalRow?.count ?? 0 });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -9680,7 +9867,44 @@ Important rules:
     try {
       const tasting = await storage.getHistoricalTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Historical tasting not found" });
-      res.json(tasting);
+
+      const { isAdmin, communityIds } = await getRequesterInfo(req);
+
+      if (tasting.visibilityLevel === "private_admin") {
+        if (!isAdmin) {
+          return res.status(403).json({
+            message: "This tasting is restricted to administrators.",
+            code: "ADMIN_ACCESS_REQUIRED",
+          });
+        }
+      }
+
+      if (tasting.visibilityLevel === "community_only") {
+        if (!isAdmin && (!tasting.communityId || !communityIds.includes(tasting.communityId))) {
+          return res.status(403).json({
+            message: "This tasting belongs to a community archive. Members only.",
+            code: "COMMUNITY_ACCESS_REQUIRED",
+            communityId: tasting.communityId,
+          });
+        }
+      }
+
+      if (tasting.visibilityLevel === "public_aggregated" && !isAdmin && (!tasting.communityId || !communityIds.includes(tasting.communityId))) {
+        const { entries, ...meta } = tasting;
+        return res.json({
+          ...meta,
+          entries: entries.map(e => ({
+            distilleryRaw: e.distilleryRaw,
+            whiskyNameRaw: e.whiskyNameRaw,
+            totalScore: e.totalScore,
+            normalizedRegion: e.normalizedRegion,
+            normalizedIsSmoky: e.normalizedIsSmoky,
+          })),
+          accessLevel: "aggregated",
+        });
+      }
+
+      res.json({ ...tasting, accessLevel: "full" });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -9689,12 +9913,14 @@ Important rules:
   app.get("/api/historical/whisky-appearances", async (req: Request, res: Response) => {
     try {
       const { historicalTastingEntries: hte, historicalTastings: ht } = await import("@shared/schema");
-      const { db } = await import("./db");
-      const { sql: sqlTag, and, asc } = await import("drizzle-orm");
+      const { db: dbInst } = await import("./db");
+      const { sql: sqlTag, and, asc, inArray } = await import("drizzle-orm");
 
       const distillery = (req.query.distillery as string || "").trim().toLowerCase();
       const name = (req.query.name as string || "").trim().toLowerCase();
       if (!distillery && !name) return res.json({ appearances: [], count: 0 });
+
+      const { isAdmin, communityIds } = await getRequesterInfo(req);
 
       const conditions = [];
       if (distillery) {
@@ -9704,9 +9930,17 @@ Important rules:
         conditions.push(sqlTag`lower(${hte.whiskyNameRaw}) LIKE ${'%' + name + '%'}`);
       }
 
+      if (!isAdmin && communityIds.length === 0) {
+        conditions.push(inArray(ht.visibilityLevel, ["public_full", "public_aggregated"]));
+      } else if (!isAdmin && communityIds.length > 0) {
+        conditions.push(
+          sqlTag`(${ht.visibilityLevel} IN ('public_full', 'public_aggregated') OR ${ht.communityId} IN (${sqlTag.join(communityIds.map(id => sqlTag`${id}`), sqlTag`,`)}))`
+        );
+      }
+
       const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
 
-      const rows = await db
+      const rows = await dbInst
         .select({
           tastingId: hte.historicalTastingId,
           tastingNumber: ht.tastingNumber,
@@ -9754,10 +9988,78 @@ Important rules:
     }
   });
 
-  app.get("/api/historical/analytics", async (_req: Request, res: Response) => {
+  app.get("/api/historical/analytics", async (req: Request, res: Response) => {
     try {
+      const { isAdmin, communityIds } = await getRequesterInfo(req);
+      if (isAdmin || communityIds.length > 0) {
+        const stats = await storage.getHistoricalWhiskyStats();
+        return res.json(stats);
+      }
       const stats = await storage.getHistoricalWhiskyStats();
       res.json(stats);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/historical/public-insights", async (_req: Request, res: Response) => {
+    try {
+      const { db: dbInst } = await import("./db");
+      const { historicalTastings: htTable, historicalTastingEntries: hteTable } = await import("@shared/schema");
+      const { inArray, eq } = await import("drizzle-orm");
+      const publicTastings = await dbInst.select({ id: htTable.id }).from(htTable)
+        .where(inArray(htTable.visibilityLevel, ["public_full", "public_aggregated"]));
+      const publicIds = publicTastings.map(t => t.id);
+      let allEntries: any[];
+      if (publicIds.length === 0) {
+        allEntries = [];
+      } else {
+        allEntries = await dbInst.select().from(hteTable).where(inArray(hteTable.historicalTastingId, publicIds));
+      }
+
+      const regionBreakdown: Record<string, number> = {};
+      let smoky = 0, nonSmoky = 0, unknown = 0;
+      const caskBreakdown: Record<string, number> = {};
+      const scoreRanges = [
+        { range: "< 60", min: 0, max: 60, count: 0 },
+        { range: "60-69", min: 60, max: 70, count: 0 },
+        { range: "70-79", min: 70, max: 80, count: 0 },
+        { range: "80-89", min: 80, max: 90, count: 0 },
+        { range: "90+", min: 90, max: 200, count: 0 },
+      ];
+      const distilleryScores: Record<string, { total: number; count: number; name: string }> = {};
+
+      for (const e of allEntries) {
+        if (e.normalizedRegion) regionBreakdown[e.normalizedRegion] = (regionBreakdown[e.normalizedRegion] || 0) + 1;
+        if (e.normalizedIsSmoky === true) smoky++;
+        else if (e.normalizedIsSmoky === false) nonSmoky++;
+        else unknown++;
+        if (e.normalizedCask) caskBreakdown[e.normalizedCask] = (caskBreakdown[e.normalizedCask] || 0) + 1;
+        if (e.totalScore != null) {
+          for (const r of scoreRanges) {
+            if (e.totalScore >= r.min && e.totalScore < r.max) { r.count++; break; }
+          }
+          const key = (e.distilleryRaw || "Unknown").toLowerCase().trim();
+          if (!distilleryScores[key]) distilleryScores[key] = { total: 0, count: 0, name: e.distilleryRaw || "Unknown" };
+          distilleryScores[key].total += e.totalScore;
+          distilleryScores[key].count++;
+        }
+      }
+
+      const topWhiskies = Object.values(distilleryScores)
+        .filter(d => d.count >= 2)
+        .map(d => ({ distillery: d.name, avgScore: Math.round((d.total / d.count) * 100) / 100, appearances: d.count }))
+        .sort((a, b) => b.avgScore - a.avgScore)
+        .slice(0, 15);
+
+      res.json({
+        totalEntries: allEntries.length,
+        topDistilleries: topWhiskies,
+        regionBreakdown,
+        smokyBreakdown: { smoky, nonSmoky, unknown },
+        caskBreakdown,
+        scoreDistribution: scoreRanges.map(r => ({ range: r.range, count: r.count })),
+      });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

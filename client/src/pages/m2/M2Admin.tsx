@@ -15,10 +15,10 @@ import {
   Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2,
   Brain, Clock, Settings, FlaskConical, Wifi, XCircle, CheckCircle,
   MessageSquarePlus, Megaphone, Rocket, Filter, AlertTriangle,
-  FileArchive, Play, FileWarning
+  FileArchive, Play, FileWarning, Globe, Lock, UserPlus, ToggleLeft, ToggleRight
 } from "lucide-react";
 
-type AdminTab = "participants" | "tastings" | "online" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "settings" | "feedback";
+type AdminTab = "participants" | "tastings" | "online" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback";
 
 const TAB_CONFIG: { id: AdminTab; labelKey: string; fallback: string; icon: any }[] = [
   { id: "participants", labelKey: "m2.admin.participants", fallback: "Participants", icon: Users },
@@ -30,6 +30,7 @@ const TAB_CONFIG: { id: AdminTab; labelKey: string; fallback: string; icon: any 
   { id: "cleanup", labelKey: "m2.admin.cleanup", fallback: "Cleanup", icon: Trash2 },
   { id: "analytics", labelKey: "m2.admin.analytics", fallback: "Analytics", icon: BarChart3 },
   { id: "historical", labelKey: "m2.admin.historical", fallback: "Historical Import", icon: FileArchive },
+  { id: "communities", labelKey: "m2.admin.communities", fallback: "Communities", icon: Globe },
   { id: "settings", labelKey: "m2.admin.settings", fallback: "Settings", icon: Settings },
   { id: "feedback", labelKey: "m2.admin.feedback", fallback: "Feedback", icon: MessageSquarePlus },
 ];
@@ -183,6 +184,7 @@ export default function M2Admin() {
       {activeTab === "cleanup" && <CleanupTab data={data} pid={pid} />}
       {activeTab === "analytics" && <AnalyticsTab pid={pid} />}
       {activeTab === "historical" && <HistoricalImportTab pid={pid} />}
+      {activeTab === "communities" && <CommunitiesTab pid={pid} />}
       {activeTab === "settings" && <SettingsTab pid={pid} />}
       {activeTab === "feedback" && <FeedbackTab pid={pid} />}
     </div>
@@ -1574,6 +1576,362 @@ function SettingsTab({ pid }: { pid: string }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function CommunitiesTab({ pid }: { pid: string }) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
+  const [addMemberEmail, setAddMemberEmail] = useState("");
+  const [addMemberRole, setAddMemberRole] = useState("member");
+
+  const { data: communities = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/admin/communities", pid],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/communities", {
+        headers: { "x-participant-id": pid },
+      });
+      if (!res.ok) throw new Error("Failed to load communities");
+      return res.json();
+    },
+    enabled: !!pid,
+  });
+
+  const { data: communityDetail, isLoading: detailLoading } = useQuery<any>({
+    queryKey: ["/admin/communities", selectedCommunityId, pid],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/communities/${selectedCommunityId}`, {
+        headers: { "x-participant-id": pid },
+      });
+      if (!res.ok) throw new Error("Failed to load community");
+      return res.json();
+    },
+    enabled: !!pid && !!selectedCommunityId,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      const res = await fetch(`/api/admin/communities/${id}`, {
+        method: "PUT",
+        headers: { "x-participant-id": pid, "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/admin/communities"] });
+      toast({ title: t("m2.admin.communityUpdated", "Community updated") });
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const addMemberMutation = useMutation({
+    mutationFn: async ({ communityId, email, role }: { communityId: string; email: string; role: string }) => {
+      const res = await fetch(`/api/admin/communities/${communityId}/members`, {
+        method: "POST",
+        headers: { "x-participant-id": pid, "Content-Type": "application/json" },
+        body: JSON.stringify({ email, role }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(err.message || "Failed to add member");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/admin/communities"] });
+      setAddMemberEmail("");
+      toast({ title: t("m2.admin.memberAdded", "Member added") });
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: async ({ communityId, participantId: memberId }: { communityId: string; participantId: string }) => {
+      const res = await fetch(`/api/admin/communities/${communityId}/members/${memberId}`, {
+        method: "DELETE",
+        headers: { "x-participant-id": pid },
+      });
+      if (!res.ok) throw new Error("Failed to remove member");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/admin/communities"] });
+      toast({ title: t("m2.admin.memberRemoved", "Member removed") });
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const seedMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/communities/seed", {
+        method: "POST",
+        headers: { "x-participant-id": pid, "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/admin/communities"] });
+      toast({ title: t("m2.admin.seedComplete", "Seed complete") });
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  if (isLoading) return <div style={{ display: "flex", justifyContent: "center", padding: 48 }}><Loader2 style={{ width: 24, height: 24, color: v.accent, animation: "spin 1s linear infinite" }} /></div>;
+
+  const visibilityLabel = (val: string) => {
+    switch (val) {
+      case "community_only": return t("m2.admin.visibilityCommunityOnly", "Community Only");
+      case "public_full": return t("m2.admin.visibilityPublicFull", "Public Full");
+      case "public_aggregated": return t("m2.admin.visibilityPublicAggregated", "Public Aggregated");
+      default: return val;
+    }
+  };
+
+  const roleColor = (role: string) => {
+    if (role === "admin") return v.accent;
+    if (role === "moderator") return "#a855f7";
+    return v.muted;
+  };
+
+  if (selectedCommunityId && communityDetail) {
+    return (
+      <div data-testid="admin-community-detail">
+        <button
+          onClick={() => setSelectedCommunityId(null)}
+          style={{
+            display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
+            cursor: "pointer", color: v.accent, fontSize: 13, fontWeight: 500, marginBottom: 16,
+            fontFamily: "system-ui, sans-serif", padding: 0,
+          }}
+          data-testid="btn-back-to-communities"
+        >
+          <ChevronRight style={{ width: 14, height: 14, transform: "rotate(180deg)" }} />
+          {t("m2.admin.backToCommunities", "Back to Communities")}
+        </button>
+
+        <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <Globe style={{ width: 20, height: 20, color: v.accent }} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 16, color: v.text }} data-testid="text-community-name">{communityDetail.name}</div>
+              <div style={{ fontSize: 11, color: v.muted }}>{communityDetail.slug}</div>
+            </div>
+          </div>
+          {communityDetail.description && (
+            <div style={{ fontSize: 13, color: v.textSecondary, marginBottom: 12 }} data-testid="text-community-description">{communityDetail.description}</div>
+          )}
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+            <div style={{ background: v.elevated, borderRadius: 8, padding: 10 }}>
+              <div style={{ fontSize: 11, color: v.muted, marginBottom: 4 }}>{t("m2.admin.archiveVisibility", "Archive Visibility")}</div>
+              <select
+                value={communityDetail.archiveVisibility}
+                onChange={e => updateMutation.mutate({ id: communityDetail.id, updates: { archiveVisibility: e.target.value } })}
+                style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 12, fontFamily: "system-ui, sans-serif" }}
+                data-testid="select-archive-visibility"
+              >
+                <option value="community_only">{t("m2.admin.visibilityCommunityOnly", "Community Only")}</option>
+                <option value="public_aggregated">{t("m2.admin.visibilityPublicAggregated", "Public Aggregated")}</option>
+                <option value="public_full">{t("m2.admin.visibilityPublicFull", "Public Full")}</option>
+              </select>
+            </div>
+            <div style={{ background: v.elevated, borderRadius: 8, padding: 10 }}>
+              <div style={{ fontSize: 11, color: v.muted, marginBottom: 4 }}>{t("m2.admin.publicAggregated", "Public Aggregated")}</div>
+              <button
+                onClick={() => updateMutation.mutate({ id: communityDetail.id, updates: { publicAggregatedEnabled: !communityDetail.publicAggregatedEnabled } })}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
+                  cursor: "pointer", padding: 0, fontFamily: "system-ui, sans-serif",
+                }}
+                data-testid="btn-toggle-public-aggregated"
+              >
+                {communityDetail.publicAggregatedEnabled ? (
+                  <ToggleRight style={{ width: 28, height: 28, color: v.success }} />
+                ) : (
+                  <ToggleLeft style={{ width: 28, height: 28, color: v.muted }} />
+                )}
+                <span style={{ fontSize: 12, color: communityDetail.publicAggregatedEnabled ? v.success : v.muted, fontWeight: 500 }}>
+                  {communityDetail.publicAggregatedEnabled ? t("m2.admin.enabled", "Enabled") : t("m2.admin.disabled", "Disabled")}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Users style={{ width: 16, height: 16, color: v.accent }} />
+              <span style={{ fontWeight: 600, fontSize: 14, color: v.text }}>{t("m2.admin.communityMembers", "Members")}</span>
+              <span style={{ fontSize: 11, color: v.muted }}>({communityDetail.members?.length ?? 0})</span>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+            <input
+              type="email"
+              value={addMemberEmail}
+              onChange={e => setAddMemberEmail(e.target.value)}
+              placeholder={t("m2.admin.addMemberEmail", "Email address...")}
+              style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 12, fontFamily: "system-ui, sans-serif" }}
+              data-testid="input-add-member-email"
+            />
+            <select
+              value={addMemberRole}
+              onChange={e => setAddMemberRole(e.target.value)}
+              style={{ padding: "8px 8px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 11, fontFamily: "system-ui, sans-serif" }}
+              data-testid="select-add-member-role"
+            >
+              <option value="member">{t("m2.admin.roleMember", "Member")}</option>
+              <option value="moderator">{t("m2.admin.roleModerator", "Moderator")}</option>
+              <option value="admin">{t("m2.admin.roleAdmin", "Admin")}</option>
+            </select>
+            <button
+              onClick={() => {
+                if (addMemberEmail.trim()) {
+                  addMemberMutation.mutate({ communityId: communityDetail.id, email: addMemberEmail.trim(), role: addMemberRole });
+                }
+              }}
+              disabled={!addMemberEmail.trim() || addMemberMutation.isPending}
+              style={{
+                display: "flex", alignItems: "center", gap: 4, padding: "8px 12px", borderRadius: 8,
+                border: "none", background: v.accent, color: v.bg, fontSize: 12, fontWeight: 600,
+                cursor: !addMemberEmail.trim() || addMemberMutation.isPending ? "not-allowed" : "pointer",
+                opacity: !addMemberEmail.trim() ? 0.5 : 1, fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="btn-add-member"
+            >
+              {addMemberMutation.isPending ? (
+                <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} />
+              ) : (
+                <UserPlus style={{ width: 12, height: 12 }} />
+              )}
+              {t("m2.admin.addMember", "Add")}
+            </button>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {(communityDetail.members || []).map((m: any) => (
+              <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderRadius: 8, border: `1px solid ${v.border}`, background: v.elevated }} data-testid={`community-member-${m.participantId}`}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <User style={{ width: 14, height: 14, color: v.muted }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: v.text }}>{m.participantId}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{
+                        fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 6,
+                        background: `${roleColor(m.role)}20`, color: roleColor(m.role), textTransform: "uppercase",
+                      }}>
+                        {m.role}
+                      </span>
+                      <span style={{ fontSize: 10, color: v.muted }}>{m.status}</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (confirm(t("m2.admin.confirmRemoveMember", "Remove this member?"))) {
+                      removeMemberMutation.mutate({ communityId: communityDetail.id, participantId: m.participantId });
+                    }
+                  }}
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}
+                  data-testid={`btn-remove-member-${m.participantId}`}
+                >
+                  <Trash2 style={{ width: 14, height: 14, color: v.danger }} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div data-testid="admin-communities-tab">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Globe style={{ width: 18, height: 18, color: v.accent }} />
+          <span style={{ fontWeight: 600, fontSize: 16, color: v.text }}>{t("m2.admin.communities", "Communities")}</span>
+          <span style={{ fontSize: 12, color: v.muted }}>({communities.length})</span>
+        </div>
+        <button
+          onClick={() => {
+            if (confirm(t("m2.admin.confirmSeed", "Run community seed? This creates the initial community and links historical data."))) {
+              seedMutation.mutate();
+            }
+          }}
+          disabled={seedMutation.isPending}
+          style={{
+            display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 8,
+            border: `1px solid ${v.border}`, background: v.elevated, color: v.textSecondary,
+            fontSize: 11, fontWeight: 500, cursor: seedMutation.isPending ? "not-allowed" : "pointer",
+            fontFamily: "system-ui, sans-serif",
+          }}
+          data-testid="btn-seed-communities"
+        >
+          {seedMutation.isPending ? (
+            <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} />
+          ) : (
+            <Database style={{ width: 12, height: 12 }} />
+          )}
+          {t("m2.admin.seedCommunity", "Seed")}
+        </button>
+      </div>
+
+      {communities.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 48, color: v.muted }}>
+          <Globe style={{ width: 32, height: 32, margin: "0 auto 12px", opacity: 0.3 }} />
+          <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>{t("m2.admin.noCommunities", "No communities yet")}</div>
+          <div style={{ fontSize: 12 }}>{t("m2.admin.noCommunitiesHint", "Use the Seed button to create the initial community.")}</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {communities.map((c: any) => (
+            <button
+              key={c.id}
+              onClick={() => setSelectedCommunityId(c.id)}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 14,
+                cursor: "pointer", textAlign: "left", width: "100%", fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid={`community-row-${c.id}`}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                  <Globe style={{ width: 14, height: 14, color: v.accent }} />
+                  <span style={{ fontWeight: 600, fontSize: 14, color: v.text }}>{c.name}</span>
+                </div>
+                <div style={{ fontSize: 11, color: v.muted, display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Users style={{ width: 10, height: 10 }} /> {c.memberCount ?? 0} {t("m2.admin.members", "members")}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Archive style={{ width: 10, height: 10 }} /> {c.tastingCount ?? 0} {t("m2.admin.tastings", "tastings")}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    {c.archiveVisibility === "community_only" ? <Lock style={{ width: 10, height: 10 }} /> : <Eye style={{ width: 10, height: 10 }} />}
+                    {visibilityLabel(c.archiveVisibility)}
+                  </span>
+                  {c.publicAggregatedEnabled && (
+                    <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 6, background: `${v.success}20`, color: v.success, fontWeight: 600 }}>
+                      {t("m2.admin.publicAggregated", "Public Aggregated")}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <ChevronRight style={{ width: 16, height: 16, color: v.muted, flexShrink: 0 }} />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

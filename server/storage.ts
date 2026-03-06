@@ -37,6 +37,10 @@ import {
   type InsertHistoricalTasting, type HistoricalTasting,
   type InsertHistoricalTastingEntry, type HistoricalTastingEntry,
   type InsertHistoricalImportRun, type HistoricalImportRun,
+  communities,
+  communityMemberships,
+  type InsertCommunity, type Community,
+  type InsertCommunityMembership, type CommunityMembership,
 } from "@shared/schema";
 
 export async function getUniquePersonCount(participantIds: string[]): Promise<number> {
@@ -312,6 +316,18 @@ export interface IStorage {
   // Test Data Flag
   setTastingTestFlag(id: string, isTest: boolean): Promise<Tasting | undefined>;
   bulkCleanupTastings(filter: { titlePattern?: string; beforeDate?: string; maxParticipants?: number; onlyTestData?: boolean }, action: "preview" | "markAsTest" | "delete"): Promise<{ count: number; tastings: Array<{ id: string; title: string; date: string; participantCount: number; isTestData: boolean }> }>;
+
+  // Communities
+  getCommunities(): Promise<Community[]>;
+  getCommunityBySlug(slug: string): Promise<Community | undefined>;
+  getCommunityById(id: string): Promise<Community | undefined>;
+  createCommunity(data: InsertCommunity): Promise<Community>;
+  updateCommunity(id: string, data: Partial<Community>): Promise<Community | undefined>;
+  getCommunityMemberships(communityId: string): Promise<(CommunityMembership & { participantName?: string; participantEmail?: string })[]>;
+  getParticipantCommunities(participantId: string): Promise<Community[]>;
+  addCommunityMember(data: InsertCommunityMembership): Promise<CommunityMembership>;
+  removeCommunityMember(communityId: string, participantId: string): Promise<void>;
+  isCommunityMember(communityId: string, participantId: string): Promise<boolean>;
 
   // Historical Tastings
   getHistoricalTastings(options?: { limit?: number; offset?: number; search?: string }): Promise<{ tastings: HistoricalTasting[]; total: number }>;
@@ -1715,6 +1731,91 @@ export class DatabaseStorage implements IStorage {
     }
 
     return { count: result.length, tastings: result };
+  }
+
+  // --- Communities ---
+  async getCommunities(): Promise<Community[]> {
+    return db.select().from(communities).orderBy(asc(communities.name));
+  }
+
+  async getCommunityBySlug(slug: string): Promise<Community | undefined> {
+    const [result] = await db.select().from(communities).where(eq(communities.slug, slug)).limit(1);
+    return result;
+  }
+
+  async getCommunityById(id: string): Promise<Community | undefined> {
+    const [result] = await db.select().from(communities).where(eq(communities.id, id)).limit(1);
+    return result;
+  }
+
+  async createCommunity(data: InsertCommunity): Promise<Community> {
+    const [result] = await db.insert(communities).values(data).returning();
+    return result;
+  }
+
+  async updateCommunity(id: string, data: Partial<Community>): Promise<Community | undefined> {
+    const [result] = await db.update(communities).set({ ...data, updatedAt: new Date() }).where(eq(communities.id, id)).returning();
+    return result;
+  }
+
+  async getCommunityMemberships(communityId: string): Promise<(CommunityMembership & { participantName?: string; participantEmail?: string })[]> {
+    const rows = await db.select({
+      id: communityMemberships.id,
+      communityId: communityMemberships.communityId,
+      participantId: communityMemberships.participantId,
+      role: communityMemberships.role,
+      status: communityMemberships.status,
+      createdAt: communityMemberships.createdAt,
+      updatedAt: communityMemberships.updatedAt,
+      participantName: participants.name,
+      participantEmail: participants.email,
+    })
+    .from(communityMemberships)
+    .leftJoin(participants, eq(communityMemberships.participantId, participants.id))
+    .where(and(eq(communityMemberships.communityId, communityId), eq(communityMemberships.status, "active")))
+    .orderBy(asc(communityMemberships.role));
+    return rows.map(r => ({ ...r, participantName: r.participantName ?? undefined, participantEmail: r.participantEmail ?? undefined }));
+  }
+
+  async getParticipantCommunities(participantId: string): Promise<Community[]> {
+    const rows = await db.select({ community: communities })
+      .from(communityMemberships)
+      .innerJoin(communities, eq(communityMemberships.communityId, communities.id))
+      .where(and(eq(communityMemberships.participantId, participantId), eq(communityMemberships.status, "active")));
+    return rows.map(r => r.community);
+  }
+
+  async addCommunityMember(data: InsertCommunityMembership): Promise<CommunityMembership> {
+    const existing = await db.select().from(communityMemberships)
+      .where(and(eq(communityMemberships.communityId, data.communityId), eq(communityMemberships.participantId, data.participantId)))
+      .limit(1);
+    if (existing.length > 0) {
+      const [updated] = await db.update(communityMemberships)
+        .set({ status: "active", role: data.role || "member", updatedAt: new Date() })
+        .where(eq(communityMemberships.id, existing[0].id))
+        .returning();
+      return updated;
+    }
+    const [result] = await db.insert(communityMemberships).values(data).returning();
+    return result;
+  }
+
+  async removeCommunityMember(communityId: string, participantId: string): Promise<void> {
+    await db.update(communityMemberships)
+      .set({ status: "removed", updatedAt: new Date() })
+      .where(and(eq(communityMemberships.communityId, communityId), eq(communityMemberships.participantId, participantId)));
+  }
+
+  async isCommunityMember(communityId: string, participantId: string): Promise<boolean> {
+    const [result] = await db.select({ id: communityMemberships.id })
+      .from(communityMemberships)
+      .where(and(
+        eq(communityMemberships.communityId, communityId),
+        eq(communityMemberships.participantId, participantId),
+        eq(communityMemberships.status, "active")
+      ))
+      .limit(1);
+    return !!result;
   }
 
   // --- Historical Tastings ---
