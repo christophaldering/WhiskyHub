@@ -196,12 +196,14 @@ function SegmentedControl({
 
 function BreakdownSection({
   title,
+  description,
   icon: Icon,
   entries,
   t,
   testId,
 }: {
   title: string;
+  description?: string;
   icon: React.ElementType;
   entries: [string, BreakdownEntry][];
   t: any;
@@ -228,33 +230,38 @@ function BreakdownSection({
         }}
         data-testid={`button-toggle-${testId}`}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Icon style={{ width: 18, height: 18, color: v.accent }} />
-          <span
-            style={{
-              fontSize: 15,
-              fontFamily: "'Playfair Display', Georgia, serif",
-              fontWeight: 600,
-            }}
-          >
-            {title}
-          </span>
-          <span
-            style={{
-              fontSize: 12,
-              color: v.muted,
-              background: v.pillBg,
-              padding: "2px 8px",
-              borderRadius: 8,
-            }}
-          >
-            {entries.length}
-          </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon style={{ width: 18, height: 18, color: v.accent }} />
+            <span
+              style={{
+                fontSize: 15,
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontWeight: 600,
+              }}
+            >
+              {title}
+            </span>
+            <span
+              style={{
+                fontSize: 12,
+                color: v.muted,
+                background: v.pillBg,
+                padding: "2px 8px",
+                borderRadius: 8,
+              }}
+            >
+              {entries.length}
+            </span>
+          </div>
+          {description && (
+            <p style={{ fontSize: 12, color: v.muted, margin: "4px 0 0 26px", lineHeight: 1.4 }}>{description}</p>
+          )}
         </div>
         {open ? (
-          <ChevronUp style={{ width: 16, height: 16, color: v.muted }} />
+          <ChevronUp style={{ width: 16, height: 16, color: v.muted, flexShrink: 0 }} />
         ) : (
-          <ChevronDown style={{ width: 16, height: 16, color: v.muted }} />
+          <ChevronDown style={{ width: 16, height: 16, color: v.muted, flexShrink: 0 }} />
         )}
       </button>
       <AnimatePresence>
@@ -676,6 +683,15 @@ export default function M2TasteProfile() {
                 style={{
                   fontSize: 13,
                   color: v.muted,
+                  margin: "0 0 4px",
+                }}
+              >
+                {t("m2.profile.radarDesc", "Your flavor profile across all dimensions — compare with friends or the community.")}
+              </p>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: v.muted,
                   margin: "0 0 16px",
                 }}
               >
@@ -982,6 +998,7 @@ export default function M2TasteProfile() {
 
           <BreakdownSection
             title={t("m2.profile.byRegion", "By Region")}
+            description={t("m2.profile.byRegionDesc", "Which regions you enjoy most, based on your ratings.")}
             icon={MapPin}
             entries={regionEntries}
             t={t}
@@ -990,6 +1007,7 @@ export default function M2TasteProfile() {
 
           <BreakdownSection
             title={t("m2.profile.byCask", "By Cask Type")}
+            description={t("m2.profile.byCaskDesc", "How different cask types influence your taste.")}
             icon={Cog}
             entries={caskEntries}
             t={t}
@@ -998,6 +1016,7 @@ export default function M2TasteProfile() {
 
           <BreakdownSection
             title={t("m2.profile.byPeat", "By Peat Level")}
+            description={t("m2.profile.byPeatDesc", "Your preference for smoke — from mild to intense.")}
             icon={Flame}
             entries={peatEntries}
             t={t}
@@ -1023,6 +1042,9 @@ export default function M2TasteProfile() {
                   />
                   {t("m2.profile.whiskyComparison", "Your Scores vs Platform")}
                 </h2>
+                <p style={{ fontSize: 12, color: v.muted, margin: "0 0 12px" }}>
+                  {t("m2.profile.whiskyComparisonDesc", "How your scores compare to the platform average.")}
+                </p>
                 <div style={{ overflowX: "auto" }}>
                   <table
                     style={{

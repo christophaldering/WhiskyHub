@@ -112,6 +112,9 @@ function TasteEvolutionCard({ pid }: { pid: string }) {
       <h2 style={sectionTitle}>
         {t("m2.analytics.evolution", "Taste Evolution")}
       </h2>
+      <p style={{ fontSize: 12, color: v.muted, margin: "0 0 12px" }}>
+        {t("m2.analytics.evolutionDesc", "How your average rating has developed over time.")}
+      </p>
       <div style={{ display: "flex", justifyContent: "center" }}>
         <svg width={chartW} height={chartH} viewBox={`0 0 ${chartW} ${chartH}`} style={{ maxWidth: "100%" }}>
           <path d={pathD} fill="none" stroke={v.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
@@ -187,6 +190,9 @@ function RatingConsistencyCard({ pid }: { pid: string }) {
       <h2 style={sectionTitle}>
         {t("m2.analytics.consistency", "Rating Consistency")}
       </h2>
+      <p style={{ fontSize: 12, color: v.muted, margin: "0 0 12px" }}>
+        {t("m2.analytics.consistencyDesc", "How stable and predictable your scoring pattern is.")}
+      </p>
 
       {!hasData ? (
         <p style={{ fontSize: 13, color: v.muted, margin: 0 }}>

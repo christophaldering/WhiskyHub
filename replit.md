@@ -27,6 +27,7 @@ PostgreSQL serves as the primary database, accessed via Drizzle ORM. The schema 
 -   **Session State Machine**: Tastings transition through defined stages (draft, open, closed, reveal, archived) managed by the host.
 -   **Asynchronous Updates**: Utilizes React Query polling for near real-time updates of session data.
 -   **Public Landing Page**: Features an Apple-style landing page with Framer Motion scroll animations and a guided presentation.
+-   **Downloads Restructured (Apple-style)**: Printable templates (score sheets, tasting mats) moved to Host Wizard Step 3; data export (CSV, Excel, ZIP) moved inline into Settings page; dedicated Downloads page removed, route redirects to Settings.
 -   **Tasting Features**: Includes comprehensive whisky management, flight board, PDF export, blind mode, discussion panel, tasting note generator, and host-uploadable cover images.
 -   **Personalization & Analytics**: Offers participant profiles, a whisky journal, achievement badges, personal flavor profiles, whisky recommendations, side-by-side comparisons, and privacy-respecting per-tasting analytics.
 -   **Internationalization**: Fully migrated to react-i18next, supporting German and English, with all UI strings internationalized.

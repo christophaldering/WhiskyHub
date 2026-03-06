@@ -1097,7 +1097,7 @@ function SettingsTab({ pid }: { pid: string }) {
   const settingItems = [
     { key: "whats_new_enabled", label: t("m2.admin.whatsNewBanner", "What's New Banner"), desc: t("m2.admin.whatsNewBannerDesc", "Show announcement banner to users") },
     { key: "guest_mode_enabled", label: t("m2.admin.guestMode", "Guest Mode"), desc: t("m2.admin.guestModeDesc", "Allow guest access without registration") },
-    { key: "registration_enabled", label: t("m2.admin.registration", "Registration"), desc: t("m2.admin.registrationDesc", "Allow new user registrations") },
+    { key: "registration_open", label: t("m2.admin.registration", "Registration"), desc: t("m2.admin.registrationDesc", "Allow new user registrations") },
     { key: "maintenance_mode", label: t("m2.admin.maintenanceMode", "Maintenance Mode"), desc: t("m2.admin.maintenanceModeDesc", "Show maintenance page to non-admins") },
   ];
 

@@ -436,7 +436,15 @@ export async function registerRoutes(
     try {
       const data = insertParticipantSchema.parse(req.body);
       const ADMIN_EMAIL = "christoph.aldering@googlemail.com";
+
       const existing = await storage.getParticipantByName(data.name);
+      if (!existing) {
+        const appSettings = await storage.getAppSettings();
+        const registrationOpen = appSettings.registration_open ?? "true";
+        if (registrationOpen === "false") {
+          return res.status(403).json({ message: "Registration is currently closed." });
+        }
+      }
       if (existing) {
         if (!data.pin) {
           return res.status(400).json({ message: "PIN is required" });
