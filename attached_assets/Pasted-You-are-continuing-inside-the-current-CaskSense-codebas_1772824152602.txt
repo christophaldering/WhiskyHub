@@ -1,0 +1,210 @@
+You are continuing inside the current CaskSense codebase.
+
+Mission:
+Expose the imported HISTORICAL TASTINGS data as a beautiful, intuitive, production-grade CaskSense feature that fits the existing product language and information architecture.
+
+Important product constraints:
+- Main nav remains: Tastings / Taste / Circle / Profile
+- Historical tastings must live naturally within "Tastings", not as a random side module
+- Existing live tasting / host / join / solo flows must remain fully functional
+- The new feature must feel Apple-professional, warm, elegant, minimal, clear, not nerdy
+- Strong desktop UX, but still solid responsive behavior
+- No placeholder UI, no ugly debug pages, no broken empty states
+- Use the existing design system, shadcn/ui, Tailwind, Framer Motion, React Query, i18n
+
+Goal:
+Build the complete frontend UX for browsing, understanding, and benefiting from the historical tasting archive.
+
+======================================================================
+A. INFORMATION ARCHITECTURE
+======================================================================
+
+Integrate the feature into Tastings.
+
+Under Tastings, create a clear split between:
+1) Live / current tasting actions
+2) Historical archive
+
+Implement a highly intuitive entry path such as:
+- Tastings landing with sections/cards:
+  - Join
+  - Host
+  - Solo
+  - Archive
+
+The new Archive area should feel like a natural extension of CaskSense, not a developer appendix.
+
+======================================================================
+B. REQUIRED SCREENS
+======================================================================
+
+Build these screens fully:
+
+1) Historical Tastings Archive Page
+Purpose:
+- overview of all historical tastings
+
+Content:
+- searchable list/grid of historical tastings
+- each card/row shows:
+  - tasting number
+  - title
+  - optional date
+  - number of whiskies
+  - winner / top whisky if available
+  - average total score
+- filter/sort controls:
+  - sort by tasting number
+  - sort by newest/oldest if dates exist
+  - sort by average quality
+  - optionally filter by smoky / region / cask if data supports this
+
+2) Historical Tasting Detail Page
+Purpose:
+- inspect one tasting in depth
+
+Content:
+- tasting header
+- tasting metadata
+- ranked lineup table/cards
+- visual emphasis on winner/top 3
+- per whisky:
+  - distillery
+  - name
+  - age
+  - abv
+  - cask
+  - nose/taste/finish/total
+  - ranks
+  - smoky/ppm if available
+- tasteful mini visualizations where useful
+- excellent empty/fallback handling if some fields are missing
+
+3) Historical Insights / Analytics Page
+Purpose:
+- turn archive into intelligence
+
+Content:
+- top-rated whiskies across all historical tastings
+- most frequently tasted whiskies
+- best-performing regions
+- smoky vs non-smoky comparison
+- cask-type comparison
+- price vs score exploration if feasible with available data
+- “group taste profile” section:
+  - what this tasting group seems to like
+  - sherry tendency
+  - peat tendency
+  - ABV tendency
+  - region tendency
+
+4) Whisky Detail Integration
+If the app already has whisky detail/profile surfaces, integrate historical insights there:
+- appeared in X historical tastings
+- avg total score
+- best historical placement
+- last historical appearance
+- link to related tastings
+
+======================================================================
+C. UX / DESIGN REQUIREMENTS
+======================================================================
+
+Design style:
+- premium
+- warm-dark whisky tone where it fits
+- Apple-like clarity
+- visually calm
+- not overloaded
+- information-dense but elegant
+
+Use:
+- strong typography hierarchy
+- spacing discipline
+- subtle animation
+- meaningful iconography
+- polished cards/tables/tabs
+- responsive layouts
+- excellent loading, empty, and error states
+
+Do not:
+- dump raw database fields
+- expose ugly normalization internals
+- show half-broken charts
+- clutter the screen
+
+======================================================================
+D. DATA HANDLING
+======================================================================
+
+Use React Query properly:
+- typed fetchers
+- caching
+- loading states
+- error states
+- pagination/infinite list if appropriate
+
+Use existing route conventions and page composition patterns.
+Add all required TypeScript types.
+
+If analytics visualizations are added:
+- use Recharts only if the result is truly polished
+- choose only a few high-value charts
+- avoid chart junk
+
+======================================================================
+E. I18N
+======================================================================
+
+Support German and English properly.
+All labels, empty states, CTAs, and summary texts must be localized.
+
+German must feel natural and polished.
+English must feel natural and polished.
+No mixed-language leftovers.
+
+======================================================================
+F. PRODUCT LOGIC / MICROCOPY
+======================================================================
+
+The UX should communicate clearly that this is:
+- the tasting history before modern CaskSense
+- now transformed into searchable, analyzable collective memory
+
+Include tasteful microcopy where appropriate, e.g.:
+- “Historical archive”
+- “Before CaskSense, there was the table, the bottle, and the verdict.”
+But keep it elegant and not cheesy.
+
+======================================================================
+G. VALIDATION
+======================================================================
+
+After implementation:
+- run the app
+- click through the new routes
+- ensure no broken links
+- ensure the archive is discoverable from Tastings
+- ensure detail pages load
+- ensure filters/search/sorting work
+- ensure mobile is acceptable
+- ensure no existing flows were broken
+
+======================================================================
+H. DELIVERABLES
+======================================================================
+
+Do not stop at mockups or plans.
+Actually implement the full frontend integration now.
+
+At the end, provide a concise build report:
+- routes added
+- components/pages added
+- queries/hooks added
+- translations added
+- validation performed
+- remaining polish items if any
+
+No pseudo implementation.
+No asking me to test everything manually.
+Implement, wire up, and validate thoroughly.
