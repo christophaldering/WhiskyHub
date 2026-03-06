@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { leaderboardApi } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, FileText, Star, Target, Trophy } from "lucide-react";
+import { Activity, FileText, Star, Compass, Trophy } from "lucide-react";
 
 interface LeaderboardEntry {
   id: string;
@@ -12,14 +12,14 @@ interface LeaderboardEntry {
   ratingsCount?: number;
   avgNotesLength?: number;
   avgScore?: number;
-  consistency?: number;
+  uniqueWhiskies?: number;
 }
 
 interface LeaderboardData {
   mostActive: LeaderboardEntry[];
   mostDetailed: LeaderboardEntry[];
   highestRated: LeaderboardEntry[];
-  mostConsistent: LeaderboardEntry[];
+  explorer: LeaderboardEntry[];
 }
 
 function getRankStyle(rank: number) {
@@ -143,11 +143,11 @@ export default function Leaderboard() {
       formatValue: (e: LeaderboardEntry) => `${(e.avgScore ?? 0).toFixed(1)}/100`,
     },
     {
-      key: "mostConsistent",
-      label: t("leaderboard.mostConsistent"),
-      icon: Target,
-      entries: data?.mostConsistent || [],
-      formatValue: (e: LeaderboardEntry) => `${Math.round(e.consistency ?? 0)}%`,
+      key: "explorer",
+      label: t("leaderboard.explorer"),
+      icon: Compass,
+      entries: data?.explorer || [],
+      formatValue: (e: LeaderboardEntry) => `${e.uniqueWhiskies ?? 0} ${t("leaderboard.whiskies")}`,
     },
   ];
 

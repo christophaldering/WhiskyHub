@@ -16,7 +16,7 @@ import {
   Star,
   Activity,
   FileText,
-  Target,
+  Compass,
   UserPlus,
   Trash2,
   Rss,
@@ -47,7 +47,7 @@ interface LeaderboardEntry {
   ratingsCount?: number;
   avgNotesLength?: number;
   avgScore?: number;
-  consistency?: number;
+  uniqueWhiskies?: number;
   score?: number;
   tastings?: number;
 }
@@ -56,7 +56,7 @@ interface LeaderboardData {
   mostActive: LeaderboardEntry[];
   mostDetailed: LeaderboardEntry[];
   highestRated: LeaderboardEntry[];
-  mostConsistent: LeaderboardEntry[];
+  explorer: LeaderboardEntry[];
 }
 
 interface ActivityItem {
@@ -388,15 +388,13 @@ export default function M2CircleHome() {
             typeof e.avgScore === "number" ? e.avgScore.toFixed(1) : "\u2014",
         },
         {
-          key: "mostConsistent",
-          label: t("m2.circle.lbMostConsistent", "Consistent"),
-          subtitle: t("m2.circle.lbMostConsistentSub", "Most stable ratings"),
-          icon: Target,
-          entries: structured.mostConsistent || [],
+          key: "explorer",
+          label: t("m2.circle.lbExplorer", "Explorer"),
+          subtitle: t("m2.circle.lbExplorerSub", "Greatest variety of whiskies rated"),
+          icon: Compass,
+          entries: structured.explorer || [],
           format: (e) =>
-            typeof e.consistency === "number"
-              ? `${Math.round(e.consistency * 100)}%`
-              : "\u2014",
+            `${e.uniqueWhiskies || 0} ${t("m2.circle.whiskies", "whiskies")}`,
         },
       ];
 

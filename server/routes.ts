@@ -5906,16 +5906,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           const overalls = data.ratings.map(r => r.overall).filter((v: any) => v != null);
           const avgScore = overalls.length > 0 ? Math.round((overalls.reduce((a: number, b: number) => a + b, 0) / overalls.length) * 10) / 10 : 0;
 
-          let consistency = 0;
-          if (overalls.length > 1) {
-            const mean = overalls.reduce((a: number, b: number) => a + b, 0) / overalls.length;
-            const variance = overalls.reduce((sum: number, v: number) => sum + (v - mean) ** 2, 0) / overalls.length;
-            const stddev = Math.sqrt(variance);
-            const normalizedStddev = mean > 0 ? stddev / mean : 0;
-            consistency = Math.round((1 - Math.min(normalizedStddev, 1)) * 100) / 100;
-          } else if (overalls.length === 1) {
-            consistency = 1;
-          }
+          const uniqueWhiskies = new Set(data.ratings.map((r: any) => r.whiskyId).filter(Boolean)).size;
 
           return {
             id: pId,
@@ -5923,7 +5914,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             ratingsCount,
             avgNotesLength,
             avgScore,
-            consistency,
+            uniqueWhiskies,
           };
         })
       );
@@ -5946,13 +5937,13 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
         avgScore: s.avgScore,
       }));
 
-      const mostConsistent = [...stats].sort((a, b) => b.consistency - a.consistency).slice(0, 10).map(s => ({
+      const explorer = [...stats].sort((a, b) => b.uniqueWhiskies - a.uniqueWhiskies).slice(0, 10).map(s => ({
         id: s.id,
         name: s.name,
-        consistency: s.consistency,
+        uniqueWhiskies: s.uniqueWhiskies,
       }));
 
-      res.json({ mostActive, mostDetailed, highestRated, mostConsistent });
+      res.json({ mostActive, mostDetailed, highestRated, explorer });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
