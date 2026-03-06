@@ -172,26 +172,30 @@ export default function M2CircleHome() {
     },
   });
 
-  const tabs: { key: Tab; icon: any; label: string }[] = [
+  const tabs: { key: Tab; icon: any; label: string; description: string }[] = [
     {
       key: "twins",
       icon: HeartHandshake,
       label: t("m2.circle.tasteTwins", "Twins"),
+      description: t("m2.circle.twinsDesc", "People who taste like you"),
     },
     {
       key: "leaderboard",
       icon: Star,
       label: t("m2.circle.leaderboard", "Board"),
+      description: t("m2.circle.leaderboardDesc", "Community rankings across categories"),
     },
     {
       key: "activity",
       icon: Rss,
       label: t("m2.circle.activity", "Feed"),
+      description: t("m2.circle.activityDesc", "Recent activity from your friends"),
     },
     {
       key: "friends",
       icon: Users,
       label: t("m2.circle.friends", "Freunde"),
+      description: t("m2.circle.friendsDesc", "Find and manage your connections"),
     },
   ];
 
@@ -351,13 +355,15 @@ export default function M2CircleHome() {
       const categories: {
         key: string;
         label: string;
+        subtitle: string;
         icon: any;
         entries: LeaderboardEntry[];
         format: (e: LeaderboardEntry) => string;
       }[] = [
         {
           key: "mostActive",
-          label: t("m2.circle.lbMostActive", "Most Active"),
+          label: t("m2.circle.lbMostActive", "Active"),
+          subtitle: t("m2.circle.lbMostActiveSub", "Most ratings submitted"),
           icon: Activity,
           entries: structured.mostActive || [],
           format: (e) =>
@@ -365,7 +371,8 @@ export default function M2CircleHome() {
         },
         {
           key: "mostDetailed",
-          label: t("m2.circle.lbMostDetailed", "Most Detailed"),
+          label: t("m2.circle.lbMostDetailed", "Detailed"),
+          subtitle: t("m2.circle.lbMostDetailedSub", "Longest tasting notes"),
           icon: FileText,
           entries: structured.mostDetailed || [],
           format: (e) =>
@@ -373,7 +380,8 @@ export default function M2CircleHome() {
         },
         {
           key: "highestRated",
-          label: t("m2.circle.lbHighestRated", "Highest Rated"),
+          label: t("m2.circle.lbHighestRated", "Top Rated"),
+          subtitle: t("m2.circle.lbHighestRatedSub", "Highest average score"),
           icon: Star,
           entries: structured.highestRated || [],
           format: (e) =>
@@ -381,7 +389,8 @@ export default function M2CircleHome() {
         },
         {
           key: "mostConsistent",
-          label: t("m2.circle.lbMostConsistent", "Most Consistent"),
+          label: t("m2.circle.lbMostConsistent", "Consistent"),
+          subtitle: t("m2.circle.lbMostConsistentSub", "Most stable ratings"),
           icon: Target,
           entries: structured.mostConsistent || [],
           format: (e) =>
@@ -428,10 +437,20 @@ export default function M2CircleHome() {
                   data-testid={`btn-lb-${cat.key}`}
                 >
                   <cat.icon style={{ width: 16, height: 16 }} />
-                  <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{cat.label}</span>
+                  <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", lineHeight: 1.2 }}>{cat.label}</span>
                 </button>
               );
             })}
+          </div>
+          <div style={{
+            fontSize: 12,
+            color: v.muted,
+            textAlign: "center",
+            marginTop: -8,
+            marginBottom: 16,
+            lineHeight: 1.3,
+          }} data-testid="m2-circle-lb-subtitle">
+            {activeCat.subtitle}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {activeCat.entries.length === 0
@@ -1095,6 +1114,17 @@ export default function M2CircleHome() {
                 </button>
               );
             })}
+          </div>
+
+          <div style={{
+            fontSize: 13,
+            color: v.muted,
+            textAlign: "center",
+            marginTop: -16,
+            marginBottom: 20,
+            lineHeight: 1.4,
+          }} data-testid="m2-circle-tab-description">
+            {tabs.find((t) => t.key === activeTab)?.description}
           </div>
 
           {activeTab === "twins" && renderTwins()}
