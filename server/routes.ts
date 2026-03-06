@@ -405,6 +405,20 @@ export async function registerRoutes(
     return { ok: true, participant };
   };
 
+  const requireOwnerOrAdmin = async (req: Request, paramId: string): Promise<{ authorized: true; requester: Participant } | { authorized: false; status: number; message: string }> => {
+    const requesterId = req.headers["x-participant-id"] as string | undefined;
+    if (!requesterId) return { authorized: false, status: 403, message: "Forbidden" };
+    if (requesterId === paramId) {
+      const p = await storage.getParticipant(requesterId);
+      if (!p) return { authorized: false, status: 403, message: "Forbidden" };
+      return { authorized: true, requester: p };
+    }
+    const requester = await storage.getParticipant(requesterId);
+    if (!requester) return { authorized: false, status: 403, message: "Forbidden" };
+    if (requester.role === "admin") return { authorized: true, requester };
+    return { authorized: false, status: 403, message: "Forbidden" };
+  };
+
   // ===== HEALTH & VERSION =====
 
   app.get("/health", (_req, res) => {
@@ -949,6 +963,16 @@ export async function registerRoutes(
   app.get("/api/tastings/:id", async (req, res) => {
     const tasting = await storage.getTasting(req.params.id);
     if (!tasting) return res.status(404).json({ message: "Not found" });
+    const requesterId = req.headers["x-participant-id"] as string | undefined;
+    if (requesterId) {
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester) return res.status(403).json({ message: "Forbidden" });
+      if (requester.role !== "admin" && tasting.hostId !== requesterId) {
+        const tp = await storage.getTastingParticipants(tasting.id);
+        const isMember = tp.some(p => p.participantId === requesterId);
+        if (!isMember) return res.status(403).json({ message: "Forbidden" });
+      }
+    }
     res.json(tasting);
   });
 
@@ -4810,8 +4834,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
   app.get("/api/participants/:id/insights", async (req, res) => {
     try {
-      const participant = await storage.getParticipant(req.params.id);
-      if (!participant) return res.status(404).json({ message: "Not found" });
+      const auth = await requireOwnerOrAdmin(req, req.params.id);
+      if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
 
       const { generateParticipantInsights } = await import("./insight-engine");
       const insights = await generateParticipantInsights(req.params.id);
@@ -4825,8 +4849,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
   app.get("/api/participants/:id/flavor-profile", async (req, res) => {
     try {
-      const participant = await storage.getParticipant(req.params.id);
-      if (!participant) return res.status(404).json({ message: "Not found" });
+      const auth = await requireOwnerOrAdmin(req, req.params.id);
+      if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
       const profile = await storage.getFlavorProfile(req.params.id);
       res.json(profile);
     } catch (e: any) {
@@ -4849,8 +4873,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
   app.get("/api/participants/:id/taste-twins", async (req, res) => {
     try {
-      const participant = await storage.getParticipant(req.params.id);
-      if (!participant) return res.status(404).json({ message: "Not found" });
+      const auth = await requireOwnerOrAdmin(req, req.params.id);
+      if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
       const twins = await storage.getTasteTwins(req.params.id);
       res.json(twins);
     } catch (e: any) {
@@ -5120,8 +5144,8 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
   app.get("/api/participants/:id/stats", async (req, res) => {
     try {
-      const participant = await storage.getParticipant(req.params.id);
-      if (!participant) return res.status(404).json({ message: "Not found" });
+      const auth = await requireOwnerOrAdmin(req, req.params.id);
+      if (!auth.authorized) return res.status(auth.status).json({ message: auth.message });
       const stats = await storage.getParticipantStats(req.params.id);
       res.json(stats);
     } catch (e: any) {
