@@ -30,7 +30,7 @@ export default function DesktopTabSwitcher({ maxWidth = 600 }: { maxWidth?: numb
           (m) => location === m || location.startsWith(m + "/")
         );
         const Icon = tab.icon;
-        const label = t(tab.labelKey, tab.key === "tasting" ? "Tasting" : "My Taste");
+        const label = t(tab.labelKey, tab.key === "tasting" ? "Tasting" : "Taste");
 
         return (
           <button

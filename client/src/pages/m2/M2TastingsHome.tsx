@@ -74,9 +74,9 @@ export default function M2TastingsHome() {
   const isHost = (ta: any) => session.pid && ta.hostId === session.pid;
 
   const actions = [
-    { href: "/m2/tastings/join", icon: Wine, labelKey: "m2.tastings.join", fallback: "Join Tasting", color: v.accent },
-    { href: "/m2/tastings/host", icon: Crown, labelKey: "m2.tastings.host", fallback: "Host Tasting", color: v.success },
-    { href: "/m2/tastings/solo", icon: PenLine, labelKey: "m2.tastings.solo", fallback: "Solo Dram", color: v.textSecondary },
+    { href: "/m2/tastings/join", icon: Wine, labelKey: "m2.tastings.join", fallback: "Joyn", color: v.accent },
+    { href: "/m2/tastings/host", icon: Crown, labelKey: "m2.tastings.host", fallback: "Host", color: v.success },
+    { href: "/m2/tastings/solo", icon: PenLine, labelKey: "m2.tastings.solo", fallback: "Solo", color: v.textSecondary },
   ];
 
   const selectStyle: React.CSSProperties = {
@@ -116,7 +116,7 @@ export default function M2TastingsHome() {
           }}
           data-testid="text-m2-tastings-title"
         >
-          {t("m2.tastings.title", "Tastings")}
+          {t("m2.tastings.title", "Tasting")}
         </h1>
 
         <div

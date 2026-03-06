@@ -45,13 +45,13 @@ const NAV_ITEMS_V1 = [
   { href: "/enter", icon: Wine, labelKey: "nav.join", labelFallback: "Join", match: ["/enter", "/join", "/tasting-room-simple", "/naked/"] },
   { href: "/log-simple", icon: PenLine, labelKey: "nav.log", labelFallback: "Log", match: ["/log-simple", "/log"] },
   { href: "/host", icon: Crown, labelKey: "nav.host", labelFallback: "Host", match: ["/host"] },
-  { href: "/my-taste", icon: User, labelKey: "nav.myTaste", labelFallback: "My Taste", match: ["/my-taste", "/taste", "/my-taste/analytics"] },
+  { href: "/my-taste", icon: User, labelKey: "nav.taste", labelFallback: "Taste", match: ["/my-taste", "/taste", "/my-taste/analytics"] },
   { href: "/analyze", icon: Compass, labelKey: "nav.discover", labelFallback: "Discover", match: ["/analyze", "/discover"] },
 ];
 
 const NAV_ITEMS_V2 = [
   { href: "/tasting", icon: Wine, labelKey: "nav.tasting", labelFallback: "Tasting", match: ["/tasting", "/enter", "/join", "/tasting-room-simple", "/naked/", "/host", "/log-simple", "/log"] },
-  { href: "/my-taste", icon: User, labelKey: "nav.myTaste", labelFallback: "My Taste", match: ["/my-taste", "/taste"] },
+  { href: "/my-taste", icon: User, labelKey: "nav.taste", labelFallback: "Taste", match: ["/my-taste", "/taste"] },
   { href: "/analyze", icon: Compass, labelKey: "nav.discover", labelFallback: "Explore", match: ["/analyze", "/discover"] },
 ];
 
@@ -59,7 +59,7 @@ const NAV_ITEMS_TWO_TAB = primaryTabs.map((tab) => ({
   href: tab.route,
   icon: tab.icon,
   labelKey: tab.labelKey,
-  labelFallback: tab.key === "tasting" ? "Tasting" : "My Taste",
+  labelFallback: tab.key === "tasting" ? "Tasting" : "Taste",
   match: tab.match || [tab.route],
 }));
 

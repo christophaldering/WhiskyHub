@@ -40,7 +40,7 @@ PostgreSQL serves as the primary database, accessed via Drizzle ORM. The schema 
 -   **Guest Mode**: Offers "Standard Naked" (persisted identity) and "Ultra Naked" (ephemeral identity) participation.
 -   **Rating System**: Dynamic step sizing for rating sliders and auto-calculated overall scores with manual override.
 -   **Context Level**: Three-tier data visibility control within active tasting sessions: Naked, Self, and Full.
--   **Navigation Structure (Simple Mode)**: Features a 2-tab bottom navigation (`v2_two_tab`) with "Tasting" and "My Taste" sections, configurable via `NAV_VERSION` flag.
+-   **Navigation Structure (Simple Mode)**: Features a 2-tab bottom navigation (`v2_two_tab`) with "Tasting" and "Taste" sections, configurable via `NAV_VERSION` flag.
 -   **My Taste (Personal Dashboard)**: A personal whisky profile hub requiring sign-in, with sections for personal drams, analytics, collection, downloads, and knowledge base.
 -   **Lazy Loading**: Pages less frequently accessed are lazy-loaded using React.lazy.
 -   **Discover (External World Hub)**: Organized into sections for Community, Knowledge, Planning, and About.
@@ -49,7 +49,7 @@ PostgreSQL serves as the primary database, accessed via Drizzle ORM. The schema 
 -   **Admin Tools**: Provides functionalities for managing test data, AI kill switch, and platform settings, accessible via a dedicated `/admin` route.
 
 ### Module 2 (`/m2/*`) — Full Feature Parity
-Fully self-contained parallel UI sharing the same backend, auth, and database. NO cross-links to the old app — all navigation stays within `/m2/*`. 3-tab bottom nav (Tastings | Taste | Circle) with M2-specific profile menu.
+Fully self-contained parallel UI sharing the same backend, auth, and database. NO cross-links to the old app — all navigation stays within `/m2/*`. 3-tab bottom nav (Tasting | Taste | People) with M2-specific profile menu. Top action cards use branded labels: Joyn | Host | Solo.
 
 #### Core Components
 - `Module2Shell.tsx` — Main layout with header (logo, profile button, notification bell, "What's New" banner, PWA install prompt), 3-tab bottom nav, session-change listener, ErrorBoundary, pull-to-refresh, Toast provider

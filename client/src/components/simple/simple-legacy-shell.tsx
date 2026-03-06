@@ -11,13 +11,13 @@ const NAV_ITEMS_V1 = [
   { href: "/enter", icon: Wine, label: "Join", match: ["/enter", "/join", "/tasting-room-simple", "/naked/"] },
   { href: "/log-simple", icon: PenLine, label: "Log", match: ["/log-simple", "/log"] },
   { href: "/host", icon: Crown, label: "Host", match: ["/host", "/legacy/tasting"] },
-  { href: "/my-taste", icon: User, label: "My Taste", match: ["/my-taste", "/taste", "/legacy/profile", "/legacy/my"] },
+  { href: "/my-taste", icon: User, label: "Taste", match: ["/my-taste", "/taste", "/legacy/profile", "/legacy/my"] },
   { href: "/analyze", icon: Compass, label: "Discover", match: ["/analyze", "/legacy/discover", "/legacy/flavor", "/legacy/news", "/legacy/badges"] },
 ];
 
 const NAV_ITEMS_V2 = [
   { href: "/tasting", icon: Wine, label: "Tasting", match: ["/tasting", "/enter", "/join", "/tasting-room-simple", "/naked/", "/host", "/legacy/tasting"] },
-  { href: "/my-taste", icon: User, label: "My Taste", match: ["/my-taste", "/taste", "/log-simple", "/log", "/legacy/profile", "/legacy/my"] },
+  { href: "/my-taste", icon: User, label: "Taste", match: ["/my-taste", "/taste", "/log-simple", "/log", "/legacy/profile", "/legacy/my"] },
   { href: "/analyze", icon: Compass, label: "Explore", match: ["/analyze", "/legacy/discover", "/legacy/flavor", "/legacy/news", "/legacy/badges"] },
 ];
 

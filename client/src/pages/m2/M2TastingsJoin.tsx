@@ -170,7 +170,7 @@ export default function M2TastingsJoin() {
         }}
         data-testid="text-m2-join-title"
       >
-        {t("m2.join.title", "Join Tasting")}
+        {t("m2.join.title", "Joyn")}
       </h1>
       <p style={{ fontSize: 14, color: v.textSecondary, marginBottom: 20 }}>
         {t("m2.join.subtitle", "Scan a QR code or enter the tasting code to join")}

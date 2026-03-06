@@ -1651,7 +1651,7 @@ export default function M2TastingsHost() {
           }}
           data-testid="text-m2-host-title"
         >
-          {t("m2.host.title", "Host a Tasting")}
+          {t("m2.host.title", "Host")}
         </h1>
         <div style={{ background: v.elevated, borderRadius: 12, padding: 20, textAlign: "center", color: v.textSecondary }}>
           {t("m2.host.signInRequired", "Please sign in to host a tasting")}
@@ -1673,7 +1673,7 @@ export default function M2TastingsHost() {
         }}
         data-testid="text-m2-host-title"
       >
-        {t("m2.host.title", "Host a Tasting")}
+        {t("m2.host.title", "Host")}
       </h1>
 
       {step === "step1" && (

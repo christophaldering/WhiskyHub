@@ -564,7 +564,7 @@ function SessionEndedView({
             }}
             data-testid="button-goto-taste"
           >
-            {t("m2.play.myTaste", "My Taste")}
+            {t("m2.play.myTaste", "Taste")}
           </div>
         </Link>
         <Link
@@ -584,7 +584,7 @@ function SessionEndedView({
             }}
             data-testid="button-done-home"
           >
-            {t("m2.play.tastings", "Tastings")}
+            {t("m2.play.tastings", "Tasting")}
           </div>
         </Link>
       </div>

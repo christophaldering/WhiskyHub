@@ -19,7 +19,7 @@ export const primaryTabs: NavItem[] = [
   },
   {
     key: "myTaste",
-    labelKey: "nav.myTaste",
+    labelKey: "nav.taste",
     route: "/my-taste",
     icon: User,
     match: ["/my-taste", "/taste", "/analyze", "/discover"],

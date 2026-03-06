@@ -92,9 +92,9 @@ class M2ErrorBoundary extends Component<
 }
 
 const TABS = [
-  { href: "/m2/tastings", icon: Wine, labelKey: "m2.tabs.tastings", fallback: "Tastings", match: ["/m2/tastings"] },
+  { href: "/m2/tastings", icon: Wine, labelKey: "m2.tabs.tastings", fallback: "Tasting", match: ["/m2/tastings"] },
   { href: "/m2/taste", icon: BarChart3, labelKey: "m2.tabs.taste", fallback: "Taste", match: ["/m2/taste"] },
-  { href: "/m2/circle", icon: Users, labelKey: "m2.tabs.circle", fallback: "Circle", match: ["/m2/circle"] },
+  { href: "/m2/circle", icon: Users, labelKey: "m2.tabs.circle", fallback: "People", match: ["/m2/circle"] },
 ];
 
 interface Module2ShellProps {

@@ -700,7 +700,7 @@ export default function M2TastingsSolo() {
       <input ref={fileInputRef} type="file" accept=".xlsx,.csv,.pdf,.docx,text/csv" onChange={handleFileUpload} style={{ display: "none" }} data-testid="input-file-upload" />
 
       <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 24, fontWeight: 700, color: v.text, margin: "16px 0 4px" }} data-testid="text-m2-solo-title">
-        {t("m2.solo.title", "Solo Dram")}
+        {t("m2.solo.title", "Solo")}
       </h1>
       <p style={{ fontSize: 14, color: v.textSecondary, marginBottom: 20 }}>
         {t("m2.solo.subtitle", "Log a whisky on your own — take notes, rate, and remember.")}
