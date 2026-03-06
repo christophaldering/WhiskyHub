@@ -336,7 +336,7 @@ export default function M2TastingsJoin() {
           }}
           data-testid="button-join-submit"
         >
-          {loading ? "…" : t("m2.join.button", "Join")}
+          {loading ? "…" : t("m2.join.button", "Joyn")}
         </button>
       </div>
 

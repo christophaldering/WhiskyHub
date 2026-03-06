@@ -116,7 +116,7 @@ export default function M2TastingsHome() {
           }}
           data-testid="text-m2-tastings-title"
         >
-          {t("m2.tastings.title", "Tasting")}
+          {t("m2.tastings.title", "Tastings")}
         </h1>
 
         <div
