@@ -5148,6 +5148,8 @@ const resources = {
           scoreDistribution: "Score Distribution",
           loading: "Loading insights...",
           loadError: "Could not load insights.",
+          emptyTitle: "No public tasting data available",
+          emptyDescription: "Community tasting insights will appear here once tasting data is shared publicly.",
         },
         adminCommunity: {
           title: "Communities",
@@ -10410,6 +10412,8 @@ const resources = {
           scoreDistribution: "Bewertungsverteilung",
           loading: "Insights werden geladen...",
           loadError: "Insights konnten nicht geladen werden.",
+          emptyTitle: "Keine öffentlichen Tasting-Daten verfügbar",
+          emptyDescription: "Hier erscheinen Community-Tasting-Insights, sobald Daten öffentlich geteilt werden.",
         },
         adminCommunity: {
           title: "Communities",

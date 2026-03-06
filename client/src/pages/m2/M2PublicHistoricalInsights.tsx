@@ -114,6 +114,26 @@ export default function M2PublicHistoricalInsights() {
     );
   }
 
+  if (data.totalEntries === 0) {
+    return (
+      <div style={{ padding: "16px 16px 100px", maxWidth: 800, margin: "0 auto" }} data-testid="public-historical-insights-page">
+        <M2BackButton />
+        <div style={{
+          textAlign: "center", padding: "60px 20px", marginTop: 24,
+          background: v.card, border: `1px solid ${v.border}`, borderRadius: 16,
+        }} data-testid="public-insights-empty">
+          <Eye size={36} color={v.muted} style={{ marginBottom: 12, opacity: 0.5 }} />
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: v.text, margin: "0 0 8px" }}>
+            {t("m2.publicInsights.emptyTitle", "No public tasting data available")}
+          </h2>
+          <p style={{ fontSize: 13, color: v.muted, lineHeight: 1.6, maxWidth: 360, margin: "0 auto" }}>
+            {t("m2.publicInsights.emptyDescription", "Community tasting insights will appear here once tasting data is shared publicly.")}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const regionData = Object.entries(data.regionBreakdown)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10)

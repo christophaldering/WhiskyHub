@@ -9715,8 +9715,16 @@ Important rules:
       const requester = await storage.getParticipant(requesterId);
       if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
 
-      const { name, description, archiveVisibility, publicAggregatedEnabled } = req.body;
-      const updated = await storage.updateCommunity(req.params.id, { name, description, archiveVisibility, publicAggregatedEnabled });
+      const updateSchema = z.object({
+        name: z.string().min(1).optional(),
+        description: z.string().optional(),
+        archiveVisibility: z.enum(["community_only", "public_full", "public_aggregated", "private_admin"]).optional(),
+        publicAggregatedEnabled: z.boolean().optional(),
+      });
+      const parsed = updateSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.issues });
+
+      const updated = await storage.updateCommunity(req.params.id, parsed.data);
       if (!updated) return res.status(404).json({ message: "Community not found" });
       res.json(updated);
     } catch (e: any) {
@@ -9734,22 +9742,28 @@ Important rules:
       const community = await storage.getCommunityById(req.params.id);
       if (!community) return res.status(404).json({ message: "Community not found" });
 
-      const { participantId, email, role } = req.body;
-      let targetId = participantId;
-      if (!targetId && email) {
+      const memberSchema = z.object({
+        participantId: z.string().uuid().optional(),
+        email: z.string().email().optional(),
+        role: z.enum(["admin", "member", "viewer"]).optional().default("member"),
+      }).refine(d => d.participantId || d.email, { message: "participantId or email required" });
+      const parsed = memberSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.issues });
+
+      let targetId = parsed.data.participantId;
+      if (!targetId && parsed.data.email) {
         const { db: dbInst } = await import("./db");
         const { participants: pTable } = await import("@shared/schema");
-        const { eq: eqOp, sql: sqlTag } = await import("drizzle-orm");
-        const [found] = await dbInst.select().from(pTable).where(sqlTag`lower(${pTable.email}) = ${email.toLowerCase().trim()}`).limit(1);
+        const { sql: sqlTag } = await import("drizzle-orm");
+        const [found] = await dbInst.select().from(pTable).where(sqlTag`lower(${pTable.email}) = ${parsed.data.email.toLowerCase().trim()}`).limit(1);
         if (!found) return res.status(404).json({ message: "No participant found with that email" });
         targetId = found.id;
       }
-      if (!targetId) return res.status(400).json({ message: "participantId or email required" });
 
       const membership = await storage.addCommunityMember({
         communityId: community.id,
-        participantId: targetId,
-        role: role || "member",
+        participantId: targetId!,
+        role: parsed.data.role,
         status: "active",
       });
       res.json(membership);
@@ -9841,23 +9855,15 @@ Important rules:
       const search = req.query.search as string | undefined;
       const enriched = req.query.enriched === "true";
 
-      if (isAdmin || communityIds.length > 0) {
-        if (enriched) {
-          const result = await storage.getHistoricalTastingsEnriched({ limit, offset, search });
-          return res.json(result);
-        }
-        const result = await storage.getHistoricalTastings({ limit, offset, search });
+      const accessible = await storage.getAccessibleHistoricalTastingIds(communityIds, isAdmin);
+      const tastingIds = accessible === "all" ? undefined : accessible;
+
+      if (enriched) {
+        const result = await storage.getHistoricalTastingsEnriched({ limit, offset, search, tastingIds });
         return res.json(result);
       }
-
-      const { db: dbInst } = await import("./db");
-      const { historicalTastings: htTable } = await import("@shared/schema");
-      const { inArray, count, sql: sqlTag } = await import("drizzle-orm");
-
-      const publicFilter = inArray(htTable.visibilityLevel, ["public_full", "public_aggregated"]);
-      const [totalRow] = await dbInst.select({ count: count() }).from(htTable).where(publicFilter);
-      const tastings = await dbInst.select().from(htTable).where(publicFilter).orderBy(htTable.tastingNumber).limit(limit).offset(offset);
-      res.json({ tastings, total: totalRow?.count ?? 0 });
+      const result = await storage.getHistoricalTastings({ limit, offset, search, tastingIds });
+      res.json(result);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }
@@ -9934,7 +9940,7 @@ Important rules:
         conditions.push(inArray(ht.visibilityLevel, ["public_full", "public_aggregated"]));
       } else if (!isAdmin && communityIds.length > 0) {
         conditions.push(
-          sqlTag`(${ht.visibilityLevel} IN ('public_full', 'public_aggregated') OR ${ht.communityId} IN (${sqlTag.join(communityIds.map(id => sqlTag`${id}`), sqlTag`,`)}))`
+          sqlTag`(${ht.visibilityLevel} IN ('public_full', 'public_aggregated') OR (${ht.communityId} IN (${sqlTag.join(communityIds.map(id => sqlTag`${id}`), sqlTag`,`)}) AND ${ht.visibilityLevel} IN ('community_only', 'public_full', 'public_aggregated')))`
         );
       }
 
@@ -9991,11 +9997,9 @@ Important rules:
   app.get("/api/historical/analytics", async (req: Request, res: Response) => {
     try {
       const { isAdmin, communityIds } = await getRequesterInfo(req);
-      if (isAdmin || communityIds.length > 0) {
-        const stats = await storage.getHistoricalWhiskyStats();
-        return res.json(stats);
-      }
-      const stats = await storage.getHistoricalWhiskyStats();
+      const accessible = await storage.getAccessibleHistoricalTastingIds(communityIds, isAdmin);
+      const tastingIds = accessible === "all" ? undefined : accessible;
+      const stats = await storage.getHistoricalWhiskyStats(tastingIds);
       res.json(stats);
     } catch (e: any) {
       res.status(500).json({ message: e.message });

@@ -330,11 +330,12 @@ export interface IStorage {
   isCommunityMember(communityId: string, participantId: string): Promise<boolean>;
 
   // Historical Tastings
-  getHistoricalTastings(options?: { limit?: number; offset?: number; search?: string }): Promise<{ tastings: HistoricalTasting[]; total: number }>;
-  getHistoricalTastingsEnriched(options?: { limit?: number; offset?: number; search?: string }): Promise<{ tastings: Array<HistoricalTasting & { avgTotalScore: number | null; winnerDistillery: string | null; winnerName: string | null; winnerScore: number | null }>; total: number }>;
+  getAccessibleHistoricalTastingIds(communityIds: string[], isAdmin: boolean): Promise<string[] | "all">;
+  getHistoricalTastings(options?: { limit?: number; offset?: number; search?: string; tastingIds?: string[] }): Promise<{ tastings: HistoricalTasting[]; total: number }>;
+  getHistoricalTastingsEnriched(options?: { limit?: number; offset?: number; search?: string; tastingIds?: string[] }): Promise<{ tastings: Array<HistoricalTasting & { avgTotalScore: number | null; winnerDistillery: string | null; winnerName: string | null; winnerScore: number | null }>; total: number }>;
   getHistoricalTasting(id: string): Promise<(HistoricalTasting & { entries: HistoricalTastingEntry[] }) | undefined>;
   getHistoricalTastingEntries(tastingId: string): Promise<HistoricalTastingEntry[]>;
-  getHistoricalWhiskyStats(): Promise<{
+  getHistoricalWhiskyStats(tastingIds?: string[]): Promise<{
     totalTastings: number;
     totalEntries: number;
     topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; tastingNumber: number }>;
@@ -343,7 +344,7 @@ export interface IStorage {
     caskBreakdown: Record<string, number>;
     scoreDistribution: Array<{ range: string; count: number }>;
   }>;
-  getAllHistoricalTastingEntries(): Promise<HistoricalTastingEntry[]>;
+  getAllHistoricalTastingEntries(tastingIds?: string[]): Promise<HistoricalTastingEntry[]>;
   createHistoricalTasting(data: InsertHistoricalTasting): Promise<HistoricalTasting>;
   createHistoricalTastingEntry(data: InsertHistoricalTastingEntry): Promise<HistoricalTastingEntry>;
   createHistoricalImportRun(data: InsertHistoricalImportRun): Promise<HistoricalImportRun>;
@@ -1819,35 +1820,50 @@ export class DatabaseStorage implements IStorage {
   }
 
   // --- Historical Tastings ---
-  async getHistoricalTastings(options?: { limit?: number; offset?: number; search?: string }): Promise<{ tastings: HistoricalTasting[]; total: number }> {
+
+  async getAccessibleHistoricalTastingIds(communityIds: string[], isAdmin: boolean): Promise<string[] | "all"> {
+    if (isAdmin) return "all";
+    const publicCondition = sql`${historicalTastings.visibilityLevel} IN ('public_full','public_aggregated')`;
+    let whereClause;
+    if (communityIds.length > 0) {
+      const communityCondition = sql`(${historicalTastings.communityId} IN (${sql.join(communityIds.map(id => sql`${id}`), sql`,`)}) AND ${historicalTastings.visibilityLevel} IN ('community_only','public_full','public_aggregated'))`;
+      whereClause = sql`(${publicCondition} OR ${communityCondition})`;
+    } else {
+      whereClause = publicCondition;
+    }
+    const rows = await db.select({ id: historicalTastings.id }).from(historicalTastings).where(whereClause);
+    return rows.map(r => r.id);
+  }
+
+  async getHistoricalTastings(options?: { limit?: number; offset?: number; search?: string; tastingIds?: string[] }): Promise<{ tastings: HistoricalTasting[]; total: number }> {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
     const search = options?.search?.trim();
 
-    let countQuery;
-    let dataQuery;
+    const buildWhere = () => {
+      const conditions = [];
+      if (options?.tastingIds) {
+        if (options.tastingIds.length === 0) return sql`1=0`;
+        conditions.push(inArray(historicalTastings.id, options.tastingIds));
+      }
+      if (search) {
+        const pattern = `%${search}%`;
+        conditions.push(sql`(${historicalTastings.titleDe} ILIKE ${pattern} OR ${historicalTastings.titleEn} ILIKE ${pattern} OR CAST(${historicalTastings.tastingNumber} AS TEXT) = ${search})`);
+      }
+      return conditions.length > 0 ? (conditions.length === 1 ? conditions[0] : sql`${sql.join(conditions, sql` AND `)}`) : undefined;
+    };
 
-    if (search) {
-      const pattern = `%${search}%`;
-      countQuery = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastings)
-        .where(sql`${historicalTastings.titleDe} ILIKE ${pattern} OR ${historicalTastings.titleEn} ILIKE ${pattern} OR CAST(${historicalTastings.tastingNumber} AS TEXT) = ${search}`);
-      dataQuery = await db.select().from(historicalTastings)
-        .where(sql`${historicalTastings.titleDe} ILIKE ${pattern} OR ${historicalTastings.titleEn} ILIKE ${pattern} OR CAST(${historicalTastings.tastingNumber} AS TEXT) = ${search}`)
-        .orderBy(asc(historicalTastings.tastingNumber))
-        .limit(limit)
-        .offset(offset);
-    } else {
-      countQuery = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastings);
-      dataQuery = await db.select().from(historicalTastings)
-        .orderBy(asc(historicalTastings.tastingNumber))
-        .limit(limit)
-        .offset(offset);
-    }
+    const where = buildWhere();
+    const countQuery = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastings).where(where);
+    const dataQuery = await db.select().from(historicalTastings).where(where)
+      .orderBy(asc(historicalTastings.tastingNumber))
+      .limit(limit)
+      .offset(offset);
 
     return { tastings: dataQuery, total: countQuery[0]?.count ?? 0 };
   }
 
-  async getHistoricalTastingsEnriched(options?: { limit?: number; offset?: number; search?: string }): Promise<{ tastings: Array<HistoricalTasting & { avgTotalScore: number | null; winnerDistillery: string | null; winnerName: string | null; winnerScore: number | null }>; total: number }> {
+  async getHistoricalTastingsEnriched(options?: { limit?: number; offset?: number; search?: string; tastingIds?: string[] }): Promise<{ tastings: Array<HistoricalTasting & { avgTotalScore: number | null; winnerDistillery: string | null; winnerName: string | null; winnerScore: number | null }>; total: number }> {
     const base = await this.getHistoricalTastings(options);
     if (base.tastings.length === 0) return { tastings: [], total: base.total };
 
@@ -1898,11 +1914,15 @@ export class DatabaseStorage implements IStorage {
       .orderBy(asc(historicalTastingEntries.totalRank));
   }
 
-  async getAllHistoricalTastingEntries(): Promise<HistoricalTastingEntry[]> {
+  async getAllHistoricalTastingEntries(tastingIds?: string[]): Promise<HistoricalTastingEntry[]> {
+    if (tastingIds) {
+      if (tastingIds.length === 0) return [];
+      return db.select().from(historicalTastingEntries).where(inArray(historicalTastingEntries.historicalTastingId, tastingIds));
+    }
     return db.select().from(historicalTastingEntries);
   }
 
-  async getHistoricalWhiskyStats(): Promise<{
+  async getHistoricalWhiskyStats(tastingIds?: string[]): Promise<{
     totalTastings: number;
     totalEntries: number;
     topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; tastingNumber: number }>;
@@ -1911,8 +1931,27 @@ export class DatabaseStorage implements IStorage {
     caskBreakdown: Record<string, number>;
     scoreDistribution: Array<{ range: string; count: number }>;
   }> {
-    const [tastingCount] = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastings);
-    const [entryCount] = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastingEntries);
+    const emptyResult = {
+      totalTastings: 0, totalEntries: 0, topWhiskies: [],
+      regionBreakdown: {}, smokyBreakdown: { smoky: 0, nonSmoky: 0, unknown: 0 },
+      caskBreakdown: {}, scoreDistribution: [
+        { range: "0-1", count: 0 }, { range: "1-2", count: 0 }, { range: "2-3", count: 0 },
+        { range: "3-4", count: 0 }, { range: "4-5", count: 0 }, { range: "5-6", count: 0 },
+        { range: "6-7", count: 0 }, { range: "7-8", count: 0 }, { range: "8-9", count: 0 },
+        { range: "9-10", count: 0 },
+      ],
+    };
+    if (tastingIds && tastingIds.length === 0) return emptyResult;
+
+    const tastingFilter = tastingIds ? inArray(historicalTastings.id, tastingIds) : undefined;
+    const entryFilter = tastingIds ? inArray(historicalTastingEntries.historicalTastingId, tastingIds) : undefined;
+
+    const [tastingCount] = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastings).where(tastingFilter);
+    const [entryCount] = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastingEntries).where(entryFilter);
+
+    const entryScoreFilter = tastingIds
+      ? sql`${historicalTastingEntries.totalScore} IS NOT NULL AND ${historicalTastingEntries.historicalTastingId} IN (${sql.join(tastingIds.map(id => sql`${id}`), sql`,`)})`
+      : sql`${historicalTastingEntries.totalScore} IS NOT NULL`;
 
     const topWhiskiesRows = await db
       .select({
@@ -1923,7 +1962,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(historicalTastingEntries)
       .innerJoin(historicalTastings, eq(historicalTastingEntries.historicalTastingId, historicalTastings.id))
-      .where(sql`${historicalTastingEntries.totalScore} IS NOT NULL`)
+      .where(entryScoreFilter)
       .orderBy(desc(historicalTastingEntries.totalScore))
       .limit(20);
 
@@ -1934,13 +1973,17 @@ export class DatabaseStorage implements IStorage {
       tastingNumber: r.tastingNumber,
     }));
 
+    const regionBaseFilter = tastingIds
+      ? sql`COALESCE(${historicalTastingEntries.normalizedRegion}, ${historicalTastingEntries.regionRaw}) IS NOT NULL AND ${historicalTastingEntries.historicalTastingId} IN (${sql.join(tastingIds.map(id => sql`${id}`), sql`,`)})`
+      : sql`COALESCE(${historicalTastingEntries.normalizedRegion}, ${historicalTastingEntries.regionRaw}) IS NOT NULL`;
+
     const regionRows = await db
       .select({
         region: sql<string>`COALESCE(${historicalTastingEntries.normalizedRegion}, ${historicalTastingEntries.regionRaw})`,
         count: sql<number>`count(*)::int`,
       })
       .from(historicalTastingEntries)
-      .where(sql`COALESCE(${historicalTastingEntries.normalizedRegion}, ${historicalTastingEntries.regionRaw}) IS NOT NULL`)
+      .where(regionBaseFilter)
       .groupBy(sql`COALESCE(${historicalTastingEntries.normalizedRegion}, ${historicalTastingEntries.regionRaw})`);
 
     const regionBreakdown: Record<string, number> = {};
@@ -1948,13 +1991,17 @@ export class DatabaseStorage implements IStorage {
       regionBreakdown[r.region] = r.count;
     }
 
+    const caskBaseFilter = tastingIds
+      ? sql`COALESCE(${historicalTastingEntries.normalizedCask}, ${historicalTastingEntries.caskRaw}) IS NOT NULL AND ${historicalTastingEntries.historicalTastingId} IN (${sql.join(tastingIds.map(id => sql`${id}`), sql`,`)})`
+      : sql`COALESCE(${historicalTastingEntries.normalizedCask}, ${historicalTastingEntries.caskRaw}) IS NOT NULL`;
+
     const caskRows = await db
       .select({
         cask: sql<string>`COALESCE(${historicalTastingEntries.normalizedCask}, ${historicalTastingEntries.caskRaw})`,
         count: sql<number>`count(*)::int`,
       })
       .from(historicalTastingEntries)
-      .where(sql`COALESCE(${historicalTastingEntries.normalizedCask}, ${historicalTastingEntries.caskRaw}) IS NOT NULL`)
+      .where(caskBaseFilter)
       .groupBy(sql`COALESCE(${historicalTastingEntries.normalizedCask}, ${historicalTastingEntries.caskRaw})`);
 
     const caskBreakdown: Record<string, number> = {};
@@ -1968,7 +2015,8 @@ export class DatabaseStorage implements IStorage {
         nonSmoky: sql<number>`count(*) FILTER (WHERE ${historicalTastingEntries.normalizedIsSmoky} = false)::int`,
         unknown: sql<number>`count(*) FILTER (WHERE ${historicalTastingEntries.normalizedIsSmoky} IS NULL)::int`,
       })
-      .from(historicalTastingEntries);
+      .from(historicalTastingEntries)
+      .where(entryFilter);
 
     const smokyBreakdown = {
       smoky: smokyRows[0]?.smoky ?? 0,
@@ -1976,13 +2024,17 @@ export class DatabaseStorage implements IStorage {
       unknown: smokyRows[0]?.unknown ?? 0,
     };
 
+    const scoreDistFilter = tastingIds
+      ? sql`${historicalTastingEntries.totalScore} IS NOT NULL AND ${historicalTastingEntries.totalScore} >= 0 AND ${historicalTastingEntries.historicalTastingId} IN (${sql.join(tastingIds.map(id => sql`${id}`), sql`,`)})`
+      : sql`${historicalTastingEntries.totalScore} IS NOT NULL AND ${historicalTastingEntries.totalScore} >= 0`;
+
     const scoreDistRows = await db
       .select({
         bucket: sql<number>`LEAST(FLOOR(${historicalTastingEntries.totalScore})::int, 9)`,
         count: sql<number>`count(*)::int`,
       })
       .from(historicalTastingEntries)
-      .where(sql`${historicalTastingEntries.totalScore} IS NOT NULL AND ${historicalTastingEntries.totalScore} >= 0`)
+      .where(scoreDistFilter)
       .groupBy(sql`LEAST(FLOOR(${historicalTastingEntries.totalScore})::int, 9)`);
 
     const scoreRanges = [
