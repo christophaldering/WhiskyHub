@@ -1,0 +1,329 @@
+You are now in FINAL ACCEPTANCE / AUDIT mode inside the CURRENT CaskSense codebase.
+
+MISSION
+Audit, validate, and if necessary fix the newly implemented COMMUNITY VISIBILITY & ACCESS MODEL for historical tasting data.
+
+Important mindset:
+Do NOT merely summarize what was intended.
+Do NOT merely state that things “should work”.
+Do NOT stop at static code inspection.
+You must actually VERIFY behavior, FIND weaknesses, FIX them where needed, and only then report.
+
+This is an acceptance, hardening, and leak-prevention pass.
+
+======================================================================
+PRIMARY ACCEPTANCE OBJECTIVE
+======================================================================
+
+Historical tasting data from a specific real-world whisky community must now behave correctly under the new visibility model:
+
+1) Public/general users:
+- can access only public-safe aggregated historical insights
+- cannot access restricted detailed historical community archives
+
+2) Community members:
+- can access their own community archive and details
+- cannot access restricted archives of communities they do not belong to
+
+3) Admin/internal users:
+- can access everything appropriate
+
+4) No API/data leakage:
+- restricted data must not leak through overlooked endpoints, query params, prefetches, hidden fields, or debug routes
+
+5) Existing CaskSense functionality must remain stable:
+- Join / Host / Solo
+- live tasting flows
+- current navigation and layout
+- existing historical features, if any, must still work coherently
+
+======================================================================
+PHASE 1 — RE-AUDIT THE CURRENT IMPLEMENTATION
+======================================================================
+
+First inspect the ACTUAL current implementation and identify:
+
+A) Data model
+- which entity represents community / circle / group / membership
+- how historical tastings are linked to a community or equivalent scope
+- what visibility fields / enums / flags exist
+- whether existing imported historical data was successfully linked/migrated
+
+B) Server enforcement
+- all endpoints/services/repos that can return historical data
+- where authorization checks happen
+- whether checks are centralized or fragmented
+- whether any endpoint still returns restricted detail accidentally
+
+C) Frontend exposure surface
+- all routes/pages/components that surface historical data
+- whether restricted data is hidden only in UI or also blocked server-side
+- whether prefetching/query hooks fetch restricted data before access is known
+- whether route guards are sufficient and graceful
+
+D) Admin/internal surfaces
+- what internal archive controls or debug views now exist
+- whether they are actually protected
+
+Then proceed into active validation and fixing.
+
+======================================================================
+PHASE 2 — ACTIVE SECURITY / ACCESS AUDIT
+======================================================================
+
+Perform an aggressive access audit against all relevant surfaces.
+
+You must test scenarios including at least:
+
+SCENARIO 1 — Anonymous/public user
+Validate that this user:
+- can see public aggregated historical insights (if intended)
+- cannot access restricted community archive list
+- cannot access restricted tasting detail pages
+- cannot retrieve restricted archive data from API endpoints directly
+- cannot infer hidden archive content from metadata leaks
+
+SCENARIO 2 — Authenticated normal user with NO relevant community membership
+Validate that this user:
+- behaves like a non-member for restricted archives
+- cannot access another community’s restricted archive list/detail
+- does not see misleading UI that implies access
+
+SCENARIO 3 — Member of the relevant community
+Validate that this user:
+- can access own community archive list
+- can access tasting detail pages for that community
+- can access richer community-specific insights as intended
+- does not see errors or partial rendering
+
+SCENARIO 4 — Member of a DIFFERENT community (if multi-community support exists or was scaffolded)
+Validate that this user:
+- cannot access restricted archive details of communities they do not belong to
+
+SCENARIO 5 — Admin/internal user
+Validate that this user:
+- can access all relevant archive/admin/debug surfaces
+- can inspect ownership/visibility/config data as intended
+
+For each scenario, test BOTH:
+- frontend route behavior
+- backend API behavior
+
+======================================================================
+PHASE 3 — LEAK PREVENTION CHECKLIST
+======================================================================
+
+You must explicitly check for the following common leakage patterns and fix any issue found:
+
+1) Hidden UI but open API
+- UI hides archive, but endpoint still returns restricted payload
+
+2) Partial metadata leakage
+- archive list hidden, but counts, titles, community names, tasting numbers, winners, or slugs leak elsewhere
+
+3) Prefetch/query leakage
+- client prefetches restricted data before authorization is confirmed
+
+4) Debug/admin leakage
+- internal routes accessible without admin/internal protection
+
+5) Overbroad analytics
+- “public aggregated” endpoint accidentally includes identifiable or community-specific detail
+
+6) Mixed authorization branches
+- one endpoint checks auth correctly, another related one does not
+
+7) Server-side filter mistakes
+- endpoint returns all rows then filters only in frontend
+
+8) Direct ID enumeration
+- guessing tasting IDs/community IDs reveals restricted content
+
+9) Type-level leakage
+- response DTOs include restricted fields that the UI currently ignores, but are still returned over the wire
+
+10) Caching leakage
+- React Query or server cache allows restricted data to persist across auth changes or user contexts
+
+For every issue found:
+- fix it
+- re-test it
+- document it in the final report
+
+======================================================================
+PHASE 4 — DATA / MIGRATION INTEGRITY AUDIT
+======================================================================
+
+Audit whether the historical dataset was linked correctly into the community visibility model.
+
+Validate:
+- historical tasting count
+- historical entry count
+- number of communities/circles/groups relevant to archive ownership
+- whether historical tastings are linked to the intended owner scope
+- default visibility policy correctness
+- whether public aggregated mode works without exposing archive detail
+- whether any historical records remain orphaned or inconsistent
+
+If there are orphaned or badly linked records:
+- fix via migration/patch logic
+- do not leave the system in a half-migrated state
+
+If there is currently a single historical dataset:
+- ensure it is cleanly represented under one initial community/owner scope
+- ensure this remains extensible for future communities
+
+======================================================================
+PHASE 5 — UX / PRODUCT ACCEPTANCE
+======================================================================
+
+Validate the user experience, not just security.
+
+Check:
+- archive discoverability for authorized users
+- tasteful locked/permission-denied handling for unauthorized users
+- no ugly raw 401/403/500 user experiences
+- no broken links from Tastings / Taste / Circle / Profile
+- copy in DE/EN is polished
+- labels do not expose raw internal enums or implementation jargon
+- the distinction between “Historical Insights” and “Community Archive” is clear
+- the app still feels elegant and coherent
+
+Fix obvious rough edges:
+- empty states
+- loading states
+- locked states
+- labels
+- truncation
+- responsive problems
+- awkward route placement if discovered
+
+======================================================================
+PHASE 6 — REGRESSION AUDIT
+======================================================================
+
+Ensure existing functionality still works.
+
+At minimum validate:
+- app starts cleanly
+- build passes
+- database migrations apply cleanly
+- historical import logic still works if present
+- Join flow works
+- Host flow works
+- Solo flow works
+- existing navigation works
+- no TypeScript/runtime errors introduced by the new access model
+
+If regressions are found:
+- fix them
+- re-test them
+
+======================================================================
+PHASE 7 — TESTING REQUIREMENTS
+======================================================================
+
+Add or improve tests where feasible.
+
+Priority test coverage:
+1) server-side access control helpers / policies
+2) public aggregated endpoint safety
+3) restricted community archive endpoint authorization
+4) admin-only/internal route protection
+5) migration/linkage logic for historical tastings to communities
+6) frontend conditional rendering / route handling if test infra exists
+
+If there is an existing test stack, use it.
+If coverage is weak, still add at least focused high-value tests around access control and visibility helpers.
+
+======================================================================
+PHASE 8 — PERFORMANCE / STABILITY REVIEW
+======================================================================
+
+Review and fix practical issues:
+- N+1 query patterns in archive fetches
+- over-fetching in public aggregated endpoints
+- missing DB indexes relevant to community/archive lookups
+- brittle null assumptions
+- overlarge payloads
+- unstable query keys
+- poor error boundaries around protected pages
+
+Do sensible hardening without overengineering.
+
+======================================================================
+FINAL ACCEPTANCE CHECKLIST
+======================================================================
+
+Do NOT finish until you can truthfully confirm all of the following:
+
+1) Public aggregated historical insights are available and safe
+2) Restricted community archive details are NOT accessible to non-members
+3) Community members can access their own archive correctly
+4) Admin/internal users can access the intended internal surfaces
+5) No major API leakage paths remain
+6) Historical data is correctly linked to the community visibility model
+7) Existing CaskSense live flows still work
+8) Build/runtime/type integrity is intact
+9) Known edge cases are documented
+10) The feature is genuinely ready for small-circle testing
+
+======================================================================
+FINAL OUTPUT FORMAT
+======================================================================
+
+At the end, provide a PRECISE audit report, not vague prose.
+
+Use this structure:
+
+1) Architecture actually found
+- relevant entities
+- auth/membership model
+- historical archive placement
+
+2) What was audited
+- endpoints
+- routes
+- services
+- pages
+- migrations/linkage
+
+3) Issues found
+- one by one
+- include severity
+- explain leak/risk/regression
+
+4) Fixes applied
+- one by one
+- exact files/modules changed
+
+5) Validation performed
+- commands run
+- manual/runtime checks performed
+- scenarios tested
+
+6) Current access matrix
+Provide a clear matrix for:
+- public user
+- authenticated non-member
+- community member
+- admin
+
+7) Data integrity results
+- tasting counts
+- archive ownership linkage
+- orphan count
+- visibility defaults
+
+8) Remaining limitations
+- only real ones
+- no invented filler
+
+9) Final verdict
+State explicitly whether the feature is:
+- NOT READY
+- READY WITH MINOR LIMITATIONS
+- READY FOR SMALL-CIRCLE TESTING
+
+Do NOT merely say “done”.
+Audit, fix, re-test, then report.
