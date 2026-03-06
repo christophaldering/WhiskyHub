@@ -1,0 +1,283 @@
+You are working inside the **CaskSense codebase**.
+
+The system is a **TypeScript monorepo**.
+
+Frontend stack:
+React + Vite
+Wouter routing
+TanStack React Query
+Zustand
+Tailwind CSS
+shadcn/ui
+Framer Motion
+Recharts
+
+Backend:
+Express 5
+Drizzle ORM
+PostgreSQL
+
+The platform theme is **Dark Warm whisky aesthetic**.
+
+Your task is to implement a **new high-impact landing page for whisky enthusiasts** while **preserving the current landing page**.
+
+---
+
+# 1 PRESERVE EXISTING LANDING PAGE
+
+The current landing page must NOT be deleted.
+
+Move it to a new route:
+
+/landing-old
+
+Ensure the route works and renders exactly the previous page.
+
+---
+
+# 2 NEW LANDING PAGE
+
+The new landing page becomes:
+
+/
+
+The **existing Hero section must remain EXACTLY as it is**.
+
+Do NOT modify:
+
+hero image
+headline
+subheadline
+typography
+spacing
+
+Only extend the page **below the hero**.
+
+---
+
+# 3 DESIGN GOAL
+
+The landing page must feel:
+
+premium
+minimal
+Apple-level polished
+warm and elegant
+
+Audience:
+
+whisky enthusiasts who host tastings with friends.
+
+Design language:
+
+dark warm colors
+large typography
+generous whitespace
+soft gold accents
+smooth scroll animations
+
+Use **Framer Motion** for subtle section reveals.
+
+---
+
+# 4 SECTION
+
+TURN EVERY WHISKY TASTING INTO A DISCOVERY
+
+Centered headline:
+
+Turn every whisky tasting into a discovery.
+
+Subtext:
+
+Blind flights.
+Live scoring.
+Unexpected winners.
+
+And the moment when the room realizes
+they all loved the same dram.
+
+Below the text create **three premium feature cards**.
+
+Card 1
+Title: Blind Flights
+Text: Serve whiskies blind and discover what people really think.
+
+Card 2
+Title: Live Scoring
+Text: Everyone rates each dram. Flavor, balance, finish and overall score.
+
+Card 3
+Title: The Reveal
+Text: Once ratings are locked the host reveals the bottle. That’s when the discussion begins.
+
+Cards must include:
+
+icon
+hover animation
+subtle elevation effect
+
+---
+
+# 5 SECTION
+
+THE TASTING FLOW
+
+Headline:
+
+The perfect tasting flow
+
+Create a **horizontal animated timeline** with five steps.
+
+1 Host a tasting
+2 Pour blind
+3 Rate together
+4 Reveal the dram
+5 See the results
+
+Each step animates slightly on scroll.
+
+---
+
+# 6 SECTION
+
+THE REVEAL MOMENT
+
+Headline:
+
+The moment everyone waits for
+
+Short storytelling paragraph:
+
+In many tastings the favorite bottle surprises everyone.
+
+The expensive dram loses.
+The unknown one wins.
+
+CaskSense captures that moment and shows the ranking instantly.
+
+Include a subtle whisky glass illustration or elegant visual element.
+
+---
+
+# 7 SECTION
+
+TASTE ANALYTICS
+
+Headline:
+
+Understand your whisky taste
+
+Include three visual components:
+
+radar chart (Recharts)
+ranking list
+flavor profile
+
+Short text:
+
+Over time CaskSense learns what you love.
+
+Not just ratings.
+Your personal whisky taste profile.
+
+---
+
+# 8 SECTION
+
+GUIDED TOUR
+
+Headline:
+
+How a tasting works
+
+Create a **four step guided tour layout**.
+
+Step 1
+Host a tasting
+Choose whiskies and invite your friends.
+
+Step 2
+Rate the drams
+Participants score aroma, flavor, balance and finish.
+
+Step 3
+Reveal the whisky
+The host reveals the bottle.
+
+Step 4
+See the ranking
+Instant results and surprising winners.
+
+Each step includes:
+
+icon
+short text
+scroll animation
+
+---
+
+# 9 SECTION
+
+TASTING MICRO DEMO
+
+Create a small **animated tasting simulation** that loops automatically.
+
+Sequence:
+
+Pour dram
+Ratings appear
+Scores update
+Bottle reveal
+Final ranking appears
+
+Use subtle Framer Motion animations.
+
+The goal is to visually demonstrate how a tasting works.
+
+Keep animation elegant and minimal.
+
+---
+
+# 10 FINAL CTA
+
+Headline:
+
+Ready for your next tasting?
+
+Buttons:
+
+Host a tasting
+Join a tasting
+Log a dram
+
+Buttons must route to the existing **Tasting Hub**.
+
+---
+
+# 11 PERFORMANCE AND UX
+
+Ensure:
+
+mobile responsive layout
+clean desktop layout
+animations are subtle
+respect prefers-reduced-motion
+
+Use existing Tailwind tokens.
+
+Maintain good Lighthouse performance.
+
+---
+
+# 12 VALIDATION
+
+After implementation verify:
+
+1 old landing page works at /landing-old
+2 new landing page loads at /
+3 hero is unchanged
+4 all sections render correctly
+5 animations work without console errors
+6 mobile layout is clean
+7 CTA buttons route correctly

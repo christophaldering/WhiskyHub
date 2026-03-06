@@ -24,6 +24,7 @@ import TastingResultsPage from "@/pages/tasting-results";
 import NakedTasting from "@/pages/naked-tasting";
 import QuickTasting from "@/pages/quick-tasting";
 import PublicLanding from "@/pages/public-landing";
+import LandingNew from "@/pages/landing-new";
 
 // ── My Taste subpages (eager: frequently accessed) ──
 import MyJournal from "@/pages/my-journal";
@@ -225,7 +226,8 @@ function Router() {
       <NavRedirects />
       <Switch>
         {/* ── Public / Marketing ── */}
-        <Route path="/" component={PublicLanding} />
+        <Route path="/" component={LandingNew} />
+        <Route path="/landing-old" component={PublicLanding} />
         <Route path="/presentation" component={GuidedPresentation} />
         <Route path="/landing-v2" component={LandingV2} />
         <Route path="/app-entry" component={Landing} />
