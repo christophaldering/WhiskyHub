@@ -1,0 +1,336 @@
+AUFTRAG: VERSCHÄRFTER FULL-SCOPE I18N-, TRANSLATION-, TERMINOLOGY- UND MENU-CONSISTENCY-ENFORCEMENT PASS
+
+Du arbeitest jetzt als extrem genauer Senior QA Engineer, I18N Architect, UX Writer, Frontend Auditor und Release Gatekeeper.
+Deine Aufgabe ist nicht kosmetisch, sondern systemkritisch:
+Du musst das gesamte Projekt systemweit auf sprachliche Ungenauigkeiten, Übersetzungsfehler, Mischsprachen, inkonsistente Terminologie, fehlerhafte Menübezeichnungen, unprofessionelles Wording, hardcodierte UI-Strings und nicht sauber lokalisierte Inhalte untersuchen, korrigieren, verifizieren und dokumentieren.
+
+DAS IST EIN VERBINDLICHER ENFORCEMENT-AUFTRAG.
+Nicht selektiv. Nicht ungefähr. Nicht oberflächlich.
+Es geht um vollständige systemweite Prüfung, Korrektur, Qualitätssicherung und belastbare Rückmeldung.
+
+==================================================
+A. VERBINDLICHE MENÜ-SETZUNGEN – OHNE AUSNAHME
+==================================================
+
+Die folgenden Menüpunkte sind systemweit verbindlich und müssen exakt so verwendet werden:
+
+PRIMARY MENU / NAVIGATION TERMS (VERBINDLICH):
+- Tastings
+- Taste
+- Circle
+- Profile
+
+TOP-RIGHT / PRIMARY ACTION TERMS (VERBINDLICH):
+- Joyn
+- Host
+- Solo
+
+Diese Begriffe gelten als CANONICAL LABELS.
+Sie dürfen:
+- nicht übersetzt werden
+- nicht umformuliert werden
+- nicht variiert werden
+- nicht durch Synonyme ersetzt werden
+- nicht lokal abgewandelt werden
+- nicht je nach Seite unterschiedlich heißen
+- nicht versehentlich als Altbegriff bestehen bleiben
+
+Insbesondere sind folgende oder ähnliche Abweichungen unerlaubt und aktiv zu suchen:
+- Tasting
+- Testing
+- Testings
+- Verkostung
+- Geschmack
+- Geschmacksprofil
+- Kreis
+- Community
+- People
+- Profil
+- Profile(s), wenn an falscher Stelle anders gemeint
+- Join
+- Joined
+- Joining
+- Enter
+- Start
+- Gastgeber
+- Hosten
+- Alone
+- Single
+- Solo Mode, wenn eigentlich nur Solo gemeint ist
+
+Wenn irgendeine Stelle von diesen Vorgaben abweicht, ist das ein Fehler und muss korrigiert werden.
+
+==================================================
+B. ZIEL
+==================================================
+
+Stelle sicher, dass das gesamte Produkt in Bezug auf:
+- Übersetzung
+- Lokalisierung
+- Sprachkonsistenz
+- UX-Wording
+- Menüführung
+- Terminologie
+- sichtbare UI-Texte
+- Fehlertexte
+- Onboarding-Texte
+- Button-Beschriftungen
+- Route-Titel
+- States / Empty States / Toasts / Modals
+- Seed-/Fallback-/Mock-/Demo-Texte
+
+vollständig sauber, professionell, konsistent und releasefähig ist.
+
+==================================================
+C. VERBINDLICHE ARBEITSPHASEN
+==================================================
+
+PHASE 1 — INVENTARISIERUNG / STRING DISCOVERY
+Führe eine systemweite, aggressive Suche nach allen user-facing Strings durch.
+
+Durchsuche insbesondere:
+- alle Frontend-Komponenten
+- alle Pages / Routes
+- Navigation / Menus / Header / Footer
+- alle locale/i18n-Dateien
+- JSON/YAML/TS/TSX/JS/JSX mit UI-Texten
+- Backend-Responses mit sichtbaren Meldungen
+- Formular-Definitionen
+- Validation-Messages
+- Toasts / Alerts / Modals / Dialogs
+- Seeds / Fixtures / Mock-Data / Fake-Data
+- Default-Werte
+- Placeholder
+- aria-labels, title-Attribute und Screenreader-Texte, sofern user-facing
+- mobile und desktop-spezifische Varianten
+- Sonderrouten, Legacy-Routen und Parallelmodule
+
+Nutze dafür nicht nur offensichtliche i18n-Dateien, sondern suche aktiv nach:
+- hardcodierten Strings
+- Altbegriffen
+- Fragmenten alter Menübezeichnungen
+- Mischformen DE/EN
+- Copy-Paste-Resten
+- temporären Platzhaltern
+- sprachlich unfertigen Beta-Texten
+
+Verlange von dir selbst einen echten TRANSLATION ENFORCEMENT PASS:
+Nicht nur „sehen“, sondern aktiv und systematisch finden.
+
+==================================================
+PHASE 2 — FEHLERKLASSIFIKATION
+==================================================
+
+Klassifiziere jeden Fund mindestens in eine der folgenden Kategorien:
+
+1. Missing translation
+2. Wrong translation
+3. Inconsistent terminology
+4. Mixed language / Denglisch
+5. Hardcoded user-facing string
+6. Wrong canonical menu label
+7. UX wording unclear
+8. Grammar / orthography / punctuation issue
+9. Locale mismatch
+10. Legacy wording still present
+11. Duplicate meaning with different labels
+12. Incomplete localization
+13. Layout-risk due to wording
+14. Unclear CTA wording
+15. Fallback text not production-ready
+
+==================================================
+PHASE 3 — AUDIT-REPORT VOR UMSETZUNG
+==================================================
+
+Erstelle einen präzisen, belastbaren Audit-Report vor Abschluss.
+Die Rückmeldung muss konkret sein, nicht pauschal.
+
+Format:
+
+A. Summary
+- Anzahl gefundener Probleme gesamt
+- Anzahl kritisch / hoch / mittel / niedrig
+- wichtigste Problemcluster
+
+B. Canonical Menu Violations
+- jede Stelle, an der die verbindlichen Menübegriffe verletzt wurden
+
+C. Translation / Localization Issues
+- Datei / Komponente / Route
+- Ist-Zustand
+- Problemtyp
+- empfohlene Korrektur
+
+D. Hardcoded Strings
+- exakte Fundstellen
+- Empfehlung zur i18n-Auslagerung
+
+E. Legacy / Residual Labels
+- alte oder verbotene Begriffe
+- wo sie vorkommen
+- wie sie ersetzt werden
+
+F. Risks
+- z. B. Layoutrisiken, doppelte Benennungslogik, inkonsistente User-Flows
+
+WICHTIG:
+Keine Floskeln wie:
+- “improved translations”
+- “fixed minor issues”
+- “updated labels”
+Stattdessen konkret, nachvollziehbar, überprüfbar.
+
+==================================================
+PHASE 4 — KORREKTUR / NORMALISIERUNG
+==================================================
+
+Setze danach alle nötigen Korrekturen konsequent um:
+
+1. Ersetze systemweit falsche oder alte Menübegriffe durch die verbindlichen Canonical Labels.
+2. Ziehe alle sichtbaren hardcodierten Strings in ein sauberes i18n-System, sofern sie dort hineingehören.
+3. Vereinheitliche Terminologie über alle Flows hinweg.
+4. Korrigiere sprachlich unnatürliche, unfertige oder missverständliche Formulierungen.
+5. Stelle sicher, dass DE- und EN-Locale logisch konsistent sind.
+6. Entferne Beta-/Platzhalter-/Legacy-Wording aus produktiven Oberflächen.
+7. Prüfe, ob Labels in Navigation, Route Title, Page Header, CTA und Inhalt wirklich dieselbe Sprache sprechen.
+
+WICHTIG:
+Nicht lokal flicken.
+Wenn ein Begriff an einer Stelle falsch ist, prüfe systemweit alle verwandten Verwendungen.
+
+==================================================
+PHASE 5 — TRANSLATION ENFORCEMENT CHECK
+==================================================
+
+Nach der Korrektur führe einen zweiten, unabhängigen Kontrolllauf durch.
+
+Dieser Kontrolllauf muss mindestens prüfen:
+
+- Gibt es noch Vorkommen unerlaubter Altbegriffe?
+- Gibt es noch sichtbare hardcodierte Strings?
+- Gibt es Translation Keys ohne Nutzung?
+- Gibt es sichtbare Strings ohne Translation Key?
+- Gibt es fehlende Keys in einer Locale?
+- Gibt es Keys mit widersprüchlichem Wording?
+- Gibt es Menüeinträge, Header oder CTAs mit abweichender Terminologie?
+- Gibt es noch Mischsprache in irgendeinem Screen?
+- Gibt es Fallback-Texte, die unfertig wirken?
+- Gibt es englische Canonical Menu Terms, die versehentlich lokalisiert wurden?
+- Gibt es Stellen, an denen Joyn / Host / Solo nicht exakt gesetzt wurden?
+- Gibt es Stellen, an denen Tastings / Taste / Circle / Profile nicht exakt gesetzt wurden?
+
+Führe ausdrücklich einen SEARCH-AND-VERIFY PASS durch:
+Suche projektweit nach problematischen Begriffen und bestätige, dass sie entfernt oder korrekt ersetzt wurden.
+
+==================================================
+PHASE 6 — UI / UX REGRESSION QUALITY CHECK
+==================================================
+
+Prüfe nach den Textkorrekturen auch die UI-Auswirkungen:
+
+- keine abgeschnittenen Labels
+- keine überlaufenden Buttons
+- keine gebrochenen Navigationen
+- keine fehlerhafte mobile Darstellung
+- keine Inkonsistenz zwischen Desktop und Mobile
+- keine unlogischen CTA-Abfolgen
+- keine widersprüchlichen Benennungen im selben Flow
+- keine missverständlichen Onboarding-Texte
+- keine widersprüchlichen Begriffe zwischen Landing, Navigation und Zielseite
+- keine veralteten Seitentitel oder Browser Titles
+- keine kaputten Empty States / Error States / Success States
+
+Wenn Textänderungen UI-Probleme erzeugen, müssen diese ebenfalls korrigiert werden.
+
+==================================================
+PHASE 7 — ABSCHLUSSBERICHT
+==================================================
+
+Am Ende musst du eine strukturierte Abschlussmeldung liefern.
+
+Format:
+
+1. Executive Summary
+- Was wurde geprüft?
+- Was wurde gefunden?
+- Was wurde korrigiert?
+
+2. Canonical Menu Enforcement Status
+- Bestätigung, dass folgende Begriffe systemweit durchgesetzt sind:
+  - Tastings
+  - Taste
+  - Circle
+  - Profile
+  - Joyn
+  - Host
+  - Solo
+
+3. Changed Files / Components / Routes
+- konkrete Liste
+
+4. Translation & Terminology Fixes
+- wichtigste Korrekturen im Überblick
+
+5. Hardcoded String Cleanup
+- was gefunden und bereinigt wurde
+
+6. QA / Verification Results
+- was konkret geprüft wurde
+- welche Tests / Checks erfolgreich waren
+
+7. Remaining Issues
+- falls vorhanden, explizit benennen
+- wenn keine vorhanden: klar sagen, dass keine mehr gefunden wurden
+
+8. Release Readiness Verdict
+- eindeutig nur eine der folgenden Aussagen:
+  - RELEASE READY
+  - NOT YET RELEASE READY
+
+Keine weichgespülte Schlussformulierung.
+Klare Aussage.
+
+==================================================
+D. ZUSÄTZLICHE VERBINDLICHE REGELN
+==================================================
+
+- Keine halben Lösungen
+- Keine stillschweigenden Annahmen
+- Keine kreative Neuinterpretation der Menübegriffe
+- Keine Rückmeldung ohne echte Suche
+- Keine Abschlussmeldung ohne echte Verifikation
+- Keine lokale Optimierung ohne Systemprüfung
+- Keine bloße Bearbeitung einzelner Screens
+- Keine kosmetischen Fixes ohne Terminologieharmonisierung
+- Keine Altbegriffe im Code belassen, wenn sie produktiv sichtbar werden können
+- Keine „good enough“-Logik
+- Null Toleranz für Mischsprache in produktiven Oberflächen
+
+==================================================
+E. QUALITÄTSSTANDARD
+==================================================
+
+Denke und arbeite wie:
+- pedantischer Product Language Owner
+- strenger QA Lead
+- sorgfältiger UX Writer
+- I18N-Architekt mit Release-Verantwortung
+- Frontend Engineer mit Blick auf reale UI-Auswirkungen
+
+Die Messlatte ist nicht „etwas besser“,
+sondern:
+vollständig konsistent, sprachlich professionell, technisch sauber, produktionsreif.
+
+==================================================
+F. OUTPUT-REIHENFOLGE
+==================================================
+
+Liefere in genau dieser Reihenfolge:
+
+1. Audit-Report
+2. Umgesetzte Korrekturen
+3. Enforcement-Check / Verifikationsbericht
+4. Abschlussbericht mit eindeutigem Release-Verdikt
+
+Führe den Auftrag jetzt vollständig aus.
