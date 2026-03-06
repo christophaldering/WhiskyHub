@@ -128,15 +128,16 @@ export default function M2TastingsHome() {
   };
 
   return (
-    <div style={{ padding: "20px 16px" }} data-testid="m2-tastings-home">
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 20 }}>
+    <div style={{ padding: "32px 16px" }} data-testid="m2-tastings-home">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 24 }}>
         <h1
           style={{
             fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: 26,
+            fontSize: 32,
             fontWeight: 700,
             color: v.text,
             margin: 0,
+            letterSpacing: "-0.02em",
           }}
           data-testid="text-m2-tastings-title"
         >
@@ -175,11 +176,11 @@ export default function M2TastingsHome() {
           ))}
         </div>
       </div>
-      <p style={{ fontSize: 14, color: v.textSecondary, marginTop: -12, marginBottom: 20 }} data-testid="text-m2-tastings-subtitle">
+      <p style={{ fontSize: 15, color: v.textSecondary, marginTop: -16, marginBottom: 24, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif", lineHeight: 1.4 }} data-testid="text-m2-tastings-subtitle">
         {t("m2.tastings.subtitle", "Your sessions — past and upcoming")}
       </p>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 28 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 32 }}>
         {actions.map((a) => (
           <Link key={a.href} href={a.href} style={{ textDecoration: "none", flex: 1 }}>
             <div
@@ -324,53 +325,71 @@ export default function M2TastingsHome() {
           </div>
 
           {isLoading && (
-            <div style={{ textAlign: "center", padding: 32, color: v.muted }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  border: `3px solid ${v.border}`,
-                  borderTopColor: v.accent,
-                  borderRadius: "50%",
-                  animation: "m2spin 0.8s linear infinite",
-                  margin: "0 auto",
-                }}
-              />
-              <style>{`@keyframes m2spin { to { transform: rotate(360deg); } }`}</style>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[0, 1, 2].map((i) => (
+                <div key={i} style={{
+                  background: v.card,
+                  border: `1px solid ${v.border}`,
+                  borderRadius: 16,
+                  padding: "16px",
+                  overflow: "hidden",
+                  position: "relative",
+                }}>
+                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <div style={{ width: 4, height: 40, borderRadius: 2, background: v.border }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ width: "60%", height: 14, borderRadius: 6, background: v.border, marginBottom: 8 }} />
+                      <div style={{ width: "40%", height: 10, borderRadius: 4, background: v.border }} />
+                    </div>
+                    <div style={{ width: 48, height: 20, borderRadius: 6, background: v.border }} />
+                  </div>
+                  <div style={{
+                    position: "absolute",
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: "linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.03) 50%, transparent 75%)",
+                    animation: "m2shimmer 1.5s infinite",
+                  }} />
+                </div>
+              ))}
+              <style>{`@keyframes m2shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`}</style>
             </div>
           )}
 
           {!isLoading && filtered.length === 0 && (
             <div
               style={{
-                background: v.card,
-                borderRadius: 12,
-                padding: "32px 16px",
+                background: `radial-gradient(ellipse at center, ${alpha(v.accent, "04")} 0%, ${v.card} 70%)`,
+                borderRadius: 16,
+                padding: "48px 24px",
                 textAlign: "center",
-                color: v.textSecondary,
-                fontSize: 14,
                 border: `1px solid ${v.border}`,
               }}
               data-testid="m2-no-results"
             >
-              <Wine style={{ width: 36, height: 36, color: v.mutedLight, margin: "0 auto 10px" }} />
-              <p style={{ margin: 0, color: v.muted }}>
+              <Wine style={{ width: 48, height: 48, color: alpha(v.accent, "25"), margin: "0 auto 16px" }} strokeWidth={1.2} />
+              <p style={{ margin: "0 0 8px", color: v.text, fontSize: 16, fontWeight: 600, fontFamily: "'Playfair Display', Georgia, serif" }}>
                 {statusFilter === "all" && timeFilter === "all"
-                  ? t("m2.tastings.noTastings", "No tastings yet")
-                  : t("m2.tastings.noMatch", "No matching tastings")}
+                  ? t("m2.tastings.noTastingsTitle", "No tastings yet")
+                  : t("m2.tastings.noMatchTitle", "No matching tastings")}
+              </p>
+              <p style={{ margin: "0 0 16px", color: v.muted, fontSize: 13, lineHeight: 1.5, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
+                {statusFilter === "all" && timeFilter === "all"
+                  ? t("m2.tastings.noTastingsDesc", "Create or join your first tasting to get started")
+                  : t("m2.tastings.noMatchDesc", "Try adjusting your filters")}
               </p>
             </div>
           )}
 
           {!isLoading && filtered.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {filtered.map((tasting: any) => (
+              {filtered.map((tasting: any, idx: number) => (
                 <TastingCard
                   key={tasting.id}
                   tasting={tasting}
                   host={isHost(tasting)}
                   formatDate={formatDate}
                   navigate={navigate}
+                  index={idx}
                 />
               ))}
             </div>
@@ -386,28 +405,40 @@ function TastingCard({
   host,
   formatDate,
   navigate,
+  index = 0,
 }: {
   tasting: any;
   host: boolean;
   formatDate: (d: string) => string;
   navigate: (to: string) => void;
+  index?: number;
 }) {
   const { t } = useTranslation();
 
   const colors = statusBadgeColors[tasting.status] || { color: v.muted, bg: alpha(v.muted, "20") };
-
   const statusLabel = t("m2.tastings.status" + tasting.status.charAt(0).toUpperCase() + tasting.status.slice(1), tasting.status);
+  const isOpen = tasting.status === "open" || tasting.status === "reveal";
 
   return (
     <div
       style={{
         background: v.card,
-        border: `1px solid ${v.border}`,
-        borderRadius: 12,
-        padding: "14px 16px",
+        border: `1px solid ${isOpen ? alpha(colors.color, "25") : v.border}`,
+        borderRadius: 16,
+        padding: "16px 16px 16px 12px",
         cursor: "pointer",
-        transition: "border-color 0.2s",
+        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        display: "flex",
+        gap: 12,
+        boxShadow: isOpen ? `0 0 12px ${alpha(colors.color, "08")}` : "none",
+        WebkitTapHighlightColor: "transparent",
+        animation: `m2fadeInUp 0.35s ease both`,
+        animationDelay: `${index * 50}ms`,
       }}
+      onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(0.98)"; }}
+      onPointerUp={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
+      onPointerLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
+      onPointerCancel={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
       data-testid={`m2-tasting-card-${tasting.id}`}
       onClick={() => {
         if (tasting.status === "draft" && host) {
@@ -417,87 +448,91 @@ function TastingCard({
         }
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <span
-              style={{
-                fontSize: 15,
-                fontWeight: 600,
-                color: v.text,
-                fontFamily: "'Playfair Display', Georgia, serif",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                flex: 1,
-                minWidth: 0,
-              }}
-              data-testid={`text-m2-tasting-title-${tasting.id}`}
-            >
-              {tasting.title || t("m2.tastings.untitled", "Untitled Tasting")}
-            </span>
-            {host && (
-              <span
-                style={{
-                  fontSize: 9,
-                  color: v.accent,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  flexShrink: 0,
-                }}
-                data-testid={`badge-host-${tasting.id}`}
-              >
-                {t("m2.tastings.hostBadge", "HOST")}
-              </span>
-            )}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            {tasting.hostName && !host && (
-              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted }}>
-                <Crown style={{ width: 11, height: 11 }} />
-                {tasting.hostName}
-              </span>
-            )}
-            {tasting.date && (
-              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted }}>
-                <Calendar style={{ width: 11, height: 11 }} />
-                {formatDate(tasting.date)}
-              </span>
-            )}
-            {tasting.location && tasting.location !== "—" && (
-              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted }}>
-                <MapPin style={{ width: 11, height: 11 }} />
-                {tasting.location}
-              </span>
-            )}
-            {tasting.participantCount != null && (
-              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted }}>
-                <Users style={{ width: 11, height: 11 }} />
-                {tasting.participantCount}
-              </span>
-            )}
-          </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+      <div style={{ width: 4, borderRadius: 2, background: colors.color, flexShrink: 0, opacity: 0.7, alignSelf: "stretch" }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <span
             style={{
-              fontSize: 11,
+              fontSize: 16,
               fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              color: colors.color,
-              background: colors.bg,
-              padding: "2px 8px",
-              borderRadius: 6,
+              color: v.text,
+              fontFamily: "'Playfair Display', Georgia, serif",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              flex: 1,
+              minWidth: 0,
             }}
-            data-testid={`badge-status-${tasting.id}`}
+            data-testid={`text-m2-tasting-title-${tasting.id}`}
           >
-            {statusLabel}
+            {tasting.title || t("m2.tastings.untitled", "Untitled Tasting")}
           </span>
-          <ChevronRight style={{ width: 18, height: 18, color: v.muted }} />
+          {host && (
+            <span
+              style={{
+                fontSize: 9,
+                color: v.accent,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                background: alpha(v.accent, "12"),
+                padding: "2px 6px",
+                borderRadius: 4,
+                flexShrink: 0,
+              }}
+              data-testid={`badge-host-${tasting.id}`}
+            >
+              {t("m2.tastings.hostBadge", "HOST")}
+            </span>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          {tasting.hostName && !host && (
+            <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
+              <Crown style={{ width: 11, height: 11 }} />
+              {tasting.hostName}
+            </span>
+          )}
+          {tasting.date && (
+            <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
+              <Calendar style={{ width: 11, height: 11 }} />
+              {formatDate(tasting.date)}
+            </span>
+          )}
+          {tasting.location && tasting.location !== "—" && (
+            <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
+              <MapPin style={{ width: 11, height: 11 }} />
+              {tasting.location}
+            </span>
+          )}
+          {tasting.participantCount != null && (
+            <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
+              <Users style={{ width: 11, height: 11 }} />
+              {tasting.participantCount}
+            </span>
+          )}
         </div>
       </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            color: colors.color,
+            background: colors.bg,
+            padding: "3px 10px",
+            borderRadius: 8,
+            fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+          }}
+          data-testid={`badge-status-${tasting.id}`}
+        >
+          {statusLabel}
+        </span>
+        <ChevronRight style={{ width: 16, height: 16, color: v.muted }} />
+      </div>
+      <style>{`@keyframes m2fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
     </div>
   );
 }

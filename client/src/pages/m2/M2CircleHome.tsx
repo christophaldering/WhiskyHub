@@ -1096,20 +1096,21 @@ export default function M2CircleHome() {
   }
 
   return (
-    <div style={{ padding: "20px 16px" }} data-testid="m2-circle-home">
+    <div style={{ padding: "32px 16px" }} data-testid="m2-circle-home">
       <h1
         style={{
           fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: 26,
+          fontSize: 32,
           fontWeight: 700,
           color: v.text,
-          margin: "0 0 6px",
+          margin: "0 0 8px",
+          letterSpacing: "-0.02em",
         }}
         data-testid="text-m2-circle-title"
       >
         {t("m2.circle.title", "Circle")}
       </h1>
-      <p style={{ fontSize: 14, color: v.textSecondary, marginBottom: 20, lineHeight: 1.4 }}>
+      <p style={{ fontSize: 15, color: v.textSecondary, marginBottom: 24, lineHeight: 1.4, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
         {t("m2.circle.subtitle", "Connect with fellow whisky enthusiasts")}
       </p>
 

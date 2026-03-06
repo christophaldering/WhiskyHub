@@ -21,18 +21,18 @@ function StatBox({ label, value, testId }: { label: string; value: number | stri
     <div
       style={{
         flex: 1,
-        background: v.card,
+        background: `radial-gradient(ellipse at center, ${alpha(v.accent, "06")} 0%, ${v.card} 70%)`,
         border: `1px solid ${v.border}`,
-        borderRadius: 12,
-        padding: "14px 12px",
+        borderRadius: 16,
+        padding: "20px 16px",
         textAlign: "center",
       }}
       data-testid={testId}
     >
-      <div style={{ fontSize: 22, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>
+      <div style={{ fontSize: 24, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums", fontFamily: "'Playfair Display', Georgia, serif" }}>
         {display}
       </div>
-      <div style={{ fontSize: 11, color: v.muted, marginTop: 2 }}>{label}</div>
+      <div style={{ fontSize: 11, color: v.muted, marginTop: 4, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>{label}</div>
     </div>
   );
 }
@@ -123,36 +123,42 @@ function NavRow({ icon: Icon, label, description, href, testId, badge }: NavRowP
     <Link href={href} style={{ textDecoration: "none" }}>
       <div
         style={{
-          background: v.card,
+          background: `linear-gradient(135deg, ${alpha(v.accent, "04")} 0%, ${v.card} 50%)`,
           border: `1px solid ${v.border}`,
-          borderRadius: 12,
-          padding: "14px 16px",
+          borderRadius: 16,
+          padding: "16px",
           display: "flex",
           alignItems: "center",
           gap: 12,
           cursor: "pointer",
-          marginBottom: 6,
+          marginBottom: 8,
+          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+          WebkitTapHighlightColor: "transparent",
         }}
+        onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(0.97)"; }}
+        onPointerUp={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
+        onPointerLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
+        onPointerCancel={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
         data-testid={testId}
       >
         <div
           style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            background: alpha(v.accent, "15"),
+            width: 42,
+            height: 42,
+            borderRadius: 12,
+            background: alpha(v.accent, "12"),
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
           }}
         >
-          <Icon style={{ width: 18, height: 18, color: v.accent }} strokeWidth={1.8} />
+          <Icon style={{ width: 20, height: 20, color: v.accent }} strokeWidth={1.8} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: v.text }}>{label}</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: v.text, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>{label}</div>
           {description && (
-            <div style={{ fontSize: 12, color: v.muted, marginTop: 2, lineHeight: 1.4 }}>{description}</div>
+            <div style={{ fontSize: 12, color: v.muted, marginTop: 2, lineHeight: 1.4, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>{description}</div>
           )}
         </div>
         {badge != null && (
@@ -162,9 +168,10 @@ function NavRow({ icon: Icon, label, description, href, testId, badge }: NavRowP
               fontWeight: 600,
               color: v.accent,
               background: alpha(v.accent, "12"),
-              padding: "3px 10px",
+              padding: "4px 10px",
               borderRadius: 20,
               flexShrink: 0,
+              fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
             }}
           >
             {badge}
@@ -238,20 +245,21 @@ export default function M2TasteHome() {
   const toggle = (key: string) => setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
   return (
-    <div style={{ padding: "20px 16px", paddingBottom: 100 }} data-testid="m2-taste-home">
+    <div style={{ padding: "32px 16px", paddingBottom: 100 }} data-testid="m2-taste-home">
       <h1
         style={{
           fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: 26,
+          fontSize: 32,
           fontWeight: 700,
           color: v.text,
           margin: "0 0 8px",
+          letterSpacing: "-0.02em",
         }}
         data-testid="text-m2-taste-title"
       >
         {t("m2.taste.title", "Taste")}
       </h1>
-      <p style={{ fontSize: 14, color: v.textSecondary, marginBottom: 20 }}>
+      <p style={{ fontSize: 15, color: v.textSecondary, marginBottom: 24, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif", lineHeight: 1.4 }}>
         {t("m2.taste.subtitle", "Your personal whisky world")}
       </p>
 
@@ -273,11 +281,11 @@ export default function M2TasteHome() {
 
       {session.signedIn && (
         <>
-          <div style={{ display: "flex", gap: 10, marginBottom: 6 }} data-testid="m2-taste-snapshot">
+          <div style={{ display: "flex", gap: 8, marginBottom: 8 }} data-testid="m2-taste-snapshot">
             <StatBox label={t("m2.taste.stability", "Stability")} value={stability} testId="stat-stability" />
             <StatBox label={t("m2.taste.exploration", "Exploration")} value={exploration} testId="stat-exploration" />
           </div>
-          <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
             <StatBox label={t("m2.taste.smokeAffinity", "Smoke")} value={smoke} testId="stat-smoke" />
             <StatBox label={t("m2.taste.tastingCount", "Tastings")} value={tastingCount} testId="stat-tastings" />
           </div>
