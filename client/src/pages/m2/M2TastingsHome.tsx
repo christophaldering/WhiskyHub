@@ -98,9 +98,9 @@ export default function M2TastingsHome() {
   const isHost = (ta: any) => session.pid && ta.hostId === session.pid;
 
   const actions = [
-    { href: "/m2/tastings/join", icon: Wine, labelKey: "m2.tastings.join", fallback: "Joyn", color: v.accent },
-    { href: "/m2/tastings/host", icon: Crown, labelKey: "m2.tastings.host", fallback: "Host", color: v.success },
-    { href: "/m2/tastings/solo", icon: PenLine, labelKey: "m2.tastings.solo", fallback: "Solo", color: v.textSecondary },
+    { href: "/m2/tastings/join", icon: Wine, labelKey: "m2.tastings.join", fallback: "Joyn", subKey: "m2.tastings.joinSub", subFallback: "An Tasting teilnehmen", color: v.accent },
+    { href: "/m2/tastings/host", icon: Crown, labelKey: "m2.tastings.host", fallback: "Host", subKey: "m2.tastings.hostSub", subFallback: "Eigenes Tasting leiten", color: v.success },
+    { href: "/m2/tastings/solo", icon: PenLine, labelKey: "m2.tastings.solo", fallback: "Solo", subKey: "m2.tastings.soloSub", subFallback: "Dram für dich loggen", color: v.textSecondary },
   ];
 
   const selectStyle: React.CSSProperties = {
@@ -184,18 +184,52 @@ export default function M2TastingsHome() {
           <Link key={a.href} href={a.href} style={{ textDecoration: "none", flex: 1 }}>
             <div
               style={{
-                background: v.card,
-                border: `1px solid ${v.border}`,
-                borderRadius: 14,
-                padding: "16px 12px",
+                background: `linear-gradient(135deg, ${alpha(a.color, "08")} 0%, ${v.card} 60%)`,
+                border: `1px solid ${alpha(a.color, "15")}`,
+                borderRadius: 16,
+                padding: "20px 12px 18px",
                 textAlign: "center",
                 cursor: "pointer",
-                transition: "background 0.15s",
+                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                WebkitTapHighlightColor: "transparent",
               }}
+              onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(0.96)"; }}
+              onPointerUp={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
+              onPointerLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
+              onPointerCancel={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
               data-testid={`m2-action-${a.fallback.toLowerCase().replace(/\s/g, "-")}`}
             >
-              <a.icon style={{ width: 24, height: 24, color: a.color, marginBottom: 6 }} />
-              <div style={{ fontSize: 12, fontWeight: 600, color: v.text }}>{t(a.labelKey, a.fallback)}</div>
+              <div style={{
+                width: 48,
+                height: 48,
+                borderRadius: 14,
+                background: alpha(a.color, "12"),
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 10px",
+              }}>
+                <a.icon style={{ width: 24, height: 24, color: a.color }} strokeWidth={1.8} />
+              </div>
+              <div style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: v.text,
+                fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+                letterSpacing: "-0.01em",
+                marginBottom: 3,
+              }}>
+                {t(a.labelKey, a.fallback)}
+              </div>
+              <div style={{
+                fontSize: 11,
+                fontWeight: 400,
+                color: v.textSecondary,
+                fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+                lineHeight: 1.3,
+              }}>
+                {t(a.subKey, a.subFallback)}
+              </div>
             </div>
           </Link>
         ))}
