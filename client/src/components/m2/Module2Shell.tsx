@@ -96,11 +96,14 @@ class M2ErrorBoundary extends Component<
 }
 
 function GlencairnIcon({ active, color, size = 24 }: { active?: boolean; color: string; size?: number }) {
-  const glass = "M8.8 2.5 h6.4 l.2 2.5 c.3 2 .5 3.8 .1 5.2 C15 12 13.8 13.2 12.8 14 L12 14.6 l-.8-.6 C10.2 13.2 9 12 8.5 10.2 8 8.8 8.3 7 8.6 5 Z";
-  const stem = "M11 14.6 h2 v4 h-2 Z";
-  const base = "M8.5 18.6 h7 c.4 0 .7.2.8.5 l.2.8 c.1.3-.1.6-.5.6 H8 c-.4 0-.6-.3-.5-.6 l.2-.8 c.1-.3.4-.5.8-.5 Z";
-  const fill = "M9.2 6.5 c-.2 1.5-.1 3 .3 4.2 .5 1.4 1.4 2.4 2.1 3 l.4.3 .4-.3 c.7-.6 1.6-1.6 2.1-3 .4-1.2.5-2.7.3-4.2 Z";
-  const whiskyLine = "M9.4 7.5 h5.2";
+  const glass = "M8.8 5.5 h6.4 l.2 2.5 c.3 2 .5 3.8 .1 5.2 C15 15 13.8 16.2 12.8 17 L12 17.6 l-.8-.6 C10.2 16.2 9 15 8.5 13.2 8 11.8 8.3 10 8.6 8 Z";
+  const stem = "M11 17.6 h2 v2.5 h-2 Z";
+  const base = "M8.5 20.1 h7 c.4 0 .7.2.8.5 l.2.6 c.1.3-.1.5-.5.5 H8 c-.4 0-.6-.2-.5-.5 l.2-.6 c.1-.3.4-.5.8-.5 Z";
+  const fill = "M9.2 9.5 c-.2 1.5-.1 3 .3 4.2 .5 1.4 1.4 2.4 2.1 3 l.4.3 .4-.3 c.7-.6 1.6-1.6 2.1-3 .4-1.2.5-2.7.3-4.2 Z";
+  const whiskyLine = "M9.4 10.5 h5.2";
+  const wave1 = "M10.2 4 c.5-.7 1-.4 1.3 0 .3.4.8.7 1.3 0";
+  const wave2 = "M10.8 2.2 c.4-.5.7-.3 1 0 .3.3.6.5 1 0";
+  const wave3 = "M11.3 0.8 c.3-.3.5-.2.7 0 .2.2.4.3.7 0";
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       {active ? (
@@ -112,12 +115,17 @@ function GlencairnIcon({ active, color, size = 24 }: { active?: boolean; color: 
           <path d={base} fill={color} opacity="0.1"/>
           <path d={base} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           <path d={whiskyLine} stroke={color} strokeWidth="1.1" strokeLinecap="round" opacity="0.45"/>
+          <path d={wave1} stroke={color} strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.55"/>
+          <path d={wave2} stroke={color} strokeWidth="1.0" strokeLinecap="round" fill="none" opacity="0.4"/>
+          <path d={wave3} stroke={color} strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.25"/>
         </>
       ) : (
         <>
           <path d={glass} stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
           <path d={stem} stroke={color} strokeWidth="1.4" strokeLinejoin="round"/>
           <path d={base} stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d={wave1} stroke={color} strokeWidth="1.0" strokeLinecap="round" fill="none" opacity="0.25"/>
+          <path d={wave2} stroke={color} strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.18"/>
         </>
       )}
     </svg>
@@ -125,46 +133,66 @@ function GlencairnIcon({ active, color, size = 24 }: { active?: boolean; color: 
 }
 
 function RadarIcon({ active, color, size = 24 }: { active?: boolean; color: string; size?: number }) {
+  const outer = "12,2.5 21,9 18,20 6,20 3,9";
+  const mid = "12,6.5 17.5,10.5 15.8,17 8.2,17 6.5,10.5";
+  const inner = "12,9.5 15,11.8 14,15 10,15 9,11.8";
+  const axes = [
+    "M12,12 L12,2.5", "M12,12 L21,9", "M12,12 L18,20", "M12,12 L6,20", "M12,12 L3,9"
+  ];
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       {active ? (
         <>
-          <polygon points="12,3 20.5,9.5 17.5,19 6.5,19 3.5,9.5" fill={color} opacity="0.15" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
-          <polygon points="12,7 17,10.5 15.5,16.5 8.5,16.5 7,10.5" fill={color} opacity="0.25" stroke={color} strokeWidth="1" strokeLinejoin="round"/>
-          <polygon points="12,10 14.5,11.8 13.5,14.5 10.5,14.5 9.5,11.8" fill={color} opacity="0.5"/>
-          <circle cx="12" cy="12" r="1.2" fill={color}/>
+          <polygon points={outer} stroke={color} strokeWidth="1.3" strokeLinejoin="round" fill="none"/>
+          {axes.map((d, i) => <path key={i} d={d} stroke={color} strokeWidth="0.6" opacity="0.2"/>)}
+          <polygon points={mid} stroke={color} strokeWidth="0.8" strokeLinejoin="round" fill={color} opacity="0.12"/>
+          <polygon points={inner} fill={color} opacity="0.3" stroke={color} strokeWidth="0.7" strokeLinejoin="round"/>
+          <circle cx="12" cy="2.5" r="1.5" fill={color} opacity="0.35"/>
+          <circle cx="21" cy="9" r="1.5" fill={color} opacity="0.35"/>
+          <circle cx="18" cy="20" r="1.5" fill={color} opacity="0.35"/>
+          <circle cx="6" cy="20" r="1.5" fill={color} opacity="0.35"/>
+          <circle cx="3" cy="9" r="1.5" fill={color} opacity="0.35"/>
+          <circle cx="12" cy="12" r="1" fill={color}/>
         </>
       ) : (
         <>
-          <polygon points="12,3 20.5,9.5 17.5,19 6.5,19 3.5,9.5" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
-          <polygon points="12,7 17,10.5 15.5,16.5 8.5,16.5 7,10.5" stroke={color} strokeWidth="1" strokeLinejoin="round" opacity="0.5"/>
-          <circle cx="12" cy="12" r="1.2" fill={color} opacity="0.6"/>
+          <polygon points={outer} stroke={color} strokeWidth="1.3" strokeLinejoin="round" fill="none"/>
+          {axes.map((d, i) => <path key={i} d={d} stroke={color} strokeWidth="0.5" opacity="0.15"/>)}
+          <polygon points={mid} stroke={color} strokeWidth="0.7" strokeLinejoin="round" fill="none" opacity="0.35"/>
+          <circle cx="12" cy="12" r="0.9" fill={color} opacity="0.5"/>
         </>
       )}
     </svg>
   );
 }
 
-function PeopleIcon({ active, color, size = 24 }: { active?: boolean; color: string; size?: number }) {
+function CircleIcon({ active, color, size = 24 }: { active?: boolean; color: string; size?: number }) {
+  const r = 8;
+  const cx = 12, cy = 12;
+  const n = 7;
+  const dots = Array.from({ length: n }, (_, i) => {
+    const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle), isMe: i === 0 };
+  });
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       {active ? (
         <>
-          <circle cx="12" cy="8" r="3.5" fill={color} opacity="0.2" stroke={color} strokeWidth="1.6"/>
-          <path d="M5.5 20c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6" fill={color} opacity="0.15" stroke={color} strokeWidth="1.6" strokeLinecap="round"/>
-          <circle cx="18.5" cy="8.5" r="2" fill={color} opacity="0.15" stroke={color} strokeWidth="1.2"/>
-          <path d="M20 20c0-1.8-1-3.2-2.5-4" stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
-          <circle cx="5.5" cy="8.5" r="2" fill={color} opacity="0.15" stroke={color} strokeWidth="1.2"/>
-          <path d="M4 20c0-1.8 1-3.2 2.5-4" stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
+          <circle cx={cx} cy={cy} r={r} stroke={color} strokeWidth="0.7" fill={color} opacity="0.08"/>
+          {dots.map((d, i) => (
+            <circle key={i} cx={d.x} cy={d.y} r={d.isMe ? 2.4 : 1.7} fill={color} opacity={d.isMe ? 0.9 : 0.5}/>
+          ))}
+          {dots.map((d, i) => {
+            const next = dots[(i + 1) % n];
+            return <line key={`l${i}`} x1={d.x} y1={d.y} x2={next.x} y2={next.y} stroke={color} strokeWidth="0.5" opacity="0.15"/>;
+          })}
         </>
       ) : (
         <>
-          <circle cx="12" cy="8" r="3.5" stroke={color} strokeWidth="1.5"/>
-          <path d="M5.5 20c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-          <circle cx="18.5" cy="8.5" r="2" stroke={color} strokeWidth="1.2" opacity="0.5"/>
-          <path d="M20 20c0-1.8-1-3.2-2.5-4" stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
-          <circle cx="5.5" cy="8.5" r="2" stroke={color} strokeWidth="1.2" opacity="0.5"/>
-          <path d="M4 20c0-1.8 1-3.2 2.5-4" stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
+          <circle cx={cx} cy={cy} r={r} stroke={color} strokeWidth="0.6" fill="none" opacity="0.2"/>
+          {dots.map((d, i) => (
+            <circle key={i} cx={d.x} cy={d.y} r={d.isMe ? 2 : 1.5} stroke={color} strokeWidth="1" fill="none" opacity={d.isMe ? 0.7 : 0.4}/>
+          ))}
         </>
       )}
     </svg>
@@ -174,7 +202,7 @@ function PeopleIcon({ active, color, size = 24 }: { active?: boolean; color: str
 const TAB_ICON_MAP = {
   tastings: GlencairnIcon,
   taste: RadarIcon,
-  circle: PeopleIcon,
+  circle: CircleIcon,
 } as const;
 
 const TABS = [
