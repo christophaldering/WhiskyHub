@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCodeLib from "qrcode";
 import { downloadDataUrl } from "@/lib/download";
 import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
+import { generateTastingMenu } from "@/components/tasting-menu-pdf";
 import {
   Plus, X, Trash2, ChevronUp, ChevronDown, ChevronRight, ArrowRight, ArrowLeft,
   Copy, Check, EyeOff, Share2, QrCode, Download, Play, Square, Eye,
@@ -1545,6 +1546,7 @@ function Step3Invite({ tasting, pid, onNext, onBack }: { tasting: TastingFull; p
       </div>
 
       <PrintableTemplatesSection />
+      <TastingMenuSection tasting={tasting} pid={pid} />
 
       <div style={{ display: "flex", gap: 8 }}>
         <button type="button" onClick={onBack} style={{ padding: "12px 16px", fontSize: 14, background: "none", color: v.muted, border: `1px solid ${v.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", gap: 6 }} data-testid="button-back-step2">
@@ -1609,6 +1611,246 @@ function PrintableTemplatesSection() {
           <Download style={{ width: 14, height: 14, marginLeft: "auto", color: v.muted, flexShrink: 0 }} />
         </button>
       </div>
+    </div>
+  );
+}
+
+function TastingMenuSection({ tasting, pid }: { tasting: TastingFull; pid: string }) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language?.startsWith("de") ? "de" : "en";
+  const [expanded, setExpanded] = useState(false);
+  const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
+  const [blindMode, setBlindMode] = useState(!!tasting.blindMode);
+  const [promptHint, setPromptHint] = useState("");
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [generatingCover, setGeneratingCover] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
+
+  const { data: whiskies = [] } = useQuery({
+    queryKey: ["whiskies", tasting.id],
+    queryFn: () => whiskyApi.getByTasting(tasting.id),
+    enabled: expanded,
+  });
+
+  const { data: tastingParticipants = [] } = useQuery({
+    queryKey: ["tasting-participants-menu", tasting.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/tastings/${tasting.id}/participants`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: expanded,
+  });
+
+  const hostName = (() => {
+    try { const s = getSession(); return s.name || s.email?.split("@")[0] || "Host"; } catch { return "Host"; }
+  })();
+
+  const handleGenerateCover = async () => {
+    setGeneratingCover(true);
+    setCoverError(null);
+    try {
+      const res = await fetch(`/api/tastings/${tasting.id}/menu-cover`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-participant-id": pid },
+        body: JSON.stringify({ customPromptHint: promptHint || undefined }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: "Failed" }));
+        throw new Error(err.message || err.error || "Failed to generate cover");
+      }
+      const data = await res.json();
+      setCoverImage(`data:${data.mimeType};base64,${data.coverImageBase64}`);
+    } catch (e: any) {
+      setCoverError(e.message || "Error generating cover");
+    } finally {
+      setGeneratingCover(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    setGeneratingPdf(true);
+    try {
+      const participants = tastingParticipants.map((p: any) => ({
+        name: p.participant?.name || p.name || p.participantName || "Guest",
+        isHost: p.participantId === tasting.hostId,
+      }));
+      await generateTastingMenu({
+        tasting: tasting as any,
+        whiskies,
+        participants,
+        hostName,
+        coverImageBase64: coverImage,
+        orientation,
+        blindMode,
+        language: lang,
+      });
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
+  const btnStyle: React.CSSProperties = {
+    display: "flex", alignItems: "center", gap: 10, width: "100%",
+    padding: "12px 14px", borderRadius: 10, border: `1px solid ${v.border}`,
+    background: v.card, color: v.text, fontSize: 13, fontWeight: 500,
+    cursor: "pointer", transition: "all 0.2s",
+    fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif", textAlign: "left" as const,
+  };
+
+  const toggleStyle = (active: boolean): React.CSSProperties => ({
+    flex: 1,
+    padding: "8px 12px",
+    borderRadius: 8,
+    border: `1px solid ${active ? v.accent : v.border}`,
+    background: active ? `${v.accent}18` : v.card,
+    color: active ? v.accent : v.muted,
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
+    textAlign: "center" as const,
+    transition: "all 0.2s",
+    fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+  });
+
+  return (
+    <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 14, padding: "16px", marginBottom: 16 }} data-testid="section-tasting-menu">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          display: "flex", alignItems: "center", gap: 8, width: "100%",
+          background: "none", border: "none", cursor: "pointer", padding: 0,
+          WebkitTapHighlightColor: "transparent",
+        }}
+        data-testid="button-toggle-menu-section"
+      >
+        <FileText style={{ width: 16, height: 16, color: v.accent }} />
+        <span style={{ fontSize: 15, fontWeight: 600, color: v.text, fontFamily: "'Playfair Display', Georgia, serif", flex: 1, textAlign: "left" }}>
+          {t("m2.host.menuCard", "Tasting Menu Card")}
+        </span>
+        <ChevronDown style={{ width: 16, height: 16, color: v.muted, transition: "transform 0.25s", transform: expanded ? "rotate(180deg)" : "rotate(0)" }} />
+      </button>
+
+      {expanded && (
+        <div style={{ marginTop: 12 }}>
+          <p style={{ fontSize: 12, color: v.muted, margin: "0 0 16px 0", lineHeight: 1.5 }}>
+            {t("m2.host.menuCardDesc", "Generate a beautiful, printable tasting menu with an AI-designed cover image.")}
+          </p>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: 1, color: v.muted, marginBottom: 6 }}>
+              {t("m2.host.menuOrientation", "Orientation")}
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button type="button" onClick={() => setOrientation("portrait")} style={toggleStyle(orientation === "portrait")} data-testid="toggle-orientation-portrait">
+                {t("m2.host.menuPortrait", "Portrait")}
+              </button>
+              <button type="button" onClick={() => setOrientation("landscape")} style={toggleStyle(orientation === "landscape")} data-testid="toggle-orientation-landscape">
+                {t("m2.host.menuLandscape", "Landscape")}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: 1, color: v.muted, marginBottom: 6 }}>
+              {t("m2.host.menuMode", "Mode")}
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button type="button" onClick={() => setBlindMode(false)} style={toggleStyle(!blindMode)} data-testid="toggle-mode-open">
+                {t("m2.host.menuOpen", "Open")}
+              </button>
+              <button type="button" onClick={() => setBlindMode(true)} style={toggleStyle(blindMode)} data-testid="toggle-mode-blind">
+                {t("m2.host.menuBlind", "Blind")}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: 1, color: v.muted, marginBottom: 6 }}>
+              {t("m2.host.menuCoverImage", "AI Cover Image")}
+            </div>
+            <input
+              type="text"
+              value={promptHint}
+              onChange={(e) => setPromptHint(e.target.value)}
+              placeholder={t("m2.host.menuPromptHint", "Optional: describe a mood (e.g. cozy winter evening, Scottish highlands)...")}
+              style={{
+                width: "100%", padding: "10px 12px", borderRadius: 8,
+                border: `1px solid ${v.border}`, background: v.elevated,
+                color: v.text, fontSize: 13, marginBottom: 8, outline: "none",
+                fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+                boxSizing: "border-box" as const,
+              }}
+              data-testid="input-prompt-hint"
+            />
+            <button
+              type="button"
+              onClick={handleGenerateCover}
+              disabled={generatingCover}
+              style={{
+                ...btnStyle,
+                opacity: generatingCover ? 0.6 : 1,
+                cursor: generatingCover ? "not-allowed" : "pointer",
+                justifyContent: "center",
+              }}
+              data-testid="button-generate-cover"
+            >
+              {generatingCover ? (
+                <>
+                  <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+                  <span>{t("m2.host.menuGenerating", "Generating cover image...")}</span>
+                </>
+              ) : (
+                <>
+                  <Image style={{ width: 16, height: 16, color: v.accent }} />
+                  <span>{coverImage ? t("m2.host.menuRegenerate", "Regenerate Cover") : t("m2.host.menuGenerate", "Generate AI Cover")}</span>
+                </>
+              )}
+            </button>
+            {coverError && (
+              <p style={{ fontSize: 12, color: v.danger, margin: "8px 0 0" }}>{coverError}</p>
+            )}
+          </div>
+
+          {coverImage && (
+            <div style={{ marginBottom: 12, borderRadius: 10, overflow: "hidden", border: `1px solid ${v.border}` }}>
+              <img
+                src={coverImage}
+                alt="Cover preview"
+                style={{ width: "100%", display: "block", borderRadius: 10 }}
+                data-testid="img-cover-preview"
+              />
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={generatingPdf}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+              width: "100%", padding: "14px", borderRadius: 10,
+              background: v.accent, color: v.bg, border: "none",
+              fontSize: 14, fontWeight: 600, cursor: generatingPdf ? "not-allowed" : "pointer",
+              opacity: generatingPdf ? 0.7 : 1,
+              fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+              transition: "all 0.2s",
+            }}
+            data-testid="button-download-menu"
+          >
+            {generatingPdf ? (
+              <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+            ) : (
+              <Download style={{ width: 16, height: 16 }} />
+            )}
+            {generatingPdf
+              ? t("m2.host.menuCreating", "Creating menu...")
+              : t("m2.host.menuDownload", "Download Menu Card (PDF)")}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

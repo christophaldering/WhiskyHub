@@ -10124,5 +10124,140 @@ Important rules:
     }
   });
 
+  // ===== TASTING MENU COVER IMAGE (AI-generated) =====
+  app.post("/api/tastings/:id/menu-cover", async (req: Request, res: Response) => {
+    try {
+      const tastingId = req.params.id;
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+
+      const tasting = await storage.getTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+      if (tasting.hostId !== requesterId) {
+        const requester = await storage.getParticipant(requesterId);
+        if (!requester || requester.role !== "admin") {
+          return res.status(403).json({ message: "Only the host or an admin can generate a menu cover" });
+        }
+      }
+
+      if (await isAIDisabled("image_generation")) {
+        return res.status(503).json({ message: "AI image generation is currently disabled" });
+      }
+
+      const whiskiesForTasting = await storage.getWhiskiesForTasting(tastingId);
+      const { customPromptHint } = req.body || {};
+
+      const regions = new Set<string>();
+      const caskTypes = new Set<string>();
+      const peatLevels = new Set<string>();
+      const distilleries = new Set<string>();
+      let hasHighPeat = false;
+
+      for (const w of whiskiesForTasting) {
+        if (w.region) regions.add(w.region);
+        if (w.caskInfluence) caskTypes.add(w.caskInfluence);
+        if (w.peatLevel) {
+          peatLevels.add(w.peatLevel);
+          if (w.peatLevel === "Heavy" || w.peatLevel === "Medium") hasHighPeat = true;
+        }
+        if (w.distillery) distilleries.add(w.distillery);
+      }
+
+      const tastingDate = tasting.date || "";
+      let season = "autumn";
+      if (tastingDate) {
+        const month = parseInt(tastingDate.split("-")[1] || "0", 10);
+        if (month >= 3 && month <= 5) season = "spring";
+        else if (month >= 6 && month <= 8) season = "summer";
+        else if (month >= 9 && month <= 11) season = "autumn";
+        else if (month === 12 || month === 1 || month === 2) season = "winter";
+      }
+
+      const seasonMood: Record<string, string> = {
+        spring: "soft natural daylight, fresh green botanicals, light and airy atmosphere",
+        summer: "golden hour sunlight, outdoor terrace feeling, warm and bright",
+        autumn: "warm amber candlelight, rich harvest colors, cozy intimate atmosphere",
+        winter: "fireplace glow, deep warm tones, snowy window backdrop, hygge atmosphere",
+      };
+
+      let visualTheme = "classic whisky tasting";
+      if (regions.has("Islay") || hasHighPeat) {
+        visualTheme = "rugged Scottish coastal landscape inspiration, peat smoke wisps, maritime elements";
+      } else if (regions.has("Speyside") || regions.has("Highland")) {
+        visualTheme = "Scottish Highland glen, heather and oak, traditional distillery warmth";
+      } else if (regions.has("Kentucky") || regions.has("Tennessee")) {
+        visualTheme = "American bourbon heritage, charred oak barrels, copper stills, Southern warmth";
+      } else if (regions.has("Japan") || regions.has("Japanese")) {
+        visualTheme = "Japanese minimalist elegance, zen garden elements, refined simplicity";
+      } else if (regions.has("Ireland") || regions.has("Irish")) {
+        visualTheme = "Irish countryside charm, lush green, pot still tradition";
+      }
+
+      let caskVisual = "";
+      if (caskTypes.has("Sherry") || caskTypes.has("Oloroso") || caskTypes.has("PX")) {
+        caskVisual = ", rich mahogany and deep amber tones, dried fruit accents";
+      } else if (caskTypes.has("Bourbon")) {
+        caskVisual = ", golden honey tones, vanilla and caramel warmth";
+      } else if (caskTypes.has("Port") || caskTypes.has("Wine")) {
+        caskVisual = ", deep ruby and burgundy accents, wine-influenced richness";
+      }
+
+      let moodStyle: string;
+      if (tasting.blindMode) {
+        moodStyle = "mysterious and intriguing atmosphere, silhouetted bottles with hidden labels, dramatic shadows, sense of discovery and anticipation";
+      } else {
+        moodStyle = "welcoming and inviting atmosphere, beautifully arranged bottles with visible labels, warm hospitality, elegant presentation";
+      }
+
+      const promptParts = [
+        "Photorealistic still-life photograph",
+        "whisky tasting table setting",
+        visualTheme,
+        caskVisual,
+        seasonMood[season],
+        moodStyle,
+        `${whiskiesForTasting.length} whisky glasses arranged elegantly`,
+        "dark wood table, crystal glassware, warm ambient lighting",
+        "editorial quality, magazine cover worthy, 8k resolution",
+        "no text, no labels with readable text, no watermarks",
+      ];
+
+      if (customPromptHint && typeof customPromptHint === "string" && customPromptHint.trim()) {
+        promptParts.push(customPromptHint.trim());
+      }
+
+      const finalPrompt = promptParts.filter(Boolean).join(", ");
+
+      const { generateImageBuffer } = await import("./replit_integrations/image/client.js");
+      const imageBuffer = await generateImageBuffer(finalPrompt, "1024x1024");
+
+      let jpegBuffer: Buffer;
+      try {
+        jpegBuffer = await sharp(imageBuffer).jpeg({ quality: 90 }).toBuffer();
+      } catch {
+        jpegBuffer = imageBuffer;
+      }
+
+      const base64 = jpegBuffer.toString("base64");
+      res.json({
+        coverImageBase64: base64,
+        mimeType: "image/jpeg",
+        prompt: finalPrompt,
+        context: {
+          season,
+          regions: Array.from(regions),
+          caskTypes: Array.from(caskTypes),
+          peatLevels: Array.from(peatLevels),
+          blindMode: !!tasting.blindMode,
+          whiskyCount: whiskiesForTasting.length,
+        },
+      });
+    } catch (e: any) {
+      console.error("Menu cover generation error:", e);
+      res.status(500).json({ message: e.message || "Failed to generate menu cover image" });
+    }
+  });
+
   return httpServer;
 }
