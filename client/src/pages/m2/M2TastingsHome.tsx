@@ -95,7 +95,7 @@ export default function M2TastingsHome() {
     return [...list].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [tastings, statusFilter, timeFilter]);
 
-  const isHost = (ta: any) => session.pid && ta.hostId === session.pid;
+  const isHost = (ta: any) => !!(session.pid && ta.hostId === session.pid);
 
   const actions = [
     { href: "/m2/tastings/join", icon: Wine, labelKey: "m2.tastings.join", fallback: "Joyn", subKey: "m2.tastings.joinSub", subFallback: "An Tasting teilnehmen", color: v.accent },

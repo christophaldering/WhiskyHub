@@ -216,19 +216,29 @@ export default function M2CircleHome() {
 
   const loadingSpinner = <M2Loading />;
 
-  const emptyState = (text: string) => (
-    <div
-      style={{
-        textAlign: "center",
-        padding: "48px 16px",
-        color: v.muted,
-        fontSize: 14,
-        lineHeight: 1.6,
-      }}
-    >
-      {text}
-    </div>
-  );
+  const emptyState = (text: string, icon?: any) => {
+    const EmptyIcon = icon || HeartHandshake;
+    return (
+      <div
+        style={{
+          textAlign: "center",
+          padding: "48px 24px",
+          background: `radial-gradient(ellipse at center, ${`color-mix(in srgb, ${v.accent} 4%, transparent)`} 0%, transparent 70%)`,
+          borderRadius: 16,
+        }}
+      >
+        <EmptyIcon style={{ width: 40, height: 40, color: `color-mix(in srgb, ${v.accent} 25%, transparent)`, margin: "0 auto 16px", display: "block" }} strokeWidth={1.2} />
+        <p style={{ margin: "0 0 4px", color: v.text, fontSize: 15, fontWeight: 600, fontFamily: "'Playfair Display', Georgia, serif" }}>
+          {text.split(".")[0]}.
+        </p>
+        {text.split(".").length > 1 && (
+          <p style={{ margin: 0, color: v.muted, fontSize: 13, lineHeight: 1.5, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
+            {text.split(".").slice(1).join(".").trim()}
+          </p>
+        )}
+      </div>
+    );
+  };
 
   function renderTwins() {
     if (!pid)
@@ -1159,10 +1169,10 @@ export default function M2CircleHome() {
               display: "grid",
               gridTemplateColumns: "repeat(4, 1fr)",
               marginBottom: 24,
-              background: v.card,
-              borderRadius: 14,
-              border: `1px solid ${v.border}`,
-              overflow: "hidden",
+              background: v.elevated,
+              borderRadius: 16,
+              padding: 4,
+              gap: 4,
             }}
             data-testid="m2-circle-tabs"
           >
@@ -1178,19 +1188,22 @@ export default function M2CircleHome() {
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 4,
-                    padding: "12px 4px 10px",
+                    padding: "10px 4px 8px",
                     border: "none",
-                    borderBottom: isActive ? `2.5px solid ${v.accent}` : "2.5px solid transparent",
+                    borderRadius: 12,
                     cursor: "pointer",
                     fontSize: 11,
                     fontWeight: isActive ? 700 : 500,
-                    background: isActive ? `color-mix(in srgb, ${v.accent} 8%, transparent)` : "transparent",
+                    background: isActive ? v.card : "transparent",
+                    boxShadow: isActive ? "0 1px 4px rgba(0,0,0,0.15), 0 0.5px 1px rgba(0,0,0,0.1)" : "none",
                     color: isActive ? v.accent : v.muted,
-                    transition: "all 0.2s ease",
+                    transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                    fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+                    WebkitTapHighlightColor: "transparent",
                   }}
                   data-testid={`tab-${tab.key}`}
                 >
-                  <tab.icon style={{ width: 20, height: 20 }} />
+                  <tab.icon style={{ width: 18, height: 18 }} />
                   <span>{tab.label}</span>
                 </button>
               );
