@@ -1,0 +1,140 @@
+You are now in the final hardening phase of the CaskSense historical tastings integration.
+
+Mission:
+Take the newly implemented historical tastings import + UI integration and bring it to a genuinely testable, robust, near-production quality level with explicit validation and reconciliation.
+
+Mindset:
+I do NOT want a fragile prototype.
+I want something I can actually trust and test in a small circle without having to discover basic breakage myself.
+
+You must aggressively validate, harden, and fix.
+
+======================================================================
+A. DATA RECONCILIATION
+======================================================================
+
+Audit the imported historical tasting dataset and produce/implement fixes where required.
+
+Validate:
+- count of tastings imported
+- count of entries imported
+- tasting grouping correctness
+- duplicate detection
+- null/empty field rates
+- parse success rates for age, abv, price, ppm
+- linked vs unlinked whiskies
+- suspicious outliers
+
+Build a reconciliation report in code/log output that shows at least:
+- total workbook rows read
+- total valid entries
+- total tastings created
+- exact duplicates avoided
+- low-confidence matches
+- unmatched entries
+- malformed rows
+- top normalization issues
+
+Where possible, fix issues in code, not manually.
+
+======================================================================
+B. ADMIN / DEBUG VISIBILITY
+======================================================================
+
+Create a minimal internal-only admin/debug surface or developer route for the imported archive.
+
+It should show:
+- latest import run
+- counts
+- warnings/errors
+- unmatched whiskies
+- low-confidence matches
+- ability to rerun dry-run if architecture supports it
+
+This must be hidden from normal users and suitable for dev/admin only.
+
+======================================================================
+C. TESTING
+======================================================================
+
+Add or improve automated tests for:
+- import parser
+- normalization helpers
+- deterministic source key generation
+- idempotent re-import
+- API responses
+- frontend rendering of archive page and tasting detail page where feasible
+- route access stability
+
+Also do practical runtime validation:
+- start dev/build
+- run migrations
+- run import
+- load archive UI
+- open several tasting detail pages
+- verify analytics render without crashes
+- verify existing live tasting flows are unaffected
+
+======================================================================
+D. PERFORMANCE / STABILITY
+======================================================================
+
+Review and improve:
+- N+1 query risks
+- expensive frontend requests
+- missing indexes
+- oversized payloads
+- avoidable rerenders
+- poor loading UX
+- unsafe null assumptions
+- brittle parsing
+
+Make sensible optimizations without overengineering.
+
+======================================================================
+E. PRODUCT POLISH
+======================================================================
+
+Polish obvious rough edges:
+- titles
+- labels
+- empty states
+- ranking presentation
+- score formatting
+- date formatting
+- responsive layout issues
+- bad truncation/wrapping
+- awkward DE/EN translations
+
+======================================================================
+F. FINAL ACCEPTANCE CHECKLIST
+======================================================================
+
+Only finish when all of the following are true:
+
+1) Historical workbook is imported safely and idempotently
+2) Archive is visible inside Tastings
+3) Archive list works
+4) Tasting detail pages work
+5) Historical analytics work
+6) Existing Join / Host / Solo flows still work
+7) No major TypeScript/build/runtime errors remain
+8) Low-confidence/unmatched items are visible somewhere for later cleanup
+9) Codebase remains coherent and maintainable
+
+======================================================================
+G. FINAL OUTPUT
+======================================================================
+
+At the end, print a precise final report:
+- dataset counts
+- routes/pages added
+- DB entities added
+- tests added
+- validation commands run
+- issues fixed in this hardening pass
+- remaining known limitations
+- exact statement whether the feature is now ready for small-circle testing
+
+Do not just say “done”.
+Actually test, fix, re-test, and report concretely.
