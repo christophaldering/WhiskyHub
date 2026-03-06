@@ -531,3 +531,84 @@ export const appSettings = pgTable("app_settings", {
 });
 
 export type AppSetting = typeof appSettings.$inferSelect;
+
+// --- Historical Tastings (imported external tasting data, independent from CaskSense live tastings) ---
+export const historicalTastings = pgTable("historical_tastings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sourceKey: text("source_key").notNull().unique(),
+  tastingNumber: integer("tasting_number").notNull(),
+  titleDe: text("title_de"),
+  titleEn: text("title_en"),
+  tastingDate: text("tasting_date"),
+  sourceFileName: text("source_file_name"),
+  importBatchId: varchar("import_batch_id"),
+  whiskyCount: integer("whisky_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertHistoricalTastingSchema = createInsertSchema(historicalTastings).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertHistoricalTasting = z.infer<typeof insertHistoricalTastingSchema>;
+export type HistoricalTasting = typeof historicalTastings.$inferSelect;
+
+// --- Historical Tasting Entries (individual whisky evaluations within a historical tasting) ---
+export const historicalTastingEntries = pgTable("historical_tasting_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  historicalTastingId: varchar("historical_tasting_id").notNull(),
+  sourceWhiskyKey: text("source_whisky_key").notNull().unique(),
+  distilleryRaw: text("distillery_raw"),
+  whiskyNameRaw: text("whisky_name_raw"),
+  ageRaw: text("age_raw"),
+  alcoholRaw: text("alcohol_raw"),
+  priceRaw: text("price_raw"),
+  countryRaw: text("country_raw"),
+  regionRaw: text("region_raw"),
+  typeRaw: text("type_raw"),
+  smokyRaw: text("smoky_raw"),
+  ppmRaw: text("ppm_raw"),
+  caskRaw: text("cask_raw"),
+  noseScore: real("nose_score"),
+  noseRank: integer("nose_rank"),
+  tasteScore: real("taste_score"),
+  tasteRank: integer("taste_rank"),
+  finishScore: real("finish_score"),
+  finishRank: integer("finish_rank"),
+  totalScore: real("total_score"),
+  totalRank: integer("total_rank"),
+  normalizedAge: integer("normalized_age"),
+  normalizedAbv: real("normalized_abv"),
+  normalizedPrice: real("normalized_price"),
+  normalizedCountry: text("normalized_country"),
+  normalizedRegion: text("normalized_region"),
+  normalizedType: text("normalized_type"),
+  normalizedIsSmoky: boolean("normalized_is_smoky"),
+  normalizedPpm: real("normalized_ppm"),
+  normalizedCask: text("normalized_cask"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertHistoricalTastingEntrySchema = createInsertSchema(historicalTastingEntries).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertHistoricalTastingEntry = z.infer<typeof insertHistoricalTastingEntrySchema>;
+export type HistoricalTastingEntry = typeof historicalTastingEntries.$inferSelect;
+
+// --- Historical Import Runs (tracking each import execution) ---
+export const historicalImportRuns = pgTable("historical_import_runs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sourceFileName: text("source_file_name").notNull(),
+  status: text("status").notNull().default("running"),
+  rowsRead: integer("rows_read").default(0),
+  rowsImported: integer("rows_imported").default(0),
+  rowsSkipped: integer("rows_skipped").default(0),
+  tastingsCreated: integer("tastings_created").default(0),
+  entriesCreated: integer("entries_created").default(0),
+  warningsCount: integer("warnings_count").default(0),
+  errorsCount: integer("errors_count").default(0),
+  summaryJson: text("summary_json"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const insertHistoricalImportRunSchema = createInsertSchema(historicalImportRuns).omit({ id: true, createdAt: true, completedAt: true });
+export type InsertHistoricalImportRun = z.infer<typeof insertHistoricalImportRunSchema>;
+export type HistoricalImportRun = typeof historicalImportRuns.$inferSelect;

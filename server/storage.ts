@@ -31,6 +31,12 @@ import {
   type SessionPresence,
   appSettings,
   type AppSetting,
+  historicalTastings,
+  historicalTastingEntries,
+  historicalImportRuns,
+  type InsertHistoricalTasting, type HistoricalTasting,
+  type InsertHistoricalTastingEntry, type HistoricalTastingEntry,
+  type InsertHistoricalImportRun, type HistoricalImportRun,
 } from "@shared/schema";
 
 export async function getUniquePersonCount(participantIds: string[]): Promise<number> {
@@ -306,6 +312,25 @@ export interface IStorage {
   // Test Data Flag
   setTastingTestFlag(id: string, isTest: boolean): Promise<Tasting | undefined>;
   bulkCleanupTastings(filter: { titlePattern?: string; beforeDate?: string; maxParticipants?: number; onlyTestData?: boolean }, action: "preview" | "markAsTest" | "delete"): Promise<{ count: number; tastings: Array<{ id: string; title: string; date: string; participantCount: number; isTestData: boolean }> }>;
+
+  // Historical Tastings
+  getHistoricalTastings(options?: { limit?: number; offset?: number; search?: string }): Promise<{ tastings: HistoricalTasting[]; total: number }>;
+  getHistoricalTasting(id: string): Promise<(HistoricalTasting & { entries: HistoricalTastingEntry[] }) | undefined>;
+  getHistoricalTastingEntries(tastingId: string): Promise<HistoricalTastingEntry[]>;
+  getHistoricalWhiskyStats(): Promise<{
+    totalTastings: number;
+    totalEntries: number;
+    topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; tastingNumber: number }>;
+    regionBreakdown: Record<string, number>;
+    smokyBreakdown: { smoky: number; nonSmoky: number; unknown: number };
+    caskBreakdown: Record<string, number>;
+    scoreDistribution: Array<{ range: string; count: number }>;
+  }>;
+  createHistoricalTasting(data: InsertHistoricalTasting): Promise<HistoricalTasting>;
+  createHistoricalTastingEntry(data: InsertHistoricalTastingEntry): Promise<HistoricalTastingEntry>;
+  createHistoricalImportRun(data: InsertHistoricalImportRun): Promise<HistoricalImportRun>;
+  updateHistoricalImportRun(id: string, data: Partial<HistoricalImportRun>): Promise<HistoricalImportRun | undefined>;
+  getHistoricalImportRuns(): Promise<HistoricalImportRun[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1688,6 +1713,154 @@ export class DatabaseStorage implements IStorage {
     }
 
     return { count: result.length, tastings: result };
+  }
+
+  // --- Historical Tastings ---
+  async getHistoricalTastings(options?: { limit?: number; offset?: number; search?: string }): Promise<{ tastings: HistoricalTasting[]; total: number }> {
+    const limit = options?.limit ?? 50;
+    const offset = options?.offset ?? 0;
+    const search = options?.search?.trim();
+
+    let countQuery;
+    let dataQuery;
+
+    if (search) {
+      const pattern = `%${search}%`;
+      countQuery = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastings)
+        .where(sql`${historicalTastings.titleDe} ILIKE ${pattern} OR ${historicalTastings.titleEn} ILIKE ${pattern} OR CAST(${historicalTastings.tastingNumber} AS TEXT) = ${search}`);
+      dataQuery = await db.select().from(historicalTastings)
+        .where(sql`${historicalTastings.titleDe} ILIKE ${pattern} OR ${historicalTastings.titleEn} ILIKE ${pattern} OR CAST(${historicalTastings.tastingNumber} AS TEXT) = ${search}`)
+        .orderBy(asc(historicalTastings.tastingNumber))
+        .limit(limit)
+        .offset(offset);
+    } else {
+      countQuery = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastings);
+      dataQuery = await db.select().from(historicalTastings)
+        .orderBy(asc(historicalTastings.tastingNumber))
+        .limit(limit)
+        .offset(offset);
+    }
+
+    return { tastings: dataQuery, total: countQuery[0]?.count ?? 0 };
+  }
+
+  async getHistoricalTasting(id: string): Promise<(HistoricalTasting & { entries: HistoricalTastingEntry[] }) | undefined> {
+    const [tasting] = await db.select().from(historicalTastings).where(eq(historicalTastings.id, id));
+    if (!tasting) return undefined;
+    const entries = await db.select().from(historicalTastingEntries)
+      .where(eq(historicalTastingEntries.historicalTastingId, id))
+      .orderBy(asc(historicalTastingEntries.totalRank));
+    return { ...tasting, entries };
+  }
+
+  async getHistoricalTastingEntries(tastingId: string): Promise<HistoricalTastingEntry[]> {
+    return db.select().from(historicalTastingEntries)
+      .where(eq(historicalTastingEntries.historicalTastingId, tastingId))
+      .orderBy(asc(historicalTastingEntries.totalRank));
+  }
+
+  async getHistoricalWhiskyStats(): Promise<{
+    totalTastings: number;
+    totalEntries: number;
+    topWhiskies: Array<{ distillery: string | null; name: string | null; totalScore: number | null; tastingNumber: number }>;
+    regionBreakdown: Record<string, number>;
+    smokyBreakdown: { smoky: number; nonSmoky: number; unknown: number };
+    caskBreakdown: Record<string, number>;
+    scoreDistribution: Array<{ range: string; count: number }>;
+  }> {
+    const [tastingCount] = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastings);
+    const [entryCount] = await db.select({ count: sql<number>`count(*)::int` }).from(historicalTastingEntries);
+
+    const allEntries = await db.select().from(historicalTastingEntries);
+    const allTastings = await db.select().from(historicalTastings);
+    const tastingMap = new Map(allTastings.map(t => [t.id, t.tastingNumber]));
+
+    const sorted = [...allEntries].filter(e => e.totalScore != null).sort((a, b) => (b.totalScore ?? 0) - (a.totalScore ?? 0));
+    const topWhiskies = sorted.slice(0, 10).map(e => ({
+      distillery: e.distilleryRaw,
+      name: e.whiskyNameRaw,
+      totalScore: e.totalScore,
+      tastingNumber: tastingMap.get(e.historicalTastingId) ?? 0,
+    }));
+
+    const regionBreakdown: Record<string, number> = {};
+    const caskBreakdown: Record<string, number> = {};
+    let smoky = 0, nonSmoky = 0, unknown = 0;
+
+    const scoreRanges = [
+      { range: "0-1", count: 0 },
+      { range: "1-2", count: 0 },
+      { range: "2-3", count: 0 },
+      { range: "3-4", count: 0 },
+      { range: "4-5", count: 0 },
+      { range: "5-6", count: 0 },
+      { range: "6-7", count: 0 },
+      { range: "7-8", count: 0 },
+      { range: "8-9", count: 0 },
+      { range: "9-10", count: 0 },
+    ];
+
+    for (const entry of allEntries) {
+      const region = entry.normalizedRegion || entry.regionRaw;
+      if (region) regionBreakdown[region] = (regionBreakdown[region] || 0) + 1;
+
+      const cask = entry.normalizedCask || entry.caskRaw;
+      if (cask) caskBreakdown[cask] = (caskBreakdown[cask] || 0) + 1;
+
+      if (entry.normalizedIsSmoky === true) smoky++;
+      else if (entry.normalizedIsSmoky === false) nonSmoky++;
+      else unknown++;
+
+      if (entry.totalScore != null) {
+        const idx = Math.min(Math.floor(entry.totalScore), 9);
+        if (idx >= 0 && idx < 10) scoreRanges[idx].count++;
+      }
+    }
+
+    return {
+      totalTastings: tastingCount?.count ?? 0,
+      totalEntries: entryCount?.count ?? 0,
+      topWhiskies,
+      regionBreakdown,
+      smokyBreakdown: { smoky, nonSmoky, unknown },
+      caskBreakdown,
+      scoreDistribution: scoreRanges,
+    };
+  }
+
+  async createHistoricalTasting(data: InsertHistoricalTasting): Promise<HistoricalTasting> {
+    const [result] = await db.insert(historicalTastings).values(data)
+      .onConflictDoUpdate({
+        target: historicalTastings.sourceKey,
+        set: { ...data, updatedAt: new Date() },
+      })
+      .returning();
+    return result;
+  }
+
+  async createHistoricalTastingEntry(data: InsertHistoricalTastingEntry): Promise<HistoricalTastingEntry> {
+    const [result] = await db.insert(historicalTastingEntries).values(data)
+      .onConflictDoUpdate({
+        target: historicalTastingEntries.sourceWhiskyKey,
+        set: { ...data, updatedAt: new Date() },
+      })
+      .returning();
+    return result;
+  }
+
+  async createHistoricalImportRun(data: InsertHistoricalImportRun): Promise<HistoricalImportRun> {
+    const [result] = await db.insert(historicalImportRuns).values(data).returning();
+    return result;
+  }
+
+  async updateHistoricalImportRun(id: string, data: Partial<HistoricalImportRun>): Promise<HistoricalImportRun | undefined> {
+    const { id: _id, createdAt: _ca, ...updateData } = data as any;
+    const [result] = await db.update(historicalImportRuns).set(updateData).where(eq(historicalImportRuns.id, id)).returning();
+    return result;
+  }
+
+  async getHistoricalImportRuns(): Promise<HistoricalImportRun[]> {
+    return db.select().from(historicalImportRuns).orderBy(desc(historicalImportRuns.createdAt));
   }
 }
 

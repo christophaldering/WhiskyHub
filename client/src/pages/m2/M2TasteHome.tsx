@@ -6,7 +6,7 @@ import { getSession } from "@/lib/session";
 import {
   BookOpen, BarChart3, ChevronRight, ChevronDown, Lock,
   Radar, Archive, Heart, FlaskConical, Sparkles, GitCompareArrows,
-  Library, Building2, Package, Map,
+  Library, Building2, Package, Map, ScrollText,
   PieChart, UtensilsCrossed, Star, GraduationCap,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -376,6 +376,7 @@ export default function M2TasteHome() {
             <NavRow icon={PieChart} label={t("m2.taste.wheel", "Flavor Wheel")} description={t("m2.taste.wheelDesc", "Aroma categories from your notes")} href="/m2/taste/wheel" testId="m2-taste-link-wheel" />
             <NavRow icon={UtensilsCrossed} label={t("m2.taste.pairings", "Pairings")} description={t("m2.taste.pairingsDesc", "AI food pairing suggestions")} href="/m2/taste/pairings" testId="m2-taste-link-pairings" />
             <NavRow icon={Library} label={t("m2.taste.collectionAnalysis", "Collection Analysis")} description={t("m2.taste.collectionAnalysisDesc", "Deep insights into your whisky collection")} href="/m2/taste/collection-analysis" testId="m2-taste-link-collection-analysis" />
+            <NavRow icon={ScrollText} label={t("m2.taste.historical", "Historical Tastings")} description={t("m2.taste.historicalDesc", "External tasting data from past events")} href="/m2/taste/historical" testId="m2-taste-link-historical" />
           </AccordionSection>
 
           <AccordionSection

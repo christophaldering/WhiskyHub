@@ -9657,5 +9657,71 @@ Important rules:
     }
   });
 
+  // ===== HISTORICAL TASTINGS =====
+
+  app.get("/api/historical/tastings", async (req: Request, res: Response) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const search = req.query.search as string | undefined;
+      const result = await storage.getHistoricalTastings({ limit, offset, search });
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/historical/tastings/:id", async (req: Request, res: Response) => {
+    try {
+      const tasting = await storage.getHistoricalTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Historical tasting not found" });
+      res.json(tasting);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/historical/analytics", async (_req: Request, res: Response) => {
+    try {
+      const stats = await storage.getHistoricalWhiskyStats();
+      res.json(stats);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/admin/historical/import", async (req: Request, res: Response) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const dryRun = req.query.dryRun === "true";
+
+      const { importHistoricalTastings } = await import("./historical-import.js");
+      const result = await importHistoricalTastings({ dryRun });
+      const statusCode = result.errors.length > 0 ? 207 : 200;
+      res.status(statusCode).json(result);
+    } catch (e: any) {
+      console.error("Historical import error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/historical/import-runs", async (req: Request, res: Response) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const runs = await storage.getHistoricalImportRuns();
+      res.json(runs);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }
