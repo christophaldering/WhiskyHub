@@ -535,6 +535,8 @@ export default function M2TastingResults() {
     enabled: !!tastingId,
   });
 
+  const confettiRef = useConfetti(!!data && data.results.length > 0);
+
   if (isLoading) {
     return (
       <div style={{ padding: 16 }}>
@@ -553,8 +555,6 @@ export default function M2TastingResults() {
       </div>
     );
   }
-
-  const confettiRef = useConfetti(!!data && data.results.length > 0);
 
   return (
     <div style={{ maxWidth: 600, margin: "0 auto", padding: 16, display: "flex", flexDirection: "column", gap: 16, position: "relative", overflow: "hidden" }} data-testid="m2-tasting-results-page" ref={confettiRef}>
