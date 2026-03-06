@@ -1,0 +1,618 @@
+MISSION-CRITICAL IMPLEMENTATION ORDER
+PROJECT: CaskSense
+FEATURE: Desktop-First Hosting Dashboard for Host-Managed Live Tastings
+PRIORITY: HIGHEST
+EXECUTION MODE: FULL IMPLEMENTATION + SELF-QA + EVIDENCE-BASED VALIDATION
+NON-NEGOTIABLE: NO PARTIAL INTERPRETATION, NO CONCEPT-ONLY DELIVERY, NO COSMETIC MOCKUP, NO CLAIM OF COMPLETION WITHOUT PROOF
+
+You are now acting as a combined:
+- Principal Product Architect
+- Senior Apple-style UX Designer
+- Staff Frontend Engineer
+- Full-Stack Product Engineer
+- Live-Experience Systems Designer
+- QA Lead
+- Release Gatekeeper
+
+This is not an ideation task.
+This is not a rough plan.
+This is not a demo-only design exercise.
+
+This is a binding implementation order for the existing CaskSense product.
+
+You must implement a production-near, desktop-first HOSTING DASHBOARD for host-managed LIVE TASTINGS, integrate it into the existing system, connect it to real or properly derived state, reduce it responsibly for mobile, and finally validate with hard evidence that the implementation actually fulfills the full requirement set.
+
+==================================================
+0. ABSOLUTE EXECUTION RULE
+==================================================
+
+Your job is to deliver the strongest complete solution in one pass.
+
+Do NOT:
+- provide only ideas
+- provide only architecture notes
+- provide only a static page
+- provide only a partially wired UI
+- skip role logic
+- skip blind-tasting logic
+- skip desktop/mobile differentiation
+- skip validation
+- hide partial completion behind vague wording
+- say “implemented” unless it is actually implemented and checked
+
+You must think and act like a premium product team shipping an important core feature.
+
+Success is defined as:
+1. the feature is implemented
+2. it is integrated into the real product flow
+3. the UX is calm, premium and Apple-influenced
+4. the host can truly operate a live tasting from it
+5. the final report proves what is done and what is not
+
+==================================================
+1. PRODUCT GOAL
+==================================================
+
+When a host has started a live tasting, the host must be able to open a dedicated Hosting Dashboard.
+
+This Hosting Dashboard is the operational control center of the running tasting.
+
+It must allow the host to:
+- understand the current tasting status at a glance
+- control the tasting flow in real time
+- see lineup, participant state, progress, and session status
+- handle blind tasting workflows with sequential reveal of prepared information
+- moderate the tasting elegantly and safely
+- separately enter or access the host’s own rating
+- see a live preview of what participants currently see
+- cleanly close the tasting
+- trigger or open results / evaluation flow
+- retain a strong feeling of calm, control, clarity, and premium product quality
+
+This must feel like a high-end live control center.
+Not like a crude admin page.
+Not like a developer tool.
+Not like an overloaded enterprise backend.
+
+==================================================
+2. CORE EXPERIENCE PRINCIPLE
+==================================================
+
+The design perspective must be that of a very experienced Apple-influenced web designer.
+
+This means:
+- clarity over noise
+- hierarchy over clutter
+- restraint over feature-chaos
+- calm over admin-hectic
+- elegant panel architecture
+- strong typography
+- meaningful spacing
+- subtle but clear state communication
+- premium visual rhythm
+- obvious primary actions
+- reduced but powerful information density
+
+Design phrase:
+CONTROL WITH CALM
+
+The host should feel like a confident conductor of a premium tasting experience.
+
+==================================================
+3. PLATFORM STRATEGY
+==================================================
+
+This feature is DESKTOP-FIRST.
+
+Full functionality must exist on desktop/laptop.
+
+Mobile must receive a reduced but useful host view.
+
+This is binding:
+- Desktop = full hosting dashboard
+- Mobile = reduced host companion view
+- Do not attempt to squeeze the full multi-panel desktop control center into a small mobile screen
+- On mobile, clearly communicate that full hosting functionality is optimized for desktop
+
+This is not a weakness.
+It is correct product design.
+
+==================================================
+4. MANDATORY FEATURE SCOPE
+==================================================
+
+The Hosting Dashboard must contain at minimum the following capabilities and modules.
+
+--------------------------------------
+4A. SESSION HEADER
+--------------------------------------
+Must show at minimum:
+- tasting title
+- live session status
+- host role/status
+- mode (blind / non-blind, where applicable)
+- participant count
+- current flight / sample position
+- overall progress
+- session/join reference if relevant and already part of the system
+- clear primary actions such as start / continue / end where contextually relevant
+
+The header must immediately create orientation and confidence.
+
+--------------------------------------
+4B. LINEUP / FLOW OVERVIEW
+--------------------------------------
+Must provide:
+- full lineup or current structured flow overview
+- clear highlighting of current sample / current flight
+- separation of previous / current / upcoming
+- visible state per sample/flight where meaningful
+- for blind tastings: distinction between host-internal knowledge and participant-visible stage
+
+The lineup must feel curated and intentional, not like a rough list.
+
+--------------------------------------
+4C. PARTICIPANT STATUS PANEL
+--------------------------------------
+Must show:
+- participant list
+- meaningful session state per participant where technically possible
+- such as joined / pending / active / rating / completed / inactive / disconnected
+- who is done
+- who is still open
+- aggregated or per-participant progress where sensible
+
+This must be readable, calm, compact, and useful during moderation.
+
+--------------------------------------
+4D. LIVE CONTROL PANEL
+--------------------------------------
+The host must be able to control the tasting from the dashboard, including at minimum:
+- start tasting
+- continue tasting
+- open rating phase
+- close rating phase
+- activate next sample / next flight
+- trigger reveal step(s)
+- move toward closing
+- trigger results/evaluation availability
+- end session
+
+Controls must be understandable and orderly.
+No confusing clusters of equal-weight buttons.
+
+--------------------------------------
+4E. BLIND TASTING CONTROL
+--------------------------------------
+This is a critical requirement.
+
+The host must be able to reveal prepared information sequentially.
+
+The system must support a staged reveal model, for example:
+- hidden
+- code only
+- partial reveal
+- more details
+- full reveal
+- results open
+
+Exact naming can differ, but the logic must be explicit, visible, and testable.
+
+The dashboard must show:
+- what the host knows internally
+- what participants currently see
+- what reveal step is active
+- what reveal actions are available next
+
+Reveal actions must be clear and safe.
+If a step is effectively irreversible, the interface must communicate that appropriately.
+
+No accidental early exposure of blind information.
+
+--------------------------------------
+4F. HOST RATING PANEL
+--------------------------------------
+The host must have a separate space to enter/access their own rating.
+
+This must NOT be mixed into the main session-control area.
+
+The host has a dual role:
+- moderator / controller
+- participant / rater
+
+The UI must separate these roles cleanly.
+
+Acceptable forms:
+- dedicated side panel
+- dedicated card region
+- drawer/panel with permanent or easy access
+- dedicated subview within the dashboard area
+
+But the separation must be obvious and functional.
+
+--------------------------------------
+4G. PARTICIPANT VIEW PREVIEW
+--------------------------------------
+A separate panel/window/preview area is mandatory.
+
+The host must be able to see what participants currently see.
+
+This is essential.
+
+It must reflect at minimum:
+- current participant step/state
+- visible information
+- hidden/not-yet-revealed information
+- relevant CTA or rating state from participant perspective
+
+This preview must reduce uncertainty and support confident moderation.
+
+--------------------------------------
+4H. CLOSING / RESULTS TRANSITION
+--------------------------------------
+The dashboard must support the clean ending of the tasting:
+- close final rating phase
+- complete reveal if appropriate
+- mark tasting as ended
+- trigger or unlock results/evaluation
+- display final session state
+
+The transition from live tasting to completion/results must feel intentional and productized.
+
+==================================================
+5. REQUIRED INFORMATION ARCHITECTURE
+==================================================
+
+For desktop, implement a calm multi-zone layout that separates concerns.
+
+Preferred model:
+
+LEFT COLUMN:
+- session actions
+- live control
+- reveal controls
+- progress actions
+- session state actions
+
+CENTER AREA:
+- current tasting focus
+- lineup / current sample / flow
+- session context
+- core live information
+
+RIGHT COLUMN:
+- host rating panel
+- participant view preview
+
+You may improve the exact composition only if:
+- clarity increases
+- all required functions remain intact
+- the interface stays calm and premium
+- host control remains immediate and reliable
+
+Do not collapse all concerns into one chaotic vertical wall.
+
+==================================================
+6. ENTRY POINT, ACCESS, ROUTING, PERMISSIONS
+==================================================
+
+You must integrate a real and logical entry into the existing flow.
+
+Requirements:
+- A host of a started live tasting can open the Hosting Dashboard directly
+- The entry point is context-aware and only visible when meaningful
+- Non-host users cannot operate this as a host control center
+- Routing is stable
+- Reload is stable
+- deep-link state is not broken
+- session ownership / authorization is respected
+
+Implement a clear CTA in the appropriate place, such as:
+- Open Hosting Dashboard
+
+But use the project’s naming/style conventions where necessary.
+
+Do not create a dead-end route or a fragile one-off page.
+
+==================================================
+7. MOBILE REDUCED MODE
+==================================================
+
+You must implement a reduced mobile host view.
+
+It must at least allow:
+- seeing session status
+- seeing participant count
+- seeing current sample/step
+- performing the next essential action
+- performing core reveal action(s), where feasible
+- initiating closing if needed
+
+It must also clearly communicate:
+- full hosting dashboard functionality is optimized for desktop
+
+Do not fake desktop completeness on mobile.
+Do not build a broken miniature of the desktop layout.
+
+==================================================
+8. VISUAL / UX QUALITY BAR
+==================================================
+
+The result must feel:
+- premium
+- focused
+- modern
+- calm
+- state-of-the-art
+- Apple-influenced
+- operationally strong
+- not overdesigned
+- not noisy
+- not cheap
+- not enterprise-ugly
+
+Requirements:
+- strong typography hierarchy
+- disciplined spacing
+- clear primary/secondary action separation
+- subtle and meaningful status cues
+- clear emphasis on current sample/phase
+- clean card/panel architecture
+- logical visual grouping
+- no redundancy without reason
+- no clutter
+- no frantic dashboard feel
+
+==================================================
+9. TECHNICAL IMPLEMENTATION RULES
+==================================================
+
+You must work within the existing CaskSense architecture and extend it responsibly.
+
+Binding rules:
+- use the existing structure where appropriate
+- no fake implementation disconnected from real state
+- no throwaway mock-only route
+- no dead UI islands
+- no huge parallel architecture without need
+- preserve existing flows
+- avoid regressions
+- handle loading, empty, unauthorized, and error states
+- wire to real or properly derived session/tasting state
+- document any required model/state extensions
+
+If backend/model changes are necessary:
+- keep them minimal but sufficient
+- integrate cleanly
+- explain them in the final report
+
+==================================================
+10. HOST DUAL-ROLE MODEL
+==================================================
+
+This is a core UX problem and must be solved cleanly.
+
+The host is both:
+A. session operator
+B. tasting participant
+
+The dashboard must clearly separate:
+- Session Control
+- My Rating
+- Participant Preview
+
+This separation is mandatory.
+Do not blur them together.
+
+==================================================
+11. STATE MODEL / EDGE CASE REQUIREMENTS
+==================================================
+
+At minimum, consider and handle these states:
+
+- live tasting not yet started
+- live tasting active
+- live tasting near completion
+- live tasting completed
+- participant count = 0
+- participant count = 1
+- multiple participants
+- some participants joined, some not
+- some participants rating, some finished
+- rating phase open
+- rating phase closed
+- blind reveal at multiple stages
+- host rating not started
+- host rating in progress
+- host rating completed
+- results available
+- mobile access
+- desktop access
+- non-host access
+- refresh/reload/rejoin
+- slow/incomplete data
+- empty/partial lineup data
+- unauthorized route access
+
+Do not pretend edge cases do not exist.
+
+==================================================
+12. SPECIFIC PROHIBITIONS
+==================================================
+
+Do NOT:
+- stop at concept level
+- deliver only sketches
+- deliver only a pretty shell
+- skip participant preview
+- skip separate host rating space
+- skip blind reveal workflow
+- merge control and rating into one messy interface
+- force full desktop complexity onto mobile
+- claim “done” without checking
+- hide partial implementation in vague summary language
+
+==================================================
+13. EXECUTION PHASES
+==================================================
+
+You must execute in this order:
+
+PHASE A — ARCHITECTURE & CODEBASE ANALYSIS
+- inspect the current codebase
+- identify current live tasting logic
+- identify session entities, routing, role handling, relevant UI surfaces, blind tasting support, rating flows
+- identify the cleanest integration path
+
+PHASE B — IMPLEMENTATION PLAN
+- provide a concise but concrete implementation plan
+- specify files/components/routes/models/stores/handlers to create or modify
+- avoid empty theory
+- plan must be actionable
+
+PHASE C — IMPLEMENTATION
+- build the hosting dashboard
+- integrate entry point
+- implement routing and access checks
+- implement desktop layout
+- implement mobile reduced mode
+- implement control logic
+- implement blind reveal logic
+- implement host rating separation
+- implement participant preview
+- implement closing/results transition
+- handle states gracefully
+
+PHASE D — SELF-QA / VERIFICATION
+- verify requirement by requirement
+- verify host access
+- verify non-host restriction
+- verify desktop behavior
+- verify mobile reduced behavior
+- verify blind reveal stages
+- verify participant preview
+- verify host rating separation
+- verify closing/results logic
+- verify reload stability
+- verify UI calmness and non-overload
+
+PHASE E — FINAL EVIDENCE-BASED REPORT
+- no vague summary
+- produce a hard validation report
+- explicitly mark fully met / partially met / not met items
+- disclose open issues honestly
+
+==================================================
+14. DEFINITION OF DONE
+==================================================
+
+This feature is only considered done when ALL of the following are true:
+
+- there is a real host-accessible Hosting Dashboard
+- it is connected to real or properly derived tasting/session state
+- desktop offers the full intended experience
+- mobile offers a reduced but usable companion mode
+- host control actions exist and are logically placed
+- blind reveal is sequential and safe
+- host rating is clearly separate
+- participant preview exists
+- closing/results transition exists
+- access/routing/reload are coherent
+- the visual result is calm, high-quality, and premium
+- a final validation report proves status honestly
+
+Anything less is not complete.
+
+==================================================
+15. REQUIRED FINAL VALIDATION REPORT FORMAT
+==================================================
+
+At the end, you MUST deliver the final report in exactly this structure:
+
+========================================
+FINAL IMPLEMENTATION REPORT
+========================================
+
+1. IMPLEMENTED SCOPE
+List concretely:
+- new routes
+- new pages
+- new components
+- new panels
+- modified files
+- state/model changes
+- integration points added
+
+2. USER FLOW
+Describe briefly but concretely:
+- how the host reaches the Hosting Dashboard
+- what the host can do there
+- what happens on desktop
+- what happens on mobile
+
+3. VALIDATION CHECKLIST
+For each line, answer ONLY with one of:
+- YES
+- PARTIAL
+- NO
+
+Then add one concise evidence sentence.
+
+Checklist:
+1. Host of a started live tasting can open the Hosting Dashboard
+2. Entry point is integrated into existing product flow
+3. Non-host cannot use the dashboard as host control
+4. Desktop provides full hosting functionality
+5. Mobile provides reduced but usable host mode
+6. Session header shows relevant session variables
+7. Lineup/current sample/progress are visible
+8. Participant list/status are visible
+9. Live tasting can be actively controlled from dashboard
+10. Blind tasting reveal is sequentially controllable
+11. Host-internal vs participant-visible state is distinguishable
+12. Host has a separate own-rating area
+13. Host can see participant view preview
+14. Tasting can be cleanly closed from dashboard
+15. Results/evaluation transition exists
+16. Reload/refresh does not create an unclear broken state
+17. Unauthorized/non-host route handling is addressed
+18. Desktop layout is calm and not overloaded
+19. Mobile clearly communicates limited/full-function difference
+20. UI quality is premium, calm, and Apple-influenced
+
+4. EDGE CASE STATUS
+Comment briefly on:
+- no participants
+- partial participants
+- blind reveal stage transitions
+- mobile usage
+- unauthorized access
+- incomplete data
+- reload state
+
+5. OPEN ISSUES
+List every remaining issue honestly.
+If none remain, write exactly:
+- None currently identified
+
+6. RELEASE VERDICT
+Output exactly one of:
+- READY FOR TESTING
+- NOT READY FOR TESTING
+
+7. CONFIDENCE NOTE
+State briefly what has been actually checked versus what still depends on future user testing.
+
+==================================================
+16. TRUTHFULNESS RULE
+==================================================
+
+Never present speculation as completion.
+Never mark “YES” unless implemented and checked.
+Never hide uncertainty.
+
+==================================================
+17. FINAL INSTRUCTION
+==================================================
+
+Now inspect the existing CaskSense codebase, determine the strongest clean integration path, implement the full feature set above, validate it against the checklist, and return the final implementation report with hard honesty.
