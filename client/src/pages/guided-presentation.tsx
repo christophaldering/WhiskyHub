@@ -167,7 +167,7 @@ function HeroSection() {
           fontFamily: font.body, fontSize: "clamp(15px, 1.6vw, 18px)",
           color: TXT_DIM, lineHeight: 1.6, maxWidth: 440,
         }}>
-        44 features that change how you taste whisky.
+        42 features that change how you taste whisky.
       </motion.p>
 
       <motion.div
@@ -269,14 +269,13 @@ const chapA: Feature[] = [
   { title: "Guided Mode", desc: "Everyone moves together. Pace synchronized in real time.", quote: "One pace. One moment." },
   { title: "Session Modes", desc: "Three ways: free Flow, locked Focus, or guided Journal.", quote: "Flow. Focus. Journal." },
   { title: "QR Code & Join", desc: "Join via QR scan or 6-digit code. No app download needed.", quote: "Scan or type. Instantly in." },
-  { title: "Blind Mode", desc: "Four-stage reveal: number, name, metadata, full bottle.", quote: "Mystery, unveiled in acts." },
+  { title: "Blind Mode", desc: "Four-stage reveal: number, ABV, age, then the full name.", quote: "Mystery, unveiled in acts." },
   { title: "Live Rating", desc: "Rate nose, taste, finish, balance. Select flavor chips. Voice notes.", quote: "Every sense, captured live." },
   { title: "Voice-to-Text", desc: "Dictate impressions hands-free. Speech recognition instant.", quote: "Speak. Notes appear." },
   { title: "Discussion Panel", desc: "Live chat during the session. Debate flavors together.", quote: "Debate in real time." },
   { title: "Multi-Act Reveal", desc: "4-act show: participation, consensus, details, final ranking.", quote: "A reveal like a finale." },
   { title: "Results & Export", desc: "Gold, silver, bronze medals. Export as PDF, Excel, CSV.", quote: "Celebrate, then share." },
   { title: "Flight Board", desc: "Visual lineup overview. See blind/revealed, navigate with a tap.", quote: "See the whole flight." },
-  { title: "Ambient Sound", desc: "Fireplace soundscape for the perfect tasting atmosphere.", quote: "Atmosphere you can hear." },
   { title: "Printable Templates", desc: "Tasting sheets, mats, AI menu cards with cover images.", quote: "Print the ritual." },
   { title: "Solo Dram Logger", desc: "Rate whiskies outside group sessions. Every note captured.", quote: "Your private dram diary." },
   { title: "Guest Mode", desc: "Standard Naked or Ultra Naked. Choose your visibility.", quote: "Choose your visibility." },
@@ -291,7 +290,6 @@ const chapB: Feature[] = [
   { title: "Whisky Journal", desc: "Every dram logged with notes, scores, and metadata.", quote: "Every dram remembered." },
   { title: "Recommendations", desc: "Factor-based engine weighing region, cask, peat, ratings.", quote: "Recommendations with reasons." },
   { title: "Side-by-Side", desc: "Overlay up to 3 whiskies on a single radar chart.", quote: "Three drams, one glance." },
-  { title: "Achievements", desc: "From 'First Sip' to 'Living Legend'. Gamified milestones.", quote: "Milestones worth pouring for." },
   { title: "Collection Analysis", desc: "Value, region, age, ABV spectrum, vintage timeline.", quote: "Know your cellar's story." },
 ];
 
@@ -303,6 +301,7 @@ const chapC: Feature[] = [
   { title: "Market Price", desc: "AI estimates market value based on distillery, age, rarity.", quote: "Market value, estimated smartly." },
   { title: "AI Menu Card", desc: "DALL-E generates context-aware cover images for menus.", quote: "Menus with imagination." },
   { title: "AI Tasting Import", desc: "Parse PDFs, Excel, photos into structured tasting events.", quote: "Chaos in, structure out." },
+  { title: "Barcode Scanner", desc: "Camera-based scanning for instant bottle lookup.", quote: "Scan shelf to profile." },
 ];
 
 const chapD: Feature[] = [
@@ -311,15 +310,14 @@ const chapD: Feature[] = [
   { title: "Activity Feed", desc: "Real-time stream of friends' tastings, drams, badges.", quote: "See what friends sip." },
   { title: "Friend Management", desc: "Search, add friends. See online status. Build your circle.", quote: "Build your tasting circle." },
   { title: "Community Rankings", desc: "Aggregated scores by region. Your score vs. group average.", quote: "The crowd's whisky verdict." },
-  { title: "Historical Tastings", desc: "Searchable archive with cross-tasting analytics and trends.", quote: "Past tastings, new insights." },
 ];
 
 const chapE: Feature[] = [
   { title: "Whiskybase Integration", desc: "Lookup by ID, CSV import, deep links, auto image fetching.", quote: "Connected to whisky knowledge." },
-  { title: "Barcode Scanner", desc: "Camera-based scanning for instant bottle lookup.", quote: "Scan shelf to profile." },
   { title: "Collection Sync", desc: "CSV re-upload. Auto-detects new, removed, changed items.", quote: "Reupload. Auto-sync." },
   { title: "Knowledge Hub", desc: "Lexicon, distillery map, bottler database, tasting guide.", quote: "Learn the whole world." },
   { title: "Wishlist", desc: "Track bottles to find. Integrated with collection and journal.", quote: "Track the next bottle." },
+  { title: "Historical Tastings", desc: "Searchable archive with cross-tasting analytics and trends.", quote: "Past tastings, new insights." },
 ];
 
 function ChapterHeader({ letter, title, count, accent = A }: { letter: string; title: string; count: number; accent?: string }) {
@@ -397,9 +395,9 @@ function BlindModeDemo() {
   const inView = useInView(ref, { once: true, margin: "-80px" });
   const stages = [
     { label: "?", sub: "Dram #1" },
+    { label: "45.8%", sub: "ABV" },
+    { label: "10 Years", sub: "Age" },
     { label: "Talisker", sub: "Revealed" },
-    { label: "45.8%", sub: "Isle of Skye" },
-    { label: "10 Years", sub: "Single Malt" },
   ];
   return (
     <FadeUp>
@@ -414,7 +412,7 @@ function BlindModeDemo() {
         </span>
       </div>
       <p style={{ fontFamily: font.body, fontSize: 14, color: TXT_DIM, textAlign: "center", maxWidth: 400, margin: "0 auto 32px" }}>
-        Four-stage reveal: only the dram number, then the name, then metadata, then the full bottle. Bias eliminated.
+        Four-stage reveal: only the dram number, then ABV, then age, then the full name. Bias eliminated.
       </p>
       <div ref={ref} style={{
         display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap",
@@ -904,11 +902,11 @@ function ChapterASection() {
   return (
     <section style={{ padding: "100px 0 80px", position: "relative", zIndex: 1 }}>
       <div style={sec}>
-        <ChapterHeader letter="A" title="The Tasting Engine" count={16} />
+        <ChapterHeader letter="A" title="The Tasting Engine" count={15} />
         <div style={{ display: "flex", flexDirection: "column", gap: 80 }}>
+          <RevealActsDemo />
           <BlindModeDemo />
           <LiveRatingDemo />
-          <RevealActsDemo />
         </div>
         <FeatureGrid features={gridFeatures} />
       </div>
@@ -921,7 +919,7 @@ function ChapterBSection() {
   return (
     <section style={{ padding: "100px 0 80px", position: "relative", zIndex: 1 }}>
       <div style={sec}>
-        <ChapterHeader letter="B" title="Personal Taste Analysis" count={10} />
+        <ChapterHeader letter="B" title="Personal Taste Analysis" count={9} />
         <div style={{ display: "flex", flexDirection: "column", gap: 80 }}>
           <RadarChartDemo />
           <TrendLineDemo />
@@ -937,7 +935,7 @@ function ChapterCSection() {
   return (
     <section style={{ padding: "100px 0 80px", position: "relative", zIndex: 1 }}>
       <div style={sec}>
-        <ChapterHeader letter="C" title="AI-Powered Features" count={7} />
+        <ChapterHeader letter="C" title="AI-Powered Features" count={8} />
         <ScannerDemo />
         <FeatureGrid features={gridFeatures} />
       </div>
@@ -950,7 +948,7 @@ function ChapterDSection() {
   return (
     <section style={{ padding: "100px 0 80px", position: "relative", zIndex: 1 }}>
       <div style={sec}>
-        <ChapterHeader letter="D" title="Community & Circle" count={6} />
+        <ChapterHeader letter="D" title="Community & Circle" count={5} />
         <TasteTwinsDemo />
         <FeatureGrid features={gridFeatures} />
       </div>
@@ -979,7 +977,7 @@ function StatsSection() {
         ...sec, display: "flex", justifyContent: "center", gap: 64, flexWrap: "wrap",
       }}>
         {[
-          { n: 44, s: "+", label: "Features" },
+          { n: 42, s: "+", label: "Features" },
           { n: 5, s: "", label: "Categories" },
           { n: 2, s: "", label: "Languages" },
         ].map((st, i) => (

@@ -530,13 +530,13 @@ function SurprisesSection() {
               fontFamily: font.display, fontSize: 20, fontWeight: 500,
               color: v.text, marginBottom: 8,
             }}>
-              44+ features in total.
+              42+ features in total.
             </div>
             <p style={{
               fontFamily: font.body, fontSize: 14, color: v.muted,
               lineHeight: 1.6, marginBottom: 20, maxWidth: 380, margin: "0 auto 20px",
             }}>
-              From AI tasting notes to collection analysis, from leaderboards to guided mode — download the complete feature overview.
+              From AI tasting notes to collection analysis, from community insights to guided mode — download the complete feature overview.
             </p>
             <button
               type="button"
@@ -750,10 +750,10 @@ export default function LandingNew() {
       `}</style>
       <HeroSection />
       <FlowSection />
-      <RevealSection />
       <CoreFeaturesSection />
-      <SurprisesSection />
       <DemoSection />
+      <RevealSection />
+      <SurprisesSection />
       <CTASection />
       <Footer />
     </div>
