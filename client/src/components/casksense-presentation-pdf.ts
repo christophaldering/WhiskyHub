@@ -1323,7 +1323,7 @@ function drawCommunityFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 34. Leaderboards
+  // 34. Community Highlights
   y = rowY(1);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -1346,7 +1346,7 @@ function drawCommunityFeatures(doc: jsPDF) {
       drawText(doc, "W", bx + 7, cy + 12 - cat.h - 9, 8, ACCENT, "bold", "center");
     }
   });
-  drawFeatureRight(doc, TEXT_X, y, "Leaderboards", "Multi-category rankings: Most Active, Most Detailed, Highest Rated, and Explorer. Medals for the top three.", "Climb every leaderboard.");
+  drawFeatureRight(doc, TEXT_X, y, "Community Highlights", "Multi-category highlights: Most Active, Most Detailed, Highest Rated, and Explorer. Celebrating contributions.", "See who's exploring.");
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 

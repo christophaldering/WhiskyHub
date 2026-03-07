@@ -306,7 +306,7 @@ const chapC: Feature[] = [
 
 const chapD: Feature[] = [
   { title: "Taste Twins", desc: "Correlation engine: Twin (80%+), Similar (50%+), Related, Different.", quote: "Find your taste twin." },
-  { title: "Leaderboards", desc: "Most Active, Most Detailed, Highest Rated, Explorer. Medals.", quote: "Climb every leaderboard." },
+  { title: "Community Highlights", desc: "Most Active, Most Detailed, Highest Rated, Explorer. Celebrating contributions.", quote: "See who's exploring." },
   { title: "Activity Feed", desc: "Real-time stream of friends' tastings, drams, badges.", quote: "See what friends sip." },
   { title: "Friend Management", desc: "Search, add friends. See online status. Build your circle.", quote: "Build your tasting circle." },
   { title: "Community Rankings", desc: "Aggregated scores by region. Your score vs. group average.", quote: "The crowd's whisky verdict." },
