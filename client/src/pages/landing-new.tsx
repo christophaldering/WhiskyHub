@@ -122,69 +122,33 @@ function HeroSection() {
 
       <FadeUp delay={0.6}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
-            <Link href="/presentation" data-testid="link-hero-tour" style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "16px 40px", background: v.accent, color: v.bg,
-              fontFamily: font.body, fontSize: 16, fontWeight: 600,
+          <a
+            href="#demo-section"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById("demo-section")?.scrollIntoView({ behavior: "smooth" });
+            }}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 10,
+              padding: "18px 48px", background: v.accent, color: v.bg,
+              fontFamily: font.body, fontSize: 17, fontWeight: 600,
               borderRadius: 50, textDecoration: "none",
               transition: "transform 0.2s, box-shadow 0.2s",
-            }}>
-              Explore Features <ChevronRight style={{ width: 18, height: 18 }} />
-            </Link>
-            <Link href="/m2" style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "16px 40px", background: "transparent", color: v.accent,
-              fontFamily: font.body, fontSize: 16, fontWeight: 500,
-              borderRadius: 50, textDecoration: "none",
-              border: `1px solid ${v.border}`, transition: "border-color 0.2s",
-            }} data-testid="link-hero-start">
-              Start Tasting
-            </Link>
-            <a
-              href="#demo-section"
-              onClick={(e) => {
-                e.preventDefault();
-                const target = document.getElementById("demo-section");
-                if (!target) return;
-                const targetY = target.getBoundingClientRect().top + window.scrollY - 40;
-                const startY = window.scrollY;
-                const distance = targetY - startY;
-                const duration = 5000;
-                let startTime: number | null = null;
-                let cancelled = false;
-                const ease = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-                const step = (ts: number) => {
-                  if (cancelled) return;
-                  if (!startTime) startTime = ts;
-                  const elapsed = ts - startTime;
-                  const progress = Math.min(elapsed / duration, 1);
-                  window.scrollTo(0, startY + distance * ease(progress));
-                  if (progress < 1) requestAnimationFrame(step);
-                };
-                const cancel = () => { cancelled = true; cleanup(); };
-                const cleanup = () => {
-                  window.removeEventListener("wheel", cancel);
-                  window.removeEventListener("touchstart", cancel);
-                  window.removeEventListener("keydown", cancel);
-                };
-                window.addEventListener("wheel", cancel, { once: true });
-                window.addEventListener("touchstart", cancel, { once: true });
-                window.addEventListener("keydown", cancel, { once: true });
-                requestAnimationFrame(step);
-              }}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "8px 0",
-                fontFamily: font.body, fontSize: 14, fontWeight: 400,
-                color: v.muted, textDecoration: "none",
-                transition: "color 0.2s", cursor: "pointer",
-              }}
-              data-testid="link-hero-demo"
-            >
-              or try the demo ↓
-            </a>
-          </div>
+              cursor: "pointer",
+            }}
+            data-testid="link-hero-demo"
+          >
+            Try the Demo <ChevronRight style={{ width: 18, height: 18 }} />
+          </a>
+          <Link href="/m2" style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "8px 0",
+            fontFamily: font.body, fontSize: 14, fontWeight: 400,
+            color: v.muted, textDecoration: "none",
+            transition: "color 0.2s",
+          }} data-testid="link-hero-start">
+            Start Tasting →
+          </Link>
         </div>
       </FadeUp>
 
@@ -781,6 +745,14 @@ function CTASection() {
               color: v.muted, textDecoration: "none",
             }} data-testid="cta-demo">
               or jump straight into the demo →
+            </Link>
+            <Link href="/presentation" style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              fontFamily: font.body, fontSize: 13, fontWeight: 400,
+              color: v.mutedLight, textDecoration: "none",
+              marginTop: 8,
+            }} data-testid="cta-explore">
+              Explore all features <ChevronRight style={{ width: 14, height: 14 }} />
             </Link>
           </div>
         </FadeUp>

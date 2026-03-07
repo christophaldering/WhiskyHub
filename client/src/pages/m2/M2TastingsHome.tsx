@@ -42,17 +42,19 @@ export default function M2TastingsHome() {
     refetchOnMount: "always" as const,
   });
 
+  const regularTastings = useMemo(() => (tastings as any[]).filter((ta) => ta.code !== "DEMO"), [tastings]);
+
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: tastings.length, draft: 0, open: 0, closed: 0, archived: 0 };
-    for (const ta of tastings) {
+    const counts: Record<string, number> = { all: regularTastings.length, draft: 0, open: 0, closed: 0, archived: 0 };
+    for (const ta of regularTastings) {
       const s = (ta as any).status === "reveal" ? "open" : (ta as any).status;
       if (counts[s] !== undefined) counts[s]++;
     }
     return counts;
-  }, [tastings]);
+  }, [regularTastings]);
 
   const filtered = useMemo(() => {
-    let list = tastings as any[];
+    let list = regularTastings as any[];
 
     if (statusFilter !== "all") {
       list = list.filter((ta) => ta.status === statusFilter || (statusFilter === "open" && ta.status === "reveal"));
