@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { v } from "@/lib/themeVars";
 import { getTheme, setTheme, type ThemeName } from "@/lib/themeVars";
-import { getSession, signIn, signOut } from "@/lib/session";
+import { getSession, signIn, signOut, setSessionPid } from "@/lib/session";
 import { participantApi } from "@/lib/api";
 import {
   X, LogOut, User, Globe, Settings, Palette, Download,
@@ -268,12 +268,17 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     try {
       const res = await participantApi.guestJoin(guestName.trim(), guestPin.trim());
       if (res?.id) {
+        setSessionPid(res.id);
         try {
           sessionStorage.setItem("session_signed_in", "1");
           sessionStorage.setItem("session_mode", "tasting");
           sessionStorage.setItem("session_name", guestName.trim());
-          sessionStorage.setItem("session_pid", res.id);
+          sessionStorage.setItem("session_role", "");
           localStorage.setItem("casksense_participant_id", res.id);
+        } catch {}
+        try {
+          const { useAppStore } = await import("@/lib/store");
+          useAppStore.getState().setParticipant({ id: res.id, name: guestName.trim() });
         } catch {}
         window.dispatchEvent(new Event("session-change"));
         refreshSession();

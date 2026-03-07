@@ -86,6 +86,16 @@ export function setSessionPid(pid: string) {
   } catch {}
 }
 
+function syncStoreParticipant(pid?: string, name?: string | null, role?: string) {
+  try {
+    if (pid) {
+      useAppStore.getState().setParticipant({ id: pid, name: name || "", role });
+    } else {
+      useAppStore.getState().setParticipant(null);
+    }
+  } catch {}
+}
+
 export async function signIn(opts: {
   pin: string;
   name?: string;
@@ -115,6 +125,7 @@ export async function signIn(opts: {
   if (pid) {
     try { localStorage.setItem("casksense_participant_id", pid); } catch {}
   }
+  syncStoreParticipant(pid, displayName, role);
   if (data.resumeToken) {
     setRemember(data.resumeToken, opts.mode, displayName);
   } else {
@@ -130,15 +141,14 @@ export async function signIn(opts: {
 
 export async function tryAutoResume(): Promise<boolean> {
   try {
-    if (sessionStorage.getItem(SK_SIGNED_IN) === "1") return true;
-
-    try {
-      const store = useAppStore.getState();
-      if (store.currentParticipant) {
-        store.setParticipant(null);
-      }
-    } catch {}
-
+    if (sessionStorage.getItem(SK_SIGNED_IN) === "1") {
+      syncStoreParticipant(
+        sessionStorage.getItem(SK_PID) || undefined,
+        sessionStorage.getItem(SK_NAME),
+        sessionStorage.getItem(SK_ROLE) || undefined,
+      );
+      return true;
+    }
 
     migrateLegacyKeys();
 
@@ -161,6 +171,7 @@ export async function tryAutoResume(): Promise<boolean> {
             if (pid) {
               try { localStorage.setItem("casksense_participant_id", pid); } catch {}
             }
+            syncStoreParticipant(pid, name, role);
             window.dispatchEvent(new Event("session-change"));
             return true;
           }
@@ -178,6 +189,7 @@ export async function tryAutoResume(): Promise<boolean> {
           if (p?.id) {
             const mode = (localStorage.getItem(LK_MODE) || "log") as SessionMode;
             setSessionStorage(mode, p.name || null, p.id, p.role || undefined);
+            syncStoreParticipant(p.id, p.name, p.role);
             window.dispatchEvent(new Event("session-change"));
             return true;
           }
@@ -186,6 +198,7 @@ export async function tryAutoResume(): Promise<boolean> {
       try { localStorage.removeItem("casksense_participant_id"); } catch {}
     }
 
+    syncStoreParticipant(undefined);
     return false;
   } catch {
     return false;

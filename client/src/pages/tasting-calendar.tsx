@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
-import { useAppStore } from "@/lib/store";
+import { useSession } from "@/lib/session";
 import { useToast } from "@/hooks/use-toast";
 import { v } from "@/lib/themeVars";
 
@@ -82,8 +82,8 @@ export default function TastingCalendar({ embedded = false }: { embedded?: boole
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [filter, setFilter] = useState<CalendarFilter>("all");
   const [selectedOffset, setSelectedOffset] = useState<number>(1440);
-  const currentParticipant = useAppStore((s) => s.currentParticipant);
-  const participantId = currentParticipant?.id;
+  const session = useSession();
+  const participantId = session.pid;
   const { toast } = useToast();
   const qc = useQueryClient();
 
