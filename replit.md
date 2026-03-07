@@ -53,6 +53,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
     -   **Historical Tastings**: Production-grade archive of externally imported tasting data with detailed views, insights, and robust community-gated access control.
     -   **Collection Analysis**: Comprehensive analytics page for user's Whiskybase collection.
     -   **Circle Tab**: Features community rankings, "Taste Twins," leaderboards, activity feeds, and friend management with real-time online notifications.
+-   **Making-Of Timeline** (`/m2/making-of`): Interactive "Making of CaskSense" page telling the development story in 7 whisky-metaphor chapters (The First Pour → The Finish). Built from real git history (1,625 commits over 20 days). Access controlled via `participants.makingOfAccess` boolean (admin can toggle per participant via Admin > Making-Of tab). Backend serves hardcoded timeline data via `GET /api/making-of`. Features: vertical golden timeline, animated stat cards, chapter narratives with milestones, lesson-learned cards, scroll-triggered fade-in animations.
 -   **Admin Tools**: Functionalities for managing test data, AI controls, and platform settings. Community member list shows participant names and emails (not UUIDs) via backend JOIN on `participants` table.
 
 ### CSS Animation Architecture (M2)

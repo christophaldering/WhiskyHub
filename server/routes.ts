@@ -6236,6 +6236,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             newsletterOptIn: p.newsletterOptIn || false,
             communityContributor: p.communityContributor || false,
             experienceLevel: p.experienceLevel || "connoisseur",
+            makingOfAccess: p.makingOfAccess || false,
           };
         })
       );
@@ -10305,6 +10306,203 @@ Important rules:
     } catch (e: any) {
       console.error("Menu cover generation error:", e);
       res.status(500).json({ message: e.message || "Failed to generate menu cover image" });
+    }
+  });
+
+  // ──── Making-Of Timeline ────
+  const MAKING_OF_TIMELINE = [
+    {
+      id: "ch1",
+      chapter: 1,
+      titleKey: "makingOf.ch1.title",
+      titleFallback: "The First Pour",
+      dateRange: "14. Feb 2026",
+      narrativeKey: "makingOf.ch1.narrative",
+      narrativeFallback: "Day one. A blank canvas and a bold idea: build a complete whisky tasting platform from scratch. In a single marathon session, 95 meaningful commits transformed an empty repository into a living, breathing application — dual-language, with photo uploads, PDF exports, blind mode, and a first deployment to the world. Like opening a new bottle: the first pour is always the most exciting.",
+      stats: { commits: 95, features: 22 },
+      color: "#F5DEB3",
+      milestones: [
+        "Initial commit → full app structure",
+        "Dual-language support (EN/DE) from hour one",
+        "Whisky management with photos & Whiskybase lookup",
+        "Blind tasting mode with sequential reveal",
+        "PDF export & flight board",
+        "First deployment to production"
+      ],
+      isDown: false,
+      lesson: "Don't overthink the start. Just pour."
+    },
+    {
+      id: "ch2",
+      chapter: 2,
+      titleKey: "makingOf.ch2.title",
+      titleFallback: "Finding the Nose",
+      dateRange: "15. – 19. Feb 2026",
+      narrativeKey: "makingOf.ch2.narrative",
+      narrativeFallback: "The next days were about exploration — nosing out which features would define CaskSense. Barcode scanning for instant whisky identification, an interactive distillery map, multi-language support beyond just EN/DE, mobile-first PWA capabilities, AI-powered bottle identification from photos. Some ideas stuck, others were refined. Like nosing a complex single malt: each sniff reveals a new layer.",
+      stats: { commits: 148, features: 35 },
+      color: "#ECC978",
+      milestones: [
+        "AI bottle identification from photos",
+        "Barcode scanner for Whiskybase lookup",
+        "Interactive distillery map",
+        "Newsletter system with rich editor",
+        "Mobile app support (Capacitor)",
+        "Guest modes: Standard & Ultra Naked"
+      ],
+      isDown: false,
+      lesson: "Not every feature idea survives — and that's the beauty of iteration."
+    },
+    {
+      id: "ch3",
+      chapter: 3,
+      titleKey: "makingOf.ch3.title",
+      titleFallback: "The Rough Edges",
+      dateRange: "20. – 23. Feb 2026",
+      narrativeKey: "makingOf.ch3.narrative",
+      narrativeFallback: "Every good whisky has a moment of harshness before the character shines through. These were those days. Rollbacks, broken login flows, donation module crashes, AI features that didn't behave. Two forced restores to previous versions. The kind of days where you question everything — but each fix taught something irreplaceable about building resilient software.",
+      stats: { commits: 201, features: 28 },
+      color: "#D4A256",
+      milestones: [
+        "Multiple rollbacks to stable versions",
+        "Login stacking bugs on mobile",
+        "Donation module breaking the UI",
+        "AI profile generation failures",
+        "Security hardening: session validation",
+        "Test suite establishment"
+      ],
+      isDown: true,
+      lesson: "Rollbacks are not failures — they're safety nets that prove your process works."
+    },
+    {
+      id: "ch4",
+      chapter: 4,
+      titleKey: "makingOf.ch4.title",
+      titleFallback: "The Cask Strength",
+      dateRange: "24. – 25. Feb 2026",
+      narrativeKey: "makingOf.ch4.narrative",
+      narrativeFallback: "Time to consolidate. Like cask-strength whisky that needs no dilution, the core was strong enough to refine without adding. Navigation restructured from scratch, bottom tab bars for mobile, consistent page layouts across every screen. The unglamorous work that separates a prototype from a product.",
+      stats: { commits: 55, features: 12 },
+      color: "#C48B3F",
+      milestones: [
+        "Complete navigation restructure",
+        "Bottom tab bar for mobile",
+        "Standardized page layout system",
+        "Accessibility improvements",
+        "Design guidelines documented",
+        "Experience level system (later removed)"
+      ],
+      isDown: false,
+      lesson: "The best features are the ones you remove to make space for clarity."
+    },
+    {
+      id: "ch5",
+      chapter: 5,
+      titleKey: "makingOf.ch5.title",
+      titleFallback: "The Rebirth",
+      dateRange: "28. Feb – 2. Mär 2026",
+      narrativeKey: "makingOf.ch5.narrative",
+      narrativeFallback: "The most pivotal moment. Like re-casking a whisky for a completely different finish — the entire UI was reimagined. 'Module 2' was born: an Apple-inspired design system with warm amber tones, Playfair Display typography, custom SVG icons, and an ambient background glow. Not an update, a transformation. The old interface was preserved at /m1 while the new world opened at /m2.",
+      stats: { commits: 89, features: 18 },
+      color: "#B07A35",
+      milestones: [
+        "Module 2 'Dark Lab' conceived and built",
+        "Apple-design system with Playfair Display",
+        "Custom SVG navigation icons (Glencairn glass)",
+        "Ambient warm glow animation",
+        "3-tab bottom navigation (Tasting | Taste | Circle)",
+        "Old UI preserved, new UI as default"
+      ],
+      isDown: false,
+      lesson: "Sometimes you have to break your own creation to build something truly great."
+    },
+    {
+      id: "ch6",
+      chapter: 6,
+      titleKey: "makingOf.ch6.title",
+      titleFallback: "The Full Body",
+      dateRange: "3. – 6. Mär 2026",
+      narrativeKey: "makingOf.ch6.narrative",
+      narrativeFallback: "With the new design as foundation, features poured in at record pace. Historical tastings imported from Excel archives, community features with rankings and 'Taste Twins', score normalization across sources, AI-generated tasting menu cards, a complete landing page — 109 commits on the peak day alone. Like a full-bodied Islay at cask strength: intense, complex, unforgettable.",
+      stats: { commits: 272, features: 45 },
+      color: "#8B5E2F",
+      milestones: [
+        "Historical tasting import from Excel",
+        "Community Circle with rankings",
+        "Score normalization (0–100 scale)",
+        "AI-generated menu cover images",
+        "Premium landing page (14 sections)",
+        "109 commits in a single day (record)"
+      ],
+      isDown: false,
+      lesson: "A great foundation makes everything else flow effortlessly."
+    },
+    {
+      id: "ch7",
+      chapter: 7,
+      titleKey: "makingOf.ch7.title",
+      titleFallback: "The Finish",
+      dateRange: "7. Mär 2026",
+      narrativeKey: "makingOf.ch7.narrative",
+      narrativeFallback: "Today. The finish of a great whisky lingers — warm, evolving, memorable. A demo tasting for instant onboarding, color-coded rating dimensions inspired by Apple Health, a slow-scroll landing page that tells its own story. And now: this very page you're reading, documenting the journey. Because the best stories are the ones you share with friends.",
+      stats: { commits: 30, features: 8 },
+      color: "#6B4226",
+      milestones: [
+        "Demo Tasting: 8 Islay whiskies, no login",
+        "Color-coded rating dimensions",
+        "Slow-scroll landing page experience",
+        "Session management hardening",
+        "This Making-Of timeline",
+        "The story continues..."
+      ],
+      isDown: false,
+      lesson: "A great finish isn't an ending — it's an invitation to pour again."
+    }
+  ];
+
+  const MAKING_OF_STATS = {
+    totalDays: 20,
+    totalCommits: 1625,
+    featuresBuilt: 168,
+    rollbacksSurvived: 5,
+    linesOfCode: "50k+",
+    languages: 2,
+    firstCommit: "2026-02-14",
+    latestCommit: "2026-03-07"
+  };
+
+  app.get("/api/making-of", async (req: Request, res: Response) => {
+    try {
+      const pid = req.headers["x-participant-id"] as string;
+      if (!pid) return res.status(401).json({ message: "Not authenticated" });
+      const participant = await storage.getParticipant(pid);
+      if (!participant) return res.status(404).json({ message: "Participant not found" });
+      if (participant.role !== "admin" && !participant.makingOfAccess) {
+        return res.status(403).json({ message: "Access not granted" });
+      }
+      res.json({ chapters: MAKING_OF_TIMELINE, stats: MAKING_OF_STATS });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/admin/participants/:id/making-of-access", async (req: Request, res: Response) => {
+    try {
+      const requesterId = req.body.requesterId as string;
+      if (!requesterId) return res.status(400).json({ message: "requesterId required" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const { access } = req.body;
+      if (typeof access !== "boolean") {
+        return res.status(400).json({ message: "access must be boolean" });
+      }
+      const result = await storage.updateMakingOfAccess(req.params.id, access);
+      if (!result) return res.status(404).json({ message: "Participant not found" });
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
     }
   });
 

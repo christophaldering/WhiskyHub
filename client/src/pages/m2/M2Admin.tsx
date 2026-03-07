@@ -15,10 +15,11 @@ import {
   Mail, Sparkles, Send, Archive, RefreshCw, CheckSquare, Square, Loader2,
   Brain, Clock, Settings, FlaskConical, Wifi, XCircle, CheckCircle,
   MessageSquarePlus, Megaphone, Rocket, Filter, AlertTriangle,
-  FileArchive, Play, FileWarning, Globe, Lock, UserPlus, ToggleLeft, ToggleRight
+  FileArchive, Play, FileWarning, Globe, Lock, UserPlus, ToggleLeft, ToggleRight,
+  BookOpen, ExternalLink
 } from "lucide-react";
 
-type AdminTab = "participants" | "tastings" | "online" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback";
+type AdminTab = "participants" | "tastings" | "online" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback" | "making-of";
 
 const TAB_CONFIG: { id: AdminTab; labelKey: string; fallback: string; icon: any }[] = [
   { id: "participants", labelKey: "m2.admin.participants", fallback: "Participants", icon: Users },
@@ -33,6 +34,7 @@ const TAB_CONFIG: { id: AdminTab; labelKey: string; fallback: string; icon: any 
   { id: "communities", labelKey: "m2.admin.communities", fallback: "Communities", icon: Globe },
   { id: "settings", labelKey: "m2.admin.settings", fallback: "Settings", icon: Settings },
   { id: "feedback", labelKey: "m2.admin.feedback", fallback: "Feedback", icon: MessageSquarePlus },
+  { id: "making-of", labelKey: "m2.admin.makingOf", fallback: "Making-Of", icon: BookOpen },
 ];
 
 interface AdminParticipant {
@@ -47,6 +49,7 @@ interface AdminParticipant {
   canAccessWhiskyDb: boolean;
   newsletterOptIn: boolean;
   communityContributor: boolean;
+  makingOfAccess: boolean;
 }
 
 interface AdminTasting {
@@ -187,6 +190,7 @@ export default function M2Admin() {
       {activeTab === "communities" && <CommunitiesTab pid={pid} participants={data.participants} />}
       {activeTab === "settings" && <SettingsTab pid={pid} />}
       {activeTab === "feedback" && <FeedbackTab pid={pid} />}
+      {activeTab === "making-of" && <MakingOfTab pid={pid} participants={data.participants} />}
     </div>
   );
 }
@@ -2052,6 +2056,168 @@ function CommunitiesTab({ pid, participants }: { pid: string; participants: Admi
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function MakingOfTab({ pid, participants }: { pid: string; participants: AdminParticipant[] }) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+
+  const accessMutation = useMutation({
+    mutationFn: ({ participantId, access }: { participantId: string; access: boolean }) =>
+      adminApi.updateMakingOfAccess(participantId, access, pid),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/admin/overview"] });
+      toast({ title: t("m2.admin.makingOfAccessUpdated", "Making-Of access updated") });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const filtered = participants.filter(p => {
+    if (search && !p.name.toLowerCase().includes(search.toLowerCase()) && !(p.email || "").toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  const accessCount = participants.filter(p => p.makingOfAccess || p.role === "admin").length;
+
+  return (
+    <div data-testid="admin-making-of-tab">
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+        <BookOpen style={{ width: 18, height: 18, color: v.accent }} />
+        <span style={{ fontWeight: 600, fontSize: 16, color: v.text }}>
+          {t("m2.admin.makingOfTitle", "The Making of CaskSense")}
+        </span>
+      </div>
+
+      <a
+        href="/m2/making-of"
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          background: `linear-gradient(135deg, #d4a25615 0%, ${v.card} 60%)`,
+          border: `1px solid #d4a25640`, borderRadius: 12,
+          padding: 16, marginBottom: 20, textDecoration: "none",
+          cursor: "pointer", transition: "all 0.15s",
+        }}
+        data-testid="link-making-of-page"
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: 10,
+            background: `linear-gradient(135deg, #F5DEB3, #8B4513)`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <BookOpen style={{ width: 20, height: 20, color: "#fff" }} />
+          </div>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 14, color: v.text }}>
+              {t("m2.admin.viewMakingOf", "View Making-Of Timeline")}
+            </div>
+            <div style={{ fontSize: 11, color: v.muted, marginTop: 2 }}>
+              {t("m2.admin.makingOfSubtitle", "20 days · 1,625 commits · 168 features")}
+            </div>
+          </div>
+        </div>
+        <ExternalLink style={{ width: 16, height: 16, color: v.accent, flexShrink: 0 }} />
+      </a>
+
+      <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 14, color: v.text }}>
+              {t("m2.admin.makingOfAccessControl", "Access Control")}
+            </div>
+            <div style={{ fontSize: 11, color: v.muted, marginTop: 2 }}>
+              {t("m2.admin.makingOfAccessHint", "{{count}} participants have access", { count: accessCount })}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ position: "relative", marginBottom: 12 }}>
+          <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: v.muted }} />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={t("m2.admin.searchParticipants", "Search participants...")}
+            style={{
+              width: "100%", padding: "8px 8px 8px 30px", borderRadius: 8,
+              border: `1px solid ${v.inputBorder}`, background: v.inputBg,
+              color: v.inputText, fontSize: 13, fontFamily: "system-ui, sans-serif",
+            }}
+            data-testid="input-search-making-of-access"
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 400, overflowY: "auto" }}>
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 32, color: v.muted }}>
+              {t("m2.admin.noResults", "No results")}
+            </div>
+          ) : filtered.map(p => {
+            const hasAccess = p.makingOfAccess || p.role === "admin";
+            const isAdmin = p.role === "admin";
+            return (
+              <div
+                key={p.id}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "10px 12px", borderRadius: 10,
+                  background: hasAccess ? `${v.accent}08` : "transparent",
+                  border: `1px solid ${hasAccess ? `${v.accent}20` : v.border}`,
+                  transition: "all 0.15s",
+                }}
+                data-testid={`making-of-access-row-${p.id}`}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
+                  {p.role === "admin" ? <Shield style={{ width: 14, height: 14, color: v.accent, flexShrink: 0 }} /> :
+                   p.role === "host" ? <Crown style={{ width: 14, height: 14, color: "#60a5fa", flexShrink: 0 }} /> :
+                   <User style={{ width: 14, height: 14, color: v.muted, flexShrink: 0 }} />}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: v.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {p.name}
+                    </div>
+                    <div style={{ fontSize: 10, color: v.muted }}>
+                      {p.email || t("m2.admin.noEmail", "No email")}
+                      {isAdmin && ` · ${t("m2.admin.alwaysAccess", "always has access")}`}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (!isAdmin) {
+                      accessMutation.mutate({ participantId: p.id, access: !p.makingOfAccess });
+                    }
+                  }}
+                  disabled={isAdmin || accessMutation.isPending}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    width: 44, height: 26, borderRadius: 13,
+                    border: "none", cursor: isAdmin ? "default" : "pointer",
+                    background: hasAccess ? v.accent : v.elevated,
+                    transition: "all 0.2s",
+                    opacity: isAdmin ? 0.6 : 1,
+                    position: "relative",
+                    flexShrink: 0,
+                  }}
+                  data-testid={`toggle-making-of-${p.id}`}
+                >
+                  <div style={{
+                    width: 20, height: 20, borderRadius: "50%",
+                    background: "#fff",
+                    position: "absolute",
+                    left: hasAccess ? 22 : 2,
+                    transition: "left 0.2s",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                  }} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

@@ -84,6 +84,7 @@ export interface IStorage {
   setVerificationCode(id: string, code: string, expiry: Date): Promise<Participant | undefined>;
   verifyEmail(id: string): Promise<Participant | undefined>;
   updateWhiskyDbAccess(id: string, canAccess: boolean): Promise<Participant | undefined>;
+  updateMakingOfAccess(id: string, access: boolean): Promise<Participant | undefined>;
 
   // Tastings
   getTasting(id: string): Promise<Tasting | undefined>;
@@ -1061,6 +1062,11 @@ export class DatabaseStorage implements IStorage {
 
   async updateWhiskyDbAccess(id: string, canAccess: boolean): Promise<Participant | undefined> {
     const [result] = await db.update(participants).set({ canAccessWhiskyDb: canAccess }).where(eq(participants.id, id)).returning();
+    return result;
+  }
+
+  async updateMakingOfAccess(id: string, access: boolean): Promise<Participant | undefined> {
+    const [result] = await db.update(participants).set({ makingOfAccess: access }).where(eq(participants.id, id)).returning();
     return result;
   }
 

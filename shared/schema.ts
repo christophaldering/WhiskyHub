@@ -22,11 +22,12 @@ export const participants = pgTable("participants", {
   sweetnessBias: real("sweetness_bias"),
   ratingStabilityScore: real("rating_stability_score"),
   explorationIndex: real("exploration_index"),
+  makingOfAccess: boolean("making_of_access").default(false),
   lastSeenAt: timestamp("last_seen_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertParticipantSchema = createInsertSchema(participants).omit({ id: true, createdAt: true, emailVerified: true, verificationCode: true, verificationExpiry: true, lastSeenAt: true });
+export const insertParticipantSchema = createInsertSchema(participants).omit({ id: true, createdAt: true, emailVerified: true, verificationCode: true, verificationExpiry: true, lastSeenAt: true, makingOfAccess: true });
 export type InsertParticipant = z.infer<typeof insertParticipantSchema>;
 export type Participant = typeof participants.$inferSelect;
 
