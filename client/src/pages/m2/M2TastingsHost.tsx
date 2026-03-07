@@ -1978,7 +1978,7 @@ function Step1Edit({ tasting, pid, onUpdated }: { tasting: TastingFull; pid: str
 }
 
 function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { tasting: TastingFull; pid: string; onBack: () => void; onEditWhiskies?: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
 
@@ -2133,13 +2133,15 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
     setTimeout(() => setSaveStatus(null), 2000);
   };
 
-  const handleGenerateNarrative = async () => {
+  const handleGenerateNarrative = async (force = false) => {
     setNarrativeGenerating(true);
     setNarrativeError(null);
     try {
+      const lang = i18n.language?.startsWith("de") ? "de" : "en";
       const res = await fetch(`/api/tastings/${tasting.id}/ai-narrative`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-participant-id": pid },
+        body: JSON.stringify({ language: lang, force }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -2295,7 +2297,7 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
             </div>
             <button
               type="button"
-              onClick={handleGenerateNarrative}
+              onClick={() => handleGenerateNarrative(true)}
               disabled={narrativeGenerating}
               style={{
                 marginTop: 14,

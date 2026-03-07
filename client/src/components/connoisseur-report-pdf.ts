@@ -277,15 +277,15 @@ export function generateConnoisseurReportPdf(options: ConnoisseurPdfOptions): vo
     doc.setFontSize(8.5);
 
     const metricLabels: Record<string, Record<string, string>> = {
-      ratingsCount: { en: "Total Ratings", de: "Bewertungen gesamt" },
-      avgScore: { en: "Average Score", de: "Durchschnittsbewertung" },
+      totalRatings: { en: "Total Ratings", de: "Bewertungen gesamt" },
+      totalTastings: { en: "Total Tastings", de: "Tastings gesamt" },
+      totalJournalEntries: { en: "Journal Entries", de: "Tagebucheinträge" },
       topRegion: { en: "Top Region", de: "Top-Region" },
       collectionSize: { en: "Collection Size", de: "Sammlungsgröße" },
-      journalCount: { en: "Journal Entries", de: "Tagebucheinträge" },
-      smokeAffinity: { en: "Smoke Affinity", de: "Rauch-Affinität" },
+      smokeAffinityIndex: { en: "Smoke Affinity", de: "Rauch-Affinität" },
       sweetnessBias: { en: "Sweetness Bias", de: "Süße-Neigung" },
       explorationIndex: { en: "Exploration Index", de: "Erkundungsindex" },
-      ratingStability: { en: "Rating Stability", de: "Bewertungsstabilität" },
+      ratingStabilityScore: { en: "Rating Stability", de: "Bewertungsstabilität" },
     };
 
     const colW = contentW / 2;

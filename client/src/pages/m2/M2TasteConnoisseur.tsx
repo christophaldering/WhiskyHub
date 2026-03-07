@@ -151,8 +151,8 @@ function SkeletonLoader({ message }: { message: string }) {
 function SnapshotComparison({ latest, previous }: { latest: Record<string, any>; previous: Record<string, any> }) {
   const { t } = useTranslation();
   const keys = [
-    { key: "ratingsCount", label: "Ratings" },
-    { key: "avgScore", label: "Avg Score" },
+    { key: "totalRatings", label: "Ratings" },
+    { key: "totalTastings", label: "Tastings" },
     { key: "topRegion", label: "Top Region" },
     { key: "collectionSize", label: "Collection" },
   ];

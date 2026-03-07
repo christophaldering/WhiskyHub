@@ -3389,17 +3389,25 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
   app.post("/api/tastings/:id/ai-narrative", async (req, res) => {
     try {
       if (await isAIDisabled("ai_narrative")) return res.status(503).json({ message: "AI feature disabled by admin" });
-      const { language } = req.body;
+      const requesterId = req.headers["x-participant-id"] as string | undefined;
+      if (!requesterId) return res.status(401).json({ message: "Missing participant ID" });
+      const { language, force } = req.body;
       const lang = language === "de" ? "German" : "English";
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester) return res.status(401).json({ message: "Unknown participant" });
+      if (tasting.hostId !== requesterId && requester.role !== "admin") {
+        return res.status(403).json({ message: "Only the host or admin can generate narratives" });
+      }
 
       const allowedStatuses = ["closed", "reveal", "archived"];
       if (!allowedStatuses.includes(tasting.status)) {
         return res.status(400).json({ message: "Narrative can only be generated for closed, revealed, or archived tastings" });
       }
 
-      if (tasting.aiNarrative) {
+      if (tasting.aiNarrative && !force) {
         return res.json({ narrative: tasting.aiNarrative, cached: true });
       }
 
