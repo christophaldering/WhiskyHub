@@ -212,7 +212,6 @@ export default function M2TastingsSolo() {
   const [barcodeManual, setBarcodeManual] = useState("");
   const [barcodeStatus, setBarcodeStatus] = useState<"scanning" | "looking_up" | "not_found" | "error" | "camera_error">("scanning");
   const [barcodeError, setBarcodeError] = useState("");
-  const [barcodeConfidence, setBarcodeConfidence] = useState<"high" | "low" | "">("");
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const barcodeProcessedRef = useRef(false);
@@ -487,7 +486,6 @@ export default function M2TastingsSolo() {
         setBarcodeStatus("error"); setBarcodeError(t("m2.solo.lookupFailed", "Lookup failed")); barcodeProcessedRef.current = false; return;
       }
       const data = await res.json();
-      setBarcodeConfidence(data.confidence || "low");
       if (data.name) setWhiskyName(data.name);
       if (data.distillery) setDistillery(data.distillery);
       if (data.age) setUnknownAge(String(data.age));
@@ -874,16 +872,7 @@ export default function M2TastingsSolo() {
 
             {showManual && (
               <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 14 }} data-testid="section-manual">
-                {barcodeConfidence === "low" && (
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    background: "rgba(212,162,86,0.12)", border: "1px solid rgba(212,162,86,0.3)",
-                    borderRadius: 10, padding: "8px 12px", fontSize: 12, color: v.accent, fontWeight: 500,
-                  }} data-testid="text-ai-guess-disclaimer">
-                    ⚠️ {t("m2.solo.aiGuessDisclaimer", "AI estimate — please verify the details")}
-                  </div>
-                )}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: 11, fontWeight: 500, color: v.accent, background: alpha(v.accent, "18"), padding: "3px 10px", borderRadius: 20 }}>✎ {t("m2.solo.manualEntry", "Manual entry")}</span>
                   <button type="button" onClick={() => setShowManual(false)} style={{ background: "none", border: "none", cursor: "pointer", color: v.muted, fontSize: 11, fontFamily: "system-ui, sans-serif" }} data-testid="button-hide-manual">{t("m2.solo.collapse", "Collapse")}</button>
                 </div>
@@ -1421,11 +1410,28 @@ export default function M2TastingsSolo() {
           )}
 
           {barcodeStatus === "not_found" && (
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 20 }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 20 }}>
               <p style={{ fontSize: 40, margin: 0 }}>🔍</p>
-              <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>{t("m2.solo.barcodeNotFound", "Not found")}: {barcodeError}</p>
-              <button onClick={() => { setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setTimeout(() => startBarcodeScanner(), 200); }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }}>{t("m2.solo.tryAgain", "Try again")}</button>
-              <button onClick={() => { stopBarcodeScanner(); setSheetView("none"); }} style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui" }}>{t("m2.solo.cancel", "Cancel")}</button>
+              <p style={{ fontSize: 15, fontWeight: 600, color: v.text, textAlign: "center", margin: 0 }}>
+                {t("m2.solo.barcodeNotInDb", "Barcode not in our database")}
+              </p>
+              <p style={{ fontSize: 12, color: v.muted, margin: 0, textAlign: "center" }}>
+                {barcodeError}
+              </p>
+              <button
+                onClick={() => { stopBarcodeScanner(); setSheetView("none"); setShowManual(true); }}
+                style={{ ...btnPrimary, width: "auto", padding: "12px 28px", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}
+                data-testid="button-barcode-enter-manually"
+              >
+                ✎ {t("m2.solo.orEnterManually", "Or enter details manually")}
+              </button>
+              <button
+                onClick={() => { setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setTimeout(() => startBarcodeScanner(), 200); }}
+                style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui", textDecoration: "underline" }}
+                data-testid="button-barcode-retry"
+              >
+                {t("m2.solo.tryAgain", "Try again")}
+              </button>
             </div>
           )}
 
