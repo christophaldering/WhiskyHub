@@ -47,7 +47,7 @@ export default function M2TastingsHome() {
     pid: currentParticipant?.id || rawSession.pid,
   };
 
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [viewMode, setViewMode] = useState<ViewMode>("calendar");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
 
