@@ -8,7 +8,7 @@ import { participantApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import {
-  Camera, PenLine, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ArrowLeft
+  Camera, PenLine, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ArrowLeft, Plus, Trash2, Clock, Wine
 } from "lucide-react";
 import M2RatingPanel from "@/components/m2/M2RatingPanel";
 import type { DimKey } from "@/components/m2/M2RatingPanel";
@@ -171,6 +171,11 @@ export default function M2TastingsSolo() {
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [finalizedAt, setFinalizedAt] = useState<string | null>(null);
+  const [soloView, setSoloView] = useState<"hub" | "editor">("hub");
+  const [hubDrafts, setHubDrafts] = useState<any[]>([]);
+  const [hubLoading, setHubLoading] = useState(true);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
 
   const [showManual, setShowManual] = useState(false);
   const [unknownAge, setUnknownAge] = useState("");
@@ -207,48 +212,91 @@ export default function M2TastingsSolo() {
     return () => window.removeEventListener("online", trySync);
   }, []);
 
-  useEffect(() => {
-    if (!unlocked || !pid) return;
-    const checkDraft = async () => {
-      try {
-        const res = await fetch(`/api/journal/${pid}?status=draft`, {
-          headers: { "x-participant-id": pid },
-        });
-        if (!res.ok) return;
-        const drafts = await res.json();
-        if (drafts.length > 0) {
-          const sorted = [...drafts].sort((a: any, b: any) =>
-            new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()
-          );
-          const d = sorted[0];
-          setDraftStatus("resumePrompt");
-          setDraftEntryId(d.id);
-          localStorage.setItem("m2_draft_data", JSON.stringify(d));
-        }
-      } catch {}
-    };
-    checkDraft();
-  }, [unlocked, pid]);
-
-  const loadDraftIntoForm = useCallback(() => {
+  const fetchHubDrafts = useCallback(async () => {
+    if (!unlocked || !pid) { setHubLoading(false); return; }
+    setHubLoading(true);
     try {
-      const raw = localStorage.getItem("m2_draft_data");
-      if (!raw) return;
-      const d = JSON.parse(raw);
+      const res = await fetch(`/api/journal/${pid}?status=draft`, {
+        headers: { "x-participant-id": pid },
+      });
+      if (!res.ok) { setHubLoading(false); return; }
+      const drafts = await res.json();
+      const sorted = [...drafts].sort((a: any, b: any) =>
+        new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()
+      );
+      setHubDrafts(sorted);
+      if (sorted.length === 0 && soloView === "hub" && draftStatus === "idle") {
+        setSoloView("editor");
+      }
+    } catch {}
+    setHubLoading(false);
+  }, [unlocked, pid, soloView, draftStatus]);
+
+  useEffect(() => {
+    fetchHubDrafts();
+  }, [fetchHubDrafts]);
+
+  const loadDraftIntoForm = useCallback((entry?: any) => {
+    try {
+      const d = entry || (() => { const raw = localStorage.getItem("m2_draft_data"); return raw ? JSON.parse(raw) : null; })();
+      if (!d) return;
       if (d.whiskyName) setWhiskyName(d.whiskyName);
       if (d.distillery) setDistillery(d.distillery);
       if (d.personalScore != null) setScore(d.personalScore);
       if (d.noseNotes) {
         const cleaned = d.noseNotes.replace(/\n\[SCORES\][\s\S]*$/, "").trim();
         setNotes(cleaned);
+
+        const scoresMatch = d.noseNotes.match(/\[SCORES\]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)\s*Balance:(\d+)\s*\[\/SCORES\]/);
+        if (scoresMatch) {
+          const parsed = { nose: parseInt(scoresMatch[1]), taste: parseInt(scoresMatch[2]), finish: parseInt(scoresMatch[3]), balance: parseInt(scoresMatch[4]) };
+          setDetailedScores(parsed);
+          setDetailTouched(true);
+        }
+
+        const dims: DimKey[] = ["nose", "taste", "finish", "balance"];
+        const restoredChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
+        const restoredTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
+        for (const dim of dims) {
+          const tag = dim.toUpperCase();
+          const dimMatch = d.noseNotes.match(new RegExp(`\\[${tag}\\]\\s*(.+?)\\s*\\[\\/${tag}\\]`));
+          if (dimMatch) {
+            const content = dimMatch[1];
+            const parts = content.split(" — ");
+            if (parts.length >= 2) {
+              restoredChips[dim] = parts[0].split(",").map((c: string) => c.trim()).filter(Boolean);
+              restoredTexts[dim] = parts[1];
+            } else if (parts[0].includes(",")) {
+              restoredChips[dim] = parts[0].split(",").map((c: string) => c.trim()).filter(Boolean);
+            } else {
+              restoredTexts[dim] = parts[0];
+            }
+          }
+        }
+        const hasAnyChipOrText = dims.some(dim => restoredChips[dim].length > 0 || restoredTexts[dim]);
+        if (hasAnyChipOrText) {
+          setDetailChips(restoredChips);
+          setDetailTexts(restoredTexts);
+        }
       }
-      if (d.age) setUnknownAge(d.age);
-      if (d.abv) setUnknownAbv(d.abv);
+      if (d.age) setUnknownAge(String(d.age));
+      if (d.abv) setUnknownAbv(String(d.abv));
       if (d.caskType) setUnknownCask(d.caskType);
-      if (d.whiskybaseId) setUnknownWbId(d.whiskybaseId);
+      if (d.whiskybaseId) setUnknownWbId(String(d.whiskybaseId));
       if (d.imageUrl) setPhotoUrl(d.imageUrl);
+      if (d.voiceMemoUrl || d.voiceMemoTranscript) {
+        setSoloVoiceMemo({
+          audioUrl: d.voiceMemoUrl || null,
+          transcript: d.voiceMemoTranscript || "",
+          durationSeconds: d.voiceMemoDuration || 0,
+        });
+      }
       setShowManual(true);
+      setDraftEntryId(d.id);
+      draftEntryIdRef.current = d.id;
       setDraftStatus("active");
+      setLastSavedTime(d.updatedAt || d.createdAt || null);
+      setSoloView("editor");
       localStorage.removeItem("m2_draft_data");
     } catch {}
   }, []);
@@ -317,6 +365,7 @@ export default function M2TastingsSolo() {
         });
         if (res.ok) {
           setAutoSaveStatus("saved");
+          setLastSavedTime(new Date().toISOString());
           setTimeout(() => setAutoSaveStatus("idle"), 2000);
         }
       } else {
@@ -331,6 +380,7 @@ export default function M2TastingsSolo() {
           draftEntryIdRef.current = created.id;
           setDraftStatus("active");
           setAutoSaveStatus("saved");
+          setLastSavedTime(new Date().toISOString());
           setTimeout(() => setAutoSaveStatus("idle"), 2000);
         }
       }
@@ -841,7 +891,7 @@ export default function M2TastingsSolo() {
     }
   };
 
-  const handleReset = () => {
+  const handleReset = (goToHub = false) => {
     setWhiskyName("");
     setDistillery("");
     setScore(50);
@@ -870,7 +920,33 @@ export default function M2TastingsSolo() {
     setDraftStatus("idle");
     setAutoSaveStatus("idle");
     setFinalizedAt(null);
+    setLastSavedTime(null);
+    setDeleteConfirmId(null);
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    if (goToHub) {
+      setSoloView("hub");
+      fetchHubDrafts();
+    }
+  };
+
+  const handleDeleteDraft = async (entryId: string) => {
+    if (!pid) return;
+    try {
+      await fetch(`/api/journal/${pid}/${entryId}`, {
+        method: "DELETE",
+        headers: { "x-participant-id": pid },
+      });
+    } catch {}
+    setDeleteConfirmId(null);
+    if (draftEntryId === entryId) {
+      handleReset(true);
+    } else {
+      fetchHubDrafts();
+    }
+  };
+
+  const handleBackToHub = () => {
+    handleReset(true);
   };
 
   const handleUnlocked = (name: string, participantId?: string) => {
@@ -884,36 +960,144 @@ export default function M2TastingsSolo() {
 
   const hasWhisky = !!(whiskyName.trim() && (selectedCandidate || showManual));
 
-  if (draftStatus === "resumePrompt") {
+  const formatRelativeTime = (isoString: string) => {
+    const diff = Date.now() - new Date(isoString).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return t("m2.solo.lastSaved", { defaultValue: "Saved {{time}}", time: "just now" });
+    if (mins < 60) return t("m2.solo.lastSaved", { defaultValue: "Saved {{time}}", time: `${mins}m ago` });
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return t("m2.solo.lastSaved", { defaultValue: "Saved {{time}}", time: `${hours}h ago` });
+    return t("m2.solo.lastSaved", { defaultValue: "Saved {{time}}", time: new Date(isoString).toLocaleDateString() });
+  };
+
+  if (soloView === "hub") {
     return (
       <div style={{ padding: "16px" }} data-testid="m2-solo-page">
         <M2BackButton />
-        <div style={{ textAlign: "center", padding: "40px 0 20px" }}>
-          <div style={{ width: 56, height: 56, borderRadius: "50%", background: alpha(v.accent, "20"), display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-            <PenLine style={{ width: 28, height: 28, color: v.accent }} />
+        <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 24, fontWeight: 700, color: v.text, margin: "16px 0 4px" }} data-testid="text-hub-title">
+          {t("m2.solo.hubTitle", "Your Drams")}
+        </h1>
+        <p style={{ fontSize: 14, color: v.textSecondary, marginBottom: 20 }}>
+          {t("m2.solo.subtitle", "Log a whisky on your own — take notes, rate, and remember.")}
+        </p>
+
+        <button
+          onClick={() => { handleReset(); setSoloView("editor"); }}
+          style={{
+            ...btnPrimary,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            width: "100%", marginBottom: 24, padding: "14px 20px", fontSize: 16,
+          }}
+          data-testid="button-new-dram"
+        >
+          <Plus style={{ width: 20, height: 20 }} />
+          {t("m2.solo.newDram", "Log new dram")}
+        </button>
+
+        {hubLoading ? (
+          <div style={{ textAlign: "center", padding: "32px 0" }}>
+            <Loader2 style={{ width: 24, height: 24, color: v.mutedLight, animation: "m2spin 1s linear infinite" }} />
           </div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: v.text, margin: "0 0 4px", fontFamily: "'Playfair Display', Georgia, serif" }} data-testid="text-resume-title">
-            {t("m2.solo.resumeDraft", "Continue previous tasting?")}
-          </h2>
-          <p style={{ fontSize: 14, color: v.textSecondary, margin: "0 0 28px" }} data-testid="text-resume-name">
-            {(() => { try { const d = JSON.parse(localStorage.getItem("m2_draft_data") || "{}"); return d.whiskyName || ""; } catch { return ""; } })()}
-          </p>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={loadDraftIntoForm} style={btnPrimary} data-testid="button-resume-yes">
-              {t("m2.solo.resumeYes", "Continue")}
-            </button>
-            <button onClick={() => {
-              if (draftEntryId && pid) {
-                fetch(`/api/journal/${pid}/${draftEntryId}`, { method: "DELETE", headers: { "x-participant-id": pid } }).catch(() => {});
-              }
-              localStorage.removeItem("m2_draft_data");
-              setDraftEntryId(null);
-              setDraftStatus("idle");
-            }} style={btnOutline} data-testid="button-resume-no">
-              {t("m2.solo.resumeNo", "Start new")}
-            </button>
+        ) : hubDrafts.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "32px 16px", color: v.mutedLight, fontSize: 14 }} data-testid="text-no-drafts">
+            {t("m2.solo.noDrafts", "No open drafts — start a new one!")}
           </div>
-        </div>
+        ) : (
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: v.mutedLight, marginBottom: 10 }}>
+              {t("m2.solo.openDrafts", "Open drafts")}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {hubDrafts.map((draft: any) => (
+                <div
+                  key={draft.id}
+                  style={{
+                    background: v.card, border: `1px solid ${v.border}`, borderRadius: 14,
+                    padding: "14px 16px", display: "flex", alignItems: "center", gap: 12,
+                  }}
+                  data-testid={`card-draft-${draft.id}`}
+                >
+                  {draft.imageUrl ? (
+                    <img src={draft.imageUrl} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", border: `1px solid ${v.border}`, flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 44, height: 44, borderRadius: 8, background: alpha(v.accent, "12"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Wine style={{ width: 20, height: 20, color: v.accent }} />
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: v.text, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {draft.whiskyName || "—"}
+                    </div>
+                    {draft.distillery && (
+                      <div style={{ fontSize: 12, color: v.mutedLight, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {draft.distillery}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
+                      <Clock style={{ width: 10, height: 10 }} />
+                      {draft.updatedAt || draft.createdAt
+                        ? new Date(draft.updatedAt || draft.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+                        : ""}
+                      {draft.personalScore != null && (
+                        <span style={{ marginLeft: 8, fontWeight: 600, color: v.accent }}>{draft.personalScore}/100</span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                    <button
+                      onClick={() => loadDraftIntoForm(draft)}
+                      style={{
+                        background: v.accent, color: "#fff", border: "none", borderRadius: 8,
+                        padding: "7px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                        fontFamily: "system-ui, sans-serif",
+                      }}
+                      data-testid={`button-continue-draft-${draft.id}`}
+                    >
+                      {t("m2.solo.continueDraft", "Continue")}
+                    </button>
+                    {deleteConfirmId === draft.id ? (
+                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                        <button
+                          onClick={() => handleDeleteDraft(draft.id)}
+                          style={{
+                            background: v.danger, color: "#fff", border: "none", borderRadius: 8,
+                            padding: "7px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                            fontFamily: "system-ui, sans-serif",
+                          }}
+                          data-testid={`button-confirm-delete-${draft.id}`}
+                        >
+                          {t("m2.solo.deleteDraft", "Delete draft")}
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmId(null)}
+                          style={{
+                            background: "none", border: `1px solid ${v.border}`, borderRadius: 8,
+                            padding: "7px 10px", fontSize: 12, cursor: "pointer", color: v.textSecondary,
+                            fontFamily: "system-ui, sans-serif",
+                          }}
+                          data-testid={`button-cancel-delete-${draft.id}`}
+                        >
+                          {t("m2.solo.cancel", "Cancel")}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setDeleteConfirmId(draft.id)}
+                        style={{
+                          background: "none", border: `1px solid ${v.border}`, borderRadius: 8,
+                          padding: "7px 8px", cursor: "pointer", display: "flex", alignItems: "center",
+                        }}
+                        data-testid={`button-delete-draft-${draft.id}`}
+                      >
+                        <Trash2 style={{ width: 14, height: 14, color: v.mutedLight }} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -936,16 +1120,12 @@ export default function M2TastingsSolo() {
             </p>
           )}
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={handleReset} style={btnPrimary} data-testid="m2-solo-again">
-              {t("m2.solo.newDram", "Log new dram")}
+            <button onClick={() => handleReset()} style={btnPrimary} data-testid="m2-solo-again">
+              {t("m2.solo.startNewAfterFinish", "Start new dram")}
             </button>
-            {draftEntryId && (
-              <Link href={`/m2/taste/drams?edit=${draftEntryId}`} style={{ flex: 1, textDecoration: "none" }}>
-                <div style={{ ...btnOutline, textAlign: "center" }} data-testid="button-continue-editing">
-                  {t("m2.solo.continueEditing", "Continue editing")}
-                </div>
-              </Link>
-            )}
+            <button onClick={() => handleReset(true)} style={btnOutline} data-testid="button-to-overview">
+              {t("m2.solo.toOverview", "To overview")}
+            </button>
           </div>
         </div>
       </div>
@@ -965,14 +1145,12 @@ export default function M2TastingsSolo() {
           </h2>
           <p style={{ fontSize: 14, color: v.textSecondary, margin: "0 0 28px" }} data-testid="text-saved-name">{whiskyName}</p>
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={handleReset} style={btnPrimary} data-testid="m2-solo-again">
+            <button onClick={() => handleReset()} style={btnPrimary} data-testid="m2-solo-again">
               {t("m2.solo.logAnother", "Log another dram")}
             </button>
-            <Link href="/m2/taste/drams" style={{ flex: 1, textDecoration: "none" }}>
-              <div style={{ ...btnOutline, textAlign: "center" }} data-testid="button-goto-drams">
-                {t("m2.solo.myDrams", "Drams")}
-              </div>
-            </Link>
+            <button onClick={() => handleReset(true)} style={btnOutline} data-testid="button-to-overview">
+              {t("m2.solo.toOverview", "To overview")}
+            </button>
           </div>
         </div>
       </div>
@@ -986,7 +1164,91 @@ export default function M2TastingsSolo() {
       <input ref={uploadInputRef} type="file" accept="image/*" multiple onChange={handleUploadChange} style={{ display: "none" }} data-testid="input-upload" />
       <input ref={fileInputRef} type="file" accept=".xlsx,.csv,.pdf,.docx,text/csv" onChange={handleFileUpload} style={{ display: "none" }} data-testid="input-file-upload" />
 
-      <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 24, fontWeight: 700, color: v.text, margin: "16px 0 4px" }} data-testid="text-m2-solo-title">
+      {/* Action Bar */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        margin: "12px 0 8px", gap: 8,
+      }} data-testid="editor-action-bar">
+        <button
+          onClick={handleBackToHub}
+          style={{
+            background: "none", border: "none", cursor: "pointer", color: v.accent,
+            display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 600,
+            fontFamily: "system-ui, sans-serif", padding: "4px 0",
+          }}
+          data-testid="button-back-to-hub"
+        >
+          <ArrowLeft style={{ width: 16, height: 16 }} />
+          {t("m2.solo.backToOverview", "Back to overview")}
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {autoSaveStatus === "saving" && (
+            <span style={{ fontSize: 12, color: v.mutedLight, display: "flex", alignItems: "center", gap: 4 }} data-testid="text-autosave-saving">
+              <Loader2 style={{ width: 12, height: 12, animation: "m2spin 1s linear infinite" }} />
+              {t("m2.solo.autoSaving", "Saving...")}
+            </span>
+          )}
+          {autoSaveStatus === "saved" && (
+            <span style={{ fontSize: 12, color: v.success, display: "flex", alignItems: "center", gap: 4 }} data-testid="text-autosave-saved">
+              <Check style={{ width: 12, height: 12 }} />
+              {t("m2.solo.draftSaved", "Draft saved")}
+            </span>
+          )}
+          {autoSaveStatus === "idle" && lastSavedTime && (
+            <span style={{ fontSize: 11, color: v.mutedLight }} data-testid="text-last-saved">
+              {formatRelativeTime(lastSavedTime)}
+            </span>
+          )}
+          {draftEntryId && (
+            <button
+              onClick={() => setDeleteConfirmId(draftEntryId)}
+              style={{
+                background: "none", border: `1px solid ${v.border}`, borderRadius: 8,
+                padding: "5px 7px", cursor: "pointer", display: "flex", alignItems: "center",
+              }}
+              data-testid="button-delete-current-draft"
+            >
+              <Trash2 style={{ width: 14, height: 14, color: v.mutedLight }} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {deleteConfirmId && deleteConfirmId === draftEntryId && (
+        <div style={{
+          background: alpha(v.danger, "10"), border: `1px solid ${alpha(v.danger, "40")}`, borderRadius: 10,
+          padding: "10px 14px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between",
+          fontSize: 13, color: v.danger,
+        }} data-testid="delete-confirm-bar">
+          <span>{t("m2.solo.deleteDraftConfirm", "Delete this draft?")}</span>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              onClick={() => handleDeleteDraft(deleteConfirmId)}
+              style={{
+                background: v.danger, color: "#fff", border: "none", borderRadius: 8,
+                padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="button-confirm-delete-editor"
+            >
+              {t("m2.solo.deleteDraft", "Delete draft")}
+            </button>
+            <button
+              onClick={() => setDeleteConfirmId(null)}
+              style={{
+                background: "none", border: `1px solid ${v.border}`, borderRadius: 8,
+                padding: "5px 12px", fontSize: 12, cursor: "pointer", color: v.textSecondary,
+                fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="button-cancel-delete-editor"
+            >
+              {t("m2.solo.cancel", "Cancel")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 24, fontWeight: 700, color: v.text, margin: "4px 0 4px" }} data-testid="text-m2-solo-title">
         {t("m2.solo.title", "Solo")}
       </h1>
       <p style={{ fontSize: 14, color: v.textSecondary, marginBottom: 20 }}>
