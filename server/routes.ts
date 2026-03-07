@@ -1575,13 +1575,69 @@ export async function registerRoutes(
       }
 
       const queryText = query.trim();
-      console.log(`[SIMPLE_MODE][IDENTIFY-TEXT] query: "${queryText.substring(0, 100)}"`);
+      console.log(`[IDENTIFY-TEXT] query: "${queryText.substring(0, 100)}"`);
 
       const cacheKey = `text:${normalize(queryText)}`;
       const cached = identifyCache.get(cacheKey);
       if (cached) {
-        console.log("[SIMPLE_MODE][IDENTIFY-TEXT] cache hit");
+        console.log("[IDENTIFY-TEXT] cache hit");
         return res.json(cached);
+      }
+
+      try {
+        const openai = new OpenAI({
+          apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+          baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+        });
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          temperature: 0.1,
+          max_tokens: 500,
+          response_format: { type: "json_object" },
+          messages: [
+            {
+              role: "system",
+              content: `You are a whisky identification expert. Given a text description or name, identify the whisky. Return JSON:
+{"name": "full product name", "distillery": "distillery name", "age": "age or empty", "abv": "ABV% or empty", "caskType": "cask type or empty", "region": "region or empty", "confidence": "high/medium/low"}
+If the text is too vague to identify a specific whisky, return {"name": "", "confidence": "low"}.`,
+            },
+            { role: "user", content: queryText },
+          ],
+        });
+
+        const raw = completion.choices[0]?.message?.content || "{}";
+        const parsed = JSON.parse(raw);
+
+        if (parsed.name && parsed.confidence !== "low") {
+          const confMap: Record<string, number> = { high: 0.95, medium: 0.75, low: 0.45 };
+          const aiCandidate = {
+            source: "ai_text" as const,
+            name: parsed.name,
+            distillery: parsed.distillery || "",
+            confidence: confMap[parsed.confidence] || 0.45,
+            age: parsed.age || "",
+            abv: parsed.abv || "",
+            caskType: parsed.caskType || "",
+            region: parsed.region || "",
+            whiskyId: undefined as string | undefined,
+          };
+
+          const index = await getWhiskyIndex();
+          const hints = extractHints(queryText);
+          const localMatches = scoreWhiskies(queryText, hints, index);
+          if (localMatches.length > 0 && localMatches[0].confidence >= 0.4) {
+            aiCandidate.whiskyId = localMatches[0].whiskyId;
+          }
+
+          const tookMs = Date.now() - startMs;
+          console.log(`[IDENTIFY-TEXT] AI: "${parsed.name}" (${parsed.confidence}) in ${tookMs}ms`);
+          const result = { candidates: [aiCandidate], debug: { queryText: queryText.substring(0, 300), tookMs, detectedMode: "text" as const } };
+          identifyCache.set(cacheKey, result);
+          return res.json(result);
+        }
+      } catch (aiErr: any) {
+        console.warn("[IDENTIFY-TEXT] AI failed, falling back to local:", aiErr.message);
       }
 
       const hints = extractHints(queryText);
@@ -1594,22 +1650,13 @@ export async function registerRoutes(
       const lowConfidence = candidates.length === 0 || candidates[0].confidence < 0.15;
       const finalCandidates = lowConfidence ? [] : candidates;
       const tookMs = Date.now() - startMs;
-      console.log(`[SIMPLE_MODE][IDENTIFY-TEXT] returning ${finalCandidates.length} candidates in ${tookMs}ms`);
+      console.log(`[IDENTIFY-TEXT] local fallback: ${finalCandidates.length} candidates in ${tookMs}ms`);
 
-      const isDev = process.env.NODE_ENV !== "production" || process.env.SIMPLE_DEBUG === "true";
-      const debug = isDev ? {
-        queryText: queryText.substring(0, 300),
-        hints,
-        tookMs,
-        indexSize: index.length,
-        detectedMode: "text" as const,
-      } : undefined;
-
-      const result = { candidates: finalCandidates, debug };
+      const result = { candidates: finalCandidates, debug: { queryText: queryText.substring(0, 300), tookMs, detectedMode: "text" as const } };
       identifyCache.set(cacheKey, result);
       res.json(result);
     } catch (e: any) {
-      console.error("[SIMPLE_MODE][IDENTIFY-TEXT] error:", e.message);
+      console.error("[IDENTIFY-TEXT] error:", e.message);
       res.status(500).json({ message: e.message });
     }
   });
@@ -4936,7 +4983,8 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
       if (!requesterId || requesterId !== req.params.participantId) {
         return res.status(403).json({ message: "Forbidden" });
       }
-      const entries = await storage.getJournalEntries(req.params.participantId);
+      const statusFilter = req.query.status as string | undefined;
+      const entries = await storage.getJournalEntries(req.params.participantId, statusFilter);
       res.json(entries);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -5031,7 +5079,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
 
   app.patch("/api/journal/:participantId/:id", async (req, res) => {
     try {
-      const allowed = ["title", "whiskyName", "distillery", "region", "age", "abv", "caskType", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "mood", "occasion", "body", "imageUrl"];
+      const allowed = ["title", "whiskyName", "distillery", "region", "age", "abv", "caskType", "noseNotes", "tasteNotes", "finishNotes", "personalScore", "mood", "occasion", "body", "imageUrl", "status"];
       const textKeys = ["title", "whiskyName", "distillery", "noseNotes", "tasteNotes", "finishNotes", "body", "mood", "occasion"];
       const filtered: any = {};
       for (const key of allowed) {

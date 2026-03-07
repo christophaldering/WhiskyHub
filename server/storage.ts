@@ -165,7 +165,7 @@ export interface IStorage {
 
   // Journal Entries
   getAllJournalEntries(): Promise<JournalEntry[]>;
-  getJournalEntries(participantId: string): Promise<JournalEntry[]>;
+  getJournalEntries(participantId: string, statusFilter?: string): Promise<JournalEntry[]>;
   getJournalEntry(id: string, participantId: string): Promise<JournalEntry | undefined>;
   createJournalEntry(data: InsertJournalEntry): Promise<JournalEntry>;
   updateJournalEntry(id: string, participantId: string, data: Partial<InsertJournalEntry>): Promise<JournalEntry | undefined>;
@@ -833,8 +833,12 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(journalEntries).orderBy(desc(journalEntries.createdAt));
   }
 
-  async getJournalEntries(participantId: string): Promise<JournalEntry[]> {
-    return db.select().from(journalEntries).where(eq(journalEntries.participantId, participantId)).orderBy(asc(journalEntries.createdAt));
+  async getJournalEntries(participantId: string, statusFilter?: string): Promise<JournalEntry[]> {
+    const conditions = [eq(journalEntries.participantId, participantId)];
+    if (statusFilter) {
+      conditions.push(eq(journalEntries.status, statusFilter));
+    }
+    return db.select().from(journalEntries).where(and(...conditions)).orderBy(asc(journalEntries.createdAt));
   }
 
   async getJournalEntry(id: string, participantId: string): Promise<JournalEntry | undefined> {

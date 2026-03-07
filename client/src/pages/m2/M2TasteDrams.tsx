@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -45,12 +45,26 @@ export default function M2TasteDrams() {
   const [editForm, setEditForm] = useState<Record<string, any>>({});
   const [deleteTarget, setDeleteTarget] = useState<JournalEntry | null>(null);
   const [search, setSearch] = useState("");
+  const [deepLinkHandled, setDeepLinkHandled] = useState(false);
 
   const { data: journal = [], isLoading, isError, refetch } = useQuery<JournalEntry[]>({
     queryKey: ["journal", session.pid],
     queryFn: () => journalApi.getAll(session.pid!),
     enabled: !!session.pid,
   });
+
+  useEffect(() => {
+    if (deepLinkHandled || isLoading || journal.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get("edit");
+    if (editId) {
+      const entry = journal.find((e: JournalEntry) => e.id === editId);
+      if (entry) {
+        handleEdit(entry);
+        setDeepLinkHandled(true);
+      }
+    }
+  }, [journal, isLoading, deepLinkHandled]);
 
   const { data: tastingHistory } = useQuery({
     queryKey: ["tasting-history", session.pid],

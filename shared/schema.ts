@@ -260,6 +260,7 @@ export const journalEntries = pgTable("journal_entries", {
   voiceMemoUrl: text("voice_memo_url"),
   voiceMemoTranscript: text("voice_memo_transcript"),
   voiceMemoDuration: integer("voice_memo_duration"),
+  status: text("status").default("final").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -106,7 +106,7 @@ interface Candidate {
   distillery: string;
   confidence: number;
   whiskyId?: string;
-  source?: "local" | "external" | "ai_vision";
+  source?: "local" | "external" | "ai_vision" | "ai_text";
   externalUrl?: string;
   age?: string;
   abv?: string;
@@ -165,6 +165,12 @@ export default function M2TastingsSolo() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
+  const [draftEntryId, setDraftEntryId] = useState<string | null>(null);
+  const [draftStatus, setDraftStatus] = useState<"idle" | "resumePrompt" | "active" | "finalized">("idle");
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [finalizedAt, setFinalizedAt] = useState<string | null>(null);
+
   const [showManual, setShowManual] = useState(false);
   const [unknownAge, setUnknownAge] = useState("");
   const [unknownAbv, setUnknownAbv] = useState("");
@@ -198,6 +204,144 @@ export default function M2TastingsSolo() {
     window.addEventListener("online", trySync);
     return () => window.removeEventListener("online", trySync);
   }, []);
+
+  useEffect(() => {
+    if (!unlocked || !pid) return;
+    const checkDraft = async () => {
+      try {
+        const res = await fetch(`/api/journal/${pid}?status=draft`, {
+          headers: { "x-participant-id": pid },
+        });
+        if (!res.ok) return;
+        const drafts = await res.json();
+        if (drafts.length > 0) {
+          setDraftStatus("resumePrompt");
+          setDraftEntryId(drafts[0].id);
+          const d = drafts[0];
+          localStorage.setItem("m2_draft_data", JSON.stringify(d));
+        }
+      } catch {}
+    };
+    checkDraft();
+  }, [unlocked, pid]);
+
+  const loadDraftIntoForm = useCallback(() => {
+    try {
+      const raw = localStorage.getItem("m2_draft_data");
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.whiskyName) setWhiskyName(d.whiskyName);
+      if (d.distillery) setDistillery(d.distillery);
+      if (d.personalScore != null) setScore(d.personalScore);
+      if (d.noseNotes) {
+        const cleaned = d.noseNotes.replace(/\n\[SCORES\][\s\S]*$/, "").trim();
+        setNotes(cleaned);
+      }
+      if (d.age) setUnknownAge(d.age);
+      if (d.abv) setUnknownAbv(d.abv);
+      if (d.caskType) setUnknownCask(d.caskType);
+      if (d.whiskybaseId) setUnknownWbId(d.whiskybaseId);
+      if (d.imageUrl) setPhotoUrl(d.imageUrl);
+      setShowManual(true);
+      setDraftStatus("active");
+      localStorage.removeItem("m2_draft_data");
+    } catch {}
+  }, []);
+
+  const buildScoresBlock = useCallback(() => {
+    const hasChipsOrTexts = (["nose", "taste", "finish", "balance"] as DimKey[]).some(
+      (d) => detailChips[d].length > 0 || detailTexts[d].trim()
+    );
+    if (!detailTouched && !hasChipsOrTexts) return "";
+    const parts = [`\n[SCORES] Nose:${detailedScores.nose} Taste:${detailedScores.taste} Finish:${detailedScores.finish} Balance:${detailedScores.balance} [/SCORES]`];
+    const dims: DimKey[] = ["nose", "taste", "finish", "balance"];
+    for (const d of dims) {
+      const chipStr = detailChips[d].length > 0 ? detailChips[d].join(", ") : "";
+      const textStr = detailTexts[d].trim();
+      if (chipStr || textStr) {
+        parts.push(`[${d.toUpperCase()}] ${[chipStr, textStr].filter(Boolean).join(" — ")} [/${d.toUpperCase()}]`);
+      }
+    }
+    return parts.join("\n");
+  }, [detailChips, detailTexts, detailTouched, detailedScores]);
+
+  const buildDraftBodyRef = useRef<() => Record<string, any>>(() => ({}));
+  buildDraftBodyRef.current = () => {
+    const scoresBlock = buildScoresBlock();
+    const body: Record<string, any> = {
+      title: whiskyName.trim(),
+      whiskyName: whiskyName.trim(),
+      distillery: distillery.trim() || undefined,
+      personalScore: score,
+      noseNotes: (notes.trim() + scoresBlock).trim() || undefined,
+      source: "casksense",
+      imageUrl: photoUrl || undefined,
+      status: "draft",
+    };
+    if (unknownAge.trim()) body.age = unknownAge.trim();
+    if (unknownAbv.trim()) body.abv = unknownAbv.trim();
+    if (unknownCask.trim()) body.caskType = unknownCask.trim();
+    if (unknownWbId.trim()) body.whiskybaseId = unknownWbId.trim();
+    if (soloVoiceMemo) {
+      if (soloVoiceMemo.audioUrl) body.voiceMemoUrl = soloVoiceMemo.audioUrl;
+      if (soloVoiceMemo.transcript) body.voiceMemoTranscript = soloVoiceMemo.transcript;
+      if (soloVoiceMemo.durationSeconds) body.voiceMemoDuration = soloVoiceMemo.durationSeconds;
+    }
+    return body;
+  };
+
+  const buildDraftBody = () => buildDraftBodyRef.current();
+
+  const draftEntryIdRef = useRef(draftEntryId);
+  draftEntryIdRef.current = draftEntryId;
+
+  const autoSaveDraft = useCallback(async () => {
+    if (!unlocked || !pid || !whiskyName.trim()) return;
+    setAutoSaveStatus("saving");
+    try {
+      const body = buildDraftBodyRef.current();
+      const entryId = draftEntryIdRef.current;
+      if (entryId) {
+        const res = await fetch(`/api/journal/${pid}/${entryId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", "x-participant-id": pid },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          setAutoSaveStatus("saved");
+          setTimeout(() => setAutoSaveStatus("idle"), 2000);
+        }
+      } else {
+        const res = await fetch(`/api/journal/${pid}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-participant-id": pid },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          const created = await res.json();
+          setDraftEntryId(created.id);
+          draftEntryIdRef.current = created.id;
+          setDraftStatus("active");
+          setAutoSaveStatus("saved");
+          setTimeout(() => setAutoSaveStatus("idle"), 2000);
+        }
+      }
+    } catch {
+      setAutoSaveStatus("idle");
+    }
+  }, [unlocked, pid, whiskyName]);
+
+  useEffect(() => {
+    if (draftStatus !== "active" && draftStatus !== "idle") return;
+    if (!whiskyName.trim() || !unlocked || !pid) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      autoSaveDraft();
+    }, 2000);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [whiskyName, distillery, score, notes, unknownAge, unknownAbv, unknownCask, unknownWbId, draftStatus, unlocked, pid]);
 
   const [scanning, setScanning] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -605,22 +749,6 @@ export default function M2TastingsSolo() {
     }
   };
 
-  const buildScoresBlock = () => {
-    const hasChipsOrTexts = (["nose", "taste", "finish", "balance"] as DimKey[]).some(
-      (d) => detailChips[d].length > 0 || detailTexts[d].trim()
-    );
-    if (!detailTouched && !hasChipsOrTexts) return "";
-    const parts = [`\n[SCORES] Nose:${detailedScores.nose} Taste:${detailedScores.taste} Finish:${detailedScores.finish} Balance:${detailedScores.balance} [/SCORES]`];
-    const dims: DimKey[] = ["nose", "taste", "finish", "balance"];
-    for (const d of dims) {
-      const chipStr = detailChips[d].length > 0 ? detailChips[d].join(", ") : "";
-      const textStr = detailTexts[d].trim();
-      if (chipStr || textStr) {
-        parts.push(`[${d.toUpperCase()}] ${[chipStr, textStr].filter(Boolean).join(" — ")} [/${d.toUpperCase()}]`);
-      }
-    }
-    return parts.join("\n");
-  };
 
   const persistLocal = () => {
     try {
@@ -644,7 +772,7 @@ export default function M2TastingsSolo() {
     } catch {}
   };
 
-  const handleSave = async () => {
+  const handleFinalize = async () => {
     if (!whiskyName.trim()) return;
 
     if (!unlocked || !pid) {
@@ -655,40 +783,41 @@ export default function M2TastingsSolo() {
 
     setSaving(true);
     setError("");
-    const scoresBlock = buildScoresBlock();
-    const body: Record<string, any> = {
-      title: whiskyName.trim(),
-      whiskyName: whiskyName.trim(),
-      distillery: distillery.trim() || undefined,
-      personalScore: score,
-      noseNotes: (notes.trim() + scoresBlock).trim() || undefined,
-      source: "casksense",
-      imageUrl: photoUrl || undefined,
-    };
-
-    if (unknownAge.trim()) body.age = unknownAge.trim();
-    if (unknownAbv.trim()) body.abv = unknownAbv.trim();
-    if (unknownCask.trim()) body.caskType = unknownCask.trim();
-    if (unknownWbId.trim()) body.whiskybaseId = unknownWbId.trim();
-    if (soloVoiceMemo) {
-      if (soloVoiceMemo.audioUrl) body.voiceMemoUrl = soloVoiceMemo.audioUrl;
-      if (soloVoiceMemo.transcript) body.voiceMemoTranscript = soloVoiceMemo.transcript;
-      if (soloVoiceMemo.durationSeconds) body.voiceMemoDuration = soloVoiceMemo.durationSeconds;
-    }
 
     try {
-      const res = await fetch(`/api/journal/${pid}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error("Save failed");
+      const body = buildDraftBody();
+      body.status = "final";
+
+      if (draftEntryId) {
+        const res = await fetch(`/api/journal/${pid}/${draftEntryId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", "x-participant-id": pid },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error("Finalize failed");
+      } else {
+        const res = await fetch(`/api/journal/${pid}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-participant-id": pid },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error("Save failed");
+        const created = await res.json();
+        setDraftEntryId(created.id);
+      }
+
       queryClient.invalidateQueries({ queryKey: ["journal"] });
+      setFinalizedAt(new Date().toLocaleString());
+      setDraftStatus("finalized");
       setSaved(true);
     } catch {
       persistLocal();
-      addToOfflineQueue({ pid: pid!, body, timestamp: new Date().toISOString() });
-      setOfflineCount(getOfflineQueue().length);
+      if (pid) {
+        const body = buildDraftBody();
+        body.status = "final";
+        addToOfflineQueue({ pid, body, timestamp: new Date().toISOString() });
+        setOfflineCount(getOfflineQueue().length);
+      }
       setSaved(true);
     } finally {
       setSaving(false);
@@ -711,7 +840,6 @@ export default function M2TastingsSolo() {
     setPhotoUrl("");
     setCandidates([]);
     setSelectedCandidate(null);
-    setBarcodeConfidence("");
     setIsMenuMode(false);
     setDetailedScores({ nose: 50, taste: 50, finish: 50, balance: 50 });
     setDetailTouched(false);
@@ -721,6 +849,11 @@ export default function M2TastingsSolo() {
     setSoloVoiceMemo(null);
     stopVoice();
     setWbLookupResult("");
+    setDraftEntryId(null);
+    setDraftStatus("idle");
+    setAutoSaveStatus("idle");
+    setFinalizedAt(null);
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
   };
 
   const handleUnlocked = (name: string, participantId?: string) => {
@@ -733,6 +866,74 @@ export default function M2TastingsSolo() {
   };
 
   const hasWhisky = !!(whiskyName.trim() && (selectedCandidate || showManual));
+
+  if (draftStatus === "resumePrompt") {
+    return (
+      <div style={{ padding: "16px" }} data-testid="m2-solo-page">
+        <M2BackButton />
+        <div style={{ textAlign: "center", padding: "40px 0 20px" }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: alpha(v.accent, "20"), display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <PenLine style={{ width: 28, height: 28, color: v.accent }} />
+          </div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: v.text, margin: "0 0 4px", fontFamily: "'Playfair Display', Georgia, serif" }} data-testid="text-resume-title">
+            {t("m2.solo.resumeDraft", "Continue previous tasting?")}
+          </h2>
+          <p style={{ fontSize: 14, color: v.textSecondary, margin: "0 0 28px" }} data-testid="text-resume-name">
+            {(() => { try { const d = JSON.parse(localStorage.getItem("m2_draft_data") || "{}"); return d.whiskyName || ""; } catch { return ""; } })()}
+          </p>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={loadDraftIntoForm} style={btnPrimary} data-testid="button-resume-yes">
+              {t("m2.solo.resumeYes", "Continue")}
+            </button>
+            <button onClick={() => {
+              if (draftEntryId && pid) {
+                fetch(`/api/journal/${pid}/${draftEntryId}`, { method: "DELETE", headers: { "x-participant-id": pid } }).catch(() => {});
+              }
+              localStorage.removeItem("m2_draft_data");
+              setDraftEntryId(null);
+              setDraftStatus("idle");
+            }} style={btnOutline} data-testid="button-resume-no">
+              {t("m2.solo.resumeNo", "Start new")}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (saved && draftStatus === "finalized") {
+    return (
+      <div style={{ padding: "16px" }} data-testid="m2-solo-page">
+        <M2BackButton />
+        <div style={{ textAlign: "center", padding: "40px 0 20px" }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: alpha(v.success, "20"), display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <Check style={{ width: 28, height: 28, color: v.success }} />
+          </div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: v.text, margin: "0 0 4px", fontFamily: "'Playfair Display', Georgia, serif" }} data-testid="text-saved-title">
+            {t("m2.solo.finalized", "Tasting completed!")}
+          </h2>
+          <p style={{ fontSize: 14, color: v.textSecondary, margin: "0 0 4px" }} data-testid="text-saved-name">{whiskyName}</p>
+          {finalizedAt && (
+            <p style={{ fontSize: 12, color: v.mutedLight, margin: "0 0 28px" }} data-testid="text-finalized-at">
+              {t("m2.solo.finalizedAt", { defaultValue: "Completed on {{date}}", date: finalizedAt })}
+            </p>
+          )}
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={handleReset} style={btnPrimary} data-testid="m2-solo-again">
+              {t("m2.solo.newDram", "Log new dram")}
+            </button>
+            {draftEntryId && (
+              <Link href={`/m2/taste/drams?edit=${draftEntryId}`} style={{ flex: 1, textDecoration: "none" }}>
+                <div style={{ ...btnOutline, textAlign: "center" }} data-testid="button-continue-editing">
+                  {t("m2.solo.continueEditing", "Continue editing")}
+                </div>
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (saved) {
     return (
@@ -1053,8 +1254,19 @@ export default function M2TastingsSolo() {
         <SignInCard onSignedIn={handleUnlocked} onCancel={() => setShowUnlockPanel(false)} />
       )}
 
+      {autoSaveStatus !== "idle" && unlocked && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 6,
+          fontSize: 12, color: autoSaveStatus === "saved" ? v.success : v.textSecondary,
+          marginBottom: 6, justifyContent: "center",
+        }} data-testid="text-auto-save-status">
+          {autoSaveStatus === "saving" && <Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} />}
+          {autoSaveStatus === "saving" ? t("m2.solo.autoSaving", "Saving...") : t("m2.solo.draftSaved", "Draft saved")}
+        </div>
+      )}
+
       <button
-        onClick={handleSave}
+        onClick={handleFinalize}
         disabled={!whiskyName.trim() || saving}
         style={{
           ...btnPrimary,
@@ -1065,8 +1277,8 @@ export default function M2TastingsSolo() {
         }}
         data-testid="m2-solo-save"
       >
-        <PenLine style={{ width: 18, height: 18 }} />
-        {saving ? t("m2.solo.saving", "Saving...") : t("m2.solo.save", "Save Dram")}
+        <Check style={{ width: 18, height: 18 }} />
+        {saving ? t("m2.solo.saving", "Saving...") : t("m2.solo.finalize", "Finish tasting")}
       </button>
 
       {!unlocked && (
@@ -1234,7 +1446,7 @@ export default function M2TastingsSolo() {
               {candidates.map((cand, i) => {
                 const badge = confidenceLabel(cand.confidence, t);
                 const isOnline = cand.source === "external";
-                const isAiVision = cand.source === "ai_vision";
+                const isAiVision = cand.source === "ai_vision" || cand.source === "ai_text";
                 const details = [cand.age ? `${cand.age}y` : "", cand.abv || "", cand.caskType || ""].filter(Boolean).join(" · ");
                 return (
                   <button
