@@ -235,9 +235,9 @@ function drawIntro(doc: jsPDF) {
   const steps = [
     { num: "01", title: "Gather", icon: "QR" },
     { num: "02", title: "Pour", icon: "?" },
-    { num: "03", title: "Reflect", icon: "★" },
+    { num: "03", title: "Reflect", icon: "*" },
     { num: "04", title: "Reveal", icon: "!" },
-    { num: "05", title: "Discover", icon: "♛" },
+    { num: "05", title: "Discover", icon: "W" },
   ];
 
   const y = 90;
@@ -437,18 +437,24 @@ function drawTastingEngineFeatures(doc: jsPDF) {
     { label: "?", sub: "", stage: "Blind" },
     { label: "Talisker", sub: "", stage: "Name" },
     { label: "45.8%", sub: "Skye", stage: "Data" },
-    { label: "▓", sub: "", stage: "Full" },
+    { label: "", sub: "", stage: "Full" },
   ];
   cardData.forEach((cd, i) => {
     const cardX = cx + i * (cardW + 5);
-    const opacity = 0.3 + i * 0.23;
     const borderColor = i === 3 ? ACCENT : ACCENT_DIM;
     doc.setFillColor(...rgb(CARD));
     doc.roundedRect(cardX, cy - cardH / 2, cardW, cardH, 3, 3, "F");
     doc.setDrawColor(...rgb(borderColor));
     doc.setLineWidth(i === 3 ? 0.6 : 0.3);
     doc.roundedRect(cardX, cy - cardH / 2, cardW, cardH, 3, 3, "S");
-    drawText(doc, cd.label, cardX + cardW / 2, cy + (cd.sub ? -2 : 2), cd.label === "▓" ? 16 : 8, i === 3 ? ACCENT : TEXT, "bold", "center");
+    if (i === 3) {
+      for (let ln = 0; ln < 4; ln++) {
+        doc.setFillColor(...rgb(ACCENT));
+        doc.roundedRect(cardX + 4, cy - 8 + ln * 5, cardW - 8 - (ln === 3 ? 4 : 0), 2, 1, 1, "F");
+      }
+    } else {
+      drawText(doc, cd.label, cardX + cardW / 2, cy + (cd.sub ? -2 : 2), 8, TEXT, "bold", "center");
+    }
     if (cd.sub) drawText(doc, cd.sub, cardX + cardW / 2, cy + 4, 6, MUTED, "normal", "center");
     drawText(doc, cd.stage, cardX + cardW / 2, cy + cardH / 2 + 5, 5, MUTED_DIM, "normal", "center");
     if (i < 3) {
@@ -525,7 +531,12 @@ function drawTastingEngineFeatures(doc: jsPDF) {
   doc.setDrawColor(...rgb(ACCENT));
   doc.setLineWidth(0.4);
   doc.circle(cx, cy, 8, "S");
-  drawText(doc, "🥃", cx, cy + 3, 10, TEXT, "normal", "center");
+  doc.setDrawColor(...rgb(ACCENT));
+  doc.setLineWidth(0.5);
+  doc.line(cx - 3, cy - 2, cx - 2, cy + 4);
+  doc.line(cx + 3, cy - 2, cx + 2, cy + 4);
+  doc.line(cx - 2, cy + 4, cx + 2, cy + 4);
+  doc.line(cx - 3, cy - 2, cx + 3, cy - 2);
   const bubbleData = [
     { bx: cx - 28, by: cy - 10, w: 22, h: 8, text: "Smoky!" },
     { bx: cx + 10, by: cy - 14, w: 18, h: 8, text: "Sweet?" },
@@ -551,10 +562,10 @@ function drawTastingEngineFeatures(doc: jsPDF) {
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
   const acts = [
-    { label: "I", icon: "📊", sub: "Stats" },
-    { label: "II", icon: "◎", sub: "Consensus" },
-    { label: "III", icon: "⚙", sub: "Technical" },
-    { label: "IV", icon: "🏆", sub: "Ranking" },
+    { label: "I", icon: "S", sub: "Stats" },
+    { label: "II", icon: "C", sub: "Consensus" },
+    { label: "III", icon: "T", sub: "Technical" },
+    { label: "IV", icon: "R", sub: "Ranking" },
   ];
   acts.forEach((act, i) => {
     const ax = cx - 36 + i * 22;
@@ -579,9 +590,9 @@ function drawTastingEngineFeatures(doc: jsPDF) {
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
   const podiumData = [
-    { h: 22, x: cx - 22, medal: "🥈", color: SILVER },
-    { h: 30, x: cx - 8, medal: "🥇", color: ACCENT },
-    { h: 16, x: cx + 6, medal: "🥉", color: BRONZE },
+    { h: 22, x: cx - 22, rank: "2", color: SILVER },
+    { h: 30, x: cx - 8, rank: "1", color: ACCENT },
+    { h: 16, x: cx + 6, rank: "3", color: BRONZE },
   ];
   podiumData.forEach((p) => {
     doc.setFillColor(...rgb(CARD));
@@ -589,7 +600,9 @@ function drawTastingEngineFeatures(doc: jsPDF) {
     doc.setDrawColor(...rgb(p.color));
     doc.setLineWidth(0.5);
     doc.roundedRect(p.x, cy + 10 - p.h, 12, p.h, 2, 2, "S");
-    drawText(doc, p.medal, p.x + 6, cy + 10 - p.h - 3, 8, TEXT, "normal", "center");
+    doc.setFillColor(...rgb(p.color));
+    doc.circle(p.x + 6, cy + 10 - p.h - 4, 3.5, "F");
+    drawText(doc, p.rank, p.x + 6, cy + 10 - p.h - 2.5, 6, BG, "bold", "center");
   });
   doc.setDrawColor(...rgb(ACCENT));
   doc.setLineWidth(0.3);
@@ -732,7 +745,10 @@ function drawTastingEngineFeatures(doc: jsPDF) {
   });
   doc.setFillColor(...rgb(ACCENT));
   doc.circle(cx + 14, cy + 4, 2.5, "F");
-  drawText(doc, "✓", cx + 14, cy + 5.5, 4, BG, "bold", "center");
+  doc.setDrawColor(...rgb(BG));
+  doc.setLineWidth(0.6);
+  doc.line(cx + 12.5, cy + 4.5, cx + 14, cy + 6);
+  doc.line(cx + 14, cy + 6, cx + 15.5, cy + 3.5);
   drawFeatureRight(doc, TEXT_X, y, "Solo Dram Logger", "Rate whiskies outside of group sessions. For quiet evenings with a single dram — every note captured.", "Your private dram diary.");
 
   // ─── Page: Feature 16 ───
@@ -928,7 +944,12 @@ function drawPersonalAnalysisFeatures(doc: jsPDF) {
     doc.setLineWidth(0.1);
     doc.line(cx - 18, cy - 10 + ln * 6, cx - 6, cy - 10 + ln * 6);
   }
-  drawText(doc, "🥃", cx + 12, cy - 4, 8, TEXT, "normal", "center");
+  doc.setDrawColor(...rgb(ACCENT));
+  doc.setLineWidth(0.4);
+  doc.line(cx + 10, cy - 7, cx + 11, cy - 1);
+  doc.line(cx + 14, cy - 7, cx + 13, cy - 1);
+  doc.line(cx + 11, cy - 1, cx + 13, cy - 1);
+  doc.line(cx + 10, cy - 7, cx + 14, cy - 7);
   drawText(doc, "15.03", cx + 12, cy + 4, 6, ACCENT_DIM, "normal", "center");
   doc.setFillColor(...rgb(ACCENT));
   doc.roundedRect(cx + 18, cy - 16, 2, 10, 1, 1, "F");
@@ -965,7 +986,7 @@ function drawPersonalAnalysisFeatures(doc: jsPDF) {
   drawGlow(doc, cx, cy + 14, 5);
   doc.setFillColor(...rgb(ACCENT));
   doc.roundedRect(cx - 3, cy + 10, 6, 10, 1, 1, "F");
-  drawText(doc, "★", cx, cy + 17, 5, BG, "bold", "center");
+  drawText(doc, "*", cx, cy + 17, 5, BG, "bold", "center");
   drawFeatureRight(doc, TEXT_X, y, "Whisky Recommendations", "Factor-based engine weighing region, cask, peat level, and community ratings. Every suggestion has a reason.", "Recommendations with reasons.");
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
@@ -1011,7 +1032,7 @@ function drawPersonalAnalysisFeatures(doc: jsPDF) {
     if (b.color === ACCENT) {
       doc.setFillColor(...rgb(ACCENT));
       doc.circle(b.x, shieldTop - 3, 2.5, "F");
-      drawText(doc, "★", b.x, shieldTop - 1.5, 4, BG, "bold", "center");
+      drawText(doc, "*", b.x, shieldTop - 1.5, 4, BG, "bold", "center");
     }
   });
   doc.setFillColor(...rgb(ACCENT_FAINT));
@@ -1161,7 +1182,7 @@ function drawAIFeatures(doc: jsPDF) {
     doc.setFillColor(...rgb(ln < 3 ? TEXT : MUTED_DIM));
     doc.roundedRect(cx + 22, cy - 8 + ln * 5, 22 - (ln === 4 ? 8 : 0), 1.5, 0.5, 0.5, "F");
   }
-  drawText(doc, "📝", cx + 33, cy - 14, 6, TEXT, "normal", "center");
+  drawText(doc, "AI", cx + 33, cy - 14, 6, ACCENT, "bold", "center");
   drawFeatureRight(doc, TEXT_X, y, "AI Tasting Notes", "Select flavor keywords, and AI generates professional tasting notes. Multilingual: German and English.", "From hints to prose.");
 
   // ─── Page: Features 30–32 ───
@@ -1180,10 +1201,10 @@ function drawAIFeatures(doc: jsPDF) {
   doc.setFillColor(...rgb(ACCENT));
   doc.circle(cx, cy - 6, 2, "F");
   const orbitItems = [
-    { angle: -60, icon: "🍴", label: "Pairing" },
-    { angle: 30, icon: "🌡", label: "Serving" },
-    { angle: 150, icon: "💡", label: "Facts" },
-    { angle: -150, icon: "🍫", label: "Food" },
+    { angle: -60, icon: "P", label: "Pairing" },
+    { angle: 30, icon: "S", label: "Serving" },
+    { angle: 150, icon: "i", label: "Facts" },
+    { angle: -150, icon: "F", label: "Food" },
   ];
   orbitItems.forEach((item) => {
     const rad = item.angle * Math.PI / 180;
@@ -1343,10 +1364,10 @@ function drawCommunityFeatures(doc: jsPDF) {
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
   const lbCategories = [
-    { label: "Active", h: 28, icon: "⚡" },
-    { label: "Detailed", h: 22, icon: "✎" },
-    { label: "Rated", h: 18, icon: "★" },
-    { label: "Explorer", h: 25, icon: "🧭" },
+    { label: "Active", h: 28, icon: "A" },
+    { label: "Detailed", h: 22, icon: "D" },
+    { label: "Rated", h: 18, icon: "R" },
+    { label: "Explorer", h: 25, icon: "E" },
   ];
   lbCategories.forEach((cat, i) => {
     const bx = cx - 32 + i * 18;
@@ -1358,7 +1379,7 @@ function drawCommunityFeatures(doc: jsPDF) {
     drawText(doc, cat.icon, bx + 7, cy + 12 - cat.h - 3, 6, i === 0 ? ACCENT : MUTED, "normal", "center");
     drawText(doc, cat.label, bx + 7, cy + 17, 4, MUTED_DIM, "normal", "center");
     if (i === 0) {
-      drawText(doc, "♛", bx + 7, cy + 12 - cat.h - 9, 8, ACCENT, "normal", "center");
+      drawText(doc, "W", bx + 7, cy + 12 - cat.h - 9, 8, ACCENT, "bold", "center");
     }
   });
   drawFeatureRight(doc, TEXT_X, y, "Leaderboards", "Multi-category rankings: Most Active, Most Detailed, Highest Rated, and Explorer. Medals for the top three.", "Climb every leaderboard.");
@@ -1456,7 +1477,7 @@ function drawCommunityFeatures(doc: jsPDF) {
     doc.roundedRect(bx, by, rb.w, 5, 2, 2, "F");
     drawText(doc, rb.score, bx + rb.w + 3, by + 4, 5, i === 0 ? ACCENT : MUTED, "bold");
     if (i === 0) {
-      drawText(doc, "★", bx - 4, by + 4, 5, ACCENT, "normal", "center");
+      drawText(doc, "*", bx - 4, by + 4, 5, ACCENT, "normal", "center");
     }
   });
   drawFeatureRight(doc, TEXT_X, y, "Community Rankings", "Aggregated whisky scores across the community. Filter by region. Compare your score vs. the group average.", "The crowd's whisky verdict.");
@@ -1543,6 +1564,7 @@ function drawWhiskyDBFeatures(doc: jsPDF) {
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
   const barWidths = [2, 1, 3, 1, 2, 1, 3, 2, 1, 3, 1, 2, 1, 2, 3, 1, 2, 1, 3, 1];
+  drawGlow(doc, cx, cy, 14);
   let barX = cx - 30;
   barWidths.forEach((w) => {
     doc.setFillColor(...rgb(TEXT));
@@ -1552,7 +1574,6 @@ function drawWhiskyDBFeatures(doc: jsPDF) {
   doc.setDrawColor(220, 60, 60);
   doc.setLineWidth(0.6);
   doc.line(cx - 32, cy, cx + 32, cy);
-  drawGlow(doc, cx, cy, 14);
   doc.setDrawColor(...rgb(ACCENT));
   doc.setLineWidth(0.3);
   doc.line(cx + 36, cy, cx + 42, cy);
@@ -1596,12 +1617,12 @@ function drawWhiskyDBFeatures(doc: jsPDF) {
   doc.line(cx + syncR * Math.cos(30 * Math.PI / 180) + 1, cy + syncR * Math.sin(30 * Math.PI / 180) - 2, cx + syncR * Math.cos(30 * Math.PI / 180), cy + syncR * Math.sin(30 * Math.PI / 180));
   const diffMarkers = [
     { x: cx + 34, y: cy - 6, symbol: "+", color: "#4caf50" },
-    { x: cx + 34, y: cy, symbol: "−", color: "#f44336" },
+    { x: cx + 34, y: cy, symbol: "-", color: "#f44336" },
     { x: cx + 34, y: cy + 6, symbol: "~", color: ACCENT },
   ];
   diffMarkers.forEach((dm) => {
     drawText(doc, dm.symbol, dm.x, dm.y + 2, 8, dm.color, "bold");
-    drawText(doc, dm.symbol === "+" ? "new" : dm.symbol === "−" ? "removed" : "changed", dm.x + 4, dm.y + 2, 4, MUTED_DIM, "normal");
+    drawText(doc, dm.symbol === "+" ? "new" : dm.symbol === "-" ? "removed" : "changed", dm.x + 4, dm.y + 2, 4, MUTED_DIM, "normal");
   });
   drawFeatureRight(doc, TEXT_X, y, "Collection Sync", "Smart synchronization via CSV re-upload. Automatically detects new items, removed bottles, and changed ratings.", "Reupload. Auto-sync.");
 
@@ -1613,9 +1634,9 @@ function drawWhiskyDBFeatures(doc: jsPDF) {
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
   const triadItems = [
-    { x: cx, y: cy - 14, icon: "📖", label: "Lexicon" },
-    { x: cx - 20, y: cy + 10, icon: "📍", label: "Distilleries" },
-    { x: cx + 20, y: cy + 10, icon: "🏭", label: "Bottlers" },
+    { x: cx, y: cy - 14, icon: "L", label: "Lexicon" },
+    { x: cx - 20, y: cy + 10, icon: "D", label: "Distilleries" },
+    { x: cx + 20, y: cy + 10, icon: "B", label: "Bottlers" },
   ];
   triadItems.forEach((ti, i) => {
     drawGlow(doc, ti.x, ti.y, 6);
@@ -1681,7 +1702,10 @@ function drawWhiskyDBFeatures(doc: jsPDF) {
     if (ci.checked) {
       doc.setFillColor(...rgb(ACCENT));
       doc.roundedRect(ix, iy, 5, 5, 1, 1, "F");
-      drawText(doc, "✓", ix + 2.5, iy + 4, 4, BG, "bold", "center");
+      doc.setDrawColor(...rgb(BG));
+      doc.setLineWidth(0.6);
+      doc.line(ix + 1, iy + 3, ix + 2.5, iy + 4.5);
+      doc.line(ix + 2.5, iy + 4.5, ix + 4, iy + 1.5);
     } else {
       doc.setDrawColor(...rgb(ACCENT_DIM));
       doc.setLineWidth(0.3);
