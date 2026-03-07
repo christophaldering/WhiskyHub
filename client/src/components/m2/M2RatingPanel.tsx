@@ -263,7 +263,7 @@ export default function M2RatingPanel({
                       ...inputBaseStyle,
                       resize: "vertical" as const,
                       minHeight: compact ? 36 : 56,
-                      paddingRight: hasSpeechAPI && !compact ? 80 : (compact ? 10 : 14),
+                      paddingRight: hasSpeechAPI && !compact ? 44 : (compact ? 10 : 14),
                       borderColor: (voiceListening && voiceTarget === key) ? v.danger : v.inputBorder,
                       opacity: disabled ? 0.5 : 1,
                     }}
@@ -281,22 +281,18 @@ export default function M2RatingPanel({
                         border: `1px solid ${(voiceListening && voiceTarget === key) ? "#e57373" : "rgba(212,162,86,0.42)"}`,
                         borderRadius: 999,
                         cursor: disabled ? "default" : "pointer",
+                        width: 30,
                         height: 30,
-                        padding: "0 10px",
-                        gap: 5,
+                        padding: 0,
                         color: (voiceListening && voiceTarget === key) ? "#1a1410" : "#d4a256",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: 11,
-                        fontWeight: 600,
-                        fontFamily: "system-ui, sans-serif",
                         boxShadow: (voiceListening && voiceTarget === key) ? "0 0 0 4px rgba(229,115,115,0.25)" : "0 2px 8px rgba(0,0,0,0.22)",
                         transition: "all 200ms ease",
                       }}
                     >
-                      <Mic style={{ width: 13, height: 13 }} />
-                      <span>{t("m2.voiceMemo.speak", "Speak")}</span>
+                      <Mic style={{ width: 14, height: 14 }} />
                     </button>
                   )}
                 </div>
