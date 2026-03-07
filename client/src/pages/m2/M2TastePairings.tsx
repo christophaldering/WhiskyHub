@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { v, alpha } from "@/lib/themeVars";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { pairingsApi, tastingApi } from "@/lib/api";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { Wine, MapPin, Flame, Package, Utensils, ChevronDown } from "lucide-react";
@@ -74,7 +74,7 @@ const card: React.CSSProperties = {
 
 export default function M2TastePairings() {
   const { t } = useTranslation();
-  const session = getSession();
+  const session = useSession();
   const pid = session.participantId;
   const [selectedTastingId, setSelectedTastingId] = useState<string>("");
 

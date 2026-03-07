@@ -1,3 +1,5 @@
+import { useState, useEffect, useCallback } from "react";
+
 const SK_SIGNED_IN = "session_signed_in";
 const SK_MODE = "session_mode";
 const SK_NAME = "session_name";
@@ -226,4 +228,14 @@ function migrateLegacyKeys() {
     sessionStorage.removeItem("simple_name");
     sessionStorage.removeItem("simple_pid");
   } catch {}
+}
+
+export function useSession(): SessionState {
+  const [state, setState] = useState<SessionState>(getSession);
+  useEffect(() => {
+    const handler = () => setState(getSession());
+    window.addEventListener("session-change", handler);
+    return () => window.removeEventListener("session-change", handler);
+  }, []);
+  return state;
 }

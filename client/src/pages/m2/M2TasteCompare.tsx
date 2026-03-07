@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { flavorProfileApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { v } from "@/lib/themeVars";
 
 const CHART_COLORS = ["#c8a864", "#6b9bd2", "#d97c5a"];
@@ -73,7 +73,7 @@ function buildSearchString(params: Record<string, string | number>) {
 
 export default function M2TasteCompare() {
   const { t } = useTranslation();
-  const session = getSession();
+  const session = useSession();
   const pid = session.pid || "";
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [radarSearch, setRadarSearch] = useState("");

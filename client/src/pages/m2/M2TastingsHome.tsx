@@ -4,7 +4,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { v, alpha } from "@/lib/themeVars";
 import { tastingApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import {
   Wine, Crown, PenLine, ChevronRight, ChevronDown,

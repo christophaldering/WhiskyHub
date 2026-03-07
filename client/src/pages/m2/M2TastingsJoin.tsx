@@ -4,7 +4,7 @@ import M2BackButton from "@/components/m2/M2BackButton";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useParams } from "wouter";
 import { tastingApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 
 export default function M2TastingsJoin() {
   const { t } = useTranslation();
@@ -14,7 +14,7 @@ export default function M2TastingsJoin() {
   const [scannerActive, setScannerActive] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [, navigate] = useLocation();
-  const session = getSession();
+  const session = useSession();
   const params = useParams<{ code?: string }>();
   const scannerRef = useRef<any>(null);
   const videoRef = useRef<HTMLDivElement>(null);

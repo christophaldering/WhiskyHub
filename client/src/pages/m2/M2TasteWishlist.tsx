@@ -5,7 +5,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { wishlistApi, wishlistScanApi, textExtractApi } from "@/lib/api";
 import { useAIStatus } from "@/hooks/use-ai-status";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { CaskTypeSelect } from "@/components/cask-type-select";
@@ -46,7 +46,7 @@ const btnBase: React.CSSProperties = {
 
 export default function M2TasteWishlist() {
   const { t } = useTranslation();
-  const session = getSession();
+  const session = useSession();
   const participantId = session.pid;
   const [, navigate] = useLocation();
   const [view, setView] = useState<View>("list");

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { v, alpha } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
-import { getSession, signIn, setSessionPid } from "@/lib/session";
+import { getSession, useSession, signIn, setSessionPid } from "@/lib/session";
 import { participantApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";

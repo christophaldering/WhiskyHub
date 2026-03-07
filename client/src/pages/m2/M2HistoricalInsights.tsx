@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { v } from "@/lib/themeVars";
 import { getParticipantId } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import M2BackButton from "@/components/m2/M2BackButton";
 import {
   Trophy, MapPin, Flame, BarChart3, Wine,
@@ -59,7 +59,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: string |
 export default function M2HistoricalInsights() {
   const { t } = useTranslation();
 
-  const session = getSession();
+  const session = useSession();
   const pid = getParticipantId();
 
   const { data: myCommunities, isLoading: commLoading } = useQuery<{ communities: Array<{ id: string; communityId: string; role: string }> }>({

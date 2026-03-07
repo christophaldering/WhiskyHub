@@ -6,7 +6,7 @@ import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { tastingApi, whiskyApi, ratingApi, blindModeApi, guidedApi, recapApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import {
   Play, Lock, Eye, EyeOff, Archive, ChevronRight, CheckCircle, Clock,
   SkipForward, Sparkles, Plus, Trash2, GripVertical, ImageIcon,
@@ -19,7 +19,7 @@ export default function M2HostControl() {
   const [, params] = useRoute("/m2/tastings/session/:id/host");
   const [, navigate] = useLocation();
   const id = params?.id || "";
-  const session = getSession();
+  const session = useSession();
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [showWhiskyManager, setShowWhiskyManager] = useState(false);
   const [aiHighlights, setAiHighlights] = useState<any>(null);

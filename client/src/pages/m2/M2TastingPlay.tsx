@@ -9,7 +9,7 @@ import type { DimKey } from "@/components/m2/M2RatingPanel";
 import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { playSoundscape, stopSoundscape, setVolume as setAmbientVolume, getState as getAmbientState } from "@/lib/ambient";
 import {
   Star,
@@ -598,7 +598,7 @@ export default function M2TastingPlay() {
   const { t } = useTranslation();
   const [, params] = useRoute("/m2/tastings/session/:id/play");
   const id = params?.id || "";
-  const session = getSession();
+  const session = useSession();
   const pid = session.pid;
 
   const [freeIndex, setFreeIndex] = useState(0);

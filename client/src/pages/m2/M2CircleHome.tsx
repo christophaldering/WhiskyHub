@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { v } from "@/lib/themeVars";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import {
   communityApi,
@@ -87,7 +87,7 @@ function formatRelativeTime(timestamp: string, language: string, t: (key: string
 
 export default function M2CircleHome() {
   const { t, i18n } = useTranslation();
-  const session = getSession();
+  const session = useSession();
   const { currentParticipant } = useAppStore();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>("twins");

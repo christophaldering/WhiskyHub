@@ -5,7 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { CircleDot, X } from "lucide-react";
 import { v } from "@/lib/themeVars";
 import { journalApi, ratingNotesApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import M2BackButton from "@/components/m2/M2BackButton";
 
 interface FlavorCategory {
@@ -158,7 +158,7 @@ function computeFlavorFrequencies(entries: JournalEntry[]) {
 
 export default function M2TasteWheel() {
   const { t } = useTranslation();
-  const session = getSession();
+  const session = useSession();
   const pid = session.participantId;
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 

@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { benchmarkApi, tastingApi } from "@/lib/api";
 import { v } from "@/lib/themeVars";
@@ -54,7 +54,7 @@ const TAB_LABELS: Record<LibraryTab, string> = {
 
 export default function M2TasteBenchmark() {
   const { t } = useTranslation();
-  const session = getSession();
+  const session = useSession();
   const pid = session.pid || '';
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);

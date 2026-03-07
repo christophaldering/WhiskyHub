@@ -5,7 +5,7 @@ import { M2Loading } from "@/components/m2/M2Feedback";
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { tastingApi, whiskyApi, inviteApi, guidedApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCodeLib from "qrcode";
 import { downloadDataUrl } from "@/lib/download";
@@ -2802,7 +2802,7 @@ function SettingsPanel({ tasting, pid, onDuplicate, onDelete, duplicating, confi
 
 export default function M2TastingsHost({ resumeId }: { resumeId?: string } = {}) {
   const { t } = useTranslation();
-  const session = getSession();
+  const session = useSession();
   const [step, setStep] = useState<WizardStep>(resumeId ? "step2" : "list");
   const [tasting, setTasting] = useState<TastingFull | null>(null);
   const [resumeLoading, setResumeLoading] = useState(!!resumeId);

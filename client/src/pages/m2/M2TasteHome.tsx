@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { v, alpha } from "@/lib/themeVars";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import {
   BookOpen, BarChart3, ChevronRight, ChevronDown, Lock,
   Radar, Archive, Heart, FlaskConical, Sparkles, GitCompareArrows,
@@ -185,7 +185,7 @@ function NavRow({ icon: Icon, label, description, href, testId, badge }: NavRowP
 
 export default function M2TasteHome() {
   const { t } = useTranslation();
-  const session = getSession();
+  const session = useSession();
   const pid = session.pid;
 
   const { data: journal = [] } = useQuery({

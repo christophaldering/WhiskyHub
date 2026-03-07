@@ -5,7 +5,7 @@ import { adminApi, feedbackApi, platformAnalyticsApi } from "@/lib/api";
 import { apiRequest } from "@/lib/queryClient";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { useToast } from "@/hooks/use-toast";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
@@ -79,7 +79,7 @@ export default function M2Admin() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const session = getSession();
+  const session = useSession();
   const pid = session.pid || "";
   const [activeTab, setActiveTab] = useState<AdminTab>("participants");
 

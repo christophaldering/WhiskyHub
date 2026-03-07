@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { v } from "@/lib/themeVars";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { communityApi, leaderboardApi } from "@/lib/api";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { Users } from "lucide-react";
@@ -13,7 +13,7 @@ const card: React.CSSProperties = { background: v.card, border: `1px solid ${v.b
 
 export default function M2DiscoverCommunity() {
   const { t } = useTranslation();
-  const session = getSession();
+  const session = useSession();
   const pid = session.participantId;
   const [activeTab, setActiveTab] = useState<Tab>("twins");
   const [rankings, setRankings] = useState<any[]>([]);

@@ -7,7 +7,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { tastingApi, whiskyApi, ratingApi, blindModeApi, guidedApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import M2RatingPanel, { type DimKey } from "@/components/m2/M2RatingPanel";
 import {
   Play, Lock, Eye, EyeOff, Archive, ChevronRight, CheckCircle, Clock,
@@ -38,7 +38,7 @@ export default function M2HostingDashboard() {
   const [, params] = useRoute("/m2/tastings/session/:id/dashboard");
   const [, navigate] = useLocation();
   const id = params?.id || "";
-  const session = getSession();
+  const session = useSession();
   const pid = session.pid;
   const isMobile = useIsMobile();
 

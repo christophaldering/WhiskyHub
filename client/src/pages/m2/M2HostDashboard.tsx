@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { v, alpha } from "@/lib/themeVars";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { hostDashboardApi, inviteApi, pidHeaders } from "@/lib/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
@@ -543,7 +543,7 @@ const sectionCard: React.CSSProperties = {
 
 export default function M2HostDashboard() {
   const { t, i18n } = useTranslation();
-  const session = getSession();
+  const session = useSession();
 
   const { data: summary, isLoading, isError, refetch } = useQuery<HostSummary>({
     queryKey: ["host-dashboard", session.pid],

@@ -5,7 +5,7 @@ import { useRoute, Link } from "wouter";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { Crown, Users, Wine, ChevronRight, Copy, Check, QrCode, User, Image as ImageIcon } from "lucide-react";
 import QRCode from "qrcode";
 
@@ -13,7 +13,7 @@ export default function M2TastingSession() {
   const { t } = useTranslation();
   const [, params] = useRoute("/m2/tastings/session/:id");
   const id = params?.id || "";
-  const session = getSession();
+  const session = useSession();
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
 

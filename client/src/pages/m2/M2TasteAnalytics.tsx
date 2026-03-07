@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { useQuery } from "@tanstack/react-query";
 import { statsApi, flavorProfileApi, journalApi, ratingNotesApi, participantApi } from "@/lib/api";
 import { Lock, PenLine, TrendingUp, TrendingDown, Minus } from "lucide-react";
@@ -358,7 +358,7 @@ const sectionTitle: React.CSSProperties = {
 
 export default function M2TasteAnalytics() {
   const { t } = useTranslation();
-  const session = getSession();
+  const session = useSession();
   const pid = session.pid;
 
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery({

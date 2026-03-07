@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { v, alpha } from "@/lib/themeVars";
 import { getParticipantId } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import M2BackButton from "@/components/m2/M2BackButton";
 import {
   Search, Wine, Trophy, Calendar, Hash, BarChart3,
@@ -81,7 +81,7 @@ export default function M2HistoricalTastings() {
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("number-desc");
 
-  const session = getSession();
+  const session = useSession();
   const pid = getParticipantId();
 
   const { data: myCommunities, isLoading: commLoading } = useQuery<{ communities: Array<{ id: string; communityId: string; role: string }> }>({

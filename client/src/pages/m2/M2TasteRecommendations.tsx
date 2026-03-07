@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { flavorProfileApi, communityApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { Sparkles, ExternalLink, Users, Info, ChevronDown } from "lucide-react";
@@ -107,7 +107,7 @@ const FACTOR_DEFAULTS: Record<FactorKey, number> = { region: 0.35, cask: 0.25, p
 
 export default function M2TasteRecommendations() {
   const { t } = useTranslation();
-  const session = getSession();
+  const session = useSession();
 
   const [infoOpen, setInfoOpen] = useState(false);
   const [activeFactors, setActiveFactors] = useState<Record<FactorKey, boolean>>({

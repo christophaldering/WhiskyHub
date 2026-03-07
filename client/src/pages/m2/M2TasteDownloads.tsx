@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { v } from "@/lib/themeVars";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -138,7 +138,7 @@ function ExportFormatButton({
 export default function M2TasteDownloads() {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
-  const session = getSession();
+  const session = useSession();
   const participantId = session.pid;
   const lang = i18n.language?.startsWith("de") ? "de" : "en";
 

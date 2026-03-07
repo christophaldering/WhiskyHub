@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { v } from "@/lib/themeVars";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { activityApi } from "@/lib/api";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { Rss, NotebookPen, Wine, Star } from "lucide-react";
@@ -32,7 +32,7 @@ const card: React.CSSProperties = { background: v.card, borderRadius: 12, border
 
 export default function M2DiscoverActivity() {
   const { t, i18n } = useTranslation();
-  const session = getSession();
+  const session = useSession();
   const pid = session.pid;
 
   const { data, isLoading } = useQuery<{ activities: ActivityItem[] }>({

@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { v, alpha } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { useQuery } from "@tanstack/react-query";
 import { collectionApi } from "@/lib/api";
 import { distilleries } from "@/data/distilleries";
@@ -133,7 +133,7 @@ function ExpandableList({ items, limit = 5 }: { items: { label: string; count: n
 
 export default function M2CollectionAnalysis() {
   const { t } = useTranslation();
-  const session = getSession();
+  const session = useSession();
   const pid = session.pid;
 
   const { data: collection, isLoading, error } = useQuery({

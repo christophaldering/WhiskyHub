@@ -5,7 +5,7 @@ import { queryClient } from "@/lib/queryClient";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
-import { getSession } from "@/lib/session";
+import { getSession, useSession } from "@/lib/session";
 import { journalApi, tastingHistoryApi } from "@/lib/api";
 import { useLocation } from "wouter";
 import type { JournalEntry } from "@shared/schema";
@@ -36,7 +36,7 @@ const DATE_PERIODS: { key: DatePeriod; labelKey: string; fallback: string; days:
 
 export default function M2TasteDrams() {
   const { t } = useTranslation();
-  const session = getSession();
+  const session = useSession();
   const [, navigate] = useLocation();
   const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
   const [datePeriod, setDatePeriod] = useState<DatePeriod>("all");
@@ -585,7 +585,7 @@ function EditTextarea({ label, value, onChange, testId }: { label: string; value
 
 function HistoricalAppearances({ distillery, whiskyName, t }: { distillery: string; whiskyName: string; t: any }) {
   const [, navigate] = useLocation();
-  const session = getSession();
+  const session = useSession();
   const pid = session?.pid || "";
   const query = new URLSearchParams();
   if (distillery) query.set("distillery", distillery);
