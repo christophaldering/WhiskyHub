@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session";
 import {
   Wine, Crown, PenLine, ChevronRight, ChevronDown,
   Calendar, CalendarDays, List, MapPin, Users, Eye,
-  Play, BarChart3,
+  Play, BarChart3, Sparkles,
 } from "lucide-react";
 
 const TastingCalendar = lazy(() => import("@/pages/tasting-calendar"));
@@ -220,23 +220,7 @@ export default function M2TastingsHome() {
         ))}
       </div>
 
-      {!session.signedIn && (
-        <div
-          style={{
-            background: v.elevated,
-            borderRadius: 12,
-            padding: "24px 16px",
-            textAlign: "center",
-            color: v.textSecondary,
-            fontSize: 14,
-          }}
-          data-testid="m2-signin-prompt"
-        >
-          {t("m2.tastings.signInPrompt", "Sign in to see your tastings")}
-        </div>
-      )}
-
-      {session.signedIn && viewMode === "calendar" && (
+      {viewMode === "calendar" && (
         <Suspense
           fallback={
             <div style={{ textAlign: "center", padding: 60 }}>
@@ -257,6 +241,25 @@ export default function M2TastingsHome() {
         >
           <TastingCalendar embedded />
         </Suspense>
+      )}
+
+      <DemoTastingCard navigate={navigate} />
+
+      {!session.signedIn && (
+        <div
+          style={{
+            background: v.elevated,
+            borderRadius: 12,
+            padding: "20px 16px",
+            textAlign: "center",
+            color: v.textSecondary,
+            fontSize: 14,
+            marginTop: 16,
+          }}
+          data-testid="m2-signin-prompt"
+        >
+          {t("m2.tastings.signInPrompt", "Sign in to see your tastings")}
+        </div>
       )}
 
       {session.signedIn && viewMode === "list" && (
@@ -380,6 +383,91 @@ export default function M2TastingsHome() {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+function DemoTastingCard({ navigate }: { navigate: (to: string) => void }) {
+  const { t } = useTranslation();
+  const { data: demo, isLoading } = useQuery({
+    queryKey: ["demo-tasting"],
+    queryFn: async () => {
+      const res = await fetch("/api/tastings/demo");
+      if (!res.ok) return null;
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading || !demo) return null;
+
+  return (
+    <div
+      style={{
+        background: `linear-gradient(135deg, ${alpha("#d4a256", "12")} 0%, ${v.card} 50%, ${alpha("#d4a256", "06")} 100%)`,
+        border: `1px solid ${alpha("#d4a256", "25")}`,
+        borderRadius: 16,
+        padding: "20px 16px",
+        cursor: "pointer",
+        marginTop: 20,
+        marginBottom: 8,
+        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        WebkitTapHighlightColor: "transparent",
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+      }}
+      onClick={() => navigate(`/m2/tastings/join/DEMO`)}
+      onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(0.98)"; }}
+      onPointerUp={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
+      onPointerLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
+      onPointerCancel={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
+      data-testid="m2-demo-tasting-card"
+    >
+      <div style={{
+        width: 48,
+        height: 48,
+        borderRadius: 14,
+        background: alpha("#d4a256", "15"),
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}>
+        <Sparkles style={{ width: 24, height: 24, color: "#d4a256" }} strokeWidth={1.8} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 16,
+          fontWeight: 600,
+          color: v.text,
+          fontFamily: "'Playfair Display', Georgia, serif",
+          marginBottom: 3,
+        }}>
+          {t("m2.tastings.demoTitle", "Demo Tasting")}
+        </div>
+        <div style={{
+          fontSize: 12,
+          color: v.textSecondary,
+          fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+          lineHeight: 1.4,
+        }}>
+          {t("m2.tastings.demoSubtitle", "Try CaskSense — no account needed")}
+        </div>
+        <div style={{
+          fontSize: 11,
+          color: v.muted,
+          fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+          marginTop: 4,
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+        }}>
+          <Wine style={{ width: 11, height: 11 }} />
+          {demo.whiskies?.length || 8} Islay Single Malts
+        </div>
+      </div>
+      <ChevronRight style={{ width: 18, height: 18, color: "#d4a256", flexShrink: 0 }} />
     </div>
   );
 }

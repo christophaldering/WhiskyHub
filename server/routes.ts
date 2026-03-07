@@ -982,6 +982,17 @@ export async function registerRoutes(
     return res.json(enriched);
   });
 
+  app.get("/api/tastings/demo", async (_req, res) => {
+    try {
+      const tasting = await storage.getTastingByCode("DEMO");
+      if (!tasting) return res.status(404).json({ message: "Demo tasting not available" });
+      const whiskyList = await storage.getWhiskiesForTasting(tasting.id);
+      res.json({ ...tasting, whiskies: whiskyList });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.get("/api/tastings/:id", async (req, res) => {
     const tasting = await storage.getTasting(req.params.id);
     if (!tasting) return res.status(404).json({ message: "Not found" });

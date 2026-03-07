@@ -280,6 +280,8 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
 
     seedProductionData()
       .catch((e) => log(`Auto-seed error: ${(e as Error).message}`, "seed"))
+      .then(() => import("./seed-demo").then(m => m.seedDemoTasting()))
+      .catch((e) => log(`Demo seed error: ${(e as Error).message}`, "seed"))
       .finally(() =>
         backfillNormalizedScores().catch((e) =>
           log(`Backfill error: ${(e as Error).message}`, "seed"),

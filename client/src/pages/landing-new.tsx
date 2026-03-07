@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import {
-  ChevronRight, EyeOff, BarChart3, Star,
+  ChevronRight, EyeOff, BarChart3, Star, Sparkles,
   ClipboardList, Camera, Heart, BookOpen, Download,
 } from "lucide-react";
 import { v } from "@/lib/themeVars";
@@ -140,6 +140,16 @@ function HeroSection() {
               border: `1px solid ${v.border}`, transition: "border-color 0.2s",
             }} data-testid="link-hero-start">
               Start Tasting
+            </Link>
+            <Link href="/m2/tastings/join/DEMO" style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "16px 32px", background: "transparent", color: ACCENT,
+              fontFamily: font.body, fontSize: 15, fontWeight: 500,
+              borderRadius: 50, textDecoration: "none",
+              border: `1px dashed ${ACCENT}40`, transition: "border-color 0.2s",
+            }} data-testid="link-hero-demo">
+              <Sparkles style={{ width: 16, height: 16 }} />
+              Try Demo
             </Link>
           </div>
         </div>
@@ -647,6 +657,24 @@ function DemoSection() {
             >
               {revealed ? "Revealed!" : "Reveal the whisky"}
             </button>
+
+            <Link
+              href="/m2/tastings/join/DEMO"
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                width: "100%", padding: "14px", marginTop: 12,
+                borderRadius: 12, border: `1px solid ${ACCENT}30`,
+                background: "transparent",
+                color: ACCENT,
+                fontFamily: font.body, fontSize: 15, fontWeight: 600,
+                cursor: "pointer", transition: "all 0.3s",
+                textDecoration: "none",
+              }}
+              data-testid="link-demo-tasting"
+            >
+              <Sparkles style={{ width: 16, height: 16 }} />
+              Try the full Demo Tasting
+            </Link>
 
             <AnimatePresence>
               {revealed && (
