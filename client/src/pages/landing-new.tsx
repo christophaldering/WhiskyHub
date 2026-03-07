@@ -145,7 +145,33 @@ function HeroSection() {
               href="#demo-section"
               onClick={(e) => {
                 e.preventDefault();
-                document.getElementById("demo-section")?.scrollIntoView({ behavior: "smooth" });
+                const target = document.getElementById("demo-section");
+                if (!target) return;
+                const targetY = target.getBoundingClientRect().top + window.scrollY - 40;
+                const startY = window.scrollY;
+                const distance = targetY - startY;
+                const duration = 5000;
+                let startTime: number | null = null;
+                let cancelled = false;
+                const ease = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+                const step = (ts: number) => {
+                  if (cancelled) return;
+                  if (!startTime) startTime = ts;
+                  const elapsed = ts - startTime;
+                  const progress = Math.min(elapsed / duration, 1);
+                  window.scrollTo(0, startY + distance * ease(progress));
+                  if (progress < 1) requestAnimationFrame(step);
+                };
+                const cancel = () => { cancelled = true; cleanup(); };
+                const cleanup = () => {
+                  window.removeEventListener("wheel", cancel);
+                  window.removeEventListener("touchstart", cancel);
+                  window.removeEventListener("keydown", cancel);
+                };
+                window.addEventListener("wheel", cancel, { once: true });
+                window.addEventListener("touchstart", cancel, { once: true });
+                window.addEventListener("keydown", cancel, { once: true });
+                requestAnimationFrame(step);
               }}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
@@ -794,9 +820,9 @@ export default function LandingNew() {
       <HeroSection />
       <FlowSection />
       <CoreFeaturesSection />
-      <DemoSection />
       <RevealSection />
       <SurprisesSection />
+      <DemoSection />
       <CTASection />
       <Footer />
     </div>
