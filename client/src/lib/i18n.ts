@@ -4639,6 +4639,7 @@ const resources = {
           startNewAfterFinish: "Start new dram",
           toOverview: "To overview",
           lastEdited: "Last edited",
+          saveNow: "Save",
         },
         rating: {
           rateDetail: "Rate in detail",
@@ -10267,6 +10268,7 @@ const resources = {
           startNewAfterFinish: "Neuen Dram starten",
           toOverview: "Zur Übersicht",
           lastEdited: "Zuletzt bearbeitet",
+          saveNow: "Speichern",
         },
         rating: {
           rateDetail: "Im Detail bewerten",

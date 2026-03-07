@@ -8,7 +8,7 @@ import { participantApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import {
-  Camera, PenLine, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ArrowLeft, Plus, Trash2, Clock, Wine
+  Camera, PenLine, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ArrowLeft, Plus, Trash2, Clock, Wine, Save
 } from "lucide-react";
 import M2RatingPanel from "@/components/m2/M2RatingPanel";
 import type { DimKey } from "@/components/m2/M2RatingPanel";
@@ -944,6 +944,14 @@ export default function M2TastingsSolo() {
     }
   };
 
+  const handleManualSave = useCallback(() => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    autoSaveDraft();
+  }, [autoSaveDraft]);
+
   const handleDeleteDraft = async (entryId: string) => {
     if (!pid) return;
     try {
@@ -1213,6 +1221,21 @@ export default function M2TastingsSolo() {
             <span style={{ fontSize: 11, color: v.mutedLight }} data-testid="text-last-saved">
               {formatRelativeTime(lastSavedTime)}
             </span>
+          )}
+          {whiskyName.trim() && unlocked && pid && autoSaveStatus !== "saving" && (
+            <button
+              onClick={handleManualSave}
+              style={{
+                background: v.accent, color: "#fff", border: "none", borderRadius: 8,
+                padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 4,
+                fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="button-save-now"
+            >
+              <Save style={{ width: 13, height: 13 }} />
+              {t("m2.solo.saveNow", "Save")}
+            </button>
           )}
           {draftEntryId && (
             <button
