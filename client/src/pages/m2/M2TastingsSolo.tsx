@@ -1215,55 +1215,7 @@ export default function M2TastingsSolo() {
         />
       </div>
 
-      {/* SECTION 3: NOTES */}
-      <div style={{ marginBottom: 24 }} data-testid="section-notes">
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: v.mutedLight, marginBottom: 10 }}>
-          {t("m2.solo.notesLabel", "Notes")}
-        </div>
-        <div style={{ position: "relative" }}>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={4}
-            style={{
-              ...inputStyle, resize: "vertical", minHeight: 100,
-              paddingRight: hasSpeechAPI ? 80 : 14,
-              borderColor: (voiceListening && voiceTarget === "notes") ? v.danger : v.inputBorder,
-            }}
-            data-testid="m2-solo-notes"
-            placeholder={t("m2.solo.notesPlaceholder", "What stands out?")}
-          />
-          {hasSpeechAPI && (
-            <button
-              type="button"
-              onClick={() => toggleVoice("notes")}
-              data-testid="button-voice-notes"
-              style={{
-                position: "absolute", right: 8, top: 8,
-                background: (voiceListening && voiceTarget === "notes") ? "#e57373" : "rgba(212,162,86,0.18)",
-                border: `1px solid ${(voiceListening && voiceTarget === "notes") ? "#e57373" : "rgba(212,162,86,0.42)"}`,
-                borderRadius: 999,
-                cursor: "pointer",
-                height: 30,
-                padding: "0 10px",
-                gap: 5,
-                color: (voiceListening && voiceTarget === "notes") ? "#1a1410" : "#d4a256",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 11,
-                fontWeight: 600,
-                fontFamily: "system-ui, sans-serif",
-                boxShadow: (voiceListening && voiceTarget === "notes") ? "0 0 0 4px rgba(229,115,115,0.25)" : "0 2px 8px rgba(0,0,0,0.22)",
-                transition: "all 200ms ease",
-              }}
-            >
-              <Mic style={{ width: 13, height: 13 }} />
-              <span>{t("m2.voiceMemo.speak", "Speak")}</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* VOICE MEMO */}
+      {/* VOICE MEMO — primary input */}
       {unlocked && pid && (
         <div style={{ marginBottom: 24 }} data-testid="section-solo-voice-memo">
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: v.mutedLight, marginBottom: 10 }}>
@@ -1276,6 +1228,50 @@ export default function M2TastingsSolo() {
           />
         </div>
       )}
+
+      {/* OPTIONAL TEXT NOTES */}
+      <div style={{ marginBottom: 24 }} data-testid="section-notes">
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: v.mutedLight, marginBottom: 10 }}>
+          {t("m2.solo.optionalNotesLabel", "Optional text notes")}
+        </div>
+        <div style={{ position: "relative" }}>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            style={{
+              ...inputStyle, resize: "vertical", minHeight: 80,
+              paddingRight: hasSpeechAPI ? 44 : 14,
+              borderColor: (voiceListening && voiceTarget === "notes") ? v.danger : v.inputBorder,
+            }}
+            data-testid="m2-solo-notes"
+            placeholder={t("m2.solo.notesPlaceholder", "What stands out?")}
+          />
+          {hasSpeechAPI && (
+            <button
+              type="button"
+              onClick={() => toggleVoice("notes")}
+              data-testid="button-voice-notes"
+              style={{
+                position: "absolute", right: 8, top: 8,
+                background: (voiceListening && voiceTarget === "notes") ? "#e57373" : "transparent",
+                border: "none",
+                borderRadius: 999,
+                cursor: "pointer",
+                width: 28,
+                height: 28,
+                padding: 0,
+                color: (voiceListening && voiceTarget === "notes") ? "#1a1410" : v.muted,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "all 200ms ease",
+              }}
+              title={t("m2.solo.dictateHint", "Dictate")}
+            >
+              <Mic style={{ width: 15, height: 15 }} />
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* SAVE BUTTON */}
       {!unlocked && !showUnlockPanel && (
