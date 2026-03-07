@@ -121,25 +121,27 @@ function HeroSection() {
       </FadeUp>
 
       <FadeUp delay={0.6}>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
-          <Link href="/m2" style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "16px 40px", background: v.accent, color: v.bg,
-            fontFamily: font.body, fontSize: 16, fontWeight: 600,
-            borderRadius: 50, textDecoration: "none",
-            transition: "transform 0.2s, box-shadow 0.2s",
-          }} data-testid="link-hero-start">
-            Start Tasting <ChevronRight style={{ width: 18, height: 18 }} />
-          </Link>
-          <Link href="/presentation" data-testid="link-hero-tour" style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "16px 40px", background: "transparent", color: v.accent,
-            fontFamily: font.body, fontSize: 16, fontWeight: 500,
-            borderRadius: 50, textDecoration: "none",
-            border: `1px solid ${v.border}`, transition: "border-color 0.2s",
-          }}>
-            Guided Tour
-          </Link>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
+            <Link href="/presentation" data-testid="link-hero-tour" style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "16px 40px", background: v.accent, color: v.bg,
+              fontFamily: font.body, fontSize: 16, fontWeight: 600,
+              borderRadius: 50, textDecoration: "none",
+              transition: "transform 0.2s, box-shadow 0.2s",
+            }}>
+              Explore Features <ChevronRight style={{ width: 18, height: 18 }} />
+            </Link>
+            <Link href="/m2" style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "16px 40px", background: "transparent", color: v.accent,
+              fontFamily: font.body, fontSize: 16, fontWeight: 500,
+              borderRadius: 50, textDecoration: "none",
+              border: `1px solid ${v.border}`, transition: "border-color 0.2s",
+            }} data-testid="link-hero-start">
+              Start Tasting
+            </Link>
+          </div>
         </div>
       </FadeUp>
 

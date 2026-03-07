@@ -1,1049 +1,1108 @@
-import { useState, useCallback, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Link } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Wine, PenLine, Users, Camera, Star, ChevronRight, ChevronLeft,
-  BookOpen, Trophy, Shield, Heart, X, Eye, EyeOff, FileDown,
-  Sparkles, Radar, BarChart3, UtensilsCrossed, Award, Archive,
-  QrCode, GitCompareArrows
-} from "lucide-react";
-import { v, alpha } from "@/lib/themeVars";
+import { motion, useInView } from "framer-motion";
+import { ChevronDown } from "lucide-react";
+import { generateCaskSensePresentation } from "@/components/casksense-presentation-pdf";
 
 const A = "#c8a97e";
 const A2 = "#a8834a";
+const BG = "#1a1714";
+const BG2 = "#211e19";
+const TXT = "#f0ebe3";
+const TXT_M = "#b8a99a";
+const TXT_DIM = "#7a6e62";
 
 const font = {
   display: "'Playfair Display', Georgia, 'Times New Roman', serif",
   body: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
 };
 
-function Vis_Welcome() {
-  return (
-    <div style={{ position: "relative", width: 220, height: 220 }}>
-      <motion.div
-        style={{ position: "absolute", inset: 0, borderRadius: "50%", background: `radial-gradient(circle, ${A}10 0%, transparent 70%)` }}
-        animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.8, 0.4] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        style={{ position: "absolute", inset: 30, borderRadius: "50%", border: `1px solid ${A}15` }}
-        animate={{ scale: [1, 1.08, 1] }}
-        transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-      />
-      <svg viewBox="0 0 100 100" style={{ position: "absolute", inset: 40, width: 140, height: 140 }}>
-        <motion.path
-          d="M35 75 C35 75 30 45 35 35 C38 28 45 25 50 25 C55 25 62 28 65 35 C70 45 65 75 65 75 Z"
-          fill={`${A}18`} stroke={A} strokeWidth="1"
-          initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-        />
-        <motion.ellipse cx="50" cy="75" rx="16" ry="3" fill="none" stroke={A} strokeWidth="0.8" opacity={0.4}
-          initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 1, duration: 0.5 }}
-        />
-        <motion.line x1="50" y1="25" x2="50" y2="18" stroke={A} strokeWidth="0.8" strokeLinecap="round"
-          initial={{ opacity: 0 }} animate={{ opacity: [0, 0.6, 0] }} transition={{ delay: 1.5, duration: 2, repeat: Infinity }}
-        />
-        {[42, 50, 58].map((x, i) => (
-          <motion.circle key={i} cx={x} cy={22 - i * 3} r="1" fill={A} opacity={0.3}
-            animate={{ y: [0, -8, -12], opacity: [0.3, 0.5, 0] }}
-            transition={{ delay: 1.8 + i * 0.3, duration: 2.5, repeat: Infinity, ease: "easeOut" }}
-          />
-        ))}
-      </svg>
-    </div>
-  );
-}
+const sec: React.CSSProperties = {
+  maxWidth: 1100,
+  margin: "0 auto",
+  padding: "0 24px",
+};
 
-function Vis_Problem() {
-  const cards = [
-    { x: 20, y: 30, rot: -5, delay: 0 },
-    { x: 80, y: 20, rot: 3, delay: 0.2 },
-    { x: 50, y: 60, rot: -2, delay: 0.4 },
-  ];
+function FadeUp({ children, delay = 0, style }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
   return (
-    <div style={{ position: "relative", width: 240, height: 180 }}>
-      {cards.map((c, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0.9, y: 0, scale: 1 }}
-          animate={{ opacity: [0.9, 0.3, 0.05], y: [0, -10, -20], scale: [1, 0.95, 0.9] }}
-          transition={{ delay: 0.5 + c.delay, duration: 3, repeat: Infinity, repeatDelay: 1 }}
-          style={{
-            position: "absolute", left: c.x, top: c.y,
-            width: 90, height: 60, borderRadius: 10,
-            background: `${A}12`, border: `1px solid ${A}20`,
-            transform: `rotate(${c.rot}deg)`, padding: 10,
-          }}
-        >
-          {[0.8, 0.5, 0.3].map((w, j) => (
-            <div key={j} style={{ height: 4, borderRadius: 2, background: `${A}${15 + j * 8}`, width: `${w * 100}%`, marginBottom: 5 }} />
-          ))}
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-function Vis_Solution() {
-  return (
-    <div style={{ position: "relative", width: 200, height: 180 }}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.7, y: 30 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.8, type: "spring" }}
-        style={{
-          width: 140, height: 100, borderRadius: 14, margin: "20px auto 0",
-          background: `${A}10`, border: `1.5px solid ${A}30`,
-          padding: 14, position: "relative", overflow: "hidden",
-        }}
-      >
-        {[0.85, 0.6, 0.7, 0.4].map((w, i) => (
-          <motion.div key={i}
-            initial={{ width: 0 }} animate={{ width: `${w * 100}%` }}
-            transition={{ delay: 0.8 + i * 0.15, duration: 0.5 }}
-            style={{ height: 5, borderRadius: 3, background: `${A}${25 + i * 10}`, marginBottom: 6 }}
-          />
-        ))}
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 1.6, duration: 0.4, type: "spring" }}
-          style={{
-            position: "absolute", right: 8, bottom: 8, width: 24, height: 24,
-            borderRadius: "50%", background: `${A}30`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <Star style={{ width: 12, height: 12, color: A }} strokeWidth={2} />
-        </motion.div>
-      </motion.div>
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 1, 0] }}
-        transition={{ delay: 1.8, duration: 1.5 }}
-        style={{ textAlign: "center", marginTop: 10, fontSize: 11, color: A, fontFamily: font.body, fontWeight: 500 }}
-      >
-        ✓ Saved
-      </motion.div>
-    </div>
-  );
-}
-
-function Vis_LogDram() {
-  const sliderData = [
-    { label: "N", value: 0.75, delay: 0.4 },
-    { label: "P", value: 0.6, delay: 0.6 },
-    { label: "F", value: 0.85, delay: 0.8 },
-    { label: "★", value: 0.7, delay: 1.0 },
-  ];
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      style={{
-        width: 160, borderRadius: 20, padding: "16px 14px",
-        background: `${A}08`, border: `1.5px solid ${A}20`,
-        boxShadow: `0 20px 60px ${A}08`,
-      }}
-    >
-      <div style={{ width: 60, height: 6, borderRadius: 3, background: `${A}20`, margin: "0 auto 14px" }} />
-      {sliderData.map((s) => (
-        <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: A, fontFamily: font.body, width: 14, textAlign: "center" }}>{s.label}</span>
-          <div style={{ flex: 1, height: 6, borderRadius: 3, background: `${A}12`, position: "relative", overflow: "hidden" }}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${s.value * 100}%` }}
-              transition={{ delay: s.delay, duration: 0.6, ease: "easeOut" }}
-              style={{ height: "100%", borderRadius: 3, background: `linear-gradient(90deg, ${A}40, ${A})` }}
-            />
-          </div>
-        </div>
-      ))}
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-        transition={{ delay: 1.4, duration: 0.4 }}
-        style={{ display: "flex", justifyContent: "center", gap: 3, marginTop: 6 }}
-      >
-        {[1,2,3,4,5].map((s) => (
-          <motion.div key={s}
-            initial={{ scale: 0 }} animate={{ scale: 1 }}
-            transition={{ delay: 1.4 + s * 0.08, type: "spring" }}
-          >
-            <Star style={{ width: 12, height: 12, color: s <= 4 ? A : `${A}30`, fill: s <= 4 ? A : "none" }} strokeWidth={1.5} />
-          </motion.div>
-        ))}
-      </motion.div>
+    <motion.div ref={ref} initial={{ opacity: 0, y: 32 }} animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.75, delay, ease: [0.25, 0.46, 0.45, 0.94] }} style={style}>
+      {children}
     </motion.div>
   );
 }
 
-function Vis_Scan() {
+function ScaleIn({ children, delay = 0, style }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-60px" });
   return (
-    <div style={{ position: "relative", width: 200, height: 200 }}>
-      <motion.div
-        style={{ position: "absolute", inset: 30, borderRadius: 16, border: `2px solid ${A}40` }}
-        animate={{ borderColor: [`${A}20`, `${A}60`, `${A}20`] }}
-        transition={{ duration: 2, repeat: Infinity }}
-      />
-      {[0, 1, 2, 3].map((corner) => {
-        const isTop = corner < 2;
-        const isLeft = corner % 2 === 0;
-        return (
-          <motion.div key={corner}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 + corner * 0.1 }}
-            style={{
-              position: "absolute",
-              [isTop ? "top" : "bottom"]: 25,
-              [isLeft ? "left" : "right"]: 25,
-              width: 20, height: 20,
-              borderTop: isTop ? `3px solid ${A}` : "none",
-              borderBottom: isTop ? "none" : `3px solid ${A}`,
-              borderLeft: isLeft ? `3px solid ${A}` : "none",
-              borderRight: isLeft ? "none" : `3px solid ${A}`,
-              borderRadius: isTop && isLeft ? "4px 0 0 0" : isTop && !isLeft ? "0 4px 0 0" : !isTop && isLeft ? "0 0 0 4px" : "0 0 4px 0",
-            }}
-          />
-        );
-      })}
-      <motion.div
-        style={{ position: "absolute", left: 35, right: 35, height: 2, background: `linear-gradient(90deg, transparent, ${A}, transparent)`, top: 80 }}
-        animate={{ top: [50, 150, 50] }}
-        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.5, duration: 0.5 }}
-        style={{
-          position: "absolute", bottom: -10, left: "50%", transform: "translateX(-50%)",
-          background: `${A}20`, border: `1px solid ${A}30`, borderRadius: 8,
-          padding: "4px 12px", fontSize: 10, color: A, fontFamily: font.body, fontWeight: 500,
-          whiteSpace: "nowrap",
-        }}
-      >
-        Lagavulin 16 · 43% · Islay
-      </motion.div>
-    </div>
+    <motion.div ref={ref} initial={{ opacity: 0, scale: 0.85 }} animate={inView ? { opacity: 1, scale: 1 } : {}}
+      transition={{ duration: 0.7, delay, ease: [0.25, 0.46, 0.45, 0.94] }} style={style}>
+      {children}
+    </motion.div>
   );
 }
 
-function Vis_Journal() {
-  const pages = [0, 1, 2];
-  return (
-    <div style={{ position: "relative", width: 180, height: 160 }}>
-      {pages.map((p) => (
-        <motion.div
-          key={p}
-          initial={{ opacity: 0, x: -20, rotateY: -15 }}
-          animate={{ opacity: 1 - p * 0.2, x: p * 12, rotateY: 0 }}
-          transition={{ delay: 0.3 + p * 0.2, duration: 0.6 }}
-          style={{
-            position: "absolute", left: 20, top: 10 + p * 6,
-            width: 120, height: 130, borderRadius: 10,
-            background: p === 0 ? `${A}12` : `${A}06`,
-            border: `1px solid ${A}${15 + p * 5}`,
-            padding: 12, zIndex: 3 - p,
-          }}
-        >
-          {p === 0 && (
-            <>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                <BookOpen style={{ width: 10, height: 10, color: A }} strokeWidth={1.5} />
-                <div style={{ height: 4, borderRadius: 2, background: `${A}30`, flex: 1 }} />
-              </div>
-              {[0.9, 0.6, 0.75, 0.5, 0.8, 0.45].map((w, i) => (
-                <motion.div key={i}
-                  initial={{ width: 0 }} animate={{ width: `${w * 100}%` }}
-                  transition={{ delay: 0.8 + i * 0.1, duration: 0.4 }}
-                  style={{ height: 3, borderRadius: 2, background: `${A}${15 + i * 4}`, marginBottom: 4 }}
-                />
-              ))}
-              <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                transition={{ delay: 1.6 }}
-                style={{ display: "flex", gap: 2, marginTop: 6 }}
-              >
-                {[1,2,3,4].map((s) => (
-                  <Star key={s} style={{ width: 8, height: 8, color: A, fill: A }} strokeWidth={1} />
-                ))}
-                <Star style={{ width: 8, height: 8, color: `${A}30` }} strokeWidth={1} />
-              </motion.div>
-            </>
-          )}
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-function Vis_Collection() {
-  const bottles = [
-    { h: 55, delay: 0.3, opacity: "30" },
-    { h: 48, delay: 0.5, opacity: "25" },
-    { h: 60, delay: 0.7, opacity: "35" },
-    { h: 42, delay: 0.9, opacity: "20" },
-    { h: 52, delay: 1.1, opacity: "28" },
-    { h: 45, delay: 1.3, opacity: "22" },
-  ];
-  return (
-    <div style={{ display: "flex", alignItems: "end", gap: 10, height: 120, padding: "0 20px" }}>
-      {bottles.map((b, i) => (
-        <motion.div
-          key={i}
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: b.h, opacity: 1 }}
-          transition={{ delay: b.delay, duration: 0.5, type: "spring" }}
-          style={{
-            width: 24, borderRadius: "6px 6px 4px 4px",
-            background: `${A}${b.opacity}`,
-            border: `1px solid ${A}20`,
-            position: "relative",
-          }}
-        >
-          <div style={{
-            position: "absolute", top: 4, left: 4, right: 4, height: 10,
-            borderRadius: 3, background: `${A}15`,
-          }} />
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-function Vis_HostTasting() {
-  const avatarPositions = [
-    { x: 90, y: 20, delay: 0.5 },
-    { x: 40, y: 50, delay: 0.7 },
-    { x: 140, y: 50, delay: 0.9 },
-    { x: 60, y: 100, delay: 1.1 },
-    { x: 120, y: 100, delay: 1.3 },
-  ];
-  return (
-    <div style={{ position: "relative", width: 200, height: 170 }}>
-      <motion.div
-        initial={{ scale: 0 }} animate={{ scale: 1 }}
-        transition={{ delay: 0.3, type: "spring" }}
-        style={{
-          position: "absolute", left: 72, top: 45, width: 56, height: 56,
-          borderRadius: 12, background: `${A}15`, border: `1.5px solid ${A}40`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}
-      >
-        <QrCode style={{ width: 28, height: 28, color: A, opacity: 0.7 }} strokeWidth={1.2} />
-      </motion.div>
-      {avatarPositions.map((a, i) => (
-        <motion.div
-          key={i}
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: a.delay, type: "spring" }}
-          style={{
-            position: "absolute", left: a.x, top: a.y,
-            width: 28, height: 28, borderRadius: "50%",
-            background: `${A}${15 + i * 5}`, border: `1px solid ${A}25`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <Users style={{ width: 12, height: 12, color: A, opacity: 0.6 }} strokeWidth={1.5} />
-        </motion.div>
-      ))}
-      {avatarPositions.map((a, i) => (
-        <motion.div
-          key={`line-${i}`}
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ opacity: 0.15 }}
-          transition={{ delay: a.delay + 0.2, duration: 0.3 }}
-          style={{
-            position: "absolute",
-            left: Math.min(a.x + 14, 100), top: Math.min(a.y + 14, 73),
-            width: Math.abs(a.x - 86), height: 1,
-            background: A, transformOrigin: "left center",
-            transform: `rotate(${Math.atan2(73 - a.y - 14, 100 - a.x - 14) * 180 / Math.PI}deg)`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-function Vis_GuidedFlow() {
-  const drams = [
-    { label: "1", delay: 0.3, revealed: true },
-    { label: "2", delay: 0.7, revealed: true },
-    { label: "3", delay: 1.1, revealed: false },
-    { label: "4", delay: 1.5, revealed: false },
-  ];
-  return (
-    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-      {drams.map((d, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, rotateY: 90 }}
-          animate={{ opacity: 1, rotateY: d.revealed ? 0 : 0 }}
-          transition={{ delay: d.delay, duration: 0.5, type: "spring" }}
-          style={{
-            width: 52, height: 72, borderRadius: 10,
-            background: d.revealed ? `${A}15` : `${A}06`,
-            border: `1.5px solid ${d.revealed ? `${A}40` : `${A}15`}`,
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center", gap: 4,
-          }}
-        >
-          {d.revealed ? (
-            <>
-              <Wine style={{ width: 16, height: 16, color: A, opacity: 0.7 }} strokeWidth={1.5} />
-              <span style={{ fontSize: 9, color: A, fontWeight: 600, fontFamily: font.body }}>{d.label}</span>
-            </>
-          ) : (
-            <motion.span
-              animate={{ opacity: [0.3, 0.7, 0.3] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              style={{ fontSize: 16, color: `${A}40` }}
-            >?</motion.span>
-          )}
-        </motion.div>
-      ))}
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-        transition={{ delay: 2 }}
-        style={{ marginLeft: 4 }}
-      >
-        <ChevronRight style={{ width: 20, height: 20, color: `${A}30` }} />
-      </motion.div>
-    </div>
-  );
-}
-
-function Vis_BlindTasting() {
-  return (
-    <div style={{ position: "relative", width: 160, height: 200 }}>
-      <svg viewBox="0 0 100 130" style={{ width: 160, height: 200 }}>
-        <motion.path
-          d="M40 110 C40 110 35 60 38 45 C40 35 45 30 50 28 C55 30 60 35 62 45 C65 60 60 110 60 110 Z"
-          fill={`${A}12`} stroke={A} strokeWidth="1" opacity={0.6}
-          initial={{ opacity: 0 }} animate={{ opacity: 0.6 }} transition={{ duration: 0.5 }}
-        />
-        <motion.rect x="30" y="20" width="40" height="95" rx="6" fill={`${A}08`}
-          stroke={`${A}30`} strokeWidth="1" strokeDasharray="4 3"
-          initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 1, 0] }}
-          transition={{ delay: 0.5, duration: 3, repeat: Infinity, repeatDelay: 1 }}
-        />
-        <motion.text x="50" y="70" textAnchor="middle" fill={A} fontSize="20" fontFamily={font.display} opacity={0.5}
-          animate={{ opacity: [0.3, 0.7, 0.3] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >?</motion.text>
-      </svg>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: [0, 1, 1, 0], scale: [0.8, 1, 1, 0.8] }}
-        transition={{ delay: 3, duration: 2, repeat: Infinity, repeatDelay: 2 }}
-        style={{
-          position: "absolute", bottom: -5, left: "50%", transform: "translateX(-50%)",
-          background: `${A}20`, border: `1px solid ${A}30`, borderRadius: 8,
-          padding: "3px 10px", fontSize: 10, color: A, fontFamily: font.body, fontWeight: 500,
-          whiteSpace: "nowrap",
-        }}
-      >
-        <Eye style={{ width: 10, height: 10, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
-        Reveal!
-      </motion.div>
-    </div>
-  );
-}
-
-function Vis_Results() {
-  const podium = [
-    { place: 2, h: 60, label: "Oban 14", x: 0, delay: 0.5 },
-    { place: 1, h: 85, label: "Lagavulin 16", x: 1, delay: 0.3 },
-    { place: 3, h: 45, label: "Glenfiddich 18", x: 2, delay: 0.7 },
-  ];
-  return (
-    <div style={{ position: "relative", width: 220, height: 160 }}>
-      <div style={{ display: "flex", alignItems: "end", justifyContent: "center", gap: 8, height: 130, paddingTop: 30 }}>
-        {podium.map((p) => (
-          <motion.div
-            key={p.place}
-            initial={{ height: 0 }}
-            animate={{ height: p.h }}
-            transition={{ delay: p.delay, duration: 0.6, type: "spring" }}
-            style={{
-              width: 56, borderRadius: "8px 8px 0 0",
-              background: p.place === 1 ? `${A}25` : `${A}12`,
-              border: `1px solid ${p.place === 1 ? `${A}40` : `${A}20`}`,
-              borderBottom: "none",
-              display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "flex-start",
-              padding: "8px 4px",
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0 }} animate={{ scale: 1 }}
-              transition={{ delay: p.delay + 0.3, type: "spring" }}
-            >
-              {p.place === 1 ? (
-                <Trophy style={{ width: 16, height: 16, color: A }} strokeWidth={1.5} />
-              ) : (
-                <span style={{ fontSize: 14, fontWeight: 600, color: A, fontFamily: font.body }}>{p.place}</span>
-              )}
-            </motion.div>
-            <motion.span
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              transition={{ delay: p.delay + 0.5 }}
-              style={{ fontSize: 7, color: `${A}80`, fontFamily: font.body, textAlign: "center", marginTop: 4, lineHeight: 1.2 }}
-            >
-              {p.label}
-            </motion.span>
-          </motion.div>
-        ))}
-      </div>
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-        transition={{ delay: 1.2 }}
-        style={{ position: "absolute", bottom: -5, right: 10, display: "flex", alignItems: "center", gap: 4 }}
-      >
-        <FileDown style={{ width: 12, height: 12, color: `${A}60` }} strokeWidth={1.5} />
-        <span style={{ fontSize: 9, color: `${A}60`, fontFamily: font.body }}>PDF · Excel</span>
-      </motion.div>
-    </div>
-  );
-}
-
-function Vis_FlavorProfile() {
-  const points = 6;
-  const r = 70;
-  const labels = ["Smoke", "Fruit", "Spice", "Sweet", "Floral", "Body"];
-  const values = [0.72, 0.55, 0.78, 0.85, 0.45, 0.68];
-  const getXY = (i: number, radius: number) => {
-    const angle = (Math.PI * 2 * i) / points - Math.PI / 2;
-    return { x: 90 + Math.cos(angle) * radius, y: 90 + Math.sin(angle) * radius };
-  };
-  const dataPath = values.map((val, i) => {
-    const p = getXY(i, r * val);
-    return `${i === 0 ? "M" : "L"}${p.x},${p.y}`;
-  }).join(" ") + "Z";
-
-  return (
-    <svg width="180" height="180" viewBox="0 0 180 180">
-      {[1, 0.66, 0.33].map((s, si) => (
-        <polygon key={si}
-          points={Array.from({ length: points }, (_, i) => { const p = getXY(i, r * s); return `${p.x},${p.y}`; }).join(" ")}
-          fill="none" stroke={A} strokeWidth="0.5" opacity={0.15}
-        />
-      ))}
-      {Array.from({ length: points }, (_, i) => {
-        const p = getXY(i, r);
-        return <line key={i} x1="90" y1="90" x2={p.x} y2={p.y} stroke={A} strokeWidth="0.3" opacity={0.2} />;
-      })}
-      <motion.polygon
-        points={values.map((val, i) => { const p = getXY(i, r * val); return `${p.x},${p.y}`; }).join(" ")}
-        fill={`${A}12`} stroke={A} strokeWidth="1.5"
-        initial={{ opacity: 0, scale: 0.3 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.5, duration: 0.8, type: "spring" }}
-        style={{ transformOrigin: "90px 90px" }}
-      />
-      {labels.map((label, i) => {
-        const p = getXY(i, r + 16);
-        return (
-          <motion.text key={i}
-            x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle"
-            fill={A} fontSize="8" fontFamily={font.body} fontWeight="500" opacity={0.7}
-            initial={{ opacity: 0 }} animate={{ opacity: 0.7 }}
-            transition={{ delay: 0.8 + i * 0.1 }}
-          >
-            {label}
-          </motion.text>
-        );
-      })}
-    </svg>
-  );
-}
-
-function Vis_Analytics() {
-  const bars = [35, 52, 68, 48, 75, 55, 42, 62, 50, 38, 58, 45];
-  return (
-    <div style={{ position: "relative", width: 200, height: 120 }}>
-      <div style={{ display: "flex", alignItems: "end", gap: 4, height: 90, padding: "0 10px" }}>
-        {bars.map((h, i) => (
-          <motion.div key={i}
-            initial={{ height: 0 }}
-            animate={{ height: h }}
-            transition={{ delay: 0.2 + i * 0.08, duration: 0.5, type: "spring" }}
-            style={{
-              flex: 1, borderRadius: "3px 3px 0 0",
-              background: `linear-gradient(to top, ${A}15, ${A}${20 + Math.floor(h / 3)})`,
-            }}
-          />
-        ))}
-      </div>
-      <svg viewBox="0 0 200 90" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 90 }}>
-        <motion.path
-          d={`M10,${90 - bars[0]} ${bars.map((h, i) => `L${10 + i * 16.5},${90 - h}`).join(" ")}`}
-          fill="none" stroke={A} strokeWidth="1.5" opacity={0.6}
-          initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-          transition={{ delay: 1, duration: 1.2, ease: "easeOut" }}
-        />
-      </svg>
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-        transition={{ delay: 2 }}
-        style={{ display: "flex", justifyContent: "space-between", padding: "4px 10px 0" }}
-      >
-        <span style={{ fontSize: 8, color: `${A}50`, fontFamily: font.body }}>Jan</span>
-        <span style={{ fontSize: 8, color: `${A}50`, fontFamily: font.body }}>Dec</span>
-      </motion.div>
-    </div>
-  );
-}
-
-function Vis_AI() {
-  const words = ["Honey", "Peat", "Vanilla", "Oak", "Dried Fruit", "Sea Salt"];
-  return (
-    <div style={{ position: "relative", width: 200, height: 140 }}>
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        style={{
-          width: 140, height: 80, borderRadius: 12, margin: "0 auto",
-          background: `${A}08`, border: `1px solid ${A}20`, padding: 10,
-          position: "relative", overflow: "hidden",
-        }}
-      >
-        {words.map((w, i) => (
-          <motion.span key={i}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.6 + i * 0.2, duration: 0.3 }}
-            style={{
-              display: "inline-block", fontSize: 9, color: A, fontFamily: font.body,
-              background: `${A}12`, padding: "2px 6px", borderRadius: 4,
-              margin: "0 3px 3px 0", fontWeight: 500,
-            }}
-          >
-            {w}
-          </motion.span>
-        ))}
-      </motion.div>
-      {[0, 1, 2].map((i) => (
-        <motion.div key={i}
-          style={{ position: "absolute", top: 10 + i * 15, left: 160 + i * 5 }}
-          animate={{ y: [0, -5, 0], opacity: [0.3, 0.8, 0.3], rotate: [0, 15, 0] }}
-          transition={{ duration: 2, delay: i * 0.4, repeat: Infinity }}
-        >
-          <Sparkles style={{ width: 12, height: 12, color: A }} strokeWidth={1.5} />
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-function Vis_Pairings() {
-  const pairs = [
-    { left: "🥃", right: "🍫", delay: 0.3, label: "Dark Chocolate" },
-    { left: "🥃", right: "🧀", delay: 0.7, label: "Aged Cheddar" },
-    { left: "🥃", right: "🍯", delay: 1.1, label: "Honeycomb" },
-  ];
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, width: 180 }}>
-      {pairs.map((p, i) => (
-        <motion.div key={i}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: p.delay, duration: 0.5 }}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            background: `${A}08`, border: `1px solid ${A}15`,
-            borderRadius: 10, padding: "8px 12px",
-          }}
-        >
-          <span style={{ fontSize: 18 }}>{p.left}</span>
-          <motion.div
-            initial={{ width: 0 }} animate={{ width: 20 }}
-            transition={{ delay: p.delay + 0.3, duration: 0.3 }}
-            style={{ height: 1, background: `${A}30` }}
-          />
-          <span style={{ fontSize: 18 }}>{p.right}</span>
-          <span style={{ fontSize: 9, color: `${A}80`, fontFamily: font.body, fontWeight: 500 }}>{p.label}</span>
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-function Vis_Badges() {
-  const badges = [
-    { icon: Star, label: "First Dram", delay: 0.3 },
-    { icon: Wine, label: "10 Tastings", delay: 0.6 },
-    { icon: Trophy, label: "Host Pro", delay: 0.9 },
-    { icon: Radar, label: "Flavour Expert", delay: 1.2 },
-    { icon: BookOpen, label: "Journaler", delay: 1.5 },
-    { icon: Award, label: "100 Drams", delay: 1.8 },
-  ];
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, width: 180 }}>
-      {badges.map((b, i) => (
-        <motion.div key={i}
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: b.delay, type: "spring", stiffness: 300 }}
-          style={{
-            width: 52, height: 52, borderRadius: 12,
-            background: `${A}10`, border: `1px solid ${A}20`,
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center", gap: 2,
-          }}
-        >
-          <b.icon style={{ width: 16, height: 16, color: A, opacity: 0.7 }} strokeWidth={1.5} />
-          <span style={{ fontSize: 6, color: `${A}70`, fontFamily: font.body, fontWeight: 500, textAlign: "center" }}>{b.label}</span>
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-function Vis_Compare() {
-  const points = 6;
-  const r = 55;
-  const v1 = [0.72, 0.55, 0.78, 0.85, 0.45, 0.68];
-  const v2 = [0.5, 0.8, 0.4, 0.65, 0.75, 0.55];
-  const getXY = (i: number, radius: number) => {
-    const angle = (Math.PI * 2 * i) / points - Math.PI / 2;
-    return { x: 80 + Math.cos(angle) * radius, y: 80 + Math.sin(angle) * radius };
-  };
-  const path1 = v1.map((val, i) => { const p = getXY(i, r * val); return `${i === 0 ? "M" : "L"}${p.x},${p.y}`; }).join(" ") + "Z";
-  const path2 = v2.map((val, i) => { const p = getXY(i, r * val); return `${i === 0 ? "M" : "L"}${p.x},${p.y}`; }).join(" ") + "Z";
-
-  return (
-    <div style={{ position: "relative" }}>
-      <svg width="160" height="160" viewBox="0 0 160 160">
-        <polygon
-          points={Array.from({ length: points }, (_, i) => { const p = getXY(i, r); return `${p.x},${p.y}`; }).join(" ")}
-          fill="none" stroke={A} strokeWidth="0.5" opacity={0.15}
-        />
-        <motion.polygon points={path1} fill={`${A}10`} stroke={A} strokeWidth="1.2" opacity={0.7}
-          initial={{ opacity: 0 }} animate={{ opacity: 0.7 }} transition={{ delay: 0.4, duration: 0.6 }}
-        />
-        <motion.polygon points={path2} fill={`#6a9a5b10`} stroke="#6a9a5b" strokeWidth="1.2" opacity={0.6}
-          initial={{ opacity: 0 }} animate={{ opacity: 0.6 }} transition={{ delay: 0.8, duration: 0.6 }}
-        />
-      </svg>
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-        transition={{ delay: 1.4 }}
-        style={{
-          position: "absolute", bottom: -8, left: "50%", transform: "translateX(-50%)",
-          display: "flex", gap: 12, fontSize: 9, fontFamily: font.body,
-        }}
-      >
-        <span style={{ color: A }}>● You</span>
-        <span style={{ color: "#6a9a5b" }}>● Taste Twin</span>
-      </motion.div>
-    </div>
-  );
-}
-
-function Vis_Privacy() {
-  return (
-    <div style={{ position: "relative", width: 160, height: 160 }}>
-      <motion.div
-        style={{ position: "absolute", inset: 20, borderRadius: "50%", border: `1.5px solid ${A}20` }}
-        animate={{ rotate: 360 }}
-        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-      />
-      <motion.div
-        style={{ position: "absolute", inset: 35, borderRadius: "50%", border: `1px solid ${A}12` }}
-        animate={{ rotate: -360 }}
-        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-      />
-      <motion.div
-        initial={{ scale: 0 }} animate={{ scale: 1 }}
-        transition={{ delay: 0.3, type: "spring" }}
-        style={{
-          position: "absolute", inset: 0, display: "flex",
-          alignItems: "center", justifyContent: "center",
-        }}
-      >
-        <div style={{
-          width: 52, height: 52, borderRadius: "50%",
-          background: `${A}12`, border: `1.5px solid ${A}30`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <Shield style={{ width: 24, height: 24, color: A, opacity: 0.7 }} strokeWidth={1.5} />
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
-function Vis_Start() {
-  return (
-    <div style={{ position: "relative", width: 220, height: 180 }}>
-      <motion.div
-        style={{ position: "absolute", inset: 10, borderRadius: "50%", background: `radial-gradient(circle, ${A}15 0%, transparent 70%)` }}
-        animate={{ scale: [1, 1.15, 1], opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.3, type: "spring" }}
-        style={{
-          position: "absolute", inset: 0, display: "flex",
-          alignItems: "center", justifyContent: "center",
-        }}
-      >
-        <div style={{
-          width: 80, height: 80, borderRadius: "50%",
-          background: `${A}15`, border: `2px solid ${A}40`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <Heart style={{ width: 32, height: 32, color: A, fill: `${A}30` }} strokeWidth={1.5} />
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
-interface SlideData {
-  id: string;
-  title: string;
-  subtitle: string;
-  visual: () => JSX.Element;
-}
-
-const slides: SlideData[] = [
-  { id: "welcome", title: "CaskSense", subtitle: "Where tasting becomes reflection.", visual: Vis_Welcome },
-  { id: "problem", title: "Tastings fade.", subtitle: "Great moments deserve to be remembered.", visual: Vis_Problem },
-  { id: "solution", title: "Capture every dram.", subtitle: "Your tasting notes, saved and structured.", visual: Vis_Solution },
-  { id: "log", title: "Log a Dram", subtitle: "Rate nose, palate, finish — in seconds.", visual: Vis_LogDram },
-  { id: "scan", title: "Scan a Bottle", subtitle: "AI recognizes the whisky instantly.", visual: Vis_Scan },
-  { id: "journal", title: "Your Whisky Journal", subtitle: "Every dram tells a story. Keep yours.", visual: Vis_Journal },
-  { id: "collection", title: "Your Collection", subtitle: "Import from Whiskybase. Track every bottle.", visual: Vis_Collection },
-  { id: "host", title: "Host a Tasting", subtitle: "Invite friends. Share a link. Go.", visual: Vis_HostTasting },
-  { id: "guided", title: "Guided Flow", subtitle: "Reveal drams one by one. You set the pace.", visual: Vis_GuidedFlow },
-  { id: "blind", title: "Blind Tasting", subtitle: "No labels. Pure perception. Then — reveal.", visual: Vis_BlindTasting },
-  { id: "results", title: "Tasting Results", subtitle: "Rankings, scores, and export in one click.", visual: Vis_Results },
-  { id: "profile", title: "Your Flavour Profile", subtitle: "Discover patterns in your palate.", visual: Vis_FlavorProfile },
-  { id: "analytics", title: "Taste Analytics", subtitle: "See how your preferences evolve.", visual: Vis_Analytics },
-  { id: "ai", title: "AI Tasting Notes", subtitle: "Vocabulary that inspires, not replaces.", visual: Vis_AI },
-  { id: "pairings", title: "Food Pairings", subtitle: "AI-curated matches for your dram.", visual: Vis_Pairings },
-  { id: "badges", title: "Achievements", subtitle: "Celebrate milestones on your journey.", visual: Vis_Badges },
-  { id: "compare", title: "Taste Twins", subtitle: "Find people who taste like you.", visual: Vis_Compare },
-  { id: "start", title: "Ready?", subtitle: "Start your whisky journey with CaskSense.", visual: Vis_Start },
-];
-
-const slideVariants = {
-  enter: (dir: number) => ({ x: dir > 0 ? 200 : -200, opacity: 0, scale: 0.95 }),
-  center: { x: 0, opacity: 1, scale: 1 },
-  exit: (dir: number) => ({ x: dir < 0 ? 200 : -200, opacity: 0, scale: 0.95 }),
-};
-
-export default function GuidedPresentation() {
-  const [current, setCurrent] = useState(0);
-  const [direction, setDirection] = useState(0);
-  const slide = slides[current];
-
-  const go = useCallback((next: number) => {
-    if (next < 0 || next >= slides.length) return;
-    setDirection(next > current ? 1 : -1);
-    setCurrent(next);
-  }, [current]);
-
+function CountUp({ target, suffix = "", duration = 2 }: { target: number; suffix?: string; duration?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const [val, setVal] = useState(0);
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" || e.key === " ") go(current + 1);
-      if (e.key === "ArrowLeft") go(current - 1);
-      if (e.key === "Escape") window.history.back();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [current, go]);
+    if (!inView) return;
+    let start = 0;
+    const step = target / (duration * 60);
+    const id = setInterval(() => {
+      start += step;
+      if (start >= target) { setVal(target); clearInterval(id); }
+      else setVal(Math.floor(start));
+    }, 1000 / 60);
+    return () => clearInterval(id);
+  }, [inView, target, duration]);
+  return <span ref={ref}>{val}{suffix}</span>;
+}
 
-  useEffect(() => {
-    let startX = 0;
-    const onStart = (e: TouchEvent) => { startX = e.touches[0].clientX; };
-    const onEnd = (e: TouchEvent) => {
-      const dx = e.changedTouches[0].clientX - startX;
-      if (Math.abs(dx) > 50) go(dx < 0 ? current + 1 : current - 1);
-    };
-    window.addEventListener("touchstart", onStart, { passive: true });
-    window.addEventListener("touchend", onEnd, { passive: true });
-    return () => {
-      window.removeEventListener("touchstart", onStart);
-      window.removeEventListener("touchend", onEnd);
-    };
-  }, [current, go]);
-
-  const isLast = current === slides.length - 1;
-  const Visual = slide.visual;
-
+function GoldenParticles() {
+  const particles = Array.from({ length: 24 }, (_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    top: `${Math.random() * 100}%`,
+    size: 2 + Math.random() * 3,
+    dur: 12 + Math.random() * 18,
+    delay: Math.random() * 10,
+    opacity: 0.15 + Math.random() * 0.25,
+  }));
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 9999,
-      background: v.bg,
-      display: "flex", flexDirection: "column",
-      fontFamily: font.body,
-      overflow: "hidden",
-      userSelect: "none",
+    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
+      <style>{`
+        @keyframes gpFloat {
+          0%, 100% { transform: translateY(0) translateX(0); opacity: var(--po); }
+          25% { transform: translateY(-40px) translateX(15px); opacity: calc(var(--po) * 1.5); }
+          50% { transform: translateY(-20px) translateX(-10px); opacity: var(--po); }
+          75% { transform: translateY(-60px) translateX(20px); opacity: calc(var(--po) * 0.6); }
+        }
+        @keyframes gpGlow1 { 0%,100%{transform:translate(-50%,-50%) scale(1)} 50%{transform:translate(-50%,-50%) scale(1.15)} }
+        @keyframes gpGlow2 { 0%,100%{transform:translate(-50%,-50%) scale(1) rotate(0deg)} 50%{transform:translate(-50%,-50%) scale(1.1) rotate(5deg)} }
+        @media (prefers-reduced-motion: reduce) {
+          .gp-particle, .gp-glow { animation: none !important; }
+        }
+      `}</style>
+      {particles.map(p => (
+        <div key={p.id} className="gp-particle" style={{
+          position: "absolute", left: p.left, top: p.top,
+          width: p.size, height: p.size, borderRadius: "50%",
+          background: A, ["--po" as any]: p.opacity,
+          opacity: p.opacity,
+          animation: `gpFloat ${p.dur}s ${p.delay}s ease-in-out infinite`,
+        }} />
+      ))}
+      <div className="gp-glow" style={{
+        position: "absolute", left: "30%", top: "15%", width: 600, height: 600, borderRadius: "50%",
+        background: `radial-gradient(circle, ${A}08 0%, transparent 70%)`,
+        animation: "gpGlow1 20s ease-in-out infinite",
+        transform: "translate(-50%, -50%)",
+      }} />
+      <div className="gp-glow" style={{
+        position: "absolute", left: "70%", top: "60%", width: 500, height: 500, borderRadius: "50%",
+        background: `radial-gradient(circle, ${A}06 0%, transparent 70%)`,
+        animation: "gpGlow2 25s ease-in-out infinite",
+        transform: "translate(-50%, -50%)",
+      }} />
+    </div>
+  );
+}
+
+function HeroSection() {
+  const letters = "CaskSense".split("");
+  return (
+    <section style={{
+      minHeight: "100dvh", display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", textAlign: "center",
+      position: "relative", padding: "100px 24px 60px", zIndex: 1,
     }}>
       <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "16px 24px", flexShrink: 0,
-      }}>
-        <Link href="/" data-testid="button-presentation-close" style={{
-          display: "flex", alignItems: "center", gap: 6,
-          color: v.muted, fontSize: 13, textDecoration: "none",
-          fontFamily: font.body,
+        position: "absolute", width: 700, height: 700, borderRadius: "50%",
+        background: `radial-gradient(circle, ${A}0a 0%, transparent 70%)`,
+        top: "30%", left: "50%", transform: "translate(-50%, -50%)",
+        pointerEvents: "none",
+      }} />
+
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.2 }}
+        style={{
+          fontSize: 12, fontFamily: font.body, fontWeight: 500,
+          letterSpacing: "0.2em", textTransform: "uppercase",
+          color: A, marginBottom: 32,
         }}>
-          <X style={{ width: 18, height: 18 }} strokeWidth={1.5} />
-        </Link>
-        <div style={{
-          fontSize: 12, color: v.mutedLight, fontFamily: font.body,
-          fontVariantNumeric: "tabular-nums",
-        }}>
-          {current + 1} / {slides.length}
-        </div>
+        Whisky Tasting Platform
+      </motion.div>
+
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
+        {letters.map((l, i) => (
+          <motion.span key={i} initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 + i * 0.06, ease: [0.25, 0.46, 0.45, 0.94] }}
+            style={{
+              fontFamily: font.display, fontSize: "clamp(52px, 10vw, 100px)",
+              fontWeight: 400, color: TXT, letterSpacing: "-0.02em", lineHeight: 1,
+            }}>
+            {l}
+          </motion.span>
+        ))}
       </div>
 
-      <div style={{ padding: "0 24px", flexShrink: 0 }}>
-        <div style={{ display: "flex", gap: 3, maxWidth: 500, margin: "0 auto" }}>
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => go(i)}
-              data-testid={`button-slide-dot-${i}`}
+      <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 1 }}
+        style={{
+          fontFamily: font.display, fontSize: "clamp(18px, 2.5vw, 26px)",
+          fontWeight: 400, fontStyle: "italic", color: TXT_M,
+          marginBottom: 16,
+        }}>
+        Where tasting becomes reflection.
+      </motion.p>
+
+      <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 1.3 }}
+        style={{
+          fontFamily: font.body, fontSize: "clamp(15px, 1.6vw, 18px)",
+          color: TXT_DIM, lineHeight: 1.6, maxWidth: 440,
+        }}>
+        44 features that change how you taste whisky.
+      </motion.p>
+
+      <motion.div
+        style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)" }}
+        animate={{ y: [0, 10, 0] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}>
+        <ChevronDown style={{ width: 28, height: 28, color: TXT_DIM, opacity: 0.5 }} />
+      </motion.div>
+    </section>
+  );
+}
+
+const flowStages = [
+  { title: "Gather", tag: "Set the table", icon: "M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5z" },
+  { title: "Pour", tag: "Choose your drams", icon: "M8 2v2H6v2l2 12h8l2-12V4h-2V2H8z" },
+  { title: "Reflect", tag: "Rate every note", icon: "M14 2H6a2 2 0 0 0-2 2v16l8-4 8 4V4a2 2 0 0 0-2-2z" },
+  { title: "Reveal", tag: "Unmask the truth", icon: "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" },
+  { title: "Discover", tag: "Explore your palate", icon: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" },
+];
+
+function FlowSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-100px" });
+  return (
+    <section ref={ref} style={{ padding: "100px 24px 120px", position: "relative", zIndex: 1 }}>
+      <div style={sec}>
+        <FadeUp>
+          <h2 style={{
+            fontFamily: font.display, fontSize: "clamp(28px, 4vw, 44px)",
+            fontWeight: 400, color: TXT, textAlign: "center", marginBottom: 12,
+          }}>
+            Five stages. One experience.
+          </h2>
+          <p style={{
+            fontFamily: font.body, fontSize: 16, color: TXT_DIM,
+            textAlign: "center", marginBottom: 72, maxWidth: 420, margin: "0 auto 72px",
+          }}>
+            Every CaskSense tasting follows a natural rhythm.
+          </p>
+        </FadeUp>
+
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "center", gap: 0, flexWrap: "wrap", position: "relative" }}>
+          {flowStages.map((s, i) => (
+            <motion.div key={i}
+              initial={{ opacity: 0, y: 30 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.2 + i * 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
               style={{
-                flex: 1, height: 2.5, borderRadius: 2, border: "none",
-                background: i <= current ? v.accent : v.border,
-                cursor: "pointer", padding: 0,
-                transition: "background 0.3s",
-                opacity: i <= current ? 1 : 0.4,
-              }}
-            />
+                display: "flex", flexDirection: "column", alignItems: "center",
+                width: 160, position: "relative", padding: "0 8px",
+              }}>
+              {i > 0 && (
+                <motion.div
+                  initial={{ scaleX: 0 }} animate={inView ? { scaleX: 1 } : {}}
+                  transition={{ duration: 0.4, delay: 0.3 + i * 0.15 }}
+                  style={{
+                    position: "absolute", top: 28, right: "50%", width: "100%", height: 1,
+                    background: `linear-gradient(to right, ${A}40, ${A}15)`,
+                    transformOrigin: "right",
+                    zIndex: 0,
+                  }} />
+              )}
+              <div style={{
+                width: 56, height: 56, borderRadius: "50%",
+                border: `1.5px solid ${A}50`,
+                background: `${A}0a`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                marginBottom: 16, position: "relative", zIndex: 1,
+              }}>
+                <span style={{ fontFamily: font.display, fontSize: 20, color: A, fontWeight: 400 }}>
+                  {i + 1}
+                </span>
+              </div>
+              <span style={{
+                fontFamily: font.display, fontSize: 17, color: TXT, fontWeight: 400, marginBottom: 4,
+              }}>
+                {s.title}
+              </span>
+              <span style={{ fontFamily: font.body, fontSize: 13, color: TXT_DIM, textAlign: "center" }}>
+                {s.tag}
+              </span>
+            </motion.div>
           ))}
         </div>
       </div>
+    </section>
+  );
+}
 
+interface Feature {
+  title: string;
+  desc: string;
+  quote: string;
+}
+
+const chapA: Feature[] = [
+  { title: "Tasting Setup", desc: "Create with title, date, location. Configure everything before inviting.", quote: "Set the stage." },
+  { title: "Rating Scales", desc: "Choose 5, 10, 20, or 100-point professional scales.", quote: "Precision, your way." },
+  { title: "Guided Mode", desc: "Everyone moves together. Pace synchronized in real time.", quote: "One pace. One moment." },
+  { title: "Session Modes", desc: "Three ways: free Flow, locked Focus, or guided Journal.", quote: "Flow. Focus. Journal." },
+  { title: "QR Code & Join", desc: "Join via QR scan or 6-digit code. No app download needed.", quote: "Scan or type. Instantly in." },
+  { title: "Blind Mode", desc: "Four-stage reveal: number, name, metadata, full bottle.", quote: "Mystery, unveiled in acts." },
+  { title: "Live Rating", desc: "Rate nose, taste, finish, balance. Select flavor chips. Voice notes.", quote: "Every sense, captured live." },
+  { title: "Voice-to-Text", desc: "Dictate impressions hands-free. Speech recognition instant.", quote: "Speak. Notes appear." },
+  { title: "Discussion Panel", desc: "Live chat during the session. Debate flavors together.", quote: "Debate in real time." },
+  { title: "Multi-Act Reveal", desc: "4-act show: participation, consensus, details, final ranking.", quote: "A reveal like a finale." },
+  { title: "Results & Export", desc: "Gold, silver, bronze medals. Export as PDF, Excel, CSV.", quote: "Celebrate, then share." },
+  { title: "Flight Board", desc: "Visual lineup overview. See blind/revealed, navigate with a tap.", quote: "See the whole flight." },
+  { title: "Ambient Sound", desc: "Fireplace soundscape for the perfect tasting atmosphere.", quote: "Atmosphere you can hear." },
+  { title: "Printable Templates", desc: "Tasting sheets, mats, AI menu cards with cover images.", quote: "Print the ritual." },
+  { title: "Solo Dram Logger", desc: "Rate whiskies outside group sessions. Every note captured.", quote: "Your private dram diary." },
+  { title: "Guest Mode", desc: "Standard Naked or Ultra Naked. Choose your visibility.", quote: "Choose your visibility." },
+];
+
+const chapB: Feature[] = [
+  { title: "Flavor Radar", desc: "Interactive radar chart mapping nose, taste, finish, balance, overall.", quote: "Shape your palate." },
+  { title: "Profile Comparison", desc: "Overlay your radar against friends or the community.", quote: "You vs. everyone." },
+  { title: "Taste Evolution", desc: "Trend line showing how your ratings develop over months.", quote: "Taste evolves over time." },
+  { title: "Consistency Score", desc: "Standard deviation, range, spread. How steady is your palate?", quote: "How steady is your palate?" },
+  { title: "Palate DNA", desc: "Your favorite region and cask combination from highest scores.", quote: "Your flavor fingerprint." },
+  { title: "Whisky Journal", desc: "Every dram logged with notes, scores, and metadata.", quote: "Every dram remembered." },
+  { title: "Recommendations", desc: "Factor-based engine weighing region, cask, peat, ratings.", quote: "Recommendations with reasons." },
+  { title: "Side-by-Side", desc: "Overlay up to 3 whiskies on a single radar chart.", quote: "Three drams, one glance." },
+  { title: "Achievements", desc: "From 'First Sip' to 'Living Legend'. Gamified milestones.", quote: "Milestones worth pouring for." },
+  { title: "Collection Analysis", desc: "Value, region, age, ABV spectrum, vintage timeline.", quote: "Know your cellar's story." },
+];
+
+const chapC: Feature[] = [
+  { title: "Bottle Recognition", desc: "Camera identifies whisky. Fills distillery, age, ABV, cask.", quote: "Point. Identify. Done." },
+  { title: "Label OCR", desc: "Reads text from labels, menus, handwritten notes.", quote: "Labels become data." },
+  { title: "AI Tasting Notes", desc: "Select flavor keywords, AI generates professional notes.", quote: "From hints to prose." },
+  { title: "AI Enrichment", desc: "Facts, food pairings, and serving recommendations for every whisky.", quote: "Facts and pairings, instantly." },
+  { title: "Market Price", desc: "AI estimates market value based on distillery, age, rarity.", quote: "Market value, estimated smartly." },
+  { title: "AI Menu Card", desc: "DALL-E generates context-aware cover images for menus.", quote: "Menus with imagination." },
+  { title: "AI Tasting Import", desc: "Parse PDFs, Excel, photos into structured tasting events.", quote: "Chaos in, structure out." },
+];
+
+const chapD: Feature[] = [
+  { title: "Taste Twins", desc: "Correlation engine: Twin (80%+), Similar (50%+), Related, Different.", quote: "Find your taste twin." },
+  { title: "Leaderboards", desc: "Most Active, Most Detailed, Highest Rated, Explorer. Medals.", quote: "Climb every leaderboard." },
+  { title: "Activity Feed", desc: "Real-time stream of friends' tastings, drams, badges.", quote: "See what friends sip." },
+  { title: "Friend Management", desc: "Search, add friends. See online status. Build your circle.", quote: "Build your tasting circle." },
+  { title: "Community Rankings", desc: "Aggregated scores by region. Your score vs. group average.", quote: "The crowd's whisky verdict." },
+  { title: "Historical Tastings", desc: "Searchable archive with cross-tasting analytics and trends.", quote: "Past tastings, new insights." },
+];
+
+const chapE: Feature[] = [
+  { title: "Whiskybase Integration", desc: "Lookup by ID, CSV import, deep links, auto image fetching.", quote: "Connected to whisky knowledge." },
+  { title: "Barcode Scanner", desc: "Camera-based scanning for instant bottle lookup.", quote: "Scan shelf to profile." },
+  { title: "Collection Sync", desc: "CSV re-upload. Auto-detects new, removed, changed items.", quote: "Reupload. Auto-sync." },
+  { title: "Knowledge Hub", desc: "Lexicon, distillery map, bottler database, tasting guide.", quote: "Learn the whole world." },
+  { title: "Wishlist", desc: "Track bottles to find. Integrated with collection and journal.", quote: "Track the next bottle." },
+];
+
+function ChapterHeader({ letter, title, count, accent = A }: { letter: string; title: string; count: number; accent?: string }) {
+  return (
+    <FadeUp style={{ textAlign: "center", marginBottom: 64 }}>
       <div style={{
-        flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-        position: "relative", overflow: "hidden",
-        padding: "16px 24px",
+        fontFamily: font.display, fontSize: "clamp(80px, 12vw, 140px)",
+        fontWeight: 400, color: `${accent}15`,
+        lineHeight: 1, marginBottom: -20, position: "relative",
       }}>
-        <AnimatePresence custom={direction} mode="wait">
-          <motion.div
-            key={slide.id}
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-            style={{
-              display: "flex", flexDirection: "column",
-              alignItems: "center", textAlign: "center",
-              gap: 28, width: "100%",
-            }}
-          >
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              minHeight: 200,
-            }}>
-              <Visual />
-            </div>
+        {letter}
+      </div>
+      <h2 style={{
+        fontFamily: font.display, fontSize: "clamp(26px, 3.5vw, 40px)",
+        fontWeight: 400, color: TXT, marginBottom: 8, position: "relative",
+      }}>
+        {title}
+      </h2>
+      <span style={{
+        fontFamily: font.body, fontSize: 14, color: accent,
+        letterSpacing: "0.1em", textTransform: "uppercase",
+      }}>
+        {count} features
+      </span>
+    </FadeUp>
+  );
+}
 
-            <div>
-              <motion.h2
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-                style={{
-                  fontFamily: font.display,
-                  fontSize: "clamp(26px, 5vw, 38px)",
-                  fontWeight: 400,
-                  color: v.text,
-                  lineHeight: 1.15,
-                  marginBottom: 8,
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                {slide.title}
-              </motion.h2>
-              <motion.p
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-                style={{
-                  fontFamily: font.body,
-                  fontSize: "clamp(14px, 1.8vw, 17px)",
-                  color: v.muted,
-                  lineHeight: 1.5,
-                  maxWidth: 380,
-                  margin: "0 auto",
-                }}
-              >
-                {slide.subtitle}
-              </motion.p>
+function FeatureCard({ f, delay = 0 }: { f: Feature; delay?: number }) {
+  return (
+    <FadeUp delay={delay} style={{ flex: "1 1 280px", maxWidth: 360 }}>
+      <div style={{
+        padding: "24px 20px", borderRadius: 16,
+        background: `${A}06`, border: `1px solid ${A}10`,
+        height: "100%",
+      }}>
+        <div style={{
+          fontFamily: font.body, fontSize: 11, color: A,
+          letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8, fontWeight: 500,
+        }}>
+          {f.quote}
+        </div>
+        <div style={{
+          fontFamily: font.display, fontSize: 18, color: TXT,
+          fontWeight: 400, marginBottom: 8,
+        }}>
+          {f.title}
+        </div>
+        <div style={{
+          fontFamily: font.body, fontSize: 14, color: TXT_DIM,
+          lineHeight: 1.5,
+        }}>
+          {f.desc}
+        </div>
+      </div>
+    </FadeUp>
+  );
+}
+
+function FeatureGrid({ features }: { features: Feature[] }) {
+  return (
+    <div style={{
+      display: "flex", flexWrap: "wrap", gap: 16,
+      justifyContent: "center", marginTop: 48,
+    }}>
+      {features.map((f, i) => (
+        <FeatureCard key={i} f={f} delay={i * 0.06} />
+      ))}
+    </div>
+  );
+}
+
+function BlindModeDemo() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const stages = [
+    { label: "?", sub: "Dram #1" },
+    { label: "Talisker", sub: "Revealed" },
+    { label: "45.8%", sub: "Isle of Skye" },
+    { label: "10 Years", sub: "Single Malt" },
+  ];
+  return (
+    <FadeUp>
+      <div style={{ textAlign: "center", marginBottom: 12 }}>
+        <span style={{ fontFamily: font.body, fontSize: 12, color: A, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+          Blind Mode
+        </span>
+      </div>
+      <div style={{ textAlign: "center", marginBottom: 8 }}>
+        <span style={{ fontFamily: font.display, fontSize: 22, color: TXT }}>
+          Mystery, unveiled in acts.
+        </span>
+      </div>
+      <p style={{ fontFamily: font.body, fontSize: 14, color: TXT_DIM, textAlign: "center", maxWidth: 400, margin: "0 auto 32px" }}>
+        Four-stage reveal: only the dram number, then the name, then metadata, then the full bottle. Bias eliminated.
+      </p>
+      <div ref={ref} style={{
+        display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap",
+        padding: "32px 0",
+      }}>
+        {stages.map((s, i) => (
+          <motion.div key={i}
+            initial={{ rotateY: 180, opacity: 0 }}
+            animate={inView ? { rotateY: 0, opacity: 1 } : {}}
+            transition={{ duration: 0.7, delay: 0.3 + i * 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+            style={{
+              width: 120, height: 160, borderRadius: 16,
+              background: i === 0 ? `linear-gradient(135deg, ${A}15, ${A}08)` : `linear-gradient(135deg, ${A}0c, ${A}05)`,
+              border: `1px solid ${i === 0 ? A + "40" : A + "18"}`,
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+              perspective: 1000, transformStyle: "preserve-3d",
+            }}>
+            <div style={{
+              fontFamily: i === 0 ? font.display : font.body,
+              fontSize: i === 0 ? 40 : 16,
+              color: i === 0 ? A : TXT,
+              fontWeight: i === 0 ? 400 : 500,
+              marginBottom: 8,
+            }}>
+              {s.label}
+            </div>
+            <div style={{ fontFamily: font.body, fontSize: 11, color: TXT_DIM }}>
+              {s.sub}
+            </div>
+            <div style={{
+              position: "absolute", top: 8, right: 10,
+              fontFamily: font.body, fontSize: 10, color: `${A}50`,
+            }}>
+              Act {i + 1}
             </div>
           </motion.div>
-        </AnimatePresence>
+        ))}
       </div>
+    </FadeUp>
+  );
+}
 
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "16px 24px 32px", flexShrink: 0,
-        maxWidth: 480, width: "100%", margin: "0 auto",
+function LiveRatingDemo() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const bars = [
+    { label: "Nose", pct: 82, color: A },
+    { label: "Taste", pct: 90, color: "#d4a256" },
+    { label: "Finish", pct: 76, color: A2 },
+    { label: "Balance", pct: 85, color: A },
+    { label: "Overall", pct: 88, color: "#d4a256" },
+  ];
+  const chips = ["Smoky", "Honey", "Vanilla", "Maritime"];
+  return (
+    <FadeUp>
+      <div style={{ textAlign: "center", marginBottom: 12 }}>
+        <span style={{ fontFamily: font.body, fontSize: 12, color: A, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+          Live Rating
+        </span>
+      </div>
+      <div style={{ textAlign: "center", marginBottom: 8 }}>
+        <span style={{ fontFamily: font.display, fontSize: 22, color: TXT }}>
+          Every sense, captured live.
+        </span>
+      </div>
+      <p style={{ fontFamily: font.body, fontSize: 14, color: TXT_DIM, textAlign: "center", maxWidth: 400, margin: "0 auto 32px" }}>
+        Rate nose, taste, finish, balance, and overall. Select flavor chips. Dictate voice notes. All captured live.
+      </p>
+      <div ref={ref} style={{
+        maxWidth: 400, margin: "0 auto", padding: "24px",
+        background: `${A}06`, borderRadius: 20, border: `1px solid ${A}10`,
       }}>
-        <button
-          onClick={() => go(current - 1)}
-          disabled={current === 0}
-          data-testid="button-presentation-prev"
-          style={{
-            display: "flex", alignItems: "center", gap: 4,
-            padding: "10px 18px", borderRadius: 50,
-            background: "transparent",
-            border: `1px solid ${current === 0 ? v.border : v.accent}`,
-            color: current === 0 ? v.muted : v.accent,
-            fontSize: 14, fontWeight: 500,
-            cursor: current === 0 ? "default" : "pointer",
-            fontFamily: font.body,
-            opacity: current === 0 ? 0.3 : 1,
-            transition: "all 0.2s",
-          }}
-        >
-          <ChevronLeft style={{ width: 16, height: 16 }} />
-        </button>
+        {bars.map((b, i) => (
+          <div key={i} style={{ marginBottom: 14 }}>
+            <div style={{
+              display: "flex", justifyContent: "space-between", marginBottom: 4,
+            }}>
+              <span style={{ fontFamily: font.body, fontSize: 13, color: TXT_M }}>{b.label}</span>
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={inView ? { opacity: 1 } : {}}
+                transition={{ delay: 0.5 + i * 0.12 }}
+                style={{ fontFamily: font.body, fontSize: 13, color: A }}>
+                {b.pct}
+              </motion.span>
+            </div>
+            <div style={{
+              height: 6, borderRadius: 3, background: `${A}12`, overflow: "hidden",
+            }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={inView ? { width: `${b.pct}%` } : {}}
+                transition={{ duration: 0.8, delay: 0.3 + i * 0.12, ease: [0.25, 0.46, 0.45, 0.94] }}
+                style={{
+                  height: "100%", borderRadius: 3,
+                  background: `linear-gradient(to right, ${b.color}80, ${b.color})`,
+                }} />
+            </div>
+          </div>
+        ))}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 20 }}>
+          {chips.map((c, i) => (
+            <motion.div key={i}
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={inView ? { opacity: 1, scale: 1 } : {}}
+              transition={{ duration: 0.4, delay: 1.2 + i * 0.1 }}
+              style={{
+                padding: "5px 14px", borderRadius: 20,
+                background: `${A}15`, border: `1px solid ${A}25`,
+                fontFamily: font.body, fontSize: 12, color: A,
+              }}>
+              {c}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </FadeUp>
+  );
+}
 
-        {isLast ? (
-          <Link href="/enter" data-testid="button-presentation-start" style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "12px 28px", borderRadius: 50,
-            background: v.accent, color: v.bg,
-            fontSize: 15, fontWeight: 600,
-            textDecoration: "none", fontFamily: font.body,
+function RevealActsDemo() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const acts = ["Stats", "Consensus", "Details", "Ranking"];
+  return (
+    <FadeUp>
+      <div style={{ textAlign: "center", marginBottom: 12 }}>
+        <span style={{ fontFamily: font.body, fontSize: 12, color: A, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+          Multi-Act Reveal
+        </span>
+      </div>
+      <div style={{ textAlign: "center", marginBottom: 8 }}>
+        <span style={{ fontFamily: font.display, fontSize: 22, color: TXT }}>
+          A reveal like a finale.
+        </span>
+      </div>
+      <p style={{ fontFamily: font.body, fontSize: 14, color: TXT_DIM, textAlign: "center", maxWidth: 400, margin: "0 auto 32px" }}>
+        The reveal is a 4-act show: participation stats, group consensus, technical details, then the final ranking.
+      </p>
+      <div ref={ref} style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        gap: 0, padding: "32px 0",
+      }}>
+        {acts.map((a, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center" }}>
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={inView ? { scale: 1, opacity: 1 } : {}}
+              transition={{ duration: 0.5, delay: 0.3 + i * 0.25, type: "spring", stiffness: 200 }}
+              style={{
+                width: i === 3 ? 64 : 52, height: i === 3 ? 64 : 52,
+                borderRadius: "50%",
+                background: i === 3 ? `linear-gradient(135deg, ${A}30, ${A}15)` : `${A}0c`,
+                border: `1.5px solid ${i === 3 ? A : A + "30"}`,
+                display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center",
+                boxShadow: i === 3 ? `0 0 20px ${A}20` : "none",
+                position: "relative",
+              }}>
+              <span style={{
+                fontFamily: font.body, fontSize: 10, color: i === 3 ? A : TXT_DIM,
+                letterSpacing: "0.05em",
+              }}>
+                Act {i + 1}
+              </span>
+              <span style={{
+                fontFamily: font.body, fontSize: 9, color: TXT_DIM,
+                position: "absolute", bottom: -20, whiteSpace: "nowrap",
+              }}>
+                {a}
+              </span>
+            </motion.div>
+            {i < 3 && (
+              <motion.div
+                initial={{ scaleX: 0 }}
+                animate={inView ? { scaleX: 1 } : {}}
+                transition={{ duration: 0.3, delay: 0.5 + i * 0.25 }}
+                style={{
+                  width: 32, height: 1, background: `${A}30`,
+                  transformOrigin: "left",
+                }} />
+            )}
+          </div>
+        ))}
+      </div>
+    </FadeUp>
+  );
+}
+
+function RadarChartDemo() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const cx = 150, cy = 150, r = 100;
+  const labels = ["Nose", "Taste", "Finish", "Balance", "Overall"];
+  const values = [0.82, 0.9, 0.76, 0.85, 0.88];
+  const angles = labels.map((_, i) => (Math.PI * 2 * i) / labels.length - Math.PI / 2);
+  const pts = values.map((v, i) => ({
+    x: cx + Math.cos(angles[i]) * r * v,
+    y: cy + Math.sin(angles[i]) * r * v,
+  }));
+  const poly = pts.map(p => `${p.x},${p.y}`).join(" ");
+  const gridRings = [0.25, 0.5, 0.75, 1];
+
+  return (
+    <FadeUp>
+      <div style={{ textAlign: "center", marginBottom: 12 }}>
+        <span style={{ fontFamily: font.body, fontSize: 12, color: A, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+          Flavor Radar
+        </span>
+      </div>
+      <div style={{ textAlign: "center", marginBottom: 8 }}>
+        <span style={{ fontFamily: font.display, fontSize: 22, color: TXT }}>
+          Shape your palate.
+        </span>
+      </div>
+      <p style={{ fontFamily: font.body, fontSize: 14, color: TXT_DIM, textAlign: "center", maxWidth: 400, margin: "0 auto 32px" }}>
+        Interactive radar chart mapping your averages across nose, taste, finish, balance, and overall.
+      </p>
+      <div ref={ref} style={{ display: "flex", justifyContent: "center", padding: "16px 0" }}>
+        <svg viewBox="0 0 300 300" style={{ width: 280, height: 280 }}>
+          {gridRings.map((ring, ri) => {
+            const gPts = angles.map(a => `${cx + Math.cos(a) * r * ring},${cy + Math.sin(a) * r * ring}`).join(" ");
+            return (
+              <motion.polygon key={ri} points={gPts} fill="none" stroke={`${A}15`} strokeWidth="0.8"
+                initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}}
+                transition={{ duration: 0.4, delay: ri * 0.1 }} />
+            );
+          })}
+          {angles.map((a, i) => (
+            <motion.line key={i} x1={cx} y1={cy}
+              x2={cx + Math.cos(a) * r} y2={cy + Math.sin(a) * r}
+              stroke={`${A}12`} strokeWidth="0.8"
+              initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}}
+              transition={{ duration: 0.3, delay: 0.4 + i * 0.05 }} />
+          ))}
+          <motion.polygon points={poly}
+            fill={`${A}18`} stroke={A} strokeWidth="1.5"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={inView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.8, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+            style={{ transformOrigin: `${cx}px ${cy}px` }}
+          />
+          {pts.map((p, i) => (
+            <motion.circle key={i} cx={p.x} cy={p.y} r="4"
+              fill={A} stroke={BG} strokeWidth="2"
+              initial={{ opacity: 0, scale: 0 }}
+              animate={inView ? { opacity: 1, scale: 1 } : {}}
+              transition={{ duration: 0.3, delay: 0.9 + i * 0.08, type: "spring" }}
+            />
+          ))}
+          {labels.map((l, i) => {
+            const lx = cx + Math.cos(angles[i]) * (r + 22);
+            const ly = cy + Math.sin(angles[i]) * (r + 22);
+            return (
+              <motion.text key={i} x={lx} y={ly}
+                textAnchor="middle" dominantBaseline="middle"
+                fill={TXT_DIM} fontSize="11" fontFamily={font.body}
+                initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}}
+                transition={{ delay: 1.2 + i * 0.05 }}>
+                {l}
+              </motion.text>
+            );
+          })}
+        </svg>
+      </div>
+    </FadeUp>
+  );
+}
+
+function TrendLineDemo() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+  const vals = [72, 78, 75, 82, 80, 86];
+  const w = 360, h = 160, pad = 40;
+  const xStep = (w - pad * 2) / (months.length - 1);
+  const minV = 65, maxV = 95;
+  const yScale = (v: number) => h - pad - ((v - minV) / (maxV - minV)) * (h - pad * 2);
+  const pathD = vals.map((v, i) => `${i === 0 ? "M" : "L"}${pad + i * xStep},${yScale(v)}`).join(" ");
+
+  return (
+    <FadeUp>
+      <div style={{ textAlign: "center", marginBottom: 12 }}>
+        <span style={{ fontFamily: font.body, fontSize: 12, color: A, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+          Taste Evolution
+        </span>
+      </div>
+      <div style={{ textAlign: "center", marginBottom: 8 }}>
+        <span style={{ fontFamily: font.display, fontSize: 22, color: TXT }}>
+          Taste evolves over time.
+        </span>
+      </div>
+      <p style={{ fontFamily: font.body, fontSize: 14, color: TXT_DIM, textAlign: "center", maxWidth: 400, margin: "0 auto 32px" }}>
+        A trend line showing how your average ratings develop over months.
+      </p>
+      <div ref={ref} style={{ display: "flex", justifyContent: "center", padding: "16px 0" }}>
+        <svg viewBox={`0 0 ${w} ${h}`} style={{ width: Math.min(w, 360), height: h }}>
+          <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke={`${A}15`} strokeWidth="1" />
+          <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke={`${A}15`} strokeWidth="1" />
+          {months.map((m, i) => (
+            <motion.text key={i} x={pad + i * xStep} y={h - pad + 18}
+              textAnchor="middle" fill={TXT_DIM} fontSize="10" fontFamily={font.body}
+              initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}}
+              transition={{ delay: 0.2 + i * 0.08 }}>
+              {m}
+            </motion.text>
+          ))}
+          <motion.path d={pathD} fill="none" stroke={A} strokeWidth="2" strokeLinecap="round"
+            initial={{ pathLength: 0 }} animate={inView ? { pathLength: 1 } : {}}
+            transition={{ duration: 1.5, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }} />
+          {vals.map((v, i) => (
+            <motion.circle key={i} cx={pad + i * xStep} cy={yScale(v)} r="4"
+              fill={A} stroke={BG} strokeWidth="2"
+              initial={{ opacity: 0, scale: 0 }}
+              animate={inView ? { opacity: 1, scale: 1 } : {}}
+              transition={{ delay: 1 + i * 0.12, type: "spring" }} />
+          ))}
+        </svg>
+      </div>
+    </FadeUp>
+  );
+}
+
+function ScannerDemo() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  return (
+    <FadeUp>
+      <div style={{ textAlign: "center", marginBottom: 12 }}>
+        <span style={{ fontFamily: font.body, fontSize: 12, color: A, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+          Bottle Recognition
+        </span>
+      </div>
+      <div style={{ textAlign: "center", marginBottom: 8 }}>
+        <span style={{ fontFamily: font.display, fontSize: 22, color: TXT }}>
+          Point. Identify. Done.
+        </span>
+      </div>
+      <p style={{ fontFamily: font.body, fontSize: 14, color: TXT_DIM, textAlign: "center", maxWidth: 400, margin: "0 auto 32px" }}>
+        Point your camera at any label. GPT-4o Vision identifies the whisky and fills in all metadata.
+      </p>
+      <div ref={ref} style={{ display: "flex", justifyContent: "center", padding: "16px 0" }}>
+        <div style={{
+          width: 220, height: 220, position: "relative",
+          background: `${A}05`, borderRadius: 20,
+          overflow: "hidden",
+        }}>
+          <style>{`
+            @keyframes scanLine { 0%{top:10%} 50%{top:80%} 100%{top:10%} }
+            @media (prefers-reduced-motion: reduce) { .scan-line { animation: none !important; } }
+          `}</style>
+          <div style={{
+            position: "absolute", top: 12, left: 12, width: 28, height: 28,
+            borderTop: `2px solid ${A}60`, borderLeft: `2px solid ${A}60`, borderRadius: "4px 0 0 0",
+          }} />
+          <div style={{
+            position: "absolute", top: 12, right: 12, width: 28, height: 28,
+            borderTop: `2px solid ${A}60`, borderRight: `2px solid ${A}60`, borderRadius: "0 4px 0 0",
+          }} />
+          <div style={{
+            position: "absolute", bottom: 12, left: 12, width: 28, height: 28,
+            borderBottom: `2px solid ${A}60`, borderLeft: `2px solid ${A}60`, borderRadius: "0 0 0 4px",
+          }} />
+          <div style={{
+            position: "absolute", bottom: 12, right: 12, width: 28, height: 28,
+            borderBottom: `2px solid ${A}60`, borderRight: `2px solid ${A}60`, borderRadius: "0 0 4px 0",
+          }} />
+
+          {inView && (
+            <div className="scan-line" style={{
+              position: "absolute", left: 16, right: 16, height: 2,
+              background: `linear-gradient(to right, transparent, ${A}80, transparent)`,
+              animation: "scanLine 2.5s ease-in-out infinite",
+              boxShadow: `0 0 12px ${A}40`,
+            }} />
+          )}
+
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ delay: 1.5, duration: 0.6 }}
+            style={{
+              position: "absolute", bottom: 20, left: 16, right: 16,
+              padding: "12px", borderRadius: 12,
+              background: `${BG}e0`, border: `1px solid ${A}25`,
+              backdropFilter: "blur(8px)",
+            }}>
+            <div style={{ fontFamily: font.body, fontSize: 13, color: TXT, fontWeight: 500, marginBottom: 2 }}>
+              Talisker 10
+            </div>
+            <div style={{ fontFamily: font.body, fontSize: 11, color: TXT_DIM }}>
+              45.8% · Isle of Skye · Single Malt
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </FadeUp>
+  );
+}
+
+function TasteTwinsDemo() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const cx = 150, cy = 150, r = 90;
+  const labels = ["N", "T", "F", "B", "O"];
+  const v1 = [0.82, 0.9, 0.76, 0.85, 0.88];
+  const v2 = [0.78, 0.88, 0.80, 0.82, 0.84];
+  const angles = labels.map((_, i) => (Math.PI * 2 * i) / labels.length - Math.PI / 2);
+  const toPoly = (vals: number[]) =>
+    vals.map((v, i) => `${cx + Math.cos(angles[i]) * r * v},${cy + Math.sin(angles[i]) * r * v}`).join(" ");
+
+  return (
+    <FadeUp>
+      <div style={{ textAlign: "center", marginBottom: 12 }}>
+        <span style={{ fontFamily: font.body, fontSize: 12, color: A, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+          Taste Twins
+        </span>
+      </div>
+      <div style={{ textAlign: "center", marginBottom: 8 }}>
+        <span style={{ fontFamily: font.display, fontSize: 22, color: TXT }}>
+          Find your taste twin.
+        </span>
+      </div>
+      <p style={{ fontFamily: font.body, fontSize: 14, color: TXT_DIM, textAlign: "center", maxWidth: 400, margin: "0 auto 32px" }}>
+        Correlation engine matching your ratings with others. Discover who shares your palate.
+      </p>
+      <div ref={ref} style={{ display: "flex", justifyContent: "center", position: "relative", padding: "16px 0" }}>
+        <svg viewBox="0 0 300 300" style={{ width: 260, height: 260 }}>
+          {[0.5, 1].map((ring, ri) => {
+            const gPts = angles.map(a => `${cx + Math.cos(a) * r * ring},${cy + Math.sin(a) * r * ring}`).join(" ");
+            return <polygon key={ri} points={gPts} fill="none" stroke={`${A}12`} strokeWidth="0.8" />;
+          })}
+          <motion.polygon points={toPoly(v1)}
+            fill={`${A}15`} stroke={A} strokeWidth="1.5"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={inView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            style={{ transformOrigin: `${cx}px ${cy}px` }}
+          />
+          <motion.polygon points={toPoly(v2)}
+            fill="#6b8cff12" stroke="#6b8cff" strokeWidth="1.5" strokeDasharray="4 3"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={inView ? { opacity: 0.7, scale: 1 } : {}}
+            transition={{ duration: 0.7, delay: 0.6 }}
+            style={{ transformOrigin: `${cx}px ${cy}px` }}
+          />
+          {labels.map((l, i) => (
+            <text key={i} x={cx + Math.cos(angles[i]) * (r + 18)} y={cy + Math.sin(angles[i]) * (r + 18)}
+              textAnchor="middle" dominantBaseline="middle" fill={TXT_DIM} fontSize="11" fontFamily={font.body}>
+              {l}
+            </text>
+          ))}
+        </svg>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={inView ? { opacity: 1, scale: 1 } : {}}
+          transition={{ delay: 1.2, duration: 0.5, type: "spring" }}
+          style={{
+            position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+            padding: "8px 16px", borderRadius: 20,
+            background: `${A}25`, border: `1px solid ${A}40`,
+            fontFamily: font.body, fontSize: 16, fontWeight: 600, color: A,
+          }}>
+          <CountUp target={82} suffix="%" />
+        </motion.div>
+      </div>
+      <div style={{
+        display: "flex", justifyContent: "center", gap: 24, marginTop: 8,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 12, height: 3, background: A, borderRadius: 2 }} />
+          <span style={{ fontFamily: font.body, fontSize: 12, color: TXT_DIM }}>You</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 12, height: 3, background: "#6b8cff", borderRadius: 2 }} />
+          <span style={{ fontFamily: font.body, fontSize: 12, color: TXT_DIM }}>Twin</span>
+        </div>
+      </div>
+    </FadeUp>
+  );
+}
+
+function ChapterASection() {
+  const heroFeatures = chapA.filter(f => ["Blind Mode", "Live Rating", "Multi-Act Reveal"].includes(f.title));
+  const gridFeatures = chapA.filter(f => !["Blind Mode", "Live Rating", "Multi-Act Reveal"].includes(f.title));
+  return (
+    <section style={{ padding: "100px 0 80px", position: "relative", zIndex: 1 }}>
+      <div style={sec}>
+        <ChapterHeader letter="A" title="The Tasting Engine" count={16} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 80 }}>
+          <BlindModeDemo />
+          <LiveRatingDemo />
+          <RevealActsDemo />
+        </div>
+        <FeatureGrid features={gridFeatures} />
+      </div>
+    </section>
+  );
+}
+
+function ChapterBSection() {
+  const gridFeatures = chapB.filter(f => !["Flavor Radar", "Taste Evolution"].includes(f.title));
+  return (
+    <section style={{ padding: "100px 0 80px", position: "relative", zIndex: 1 }}>
+      <div style={sec}>
+        <ChapterHeader letter="B" title="Personal Taste Analysis" count={10} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 80 }}>
+          <RadarChartDemo />
+          <TrendLineDemo />
+        </div>
+        <FeatureGrid features={gridFeatures} />
+      </div>
+    </section>
+  );
+}
+
+function ChapterCSection() {
+  const gridFeatures = chapC.filter(f => f.title !== "Bottle Recognition");
+  return (
+    <section style={{ padding: "100px 0 80px", position: "relative", zIndex: 1 }}>
+      <div style={sec}>
+        <ChapterHeader letter="C" title="AI-Powered Features" count={7} />
+        <ScannerDemo />
+        <FeatureGrid features={gridFeatures} />
+      </div>
+    </section>
+  );
+}
+
+function ChapterDSection() {
+  const gridFeatures = chapD.filter(f => f.title !== "Taste Twins");
+  return (
+    <section style={{ padding: "100px 0 80px", position: "relative", zIndex: 1 }}>
+      <div style={sec}>
+        <ChapterHeader letter="D" title="Community & Circle" count={6} />
+        <TasteTwinsDemo />
+        <FeatureGrid features={gridFeatures} />
+      </div>
+    </section>
+  );
+}
+
+function ChapterESection() {
+  return (
+    <section style={{ padding: "100px 0 80px", position: "relative", zIndex: 1 }}>
+      <div style={sec}>
+        <ChapterHeader letter="E" title="Whisky Database & Collection" count={5} />
+        <FeatureGrid features={chapE} />
+      </div>
+    </section>
+  );
+}
+
+function StatsSection() {
+  return (
+    <section style={{
+      padding: "80px 24px", position: "relative", zIndex: 1,
+      background: `linear-gradient(180deg, transparent 0%, ${A}05 50%, transparent 100%)`,
+    }}>
+      <div style={{
+        ...sec, display: "flex", justifyContent: "center", gap: 64, flexWrap: "wrap",
+      }}>
+        {[
+          { n: 44, s: "+", label: "Features" },
+          { n: 5, s: "", label: "Categories" },
+          { n: 2, s: "", label: "Languages" },
+        ].map((st, i) => (
+          <ScaleIn key={i} delay={i * 0.1}>
+            <div style={{ textAlign: "center", minWidth: 120 }}>
+              <div style={{
+                fontFamily: font.display, fontSize: "clamp(40px, 6vw, 64px)",
+                fontWeight: 400, color: A, lineHeight: 1.1,
+              }}>
+                <CountUp target={st.n} suffix={st.s} />
+              </div>
+              <div style={{
+                fontFamily: font.body, fontSize: 14, color: TXT_DIM,
+                marginTop: 4, letterSpacing: "0.05em",
+              }}>
+                {st.label}
+              </div>
+            </div>
+          </ScaleIn>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CTASection() {
+  const [downloading, setDownloading] = useState(false);
+  const handlePDF = async () => {
+    setDownloading(true);
+    try { await generateCaskSensePresentation(); } finally { setDownloading(false); }
+  };
+  return (
+    <section style={{
+      padding: "100px 24px 120px", position: "relative", zIndex: 1,
+      textAlign: "center",
+    }}>
+      <div style={{
+        position: "absolute", width: 500, height: 500, borderRadius: "50%",
+        background: `radial-gradient(circle, ${A}0a 0%, transparent 70%)`,
+        top: "40%", left: "50%", transform: "translate(-50%, -50%)",
+        pointerEvents: "none",
+      }} />
+      <FadeUp>
+        <h2 style={{
+          fontFamily: font.display, fontSize: "clamp(30px, 5vw, 48px)",
+          fontWeight: 400, color: TXT, marginBottom: 16,
+        }}>
+          Start your whisky journey.
+        </h2>
+      </FadeUp>
+      <FadeUp delay={0.15}>
+        <p style={{
+          fontFamily: font.body, fontSize: 16, color: TXT_DIM,
+          maxWidth: 440, margin: "0 auto 40px", lineHeight: 1.6,
+        }}>
+          Open CaskSense and create your first session in under a minute.
+        </p>
+      </FadeUp>
+      <FadeUp delay={0.3}>
+        <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+          <Link href="/m2" data-testid="link-cta-open" style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "16px 44px", background: A, color: BG,
+            fontFamily: font.body, fontSize: 16, fontWeight: 600,
+            borderRadius: 50, textDecoration: "none",
+            transition: "transform 0.2s, box-shadow 0.2s",
           }}>
             Open App
-            <ChevronRight style={{ width: 16, height: 16 }} />
           </Link>
-        ) : (
-          <button
-            onClick={() => go(current + 1)}
-            data-testid="button-presentation-next"
-            style={{
-              display: "flex", alignItems: "center", gap: 4,
-              padding: "12px 28px", borderRadius: 50,
-              background: v.accent, color: v.bg,
-              fontSize: 15, fontWeight: 600, border: "none",
-              cursor: "pointer", fontFamily: font.body,
-              transition: "transform 0.2s",
-            }}
-          >
-            <ChevronRight style={{ width: 16, height: 16 }} />
+          <button onClick={handlePDF} disabled={downloading} data-testid="btn-cta-pdf" style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "16px 44px", background: "transparent", color: A,
+            fontFamily: font.body, fontSize: 16, fontWeight: 500,
+            borderRadius: 50, border: `1px solid ${A}40`,
+            cursor: downloading ? "wait" : "pointer",
+            transition: "border-color 0.2s",
+            opacity: downloading ? 0.6 : 1,
+          }}>
+            {downloading ? "Generating..." : "Download PDF"}
           </button>
-        )}
-      </div>
+        </div>
+      </FadeUp>
+    </section>
+  );
+}
+
+function DividerLine() {
+  return (
+    <FadeUp>
+      <div style={{
+        width: 60, height: 1, background: `${A}25`,
+        margin: "0 auto",
+      }} />
+    </FadeUp>
+  );
+}
+
+export default function GuidedPresentation() {
+  return (
+    <div style={{
+      background: BG, minHeight: "100vh", color: TXT,
+      position: "relative", overflow: "hidden",
+    }}>
+      <style>{`
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after { animation-duration: 0.001s !important; transition-duration: 0.001s !important; }
+        }
+      `}</style>
+      <GoldenParticles />
+      <HeroSection />
+      <FlowSection />
+      <DividerLine />
+      <ChapterASection />
+      <DividerLine />
+      <ChapterBSection />
+      <DividerLine />
+      <ChapterCSection />
+      <DividerLine />
+      <ChapterDSection />
+      <DividerLine />
+      <ChapterESection />
+      <StatsSection />
+      <CTASection />
     </div>
   );
 }
