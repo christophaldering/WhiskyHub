@@ -14,20 +14,27 @@ export type DimKey = "nose" | "taste" | "finish" | "balance";
 
 const DIM_KEYS: DimKey[] = ["nose", "taste", "finish", "balance"];
 
+const DIM_COLORS: Record<DimKey, string> = {
+  nose: "#D9A15B",
+  taste: "#C97845",
+  finish: "#9C6A5E",
+  balance: "#7F8C5A",
+};
+
 const SpeechRecognitionAPI =
   typeof window !== "undefined"
     ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     : null;
 
-function chipStyle(selected: boolean): React.CSSProperties {
+function chipStyle(selected: boolean, dimColor: string): React.CSSProperties {
   return {
     padding: "6px 14px",
     fontSize: 12,
     fontWeight: 500,
     borderRadius: 20,
-    border: `1px solid ${selected ? v.accent : v.border}`,
-    background: selected ? alpha(v.accent, "18") : "transparent",
-    color: selected ? v.accent : v.mutedLight,
+    border: `1px solid ${selected ? dimColor : v.border}`,
+    background: selected ? `${dimColor}24` : "transparent",
+    color: selected ? dimColor : v.mutedLight,
     cursor: "pointer",
     fontFamily: "system-ui, sans-serif",
     transition: "all 0.15s",
@@ -169,8 +176,16 @@ export default function M2RatingPanel({
       {DIM_KEYS.map((key) => {
         const attrs = ATTRIBUTES[key];
         const expanded = expandedModules[key];
+        const dc = DIM_COLORS[key];
         return (
-          <div key={key} style={{ borderBottom: `1px solid ${v.border}` }}>
+          <div key={key} style={{
+            borderBottom: `1px solid ${v.border}`,
+            borderLeft: `3px solid ${dc}`,
+            marginLeft: -16,
+            paddingLeft: 13,
+            background: expanded ? `${dc}14` : "transparent",
+            transition: "background 0.2s",
+          }}>
             <button
               type="button"
               onClick={() => toggleModule(key)}
@@ -191,13 +206,13 @@ export default function M2RatingPanel({
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: fontSize.label, fontWeight: 600, color: v.text }}>{dimLabels[key]}</span>
                 {chips[key].length > 0 && (
-                  <span style={{ fontSize: 10, color: v.accent, background: alpha(v.accent, "15"), padding: "2px 8px", borderRadius: 10 }}>
+                  <span style={{ fontSize: 10, color: dc, background: `${dc}26`, padding: "2px 8px", borderRadius: 10 }}>
                     {chips[key].length}
                   </span>
                 )}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: fontSize.score, fontWeight: 600, color: v.accent, fontVariantNumeric: "tabular-nums", width: 24, textAlign: "right" as const }}>{scores[key]}</span>
+                <span style={{ fontSize: fontSize.score, fontWeight: 600, color: dc, fontVariantNumeric: "tabular-nums", width: 24, textAlign: "right" as const }}>{scores[key]}</span>
                 <ChevronDown style={{ width: 16, height: 16, color: v.mutedLight, transition: "transform 0.2s", transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }} />
               </div>
             </button>
@@ -212,7 +227,7 @@ export default function M2RatingPanel({
                   onChange={(e) => onScoreChange(key, Number(e.target.value))}
                   disabled={disabled}
                   data-testid={`input-score-${key}`}
-                  style={{ width: "100%", accentColor: v.accent, display: "block", marginBottom: spacing.sliderMb, cursor: disabled ? "not-allowed" : "pointer" }}
+                  style={{ width: "100%", accentColor: dc, display: "block", marginBottom: spacing.sliderMb, cursor: disabled ? "not-allowed" : "pointer" }}
                 />
                 <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.chipGap, marginBottom: compact ? 8 : 12 }} data-testid={`chips-${key}`}>
                   {attrs.map((attr) => {
@@ -224,7 +239,7 @@ export default function M2RatingPanel({
                         onClick={() => !disabled && onChipToggle(key, attr)}
                         data-testid={`chip-${key}-${attr.toLowerCase()}`}
                         style={{
-                          ...chipStyle(sel),
+                          ...chipStyle(sel, dc),
                           padding: spacing.chipPad,
                           fontSize: fontSize.chip,
                           opacity: disabled ? 0.5 : 1,
