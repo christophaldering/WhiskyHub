@@ -184,7 +184,7 @@ export default function M2Admin() {
       {activeTab === "cleanup" && <CleanupTab data={data} pid={pid} />}
       {activeTab === "analytics" && <AnalyticsTab pid={pid} />}
       {activeTab === "historical" && <HistoricalImportTab pid={pid} />}
-      {activeTab === "communities" && <CommunitiesTab pid={pid} />}
+      {activeTab === "communities" && <CommunitiesTab pid={pid} participants={data.participants} />}
       {activeTab === "settings" && <SettingsTab pid={pid} />}
       {activeTab === "feedback" && <FeedbackTab pid={pid} />}
     </div>
@@ -513,12 +513,16 @@ function AITab({ pid }: { pid: string }) {
     }
   }, [data]);
 
+  const saveAiSettings = (newMasterDisabled: boolean | null, newDisabledFeatures: string[]) => {
+    saveMutation.mutate({ masterDisabled: newMasterDisabled, disabledFeatures: newDisabledFeatures });
+  };
+
   const saveMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ masterDisabled: md, disabledFeatures: df }: { masterDisabled: boolean | null; disabledFeatures: string[] }) => {
       const res = await apiRequest("POST", "/api/admin/ai-settings", {
         participantId: pid,
-        ai_master_disabled: masterDisabled,
-        ai_features_disabled: disabledFeatures,
+        ai_master_disabled: md,
+        ai_features_disabled: df,
       });
       return res.json();
     },
@@ -526,13 +530,21 @@ function AITab({ pid }: { pid: string }) {
       toast({ title: t("m2.admin.aiSettingsSaved", "AI settings saved") });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-settings"] });
     },
-    onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+      if (data) {
+        setMasterDisabled(data.settings.ai_master_disabled);
+        setDisabledFeatures(data.settings.ai_features_disabled || []);
+      }
+    },
   });
 
   const toggleFeature = (featureId: string) => {
-    setDisabledFeatures(prev =>
-      prev.includes(featureId) ? prev.filter(f => f !== featureId) : [...prev, featureId]
-    );
+    const newDisabled = disabledFeatures.includes(featureId)
+      ? disabledFeatures.filter(f => f !== featureId)
+      : [...disabledFeatures, featureId];
+    setDisabledFeatures(newDisabled);
+    saveAiSettings(masterDisabled, newDisabled);
   };
 
   if (isLoading || masterDisabled === null) {
@@ -541,8 +553,6 @@ function AITab({ pid }: { pid: string }) {
 
   const features = data?.features || [];
   const auditLog = data?.auditLog || [];
-  const hasChanges = masterDisabled !== data?.settings.ai_master_disabled ||
-    JSON.stringify([...disabledFeatures].sort()) !== JSON.stringify([...(data?.settings.ai_features_disabled || [])].sort());
 
   return (
     <div data-testid="admin-ai-tab">
@@ -558,7 +568,11 @@ function AITab({ pid }: { pid: string }) {
             <div style={{ fontSize: 12, color: v.muted }}>{masterDisabled ? t("m2.admin.allAiDisabled", "All AI features disabled") : t("m2.admin.aiFeaturesActive", "AI features active")}</div>
           </div>
           <button
-            onClick={() => setMasterDisabled(!masterDisabled)}
+            onClick={() => {
+              const newVal = !masterDisabled;
+              setMasterDisabled(newVal);
+              saveAiSettings(newVal, disabledFeatures);
+            }}
             style={{
               width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
               background: masterDisabled ? v.muted : v.success,
@@ -607,21 +621,12 @@ function AITab({ pid }: { pid: string }) {
           })}
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-          <button
-            onClick={() => saveMutation.mutate()}
-            disabled={!hasChanges || saveMutation.isPending}
-            style={{
-              padding: "8px 16px", borderRadius: 8, border: "none", cursor: hasChanges ? "pointer" : "not-allowed",
-              background: hasChanges ? v.accent : v.muted, color: v.bg, fontSize: 13, fontWeight: 600,
-              fontFamily: "system-ui, sans-serif", opacity: hasChanges ? 1 : 0.5, display: "flex", alignItems: "center", gap: 6,
-            }}
-            data-testid="ai-settings-save"
-          >
-            {saveMutation.isPending && <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />}
-            {t("m2.admin.saveChanges", "Save Changes")}
-          </button>
-        </div>
+        {saveMutation.isPending && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 12, color: v.muted }}>
+            <Loader2 style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />
+            {t("m2.admin.saving", "Saving...")}
+          </div>
+        )}
       </div>
 
       {auditLog.length > 0 && (
@@ -1581,13 +1586,15 @@ function SettingsTab({ pid }: { pid: string }) {
   );
 }
 
-function CommunitiesTab({ pid }: { pid: string }) {
+function CommunitiesTab({ pid, participants }: { pid: string; participants: AdminParticipant[] }) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
-  const [addMemberEmail, setAddMemberEmail] = useState("");
+  const [addMemberSearch, setAddMemberSearch] = useState("");
+  const [addMemberSelectedId, setAddMemberSelectedId] = useState<string | null>(null);
   const [addMemberRole, setAddMemberRole] = useState("member");
+  const [showMemberDropdown, setShowMemberDropdown] = useState(false);
 
   const { data: communities = [], isLoading } = useQuery<any[]>({
     queryKey: ["/admin/communities", pid],
@@ -1631,11 +1638,11 @@ function CommunitiesTab({ pid }: { pid: string }) {
   });
 
   const addMemberMutation = useMutation({
-    mutationFn: async ({ communityId, email, role }: { communityId: string; email: string; role: string }) => {
+    mutationFn: async ({ communityId, participantId, role }: { communityId: string; participantId: string; role: string }) => {
       const res = await fetch(`/api/admin/communities/${communityId}/members`, {
         method: "POST",
         headers: { "x-participant-id": pid, "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role }),
+        body: JSON.stringify({ participantId, role }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: res.statusText }));
@@ -1645,7 +1652,8 @@ function CommunitiesTab({ pid }: { pid: string }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/admin/communities"] });
-      setAddMemberEmail("");
+      setAddMemberSearch("");
+      setAddMemberSelectedId(null);
       toast({ title: t("m2.admin.memberAdded", "Member added") });
     },
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -1775,14 +1783,59 @@ function CommunitiesTab({ pid }: { pid: string }) {
           </div>
 
           <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-            <input
-              type="email"
-              value={addMemberEmail}
-              onChange={e => setAddMemberEmail(e.target.value)}
-              placeholder={t("m2.admin.addMemberEmail", "Email address...")}
-              style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 12, fontFamily: "system-ui, sans-serif" }}
-              data-testid="input-add-member-email"
-            />
+            <div style={{ flex: 1, position: "relative" }}>
+              <input
+                type="text"
+                value={addMemberSearch}
+                onChange={e => {
+                  setAddMemberSearch(e.target.value);
+                  setAddMemberSelectedId(null);
+                  setShowMemberDropdown(true);
+                }}
+                onFocus={() => setShowMemberDropdown(true)}
+                placeholder={t("m2.admin.searchParticipant", "Search by name or email...")}
+                style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 12, fontFamily: "system-ui, sans-serif", boxSizing: "border-box" }}
+                data-testid="input-add-member-search"
+              />
+              {showMemberDropdown && addMemberSearch.trim().length > 0 && !addMemberSelectedId && (() => {
+                const existingMemberIds = new Set((communityDetail.members || []).map((m: any) => m.participantId));
+                const filtered = participants.filter(p =>
+                  !existingMemberIds.has(p.id) &&
+                  (p.name.toLowerCase().includes(addMemberSearch.toLowerCase()) ||
+                   (p.email && p.email.toLowerCase().includes(addMemberSearch.toLowerCase())))
+                ).slice(0, 8);
+                if (filtered.length === 0) return null;
+                return (
+                  <div style={{
+                    position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20,
+                    background: v.card, border: `1px solid ${v.border}`, borderRadius: 8,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.15)", maxHeight: 200, overflowY: "auto", marginTop: 4,
+                  }} data-testid="member-search-dropdown">
+                    {filtered.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          setAddMemberSelectedId(p.id);
+                          setAddMemberSearch(p.name + (p.email ? ` (${p.email})` : ""));
+                          setShowMemberDropdown(false);
+                        }}
+                        style={{
+                          display: "flex", flexDirection: "column", gap: 1, width: "100%", padding: "8px 10px",
+                          background: "none", border: "none", borderBottom: `1px solid ${v.border}`,
+                          cursor: "pointer", textAlign: "left", fontFamily: "system-ui, sans-serif",
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = v.elevated)}
+                        onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                        data-testid={`member-option-${p.id}`}
+                      >
+                        <span style={{ fontSize: 13, fontWeight: 500, color: v.text }}>{p.name}</span>
+                        {p.email && <span style={{ fontSize: 11, color: v.muted }}>{p.email}</span>}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
             <select
               value={addMemberRole}
               onChange={e => setAddMemberRole(e.target.value)}
@@ -1790,21 +1843,21 @@ function CommunitiesTab({ pid }: { pid: string }) {
               data-testid="select-add-member-role"
             >
               <option value="member">{t("m2.admin.roleMember", "Member")}</option>
-              <option value="moderator">{t("m2.admin.roleModerator", "Moderator")}</option>
+              <option value="viewer">{t("m2.admin.roleViewer", "Viewer")}</option>
               <option value="admin">{t("m2.admin.roleAdmin", "Admin")}</option>
             </select>
             <button
               onClick={() => {
-                if (addMemberEmail.trim()) {
-                  addMemberMutation.mutate({ communityId: communityDetail.id, email: addMemberEmail.trim(), role: addMemberRole });
+                if (addMemberSelectedId) {
+                  addMemberMutation.mutate({ communityId: communityDetail.id, participantId: addMemberSelectedId, role: addMemberRole });
                 }
               }}
-              disabled={!addMemberEmail.trim() || addMemberMutation.isPending}
+              disabled={!addMemberSelectedId || addMemberMutation.isPending}
               style={{
                 display: "flex", alignItems: "center", gap: 4, padding: "8px 12px", borderRadius: 8,
                 border: "none", background: v.accent, color: v.bg, fontSize: 12, fontWeight: 600,
-                cursor: !addMemberEmail.trim() || addMemberMutation.isPending ? "not-allowed" : "pointer",
-                opacity: !addMemberEmail.trim() ? 0.5 : 1, fontFamily: "system-ui, sans-serif",
+                cursor: !addMemberSelectedId || addMemberMutation.isPending ? "not-allowed" : "pointer",
+                opacity: !addMemberSelectedId ? 0.5 : 1, fontFamily: "system-ui, sans-serif",
               }}
               data-testid="btn-add-member"
             >
