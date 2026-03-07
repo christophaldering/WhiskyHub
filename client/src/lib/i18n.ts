@@ -4605,6 +4605,7 @@ const resources = {
           save: "Save Dram",
           saving: "Saving...",
           offlineHint: "Not signed in — will be saved locally on this device.",
+          voiceMemoLabel: "Voice Memo",
         },
         rating: {
           rateDetail: "Rate in detail",
@@ -5554,6 +5555,8 @@ const resources = {
           sectionTitle: "Voice Memos",
           transcriptLabel: "Transcript",
           play: "Play",
+          recordSolo: "Record a voice note",
+          title: "Voice Memo",
         },
       },
       makingOf: {
@@ -10192,6 +10195,7 @@ const resources = {
           save: "Dram speichern",
           saving: "Wird gespeichert...",
           offlineHint: "Nicht angemeldet — wird nur lokal auf diesem Gerät gespeichert.",
+          voiceMemoLabel: "Sprachnotiz",
         },
         rating: {
           rateDetail: "Im Detail bewerten",
@@ -11252,6 +11256,8 @@ const resources = {
           sectionTitle: "Sprachnotizen",
           transcriptLabel: "Transkript",
           play: "Abspielen",
+          recordSolo: "Sprachnotiz aufnehmen",
+          title: "Sprachnotiz",
         },
       },
       makingOf: {

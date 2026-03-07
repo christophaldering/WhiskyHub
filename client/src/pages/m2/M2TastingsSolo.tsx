@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import M2RatingPanel from "@/components/m2/M2RatingPanel";
 import type { DimKey } from "@/components/m2/M2RatingPanel";
+import SoloVoiceMemoRecorder from "@/components/m2/SoloVoiceMemoRecorder";
 
 const OFFLINE_QUEUE_KEY = "cs_offline_queue";
 
@@ -174,6 +175,8 @@ export default function M2TastingsSolo() {
   const [overrideActive, setOverrideActive] = useState(false);
   const [detailChips, setDetailChips] = useState<Record<DimKey, string[]>>({ nose: [], taste: [], finish: [], balance: [] });
   const [detailTexts, setDetailTexts] = useState<Record<DimKey, string>>({ nose: "", taste: "", finish: "", balance: "" });
+
+  const [soloVoiceMemo, setSoloVoiceMemo] = useState<{ audioUrl: string | null; transcript: string; durationSeconds: number; localBlobUrl?: string } | null>(null);
 
   const [voiceListening, setVoiceListening] = useState(false);
   const [voiceTarget, setVoiceTarget] = useState<DimKey | "notes" | null>(null);
@@ -585,6 +588,11 @@ export default function M2TastingsSolo() {
     if (unknownAbv.trim()) body.abv = unknownAbv.trim();
     if (unknownCask.trim()) body.caskType = unknownCask.trim();
     if (unknownWbId.trim()) body.whiskybaseId = unknownWbId.trim();
+    if (soloVoiceMemo) {
+      if (soloVoiceMemo.audioUrl) body.voiceMemoUrl = soloVoiceMemo.audioUrl;
+      if (soloVoiceMemo.transcript) body.voiceMemoTranscript = soloVoiceMemo.transcript;
+      if (soloVoiceMemo.durationSeconds) body.voiceMemoDuration = soloVoiceMemo.durationSeconds;
+    }
 
     try {
       const res = await fetch(`/api/journal/${pid}`, {
@@ -627,6 +635,7 @@ export default function M2TastingsSolo() {
     setOverrideActive(false);
     setDetailChips({ nose: [], taste: [], finish: [], balance: [] });
     setDetailTexts({ nose: "", taste: "", finish: "", balance: "" });
+    setSoloVoiceMemo(null);
     stopVoice();
     setWbLookupResult("");
   };
@@ -921,6 +930,20 @@ export default function M2TastingsSolo() {
           )}
         </div>
       </div>
+
+      {/* VOICE MEMO */}
+      {unlocked && pid && (
+        <div style={{ marginBottom: 24 }} data-testid="section-solo-voice-memo">
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: v.mutedLight, marginBottom: 10 }}>
+            {t("m2.solo.voiceMemoLabel", "Voice Memo")}
+          </div>
+          <SoloVoiceMemoRecorder
+            memo={soloVoiceMemo}
+            onMemoChange={setSoloVoiceMemo}
+            participantId={pid!}
+          />
+        </div>
+      )}
 
       {/* SAVE BUTTON */}
       {!unlocked && !showUnlockPanel && (

@@ -257,6 +257,9 @@ export const journalEntries = pgTable("journal_entries", {
   imageUrl: text("image_url"),
   body: text("body"),
   source: text("source").default("casksense"),
+  voiceMemoUrl: text("voice_memo_url"),
+  voiceMemoTranscript: text("voice_memo_transcript"),
+  voiceMemoDuration: integer("voice_memo_duration"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

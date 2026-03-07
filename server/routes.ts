@@ -4988,9 +4988,67 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
     }
   });
 
+  app.post("/api/journal/voice-memo", (req: any, res: any, next: any) => {
+    audioUpload.single("audio")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: "Audio must be under 5 MB" });
+        return res.status(400).json({ message: err.message || "Upload failed" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string | undefined;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(403).json({ message: "Invalid participant" });
+
+      if (!req.file) return res.status(400).json({ message: "No audio file provided" });
+
+      const audioBuffer = req.file.buffer as Buffer;
+      const durationSeconds = parseInt(req.body.durationSeconds || "0", 10);
+
+      let audioUrl: string | null = null;
+      try {
+        audioUrl = await uploadBufferToObjectStorage(objectStorage, audioBuffer, req.file.mimetype);
+      } catch (e: any) {
+        console.error("Journal voice memo upload error:", e.message);
+        return res.status(500).json({ message: "Failed to store audio file" });
+      }
+
+      if (!audioUrl) {
+        return res.status(500).json({ message: "Failed to store audio file" });
+      }
+
+      let transcript = "";
+      try {
+        const { detectAudioFormat, convertToWav, speechToText } = await import("./replit_integrations/audio/client.js");
+        const format = detectAudioFormat(audioBuffer);
+        let wavBuffer = audioBuffer;
+        if (format !== "wav") {
+          wavBuffer = await convertToWav(audioBuffer);
+        }
+        transcript = await speechToText(wavBuffer, "wav");
+      } catch (e: any) {
+        console.error("Journal voice memo transcription error:", e.message);
+        transcript = "[Transcription failed]";
+      }
+
+      res.status(200).json({
+        audioUrl,
+        transcript,
+        durationSeconds: durationSeconds || 0,
+      });
+    } catch (e: any) {
+      console.error("Journal voice memo error:", e.message);
+      res.status(500).json({ message: "Could not process voice memo" });
+    }
+  });
+
   app.post("/api/journal/:participantId", async (req, res) => {
     try {
-      const sanitizedBody = sanitizeObject(req.body, ["title", "whiskyName", "distillery", "noseNotes", "tasteNotes", "finishNotes", "notes", "body", "mood", "occasion", "age", "abv", "caskType", "personalScore", "whiskybaseId", "imageUrl", "source"]);
+      const sanitizedBody = sanitizeObject(req.body, ["title", "whiskyName", "distillery", "noseNotes", "tasteNotes", "finishNotes", "notes", "body", "mood", "occasion", "age", "abv", "caskType", "personalScore", "whiskybaseId", "imageUrl", "source", "voiceMemoUrl", "voiceMemoTranscript", "voiceMemoDuration"]);
       const parsed = insertJournalEntrySchema.parse({ ...sanitizedBody, participantId: req.params.participantId });
       const entry = await storage.createJournalEntry(parsed);
       res.status(201).json(entry);
