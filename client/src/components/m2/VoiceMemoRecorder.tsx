@@ -392,33 +392,65 @@ export default function VoiceMemoRecorder({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
-                padding: "10px 16px",
-                fontSize: 13,
-                fontWeight: 600,
-                background: v.elevated,
-                color: v.accent,
-                border: `1px solid ${v.border}`,
-                borderRadius: 12,
+                gap: 14,
+                padding: "14px 16px",
+                background: "linear-gradient(135deg, rgba(212,162,86,0.18) 0%, rgba(212,162,86,0.08) 42%, rgba(42,34,24,0.92) 100%)",
+                border: "1px solid rgba(212,162,86,0.32)",
+                borderRadius: 14,
                 cursor: "pointer",
-                fontFamily: "system-ui, sans-serif",
                 width: "100%",
-                justifyContent: "center",
+                fontFamily: "system-ui, sans-serif",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 20px rgba(0,0,0,0.28)",
+                transition: "transform 180ms ease, box-shadow 180ms ease",
+                textAlign: "left" as const,
               }}
+              onPointerDown={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(0.985)"; }}
+              onPointerUp={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
+              onPointerLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
               data-testid="button-start-recording"
             >
-              <Mic style={{ width: 16, height: 16 }} />
-              {t("m2.voiceMemo.record", "Record Voice Memo")}
-              <span
+              <div
                 style={{
-                  fontSize: 11,
-                  color: v.muted,
-                  fontWeight: 400,
-                  marginLeft: 4,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  background: "radial-gradient(circle at 30% 25%, #f2cc88 0%, #d4a256 42%, #9b6f2f 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  animation: "cs-orb-breathe 3s ease-in-out infinite",
+                  boxShadow: "0 2px 12px rgba(212,162,86,0.35)",
                 }}
               >
-                ({t("m2.voiceMemo.maxDuration", "Max 30 seconds")})
-              </span>
+                <Mic style={{ width: 20, height: 20, color: "#1a1410" }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: v.text, lineHeight: 1.3 }}>
+                  {t("m2.voiceMemo.title", "Voice Memo")}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 500, color: "rgba(184,171,155,0.8)", lineHeight: 1.4, marginTop: 2 }}>
+                  {t("m2.voiceMemo.tapToSpeak", "Tap to speak · up to 30s")}
+                </div>
+              </div>
+              <div
+                style={{
+                  height: 22,
+                  padding: "0 10px",
+                  borderRadius: 999,
+                  background: "rgba(212,162,86,0.14)",
+                  border: "1px solid rgba(212,162,86,0.32)",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: v.accent,
+                  display: "flex",
+                  alignItems: "center",
+                  flexShrink: 0,
+                  fontFamily: "system-ui, sans-serif",
+                }}
+              >
+                30s
+              </div>
             </button>
           )}
 
@@ -576,6 +608,10 @@ export default function VoiceMemoRecorder({
           0% { transform: translateX(-100%); }
           50% { transform: translateX(200%); }
           100% { transform: translateX(200%); }
+        }
+        @keyframes cs-orb-breathe {
+          0%, 100% { transform: scale(1); box-shadow: 0 2px 12px rgba(212,162,86,0.35); }
+          50% { transform: scale(1.06); box-shadow: 0 4px 18px rgba(212,162,86,0.5); }
         }
       `}</style>
     </div>

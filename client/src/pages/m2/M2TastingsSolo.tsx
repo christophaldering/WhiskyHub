@@ -905,7 +905,7 @@ export default function M2TastingsSolo() {
             rows={4}
             style={{
               ...inputStyle, resize: "vertical", minHeight: 100,
-              paddingRight: hasSpeechAPI ? 40 : 14,
+              paddingRight: hasSpeechAPI ? 80 : 14,
               borderColor: (voiceListening && voiceTarget === "notes") ? v.danger : v.inputBorder,
             }}
             data-testid="m2-solo-notes"
@@ -917,15 +917,25 @@ export default function M2TastingsSolo() {
               onClick={() => toggleVoice("notes")}
               data-testid="button-voice-notes"
               style={{
-                position: "absolute", right: 10, top: 10,
-                background: (voiceListening && voiceTarget === "notes") ? v.danger : "transparent",
-                border: "none", borderRadius: "50%", cursor: "pointer",
-                width: 32, height: 32, padding: 0,
-                color: (voiceListening && voiceTarget === "notes") ? v.bg : v.mutedLight,
+                position: "absolute", right: 8, top: 8,
+                background: (voiceListening && voiceTarget === "notes") ? "#e57373" : "rgba(212,162,86,0.18)",
+                border: `1px solid ${(voiceListening && voiceTarget === "notes") ? "#e57373" : "rgba(212,162,86,0.42)"}`,
+                borderRadius: 999,
+                cursor: "pointer",
+                height: 30,
+                padding: "0 10px",
+                gap: 5,
+                color: (voiceListening && voiceTarget === "notes") ? "#1a1410" : "#d4a256",
                 display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11,
+                fontWeight: 600,
+                fontFamily: "system-ui, sans-serif",
+                boxShadow: (voiceListening && voiceTarget === "notes") ? "0 0 0 4px rgba(229,115,115,0.25)" : "0 2px 8px rgba(0,0,0,0.22)",
+                transition: "all 200ms ease",
               }}
             >
-              <Mic style={{ width: 16, height: 16 }} />
+              <Mic style={{ width: 13, height: 13 }} />
+              <span>{t("m2.voiceMemo.speak", "Speak")}</span>
             </button>
           )}
         </div>

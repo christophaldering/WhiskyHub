@@ -5557,6 +5557,8 @@ const resources = {
           play: "Play",
           recordSolo: "Record a voice note",
           title: "Voice Memo",
+          tapToSpeak: "Tap to speak · up to 30s",
+          speak: "Speak",
         },
       },
       makingOf: {
@@ -11258,6 +11260,8 @@ const resources = {
           play: "Abspielen",
           recordSolo: "Sprachnotiz aufnehmen",
           title: "Sprachnotiz",
+          tapToSpeak: "Tippen zum Sprechen · max 30s",
+          speak: "Sprechen",
         },
       },
       makingOf: {
