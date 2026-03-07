@@ -22,7 +22,7 @@ PostgreSQL is the primary database, accessed via Drizzle ORM. The schema include
 
 ### Key Design Decisions
 -   **Authentication**: Email/password login with session persistence, account management, and guest mode.
--   **Data Access Security**: Enforces `x-participant-id` header validation and limits non-owner data exposure.
+-   **Data Access Security**: Enforces `x-participant-id` header validation and limits non-owner data exposure. Calendar API (`/api/calendar`) filters by participant: admin sees all, regular users see only own tastings (host or participant). All calendar consumers send `x-participant-id` header.
 -   **Shared Schema**: Ensures consistent data definitions across client and server.
 -   **Session State Machine**: Tastings transition through defined stages (draft, open, closed, reveal, archived) managed by the host.
 -   **Asynchronous Updates**: Uses React Query polling for near real-time session data updates.

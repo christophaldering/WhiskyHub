@@ -5277,11 +5277,25 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
 
   // ===== TASTING CALENDAR =====
 
-  app.get("/api/calendar", async (_req, res) => {
+  app.get("/api/calendar", async (req, res) => {
     try {
-      const allTastings = await storage.getAllTastings();
+      const headerPid = req.headers["x-participant-id"] as string | undefined;
+      const queryPid = req.query.participantId as string | undefined;
+      const pid = headerPid || queryPid;
+      let participant: any = null;
+      if (pid) {
+        participant = await storage.getParticipant(pid);
+      }
+      let tastings;
+      if (participant?.role === "admin") {
+        tastings = await storage.getAllTastings();
+      } else if (pid) {
+        tastings = await storage.getTastingsForParticipant(pid);
+      } else {
+        tastings = [];
+      }
       const calendarEvents = await Promise.all(
-        allTastings.map(async (t) => {
+        tastings.map(async (t) => {
           const host = await storage.getParticipant(t.hostId);
           const participants = await storage.getTastingParticipants(t.id);
           const whiskies = await storage.getWhiskiesForTasting(t.id);

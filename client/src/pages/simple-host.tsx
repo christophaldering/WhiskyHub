@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Plus, Calendar, FileText, Settings, ChevronRight, ChevronLeft, ChevronDown, Copy, Check, ArrowRight, X, Trash2, ChevronUp, EyeOff, Share2, QrCode, Download, Play, Square, Eye, Users, BarChart3, Star, BookOpen, ClipboardList, Camera, FileSpreadsheet, Sparkles, Wine, ScanLine } from "lucide-react";
 import SimpleShell from "@/components/simple/simple-shell";
 import { getSession } from "@/lib/session";
+import { pidHeaders } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCodeLib from "qrcode";
 import { c, cardStyle } from "@/lib/theme";
@@ -1514,7 +1515,7 @@ function HostCalendar({ pid }: { pid: string }) {
   const { data: events = [] } = useQuery<CalendarEvent[]>({
     queryKey: ["/api/calendar"],
     queryFn: async () => {
-      const res = await fetch("/api/calendar");
+      const res = await fetch("/api/calendar", { headers: pidHeaders() });
       if (!res.ok) return [];
       return res.json();
     },

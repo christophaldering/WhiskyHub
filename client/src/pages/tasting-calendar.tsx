@@ -68,6 +68,12 @@ const OFFSET_OPTIONS = [
   { value: 30, key: "offset30" },
 ];
 
+function getTastingRoute(ev: CalendarEvent, embedded: boolean, participantId?: string): string {
+  if (!embedded) return `/tasting/${ev.id}`;
+  if (ev.status === "draft" && ev.hostId === participantId) return `/m2/tastings/host/${ev.id}`;
+  return `/m2/tastings/session/${ev.id}`;
+}
+
 export default function TastingCalendar({ embedded = false }: { embedded?: boolean } = {}) {
   const { t, i18n } = useTranslation();
   const now = new Date();
@@ -82,8 +88,8 @@ export default function TastingCalendar({ embedded = false }: { embedded?: boole
   const qc = useQueryClient();
 
   const { data: events = [], isLoading } = useQuery<CalendarEvent[]>({
-    queryKey: ["calendar"],
-    queryFn: calendarApi.getAll,
+    queryKey: ["calendar", participantId],
+    queryFn: () => calendarApi.getAll(participantId || undefined),
   });
 
   const { data: reminders = [] } = useQuery<any[]>({
@@ -203,6 +209,22 @@ export default function TastingCalendar({ embedded = false }: { embedded?: boole
     setCurrentMonth(now.getMonth());
     setSelectedDate(null);
   };
+
+  type StatusFilterAll = "all" | "draft" | "open" | "closed" | "archived";
+  const [statusFilter, setStatusFilter] = useState<StatusFilterAll>("all");
+
+  const allTastingsList = useMemo(() => {
+    let items = [...filteredEvents];
+    if (statusFilter !== "all") {
+      items = items.filter(ev => statusFilter === "open" ? (ev.status === "open" || ev.status === "reveal") : ev.status === statusFilter);
+    }
+    items.sort((a, b) => {
+      const da = parseDate(a.date)?.getTime() || 0;
+      const db = parseDate(b.date)?.getTime() || 0;
+      return db - da;
+    });
+    return items;
+  }, [filteredEvents, statusFilter]);
 
   const selectedEvents = selectedDate ? eventsByDate.get(selectedDate) || [] : [];
 
@@ -418,7 +440,7 @@ export default function TastingCalendar({ embedded = false }: { embedded?: boole
                   ) : (
                     <div className="space-y-2">
                       {selectedEvents.map(ev => (
-                        <EventCard key={ev.id} event={ev} />
+                        <EventCard key={ev.id} event={ev} embedded={embedded} participantId={participantId} />
                       ))}
                     </div>
                   )}
@@ -437,7 +459,7 @@ export default function TastingCalendar({ embedded = false }: { embedded?: boole
                 ) : (
                   <div className="space-y-3">
                     {upcomingEvents.map(ev => (
-                      <Link key={ev.id} href={`/tasting/${ev.id}`}>
+                      <Link key={ev.id} href={getTastingRoute(ev, embedded, participantId)}>
                         <div
                           className="group cursor-pointer py-2 last:border-b-0 transition-colors"
                           style={{ borderBottom: `1px solid color-mix(in srgb, ${v.border} 50%, transparent)` }}
@@ -606,15 +628,79 @@ export default function TastingCalendar({ embedded = false }: { embedded?: boole
             </div>
           </div>
         )}
+
+        <div style={{ marginTop: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: v.text, margin: 0 }}>
+              {t("calendar.allTastings", "Alle Tastings")}
+            </h3>
+            <span style={{ fontSize: 12, color: v.muted }}>{allTastingsList.length}</span>
+          </div>
+          <div style={{ display: "flex", gap: 6, marginBottom: 12, overflowX: "auto" }}>
+            {(["all", "draft", "open", "closed", "archived"] as StatusFilterAll[]).map(sf => (
+              <button
+                key={sf}
+                onClick={() => setStatusFilter(sf)}
+                style={{
+                  padding: "5px 12px", fontSize: 11, fontWeight: statusFilter === sf ? 600 : 400,
+                  color: statusFilter === sf ? v.accent : v.muted,
+                  background: statusFilter === sf ? `color-mix(in srgb, ${v.accent} 10%, transparent)` : "transparent",
+                  border: `1px solid ${statusFilter === sf ? `color-mix(in srgb, ${v.accent} 40%, transparent)` : v.border}`,
+                  borderRadius: 16, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                  fontFamily: "system-ui, sans-serif",
+                }}
+                data-testid={`status-filter-${sf}`}
+              >
+                {sf === "all" ? t("calendar.filterAll", "Alle") : t(`calendar.status_${sf}`, sf.charAt(0).toUpperCase() + sf.slice(1))}
+              </button>
+            ))}
+          </div>
+          {allTastingsList.length === 0 ? (
+            <p style={{ textAlign: "center", fontSize: 13, color: v.muted, padding: "24px 0", fontStyle: "italic" }}>
+              {t("calendar.noTastingsFound", "Keine Tastings gefunden")}
+            </p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {allTastingsList.map(ev => (
+                <Link key={ev.id} href={getTastingRoute(ev, embedded, participantId)} style={{ textDecoration: "none" }}>
+                  <div
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px",
+                      background: v.card, border: `1px solid ${v.border}`, borderRadius: 10, cursor: "pointer",
+                    }}
+                    data-testid={`all-tasting-${ev.id}`}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: v.text, fontFamily: "'Playfair Display', serif", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {ev.title}
+                      </div>
+                      <div style={{ fontSize: 11, color: v.muted }}>
+                        {ev.date} · {ev.location || "–"} · {ev.hostName}
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 9, padding: "2px 8px", borderRadius: 4, marginLeft: 8, flexShrink: 0,
+                        ...(STATUS_COLORS[ev.status] || STATUS_COLORS.draft),
+                      }}
+                    >
+                      {ev.status}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </motion.div>
     </div>
   );
 }
 
-function EventCard({ event }: { event: CalendarEvent }) {
+function EventCard({ event, embedded = false, participantId }: { event: CalendarEvent; embedded?: boolean; participantId?: string }) {
   const { t } = useTranslation();
   return (
-    <Link href={`/tasting/${event.id}`}>
+    <Link href={getTastingRoute(event, embedded, participantId)}>
       <div
         className="rounded-md p-3 transition-colors cursor-pointer"
         style={{ background: v.elevated, border: `1px solid ${v.border}` }}

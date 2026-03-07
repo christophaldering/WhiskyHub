@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { v, alpha } from "@/lib/themeVars";
 import { getSession } from "@/lib/session";
-import { hostDashboardApi, inviteApi } from "@/lib/api";
+import { hostDashboardApi, inviteApi, pidHeaders } from "@/lib/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
   GlassWater, Users, Wine, Star, Calendar, Trophy,
@@ -129,7 +129,7 @@ function DashboardCalendar() {
   const { data: events = [] } = useQuery<CalendarEvent[]>({
     queryKey: ["/api/calendar"],
     queryFn: async () => {
-      const res = await fetch("/api/calendar");
+      const res = await fetch("/api/calendar", { headers: pidHeaders() });
       if (!res.ok) return [];
       return res.json();
     },

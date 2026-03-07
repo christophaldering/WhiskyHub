@@ -2516,7 +2516,13 @@ const resources = {
         filterFriends: "From Friends",
         today: "Today",
         add: "Add",
-        host: "Host"
+        host: "Host",
+        allTastings: "All Tastings",
+        noTastingsFound: "No tastings found",
+        status_draft: "Draft",
+        status_open: "Open",
+        status_closed: "Closed",
+        status_archived: "Archived",
       },
       tasteTwins: {
         title: "Taste Twins",
@@ -8013,7 +8019,13 @@ const resources = {
         filterFriends: "Von Freunden",
         today: "Heute",
         add: "Hinzufügen",
-        host: "Host"
+        host: "Host",
+        allTastings: "Alle Tastings",
+        noTastingsFound: "Keine Tastings gefunden",
+        status_draft: "Entwurf",
+        status_open: "Offen",
+        status_closed: "Abgeschlossen",
+        status_archived: "Archiviert",
       },
       tasteTwins: {
         title: "Geschmackszwillinge",

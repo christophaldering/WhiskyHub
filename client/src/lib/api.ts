@@ -352,7 +352,7 @@ export const activityApi = {
 
 // ===== Calendar =====
 export const calendarApi = {
-  getAll: () => fetchJSON("/calendar"),
+  getAll: (participantId?: string) => fetchJSON(participantId ? `/calendar?participantId=${participantId}` : "/calendar"),
 };
 
 // ===== Ratings =====

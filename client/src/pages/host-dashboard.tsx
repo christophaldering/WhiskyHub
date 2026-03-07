@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/lib/store";
-import { hostDashboardApi, inviteApi } from "@/lib/api";
+import { hostDashboardApi, inviteApi, pidHeaders } from "@/lib/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
   GlassWater, Users, Wine, Star, Calendar, Trophy, Eye,
@@ -136,7 +136,7 @@ function DashboardCalendar() {
   const { data: events = [] } = useQuery<CalendarEvent[]>({
     queryKey: ["/api/calendar"],
     queryFn: async () => {
-      const res = await fetch("/api/calendar");
+      const res = await fetch("/api/calendar", { headers: pidHeaders() });
       if (!res.ok) return [];
       return res.json();
     },
