@@ -245,62 +245,113 @@ export default function VoiceMemoRecorder({
 
       {!readOnly && (
         <div style={{ marginBottom: 12 }}>
-          {recording ? (
+          {recording ? (() => {
+            const progress = elapsed / MAX_DURATION;
+            const barColor = elapsed >= 28 ? "#d48040" : elapsed >= 24 ? "#e0a830" : v.accent;
+            return (
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "10px 14px",
+                padding: "12px 14px",
                 background: v.elevated,
                 borderRadius: 12,
                 border: `1px solid ${v.border}`,
               }}
             >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "3px 8px",
+                    background: `color-mix(in srgb, ${v.danger} 15%, transparent)`,
+                    borderRadius: 6,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: "50%",
+                      background: v.danger,
+                      animation: "cs-pulse 1.5s ease-in-out infinite",
+                    }}
+                  />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: v.danger, fontFamily: "system-ui, sans-serif", letterSpacing: "0.06em" }}>REC</span>
+                </div>
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: v.muted,
+                    fontFamily: "system-ui, sans-serif",
+                    fontWeight: 500,
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                  data-testid="text-recording-status"
+                >
+                  {formatTime(elapsed)} / {formatTime(MAX_DURATION)}
+                </span>
+                <div style={{ flex: 1 }} />
+                <button
+                  onClick={stopRecording}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "6px 14px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    background: v.accent,
+                    color: v.bg,
+                    border: "none",
+                    borderRadius: 8,
+                    cursor: "pointer",
+                    fontFamily: "system-ui, sans-serif",
+                  }}
+                  data-testid="button-stop-recording"
+                >
+                  <Square style={{ width: 14, height: 14 }} />
+                  {t("m2.voiceMemo.stop", "Stop")}
+                </button>
+              </div>
               <div
                 style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  background: v.danger,
-                  animation: "cs-pulse 1s ease-in-out infinite",
+                  width: "100%",
+                  height: 4,
+                  borderRadius: 999,
+                  background: `color-mix(in srgb, ${v.border} 40%, ${v.elevated})`,
+                  overflow: "hidden",
+                  position: "relative",
                 }}
-              />
-              <span
-                style={{
-                  fontSize: 13,
-                  color: v.text,
-                  fontFamily: "system-ui, sans-serif",
-                  fontWeight: 500,
-                }}
-                data-testid="text-recording-status"
+                data-testid="progress-recording-bar"
               >
-                {t("m2.voiceMemo.recording", "Recording...")} {formatTime(elapsed)} / {formatTime(MAX_DURATION)}
-              </span>
-              <div style={{ flex: 1 }} />
-              <button
-                onClick={stopRecording}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "6px 14px",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  background: v.danger,
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  fontFamily: "system-ui, sans-serif",
-                }}
-                data-testid="button-stop-recording"
-              >
-                <Square style={{ width: 14, height: 14 }} />
-                {t("m2.voiceMemo.stop", "Stop")}
-              </button>
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${progress * 100}%`,
+                    borderRadius: 999,
+                    background: `linear-gradient(90deg, color-mix(in srgb, ${barColor} 50%, #8a6a3e), ${barColor})`,
+                    transition: "width 150ms ease-out, background 600ms ease",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%)",
+                      animation: "cs-sheen 2.5s ease-in-out infinite",
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-          ) : uploading ? (
+            );
+          })() : uploading ? (
             <div
               style={{
                 display: "flex",
@@ -516,6 +567,11 @@ export default function VoiceMemoRecorder({
         @keyframes cs-pulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.4; transform: scale(0.85); }
+        }
+        @keyframes cs-sheen {
+          0% { transform: translateX(-100%); }
+          50% { transform: translateX(200%); }
+          100% { transform: translateX(200%); }
         }
       `}</style>
     </div>
