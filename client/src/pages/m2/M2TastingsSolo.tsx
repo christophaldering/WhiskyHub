@@ -225,12 +225,9 @@ export default function M2TastingsSolo() {
         new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()
       );
       setHubDrafts(sorted);
-      if (sorted.length === 0 && soloView === "hub" && draftStatus === "idle") {
-        setSoloView("editor");
-      }
     } catch {}
     setHubLoading(false);
-  }, [unlocked, pid, soloView, draftStatus]);
+  }, [unlocked, pid]);
 
   useEffect(() => {
     fetchHubDrafts();
@@ -240,9 +237,29 @@ export default function M2TastingsSolo() {
     try {
       const d = entry || (() => { const raw = localStorage.getItem("m2_draft_data"); return raw ? JSON.parse(raw) : null; })();
       if (!d) return;
-      if (d.whiskyName) setWhiskyName(d.whiskyName);
-      if (d.distillery) setDistillery(d.distillery);
-      if (d.personalScore != null) setScore(d.personalScore);
+
+      setWhiskyName(d.whiskyName || "");
+      setDistillery(d.distillery || "");
+      setScore(d.personalScore != null ? d.personalScore : 50);
+      setNotes("");
+      setUnknownAge(d.age ? String(d.age) : "");
+      setUnknownAbv(d.abv ? String(d.abv) : "");
+      setUnknownCask(d.caskType || "");
+      setUnknownWbId(d.whiskybaseId ? String(d.whiskybaseId) : "");
+      setUnknownPrice("");
+      setPhotoUrl(d.imageUrl || "");
+      setDetailedScores({ nose: 50, taste: 50, finish: 50, balance: 50 });
+      setDetailTouched(false);
+      setOverrideActive(false);
+      setDetailChips({ nose: [], taste: [], finish: [], balance: [] });
+      setDetailTexts({ nose: "", taste: "", finish: "", balance: "" });
+      setSoloVoiceMemo(null);
+      setCandidates([]);
+      setSelectedCandidate(null);
+      setIsMenuMode(false);
+      setWbLookupResult("");
+      setError("");
+
       if (d.noseNotes) {
         const cleaned = d.noseNotes.replace(/\n\[SCORES\][\s\S]*$/, "").trim();
         setNotes(cleaned);
@@ -279,11 +296,7 @@ export default function M2TastingsSolo() {
           setDetailTexts(restoredTexts);
         }
       }
-      if (d.age) setUnknownAge(String(d.age));
-      if (d.abv) setUnknownAbv(String(d.abv));
-      if (d.caskType) setUnknownCask(d.caskType);
-      if (d.whiskybaseId) setUnknownWbId(String(d.whiskybaseId));
-      if (d.imageUrl) setPhotoUrl(d.imageUrl);
+
       if (d.voiceMemoUrl || d.voiceMemoTranscript) {
         setSoloVoiceMemo({
           audioUrl: d.voiceMemoUrl || null,
@@ -399,7 +412,9 @@ export default function M2TastingsSolo() {
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
-  }, [whiskyName, distillery, score, notes, unknownAge, unknownAbv, unknownCask, unknownWbId, draftStatus, unlocked, pid, photoUrl, detailedScores.nose, detailedScores.taste, detailedScores.finish, detailedScores.balance, soloVoiceMemo?.audioUrl]);
+  }, [whiskyName, distillery, score, notes, unknownAge, unknownAbv, unknownCask, unknownWbId, draftStatus, unlocked, pid, photoUrl, detailedScores.nose, detailedScores.taste, detailedScores.finish, detailedScores.balance, soloVoiceMemo?.audioUrl, soloVoiceMemo?.transcript, soloVoiceMemo?.durationSeconds,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    JSON.stringify(detailChips), JSON.stringify(detailTexts)]);
 
   const [scanning, setScanning] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
