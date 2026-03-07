@@ -143,6 +143,8 @@ export default function M2TastingsSolo() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const ratingSectionRef = useRef<HTMLDivElement>(null);
+  const [acceptedBanner, setAcceptedBanner] = useState(false);
 
   const [unlocked, setUnlocked] = useState(() => getSession().signedIn);
   const [pid, setPid] = useState<string | undefined>(() => getSession().pid || currentParticipant?.id);
@@ -215,9 +217,12 @@ export default function M2TastingsSolo() {
         if (!res.ok) return;
         const drafts = await res.json();
         if (drafts.length > 0) {
+          const sorted = [...drafts].sort((a: any, b: any) =>
+            new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()
+          );
+          const d = sorted[0];
           setDraftStatus("resumePrompt");
-          setDraftEntryId(drafts[0].id);
-          const d = drafts[0];
+          setDraftEntryId(d.id);
           localStorage.setItem("m2_draft_data", JSON.stringify(d));
         }
       } catch {}
@@ -295,8 +300,12 @@ export default function M2TastingsSolo() {
   const draftEntryIdRef = useRef(draftEntryId);
   draftEntryIdRef.current = draftEntryId;
 
+  const draftStatusRef = useRef(draftStatus);
+  draftStatusRef.current = draftStatus;
+
   const autoSaveDraft = useCallback(async () => {
     if (!unlocked || !pid || !whiskyName.trim()) return;
+    if (draftStatusRef.current === "finalized") return;
     setAutoSaveStatus("saving");
     try {
       const body = buildDraftBodyRef.current();
@@ -341,7 +350,7 @@ export default function M2TastingsSolo() {
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
-  }, [whiskyName, distillery, score, notes, unknownAge, unknownAbv, unknownCask, unknownWbId, draftStatus, unlocked, pid]);
+  }, [whiskyName, distillery, score, notes, unknownAge, unknownAbv, unknownCask, unknownWbId, draftStatus, unlocked, pid, photoUrl, detailedScores.nose, detailedScores.taste, detailedScores.finish, detailedScores.balance, soloVoiceMemo?.audioUrl]);
 
   const [scanning, setScanning] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -607,6 +616,11 @@ export default function M2TastingsSolo() {
     setSelectedCandidate(cand);
     setSheetView("none");
     setShowManual(true);
+    setAcceptedBanner(true);
+    setTimeout(() => setAcceptedBanner(false), 3500);
+    setTimeout(() => {
+      ratingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 300);
   };
 
   const handleCreateUnknown = () => {
@@ -774,6 +788,11 @@ export default function M2TastingsSolo() {
 
   const handleFinalize = async () => {
     if (!whiskyName.trim()) return;
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
 
     if (!unlocked || !pid) {
       persistLocal();
@@ -1154,8 +1173,27 @@ export default function M2TastingsSolo() {
         )}
       </div>
 
+      {acceptedBanner && (
+        <div style={{
+          background: alpha(v.success, "15"),
+          border: `1px solid ${alpha(v.success, "40")}`,
+          borderRadius: 10,
+          padding: "10px 14px",
+          marginBottom: 12,
+          fontSize: 13,
+          color: v.success,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          animation: "m2fadeInUp 0.3s ease-out",
+        }} data-testid="banner-whisky-accepted">
+          <Check style={{ width: 16, height: 16, flexShrink: 0 }} />
+          {t("m2.solo.whiskyAccepted", "Whisky accepted — rate now!")}
+        </div>
+      )}
+
       {/* SECTION 2: RATING */}
-      <div style={{ marginBottom: 24 }} data-testid="section-score">
+      <div ref={ratingSectionRef} style={{ marginBottom: 24 }} data-testid="section-score">
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: v.mutedLight, marginBottom: 10 }}>
           {t("m2.solo.scoreLabel", "Score")}
         </div>

@@ -10,13 +10,13 @@ import { journalApi, tastingHistoryApi } from "@/lib/api";
 import { useLocation } from "wouter";
 import type { JournalEntry } from "@shared/schema";
 import {
-  BookOpen, Star, Plus, ArrowLeft, Pencil, Trash2,
+  BookOpen, Star, Plus, ArrowLeft, Pencil, Trash2, Check,
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy, Award,
 } from "lucide-react";
 
 const serif = "'Playfair Display', Georgia, serif";
 
-type FilterValue = "all" | "solo" | "tasting";
+type FilterValue = "all" | "solo" | "tasting" | "drafts";
 type ViewState = "list" | "detail" | "edit";
 type DatePeriod = "all" | "7d" | "30d" | "3m" | "1y";
 
@@ -24,6 +24,7 @@ const FILTERS: { key: FilterValue; labelKey: string }[] = [
   { key: "all", labelKey: "All" },
   { key: "solo", labelKey: "Solo" },
   { key: "tasting", labelKey: "Tasting" },
+  { key: "drafts", labelKey: "Drafts" },
 ];
 
 const DATE_PERIODS: { key: DatePeriod; labelKey: string; fallback: string; days: number }[] = [
@@ -99,11 +100,15 @@ export default function M2TasteDrams() {
 
   const filteredEntries = useMemo(() => {
     let items: any[] = [];
-    if (activeFilter === "all" || activeFilter === "solo") {
-      items = [...items, ...journal.map((e: any) => ({ ...e, source: e.source || "solo" }))];
-    }
-    if (activeFilter === "all" || activeFilter === "tasting") {
-      items = [...items, ...tastingWhiskies];
+    if (activeFilter === "drafts") {
+      items = journal.filter((e: any) => e.status === "draft").map((e: any) => ({ ...e, source: e.source || "solo" }));
+    } else {
+      if (activeFilter === "all" || activeFilter === "solo") {
+        items = [...items, ...journal.map((e: any) => ({ ...e, source: e.source || "solo" }))];
+      }
+      if (activeFilter === "all" || activeFilter === "tasting") {
+        items = [...items, ...tastingWhiskies];
+      }
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -123,6 +128,9 @@ export default function M2TasteDrams() {
       }
     }
     items.sort((a: any, b: any) => {
+      const isDraftA = a.status === "draft" ? 0 : 1;
+      const isDraftB = b.status === "draft" ? 0 : 1;
+      if (isDraftA !== isDraftB) return isDraftA - isDraftB;
       const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return db - da;
@@ -225,6 +233,34 @@ export default function M2TasteDrams() {
           )}
         </div>
 
+        {selectedEntry.status === "draft" && isSoloEntry(selectedEntry) && (
+          <button
+            onClick={() => {
+              updateMutation.mutate({ id: selectedEntry.id, data: { status: "final" } });
+            }}
+            style={{
+              width: "100%",
+              padding: 12,
+              fontSize: 15,
+              fontWeight: 600,
+              background: "#d4a256",
+              color: "#1a1612",
+              border: "none",
+              borderRadius: 12,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              marginBottom: 16,
+            }}
+            data-testid="button-finalize-dram"
+          >
+            <Check style={{ width: 18, height: 18 }} />
+            {t("m2.taste.finalizeDram", "Finish tasting")}
+          </button>
+        )}
+
         <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 14, padding: "20px" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 16 }}>
             {selectedEntry.imageUrl && (
@@ -239,12 +275,19 @@ export default function M2TasteDrams() {
               {selectedEntry.distillery && (
                 <div style={{ fontSize: 14, color: v.textSecondary, marginTop: 4 }}>{selectedEntry.distillery}</div>
               )}
-              {selectedEntry.createdAt && (
-                <div style={{ fontSize: 12, color: v.muted, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
-                  <Calendar style={{ width: 12, height: 12 }} />
-                  {new Date(selectedEntry.createdAt).toLocaleDateString()}
-                </div>
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                {selectedEntry.status === "draft" && (
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: "#d4a25620", color: "#d4a256" }}>
+                    {t("m2.taste.draft", "Draft")}
+                  </span>
+                )}
+                {selectedEntry.createdAt && (
+                  <span style={{ fontSize: 12, color: v.muted, display: "flex", alignItems: "center", gap: 4 }}>
+                    <Calendar style={{ width: 12, height: 12 }} />
+                    {new Date(selectedEntry.createdAt).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
             </div>
             {selectedEntry.personalScore != null && (
               <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -484,6 +527,15 @@ export default function M2TasteDrams() {
                         <div style={{ fontSize: 15, fontWeight: 600, color: v.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {entry.whiskyName || entry.title || "—"}
                         </div>
+                        {entry.status === "draft" && (
+                          <span style={{
+                            fontSize: 10, fontWeight: 600,
+                            padding: "2px 6px", borderRadius: 4,
+                            background: "#d4a25620", color: "#d4a256",
+                          }} data-testid={`badge-draft-${entry.id}`}>
+                            {t("m2.taste.draft", "Draft")}
+                          </span>
+                        )}
                         {entry.source === "tasting" && (
                           <span style={{
                             fontSize: 10, fontWeight: 600,
