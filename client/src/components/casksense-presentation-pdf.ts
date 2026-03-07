@@ -209,7 +209,7 @@ function drawCover(doc: jsPDF) {
   drawText(doc, "CaskSense", pw / 2, ph / 2 - 10, 52, TEXT, "bold", "center");
   drawAccentLine(doc, ph / 2, 60);
   drawText(doc, "Where tasting becomes reflection.", pw / 2, ph / 2 + 16, 16, MUTED, "italic", "center");
-  drawText(doc, "Complete Feature Overview  ·  44+ Features  ·  5 Categories", pw / 2, ph / 2 + 32, 10, ACCENT_DIM, "normal", "center");
+  drawText(doc, "Complete Feature Overview  ·  42+ Features  ·  5 Categories", pw / 2, ph / 2 + 32, 10, ACCENT_DIM, "normal", "center");
   drawText(doc, "casksense.com", pw / 2, ph - 16, 8, MUTED, "normal", "center");
 }
 
@@ -271,11 +271,11 @@ function drawIntro(doc: jsPDF) {
 
 
 // ─────────────────────────────────────────────
-// A. TASTING ENGINE (16 features)
+// A. TASTING ENGINE (15 features)
 // ─────────────────────────────────────────────
 
 function drawTastingEngineFeatures(doc: jsPDF) {
-  drawChapterDivider(doc, "A", "The Tasting Engine", "Everything you need to run a structured whisky tasting", "16 features");
+  drawChapterDivider(doc, "A", "The Tasting Engine", "Everything you need to run a structured whisky tasting", "15 features");
 
   // ─── Page: Features 1–3 ───
   newFeaturePage(doc);
@@ -435,9 +435,9 @@ function drawTastingEngineFeatures(doc: jsPDF) {
   const cardH = 28;
   const cardData = [
     { label: "?", sub: "", stage: "Blind" },
-    { label: "Talisker", sub: "", stage: "Name" },
-    { label: "45.8%", sub: "Skye", stage: "Data" },
-    { label: "", sub: "", stage: "Full" },
+    { label: "45.8%", sub: "", stage: "ABV" },
+    { label: "10 Yrs", sub: "", stage: "Age" },
+    { label: "", sub: "", stage: "Name" },
   ];
   cardData.forEach((cd, i) => {
     const cardX = cx + i * (cardW + 5);
@@ -466,7 +466,7 @@ function drawTastingEngineFeatures(doc: jsPDF) {
       doc.line(ax + 1.5, cy + 1, ax + 2.5, cy);
     }
   });
-  drawFeatureRight(doc, TEXT_X, y, "Blind Mode", "Four-stage reveal: only the dram number, then the name, then metadata, then the full bottle. Bias eliminated.", "Mystery, unveiled in acts.");
+  drawFeatureRight(doc, TEXT_X, y, "Blind Mode", "Four-stage reveal: only the dram number, then ABV, then age, then the full name. Bias eliminated.", "Mystery, unveiled in acts.");
 
   // ─── Page: Features 7–9 ───
   newFeaturePage(doc);
@@ -645,40 +645,8 @@ function drawTastingEngineFeatures(doc: jsPDF) {
   // ─── Page: Features 13–15 ───
   newFeaturePage(doc);
 
-  // 13. Ambient Sound
+  // 13. Printable Templates
   y = rowY(0);
-  cx = VIS_X + VIS_W / 2;
-  cy = y + ROW_H / 2;
-  doc.setFillColor(...rgb(CARD));
-  doc.roundedRect(cx - 6, cy - 4, 12, 8, 1, 1, "F");
-  doc.setFillColor(...rgb(CARD));
-  doc.roundedRect(cx - 3, cy - 8, 6, 4, 0, 0, "F");
-  for (let i = 1; i <= 4; i++) {
-    const arcR = 6 + i * 5;
-    doc.setDrawColor(...rgb(i <= 2 ? ACCENT : ACCENT_DIM));
-    doc.setLineWidth(0.4);
-    const startAngle = -40 * (Math.PI / 180);
-    const endAngle = 40 * (Math.PI / 180);
-    const steps = 12;
-    for (let s = 0; s < steps; s++) {
-      const a1 = startAngle + (endAngle - startAngle) * (s / steps);
-      const a2 = startAngle + (endAngle - startAngle) * ((s + 1) / steps);
-      doc.line(cx + arcR * Math.cos(a1), cy + arcR * Math.sin(a1), cx + arcR * Math.cos(a2), cy + arcR * Math.sin(a2));
-    }
-  }
-  const flameX = [cx - 12, cx - 7, cx + 7, cx + 12];
-  flameX.forEach((fx) => {
-    doc.setFillColor(...rgb(ACCENT));
-    doc.circle(fx, cy + 12, 1.5, "F");
-    doc.setFillColor(...rgb(ACCENT_DIM));
-    doc.circle(fx, cy + 10, 1, "F");
-  });
-  drawFeatureRight(doc, TEXT_X, y, "Ambient Sound", "Toggle a fireplace soundscape for the perfect tasting atmosphere. Crackling fire, warmth, focus.", "Atmosphere you can hear.");
-
-  drawFeatureSeparator(doc, y + ROW_H - 2);
-
-  // 14. Printable Templates
-  y = rowY(1);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
   const sheets = [
@@ -716,8 +684,8 @@ function drawTastingEngineFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 15. Solo Dram Logger
-  y = rowY(2);
+  // 14. Solo Dram Logger
+  y = rowY(1);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
   drawGlow(doc, cx, cy, 16);
@@ -751,11 +719,10 @@ function drawTastingEngineFeatures(doc: jsPDF) {
   doc.line(cx + 14, cy + 6, cx + 15.5, cy + 3.5);
   drawFeatureRight(doc, TEXT_X, y, "Solo Dram Logger", "Rate whiskies outside of group sessions. For quiet evenings with a single dram — every note captured.", "Your private dram diary.");
 
-  // ─── Page: Feature 16 ───
-  newFeaturePage(doc);
+  drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 16. Guest Mode
-  y = rowY(0);
+  // 15. Guest Mode
+  y = rowY(2);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
   const badgeW = 34;
@@ -784,16 +751,16 @@ function drawTastingEngineFeatures(doc: jsPDF) {
 
 
 // ─────────────────────────────────────────────
-// B. PERSONAL ANALYSIS (10 features)
+// B. PERSONAL ANALYSIS (9 features)
 // ─────────────────────────────────────────────
 
 function drawPersonalAnalysisFeatures(doc: jsPDF) {
-  drawChapterDivider(doc, "B", "Personal Taste Analysis", "10 features that learn your palate", "10 features");
+  drawChapterDivider(doc, "B", "Personal Taste Analysis", "9 features that learn your palate", "9 features");
 
-  // ─── Page: Features 17–19 ───
+  // ─── Page: Features 16–18 ───
   newFeaturePage(doc);
 
-  // 17. Flavor Radar
+  // 16. Flavor Radar
   let y = rowY(0);
   let cx = VIS_X + VIS_W / 2;
   let cy = y + ROW_H / 2;
@@ -810,7 +777,7 @@ function drawPersonalAnalysisFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 18. Profile Comparison
+  // 17. Profile Comparison
   y = rowY(1);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -826,7 +793,7 @@ function drawPersonalAnalysisFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 19. Taste Evolution
+  // 18. Taste Evolution
   y = rowY(2);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -864,10 +831,10 @@ function drawPersonalAnalysisFeatures(doc: jsPDF) {
   doc.line(cx + 38, cy - 12, cx + 38, cy - 14);
   drawFeatureRight(doc, TEXT_X, y, "Taste Evolution", "A trend line showing how your average ratings develop over months. See if your palate is rising, stable, or shifting.", "Taste evolves over time.");
 
-  // ─── Page: Features 20–22 ───
+  // ─── Page: Features 19–21 ───
   newFeaturePage(doc);
 
-  // 20. Consistency Score
+  // 19. Consistency Score
   y = rowY(0);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -890,7 +857,7 @@ function drawPersonalAnalysisFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 21. Palate DNA
+  // 20. Palate DNA
   y = rowY(1);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -925,7 +892,7 @@ function drawPersonalAnalysisFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 22. Whisky Journal
+  // 21. Whisky Journal
   y = rowY(2);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -955,10 +922,10 @@ function drawPersonalAnalysisFeatures(doc: jsPDF) {
   doc.roundedRect(cx + 18, cy - 16, 2, 10, 1, 1, "F");
   drawFeatureRight(doc, TEXT_X, y, "Personal Whisky Journal", "Every dram you taste — solo or in a group — is automatically logged with notes, scores, and metadata.", "Every dram remembered.");
 
-  // ─── Page: Features 23–25 ───
+  // ─── Page: Features 22–24 ───
   newFeaturePage(doc);
 
-  // 23. Recommendations
+  // 22. Recommendations
   y = rowY(0);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -991,7 +958,7 @@ function drawPersonalAnalysisFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 24. Side-by-Side
+  // 23. Side-by-Side
   y = rowY(1);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -1011,42 +978,8 @@ function drawPersonalAnalysisFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 25. Badges & Achievements
+  // 24. Collection Analysis (moved from separate page)
   y = rowY(2);
-  cx = VIS_X + VIS_W / 2;
-  cy = y + ROW_H / 2;
-  const badges = [
-    { x: cx - 24, h: 20, color: BRONZE, label: "First\nSip", size: 14 },
-    { x: cx, h: 26, color: SILVER, label: "Islay\nPilgrim", size: 16 },
-    { x: cx + 24, h: 32, color: ACCENT, label: "Living\nLegend", size: 18 },
-  ];
-  badges.forEach((b) => {
-    const shieldTop = cy + 8 - b.h;
-    doc.setFillColor(...rgb(CARD));
-    doc.roundedRect(b.x - b.size / 2, shieldTop, b.size, b.h - 4, 3, 3, "F");
-    doc.setDrawColor(...rgb(b.color));
-    doc.setLineWidth(0.6);
-    doc.roundedRect(b.x - b.size / 2, shieldTop, b.size, b.h - 4, 3, 3, "S");
-    doc.setFillColor(...rgb(b.color));
-    doc.triangle(b.x - b.size / 2, shieldTop + b.h - 4, b.x + b.size / 2, shieldTop + b.h - 4, b.x, shieldTop + b.h + 2, "F");
-    if (b.color === ACCENT) {
-      doc.setFillColor(...rgb(ACCENT));
-      doc.circle(b.x, shieldTop - 3, 2.5, "F");
-      drawText(doc, "*", b.x, shieldTop - 1.5, 4, BG, "bold", "center");
-    }
-  });
-  doc.setFillColor(...rgb(ACCENT_FAINT));
-  doc.roundedRect(cx - 32, cy + 14, 64, 4, 2, 2, "F");
-  doc.setFillColor(...rgb(ACCENT));
-  doc.roundedRect(cx - 32, cy + 14, 54, 4, 2, 2, "F");
-  drawText(doc, "847 / 1000", cx, cy + 22, 5, MUTED, "normal", "center");
-  drawFeatureRight(doc, TEXT_X, y, "Badges & Achievements", "Gamified milestones: from 'First Sip' to 'Living Legend'. Every badge earned tells a story.", "Milestones worth pouring for.");
-
-  // ─── Page: Feature 26 ───
-  newFeaturePage(doc);
-
-  // 26. Collection Analysis
-  y = rowY(0);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
   const skylineBars = [
@@ -1076,16 +1009,16 @@ function drawPersonalAnalysisFeatures(doc: jsPDF) {
 
 
 // ─────────────────────────────────────────────
-// C. AI FEATURES (7 features)
+// C. AI FEATURES (8 features)
 // ─────────────────────────────────────────────
 
 function drawAIFeatures(doc: jsPDF) {
-  drawChapterDivider(doc, "C", "AI-Powered Features", "Artificial intelligence that makes your whisky experience smarter", "7 features");
+  drawChapterDivider(doc, "C", "AI-Powered Features", "Artificial intelligence that makes your whisky experience smarter", "8 features");
 
-  // ─── Page: Features 27–29 ───
+  // ─── Page: Features 25–27 ───
   newFeaturePage(doc);
 
-  // 27. Bottle Recognition
+  // 25. Bottle Recognition
   let y = rowY(0);
   let cx = VIS_X + VIS_W / 2;
   let cy = y + ROW_H / 2;
@@ -1125,7 +1058,7 @@ function drawAIFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 28. Label OCR
+  // 26. Label OCR
   y = rowY(1);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -1156,7 +1089,7 @@ function drawAIFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 29. AI Tasting Notes
+  // 27. AI Tasting Notes
   y = rowY(2);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -1185,10 +1118,10 @@ function drawAIFeatures(doc: jsPDF) {
   drawText(doc, "AI", cx + 33, cy - 14, 6, ACCENT, "bold", "center");
   drawFeatureRight(doc, TEXT_X, y, "AI Tasting Notes", "Select flavor keywords, and AI generates professional tasting notes. Multilingual: German and English.", "From hints to prose.");
 
-  // ─── Page: Features 30–32 ───
+  // ─── Page: Features 28–30 ───
   newFeaturePage(doc);
 
-  // 30. AI Enrichment
+  // 28. AI Enrichment
   y = rowY(0);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -1218,7 +1151,7 @@ function drawAIFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 31. Market Price
+  // 29. Market Price
   y = rowY(1);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -1249,7 +1182,7 @@ function drawAIFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 32. AI Menu Cover
+  // 30. AI Menu Cover
   y = rowY(2);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -1280,10 +1213,10 @@ function drawAIFeatures(doc: jsPDF) {
   });
   drawFeatureRight(doc, TEXT_X, y, "AI Menu Card Cover", "DALL-E generates context-aware cover images for tasting menus — based on region, season, cask types, and mood.", "Menus with imagination.");
 
-  // ─── Page: Feature 33 ───
+  // ─── Page: Features 31–32 ───
   newFeaturePage(doc);
 
-  // 33. AI Import
+  // 31. AI Import
   y = rowY(0);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -1323,20 +1256,51 @@ function drawAIFeatures(doc: jsPDF) {
     }
   }
   drawFeatureRight(doc, TEXT_X, y, "AI Tasting Import", "Parse unstructured documents — PDFs, Excel files, photos — into structured tasting events with complete whisky data.", "Chaos in, structure out.");
+
+  drawFeatureSeparator(doc, y + ROW_H - 2);
+
+  // 32. Barcode Scanner (moved from Chapter E)
+  y = rowY(1);
+  cx = VIS_X + VIS_W / 2;
+  cy = y + ROW_H / 2;
+  const barWidths = [2, 1, 3, 1, 2, 1, 3, 2, 1, 3, 1, 2, 1, 2, 3, 1, 2, 1, 3, 1];
+  drawGlow(doc, cx, cy, 14);
+  let barX = cx - 30;
+  barWidths.forEach((w) => {
+    doc.setFillColor(...rgb(TEXT));
+    doc.rect(barX, cy - 12, w, 24, "F");
+    barX += w + 1;
+  });
+  doc.setDrawColor(220, 60, 60);
+  doc.setLineWidth(0.6);
+  doc.line(cx - 32, cy, cx + 32, cy);
+  doc.setDrawColor(...rgb(ACCENT));
+  doc.setLineWidth(0.3);
+  doc.line(cx + 36, cy, cx + 42, cy);
+  doc.line(cx + 40, cy - 2, cx + 42, cy);
+  doc.line(cx + 40, cy + 2, cx + 42, cy);
+  doc.setFillColor(...rgb(CARD));
+  doc.roundedRect(cx + 44, cy - 8, 22, 16, 2, 2, "F");
+  doc.setDrawColor(...rgb(ACCENT));
+  doc.setLineWidth(0.3);
+  doc.roundedRect(cx + 44, cy - 8, 22, 16, 2, 2, "S");
+  drawText(doc, "WB#12345", cx + 55, cy + 1, 5, ACCENT, "bold", "center");
+  drawText(doc, "Identified", cx + 55, cy + 6, 4, MUTED, "normal", "center");
+  drawFeatureRight(doc, TEXT_X, y, "Barcode Scanner", "Camera-based barcode scanning for instant bottle lookup. Rate-limited and cached for reliable performance.", "Scan shelf to profile.");
 }
 
 
 // ─────────────────────────────────────────────
-// D. COMMUNITY & CIRCLE (6 features)
+// D. COMMUNITY & CIRCLE (5 features)
 // ─────────────────────────────────────────────
 
 function drawCommunityFeatures(doc: jsPDF) {
-  drawChapterDivider(doc, "D", "Community & Circle", "Taste together. Compare. Discover who shares your palate.", "6 features");
+  drawChapterDivider(doc, "D", "Community & Circle", "Taste together. Compare. Discover who shares your palate.", "5 features");
 
-  // ─── Page: Features 34–36 ───
+  // ─── Page: Features 33–35 ───
   newFeaturePage(doc);
 
-  // 34. Taste Twins
+  // 33. Taste Twins
   let y = rowY(0);
   let cx = VIS_X + VIS_W / 2;
   let cy = y + ROW_H / 2;
@@ -1359,7 +1323,7 @@ function drawCommunityFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 35. Leaderboards
+  // 34. Leaderboards
   y = rowY(1);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -1386,7 +1350,7 @@ function drawCommunityFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 36. Activity Feed
+  // 35. Activity Feed
   y = rowY(2);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -1411,10 +1375,10 @@ function drawCommunityFeatures(doc: jsPDF) {
   });
   drawFeatureRight(doc, TEXT_X, y, "Activity Feed", "Real-time stream of what friends are tasting — solo drams, group sessions, badges. With relative timestamps.", "See what friends sip.");
 
-  // ─── Page: Features 37–39 ───
+  // ─── Page: Features 36–37 ───
   newFeaturePage(doc);
 
-  // 37. Friend Management
+  // 36. Friend Management
   y = rowY(0);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -1457,7 +1421,7 @@ function drawCommunityFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 38. Community Rankings
+  // 37. Community Rankings
   y = rowY(1);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
@@ -1481,36 +1445,6 @@ function drawCommunityFeatures(doc: jsPDF) {
     }
   });
   drawFeatureRight(doc, TEXT_X, y, "Community Rankings", "Aggregated whisky scores across the community. Filter by region. Compare your score vs. the group average.", "The crowd's whisky verdict.");
-
-  drawFeatureSeparator(doc, y + ROW_H - 2);
-
-  // 39. Historical Tastings
-  y = rowY(2);
-  cx = VIS_X + VIS_W / 2;
-  cy = y + ROW_H / 2;
-  doc.setFillColor(...rgb(CARD));
-  doc.roundedRect(cx - 28, cy - 16, 22, 32, 2, 2, "F");
-  doc.roundedRect(cx - 4, cy - 16, 22, 32, 2, 2, "F");
-  doc.roundedRect(cx + 20, cy - 16, 22, 32, 2, 2, "F");
-  doc.setDrawColor(...rgb(ACCENT_DIM));
-  doc.setLineWidth(0.3);
-  doc.roundedRect(cx - 28, cy - 16, 22, 32, 2, 2, "S");
-  doc.roundedRect(cx - 4, cy - 16, 22, 32, 2, 2, "S");
-  doc.setDrawColor(...rgb(ACCENT));
-  doc.setLineWidth(0.5);
-  doc.roundedRect(cx + 20, cy - 16, 22, 32, 2, 2, "S");
-  for (let d = 0; d < 3; d++) {
-    const dx = cx - 28 + d * 24;
-    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
-      const dotX = dx + 4 + c * 4.5;
-      const dotY = cy - 8 + r * 5;
-      const hasEvent = (d === 2 && (r * 4 + c) % 3 === 0) || (d === 1 && (r * 4 + c) % 5 === 0);
-      doc.setFillColor(...rgb(hasEvent ? ACCENT : ACCENT_FAINT));
-      doc.circle(dotX, dotY, hasEvent ? 1.2 : 0.6, "F");
-    }
-    drawText(doc, d === 0 ? "2023" : d === 1 ? "2024" : "2025", dx + 11, cy + 20, 5, d === 2 ? ACCENT : MUTED_DIM, "bold", "center");
-  }
-  drawFeatureRight(doc, TEXT_X, y, "Historical Tastings", "Searchable archive of past events. Cross-tasting analytics reveal top whiskies, region breakdowns, and trends.", "Past tastings, new insights.");
 }
 
 
@@ -1521,10 +1455,10 @@ function drawCommunityFeatures(doc: jsPDF) {
 function drawWhiskyDBFeatures(doc: jsPDF) {
   drawChapterDivider(doc, "E", "Whisky Database & Collection", "Manage your bottles, explore the world of whisky", "5 features");
 
-  // ─── Page: Features 40–42 ───
+  // ─── Page: Features 38–40 ───
   newFeaturePage(doc);
 
-  // 40. Whiskybase Integration
+  // 38. Whiskybase Integration
   let y = rowY(0);
   let cx = VIS_X + VIS_W / 2;
   let cy = y + ROW_H / 2;
@@ -1559,39 +1493,8 @@ function drawWhiskyDBFeatures(doc: jsPDF) {
 
   drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 41. Barcode Scanner
+  // 39. Collection Sync
   y = rowY(1);
-  cx = VIS_X + VIS_W / 2;
-  cy = y + ROW_H / 2;
-  const barWidths = [2, 1, 3, 1, 2, 1, 3, 2, 1, 3, 1, 2, 1, 2, 3, 1, 2, 1, 3, 1];
-  drawGlow(doc, cx, cy, 14);
-  let barX = cx - 30;
-  barWidths.forEach((w) => {
-    doc.setFillColor(...rgb(TEXT));
-    doc.rect(barX, cy - 12, w, 24, "F");
-    barX += w + 1;
-  });
-  doc.setDrawColor(220, 60, 60);
-  doc.setLineWidth(0.6);
-  doc.line(cx - 32, cy, cx + 32, cy);
-  doc.setDrawColor(...rgb(ACCENT));
-  doc.setLineWidth(0.3);
-  doc.line(cx + 36, cy, cx + 42, cy);
-  doc.line(cx + 40, cy - 2, cx + 42, cy);
-  doc.line(cx + 40, cy + 2, cx + 42, cy);
-  doc.setFillColor(...rgb(CARD));
-  doc.roundedRect(cx + 44, cy - 8, 22, 16, 2, 2, "F");
-  doc.setDrawColor(...rgb(ACCENT));
-  doc.setLineWidth(0.3);
-  doc.roundedRect(cx + 44, cy - 8, 22, 16, 2, 2, "S");
-  drawText(doc, "WB#12345", cx + 55, cy + 1, 5, ACCENT, "bold", "center");
-  drawText(doc, "Identified", cx + 55, cy + 6, 4, MUTED, "normal", "center");
-  drawFeatureRight(doc, TEXT_X, y, "Barcode Scanner", "Camera-based barcode scanning for instant bottle lookup. Rate-limited and cached for reliable performance.", "Scan shelf to profile.");
-
-  drawFeatureSeparator(doc, y + ROW_H - 2);
-
-  // 42. Collection Sync
-  y = rowY(2);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
   doc.setFillColor(...rgb(CARD));
@@ -1626,11 +1529,10 @@ function drawWhiskyDBFeatures(doc: jsPDF) {
   });
   drawFeatureRight(doc, TEXT_X, y, "Collection Sync", "Smart synchronization via CSV re-upload. Automatically detects new items, removed bottles, and changed ratings.", "Reupload. Auto-sync.");
 
-  // ─── Page: Features 43–44 ───
-  newFeaturePage(doc);
+  drawFeatureSeparator(doc, y + ROW_H - 2);
 
-  // 43. Knowledge Hub
-  y = rowY(0);
+  // 40. Knowledge Hub
+  y = rowY(2);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
   const triadItems = [
@@ -1653,10 +1555,11 @@ function drawWhiskyDBFeatures(doc: jsPDF) {
   drawDottedLine(doc, triadItems[1].x + 7, triadItems[1].y, triadItems[2].x - 7, triadItems[2].y);
   drawFeatureRight(doc, TEXT_X, y, "Knowledge Hub", "Built-in whisky lexicon, interactive distillery map, bottler database, and a structured tasting guide. All in one place.", "Learn the whole world.");
 
-  drawFeatureSeparator(doc, y + ROW_H - 2);
+  // ─── Page: Features 41–42 ───
+  newFeaturePage(doc);
 
-  // 44. Wishlist
-  y = rowY(1);
+  // 41. Wishlist
+  y = rowY(0);
   cx = VIS_X + VIS_W / 2;
   cy = y + ROW_H / 2;
   doc.setDrawColor(...rgb(ACCENT));
@@ -1714,6 +1617,36 @@ function drawWhiskyDBFeatures(doc: jsPDF) {
     drawText(doc, ci.text, ix + 8, iy + 4, 5, ci.checked ? MUTED_DIM : TEXT, ci.checked ? "normal" : "normal");
   });
   drawFeatureRight(doc, TEXT_X, y, "Wishlist", "Track bottles you want to find. Integrated with your collection and journal for a complete whisky inventory.", "Track the next bottle.");
+
+  drawFeatureSeparator(doc, y + ROW_H - 2);
+
+  // 42. Historical Tastings
+  y = rowY(1);
+  cx = VIS_X + VIS_W / 2;
+  cy = y + ROW_H / 2;
+  doc.setFillColor(...rgb(CARD));
+  doc.roundedRect(cx - 28, cy - 16, 22, 32, 2, 2, "F");
+  doc.roundedRect(cx - 4, cy - 16, 22, 32, 2, 2, "F");
+  doc.roundedRect(cx + 20, cy - 16, 22, 32, 2, 2, "F");
+  doc.setDrawColor(...rgb(ACCENT_DIM));
+  doc.setLineWidth(0.3);
+  doc.roundedRect(cx - 28, cy - 16, 22, 32, 2, 2, "S");
+  doc.roundedRect(cx - 4, cy - 16, 22, 32, 2, 2, "S");
+  doc.setDrawColor(...rgb(ACCENT));
+  doc.setLineWidth(0.5);
+  doc.roundedRect(cx + 20, cy - 16, 22, 32, 2, 2, "S");
+  for (let d = 0; d < 3; d++) {
+    const dx = cx - 28 + d * 24;
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+      const dotX = dx + 4 + c * 4.5;
+      const dotY = cy - 8 + r * 5;
+      const hasEvent = (d === 2 && (r * 4 + c) % 3 === 0) || (d === 1 && (r * 4 + c) % 5 === 0);
+      doc.setFillColor(...rgb(hasEvent ? ACCENT : ACCENT_FAINT));
+      doc.circle(dotX, dotY, hasEvent ? 1.2 : 0.6, "F");
+    }
+    drawText(doc, d === 0 ? "2023" : d === 1 ? "2024" : "2025", dx + 11, cy + 20, 5, d === 2 ? ACCENT : MUTED_DIM, "bold", "center");
+  }
+  drawFeatureRight(doc, TEXT_X, y, "Historical Tastings", "Searchable archive of past events. Cross-tasting analytics reveal top whiskies, region breakdowns, and trends.", "Past tastings, new insights.");
 }
 
 
@@ -1737,7 +1670,7 @@ function drawCTAPage(doc: jsPDF) {
   doc.roundedRect(pw / 2 - 40, ph / 2 + 24, 80, 14, 7, 7, "F");
   drawText(doc, "casksense.com", pw / 2, ph / 2 + 33, 14, BG, "bold", "center");
 
-  drawText(doc, "44+ features  ·  Blind tastings  ·  AI-powered  ·  Free to use", pw / 2, ph / 2 + 50, 8, MUTED_DIM, "normal", "center");
+  drawText(doc, "42+ features  ·  Blind tastings  ·  AI-powered  ·  Free to use", pw / 2, ph / 2 + 50, 8, MUTED_DIM, "normal", "center");
 }
 
 
