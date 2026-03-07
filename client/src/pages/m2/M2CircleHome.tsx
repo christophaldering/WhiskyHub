@@ -692,42 +692,40 @@ export default function M2CircleHome() {
                   {formatRelativeTime(activity.timestamp, i18n.language, t)}
                 </span>
               </div>
-              {activity.details && (
-                <>
-                  {activity.type === "journal" && activity.details.whiskyName && (
-                    <p
-                      style={{
-                        fontSize: 13,
-                        color: v.textSecondary,
-                        margin: 0,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        lineHeight: 1.4,
-                      }}
-                    >
+              <p
+                style={{
+                  fontSize: 13,
+                  color: v.textSecondary,
+                  margin: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  lineHeight: 1.4,
+                }}
+              >
+                {activity.type === "journal" ? (
+                  activity.details?.whiskyName ? (
+                    <>
                       {t("m2.circle.loggedDram", "Logged")}: {activity.details.whiskyName}
-                      {activity.details.score != null && (
+                      {activity.details.personalScore != null && (
                         <span style={{ color: v.accent, fontWeight: 600, marginLeft: 6 }}>
-                          {activity.details.score}/100
+                          {activity.details.personalScore}/100
                         </span>
                       )}
-                    </p>
-                  )}
-                  {activity.type === "tasting" && activity.details.tastingName && (
-                    <p
-                      style={{
-                        fontSize: 13,
-                        color: v.textSecondary,
-                        margin: 0,
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {t("m2.circle.joinedTasting", "Joined")}: {activity.details.tastingName}
-                    </p>
-                  )}
-                </>
-              )}
+                    </>
+                  ) : (
+                    t("m2.circle.loggedDramGeneric", "Logged a dram")
+                  )
+                ) : (
+                  activity.details?.title ? (
+                    <>
+                      {t("m2.circle.joinedTasting", "Joined")}: {activity.details.title}
+                    </>
+                  ) : (
+                    t("m2.circle.joinedTastingGeneric", "Participated in a tasting")
+                  )
+                )}
+              </p>
             </div>
           </div>
         ))}
