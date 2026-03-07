@@ -193,6 +193,7 @@ export async function signOut(): Promise<void> {
   } catch {}
   clearSessionStorage();
   clearRemember();
+  try { localStorage.removeItem("casksense_participant_id"); } catch {}
   window.dispatchEvent(new Event("session-change"));
 }
 

@@ -90,6 +90,7 @@ export default function TastingCalendar({ embedded = false }: { embedded?: boole
   const { data: events = [], isLoading } = useQuery<CalendarEvent[]>({
     queryKey: ["calendar", participantId],
     queryFn: () => calendarApi.getAll(participantId || undefined),
+    enabled: !!participantId,
   });
 
   const { data: reminders = [] } = useQuery<any[]>({
