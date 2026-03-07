@@ -62,6 +62,7 @@ export const tastings = pgTable("tastings", {
   activeWhiskyId: varchar("active_whisky_id"), // tracks which whisky is currently being discussed
   aiHighlightsCache: text("ai_highlights_cache"), // Cached AI session highlights (JSON)
   aiHighlightsRatingCount: integer("ai_highlights_rating_count"), // Rating count when highlights were cached
+  aiNarrative: text("ai_narrative"), // AI-generated narrative session summary (Markdown)
   guestMode: text("guest_mode").default("standard"), // "standard" | "ultra" — guest participation flavor
   sessionUiMode: text("session_ui_mode"), // null | flow | focus | journal — host-enforced UI mode
   showRanking: boolean("show_ranking").default(true),
@@ -658,3 +659,18 @@ export const historicalImportRuns = pgTable("historical_import_runs", {
 export const insertHistoricalImportRunSchema = createInsertSchema(historicalImportRuns).omit({ id: true, createdAt: true, completedAt: true });
 export type InsertHistoricalImportRun = z.infer<typeof insertHistoricalImportRunSchema>;
 export type HistoricalImportRun = typeof historicalImportRuns.$inferSelect;
+
+// --- Connoisseur Reports (AI-generated personal whisky profile) ---
+export const connoisseurReports = pgTable("connoisseur_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull(),
+  generatedAt: timestamp("generated_at").defaultNow(),
+  reportContent: text("report_content").notNull(),
+  summary: text("summary").notNull(),
+  dataSnapshot: jsonb("data_snapshot"),
+  language: text("language").default("en"),
+});
+
+export const insertConnoisseurReportSchema = createInsertSchema(connoisseurReports).omit({ id: true, generatedAt: true });
+export type InsertConnoisseurReport = z.infer<typeof insertConnoisseurReportSchema>;
+export type ConnoisseurReport = typeof connoisseurReports.$inferSelect;

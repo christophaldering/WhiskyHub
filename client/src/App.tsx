@@ -136,6 +136,7 @@ import M2CircleHome from "@/pages/m2/M2CircleHome";
 import M2Admin from "@/pages/m2/M2Admin";
 import M2HostDashboard from "@/pages/m2/M2HostDashboard";
 import M2TasteRecommendations from "@/pages/m2/M2TasteRecommendations";
+import M2TasteConnoisseur from "@/pages/m2/M2TasteConnoisseur";
 import M2Impressum from "@/pages/m2/M2Impressum";
 import M2Privacy from "@/pages/m2/M2Privacy";
 import M2DiscoverHub from "@/pages/m2/M2DiscoverHub";
@@ -397,6 +398,9 @@ function Router() {
         </Route>
         <Route path="/m2/taste/settings">
           <Module2Shell><M2TasteSettings /></Module2Shell>
+        </Route>
+        <Route path="/m2/taste/connoisseur">
+          <Module2Shell><M2TasteConnoisseur /></Module2Shell>
         </Route>
         <Route path="/m2/taste/wishlist">
           <Module2Shell><M2TasteWishlist /></Module2Shell>

@@ -14,6 +14,7 @@ export const AI_FEATURES = [
   { id: "benchmark_analyze", label: "Benchmark Dokument-Analyse", route: "/api/benchmark/analyze" },
   { id: "photo_tasting_identify", label: "Foto-Tasting Erkennung", route: "/api/photo-tasting/identify" },
   { id: "ai_import", label: "Tasting AI Import", route: "/api/tastings/ai-import" },
+  { id: "connoisseur_report", label: "Connoisseur Report", route: "/api/participants/:id/connoisseur-report" },
 ] as const;
 
 export type AIFeatureId = typeof AI_FEATURES[number]["id"];

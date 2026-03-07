@@ -41,6 +41,8 @@ import {
   communityMemberships,
   type InsertCommunity, type Community,
   type InsertCommunityMembership, type CommunityMembership,
+  connoisseurReports,
+  type InsertConnoisseurReport, type ConnoisseurReport,
 } from "@shared/schema";
 
 export async function getUniquePersonCount(participantIds: string[]): Promise<number> {
@@ -351,6 +353,11 @@ export interface IStorage {
   createHistoricalImportRun(data: InsertHistoricalImportRun): Promise<HistoricalImportRun>;
   updateHistoricalImportRun(id: string, data: Partial<HistoricalImportRun>): Promise<HistoricalImportRun | undefined>;
   getHistoricalImportRuns(): Promise<HistoricalImportRun[]>;
+
+  // Connoisseur Reports
+  createConnoisseurReport(data: InsertConnoisseurReport): Promise<ConnoisseurReport>;
+  getConnoisseurReports(participantId: string): Promise<ConnoisseurReport[]>;
+  getConnoisseurReport(id: string): Promise<ConnoisseurReport | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2115,6 +2122,21 @@ export class DatabaseStorage implements IStorage {
 
   async getHistoricalImportRuns(): Promise<HistoricalImportRun[]> {
     return db.select().from(historicalImportRuns).orderBy(desc(historicalImportRuns.createdAt));
+  }
+
+  // --- Connoisseur Reports ---
+  async createConnoisseurReport(data: InsertConnoisseurReport): Promise<ConnoisseurReport> {
+    const [result] = await db.insert(connoisseurReports).values(data).returning();
+    return result;
+  }
+
+  async getConnoisseurReports(participantId: string): Promise<ConnoisseurReport[]> {
+    return db.select().from(connoisseurReports).where(eq(connoisseurReports.participantId, participantId)).orderBy(desc(connoisseurReports.generatedAt));
+  }
+
+  async getConnoisseurReport(id: string): Promise<ConnoisseurReport | undefined> {
+    const [result] = await db.select().from(connoisseurReports).where(eq(connoisseurReports.id, id));
+    return result;
   }
 }
 

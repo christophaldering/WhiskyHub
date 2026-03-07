@@ -3386,6 +3386,345 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
     }
   });
 
+  app.post("/api/tastings/:id/ai-narrative", async (req, res) => {
+    try {
+      if (await isAIDisabled("ai_narrative")) return res.status(503).json({ message: "AI feature disabled by admin" });
+      const { language } = req.body;
+      const lang = language === "de" ? "German" : "English";
+      const tasting = await storage.getTasting(req.params.id);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+      const allowedStatuses = ["closed", "reveal", "archived"];
+      if (!allowedStatuses.includes(tasting.status)) {
+        return res.status(400).json({ message: "Narrative can only be generated for closed, revealed, or archived tastings" });
+      }
+
+      if (tasting.aiNarrative) {
+        return res.json({ narrative: tasting.aiNarrative, cached: true });
+      }
+
+      const allRatings = await storage.getRatingsForTasting(req.params.id);
+      const tastingWhiskies = await storage.getWhiskiesForTasting(req.params.id);
+      const tastingParticipantRecords = await storage.getTastingParticipants(req.params.id);
+      const participantMap = new Map<string, string>();
+      for (const tp of tastingParticipantRecords) {
+        participantMap.set(tp.participantId, tp.participant.name);
+      }
+
+      const whiskyData = tastingWhiskies.map(w => {
+        const wRatings = allRatings.filter(r => r.whiskyId === w.id);
+        const avgOverall = wRatings.length > 0 ? wRatings.reduce((s, r) => s + (r.overall ?? 0), 0) / wRatings.length : 0;
+        const scores = wRatings.map(r => r.overall ?? 0);
+        const spread = scores.length > 1 ? Math.max(...scores) - Math.min(...scores) : 0;
+        return {
+          name: w.name,
+          distillery: w.distillery,
+          age: w.age,
+          abv: w.abv,
+          region: w.region,
+          caskInfluence: w.caskInfluence,
+          peatLevel: w.peatLevel,
+          avgScore: avgOverall.toFixed(1),
+          ratingCount: wRatings.length,
+          spread: spread.toFixed(1),
+          ratings: wRatings.map(r => ({
+            participant: participantMap.get(r.participantId) || "Unknown",
+            overall: r.overall,
+            nose: r.nose,
+            taste: r.taste,
+            finish: r.finish,
+            notes: r.notes,
+          })),
+        };
+      });
+
+      let discussionThemes: string[] = [];
+      try {
+        const discussions = await storage.getDiscussionEntries(req.params.id);
+        discussionThemes = discussions.slice(0, 20).map(d => {
+          const name = participantMap.get(d.participantId) || "Unknown";
+          return `${name}: "${d.text}"`;
+        });
+      } catch {}
+
+      let reflectionThemes: string[] = [];
+      try {
+        const reflections = await storage.getReflectionEntries(req.params.id);
+        reflectionThemes = reflections.slice(0, 15).map(r => r.text);
+      } catch {}
+
+      let historicalContext = "";
+      try {
+        const hostId = tasting.hostId;
+        const allHostTastings = await storage.getTastingsForParticipant(hostId);
+        const closedTastings = allHostTastings.filter(t =>
+          t.hostId === hostId && ["closed", "reveal", "archived"].includes(t.status)
+        );
+        const tastingNumber = closedTastings.length;
+        if (tastingNumber <= 1) {
+          historicalContext = "This is the group's first tasting session.";
+        } else {
+          historicalContext = `This is approximately the host's ${tastingNumber}${tastingNumber === 2 ? 'nd' : tastingNumber === 3 ? 'rd' : 'th'} tasting session.`;
+        }
+      } catch {}
+
+      const participantNames = Array.from(participantMap.values());
+
+      const { client } = await getAIClient(null, "ai_narrative");
+      if (!client) {
+        return res.status(503).json({ message: "AI service not available" });
+      }
+
+      const response = await client.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are a whisky journalist covering an intimate tasting event. Write a narrative story of the tasting evening (400-600 words, Markdown format).
+
+Structure with these sections (use ## headings):
+## The Setting
+## The Journey
+## Group Dynamics
+## The Verdict
+## What's Next
+
+Guidelines:
+- Name participants, reference specific scores, mention surprises
+- Write vividly but warmly, like covering a cultural event
+- Highlight consensus moments and disagreements
+- Note any standout whiskies or unexpected favorites
+- End with a forward-looking note
+- ALWAYS write in ${lang}`
+          },
+          {
+            role: "user",
+            content: `Tasting: "${tasting.title}" on ${tasting.date} at ${tasting.location}
+Participants: ${participantNames.join(", ")}
+${historicalContext}
+
+Whisky Flight:
+${JSON.stringify(whiskyData, null, 2)}
+
+${discussionThemes.length > 0 ? `Discussion highlights:\n${discussionThemes.join("\n")}` : ""}
+
+${reflectionThemes.length > 0 ? `Reflection themes (anonymous):\n${reflectionThemes.join("\n")}` : ""}`
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.8,
+      });
+
+      const narrative = response.choices[0]?.message?.content || "";
+
+      try {
+        await storage.updateTasting(req.params.id, { aiNarrative: narrative } as any);
+      } catch {}
+
+      res.json({ narrative, cached: false });
+    } catch (e: any) {
+      console.error("AI narrative error:", e.message);
+      res.status(500).json({ message: "Could not generate narrative" });
+    }
+  });
+
+  // ===== CONNOISSEUR REPORTS =====
+
+  app.post("/api/participants/:id/connoisseur-report", async (req, res) => {
+    try {
+      if (await isAIDisabled("connoisseur_report")) return res.status(503).json({ message: "AI feature disabled by admin" });
+
+      const participantId = req.params.id;
+      const requesterId = req.headers["x-participant-id"] as string | undefined;
+      if (!requesterId || requesterId !== participantId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(404).json({ message: "Participant not found" });
+
+      const { client: openai } = await getAIClient(participantId, "connoisseur_report");
+      if (!openai) return res.status(503).json({ message: "AI not available" });
+
+      const acceptLang = req.headers["accept-language"] || "";
+      const lang = participant.language === "de" || acceptLang.startsWith("de") ? "de" : "en";
+      const langLabel = lang === "de" ? "German" : "English";
+
+      const flavorProfile = await storage.getFlavorProfile(participantId);
+      const stats = await storage.getParticipantStats(participantId);
+      const journalEntries = await storage.getJournalEntries(participantId);
+      const collection = await storage.getWhiskybaseCollection(participantId);
+      const tasteTwins = await storage.getTasteTwins(participantId);
+
+      let communityRankPosition: number | null = null;
+      try {
+        const communityScores = await storage.getCommunityScores();
+        const allParticipantIds = new Set<string>();
+        const allRatings = await storage.getAllRatings();
+        for (const r of allRatings) allParticipantIds.add(r.participantId);
+        communityRankPosition = Array.from(allParticipantIds).indexOf(participantId) + 1;
+        if (communityRankPosition === 0) communityRankPosition = null;
+      } catch {}
+
+      const topWhiskies = flavorProfile.ratedWhiskies
+        .sort((a, b) => (b.rating.overall || 0) - (a.rating.overall || 0))
+        .slice(0, 5)
+        .map(rw => ({
+          name: rw.whisky.name,
+          distillery: rw.whisky.distillery,
+          region: rw.whisky.region,
+          score: rw.rating.overall,
+        }));
+
+      const regionBreakdown = Object.entries(flavorProfile.regionBreakdown)
+        .sort((a, b) => b[1].count - a[1].count)
+        .slice(0, 8)
+        .map(([region, data]) => ({ region, count: data.count, avgScore: Math.round(data.avgScore * 10) / 10 }));
+
+      const ageDistribution: Record<string, number> = {};
+      for (const item of collection) {
+        const age = item.statedAge || "NAS";
+        ageDistribution[age] = (ageDistribution[age] || 0) + 1;
+      }
+
+      const dataSnapshot = {
+        totalRatings: stats.totalRatings,
+        totalTastings: stats.totalTastings,
+        totalJournalEntries: stats.totalJournalEntries,
+        collectionSize: collection.length,
+        avgScores: flavorProfile.avgScores,
+        topRegion: regionBreakdown[0]?.region || null,
+        topRegionCount: regionBreakdown[0]?.count || 0,
+        smokeAffinityIndex: participant.smokeAffinityIndex,
+        sweetnessBias: participant.sweetnessBias,
+        ratingStabilityScore: participant.ratingStabilityScore,
+        explorationIndex: participant.explorationIndex,
+        tasteTwinsCount: tasteTwins.length,
+        topTasteTwin: tasteTwins[0]?.participantName || null,
+        topTasteTwinCorrelation: tasteTwins[0]?.correlation || null,
+      };
+
+      const profileData = {
+        name: participant.name,
+        totalRatings: stats.totalRatings,
+        totalTastings: stats.totalTastings,
+        totalJournalEntries: stats.totalJournalEntries,
+        avgScores: flavorProfile.avgScores,
+        topWhiskies,
+        regionBreakdown,
+        caskBreakdown: Object.entries(flavorProfile.caskBreakdown)
+          .sort((a, b) => b[1].count - a[1].count)
+          .slice(0, 5)
+          .map(([cask, data]) => ({ cask, count: data.count, avgScore: Math.round(data.avgScore * 10) / 10 })),
+        peatBreakdown: Object.entries(flavorProfile.peatBreakdown)
+          .sort((a, b) => b[1].count - a[1].count)
+          .map(([level, data]) => ({ level, count: data.count, avgScore: Math.round(data.avgScore * 10) / 10 })),
+        collectionSize: collection.length,
+        collectionRegions: Object.keys(ageDistribution).length,
+        journalCount: journalEntries.length,
+        recentJournals: journalEntries.slice(0, 3).map(j => ({ title: j.title, whisky: j.whiskyName, score: j.personalScore })),
+        smokeAffinityIndex: participant.smokeAffinityIndex,
+        sweetnessBias: participant.sweetnessBias,
+        ratingStabilityScore: participant.ratingStabilityScore,
+        explorationIndex: participant.explorationIndex,
+        tasteTwins: tasteTwins.slice(0, 3).map(t => ({ name: t.participantName, correlation: t.correlation, sharedWhiskies: t.sharedWhiskies })),
+        communityRankPosition,
+      };
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are a master blender and whisky educator assessing a fellow whisky enthusiast's profile. Write a professional, respectful, and insightful Connoisseur Report.
+
+Return a JSON object with exactly two fields:
+- "report": A Markdown-formatted report (800-1200 words) with these sections:
+  ## Overview
+  ## Palate Profile
+  ## Strengths & Preferences
+  ## Evolution & Growth
+  ## Collection Character
+  ## Community Standing
+  ## Recommendations
+  
+  Use specific data points, scores, and names from the provided data. Be precise and analytical yet warm. Avoid generic platitudes — reference actual whiskies, regions, and scores.
+
+- "summary": A 2-3 sentence shareable summary that captures the essence of this person's whisky personality. This should be quotable and compelling.
+
+ALWAYS respond in ${langLabel}. Use the tone of a knowledgeable master blender addressing a respected colleague.`
+          },
+          {
+            role: "user",
+            content: `Generate a Connoisseur Report for this whisky enthusiast:\n\n${JSON.stringify(profileData, null, 2)}`
+          }
+        ],
+        max_tokens: 3000,
+        temperature: 0.7,
+        response_format: { type: "json_object" },
+      });
+
+      const content = response.choices[0]?.message?.content || "{}";
+      let parsed: { report?: string; summary?: string };
+      try { parsed = JSON.parse(content); } catch { parsed = { report: content, summary: "" }; }
+
+      const reportContent = parsed.report || content;
+      const summary = parsed.summary || "";
+
+      const report = await storage.createConnoisseurReport({
+        participantId,
+        reportContent,
+        summary,
+        dataSnapshot,
+        language: lang,
+      });
+
+      res.status(201).json(report);
+    } catch (e: any) {
+      console.error("Connoisseur report error:", e.message);
+      res.status(500).json({ message: "Could not generate connoisseur report" });
+    }
+  });
+
+  app.get("/api/participants/:id/connoisseur-reports", async (req, res) => {
+    try {
+      const participantId = req.params.id;
+      const requesterId = req.headers["x-participant-id"] as string | undefined;
+      if (!requesterId || requesterId !== participantId) {
+        const requester = requesterId ? await storage.getParticipant(requesterId) : null;
+        if (!requester || requester.role !== "admin") {
+          return res.status(403).json({ message: "Forbidden" });
+        }
+      }
+
+      const reports = await storage.getConnoisseurReports(participantId);
+      res.json(reports);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/participants/:id/connoisseur-reports/:reportId", async (req, res) => {
+    try {
+      const participantId = req.params.id;
+      const requesterId = req.headers["x-participant-id"] as string | undefined;
+      if (!requesterId || requesterId !== participantId) {
+        const requester = requesterId ? await storage.getParticipant(requesterId) : null;
+        if (!requester || requester.role !== "admin") {
+          return res.status(403).json({ message: "Forbidden" });
+        }
+      }
+
+      const report = await storage.getConnoisseurReport(req.params.reportId);
+      if (!report || report.participantId !== participantId) {
+        return res.status(404).json({ message: "Report not found" });
+      }
+      res.json(report);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== PHOTO REVEAL (per-whisky and bulk) =====
 
   app.patch("/api/whiskies/:id/reveal-photo", async (req, res) => {

@@ -7,7 +7,7 @@ import {
   BookOpen, BarChart3, ChevronRight, ChevronDown, Lock,
   Radar, Archive, Heart, FlaskConical, Sparkles, GitCompareArrows,
   Library, Building2, Package, Map, ScrollText,
-  PieChart, UtensilsCrossed, Star, GraduationCap,
+  PieChart, UtensilsCrossed, Star, GraduationCap, Crown,
 } from "lucide-react";
 import { Link } from "wouter";
 import { participantApi, journalApi, statsApi } from "@/lib/api";
@@ -325,6 +325,7 @@ export default function M2TasteHome() {
             <NavRow icon={PieChart} label={t("m2.taste.wheel", "Flavor Wheel")} description={t("m2.taste.wheelDesc", "Aroma categories from your notes")} href="/m2/taste/wheel" testId="m2-taste-link-wheel" />
             <NavRow icon={UtensilsCrossed} label={t("m2.taste.pairings", "Pairings")} description={t("m2.taste.pairingsDesc", "AI food pairing suggestions")} href="/m2/taste/pairings" testId="m2-taste-link-pairings" />
             <NavRow icon={Library} label={t("m2.taste.collectionAnalysis", "Collection Analysis")} description={t("m2.taste.collectionAnalysisDesc", "Deep insights into your whisky collection")} href="/m2/taste/collection-analysis" testId="m2-taste-link-collection-analysis" />
+            <NavRow icon={Crown} label={t("m2.connoisseur.navLabel", "Connoisseur Report")} description={t("m2.connoisseur.navDesc", "AI analysis of your whisky personality")} href="/m2/taste/connoisseur" testId="m2-taste-link-connoisseur" />
           </AccordionSection>
 
           <AccordionSection

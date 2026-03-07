@@ -17,7 +17,7 @@ import {
   Users, BarChart3, Star, Upload, Mail, Settings, Image, Calendar,
   MapPin, FileText, RefreshCw, Send, Search, BookOpen, Heart, UserPlus,
   MessageCircle, ExternalLink, Sliders, Video, Lock, Globe, Gauge, Monitor,
-  ClipboardList, Loader2, Printer, Pencil,
+  ClipboardList, Loader2, Printer, Pencil, Sparkles,
 } from "lucide-react";
 
 type WizardStep = "list" | "step1" | "step2" | "step3" | "step4";
@@ -48,6 +48,7 @@ interface TastingFull {
   reflectionMode?: string;
   reflectionVisibility?: string;
   videoLink?: string | null;
+  aiNarrative?: string | null;
 }
 
 interface Rating {
@@ -2028,6 +2029,8 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
   const [duplicating, setDuplicating] = useState(false);
   const [localCoverUrl, setLocalCoverUrl] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [narrativeGenerating, setNarrativeGenerating] = useState(false);
+  const [narrativeError, setNarrativeError] = useState<string | null>(null);
 
   const isBlind = !!tasting.blindMode;
   const isOpen = tasting.status === "open";
@@ -2130,6 +2133,25 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
     setTimeout(() => setSaveStatus(null), 2000);
   };
 
+  const handleGenerateNarrative = async () => {
+    setNarrativeGenerating(true);
+    setNarrativeError(null);
+    try {
+      const res = await fetch(`/api/tastings/${tasting.id}/ai-narrative`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to generate narrative");
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/tastings", tasting.id] });
+    } catch (e: any) {
+      setNarrativeError(e.message || "Error");
+    }
+    setNarrativeGenerating(false);
+  };
+
   const activeRatings = activeWhisky ? ratings.filter((r) => r.whiskyId === activeWhisky.id) : [];
   const avgScore = activeRatings.length > 0
     ? Math.round(activeRatings.reduce((sum, r) => sum + (r.overall ?? 0), 0) / activeRatings.length)
@@ -2223,6 +2245,122 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
         >
           {t("m2.host.viewRecap", "View Recap")}
         </button>
+
+        {tasting.aiNarrative ? (
+          <div
+            style={{
+              background: `color-mix(in srgb, ${v.accent} 6%, ${v.card})`,
+              border: `1px solid color-mix(in srgb, ${v.accent} 25%, ${v.border})`,
+              borderRadius: 14,
+              padding: "20px",
+              position: "relative",
+            }}
+            data-testid="card-session-narrative"
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: v.text, fontFamily: "'Playfair Display', Georgia, serif" }}>
+                {t("m2.host.narrativeTitle", "Session Story")}
+              </h3>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: v.accent,
+                  background: `color-mix(in srgb, ${v.accent} 15%, transparent)`,
+                  padding: "3px 8px",
+                  borderRadius: 6,
+                }}
+                data-testid="badge-ai-narrative"
+              >
+                <Sparkles style={{ width: 10, height: 10 }} />
+                {t("m2.host.narrativeBadge", "AI Generated")}
+              </span>
+            </div>
+            <div
+              style={{
+                fontSize: 14,
+                lineHeight: 1.7,
+                color: v.text,
+                whiteSpace: "pre-wrap",
+                fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="text-session-narrative"
+            >
+              {tasting.aiNarrative}
+            </div>
+            <button
+              type="button"
+              onClick={handleGenerateNarrative}
+              disabled={narrativeGenerating}
+              style={{
+                marginTop: 14,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                background: "none",
+                border: `1px solid ${v.border}`,
+                borderRadius: 8,
+                padding: "8px 14px",
+                color: v.muted,
+                fontSize: 12,
+                cursor: narrativeGenerating ? "not-allowed" : "pointer",
+                fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="button-regenerate-narrative"
+            >
+              {narrativeGenerating ? <Loader2 style={{ width: 13, height: 13, animation: "spin 1s linear infinite" }} /> : <RefreshCw style={{ width: 13, height: 13 }} />}
+              {narrativeGenerating ? t("m2.host.generatingNarrative", "Writing your tasting story...") : t("m2.host.regenerateNarrative", "Regenerate")}
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <button
+              type="button"
+              onClick={handleGenerateNarrative}
+              disabled={narrativeGenerating}
+              style={{
+                width: "100%",
+                padding: "14px",
+                fontSize: 14,
+                fontWeight: 600,
+                background: narrativeGenerating ? v.card : `color-mix(in srgb, ${v.accent} 10%, ${v.card})`,
+                color: narrativeGenerating ? v.muted : v.accent,
+                border: `1px solid color-mix(in srgb, ${v.accent} 30%, ${v.border})`,
+                borderRadius: 12,
+                cursor: narrativeGenerating ? "not-allowed" : "pointer",
+                fontFamily: "system-ui, sans-serif",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+              }}
+              data-testid="button-generate-narrative"
+            >
+              {narrativeGenerating ? (
+                <>
+                  <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+                  {t("m2.host.generatingNarrative", "Writing your tasting story...")}
+                </>
+              ) : (
+                <>
+                  <Sparkles style={{ width: 16, height: 16 }} />
+                  {t("m2.host.generateNarrative", "Generate Session Story")}
+                </>
+              )}
+            </button>
+            {narrativeError && (
+              <div style={{ fontSize: 12, color: v.danger, background: `color-mix(in srgb, ${v.danger} 15%, transparent)`, padding: "8px 12px", borderRadius: 8 }} data-testid="text-narrative-error">
+                {narrativeError}
+              </div>
+            )}
+          </div>
+        )}
+
         <SettingsPanel tasting={tasting} pid={pid} onDuplicate={handleDuplicate} onDelete={handleDelete} duplicating={duplicating} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} onCoverUpload={handleCoverUpload} localCoverUrl={localCoverUrl} saveStatus={saveStatus} onSaved={showSaved} />
       </div>
     );
