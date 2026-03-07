@@ -103,14 +103,14 @@ export default function M2CircleHome() {
   const { data: twins = [], isLoading: twinsLoading } = useQuery<TasteTwin[]>({
     queryKey: ["taste-twins", pid],
     queryFn: () => communityApi.getTasteTwins(pid!),
-    enabled: activeTab === "twins" && !!pid,
+    enabled: session.signedIn && activeTab === "twins" && !!pid,
   });
 
   const { data: leaderboardData, isLoading: leaderboardLoading } =
     useQuery<LeaderboardData | LeaderboardEntry[]>({
       queryKey: ["leaderboard"],
       queryFn: () => leaderboardApi.get(),
-      enabled: activeTab === "leaderboard",
+      enabled: session.signedIn && activeTab === "leaderboard",
     });
 
   const { data: activityData, isLoading: activityLoading } = useQuery<{
@@ -118,27 +118,27 @@ export default function M2CircleHome() {
   }>({
     queryKey: ["friend-activity", pid],
     queryFn: () => activityApi.getFriendActivity(pid!),
-    enabled: activeTab === "activity" && !!pid,
+    enabled: session.signedIn && activeTab === "activity" && !!pid,
     refetchInterval: 60000,
   });
 
   const { data: friends = [], isLoading: friendsLoading } = useQuery<any[]>({
     queryKey: ["friends", pid],
     queryFn: () => friendsApi.getAll(pid!),
-    enabled: activeTab === "friends" && !!pid,
+    enabled: session.signedIn && activeTab === "friends" && !!pid,
   });
 
   const { data: pendingRequests = [] } = useQuery<any[]>({
     queryKey: ["friends-pending", pid],
     queryFn: () => friendsApi.getPending(pid!),
-    enabled: activeTab === "friends" && !!pid,
+    enabled: session.signedIn && activeTab === "friends" && !!pid,
     refetchInterval: 30000,
   });
 
   const { data: onlineData } = useQuery<{ online: any[]; count: number }>({
     queryKey: ["friends-online", pid],
     queryFn: () => fetch(`/api/participants/${pid}/friends/online`).then(r => r.json()),
-    enabled: !!pid,
+    enabled: session.signedIn && !!pid,
     refetchInterval: 60000,
   });
 
@@ -1122,7 +1122,7 @@ export default function M2CircleHome() {
         {t("m2.circle.subtitle", "Connect with fellow whisky enthusiasts")}
       </p>
 
-      {!session.signedIn && !pid && (
+      {!session.signedIn && (
         <div
           style={{
             background: v.elevated,
@@ -1138,7 +1138,7 @@ export default function M2CircleHome() {
         </div>
       )}
 
-      {(session.signedIn || pid) && (
+      {session.signedIn && pid && (
         <>
           {onlineData && onlineData.count > 0 && (
             <div
