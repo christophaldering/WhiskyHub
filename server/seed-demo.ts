@@ -54,7 +54,6 @@ export async function seedDemoTasting() {
       isTestData: true,
       blindMode: false,
       guestMode: "standard",
-      description: "Welcome to CaskSense! Explore 8 legendary Islay single malts. Rate each whisky and discover your personal taste profile.",
     })
     .returning();
 
