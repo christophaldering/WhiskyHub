@@ -239,13 +239,18 @@ export async function textToSpeechStream(
  */
 export async function speechToText(
   audioBuffer: Buffer,
-  format: "wav" | "mp3" | "webm" = "wav"
+  format: "wav" | "mp3" | "webm" = "wav",
+  language?: string
 ): Promise<string> {
   const file = await toFile(audioBuffer, `audio.${format}`);
-  const response = await openai.audio.transcriptions.create({
+  const opts: any = {
     file,
     model: "gpt-4o-mini-transcribe",
-  });
+  };
+  if (language) {
+    opts.language = language;
+  }
+  const response = await openai.audio.transcriptions.create(opts);
   return response.text;
 }
 

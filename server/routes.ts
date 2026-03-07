@@ -3592,6 +3592,9 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
       const audioBuffer = req.file.buffer as Buffer;
       const durationSeconds = parseInt(req.body.durationSeconds || "0", 10);
 
+      const participant = await storage.getParticipant(participantId);
+      const lang = participant?.language || undefined;
+
       let audioUrl: string | null = null;
       try {
         audioUrl = await uploadBufferToObjectStorage(objectStorage, audioBuffer, req.file.mimetype);
@@ -3607,7 +3610,7 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         if (format !== "wav") {
           wavBuffer = await convertToWav(audioBuffer);
         }
-        transcript = await speechToText(wavBuffer, "wav");
+        transcript = await speechToText(wavBuffer, "wav", lang);
       } catch (e: any) {
         console.error("Voice memo transcription error:", e.message);
         transcript = "[Transcription failed]";
@@ -3622,7 +3625,6 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
         durationSeconds: durationSeconds || null,
       });
 
-      const participant = await storage.getParticipant(participantId);
       res.status(201).json({ ...memo, participantName: participant?.name || "Unknown" });
     } catch (e: any) {
       console.error("Voice memo error:", e.message);
@@ -5021,6 +5023,8 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
         return res.status(500).json({ message: "Failed to store audio file" });
       }
 
+      const lang = participant.language || undefined;
+
       let transcript = "";
       try {
         const { detectAudioFormat, convertToWav, speechToText } = await import("./replit_integrations/audio/client.js");
@@ -5029,7 +5033,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
         if (format !== "wav") {
           wavBuffer = await convertToWav(audioBuffer);
         }
-        transcript = await speechToText(wavBuffer, "wav");
+        transcript = await speechToText(wavBuffer, "wav", lang);
       } catch (e: any) {
         console.error("Journal voice memo transcription error:", e.message);
         transcript = "[Transcription failed]";
