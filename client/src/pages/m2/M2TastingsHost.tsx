@@ -17,7 +17,7 @@ import {
   Users, BarChart3, Star, Upload, Mail, Settings, Image, Calendar,
   MapPin, FileText, RefreshCw, Send, Search, BookOpen, Heart, UserPlus,
   MessageCircle, ExternalLink, Sliders, Video, Lock, Globe, Gauge, Monitor,
-  ClipboardList, Loader2, Printer,
+  ClipboardList, Loader2, Printer, Pencil,
 } from "lucide-react";
 
 type WizardStep = "list" | "step1" | "step2" | "step3" | "step4";
@@ -1553,7 +1553,7 @@ function Step3Invite({ tasting, pid, onNext, onBack }: { tasting: TastingFull; p
           <ArrowLeft style={{ width: 14, height: 14 }} />
         </button>
         <button type="button" onClick={onNext} style={{ flex: 1, padding: "12px", fontSize: 15, fontWeight: 600, background: v.accent, color: v.bg, border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} data-testid="button-next-to-live">
-          {t("m2.host.nextLive", "Next: Go Live")}
+          {tasting.status !== "draft" ? t("m2.host.backToLive", "Back to Live View") : t("m2.host.nextLive", "Next: Go Live")}
           <ArrowRight style={{ width: 16, height: 16 }} />
         </button>
       </div>
@@ -1956,7 +1956,7 @@ function Step1Edit({ tasting, pid, onUpdated }: { tasting: TastingFull; pid: str
   );
 }
 
-function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingFull; pid: string; onBack: () => void }) {
+function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { tasting: TastingFull; pid: string; onBack: () => void; onEditWhiskies?: () => void }) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -2399,6 +2399,24 @@ function Step4Live({ tasting: initialTasting, pid, onBack }: { tasting: TastingF
             >
               <Star style={{ width: 18, height: 18 }} />
               {t("m2.host.rateWhisky", "Rate This Whisky")}
+            </button>
+          )}
+
+          {onEditWhiskies && (
+            <button
+              type="button"
+              onClick={onEditWhiskies}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                padding: "12px", fontSize: 14, fontWeight: 600,
+                background: v.bg, color: v.muted,
+                border: `1.5px solid ${v.border}`,
+                borderRadius: 12, cursor: "pointer", fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="button-edit-whiskies"
+            >
+              <Pencil style={{ width: 16, height: 16 }} />
+              {t("m2.host.editWhiskies", "Edit Whiskies")}
             </button>
           )}
         </div>
@@ -2912,8 +2930,8 @@ export default function M2TastingsHost({ resumeId }: { resumeId?: string } = {})
         <Step2Whiskies
           tasting={tasting}
           pid={session.pid}
-          onNext={() => setStep("step3")}
-          onBack={() => setStep("step1")}
+          onNext={() => setStep(tasting.status !== "draft" ? "step4" : "step3")}
+          onBack={() => setStep(tasting.status !== "draft" ? "step4" : "step1")}
         />
       )}
 
@@ -2931,6 +2949,7 @@ export default function M2TastingsHost({ resumeId }: { resumeId?: string } = {})
           tasting={tasting}
           pid={session.pid}
           onBack={() => setStep("step3")}
+          onEditWhiskies={() => setStep("step2")}
         />
       )}
     </div>
