@@ -1437,6 +1437,43 @@ export default function M2TastingPlay() {
         )}
       </div>
 
+      {!isGuided && sortedWhiskies.length > 1 && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <button
+            onClick={() => setFreeIndex((i) => Math.max(0, i - 1))}
+            disabled={currentIndex === 0}
+            style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+              padding: "10px", borderRadius: 10, border: `1px solid ${v.border}`,
+              background: "transparent", color: currentIndex === 0 ? v.muted : v.text,
+              fontWeight: 600, fontSize: 14, cursor: currentIndex === 0 ? "default" : "pointer",
+              fontFamily: "system-ui, sans-serif",
+            }}
+            data-testid="m2-play-prev"
+          >
+            <ChevronLeft style={{ width: 16, height: 16 }} />
+            {t("m2.play.prev", "Previous")}
+          </button>
+          <button
+            onClick={() => setFreeIndex((i) => Math.min(sortedWhiskies.length - 1, i + 1))}
+            disabled={currentIndex >= sortedWhiskies.length - 1}
+            style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+              padding: "10px", borderRadius: 10, border: `1px solid ${v.border}`,
+              background: "transparent",
+              color: currentIndex >= sortedWhiskies.length - 1 ? v.muted : v.text,
+              fontWeight: 600, fontSize: 14,
+              cursor: currentIndex >= sortedWhiskies.length - 1 ? "default" : "pointer",
+              fontFamily: "system-ui, sans-serif",
+            }}
+            data-testid="m2-play-next"
+          >
+            {t("m2.play.next", "Next")}
+            <ChevronRight style={{ width: 16, height: 16 }} />
+          </button>
+        </div>
+      )}
+
       {tasting.ratingPrompt && (
         <div
           style={{
@@ -1584,70 +1621,6 @@ export default function M2TastingPlay() {
         />
       </div>
 
-      {!isGuided && (
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            onClick={() =>
-              setFreeIndex((i) => Math.max(0, i - 1))
-            }
-            disabled={currentIndex === 0}
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 4,
-              padding: "12px",
-              borderRadius: 10,
-              border: `1px solid ${v.border}`,
-              background: "transparent",
-              color: currentIndex === 0 ? v.muted : v.text,
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: currentIndex === 0 ? "default" : "pointer",
-              fontFamily: "system-ui, sans-serif",
-            }}
-            data-testid="m2-play-prev"
-          >
-            <ChevronLeft style={{ width: 16, height: 16 }} />
-            {t("m2.play.prev", "Previous")}
-          </button>
-          <button
-            onClick={() =>
-              setFreeIndex((i) =>
-                Math.min(sortedWhiskies.length - 1, i + 1),
-              )
-            }
-            disabled={currentIndex >= sortedWhiskies.length - 1}
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 4,
-              padding: "12px",
-              borderRadius: 10,
-              border: `1px solid ${v.border}`,
-              background: "transparent",
-              color:
-                currentIndex >= sortedWhiskies.length - 1
-                  ? v.muted
-                  : v.text,
-              fontWeight: 600,
-              fontSize: 14,
-              cursor:
-                currentIndex >= sortedWhiskies.length - 1
-                  ? "default"
-                  : "pointer",
-              fontFamily: "system-ui, sans-serif",
-            }}
-            data-testid="m2-play-next"
-          >
-            {t("m2.play.next", "Next")}
-            <ChevronRight style={{ width: 16, height: 16 }} />
-          </button>
-        </div>
-      )}
 
       {saving && (
         <div
