@@ -162,7 +162,7 @@ export default function M2Admin() {
                 background: active ? v.accent : v.elevated,
                 color: active ? v.bg : v.textSecondary,
                 fontSize: 12, fontWeight: active ? 600 : 400,
-                cursor: "pointer", whiteSpace: "nowrap",
+                cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
                 fontFamily: "system-ui, sans-serif",
                 transition: "all 0.15s",
               }}
@@ -317,6 +317,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
     mutationFn: (tastingId: string) => adminApi.deleteTasting(tastingId, pid),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/admin/overview"] });
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
       toast({ title: t("m2.admin.tastingDeleted", "Tasting deleted") });
     },
   });

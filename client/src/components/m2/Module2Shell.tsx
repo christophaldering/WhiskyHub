@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect, useCallback, useRef, Component, type ErrorInfo } from "react";
 import { Link, useLocation } from "wouter";
 import { User, Bell, Download, AlertTriangle, RefreshCw } from "lucide-react";
-import { v } from "@/lib/themeVars";
+import { v, getTheme } from "@/lib/themeVars";
 import { useTranslation } from "react-i18next";
 import i18next from "i18next";
 import { getSession, tryAutoResume } from "@/lib/session";
@@ -520,6 +520,14 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
   const isActive = (tab: typeof TABS[number]) =>
     tab.match.some((m) => location === m || location.startsWith(m + "/"));
 
+  const isLightTheme = getTheme() === "light-warm";
+  const navBg = isLightTheme ? "rgba(249, 245, 240, 0.92)" : "rgba(26, 23, 20, 0.88)";
+  const navShadow = isLightTheme
+    ? "0 -1px 20px rgba(0, 0, 0, 0.06), inset 0 0.5px 0 rgba(0,0,0,0.08)"
+    : "0 -1px 20px rgba(0, 0, 0, 0.35), inset 0 0.5px 0 rgba(255,255,255,0.06)";
+  const navInactiveColor = isLightTheme ? "rgba(60, 50, 40, 0.45)" : "rgba(214, 203, 189, 0.55)";
+  const navActiveHighlight = isLightTheme ? "rgba(200, 169, 126, 0.12)" : "rgba(212, 162, 86, 0.1)";
+
   return (
     <div
       style={{
@@ -742,11 +750,11 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
             justifyContent: "space-around",
             alignItems: "center",
             padding: "6px 0 max(6px, env(safe-area-inset-bottom))",
-            background: "rgba(26, 23, 20, 0.88)",
+            background: navBg,
             borderTop: "none",
             backdropFilter: "saturate(180%) blur(20px)",
             WebkitBackdropFilter: "saturate(180%) blur(20px)",
-            boxShadow: "0 -1px 20px rgba(0, 0, 0, 0.35), inset 0 0.5px 0 rgba(255,255,255,0.06)",
+            boxShadow: navShadow,
             zIndex: 50,
           }}
           data-testid="m2-bottom-nav"
@@ -754,7 +762,7 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
           {TABS.map((tab) => {
             const active = isActive(tab);
             const IconComp = TAB_ICON_MAP[tab.iconKey];
-            const tabColor = active ? v.accent : "rgba(214, 203, 189, 0.55)";
+            const tabColor = active ? v.accent : navInactiveColor;
             return (
               <Link key={tab.href} href={tab.href} style={{ textDecoration: "none", WebkitTapHighlightColor: "transparent" }}>
                 <div
@@ -766,7 +774,7 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
                     padding: active ? "6px 20px 4px" : "6px 20px 4px",
                     minWidth: 72,
                     borderRadius: 16,
-                    background: active ? "rgba(212, 162, 86, 0.1)" : "transparent",
+                    background: active ? navActiveHighlight : "transparent",
                     transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
                     transform: active ? "scale(1.05)" : "scale(1)",
                     position: "relative",
