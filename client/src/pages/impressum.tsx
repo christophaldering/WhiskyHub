@@ -9,7 +9,7 @@ export default function Impressum() {
   const [, navigate] = useLocation();
 
   return (
-    <SimpleShell maxWidth={720}>
+    <SimpleShell maxWidth={720} hideNav>
       <div style={{ paddingTop: 16, paddingBottom: 48 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
           <button

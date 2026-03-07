@@ -69,9 +69,10 @@ interface SimpleShellProps {
   children: ReactNode;
   showBack?: boolean;
   maxWidth?: number;
+  hideNav?: boolean;
 }
 
-export default function SimpleShell({ children, showBack = false, maxWidth = 600 }: SimpleShellProps) {
+export default function SimpleShell({ children, showBack = false, maxWidth = 600, hideNav = false }: SimpleShellProps) {
   const [location] = useLocation();
   const [showSessionSheet, setShowSessionSheet] = useState(false);
   const [session, setSession] = useState(() => getSession());
@@ -154,7 +155,7 @@ export default function SimpleShell({ children, showBack = false, maxWidth = 600
             )}
           </button>
         </div>
-        {!isMobile && (
+        {!isMobile && !hideNav && (
           <div style={{ marginTop: 8 }}>
             <DesktopTabSwitcher maxWidth={maxWidth} />
           </div>
@@ -188,7 +189,7 @@ export default function SimpleShell({ children, showBack = false, maxWidth = 600
         variant="dark"
       />
 
-      {isMobile && <nav
+      {isMobile && !hideNav && <nav
         style={{
           position: "fixed",
           bottom: 0,
