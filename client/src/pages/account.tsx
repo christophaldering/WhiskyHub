@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppStore } from "@/lib/store";
+import { signOut } from "@/lib/session";
 import { participantApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { resetAllTours } from "@/components/spotlight-hint";
@@ -139,7 +140,7 @@ export default function Account() {
         }
         throw new Error(err.message);
       }
-      setParticipant(null);
+      await signOut();
     } catch (e: any) {
       toast({ title: e.message, variant: "destructive" });
     } finally {

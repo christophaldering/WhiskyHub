@@ -113,7 +113,6 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
 
   const handleSignOut = async () => {
     await signOut();
-    try { localStorage.removeItem("casksense_participant_id"); } catch {}
     refreshSession();
     onClose();
   };

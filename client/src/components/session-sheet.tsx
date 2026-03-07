@@ -48,7 +48,6 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
   const [editMsg, setEditMsg] = useState("");
   const [editSuccess, setEditSuccess] = useState(false);
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
-  const { setParticipant: clearStoreParticipant } = useAppStore();
 
   useEffect(() => {
     if (open) {
@@ -224,8 +223,6 @@ export default function SessionSheet({ open, onClose, onSessionChange, defaultMo
 
   const handleSignOut = async () => {
     await signOut();
-    clearStoreParticipant(null);
-    try { localStorage.removeItem("casksense_participant_id"); } catch {}
     setSession(getSession());
     onSessionChange();
     onClose();

@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAppStore } from "@/lib/store";
+import { queryClient } from "@/lib/queryClient";
 
 const SK_SIGNED_IN = "session_signed_in";
 const SK_MODE = "session_mode";
@@ -194,6 +196,15 @@ export async function signOut(): Promise<void> {
   clearSessionStorage();
   clearRemember();
   try { localStorage.removeItem("casksense_participant_id"); } catch {}
+  try { useAppStore.getState().setParticipant(null); } catch {}
+  try { queryClient.clear(); } catch {}
+  const offlineKeys = [
+    "m2_solo_logs", "simple_manual_logs", "simple_feedback",
+    "simple_score_details", "casksense_remember_name",
+  ];
+  for (const k of offlineKeys) {
+    try { localStorage.removeItem(k); } catch {}
+  }
   window.dispatchEvent(new Event("session-change"));
 }
 

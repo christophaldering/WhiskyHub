@@ -5,7 +5,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { AmbientToggle } from "@/components/ambient-toggle";
 import { ViewSwitcherLegacy } from "@/components/view-switcher";
 import { useState, useRef, useEffect, useCallback, useMemo, memo, createContext, useContext } from "react";
-import { getSession, tryAutoResume } from "@/lib/session";
+import { getSession, tryAutoResume, signOut } from "@/lib/session";
 import SessionSheet from "@/components/session-sheet";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -98,7 +98,7 @@ function ProfileAvatar({ size = 36, showName = false, showSignOut = false }: { s
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setParticipant(null)}
+          onClick={async () => { await signOut(); }}
           title={t('nav.leave')}
           className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           data-testid="button-signout-mobile"
@@ -433,7 +433,7 @@ function NavContent({ navInnerRef, location, navGroups, onNavigate }: {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => { setParticipant(null); onNavigate(); }}
+                onClick={async () => { await signOut(); onNavigate(); }}
                 className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
                 title={t('nav.leave')}
                 data-testid="button-signout-sidebar"

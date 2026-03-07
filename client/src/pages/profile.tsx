@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store";
+import { signOut } from "@/lib/session";
 import { profileApi, participantApi, participantUpdateApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -189,9 +190,9 @@ export default function Profile() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: t("profile.deleteAccountSuccess") });
-      setParticipant(null);
+      await signOut();
       navigate("/");
     },
     onError: (error: Error) => {
