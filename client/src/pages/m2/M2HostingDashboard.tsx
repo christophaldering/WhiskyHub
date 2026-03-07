@@ -9,6 +9,7 @@ import { tastingApi, whiskyApi, ratingApi, blindModeApi, guidedApi } from "@/lib
 import { queryClient } from "@/lib/queryClient";
 import { getSession, useSession } from "@/lib/session";
 import M2RatingPanel, { type DimKey } from "@/components/m2/M2RatingPanel";
+import VoiceMemoRecorder from "@/components/m2/VoiceMemoRecorder";
 import {
   Play, Lock, Eye, EyeOff, Archive, ChevronRight, CheckCircle, Clock,
   SkipForward, Users, Wine, Star, BarChart3, Radio, Monitor,
@@ -1147,6 +1148,17 @@ function RightColumn({ tasting, whiskies, status, isBlind, isGuided, guidedIdx, 
               }}
               data-testid="host-rating-notes"
             />
+
+            {pid && (
+              <div style={{ marginTop: 12 }}>
+                <VoiceMemoRecorder
+                  tastingId={id}
+                  whiskyId={currentWhisky.id}
+                  participantId={pid}
+                  readOnly={false}
+                />
+              </div>
+            )}
           </>
         ) : (
           <div style={{ padding: 20, textAlign: "center", color: v.muted, fontSize: 13 }}>

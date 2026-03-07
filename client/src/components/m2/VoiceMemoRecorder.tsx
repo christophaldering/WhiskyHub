@@ -48,6 +48,7 @@ export default function VoiceMemoRecorder({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const elapsedRef = useRef(0);
 
   const queryKey = ["voice-memos", tastingId, whiskyId];
 
@@ -125,14 +126,17 @@ export default function VoiceMemoRecorder({
       recorder.start();
       setRecording(true);
       setElapsed(0);
+      elapsedRef.current = 0;
 
       timerRef.current = setInterval(() => {
         setElapsed((prev) => {
-          if (prev + 1 >= MAX_DURATION) {
+          const next = prev + 1;
+          elapsedRef.current = next;
+          if (next >= MAX_DURATION) {
             stopRecording();
             return MAX_DURATION;
           }
-          return prev + 1;
+          return next;
         });
       }, 1000);
     } catch (err: any) {
@@ -166,7 +170,7 @@ export default function VoiceMemoRecorder({
       const ext = blob.type.includes("webm") ? "webm" : blob.type.includes("mp4") ? "mp4" : "ogg";
       const formData = new FormData();
       formData.append("audio", blob, `memo.${ext}`);
-      formData.append("durationSeconds", String(elapsed));
+      formData.append("durationSeconds", String(elapsedRef.current || elapsed));
 
       const res = await fetch(
         `/api/tastings/${tastingId}/whiskies/${whiskyId}/voice-memo`,
