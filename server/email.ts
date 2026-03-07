@@ -454,3 +454,59 @@ export function buildThankYouEmail(params: {
 
   return { subject, html };
 }
+
+export function buildFriendInviteEmail(params: {
+  adderName: string;
+  recipientName?: string;
+  platformLink: string;
+  language?: string;
+}): { subject: string; html: string } {
+  const { adderName, recipientName, platformLink, language } = params;
+  const isDE = language === "de";
+
+  const subject = isDE
+    ? `${adderName} hat dich als Whisky-Freund auf CaskSense hinzugefügt`
+    : `${adderName} has added you as a whisky friend on CaskSense`;
+
+  const greeting = recipientName
+    ? (isDE ? `Hallo <strong>${recipientName}</strong>,` : `Hello <strong>${recipientName}</strong>,`)
+    : (isDE ? "Hallo," : "Hello,");
+
+  const bodyText = isDE
+    ? `<strong>${adderName}</strong> hat dich als Whisky-Freund auf CaskSense hinzugefügt. Gemeinsam könnt ihr Verkostungen teilen, Geschmacksprofile vergleichen und eure Whisky-Reise dokumentieren.`
+    : `<strong>${adderName}</strong> has added you as a whisky friend on CaskSense. Together you can share tastings, compare flavor profiles, and document your whisky journey.`;
+
+  const ctaText = isDE ? "CaskSense öffnen" : "Open CaskSense";
+  const footer = isDE ? "Wo Verkostung zur Reflexion wird" : "Where Tasting Becomes Reflection";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:'Georgia',serif;background:#f9f9f7;color:#333;">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border:1px solid #e5e5e0;border-radius:4px;overflow:hidden;">
+    <div style="padding:32px 32px 16px;border-bottom:1px solid #e5e5e0;">
+      <h1 style="margin:0;font-size:24px;color:#4a5568;font-weight:700;letter-spacing:-0.5px;">CaskSense</h1>
+      <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a0aec0;">${isDE ? "Freundschaftseinladung" : "Friend Invitation"}</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">${greeting}</p>
+      <p style="font-size:15px;line-height:1.6;margin:0 0 24px;color:#555;">${bodyText}</p>
+      <div style="text-align:center;margin:24px 0 16px;">
+        <a href="${platformLink}" style="display:inline-block;padding:12px 32px;background:#4a5568;color:#fff;text-decoration:none;border-radius:3px;font-size:14px;font-weight:600;letter-spacing:0.5px;">
+          ${ctaText}
+        </a>
+      </div>
+      <p style="font-size:12px;color:#a0aec0;margin:16px 0 0;line-height:1.5;text-align:center;">
+        <a href="${platformLink}" style="color:#6b7b8d;word-break:break-all;">${platformLink}</a>
+      </p>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid #e5e5e0;background:#fafaf8;">
+      <p style="margin:0;font-size:11px;color:#a0aec0;text-align:center;">CaskSense — ${footer}</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  return { subject, html };
+}

@@ -13,7 +13,7 @@ import { insertTastingSchema, insertWhiskySchema, insertRatingSchema, insertPart
 import OpenAI from "openai";
 import { z } from "zod";
 import { APP_VERSION, getVersionInfo } from "@shared/version";
-import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification } from "./email";
+import { isSmtpConfigured, sendEmail, buildInviteEmail, buildVerificationEmail, buildThankYouEmail, buildAdminLoginNotification, buildFriendInviteEmail } from "./email";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 import { isAIDisabled, getAISettings, updateAISettings, getAuditLog, AI_FEATURES } from "./ai-settings";
 import { getAIClient, getAIStatus } from "./ai-client";
@@ -2700,7 +2700,23 @@ export async function registerRoutes(
         console.error("Error creating pending reciprocal friend:", err);
       }
 
-      res.status(201).json(friend);
+      let emailSent = false;
+      try {
+        const adderName = adder?.name || firstName.trim();
+        const platformLink = process.env.APP_BASE_URL || "https://casksense.com";
+        const lang = (req.headers["accept-language"] || "").startsWith("de") ? "de" : "en";
+        const emailContent = buildFriendInviteEmail({
+          adderName,
+          recipientName: firstName.trim(),
+          platformLink,
+          language: lang,
+        });
+        emailSent = await sendEmail({ to: normalizedEmail, ...emailContent });
+      } catch (err) {
+        console.error("Error sending friend invite email:", err);
+      }
+
+      res.status(201).json({ ...friend, emailSent });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

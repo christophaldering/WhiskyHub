@@ -4898,6 +4898,8 @@ const resources = {
           sendInvite: "Send Invite",
           pendingRequests: "Pending Requests",
           noFriends: "No friends yet. Add your whisky companions!",
+          friendInvitationSent: "Invitation email sent",
+          friendAddedNoEmail: "Friend added",
         },
         admin: {
           accessRequired: "Admin Access Required",
@@ -10907,6 +10909,8 @@ const resources = {
           email: "E-Mail",
           sendInvite: "Einladung senden",
           pendingRequests: "Offene Anfragen",
+          friendInvitationSent: "Einladung per E-Mail gesendet",
+          friendAddedNoEmail: "Freund hinzugefügt",
           loggedDram: "Eingetragen",
           loggedDramGeneric: "Hat einen Dram geloggt",
           joinedTasting: "Beigetreten",

@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
 import { v } from "@/lib/themeVars";
-import { popRoute } from "@/lib/navStack";
+import { popRoute, markBackNavigation } from "@/lib/navStack";
 
 function getM2Fallback(currentPath: string): string {
   if (currentPath.startsWith("/m2/tastings")) return "/m2/tastings";
@@ -19,6 +19,7 @@ export default function M2BackButton() {
   const isM2Route = (path: string) => path.startsWith("/m2");
 
   const goBack = () => {
+    markBackNavigation();
     const params = new URLSearchParams(window.location.search);
     const from = params.get("from");
     if (from && /^\/[a-zA-Z0-9\-_/]*$/.test(from) && isM2Route(from)) {

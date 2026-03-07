@@ -11,6 +11,7 @@ import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { saveScrollPosition, getScrollPosition, consumeBackNavigation } from "@/lib/navStack";
 
 class M2ErrorBoundary extends Component<
   { children: ReactNode },
@@ -516,6 +517,35 @@ export default function Module2Shell({ children, hideNav }: Module2ShellProps) {
     const hb = setInterval(() => { participantApi.heartbeat(pid).catch(() => {}); }, 120000);
     return () => clearInterval(hb);
   }, [session.pid]);
+
+  const prevLocationRef = useRef(location);
+  useEffect(() => {
+    if (prevLocationRef.current !== location) {
+      const el = mainRef.current;
+      if (el) {
+        saveScrollPosition(prevLocationRef.current, el.scrollTop);
+      }
+      prevLocationRef.current = location;
+
+      const isBack = consumeBackNavigation();
+      if (isBack) {
+        const saved = getScrollPosition(location);
+        if (saved != null) {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              if (mainRef.current) {
+                mainRef.current.scrollTop = saved;
+              }
+            });
+          });
+          return;
+        }
+      }
+      if (el) {
+        el.scrollTop = 0;
+      }
+    }
+  }, [location]);
 
   const isActive = (tab: typeof TABS[number]) =>
     tab.match.some((m) => location === m || location.startsWith(m + "/"));

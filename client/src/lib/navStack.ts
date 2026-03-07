@@ -45,3 +45,45 @@ export function getSmartFallback(currentPath: string): string {
   if (currentPath.startsWith("/my-taste")) return "/my-taste";
   return "/tasting";
 }
+
+const SCROLL_KEY = "cs_scroll_positions";
+const BACK_NAV_KEY = "cs_back_nav";
+
+function getScrollMap(): Record<string, number> {
+  try {
+    const raw = sessionStorage.getItem(SCROLL_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveScrollPosition(path: string, scrollTop: number) {
+  try {
+    const map = getScrollMap();
+    map[path] = scrollTop;
+    sessionStorage.setItem(SCROLL_KEY, JSON.stringify(map));
+  } catch {}
+}
+
+export function getScrollPosition(path: string): number | null {
+  const map = getScrollMap();
+  return typeof map[path] === "number" ? map[path] : null;
+}
+
+export function markBackNavigation() {
+  try {
+    sessionStorage.setItem(BACK_NAV_KEY, "1");
+  } catch {}
+}
+
+export function consumeBackNavigation(): boolean {
+  try {
+    const val = sessionStorage.getItem(BACK_NAV_KEY);
+    if (val === "1") {
+      sessionStorage.removeItem(BACK_NAV_KEY);
+      return true;
+    }
+  } catch {}
+  return false;
+}

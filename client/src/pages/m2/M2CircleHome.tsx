@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { v } from "@/lib/themeVars";
 import { useSession } from "@/lib/session";
+import { useToast } from "@/hooks/use-toast";
 import {
   communityApi,
   leaderboardApi,
@@ -88,6 +89,7 @@ export default function M2CircleHome() {
   const { t, i18n } = useTranslation();
   const session = useSession();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>("twins");
 
   const [addFriendOpen, setAddFriendOpen] = useState(false);
@@ -146,12 +148,18 @@ export default function M2CircleHome() {
       lastName: string;
       email: string;
     }) => friendsApi.create(pid!, data),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["friends", pid] });
       setFriendFirstName("");
       setFriendLastName("");
       setFriendEmail("");
       setAddFriendOpen(false);
+      const emailSent = data?.emailSent === true;
+      toast({
+        title: emailSent
+          ? t("m2.circle.friendInvitationSent", "Invitation email sent")
+          : t("m2.circle.friendAddedNoEmail", "Friend added"),
+      });
     },
   });
 
