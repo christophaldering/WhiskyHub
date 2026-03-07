@@ -2,14 +2,11 @@ import { useRef, useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import {
-  ChevronRight, EyeOff, BarChart3, Star, Sparkles,
-  ClipboardList, Camera, Heart, BookOpen, Download,
+  ChevronRight, BarChart3, Star, Sparkles,
+  Camera, Heart, BookOpen, Download, QrCode, Play,
 } from "lucide-react";
 import { v } from "@/lib/themeVars";
 import heroImage from "@/assets/images/hero-whisky.png";
-import {
-  RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer,
-} from "recharts";
 import { generateCaskSensePresentation } from "@/components/casksense-presentation-pdf";
 
 const ACCENT = "#c8a97e";
@@ -169,59 +166,82 @@ function HeroSection() {
   );
 }
 
-function FlowSection() {
-  const stages = [
-    { num: "01", word: "Gather", sub: "Invite friends. Join via QR code." },
-    { num: "02", word: "Pour", sub: "Blind. No labels. No bias." },
-    { num: "03", word: "Reflect", sub: "Rate nose, taste, finish, balance." },
-    { num: "04", word: "Reveal", sub: "The host unveils the bottle." },
-    { num: "05", word: "Discover", sub: "See who loved what — and why." },
-  ];
+const pillars = [
+  {
+    icon: <QrCode style={{ width: 22, height: 22 }} />,
+    title: "Join",
+    sub: "Scan a QR code. You're in.",
+  },
+  {
+    icon: <Play style={{ width: 22, height: 22 }} />,
+    title: "Host",
+    sub: "Create a blind tasting in 60 seconds.",
+  },
+  {
+    icon: <BookOpen style={{ width: 22, height: 22 }} />,
+    title: "Solo",
+    sub: "Log a dram. Build your journal.",
+  },
+  {
+    icon: <BarChart3 style={{ width: 22, height: 22 }} />,
+    title: "Analyse",
+    sub: "Your flavor profile grows with every sip.",
+  },
+  {
+    icon: <Camera style={{ width: 22, height: 22 }} />,
+    title: "AI",
+    sub: "Point your camera. We identify the bottle.",
+  },
+  {
+    icon: <Heart style={{ width: 22, height: 22 }} />,
+    title: "Circle",
+    sub: "Find your Taste Twins. Compare palates.",
+  },
+];
 
+function PillarsSection() {
   return (
-    <section style={{ padding: "120px 24px" }}>
+    <section style={{ padding: "100px 24px" }}>
       <div style={container}>
         <FadeUp>
-          <div style={{ textAlign: "center", marginBottom: 72 }}>
+          <div style={{ textAlign: "center", marginBottom: 64 }}>
             <h2 style={{
               fontFamily: font.display, fontSize: "clamp(28px, 4vw, 44px)",
               fontWeight: 400, color: v.text, letterSpacing: "-0.02em",
               lineHeight: 1.15, marginBottom: 16,
             }}>
-              Five stages. One experience.
+              Everything you need.
             </h2>
             <p style={{ fontFamily: font.body, fontSize: 16, color: v.muted }}>
-              Every CaskSense tasting follows the same elegant flow.
+              Six ways to explore whisky — together or alone.
             </p>
           </div>
         </FadeUp>
 
         <div style={{
-          display: "flex", alignItems: "flex-start", justifyContent: "center",
-          gap: 0, flexWrap: "wrap",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: 20, maxWidth: 940, margin: "0 auto",
         }}>
-          {stages.map((s, i) => (
-            <FadeUp key={s.num} delay={0.06 + i * 0.08}>
+          {pillars.map((p, i) => (
+            <FadeUp key={p.title} delay={0.06 + i * 0.06}>
               <div style={{
-                display: "flex", flexDirection: "column", alignItems: "center",
-                textAlign: "center", width: 160, padding: "0 8px",
-              }}>
+                background: v.card, border: `1px solid ${v.border}`,
+                borderRadius: 14, padding: "28px 24px",
+              }} data-testid={`card-pillar-${p.title.toLowerCase()}`}>
                 <div style={{
-                  fontFamily: font.body, fontSize: 11, fontWeight: 600,
-                  letterSpacing: "0.12em", color: ACCENT_DIM, marginBottom: 12,
-                }}>{s.num}</div>
-                <div style={{
-                  fontFamily: font.display, fontSize: 26, fontWeight: 400,
-                  color: v.text, marginBottom: 10, letterSpacing: "-0.01em",
-                }}>{s.word}</div>
-                <div style={{
-                  width: 40, height: 1, marginBottom: 10,
-                  background: `linear-gradient(90deg, transparent, ${ACCENT}35, transparent)`,
-                }} />
-                <p style={{
-                  fontFamily: font.body, fontSize: 13, color: v.muted,
-                  lineHeight: 1.5, maxWidth: 140,
-                }}>{s.sub}</p>
+                  width: 44, height: 44, borderRadius: 12,
+                  background: `${ACCENT}10`, display: "flex",
+                  alignItems: "center", justifyContent: "center",
+                  color: ACCENT, marginBottom: 16,
+                }}>{p.icon}</div>
+                <h3 style={{
+                  fontFamily: font.display, fontSize: 22, fontWeight: 500,
+                  color: v.text, marginBottom: 8, letterSpacing: "-0.01em",
+                }}>{p.title}</h3>
+                <p style={{ fontFamily: font.body, fontSize: 13, color: v.muted, lineHeight: 1.6 }}>
+                  {p.sub}
+                </p>
               </div>
             </FadeUp>
           ))}
@@ -250,319 +270,63 @@ function RevealSection() {
   }, [inView]);
 
   return (
-    <section style={{ padding: "120px 24px" }} ref={ref}>
-      <div style={{ ...container, maxWidth: 700, textAlign: "center" }}>
+    <section style={{ padding: "100px 24px" }} ref={ref}>
+      <div style={{ ...container, maxWidth: 640, textAlign: "center" }}>
         <FadeUp>
-          <h2 style={{
-            fontFamily: font.display, fontSize: "clamp(28px, 4vw, 44px)",
-            fontWeight: 400, color: v.text, letterSpacing: "-0.02em",
-            lineHeight: 1.15, marginBottom: 32,
+          <p style={{
+            fontFamily: font.body, fontSize: 14, fontWeight: 500,
+            letterSpacing: "0.1em", textTransform: "uppercase",
+            color: ACCENT_DIM, marginBottom: 24,
           }}>
-            The moment everyone waits for.
+            The Reveal Moment
+          </p>
+          <h2 style={{
+            fontFamily: font.display, fontSize: "clamp(26px, 4vw, 40px)",
+            fontWeight: 400, color: v.text, letterSpacing: "-0.02em",
+            lineHeight: 1.2, marginBottom: 40,
+          }}>
+            Then the host reveals the whisky.
           </h2>
         </FadeUp>
 
-        <FadeUp delay={0.1}>
-          <p style={{
-            fontFamily: font.body, fontSize: "clamp(15px, 1.8vw, 18px)",
-            color: v.muted, lineHeight: 1.8, maxWidth: 480,
-            margin: "0 auto 56px",
-          }}>
-            The expensive dram loses. The unknown one wins.
-            CaskSense captures that moment — and shows the ranking instantly.
-          </p>
-        </FadeUp>
-
-        <div style={{
-          padding: "40px 24px", borderRadius: 16,
-          background: v.card, border: `1px solid ${v.border}`,
-          display: "inline-block", minWidth: 280,
-        }}>
+        <FadeUp delay={0.15}>
           <div style={{
-            fontFamily: font.body, fontSize: 12, fontWeight: 600,
-            letterSpacing: "0.1em", textTransform: "uppercase",
-            color: ACCENT_DIM, marginBottom: 16,
-          }}>
-            The winner is...
-          </div>
-          <div style={{
-            fontFamily: font.display, fontSize: "clamp(32px, 5vw, 48px)",
-            fontWeight: 400, color: v.text, letterSpacing: "-0.01em",
-            minHeight: 56,
-          }} data-testid="text-reveal-name">
-            {REVEAL_NAME.slice(0, charCount)}
-            {charCount < REVEAL_NAME.length && (
-              <motion.span
-                animate={{ opacity: [1, 0] }}
-                transition={{ duration: 0.6, repeat: Infinity }}
-                style={{ color: ACCENT }}
-              >|</motion.span>
-            )}
-          </div>
-          {charCount >= REVEAL_NAME.length && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              style={{
-                fontFamily: font.body, fontSize: 14, color: v.muted, marginTop: 12,
-              }}
-            >
-              Isle of Skye · 45.8% · Score: 91
-            </motion.div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-const radarData = [
-  { axis: "Nose", value: 82 },
-  { axis: "Taste", value: 88 },
-  { axis: "Finish", value: 75 },
-  { axis: "Balance", value: 80 },
-  { axis: "Overall", value: 85 },
-];
-
-function CoreFeaturesSection() {
-  return (
-    <section style={{ padding: "120px 24px" }}>
-      <div style={container}>
-        <FadeUp>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <h2 style={{
-              fontFamily: font.display, fontSize: "clamp(28px, 4vw, 44px)",
-              fontWeight: 400, color: v.text, letterSpacing: "-0.02em",
-              lineHeight: 1.15, marginBottom: 16,
-            }}>
-              What CaskSense does.
-            </h2>
-            <p style={{ fontFamily: font.body, fontSize: 16, color: v.muted }}>
-              Three features that change how you taste whisky.
-            </p>
-          </div>
-        </FadeUp>
-
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: 24, maxWidth: 1000, margin: "0 auto",
-        }}>
-          <FadeUp delay={0.1}>
-            <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ duration: 0.25 }}
-              style={{
-                background: v.card, border: `1px solid ${v.border}`,
-                borderRadius: 16, padding: "36px 28px", cursor: "default",
-              }}
-              data-testid="card-core-blind"
-            >
-              <div style={{
-                width: 52, height: 52, borderRadius: 14,
-                background: `${ACCENT}10`, display: "flex",
-                alignItems: "center", justifyContent: "center",
-                color: ACCENT, marginBottom: 20,
-              }}>
-                <EyeOff style={{ width: 24, height: 24 }} />
-              </div>
-              <h3 style={{
-                fontFamily: font.display, fontSize: 22, fontWeight: 500,
-                color: v.text, marginBottom: 10,
-              }}>Blind Flights</h3>
-              <p style={{ fontFamily: font.body, fontSize: 14, color: v.muted, lineHeight: 1.6 }}>
-                Four-stage reveal: number → name → details → bottle image.
-                Discover what people really think — without the label bias.
-              </p>
-            </motion.div>
-          </FadeUp>
-
-          <FadeUp delay={0.2}>
-            <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ duration: 0.25 }}
-              style={{
-                background: v.card, border: `1px solid ${v.border}`,
-                borderRadius: 16, padding: "36px 28px", cursor: "default",
-              }}
-              data-testid="card-core-rating"
-            >
-              <div style={{
-                width: 52, height: 52, borderRadius: 14,
-                background: `${ACCENT}10`, display: "flex",
-                alignItems: "center", justifyContent: "center",
-                color: ACCENT, marginBottom: 20,
-              }}>
-                <ClipboardList style={{ width: 24, height: 24 }} />
-              </div>
-              <h3 style={{
-                fontFamily: font.display, fontSize: 22, fontWeight: 500,
-                color: v.text, marginBottom: 10,
-              }}>Live Rating</h3>
-              <p style={{ fontFamily: font.body, fontSize: 14, color: v.muted, lineHeight: 1.6 }}>
-                Nose, taste, finish, balance — plus flavor chips and voice notes.
-                Everyone rates. The host reveals. The discussion begins.
-              </p>
-            </motion.div>
-          </FadeUp>
-
-          <FadeUp delay={0.3}>
-            <motion.div
-              whileHover={{ y: -4 }}
-              transition={{ duration: 0.25 }}
-              style={{
-                background: v.card, border: `1px solid ${v.border}`,
-                borderRadius: 16, padding: "36px 28px", cursor: "default",
-              }}
-              data-testid="card-core-profile"
-            >
-              <div style={{
-                width: 52, height: 52, borderRadius: 14,
-                background: `${ACCENT}10`, display: "flex",
-                alignItems: "center", justifyContent: "center",
-                color: ACCENT, marginBottom: 20,
-              }}>
-                <BarChart3 style={{ width: 24, height: 24 }} />
-              </div>
-              <h3 style={{
-                fontFamily: font.display, fontSize: 22, fontWeight: 500,
-                color: v.text, marginBottom: 10,
-              }}>Your Taste Profile</h3>
-              <div style={{ width: "100%", height: 180, marginBottom: 12 }}>
-                <ResponsiveContainer>
-                  <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="65%">
-                    <PolarGrid stroke={`${ACCENT}20`} />
-                    <PolarAngleAxis dataKey="axis" tick={{ fill: v.muted, fontSize: 11, fontFamily: font.body }} />
-                    <Radar dataKey="value" stroke={ACCENT} fill={ACCENT} fillOpacity={0.15} strokeWidth={1.5} />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
-              <p style={{ fontFamily: font.body, fontSize: 14, color: v.muted, lineHeight: 1.6 }}>
-                A personal flavor profile that grows with every dram you taste.
-                Compare yourself to friends or the global community.
-              </p>
-            </motion.div>
-          </FadeUp>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function SurprisesSection() {
-  const [downloading, setDownloading] = useState(false);
-
-  const handleDownload = async () => {
-    setDownloading(true);
-    try {
-      await generateCaskSensePresentation();
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  const surprises = [
-    {
-      icon: <Camera style={{ width: 22, height: 22 }} />,
-      title: "AI Bottle Recognition",
-      text: "Point your camera at any bottle. CaskSense identifies the whisky, fills in every detail, and estimates the market price.",
-    },
-    {
-      icon: <Heart style={{ width: 22, height: 22 }} />,
-      title: "Taste Twins",
-      text: "Discover who in your circle shares your palate. A correlation engine that matches your ratings with your friends'.",
-    },
-    {
-      icon: <BookOpen style={{ width: 22, height: 22 }} />,
-      title: "Whisky Journal",
-      text: "Every dram you taste — solo or in a group — becomes part of your personal archive. With AI-generated tasting notes.",
-    },
-  ];
-
-  return (
-    <section style={{ padding: "120px 24px" }}>
-      <div style={container}>
-        <FadeUp>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <h2 style={{
-              fontFamily: font.display, fontSize: "clamp(28px, 4vw, 44px)",
-              fontWeight: 400, color: v.text, letterSpacing: "-0.02em",
-              lineHeight: 1.15, marginBottom: 16,
-            }}>
-              What surprises you.
-            </h2>
-            <p style={{ fontFamily: font.body, fontSize: 16, color: v.muted }}>
-              Beyond the tasting — features you didn't expect.
-            </p>
-          </div>
-        </FadeUp>
-
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: 20, maxWidth: 920, margin: "0 auto 48px",
-        }}>
-          {surprises.map((s, i) => (
-            <FadeUp key={s.title} delay={0.1 + i * 0.08}>
-              <div style={{
-                background: v.card, border: `1px solid ${v.border}`,
-                borderRadius: 14, padding: "28px 24px",
-              }} data-testid={`card-surprise-${i}`}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12,
-                  background: `${ACCENT}10`, display: "flex",
-                  alignItems: "center", justifyContent: "center",
-                  color: ACCENT, marginBottom: 16,
-                }}>{s.icon}</div>
-                <h3 style={{
-                  fontFamily: font.display, fontSize: 18, fontWeight: 500,
-                  color: v.text, marginBottom: 8,
-                }}>{s.title}</h3>
-                <p style={{ fontFamily: font.body, fontSize: 13, color: v.muted, lineHeight: 1.6 }}>
-                  {s.text}
-                </p>
-              </div>
-            </FadeUp>
-          ))}
-        </div>
-
-        <FadeUp delay={0.4}>
-          <div style={{
-            textAlign: "center", padding: "32px 24px",
             background: v.card, border: `1px solid ${v.border}`,
-            borderRadius: 16, maxWidth: 520, margin: "0 auto",
-          }}>
+            borderRadius: 20, padding: "48px 32px",
+          }} data-testid="reveal-card">
             <div style={{
-              fontFamily: font.display, fontSize: 20, fontWeight: 500,
-              color: v.text, marginBottom: 8,
+              fontFamily: font.body, fontSize: 12, fontWeight: 500,
+              letterSpacing: "0.1em", textTransform: "uppercase",
+              color: v.muted, marginBottom: 16,
             }}>
-              42+ features in total.
+              It was...
             </div>
-            <p style={{
-              fontFamily: font.body, fontSize: 14, color: v.muted,
-              lineHeight: 1.6, marginBottom: 20, maxWidth: 380, margin: "0 auto 20px",
-            }}>
-              From AI tasting notes to collection analysis, from community insights to guided mode — download the complete feature overview.
-            </p>
-            <button
-              type="button"
-              onClick={handleDownload}
-              disabled={downloading}
+            <div style={{
+              fontFamily: font.display,
+              fontSize: "clamp(36px, 6vw, 56px)",
+              fontWeight: 400,
+              color: v.text,
+              letterSpacing: "-0.02em",
+              minHeight: "1.2em",
+            }} data-testid="text-reveal">
+              {inView ? REVEAL_NAME.slice(0, charCount) : ""}
+              {inView && charCount < REVEAL_NAME.length && (
+                <motion.span
+                  animate={{ opacity: [1, 0] }}
+                  transition={{ duration: 0.5, repeat: Infinity }}
+                  style={{ color: ACCENT }}
+                >|</motion.span>
+              )}
+            </div>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={inView ? { width: "60%" } : {}}
+              transition={{ duration: 1.5, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
               style={{
-                display: "inline-flex", alignItems: "center", gap: 8,
-                padding: "12px 28px", borderRadius: 10,
-                background: `${ACCENT}15`, border: `1px solid ${ACCENT}30`,
-                color: ACCENT, fontFamily: font.body, fontSize: 14, fontWeight: 600,
-                cursor: downloading ? "not-allowed" : "pointer",
-                opacity: downloading ? 0.6 : 1,
-                transition: "all 0.2s",
+                height: 1, margin: "24px auto 0",
+                background: `linear-gradient(90deg, transparent, ${ACCENT}40, transparent)`,
               }}
-              data-testid="button-download-presentation"
-            >
-              <Download style={{ width: 16, height: 16 }} />
-              {downloading ? "Creating PDF..." : "Download Feature Presentation (PDF)"}
-            </button>
+            />
           </div>
         </FadeUp>
       </div>
@@ -579,7 +343,7 @@ function DemoSection() {
   const overall = Math.round((aroma + flavor + finish) / 3);
 
   return (
-    <section id="demo-section" style={{ padding: "120px 24px" }}>
+    <section id="demo-section" style={{ padding: "100px 24px" }}>
       <div style={{ ...container, maxWidth: 480, textAlign: "center" }}>
         <FadeUp>
           <h2 style={{
@@ -717,8 +481,19 @@ function DemoSection() {
 }
 
 function CTASection() {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      await generateCaskSensePresentation();
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
-    <section style={{ padding: "120px 24px 80px", textAlign: "center" }}>
+    <section style={{ padding: "100px 24px 80px", textAlign: "center" }}>
       <div style={container}>
         <FadeUp>
           <h2 style={{
@@ -746,11 +521,36 @@ function CTASection() {
             }} data-testid="cta-demo">
               or jump straight into the demo →
             </Link>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={0.3}>
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "center",
+            gap: 24, marginTop: 40, flexWrap: "wrap",
+          }}>
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={downloading}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "10px 20px", borderRadius: 10,
+                background: "transparent", border: `1px solid ${v.border}`,
+                color: v.muted, fontFamily: font.body, fontSize: 13, fontWeight: 500,
+                cursor: downloading ? "not-allowed" : "pointer",
+                opacity: downloading ? 0.5 : 1,
+                transition: "all 0.2s",
+              }}
+              data-testid="button-download-presentation"
+            >
+              <Download style={{ width: 14, height: 14 }} />
+              {downloading ? "Creating PDF..." : "Download Presentation"}
+            </button>
             <Link href="/presentation" style={{
               display: "inline-flex", alignItems: "center", gap: 6,
-              fontFamily: font.body, fontSize: 13, fontWeight: 400,
-              color: v.mutedLight, textDecoration: "none",
-              marginTop: 8,
+              fontFamily: font.body, fontSize: 13, fontWeight: 500,
+              color: v.muted, textDecoration: "none",
             }} data-testid="cta-explore">
               Explore all features <ChevronRight style={{ width: 14, height: 14 }} />
             </Link>
@@ -790,10 +590,8 @@ export default function LandingNew() {
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
       `}</style>
       <HeroSection />
-      <FlowSection />
-      <CoreFeaturesSection />
+      <PillarsSection />
       <RevealSection />
-      <SurprisesSection />
       <DemoSection />
       <CTASection />
       <Footer />
