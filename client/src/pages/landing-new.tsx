@@ -193,31 +193,26 @@ function FlowSection() {
         }}>
           {stages.map((s, i) => (
             <FadeUp key={s.num} delay={0.06 + i * 0.08}>
-              <div style={{ display: "flex", alignItems: "center" }}>
+              <div style={{
+                display: "flex", flexDirection: "column", alignItems: "center",
+                textAlign: "center", width: 160, padding: "0 8px",
+              }}>
                 <div style={{
-                  display: "flex", flexDirection: "column", alignItems: "center",
-                  textAlign: "center", width: 160, padding: "0 8px",
-                }}>
-                  <div style={{
-                    fontFamily: font.body, fontSize: 11, fontWeight: 600,
-                    letterSpacing: "0.12em", color: ACCENT_DIM, marginBottom: 12,
-                  }}>{s.num}</div>
-                  <div style={{
-                    fontFamily: font.display, fontSize: 26, fontWeight: 400,
-                    color: v.text, marginBottom: 10, letterSpacing: "-0.01em",
-                  }}>{s.word}</div>
-                  <p style={{
-                    fontFamily: font.body, fontSize: 13, color: v.muted,
-                    lineHeight: 1.5, maxWidth: 140,
-                  }}>{s.sub}</p>
-                </div>
-                {i < stages.length - 1 && (
-                  <div style={{
-                    width: 40, height: 1,
-                    background: `linear-gradient(90deg, ${ACCENT}35, ${ACCENT}10)`,
-                    flexShrink: 0, marginTop: -32,
-                  }} />
-                )}
+                  fontFamily: font.body, fontSize: 11, fontWeight: 600,
+                  letterSpacing: "0.12em", color: ACCENT_DIM, marginBottom: 12,
+                }}>{s.num}</div>
+                <div style={{
+                  fontFamily: font.display, fontSize: 26, fontWeight: 400,
+                  color: v.text, marginBottom: 10, letterSpacing: "-0.01em",
+                }}>{s.word}</div>
+                <div style={{
+                  width: 40, height: 1, marginBottom: 10,
+                  background: `linear-gradient(90deg, transparent, ${ACCENT}35, transparent)`,
+                }} />
+                <p style={{
+                  fontFamily: font.body, fontSize: 13, color: v.muted,
+                  lineHeight: 1.5, maxWidth: 140,
+                }}>{s.sub}</p>
               </div>
             </FadeUp>
           ))}
