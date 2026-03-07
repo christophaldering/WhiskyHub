@@ -8,7 +8,7 @@ import { participantApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import {
-  Camera, PenLine, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ArrowLeft, Plus, Trash2, Clock, Wine, Save
+  Camera, PenLine, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ArrowLeft, Plus, Trash2, Clock, Wine, Save, ExternalLink
 } from "lucide-react";
 import M2RatingPanel from "@/components/m2/M2RatingPanel";
 import type { DimKey } from "@/components/m2/M2RatingPanel";
@@ -1459,6 +1459,29 @@ export default function M2TastingsSolo() {
                          wbLookupResult === "invalid" ? t("m2.solo.wbInvalidId", "Invalid ID") : t("m2.solo.wbError", "Error")}
                       </p>
                     )}
+                    {unknownWbId.trim() ? (
+                      <a
+                        href={`https://www.whiskybase.com/whiskies/whisky/${unknownWbId.trim()}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: 11, color: v.accent, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3, marginTop: 4 }}
+                        data-testid="link-view-whiskybase"
+                      >
+                        <ExternalLink style={{ width: 10, height: 10 }} />
+                        {t("m2.solo.viewOnWhiskybase", "View on Whiskybase")}
+                      </a>
+                    ) : whiskyName.trim() ? (
+                      <a
+                        href={`https://www.whiskybase.com/search?q=${encodeURIComponent(whiskyName.trim())}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: 11, color: v.accent, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3, marginTop: 4 }}
+                        data-testid="link-search-whiskybase"
+                      >
+                        <ExternalLink style={{ width: 10, height: 10 }} />
+                        {t("m2.solo.searchOnWhiskybase", "Search on Whiskybase")}
+                      </a>
+                    ) : null}
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 2 }}>{t("m2.solo.price", "Price")}</label>

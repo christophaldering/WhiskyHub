@@ -4640,6 +4640,8 @@ const resources = {
           toOverview: "To overview",
           lastEdited: "Last edited",
           saveNow: "Save",
+          searchOnWhiskybase: "Search on Whiskybase",
+          viewOnWhiskybase: "View on Whiskybase",
         },
         rating: {
           rateDetail: "Rate in detail",
@@ -10269,6 +10271,8 @@ const resources = {
           toOverview: "Zur Übersicht",
           lastEdited: "Zuletzt bearbeitet",
           saveNow: "Speichern",
+          searchOnWhiskybase: "In Whiskybase suchen",
+          viewOnWhiskybase: "Auf Whiskybase ansehen",
         },
         rating: {
           rateDetail: "Im Detail bewerten",
