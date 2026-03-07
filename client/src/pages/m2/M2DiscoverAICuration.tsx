@@ -35,7 +35,7 @@ const card: React.CSSProperties = { background: v.card, borderRadius: 14, border
 export default function M2DiscoverAICuration() {
   const { t, i18n } = useTranslation();
   const session = getSession();
-  const pid = session.participantId;
+  const pid = session.pid;
   const [selectedId, setSelectedId] = useState("");
 
   const { data: tastings, isLoading: tL } = useQuery({ queryKey: ["tastings", pid], queryFn: () => tastingApi.getAll(pid!), enabled: !!pid });

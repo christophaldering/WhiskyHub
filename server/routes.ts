@@ -4958,7 +4958,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
       const whiskyMap = new Map(allWhiskiesArr.map(w => [w.id, w]));
 
       interface NormedRating {
-        whiskyId: string; nose: number; taste: number; finish: number; balance: number; overall: number;
+        whiskyId: string; nose: number; taste: number; finish: number; balance: number; overall: number; ratedAt?: string | null;
       }
 
       let userRatings: NormedRating[] = userRatingsRaw.map(r => {
@@ -4968,6 +4968,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
           whiskyId: r.whiskyId,
           nose: r.nose * norm, taste: r.taste * norm, finish: r.finish * norm,
           balance: r.balance * norm, overall: r.overall * norm,
+          ratedAt: r.updatedAt || null,
         };
       });
 
@@ -4983,6 +4984,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             whiskyId: j.id,
             nose: j.noseNotes ? 50 : 0, taste: j.tasteNotes ? 50 : 0, finish: j.finishNotes ? 50 : 0, balance: 0,
             overall: j.personalScore!,
+            ratedAt: j.createdAt || null,
           }));
         if (source === "all_incl_imported") {
           userRatings = [...userRatings, ...journalScores];
@@ -5106,6 +5108,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
             delta: Math.round((r.overall - pMedian) * 10) / 10,
             iqr: pIqr ? { q1: Math.round(pIqr.q1 * 10) / 10, q3: Math.round(pIqr.q3 * 10) / 10, iqr: Math.round(pIqr.iqr * 10) / 10 } : null,
             platformN: pw.overalls.length,
+            ratedAt: r.ratedAt || null,
           };
         });
 

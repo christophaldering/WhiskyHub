@@ -18,6 +18,7 @@ const serif = "'Playfair Display', Georgia, serif";
 
 type FilterValue = "all" | "solo" | "tasting";
 type ViewState = "list" | "detail" | "edit";
+type DatePeriod = "all" | "7d" | "30d" | "3m" | "1y";
 
 const FILTERS: { key: FilterValue; labelKey: string }[] = [
   { key: "all", labelKey: "All" },
@@ -25,11 +26,20 @@ const FILTERS: { key: FilterValue; labelKey: string }[] = [
   { key: "tasting", labelKey: "Tasting" },
 ];
 
+const DATE_PERIODS: { key: DatePeriod; labelKey: string; fallback: string; days: number }[] = [
+  { key: "all", labelKey: "m2.taste.periodAll", fallback: "All time", days: 0 },
+  { key: "7d", labelKey: "m2.taste.period7d", fallback: "7 days", days: 7 },
+  { key: "30d", labelKey: "m2.taste.period30d", fallback: "30 days", days: 30 },
+  { key: "3m", labelKey: "m2.taste.period3m", fallback: "3 months", days: 90 },
+  { key: "1y", labelKey: "m2.taste.period1y", fallback: "1 year", days: 365 },
+];
+
 export default function M2TasteDrams() {
   const { t } = useTranslation();
   const session = getSession();
   const [, navigate] = useLocation();
   const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
+  const [datePeriod, setDatePeriod] = useState<DatePeriod>("all");
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [viewState, setViewState] = useState<ViewState>("list");
   const [editForm, setEditForm] = useState<Record<string, any>>({});
@@ -88,13 +98,23 @@ export default function M2TasteDrams() {
         (e.distillery || "").toLowerCase().includes(q)
       );
     }
+    if (datePeriod !== "all") {
+      const periodDays = DATE_PERIODS.find(p => p.key === datePeriod)?.days || 0;
+      if (periodDays > 0) {
+        const cutoff = Date.now() - periodDays * 86400000;
+        items = items.filter((e: any) => {
+          if (!e.createdAt) return false;
+          return new Date(e.createdAt).getTime() >= cutoff;
+        });
+      }
+    }
     items.sort((a: any, b: any) => {
       const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return db - da;
     });
     return items;
-  }, [journal, tastingWhiskies, activeFilter, search]);
+  }, [journal, tastingWhiskies, activeFilter, search, datePeriod]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
@@ -340,7 +360,7 @@ export default function M2TasteDrams() {
         </div>
       ) : (
         <>
-          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
             {FILTERS.map((f) => {
               const isActive = activeFilter === f.key;
               return (
@@ -359,6 +379,30 @@ export default function M2TasteDrams() {
                   data-testid={`filter-${f.key}`}
                 >
                   {t(`m2.taste.filter${f.labelKey}`, f.labelKey)}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "flex", gap: 6, marginBottom: 12, overflowX: "auto" }}>
+            {DATE_PERIODS.map((p) => {
+              const isActive = datePeriod === p.key;
+              return (
+                <button
+                  key={p.key}
+                  onClick={() => setDatePeriod(p.key)}
+                  style={{
+                    padding: "5px 12px", fontSize: 12,
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive ? v.accent : v.muted,
+                    background: isActive ? v.pillBg : "transparent",
+                    border: `1px solid ${isActive ? v.accent : v.border}`,
+                    borderRadius: 16, cursor: "pointer",
+                    transition: "all 0.2s", whiteSpace: "nowrap", flexShrink: 0,
+                  }}
+                  data-testid={`period-${p.key}`}
+                >
+                  {t(p.labelKey, p.fallback)}
                 </button>
               );
             })}

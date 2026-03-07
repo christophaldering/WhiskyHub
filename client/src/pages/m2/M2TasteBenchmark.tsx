@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAppStore } from "@/lib/store";
+import { getSession } from "@/lib/session";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { benchmarkApi, tastingApi } from "@/lib/api";
 import { v } from "@/lib/themeVars";
@@ -54,7 +54,8 @@ const TAB_LABELS: Record<LibraryTab, string> = {
 
 export default function M2TasteBenchmark() {
   const { t } = useTranslation();
-  const { currentParticipant } = useAppStore();
+  const session = getSession();
+  const pid = session.pid || '';
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,13 +75,13 @@ export default function M2TasteBenchmark() {
   const [classifySuccess, setClassifySuccess] = useState<string>("");
 
   const { data: allTastings } = useQuery({
-    queryKey: ["/api/tastings", currentParticipant?.id],
-    queryFn: () => tastingApi.getAll(currentParticipant?.id),
-    enabled: !!currentParticipant,
+    queryKey: ["/api/tastings", pid],
+    queryFn: () => tastingApi.getAll(pid),
+    enabled: !!pid,
   });
 
-  const isHost = allTastings?.some((t: any) => t.hostId === currentParticipant?.id);
-  const isAdmin = currentParticipant?.role === "admin";
+  const isHost = allTastings?.some((t: any) => t.hostId === pid);
+  const isAdmin = session.role === "admin";
   const hasAccess = isHost || isAdmin;
 
   const isLibraryTab = activeTab !== "import";
@@ -89,18 +90,18 @@ export default function M2TasteBenchmark() {
   const { data: savedEntries, isLoading: loadingSaved } = useQuery({
     queryKey: ["/api/benchmark", categoryFilter],
     queryFn: () => {
-      let url = `/api/benchmark?participantId=${currentParticipant!.id}`;
+      let url = `/api/benchmark?participantId=${pid}`;
       if (categoryFilter) url += `&category=${categoryFilter}`;
       return fetch(url).then(r => r.json());
     },
-    enabled: !!currentParticipant && hasAccess && isLibraryTab,
+    enabled: !!pid && hasAccess && isLibraryTab,
   });
 
   const saveMutation = useMutation({
     mutationFn: (data: { entries: ExtractedEntry[]; libraryCategory: string }) =>
       benchmarkApi.saveEntries(
         data.entries.map(e => ({ ...e, sourceDocument: fileName, libraryCategory: data.libraryCategory })),
-        currentParticipant!.id,
+        pid,
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/benchmark"] });
@@ -111,7 +112,7 @@ export default function M2TasteBenchmark() {
 
   const wishlistMutation = useMutation({
     mutationFn: (entries: ExtractedEntry[]) =>
-      benchmarkApi.toWishlist(entries, currentParticipant!.id),
+      benchmarkApi.toWishlist(entries, pid),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
       setClassifySuccess(t("benchmark.classifyAddedToWishlist"));
@@ -121,7 +122,7 @@ export default function M2TasteBenchmark() {
 
   const journalMutation = useMutation({
     mutationFn: (entries: ExtractedEntry[]) =>
-      benchmarkApi.toJournal(entries, currentParticipant!.id),
+      benchmarkApi.toJournal(entries, pid),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["journal"] });
       setClassifySuccess(t("benchmark.classifyAddedToTasted"));
@@ -130,7 +131,7 @@ export default function M2TasteBenchmark() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => benchmarkApi.deleteEntry(id, currentParticipant!.id),
+    mutationFn: (id: string) => benchmarkApi.deleteEntry(id, pid),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/benchmark"] });
       setDeleteConfirmId(null);
@@ -148,7 +149,7 @@ export default function M2TasteBenchmark() {
     setClassifySuccess("");
 
     try {
-      const result = await benchmarkApi.analyze(file, currentParticipant!.id);
+      const result = await benchmarkApi.analyze(file, pid);
       const entries = (result.entries || []).map((entry: ExtractedEntry) => ({
         ...entry,
         selected: true,
@@ -169,7 +170,7 @@ export default function M2TasteBenchmark() {
       setAnalyzing(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
-  }, [t, currentParticipant]);
+  }, [t, pid]);
 
   const toggleClassifyAction = (idx: number, action: ClassifyAction) => {
     setClassifySelections(prev => {
@@ -239,7 +240,7 @@ export default function M2TasteBenchmark() {
     );
   });
 
-  if (!currentParticipant) {
+  if (!pid) {
     return (
       <div style={{ padding: 16 }}>
         <M2BackButton />
@@ -507,11 +508,11 @@ export default function M2TasteBenchmark() {
                     </div>
                   </div>
 
-                  {currentParticipant && (
+                  {pid && (
                     <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 12, color: v.muted, background: v.elevated, borderRadius: 10, padding: "8px 12px", flexWrap: "wrap" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <User style={{ width: 14, height: 14 }} />
-                        {t("benchmark.uploadedBy")}: <span style={{ fontWeight: 500, color: v.text }}>{currentParticipant.name}</span>
+                        {t("benchmark.uploadedBy")}: <span style={{ fontWeight: 500, color: v.text }}>{session.name || ''}</span>
                       </span>
                       <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <Clock style={{ width: 14, height: 14 }} />

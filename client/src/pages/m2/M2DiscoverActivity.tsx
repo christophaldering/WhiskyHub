@@ -33,7 +33,7 @@ const card: React.CSSProperties = { background: v.card, borderRadius: 12, border
 export default function M2DiscoverActivity() {
   const { t, i18n } = useTranslation();
   const session = getSession();
-  const pid = session.participantId;
+  const pid = session.pid;
 
   const { data, isLoading } = useQuery<{ activities: ActivityItem[] }>({
     queryKey: ["friend-activity", pid],

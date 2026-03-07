@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { flavorProfileApi } from "@/lib/api";
-import { useAppStore } from "@/lib/store";
+import { getSession } from "@/lib/session";
 import { v } from "@/lib/themeVars";
 
 const CHART_COLORS = ["#c8a864", "#6b9bd2", "#d97c5a"];
@@ -25,7 +25,16 @@ interface WhiskyComparisonItem {
   delta: number;
   iqr: { q1: number; q3: number; iqr: number } | null;
   platformN: number;
+  ratedAt: string | null;
 }
+
+type DatePeriodCompare = "all" | "30d" | "3m" | "1y";
+const DATE_PERIODS_COMPARE: { key: DatePeriodCompare; labelKey: string; fallback: string; days: number }[] = [
+  { key: "all", labelKey: "m2.taste.periodAll", fallback: "All time", days: 0 },
+  { key: "30d", labelKey: "m2.taste.period30d", fallback: "30 days", days: 30 },
+  { key: "3m", labelKey: "m2.taste.period3m", fallback: "3 months", days: 90 },
+  { key: "1y", labelKey: "m2.taste.period1y", fallback: "1 year", days: 365 },
+];
 
 const DIMENSION_KEYS = [
   { key: "nose", labelKey: "m2.rating.nose", fallback: "Nose" },
@@ -45,6 +54,7 @@ function parseSearchParams(searchStr: string) {
     sort: (params.get("sort") as SortOption) || "delta_desc",
     minN: parseInt(params.get("minN") || "1", 10),
     direction: (params.get("direction") as DirectionFilter) || "all",
+    period: (params.get("period") as DatePeriodCompare) || "all",
     page: parseInt(params.get("page") || "1", 10),
     perPage: parseInt(params.get("perPage") || "25", 10),
   };
@@ -63,7 +73,8 @@ function buildSearchString(params: Record<string, string | number>) {
 
 export default function M2TasteCompare() {
   const { t } = useTranslation();
-  const { currentParticipant } = useAppStore();
+  const session = getSession();
+  const pid = session.pid || "";
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [radarSearch, setRadarSearch] = useState("");
   const searchStr = useSearch();
@@ -78,9 +89,9 @@ export default function M2TasteCompare() {
   };
 
   const { data, isLoading } = useQuery<{ ratedWhiskies: RatedWhiskyItem[]; whiskyComparison?: WhiskyComparisonItem[] }>({
-    queryKey: ["flavor-profile", currentParticipant?.id],
-    queryFn: () => flavorProfileApi.getWhiskyProfile(currentParticipant!.id, "all", "platform"),
-    enabled: !!currentParticipant,
+    queryKey: ["flavor-profile", pid],
+    queryFn: () => flavorProfileApi.getWhiskyProfile(pid, "all", "platform"),
+    enabled: !!pid,
   });
 
   const ratedWhiskies = data?.ratedWhiskies || [];
@@ -106,6 +117,17 @@ export default function M2TasteCompare() {
       items = items.filter((item) => item.delta > 0);
     } else if (filters.direction === "negative") {
       items = items.filter((item) => item.delta < 0);
+    }
+
+    if (filters.period !== "all") {
+      const periodDays = DATE_PERIODS_COMPARE.find(p => p.key === filters.period)?.days || 0;
+      if (periodDays > 0) {
+        const cutoff = Date.now() - periodDays * 86400000;
+        items = items.filter((item) => {
+          if (!item.ratedAt) return false;
+          return new Date(item.ratedAt).getTime() >= cutoff;
+        });
+      }
     }
 
     switch (filters.sort) {
@@ -138,7 +160,7 @@ export default function M2TasteCompare() {
 
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
-  if (!currentParticipant) {
+  if (!pid) {
     return (
       <div style={{ padding: 16 }}>
         <div style={{ textAlign: "center", padding: "60px 0", color: v.muted }} data-testid="text-sign-in-prompt">
@@ -313,6 +335,20 @@ export default function M2TasteCompare() {
                       data-testid={`chip-direction-${dir}`}
                     >
                       {t(`comparison.direction${dir.charAt(0).toUpperCase() + dir.slice(1)}`)}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <span style={{ fontSize: 12, color: v.muted, fontWeight: 600 }}>{t("m2.taste.periodLabel", "Period")}:</span>
+                  {DATE_PERIODS_COMPARE.map((p) => (
+                    <button
+                      key={p.key}
+                      onClick={() => setFilter("period", p.key)}
+                      style={chipStyle(filters.period === p.key)}
+                      data-testid={`chip-period-${p.key}`}
+                    >
+                      {t(p.labelKey, p.fallback)}
                     </button>
                   ))}
                 </div>

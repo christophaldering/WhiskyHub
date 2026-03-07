@@ -310,65 +310,6 @@ export default function M2TasteHome() {
             </div>
           )}
 
-          <Link href="/m2/taste/analytics" style={{ textDecoration: "none" }}>
-            <div
-              style={{
-                background: v.card,
-                border: `1px solid ${v.border}`,
-                borderRadius: 12,
-                padding: "16px",
-                cursor: "pointer",
-                opacity: analyticsLocked ? 0.85 : 1,
-                marginBottom: 4,
-              }}
-              data-testid="card-analytics-preview"
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 10,
-                    background: alpha(v.accent, "15"),
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  {analyticsLocked ? (
-                    <Lock style={{ width: 16, height: 16, color: v.mutedLight }} />
-                  ) : (
-                    <BarChart3 style={{ width: 18, height: 18, color: v.accent }} />
-                  )}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: analyticsLocked ? v.mutedLight : v.text }}>
-                    {t("m2.taste.analytics", "Analytics")}
-                  </div>
-                  <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>
-                    {analyticsLocked
-                      ? t("m2.taste.analyticsLocked", `${whiskyCount}/${ANALYTICS_THRESHOLD} whiskies to unlock`)
-                      : t("m2.taste.analyticsUnlocked", "Your taste data is ready")}
-                  </div>
-                </div>
-                {analyticsLocked && (
-                  <div style={{ height: 4, width: 50, background: v.bg, borderRadius: 2, overflow: "hidden", flexShrink: 0 }}>
-                    <div
-                      style={{
-                        height: "100%",
-                        width: `${Math.min((whiskyCount / ANALYTICS_THRESHOLD) * 100, 100)}%`,
-                        background: v.accent,
-                        borderRadius: 2,
-                      }}
-                    />
-                  </div>
-                )}
-                {!analyticsLocked && <ChevronRight style={{ width: 14, height: 14, color: v.muted, flexShrink: 0 }} />}
-              </div>
-            </div>
-          </Link>
-
           <AccordionSection
             title={t("m2.taste.sectionProfile", "Profile & Analysis")}
             icon={Radar}
