@@ -149,7 +149,6 @@ export default function M2TastingsSolo() {
   const [unlocked, setUnlocked] = useState(() => getSession().signedIn);
   const [pid, setPid] = useState<string | undefined>(() => getSession().pid || currentParticipant?.id);
   const [showUnlockPanel, setShowUnlockPanel] = useState(false);
-
   useEffect(() => {
     const sess = getSession();
     if (sess.signedIn) {
@@ -195,6 +194,7 @@ export default function M2TastingsSolo() {
   const recognitionRef = useRef<any>(null);
   const hasSpeechAPI = !!SpeechRecognitionAPI;
 
+  const [photoUrl, setPhotoUrl] = useState("");
   const [offlineCount, setOfflineCount] = useState(() => getOfflineQueue().length);
 
   useEffect(() => {
@@ -299,7 +299,6 @@ export default function M2TastingsSolo() {
 
   const draftEntryIdRef = useRef(draftEntryId);
   draftEntryIdRef.current = draftEntryId;
-
   const draftStatusRef = useRef(draftStatus);
   draftStatusRef.current = draftStatus;
 
@@ -355,7 +354,6 @@ export default function M2TastingsSolo() {
   const [scanning, setScanning] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [sheetView, setSheetView] = useState<SheetView>("none");
-  const [photoUrl, setPhotoUrl] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isMenuMode, setIsMenuMode] = useState(false);
   const [lastResult, setLastResult] = useState<IdentifyResult | null>(null);
