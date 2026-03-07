@@ -1173,6 +1173,26 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
                   {editingId === w.id ? (
                     <div style={{ background: v.elevated, border: `1px solid ${v.accent}`, borderRadius: 10, padding: 12 }} data-testid={`card-whisky-edit-${w.id}`}>
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                          {w.imageUrl ? (
+                            <img src={w.imageUrl} alt="" style={{ width: 48, height: 64, objectFit: "cover", borderRadius: 8, flexShrink: 0, background: v.bg }} />
+                          ) : (
+                            <div style={{ width: 48, height: 64, borderRadius: 8, background: v.bg, border: `1px dashed ${v.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <Image style={{ width: 18, height: 18, color: v.muted }} />
+                            </div>
+                          )}
+                          <label style={{
+                            display: "inline-flex", alignItems: "center", gap: 6,
+                            padding: "8px 14px", borderRadius: 8,
+                            background: `${v.accent}15`, border: `1px solid ${v.accent}30`,
+                            color: v.accent, fontSize: 12, fontWeight: 600,
+                            cursor: "pointer", fontFamily: "system-ui, sans-serif",
+                          }} data-testid={`button-edit-upload-image-${w.id}`}>
+                            <Upload style={{ width: 13, height: 13 }} />
+                            {w.imageUrl ? t("m2.host.changeImage", "Change Image") : t("m2.host.addImage", "Add Image")}
+                            <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { if (e.target.files?.[0]) handleImageUpload(w.id, e.target.files[0]); }} />
+                          </label>
+                        </div>
                         <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} style={{ ...inputStyle, fontSize: 13 }} data-testid={`input-edit-name-${w.id}`} />
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                           <input type="text" value={editDistillery} onChange={(e) => setEditDistillery(e.target.value)} placeholder={t("m2.host.distilleryLabel", "Distillery")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-distillery-${w.id}`} />
@@ -1181,11 +1201,11 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
                         <input type="text" value={editCask} onChange={(e) => setEditCask(e.target.value)} placeholder={t("m2.host.caskTypeLabel", "Cask type")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-cask-${w.id}`} />
                         <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder={t("m2.host.notesLabel", "Notes")} rows={2} style={{ ...inputStyle, fontSize: 12, resize: "vertical" }} data-testid={`input-edit-notes-${w.id}`} />
                         <div style={{ display: "flex", gap: 8 }}>
-                          <button type="button" onClick={handleSaveEdit} style={{ flex: 1, padding: "8px", fontSize: 13, fontWeight: 600, background: v.accent, color: v.bg, border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid={`button-save-edit-${w.id}`}>
-                            {t("m2.host.save", "Save")}
-                          </button>
                           <button type="button" onClick={() => setEditingId(null)} style={{ flex: 1, padding: "8px", fontSize: 13, background: "none", color: v.muted, border: `1px solid ${v.border}`, borderRadius: 8, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid={`button-cancel-edit-${w.id}`}>
                             {t("m2.host.cancel", "Cancel")}
+                          </button>
+                          <button type="button" onClick={handleSaveEdit} style={{ flex: 1, padding: "8px", fontSize: 13, fontWeight: 600, background: v.accent, color: v.bg, border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid={`button-save-edit-${w.id}`}>
+                            {t("m2.host.save", "Save")}
                           </button>
                         </div>
                       </div>
