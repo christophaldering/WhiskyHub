@@ -4198,14 +4198,36 @@ ALWAYS respond in ${langLabel}. Use the tone of a knowledgeable master blender a
         return res.status(503).json({ error: "ai_unavailable" });
       }
 
+      let collectionContext = "";
+      if (participantId) {
+        try {
+          const collection = await storage.getWhiskybaseCollection(participantId);
+          if (collection && collection.length > 0) {
+            const collectionList = collection.slice(0, 200).map(w =>
+              `${w.name} | ${w.brand || ""} | ${w.distillery || ""} | ABV: ${w.abv || "?"} | Age: ${w.statedAge || "?"} | WB-ID: ${w.whiskybaseId}`
+            ).join("\n");
+            collectionContext = `\n\nThe user owns the following whisky collection. If the barcode likely matches one of these bottles, prefer it:\n${collectionList}`;
+          }
+        } catch {
+        }
+      }
+
       const completion = await client.chat.completions.create({
         model: "gpt-4o-mini",
-        temperature: 0.2,
+        temperature: 0.1,
         response_format: { type: "json_object" },
         messages: [
           {
             role: "system",
-            content: `You are a whisky and spirits product database expert. Given a product barcode (EAN-13, UPC-A, or similar), identify the whisky or spirit bottle it belongs to. Return JSON with fields: name (full product name), distillery, age (just the number or empty string), abv (with % sign or empty string), caskType (or empty string), region (or empty string), whiskybaseId (if known, or empty string), price (estimated retail price in EUR with € sign, or empty string). If you cannot identify the product at all, return {"found": false}.`,
+            content: `You are a whisky and spirits product database expert. Given a product barcode (EAN-13, UPC-A, or similar), identify the whisky or spirit bottle it belongs to.
+
+IMPORTANT RULES:
+- Only identify a product if you are highly confident about the barcode-to-product mapping.
+- EAN/UPC barcodes are manufacturer-specific codes. Do NOT guess based on partial number patterns.
+- If you are not at least 80% confident, return {"found": false}.
+- Include a "confidence" field: "high" if you are very sure (known barcode in training data), "low" if it's a reasonable guess.
+
+Return JSON with fields: found (boolean), confidence ("high" or "low"), name (full product name), distillery, age (just the number or empty string), abv (with % sign or empty string), caskType (or empty string), region (or empty string), whiskybaseId (if known, or empty string), price (estimated retail price in EUR with € sign, or empty string).${collectionContext}`,
           },
           {
             role: "user",
@@ -4224,6 +4246,7 @@ ALWAYS respond in ${langLabel}. Use the tone of a knowledgeable master blender a
 
       const result = {
         source: "barcode" as const,
+        confidence: parsed.confidence === "high" ? "high" as const : "low" as const,
         name: parsed.name || "",
         distillery: parsed.distillery || "",
         age: String(parsed.age || ""),

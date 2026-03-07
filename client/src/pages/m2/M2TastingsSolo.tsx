@@ -8,7 +8,7 @@ import { participantApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import {
-  Camera, PenLine, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff
+  Camera, PenLine, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ArrowLeft
 } from "lucide-react";
 import M2RatingPanel from "@/components/m2/M2RatingPanel";
 import type { DimKey } from "@/components/m2/M2RatingPanel";
@@ -212,7 +212,12 @@ export default function M2TastingsSolo() {
   const [barcodeManual, setBarcodeManual] = useState("");
   const [barcodeStatus, setBarcodeStatus] = useState<"scanning" | "looking_up" | "not_found" | "error" | "camera_error">("scanning");
   const [barcodeError, setBarcodeError] = useState("");
+  const [barcodeConfidence, setBarcodeConfidence] = useState<"high" | "low" | "">("");
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState("");
   const barcodeProcessedRef = useRef(false);
+  const barcodeScannerRef = useRef<any>(null);
+  const barcodeVideoRef = useRef<HTMLDivElement>(null);
 
   const calcOverall = (scores: typeof detailedScores) =>
     Math.round((scores.nose + scores.taste + scores.finish + scores.balance) / 4);
@@ -482,6 +487,7 @@ export default function M2TastingsSolo() {
         setBarcodeStatus("error"); setBarcodeError(t("m2.solo.lookupFailed", "Lookup failed")); barcodeProcessedRef.current = false; return;
       }
       const data = await res.json();
+      setBarcodeConfidence(data.confidence || "low");
       if (data.name) setWhiskyName(data.name);
       if (data.distillery) setDistillery(data.distillery);
       if (data.age) setUnknownAge(String(data.age));
@@ -497,6 +503,77 @@ export default function M2TastingsSolo() {
       barcodeProcessedRef.current = false;
     }
   }, [pid]);
+
+  const stopBarcodeScanner = useCallback(async () => {
+    const scanner = barcodeScannerRef.current;
+    barcodeScannerRef.current = null;
+    if (scanner) {
+      try {
+        const state = scanner.getState();
+        if (state === 2) {
+          await scanner.stop();
+        }
+        scanner.clear();
+      } catch {}
+    }
+    setCameraActive(false);
+  }, []);
+
+  const startBarcodeScanner = useCallback(async () => {
+    setCameraError("");
+    setCameraActive(true);
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      await new Promise((r) => setTimeout(r, 150));
+      if (!barcodeVideoRef.current) {
+        setCameraError(t("m2.solo.cameraUnavailable", "Camera not available"));
+        setCameraActive(false);
+        return;
+      }
+      const scannerId = "m2-barcode-reader";
+      let container = document.getElementById(scannerId);
+      if (!container) {
+        container = document.createElement("div");
+        container.id = scannerId;
+        barcodeVideoRef.current.appendChild(container);
+      }
+      const scanner = new Html5Qrcode(scannerId);
+      barcodeScannerRef.current = scanner;
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 100 }, aspectRatio: 2 },
+        (decodedText: string) => {
+          const cleaned = decodedText.replace(/\D/g, "");
+          if (cleaned.length >= 8 && cleaned.length <= 14) {
+            setBarcodeManual(cleaned);
+            stopBarcodeScanner();
+            lookupBarcode(cleaned);
+          }
+        },
+        () => {}
+      );
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("NotAllowedError") || msg.includes("Permission")) {
+        setCameraError(t("m2.solo.cameraPermission", "Camera permission denied. Please allow camera access."));
+      } else if (msg.includes("NotFoundError") || msg.includes("no camera")) {
+        setCameraError(t("m2.solo.noCamera", "No camera found on this device."));
+      } else {
+        setCameraError(t("m2.solo.cameraFallback", "Camera not available — enter barcode manually."));
+      }
+      setCameraActive(false);
+    }
+  }, [t, lookupBarcode, stopBarcodeScanner]);
+
+  useEffect(() => {
+    if (sheetView !== "barcode") {
+      stopBarcodeScanner();
+    }
+  }, [sheetView, stopBarcodeScanner]);
+
+  useEffect(() => {
+    return () => { stopBarcodeScanner(); };
+  }, [stopBarcodeScanner]);
 
   const doOnlineSearch = async () => {
     setOnlineSearching(true);
@@ -629,6 +706,7 @@ export default function M2TastingsSolo() {
     setPhotoUrl("");
     setCandidates([]);
     setSelectedCandidate(null);
+    setBarcodeConfidence("");
     setIsMenuMode(false);
     setDetailedScores({ nose: 50, taste: 50, finish: 50, balance: 50 });
     setDetailTouched(false);
@@ -796,6 +874,15 @@ export default function M2TastingsSolo() {
 
             {showManual && (
               <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 14 }} data-testid="section-manual">
+                {barcodeConfidence === "low" && (
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 8,
+                    background: "rgba(212,162,86,0.12)", border: "1px solid rgba(212,162,86,0.3)",
+                    borderRadius: 10, padding: "8px 12px", fontSize: 12, color: v.accent, fontWeight: 500,
+                  }} data-testid="text-ai-guess-disclaimer">
+                    ⚠️ {t("m2.solo.aiGuessDisclaimer", "AI estimate — please verify the details")}
+                  </div>
+                )}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: 11, fontWeight: 500, color: v.accent, background: alpha(v.accent, "18"), padding: "3px 10px", borderRadius: 20 }}>✎ {t("m2.solo.manualEntry", "Manual entry")}</span>
                   <button type="button" onClick={() => setShowManual(false)} style={{ background: "none", border: "none", cursor: "pointer", color: v.muted, fontSize: 11, fontFamily: "system-ui, sans-serif" }} data-testid="button-hide-manual">{t("m2.solo.collapse", "Collapse")}</button>
@@ -1036,7 +1123,7 @@ export default function M2TastingsSolo() {
               </div>
             </button>
 
-            <button onClick={() => { setSheetView("barcode"); setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setBarcodeManual(""); }} data-testid="button-card-barcode" style={{ ...btnOutline, textAlign: "left", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+            <button onClick={() => { setSheetView("barcode"); setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setBarcodeManual(""); setCameraError(""); setTimeout(() => startBarcodeScanner(), 200); }} data-testid="button-card-barcode" style={{ ...btnOutline, textAlign: "left", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
               <Barcode style={{ width: 22, height: 22, color: v.accent, flexShrink: 0 }} />
               <div>
                 <div style={{ fontWeight: 600, color: v.accent }}>{t("m2.solo.barcodeTitle", "Scan Barcode")}</div>
@@ -1253,13 +1340,23 @@ export default function M2TastingsSolo() {
       {sheetView === "barcode" && (
         <div style={{
           position: "fixed", inset: 0, background: v.bg, zIndex: 101,
-          display: "flex", flexDirection: "column",
+          display: "flex", flexDirection: "column", paddingTop: 56,
         }} data-testid="sheet-barcode-scanner">
-          <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: 0 }}>{t("m2.solo.barcodeTitle", "Scan Barcode")}</h3>
-            <button onClick={() => setSheetView("none")} data-testid="button-close-barcode" style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 14, fontFamily: "system-ui" }}>
-              {t("m2.solo.cancel", "Cancel")}
+          <div style={{ padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${v.border}` }}>
+            <button
+              onClick={() => { stopBarcodeScanner(); setSheetView("none"); }}
+              data-testid="button-close-barcode"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                fontSize: 14, color: v.accent, background: "none", border: "none",
+                cursor: "pointer", padding: "8px 0", fontFamily: "system-ui, sans-serif", fontWeight: 500,
+              }}
+            >
+              <ArrowLeft style={{ width: 16, height: 16 }} strokeWidth={2} />
+              {t("common.back", "Zurück")}
             </button>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: 0 }}>{t("m2.solo.barcodeTitle", "Scan Barcode")}</h3>
+            <div style={{ width: 60 }} />
           </div>
 
           {barcodeStatus === "looking_up" && (
@@ -1270,28 +1367,55 @@ export default function M2TastingsSolo() {
           )}
 
           {(barcodeStatus === "scanning" || barcodeStatus === "camera_error") && (
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }}>
-              <p style={{ fontSize: 13, color: v.muted, textAlign: "center", margin: "0 0 16px" }}>
-                {t("m2.solo.enterBarcode", "Enter the barcode number manually")}
-              </p>
-              <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 320 }}>
-                <input
-                  type="text"
-                  value={barcodeManual}
-                  onChange={(e) => setBarcodeManual(e.target.value.replace(/\D/g, ""))}
-                  placeholder={t("m2.solo.barcodePlaceholder", "Barcode number...")}
-                  style={{ ...inputStyle, flex: 1, fontSize: 13 }}
-                  data-testid="input-barcode-manual"
-                  inputMode="numeric"
-                />
-                <button
-                  onClick={() => { if (barcodeManual.trim().length >= 8) lookupBarcode(barcodeManual.trim()); }}
-                  disabled={barcodeManual.trim().length < 8}
-                  data-testid="button-barcode-submit"
-                  style={{ ...btnPrimary, width: "auto", padding: "10px 16px", fontSize: 13, opacity: barcodeManual.trim().length >= 8 ? 1 : 0.4 }}
-                >
-                  {t("m2.solo.search", "Search")}
-                </button>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 20, gap: 20 }}>
+              <div
+                ref={barcodeVideoRef}
+                style={{
+                  width: "100%", maxWidth: 400, margin: "0 auto",
+                  aspectRatio: "4/3", borderRadius: 12, overflow: "hidden",
+                  background: cameraActive ? "#000" : v.elevated,
+                  border: `1px solid ${v.border}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+                data-testid="barcode-camera-viewfinder"
+              >
+                {!cameraActive && !cameraError && (
+                  <div style={{ textAlign: "center", padding: 20 }}>
+                    <Loader2 style={{ width: 24, height: 24, color: v.accent, animation: "spin 1s linear infinite" }} />
+                    <p style={{ fontSize: 13, color: v.muted, marginTop: 8 }}>{t("m2.solo.startingCamera", "Starting camera...")}</p>
+                  </div>
+                )}
+                {cameraError && (
+                  <div style={{ textAlign: "center", padding: 20 }}>
+                    <Camera style={{ width: 32, height: 32, color: v.muted, marginBottom: 8 }} />
+                    <p style={{ fontSize: 13, color: v.muted, margin: 0 }}>{cameraError}</p>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ textAlign: "center" }}>
+                <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", color: v.mutedLight, margin: "0 0 12px" }}>
+                  {t("m2.solo.orManualEntry", "Or enter manually")}
+                </p>
+                <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 320, margin: "0 auto" }}>
+                  <input
+                    type="text"
+                    value={barcodeManual}
+                    onChange={(e) => setBarcodeManual(e.target.value.replace(/\D/g, ""))}
+                    placeholder={t("m2.solo.barcodePlaceholder", "Barcode number...")}
+                    style={{ ...inputStyle, flex: 1, fontSize: 13 }}
+                    data-testid="input-barcode-manual"
+                    inputMode="numeric"
+                  />
+                  <button
+                    onClick={() => { if (barcodeManual.trim().length >= 8) { stopBarcodeScanner(); lookupBarcode(barcodeManual.trim()); } }}
+                    disabled={barcodeManual.trim().length < 8}
+                    data-testid="button-barcode-submit"
+                    style={{ ...btnPrimary, width: "auto", padding: "10px 16px", fontSize: 13, opacity: barcodeManual.trim().length >= 8 ? 1 : 0.4 }}
+                  >
+                    {t("m2.solo.search", "Search")}
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -1300,8 +1424,8 @@ export default function M2TastingsSolo() {
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 20 }}>
               <p style={{ fontSize: 40, margin: 0 }}>🔍</p>
               <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>{t("m2.solo.barcodeNotFound", "Not found")}: {barcodeError}</p>
-              <button onClick={() => { setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }}>{t("m2.solo.tryAgain", "Try again")}</button>
-              <button onClick={() => setSheetView("none")} style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui" }}>{t("m2.solo.cancel", "Cancel")}</button>
+              <button onClick={() => { setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setTimeout(() => startBarcodeScanner(), 200); }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }}>{t("m2.solo.tryAgain", "Try again")}</button>
+              <button onClick={() => { stopBarcodeScanner(); setSheetView("none"); }} style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui" }}>{t("m2.solo.cancel", "Cancel")}</button>
             </div>
           )}
 
@@ -1309,8 +1433,8 @@ export default function M2TastingsSolo() {
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 20 }}>
               <p style={{ fontSize: 40, margin: 0 }}>⚠️</p>
               <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>{barcodeError || t("m2.solo.wbError", "Error")}</p>
-              <button onClick={() => { setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }}>{t("m2.solo.tryAgain", "Try again")}</button>
-              <button onClick={() => setSheetView("none")} style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui" }}>{t("m2.solo.cancel", "Cancel")}</button>
+              <button onClick={() => { setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setTimeout(() => startBarcodeScanner(), 200); }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }}>{t("m2.solo.tryAgain", "Try again")}</button>
+              <button onClick={() => { stopBarcodeScanner(); setSheetView("none"); }} style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui" }}>{t("m2.solo.cancel", "Cancel")}</button>
             </div>
           )}
         </div>
