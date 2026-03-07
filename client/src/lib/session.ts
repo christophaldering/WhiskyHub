@@ -132,6 +132,14 @@ export async function tryAutoResume(): Promise<boolean> {
   try {
     if (sessionStorage.getItem(SK_SIGNED_IN) === "1") return true;
 
+    try {
+      const store = useAppStore.getState();
+      if (store.currentParticipant) {
+        store.setParticipant(null);
+      }
+    } catch {}
+
+
     migrateLegacyKeys();
 
     const token = localStorage.getItem(LK_TOKEN);

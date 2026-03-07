@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { v } from "@/lib/themeVars";
-import { getSession, useSession } from "@/lib/session";
-import { useAppStore } from "@/lib/store";
+import { useSession } from "@/lib/session";
 import {
   communityApi,
   leaderboardApi,
@@ -88,7 +87,6 @@ function formatRelativeTime(timestamp: string, language: string, t: (key: string
 export default function M2CircleHome() {
   const { t, i18n } = useTranslation();
   const session = useSession();
-  const { currentParticipant } = useAppStore();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>("twins");
 
@@ -98,7 +96,7 @@ export default function M2CircleHome() {
   const [friendEmail, setFriendEmail] = useState("");
   const [lbTab, setLbTab] = useState<string>("mostActive");
 
-  const pid = currentParticipant?.id || session.pid;
+  const pid = session.pid;
 
   const { data: twins = [], isLoading: twinsLoading } = useQuery<TasteTwin[]>({
     queryKey: ["taste-twins", pid],

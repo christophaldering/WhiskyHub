@@ -1,11 +1,10 @@
-import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { v, alpha } from "@/lib/themeVars";
 import { tastingApi } from "@/lib/api";
-import { getSession, useSession } from "@/lib/session";
-import { useAppStore } from "@/lib/store";
+import { useSession } from "@/lib/session";
 import {
   Wine, Crown, PenLine, ChevronRight, ChevronDown,
   Calendar, CalendarDays, List, MapPin, Users, Eye,
@@ -29,23 +28,7 @@ const statusBadgeColors: Record<string, { color: string; bg: string }> = {
 export default function M2TastingsHome() {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
-  const [rawSession, setRawSession] = useState(getSession());
-  const { currentParticipant } = useAppStore();
-
-  const refreshSession = useCallback(() => {
-    setRawSession(getSession());
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener("session-change", refreshSession);
-    return () => window.removeEventListener("session-change", refreshSession);
-  }, [refreshSession]);
-
-  const session = {
-    ...rawSession,
-    signedIn: rawSession.signedIn || !!currentParticipant,
-    pid: currentParticipant?.id || rawSession.pid,
-  };
+  const session = useSession();
 
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
