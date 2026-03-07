@@ -180,9 +180,9 @@ export default function M2TastingsHome() {
         {t("m2.tastings.subtitle", "Your sessions — past and upcoming")}
       </p>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 32 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 32, alignItems: "stretch" }}>
         {actions.map((a) => (
-          <Link key={a.href} href={a.href} style={{ textDecoration: "none", flex: 1 }}>
+          <Link key={a.href} href={a.href} style={{ textDecoration: "none", flex: 1, display: "flex" }}>
             <div
               style={{
                 background: `linear-gradient(135deg, ${alpha(a.color, "08")} 0%, ${v.card} 60%)`,
@@ -193,6 +193,7 @@ export default function M2TastingsHome() {
                 cursor: "pointer",
                 transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                 WebkitTapHighlightColor: "transparent",
+                flex: 1,
               }}
               onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(0.96)"; }}
               onPointerUp={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
