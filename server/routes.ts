@@ -1473,65 +1473,90 @@ export async function registerRoutes(
         return res.status(429).json({ message: "Too many requests. Please wait a few minutes." });
       }
 
-      console.log("[SIMPLE_MODE][IDENTIFY] request received");
+      console.log("[IDENTIFY] request received");
       const file = req.file;
       if (!file) {
         return res.status(400).json({ message: "No photo provided" });
       }
       const photoUrl = `/uploads/${file.filename}`;
-      console.log(`[SIMPLE_MODE][IDENTIFY] photo saved: ${photoUrl}`);
 
       const imageBuffer = fs.readFileSync(file.path);
       const hash = LRUCacheImpl.hashBuffer(imageBuffer);
       const cached = identifyCache.get(hash);
       if (cached) {
-        console.log("[SIMPLE_MODE][IDENTIFY] cache hit");
+        console.log("[IDENTIFY] cache hit");
         return res.json({ ...cached, photoUrl });
       }
 
-      const ocrText = await extractTextFromImage(file.path);
-      console.log(`[SIMPLE_MODE][OCR] text: "${ocrText.substring(0, 120)}..."`);
+      const { identifyWhiskyFromImage } = await import("./lib/ocr.js");
+      const visionResult = await identifyWhiskyFromImage(file.path);
 
+      if (visionResult && visionResult.name && visionResult.confidence !== "low") {
+        const confMap: Record<string, number> = { high: 0.95, medium: 0.75, low: 0.45 };
+        const aiCandidate = {
+          source: "ai_vision" as const,
+          name: visionResult.name,
+          distillery: visionResult.distillery,
+          confidence: confMap[visionResult.confidence] || 0.45,
+          age: visionResult.age,
+          abv: visionResult.abv,
+          caskType: visionResult.caskType,
+          region: visionResult.region,
+          whiskyId: undefined as string | undefined,
+        };
+
+        if (visionResult.ocrText) {
+          try {
+            const index = await getWhiskyIndex();
+            const hints = extractHints(visionResult.ocrText);
+            const localMatches = scoreWhiskies(visionResult.ocrText, hints, index);
+            if (localMatches.length > 0 && localMatches[0].confidence >= 0.4) {
+              aiCandidate.whiskyId = localMatches[0].whiskyId;
+              console.log(`[IDENTIFY] linked to local: ${localMatches[0].name}`);
+            }
+          } catch {}
+        }
+
+        const tookMs = Date.now() - startMs;
+        console.log(`[IDENTIFY] AI vision: "${visionResult.name}" (${visionResult.confidence}) in ${tookMs}ms`);
+
+        const result = {
+          candidates: [aiCandidate],
+          debug: {
+            ocrText: visionResult.ocrText?.substring(0, 300) || "",
+            tookMs,
+            detectedMode: "label" as const,
+          },
+        };
+        if (hash) identifyCache.set(hash, result);
+        return res.json({ ...result, photoUrl });
+      }
+
+      console.log("[IDENTIFY] AI vision failed, falling back to OCR+matching");
+      const ocrText = await extractTextFromImage(file.path);
       if (!ocrText.trim()) {
-        console.log("[SIMPLE_MODE][IDENTIFY] no text extracted, returning empty");
         return res.json({ candidates: [], photoUrl });
       }
 
       const hints = extractHints(ocrText);
-      console.log(`[SIMPLE_MODE][MATCH] hints:`, JSON.stringify(hints));
-
       const index = await getWhiskyIndex();
       const mode = detectMode(ocrText);
-      console.log(`[SIMPLE_MODE][IDENTIFY] detected mode: ${mode}`);
-
       const candidates = mode === "menu"
         ? scoreWhiskiesMultiLine(ocrText, hints, index)
         : scoreWhiskies(ocrText, hints, index);
 
       const lowConfidence = candidates.length === 0 || candidates[0].confidence < 0.15;
-      if (lowConfidence) {
-        console.log("[SIMPLE_MODE][MATCH] low confidence, filtering");
-      }
-
       const finalCandidates = lowConfidence ? [] : candidates;
       const tookMs = Date.now() - startMs;
-      console.log(`[SIMPLE_MODE][IDENTIFY] returning ${finalCandidates.length} candidates in ${tookMs}ms`);
 
-      const isDev = process.env.NODE_ENV !== "production" || process.env.SIMPLE_DEBUG === "true";
-      const debug = isDev ? {
-        ocrText: ocrText.substring(0, 300),
-        tokens: ocrText.split(/\s+/).slice(0, 50),
-        hints,
-        tookMs,
-        indexSize: index.length,
-        detectedMode: mode,
-      } : undefined;
-
-      const result = { candidates: finalCandidates, debug };
+      const result = {
+        candidates: finalCandidates,
+        debug: { ocrText: ocrText.substring(0, 300), tookMs, detectedMode: mode },
+      };
       if (hash) identifyCache.set(hash, result);
       res.json({ ...result, photoUrl });
     } catch (e: any) {
-      console.error("[SIMPLE_MODE][IDENTIFY] error:", e.message);
+      console.error("[IDENTIFY] error:", e.message);
       res.status(500).json({ message: e.message });
     }
   });

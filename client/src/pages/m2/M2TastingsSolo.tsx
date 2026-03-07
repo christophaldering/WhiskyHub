@@ -106,8 +106,12 @@ interface Candidate {
   distillery: string;
   confidence: number;
   whiskyId?: string;
-  source?: "local" | "external";
+  source?: "local" | "external" | "ai_vision";
   externalUrl?: string;
+  age?: string;
+  abv?: string;
+  caskType?: string;
+  region?: string;
 }
 
 interface IdentifyResult {
@@ -453,9 +457,12 @@ export default function M2TastingsSolo() {
   const handleSelectCandidate = (cand: Candidate) => {
     setWhiskyName(cand.name);
     setDistillery(cand.distillery);
+    if (cand.age) setUnknownAge(cand.age);
+    if (cand.abv) setUnknownAbv(cand.abv);
+    if (cand.caskType) setUnknownCask(cand.caskType);
     setSelectedCandidate(cand);
     setSheetView("none");
-    setShowManual(false);
+    setShowManual(true);
   };
 
   const handleCreateUnknown = () => {
@@ -1225,8 +1232,10 @@ export default function M2TastingsSolo() {
           {candidates.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
               {candidates.map((cand, i) => {
-                const badge = confidenceLabel(cand.confidence);
+                const badge = confidenceLabel(cand.confidence, t);
                 const isOnline = cand.source === "external";
+                const isAiVision = cand.source === "ai_vision";
+                const details = [cand.age ? `${cand.age}y` : "", cand.abv || "", cand.caskType || ""].filter(Boolean).join(" · ");
                 return (
                   <button
                     key={i}
@@ -1243,9 +1252,10 @@ export default function M2TastingsSolo() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 600, color: v.text }}>{cand.name}</div>
                       <div style={{ fontSize: 12, color: v.muted }}>{cand.distillery}</div>
+                      {details && <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 2 }}>{details}</div>}
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: isOnline ? "#6ba3d6" : badge.color, background: isOnline ? "#6ba3d620" : `${badge.color}20`, padding: "3px 8px", borderRadius: 6, flexShrink: 0 }}>
-                      {isOnline ? t("m2.solo.online", "Online") : badge.text}
+                    <span style={{ fontSize: 11, fontWeight: 600, color: isAiVision ? v.accent : isOnline ? "#6ba3d6" : badge.color, background: isAiVision ? alpha(v.accent, "18") : isOnline ? "#6ba3d620" : `${badge.color}20`, padding: "3px 8px", borderRadius: 6, flexShrink: 0 }}>
+                      {isAiVision ? t("m2.solo.aiIdentified", "AI identified") : isOnline ? t("m2.solo.online", "Online") : badge.text}
                     </span>
                   </button>
                 );
