@@ -674,3 +674,19 @@ export const connoisseurReports = pgTable("connoisseur_reports", {
 export const insertConnoisseurReportSchema = createInsertSchema(connoisseurReports).omit({ id: true, generatedAt: true });
 export type InsertConnoisseurReport = z.infer<typeof insertConnoisseurReportSchema>;
 export type ConnoisseurReport = typeof connoisseurReports.$inferSelect;
+
+// --- Voice Memos (audio recordings per whisky during tasting) ---
+export const voiceMemos = pgTable("voice_memos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tastingId: varchar("tasting_id").notNull(),
+  whiskyId: varchar("whisky_id").notNull(),
+  participantId: varchar("participant_id").notNull(),
+  audioUrl: text("audio_url"),
+  transcript: text("transcript"),
+  durationSeconds: integer("duration_seconds"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertVoiceMemoSchema = createInsertSchema(voiceMemos).omit({ id: true, createdAt: true });
+export type InsertVoiceMemo = z.infer<typeof insertVoiceMemoSchema>;
+export type VoiceMemo = typeof voiceMemos.$inferSelect;

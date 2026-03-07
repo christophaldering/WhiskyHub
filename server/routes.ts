@@ -102,6 +102,16 @@ const memUpload = multer({
   },
 });
 
+const audioUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req: any, file: any, cb: any) => {
+    const allowed = ["audio/webm", "audio/ogg", "audio/mp4", "audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp3", "video/webm"];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Only audio files are allowed (webm, ogg, mp4, wav, mp3)"));
+  },
+});
+
 const importUpload = multer({
   storage: multer.diskStorage({
     destination: (_req: any, _file: any, cb: any) => cb(null, uploadsDir),
@@ -3461,6 +3471,19 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
         reflectionThemes = reflections.slice(0, 15).map(r => r.text);
       } catch {}
 
+      let voiceMemoData: string[] = [];
+      try {
+        const memos = await storage.getVoiceMemosForTasting(req.params.id);
+        for (const memo of memos) {
+          if (memo.transcript && memo.transcript !== "[Transcription failed]") {
+            const name = participantMap.get(memo.participantId) || "Unknown";
+            const whisky = tastingWhiskies.find(w => w.id === memo.whiskyId);
+            const whiskyName = whisky?.name || "Unknown whisky";
+            voiceMemoData.push(`[${whiskyName}] ${name}: "${memo.transcript}"`);
+          }
+        }
+      } catch {}
+
       let historicalContext = "";
       try {
         const hostId = tasting.hostId;
@@ -3516,7 +3539,9 @@ ${JSON.stringify(whiskyData, null, 2)}
 
 ${discussionThemes.length > 0 ? `Discussion highlights:\n${discussionThemes.join("\n")}` : ""}
 
-${reflectionThemes.length > 0 ? `Reflection themes (anonymous):\n${reflectionThemes.join("\n")}` : ""}`
+${reflectionThemes.length > 0 ? `Reflection themes (anonymous):\n${reflectionThemes.join("\n")}` : ""}
+
+${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live during tasting — these are spontaneous first-hand reactions, weave them into the narrative):\n${voiceMemoData.join("\n")}` : ""}`
           }
         ],
         max_tokens: 1500,
@@ -3533,6 +3558,138 @@ ${reflectionThemes.length > 0 ? `Reflection themes (anonymous):\n${reflectionThe
     } catch (e: any) {
       console.error("AI narrative error:", e.message);
       res.status(500).json({ message: "Could not generate narrative" });
+    }
+  });
+
+  // ===== VOICE MEMOS =====
+  app.post("/api/tastings/:tastingId/whiskies/:whiskyId/voice-memo", (req: any, res: any, next: any) => {
+    audioUpload.single("audio")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: "Audio must be under 5 MB" });
+        return res.status(400).json({ message: err.message || "Upload failed" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string | undefined;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+
+      const tasting = await storage.getTasting(req.params.tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.status !== "open") return res.status(400).json({ message: "Voice memos can only be recorded during open tastings" });
+
+      const isInTasting = await storage.isParticipantInTasting(req.params.tastingId, participantId);
+      if (!isInTasting) return res.status(403).json({ message: "Not a participant in this tasting" });
+
+      if (!req.file) return res.status(400).json({ message: "No audio file provided" });
+
+      const whisky = await storage.getWhisky(req.params.whiskyId);
+      if (!whisky || whisky.tastingId !== req.params.tastingId) {
+        return res.status(404).json({ message: "Whisky not found in this tasting" });
+      }
+
+      const audioBuffer = req.file.buffer as Buffer;
+      const durationSeconds = parseInt(req.body.durationSeconds || "0", 10);
+
+      let audioUrl: string | null = null;
+      try {
+        audioUrl = await uploadBufferToObjectStorage(objectStorage, audioBuffer, req.file.mimetype);
+      } catch (e: any) {
+        console.error("Voice memo upload error:", e.message);
+      }
+
+      let transcript = "";
+      try {
+        const { detectAudioFormat, convertToWav, speechToText } = await import("./replit_integrations/audio/client.js");
+        const format = detectAudioFormat(audioBuffer);
+        let wavBuffer = audioBuffer;
+        if (format !== "wav") {
+          wavBuffer = await convertToWav(audioBuffer);
+        }
+        transcript = await speechToText(wavBuffer, "wav");
+      } catch (e: any) {
+        console.error("Voice memo transcription error:", e.message);
+        transcript = "[Transcription failed]";
+      }
+
+      const memo = await storage.createVoiceMemo({
+        tastingId: req.params.tastingId,
+        whiskyId: req.params.whiskyId,
+        participantId,
+        audioUrl,
+        transcript,
+        durationSeconds: durationSeconds || null,
+      });
+
+      const participant = await storage.getParticipant(participantId);
+      res.status(201).json({ ...memo, participantName: participant?.name || "Unknown" });
+    } catch (e: any) {
+      console.error("Voice memo error:", e.message);
+      res.status(500).json({ message: "Could not process voice memo" });
+    }
+  });
+
+  app.get("/api/tastings/:tastingId/whiskies/:whiskyId/voice-memos", async (req, res) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string | undefined;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+
+      const isInTasting = await storage.isParticipantInTasting(req.params.tastingId, participantId);
+      const requester = await storage.getParticipant(participantId);
+      if (!isInTasting && requester?.role !== "admin") return res.status(403).json({ message: "Not authorized" });
+
+      const memos = await storage.getVoiceMemosForWhisky(req.params.tastingId, req.params.whiskyId);
+      const enriched = await Promise.all(memos.map(async (m) => {
+        const p = await storage.getParticipant(m.participantId);
+        return { ...m, participantName: p?.name || "Unknown" };
+      }));
+      res.json(enriched);
+    } catch (e: any) {
+      res.status(500).json({ message: "Could not fetch voice memos" });
+    }
+  });
+
+  app.get("/api/tastings/:tastingId/voice-memos", async (req, res) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string | undefined;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+
+      const isInTasting = await storage.isParticipantInTasting(req.params.tastingId, participantId);
+      const requester = await storage.getParticipant(participantId);
+      if (!isInTasting && requester?.role !== "admin") return res.status(403).json({ message: "Not authorized" });
+
+      const memos = await storage.getVoiceMemosForTasting(req.params.tastingId);
+      const enriched = await Promise.all(memos.map(async (m) => {
+        const p = await storage.getParticipant(m.participantId);
+        return { ...m, participantName: p?.name || "Unknown" };
+      }));
+      res.json(enriched);
+    } catch (e: any) {
+      res.status(500).json({ message: "Could not fetch voice memos" });
+    }
+  });
+
+  app.delete("/api/tastings/:tastingId/voice-memos/:memoId", async (req, res) => {
+    try {
+      const participantId = req.headers["x-participant-id"] as string | undefined;
+      if (!participantId) return res.status(401).json({ message: "Missing participant ID" });
+
+      const memo = await storage.getVoiceMemosForTasting(req.params.tastingId);
+      const target = memo.find(m => m.id === req.params.memoId);
+      if (!target) return res.status(404).json({ message: "Voice memo not found" });
+
+      const requester = await storage.getParticipant(participantId);
+      const tasting = await storage.getTasting(req.params.tastingId);
+      const isOwner = target.participantId === participantId;
+      const isHost = tasting?.hostId === participantId;
+      const isAdmin = requester?.role === "admin";
+      if (!isOwner && !isHost && !isAdmin) return res.status(403).json({ message: "Not authorized to delete this memo" });
+
+      await storage.deleteVoiceMemo(req.params.memoId, target.participantId);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: "Could not delete voice memo" });
     }
   });
 

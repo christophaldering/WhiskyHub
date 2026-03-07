@@ -43,6 +43,8 @@ import {
   type InsertCommunityMembership, type CommunityMembership,
   connoisseurReports,
   type InsertConnoisseurReport, type ConnoisseurReport,
+  voiceMemos,
+  type InsertVoiceMemo, type VoiceMemo,
 } from "@shared/schema";
 
 export async function getUniquePersonCount(participantIds: string[]): Promise<number> {
@@ -358,6 +360,12 @@ export interface IStorage {
   createConnoisseurReport(data: InsertConnoisseurReport): Promise<ConnoisseurReport>;
   getConnoisseurReports(participantId: string): Promise<ConnoisseurReport[]>;
   getConnoisseurReport(id: string): Promise<ConnoisseurReport | undefined>;
+
+  // Voice Memos
+  createVoiceMemo(data: InsertVoiceMemo): Promise<VoiceMemo>;
+  getVoiceMemosForWhisky(tastingId: string, whiskyId: string): Promise<VoiceMemo[]>;
+  getVoiceMemosForTasting(tastingId: string): Promise<VoiceMemo[]>;
+  deleteVoiceMemo(id: string, participantId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2137,6 +2145,23 @@ export class DatabaseStorage implements IStorage {
   async getConnoisseurReport(id: string): Promise<ConnoisseurReport | undefined> {
     const [result] = await db.select().from(connoisseurReports).where(eq(connoisseurReports.id, id));
     return result;
+  }
+  // --- Voice Memos ---
+  async createVoiceMemo(data: InsertVoiceMemo): Promise<VoiceMemo> {
+    const [result] = await db.insert(voiceMemos).values(data).returning();
+    return result;
+  }
+
+  async getVoiceMemosForWhisky(tastingId: string, whiskyId: string): Promise<VoiceMemo[]> {
+    return db.select().from(voiceMemos).where(and(eq(voiceMemos.tastingId, tastingId), eq(voiceMemos.whiskyId, whiskyId))).orderBy(asc(voiceMemos.createdAt));
+  }
+
+  async getVoiceMemosForTasting(tastingId: string): Promise<VoiceMemo[]> {
+    return db.select().from(voiceMemos).where(eq(voiceMemos.tastingId, tastingId)).orderBy(asc(voiceMemos.createdAt));
+  }
+
+  async deleteVoiceMemo(id: string, participantId: string): Promise<void> {
+    await db.delete(voiceMemos).where(and(eq(voiceMemos.id, id), eq(voiceMemos.participantId, participantId)));
   }
 }
 

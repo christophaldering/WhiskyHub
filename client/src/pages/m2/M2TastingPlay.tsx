@@ -7,6 +7,7 @@ import M2BackButton from "@/components/m2/M2BackButton";
 import M2RatingPanel from "@/components/m2/M2RatingPanel";
 import type { DimKey } from "@/components/m2/M2RatingPanel";
 import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
+import VoiceMemoRecorder from "@/components/m2/VoiceMemoRecorder";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { getSession, useSession, setSessionPid, syncStoreParticipant } from "@/lib/session";
@@ -1621,6 +1622,15 @@ export default function M2TastingPlay() {
         />
       </div>
 
+
+      {whiskyId && pid && id && (
+        <VoiceMemoRecorder
+          tastingId={id}
+          whiskyId={whiskyId}
+          participantId={pid}
+          readOnly={!isOpen}
+        />
+      )}
 
       {saving && (
         <div
