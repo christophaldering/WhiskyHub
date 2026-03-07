@@ -597,19 +597,19 @@ const blindLabel = (index: number) => String.fromCharCode(65 + index);
 
 function DemoGuestEntry({ tastingId }: { tastingId: string }) {
   const { t } = useTranslation();
-  const [name, setName] = useState("");
+  const [alias, setAlias] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleJoin = async () => {
-    if (!name.trim()) return;
+    if (!alias.trim()) return;
     setLoading(true);
     setError("");
     try {
       const res = await fetch("/api/participants/demo-guest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify({ name: alias.trim() }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -662,17 +662,18 @@ function DemoGuestEntry({ tastingId }: { tastingId: string }) {
         <p style={{
           fontSize: 14, color: v.textSecondary,
           fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
-          margin: "0 0 24px", lineHeight: 1.5,
+          margin: "0 0 16px", lineHeight: 1.5,
         }}>
-          {t("m2.demo.welcomeDesc", "Enter your name to start rating 8 legendary Islay whiskies. No account required.")}
+          {t("m2.demo.welcomeDesc", "Choose an alias and start tasting. No account needed.")}
         </p>
         <input
           type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          value={alias}
+          onChange={(e) => setAlias(e.target.value.slice(0, 20))}
           onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-          placeholder={t("m2.demo.namePlaceholder", "Your name")}
+          placeholder={t("m2.demo.aliasPlaceholder", "Alias or initials")}
           autoFocus
+          maxLength={20}
           style={{
             width: "100%", padding: "14px 16px",
             borderRadius: 12, border: `1px solid ${v.border}`,
@@ -688,23 +689,30 @@ function DemoGuestEntry({ tastingId }: { tastingId: string }) {
         <button
           type="button"
           onClick={handleJoin}
-          disabled={!name.trim() || loading}
+          disabled={!alias.trim() || loading}
           style={{
             width: "100%", padding: "14px",
             marginTop: 12, borderRadius: 12, border: "none",
-            background: name.trim() ? "#d4a256" : alpha("#d4a256", "30"),
-            color: name.trim() ? v.bg : v.muted,
+            background: alias.trim() ? "#d4a256" : alpha("#d4a256", "30"),
+            color: alias.trim() ? v.bg : v.muted,
             fontSize: 16, fontWeight: 600,
             fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
-            cursor: name.trim() ? "pointer" : "default",
+            cursor: alias.trim() ? "pointer" : "default",
             transition: "all 0.2s",
           }}
           data-testid="button-demo-join"
         >
           {loading
             ? t("common.loading", "Loading...")
-            : t("m2.demo.joinButton", "Join Demo Tasting")}
+            : t("m2.demo.joinButton", "Start Tasting")}
         </button>
+        <p style={{
+          fontSize: 11, color: v.muted, margin: "16px 0 0",
+          fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+          lineHeight: 1.4,
+        }}>
+          {t("m2.demo.upgradeHint", "Want more features? You can create a full account anytime later.")}
+        </p>
       </div>
     </div>
   );

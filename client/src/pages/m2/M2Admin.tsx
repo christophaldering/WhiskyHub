@@ -334,6 +334,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
   });
 
   const filtered = data.tastings.filter(ta => {
+    if (ta.code === "DEMO") return false;
     if (filterStatus !== "all" && ta.status !== filterStatus) return false;
     if (search && !ta.title.toLowerCase().includes(search.toLowerCase()) && !ta.hostName.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
@@ -343,8 +344,70 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
     draft: v.muted, open: v.success, closed: v.accent, reveal: "#a855f7", archived: v.muted,
   };
 
+  const demoTasting = data.tastings.find(ta => ta.code === "DEMO");
+
   return (
     <div data-testid="admin-tastings-tab">
+      {demoTasting && (
+        <div
+          style={{
+            background: `linear-gradient(135deg, #d4a25615 0%, ${v.card} 60%)`,
+            border: `1px solid #d4a25640`,
+            borderRadius: 12,
+            padding: 14,
+            marginBottom: 16,
+          }}
+          data-testid="admin-demo-tasting-card"
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <Sparkles style={{ width: 14, height: 14, color: "#d4a256" }} />
+                <span style={{ fontWeight: 700, fontSize: 14, color: v.text }}>{t("m2.admin.demoTasting", "Demo Tasting")}</span>
+                <span style={{ fontSize: 10, padding: "1px 8px", borderRadius: 10, background: `${statusColors[demoTasting.status] || v.muted}20`, color: statusColors[demoTasting.status] || v.muted, fontWeight: 600 }}>
+                  {demoTasting.status}
+                </span>
+              </div>
+              <div style={{ fontSize: 11, color: v.muted, display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 2 }}><Users style={{ width: 10, height: 10 }} /> {demoTasting.participantCount} {t("m2.admin.guests", "guests")}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 2 }}><Wine style={{ width: 10, height: 10 }} /> {demoTasting.whiskyCount} {t("m2.admin.whiskies", "whiskies")}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 2 }}><Hash style={{ width: 10, height: 10 }} /> {demoTasting.code}</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+              <a
+                href={`/m2/tastings/host/${demoTasting.id}`}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 4,
+                  padding: "6px 12px", borderRadius: 8, border: "none",
+                  background: "#d4a256", color: v.bg,
+                  fontSize: 12, fontWeight: 600, textDecoration: "none",
+                  fontFamily: "system-ui, sans-serif", cursor: "pointer",
+                }}
+                data-testid="btn-admin-demo-host"
+              >
+                <Settings style={{ width: 12, height: 12 }} />
+                {t("m2.admin.manageTasting", "Manage")}
+              </a>
+              <a
+                href={`/m2/tastings/session/${demoTasting.id}/play`}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 4,
+                  padding: "6px 12px", borderRadius: 8,
+                  border: `1px solid ${v.border}`, background: v.card, color: v.text,
+                  fontSize: 12, fontWeight: 600, textDecoration: "none",
+                  fontFamily: "system-ui, sans-serif", cursor: "pointer",
+                }}
+                data-testid="btn-admin-demo-play"
+              >
+                <Play style={{ width: 12, height: 12 }} />
+                {t("m2.admin.openTasting", "Open")}
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         <div style={{ flex: 1, position: "relative" }}>
           <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: v.muted }} />

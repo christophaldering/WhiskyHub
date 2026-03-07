@@ -4719,9 +4719,10 @@ const resources = {
         },
         demo: {
           welcomeTitle: "Welcome to the Demo Tasting",
-          welcomeDesc: "Enter your name to start rating 8 legendary Islay whiskies. No account required.",
-          namePlaceholder: "Your name",
-          joinButton: "Join Demo Tasting",
+          welcomeDesc: "Choose an alias and start tasting. No account needed.",
+          aliasPlaceholder: "Alias or initials",
+          joinButton: "Start Tasting",
+          upgradeHint: "Want more features? You can create a full account anytime later.",
         },
         taste: {
           title: "Taste",
@@ -10202,9 +10203,10 @@ const resources = {
         },
         demo: {
           welcomeTitle: "Willkommen zum Demo Tasting",
-          welcomeDesc: "Gib deinen Namen ein und bewerte 8 legendäre Islay Single Malts. Kein Account nötig.",
-          namePlaceholder: "Dein Name",
-          joinButton: "Demo Tasting starten",
+          welcomeDesc: "Wähle ein Kürzel und leg los. Kein Account nötig.",
+          aliasPlaceholder: "Kürzel oder Initialen",
+          joinButton: "Tasting starten",
+          upgradeHint: "Mehr Features? Du kannst jederzeit später ein vollständiges Konto anlegen.",
         },
         taste: {
           title: "Taste",
