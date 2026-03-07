@@ -9,7 +9,7 @@ import type { DimKey } from "@/components/m2/M2RatingPanel";
 import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
-import { getSession, useSession } from "@/lib/session";
+import { getSession, useSession, setSessionPid, syncStoreParticipant } from "@/lib/session";
 import { playSoundscape, stopSoundscape, setVolume as setAmbientVolume, getState as getAmbientState } from "@/lib/ambient";
 import {
   Star,
@@ -23,6 +23,7 @@ import {
   Volume2,
   VolumeX,
   Crown,
+  Sparkles,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -594,6 +595,121 @@ function GroupAverageDisplay({
 
 const blindLabel = (index: number) => String.fromCharCode(65 + index);
 
+function DemoGuestEntry({ tastingId }: { tastingId: string }) {
+  const { t } = useTranslation();
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleJoin = async () => {
+    if (!name.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/participants/demo-guest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to join");
+      }
+      const guest = await res.json();
+      sessionStorage.setItem("session_signed_in", "1");
+      sessionStorage.setItem("session_mode", "log");
+      sessionStorage.setItem("session_name", guest.name);
+      sessionStorage.setItem("session_pid", guest.id);
+      sessionStorage.setItem("session_role", guest.role || "user");
+      try { localStorage.setItem("casksense_participant_id", guest.id); } catch {}
+      syncStoreParticipant(guest.id, guest.name, guest.role);
+      window.location.reload();
+    } catch (e: any) {
+      setError(e.message || "Error joining demo");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ padding: "16px" }} data-testid="m2-play-page">
+      <M2BackButton />
+      <div
+        style={{
+          background: `linear-gradient(135deg, ${alpha("#d4a256", "10")} 0%, ${v.card} 60%)`,
+          border: `1px solid ${alpha("#d4a256", "25")}`,
+          borderRadius: 16,
+          padding: "32px 20px",
+          textAlign: "center",
+          marginTop: 24,
+        }}
+      >
+        <div style={{
+          width: 56, height: 56, borderRadius: 16,
+          background: alpha("#d4a256", "15"),
+          display: "flex", alignItems: "center", justifyContent: "center",
+          margin: "0 auto 16px",
+        }}>
+          <Sparkles style={{ width: 28, height: 28, color: "#d4a256" }} strokeWidth={1.5} />
+        </div>
+        <h2 style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontSize: 22, fontWeight: 600, color: v.text,
+          margin: "0 0 8px",
+        }}>
+          {t("m2.demo.welcomeTitle", "Welcome to the Demo Tasting")}
+        </h2>
+        <p style={{
+          fontSize: 14, color: v.textSecondary,
+          fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+          margin: "0 0 24px", lineHeight: 1.5,
+        }}>
+          {t("m2.demo.welcomeDesc", "Enter your name to start rating 8 legendary Islay whiskies. No account required.")}
+        </p>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+          placeholder={t("m2.demo.namePlaceholder", "Your name")}
+          autoFocus
+          style={{
+            width: "100%", padding: "14px 16px",
+            borderRadius: 12, border: `1px solid ${v.border}`,
+            background: v.bg, color: v.text,
+            fontSize: 16, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+            outline: "none", boxSizing: "border-box",
+          }}
+          data-testid="input-demo-name"
+        />
+        {error && (
+          <p style={{ color: "#e74c3c", fontSize: 13, margin: "8px 0 0" }}>{error}</p>
+        )}
+        <button
+          type="button"
+          onClick={handleJoin}
+          disabled={!name.trim() || loading}
+          style={{
+            width: "100%", padding: "14px",
+            marginTop: 12, borderRadius: 12, border: "none",
+            background: name.trim() ? "#d4a256" : alpha("#d4a256", "30"),
+            color: name.trim() ? v.bg : v.muted,
+            fontSize: 16, fontWeight: 600,
+            fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+            cursor: name.trim() ? "pointer" : "default",
+            transition: "all 0.2s",
+          }}
+          data-testid="button-demo-join"
+        >
+          {loading
+            ? t("common.loading", "Loading...")
+            : t("m2.demo.joinButton", "Join Demo Tasting")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function M2TastingPlay() {
   const { t } = useTranslation();
   const [, params] = useRoute("/m2/tastings/session/:id/play");
@@ -883,6 +999,10 @@ export default function M2TastingPlay() {
   };
 
   if (!session.signedIn) {
+    const isDemo = tasting?.code === "DEMO";
+    if (isDemo) {
+      return <DemoGuestEntry tastingId={id} />;
+    }
     return (
       <div style={{ padding: "16px" }} data-testid="m2-play-page">
         <M2BackButton />

@@ -4717,6 +4717,12 @@ const resources = {
           playAmbient: "Play ambient sounds",
           somethingWrong: "Something went wrong",
         },
+        demo: {
+          welcomeTitle: "Welcome to the Demo Tasting",
+          welcomeDesc: "Enter your name to start rating 8 legendary Islay whiskies. No account required.",
+          namePlaceholder: "Your name",
+          joinButton: "Join Demo Tasting",
+        },
         taste: {
           title: "Taste",
           subtitle: "Your personal whisky world",
@@ -10193,6 +10199,12 @@ const resources = {
           muteAmbient: "Ambiente stummschalten",
           playAmbient: "Ambiente-Klänge abspielen",
           somethingWrong: "Etwas ist schiefgelaufen",
+        },
+        demo: {
+          welcomeTitle: "Willkommen zum Demo Tasting",
+          welcomeDesc: "Gib deinen Namen ein und bewerte 8 legendäre Islay Single Malts. Kein Account nötig.",
+          namePlaceholder: "Dein Name",
+          joinButton: "Demo Tasting starten",
         },
         taste: {
           title: "Taste",

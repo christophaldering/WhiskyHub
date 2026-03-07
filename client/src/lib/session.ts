@@ -86,7 +86,7 @@ export function setSessionPid(pid: string) {
   } catch {}
 }
 
-function syncStoreParticipant(pid?: string, name?: string | null, role?: string) {
+export function syncStoreParticipant(pid?: string, name?: string | null, role?: string) {
   try {
     if (pid) {
       useAppStore.getState().setParticipant({ id: pid, name: name || "", role });

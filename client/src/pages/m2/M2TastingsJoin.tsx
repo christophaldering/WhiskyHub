@@ -26,10 +26,15 @@ export default function M2TastingsJoin() {
     try {
       const tasting = await tastingApi.getByCode(joinCode.trim().toUpperCase());
       if (tasting && tasting.id) {
+        const isDemo = joinCode.trim().toUpperCase() === "DEMO";
         if (session.pid) {
           await tastingApi.join(tasting.id, session.pid, joinCode.trim().toUpperCase());
         }
-        navigate(`/m2/tastings/session/${tasting.id}`);
+        if (isDemo && !session.pid) {
+          navigate(`/m2/tastings/session/${tasting.id}/play`);
+        } else {
+          navigate(`/m2/tastings/session/${tasting.id}`);
+        }
       }
     } catch (e: any) {
       setError(e.message || t("m2.join.error", "Could not find tasting"));

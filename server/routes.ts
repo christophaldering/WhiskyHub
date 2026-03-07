@@ -599,6 +599,27 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/participants/demo-guest", async (req, res) => {
+    try {
+      const { name } = req.body;
+      if (!name || typeof name !== "string" || name.trim().length < 1) {
+        return res.status(400).json({ message: "Name is required" });
+      }
+      const demoTasting = await storage.getTastingByCode("DEMO");
+      if (!demoTasting) return res.status(404).json({ message: "Demo tasting not available" });
+
+      const suffix = Math.random().toString(36).slice(2, 6);
+      const guestName = `${name.trim()} #${suffix}`;
+
+      const participant = await storage.createParticipant({ name: guestName, experienceLevel: "guest" });
+      await storage.addParticipantToTasting({ tastingId: demoTasting.id, participantId: participant.id });
+      storage.updateLastSeen(participant.id).catch(() => {});
+      res.status(201).json({ id: participant.id, name: participant.name, role: participant.role, experienceLevel: "guest", guest: true, tastingId: demoTasting.id });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
   app.post("/api/participants/guest", async (req, res) => {
     try {
       const { name, pin } = req.body;
