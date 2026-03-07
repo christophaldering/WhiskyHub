@@ -141,16 +141,23 @@ function HeroSection() {
             }} data-testid="link-hero-start">
               Start Tasting
             </Link>
-            <Link href="/m2/tastings/join/DEMO" style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "16px 32px", background: "transparent", color: ACCENT,
-              fontFamily: font.body, fontSize: 15, fontWeight: 500,
-              borderRadius: 50, textDecoration: "none",
-              border: `1px dashed ${ACCENT}40`, transition: "border-color 0.2s",
-            }} data-testid="link-hero-demo">
-              <Sparkles style={{ width: 16, height: 16 }} />
-              Try Demo
-            </Link>
+            <a
+              href="#demo-section"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById("demo-section")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "8px 0",
+                fontFamily: font.body, fontSize: 14, fontWeight: 400,
+                color: v.muted, textDecoration: "none",
+                transition: "color 0.2s", cursor: "pointer",
+              }}
+              data-testid="link-hero-demo"
+            >
+              or try the demo ↓
+            </a>
           </div>
         </div>
       </FadeUp>
@@ -582,7 +589,7 @@ function DemoSection() {
   const overall = Math.round((aroma + flavor + finish) / 3);
 
   return (
-    <section style={{ padding: "120px 24px" }}>
+    <section id="demo-section" style={{ padding: "120px 24px" }}>
       <div style={{ ...container, maxWidth: 480, textAlign: "center" }}>
         <FadeUp>
           <h2 style={{
@@ -733,15 +740,23 @@ function CTASection() {
           </h2>
         </FadeUp>
         <FadeUp delay={0.15}>
-          <Link href="/m2" style={{
-            display: "inline-flex", alignItems: "center", gap: 10,
-            padding: "18px 48px", background: v.accent, color: v.bg,
-            fontFamily: font.body, fontSize: 17, fontWeight: 600,
-            borderRadius: 50, textDecoration: "none",
-            transition: "transform 0.2s, box-shadow 0.2s",
-          }} data-testid="cta-start">
-            Open CaskSense <ChevronRight style={{ width: 18, height: 18 }} />
-          </Link>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+            <Link href="/m2" style={{
+              display: "inline-flex", alignItems: "center", gap: 10,
+              padding: "18px 48px", background: v.accent, color: v.bg,
+              fontFamily: font.body, fontSize: 17, fontWeight: 600,
+              borderRadius: 50, textDecoration: "none",
+              transition: "transform 0.2s, box-shadow 0.2s",
+            }} data-testid="cta-start">
+              Open CaskSense <ChevronRight style={{ width: 18, height: 18 }} />
+            </Link>
+            <Link href="/m2/tastings/join/DEMO" style={{
+              fontFamily: font.body, fontSize: 14, fontWeight: 400,
+              color: v.muted, textDecoration: "none",
+            }} data-testid="cta-demo">
+              or jump straight into the demo →
+            </Link>
+          </div>
         </FadeUp>
       </div>
     </section>
