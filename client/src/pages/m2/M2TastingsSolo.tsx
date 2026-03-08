@@ -179,6 +179,11 @@ export default function M2TastingsSolo() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
 
+  const [hubSearch, setHubSearch] = useState("");
+  const [hubSort, setHubSort] = useState<"date-desc" | "date-asc" | "score-desc" | "score-asc" | "name-az">("date-desc");
+  const [hubTimePeriod, setHubTimePeriod] = useState<"all" | "30d" | "3m" | "1y">("all");
+  const [hubScoreRange, setHubScoreRange] = useState<"all" | "90+" | "80-89" | "70-79" | "<70">("all");
+
   const [showManual, setShowManual] = useState(false);
   const [unknownAge, setUnknownAge] = useState("");
   const [unknownAbv, setUnknownAbv] = useState("");
@@ -1140,53 +1145,195 @@ export default function M2TastingsSolo() {
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: v.mutedLight, marginBottom: 10 }}>
                   {t("m2.solo.completedDrams", "Completed drams")} ({hubCompleted.length})
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {hubCompleted.map((entry: any) => (
-                    <div
-                      key={entry.id}
-                      style={{
-                        background: v.card, border: `1px solid ${v.border}`, borderRadius: 14,
-                        padding: "14px 16px", display: "flex", alignItems: "center", gap: 12,
-                        cursor: "pointer", transition: "border-color 0.2s",
-                      }}
-                      onClick={() => navigate("/m2/taste/drams")}
-                      data-testid={`card-completed-${entry.id}`}
+
+                <div style={{ position: "relative", marginBottom: 10 }}>
+                  <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: v.mutedLight, pointerEvents: "none" }} />
+                  <input
+                    type="text"
+                    value={hubSearch}
+                    onChange={(e) => setHubSearch(e.target.value)}
+                    placeholder={t("m2.solo.searchPlaceholder", "Search by name or distillery...")}
+                    style={{ ...inputStyle, paddingLeft: 34, height: 40, fontSize: 13, borderRadius: 10 }}
+                    data-testid="input-hub-search"
+                  />
+                  {hubSearch && (
+                    <button
+                      onClick={() => setHubSearch("")}
+                      style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: v.mutedLight, padding: 2 }}
+                      data-testid="button-clear-hub-search"
                     >
-                      {entry.imageUrl ? (
-                        <img src={entry.imageUrl} alt="" style={{ width: 44, height: 56, borderRadius: 8, objectFit: "cover", border: `1px solid ${v.border}`, flexShrink: 0 }} />
-                      ) : (
-                        <div style={{ width: 44, height: 56, borderRadius: 8, background: alpha(v.accent, "08"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${v.border}` }}>
-                          <Wine style={{ width: 20, height: 20, color: v.accent, opacity: 0.5 }} />
-                        </div>
-                      )}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 15, fontWeight: 600, color: v.text, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {entry.whiskyName || "—"}
-                        </div>
-                        {entry.distillery && (
-                          <div style={{ fontSize: 12, color: v.mutedLight, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {entry.distillery}
-                          </div>
-                        )}
-                        <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                            <Calendar style={{ width: 10, height: 10 }} />
-                            {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : ""}
-                          </span>
-                          {entry.region && (
-                            <span>{entry.region}</span>
-                          )}
-                        </div>
-                      </div>
-                      {entry.personalScore != null && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 16, fontWeight: 700, color: v.accent, fontFamily: "'Playfair Display', Georgia, serif", flexShrink: 0 }}>
-                          <Star style={{ width: 14, height: 14 }} />
-                          {Number(entry.personalScore).toFixed(1)}
-                        </div>
-                      )}
-                    </div>
+                      <X style={{ width: 14, height: 14 }} />
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginBottom: 6, WebkitOverflowScrolling: "touch", msOverflowStyle: "none", scrollbarWidth: "none" }} data-testid="hub-sort-pills">
+                  {([
+                    { key: "date-desc" as const, label: t("m2.solo.sortNewest", "Newest") },
+                    { key: "date-asc" as const, label: t("m2.solo.sortOldest", "Oldest") },
+                    { key: "score-desc" as const, label: t("m2.solo.sortScoreHigh", "Score ↓") },
+                    { key: "score-asc" as const, label: t("m2.solo.sortScoreLow", "Score ↑") },
+                    { key: "name-az" as const, label: t("m2.solo.sortName", "A–Z") },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => setHubSort(opt.key)}
+                      style={{
+                        padding: "5px 12px", fontSize: 12, fontWeight: hubSort === opt.key ? 600 : 400,
+                        borderRadius: 8, whiteSpace: "nowrap", cursor: "pointer",
+                        border: `1px solid ${hubSort === opt.key ? v.accent : v.border}`,
+                        background: hubSort === opt.key ? alpha(v.accent, "15") : "transparent",
+                        color: hubSort === opt.key ? v.accent : v.textSecondary,
+                        fontFamily: "system-ui, sans-serif",
+                      }}
+                      data-testid={`button-sort-${opt.key}`}
+                    >
+                      {opt.label}
+                    </button>
                   ))}
                 </div>
+
+                <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginBottom: 6, WebkitOverflowScrolling: "touch", msOverflowStyle: "none", scrollbarWidth: "none" }} data-testid="hub-time-pills">
+                  {([
+                    { key: "all" as const, label: t("m2.solo.timeAll", "All time") },
+                    { key: "30d" as const, label: t("m2.solo.time30d", "30 days") },
+                    { key: "3m" as const, label: t("m2.solo.time3m", "3 months") },
+                    { key: "1y" as const, label: t("m2.solo.time1y", "1 year") },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => setHubTimePeriod(opt.key)}
+                      style={{
+                        padding: "5px 12px", fontSize: 12, fontWeight: hubTimePeriod === opt.key ? 600 : 400,
+                        borderRadius: 8, whiteSpace: "nowrap", cursor: "pointer",
+                        border: `1px solid ${hubTimePeriod === opt.key ? v.accent : v.border}`,
+                        background: hubTimePeriod === opt.key ? alpha(v.accent, "15") : "transparent",
+                        color: hubTimePeriod === opt.key ? v.accent : v.textSecondary,
+                        fontFamily: "system-ui, sans-serif",
+                      }}
+                      data-testid={`button-time-${opt.key}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginBottom: 12, WebkitOverflowScrolling: "touch", msOverflowStyle: "none", scrollbarWidth: "none" }} data-testid="hub-score-pills">
+                  {([
+                    { key: "all" as const, label: t("m2.solo.scoreAll", "All scores") },
+                    { key: "90+" as const, label: "90+" },
+                    { key: "80-89" as const, label: "80–89" },
+                    { key: "70-79" as const, label: "70–79" },
+                    { key: "<70" as const, label: "<70" },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => setHubScoreRange(opt.key)}
+                      style={{
+                        padding: "5px 12px", fontSize: 12, fontWeight: hubScoreRange === opt.key ? 600 : 400,
+                        borderRadius: 8, whiteSpace: "nowrap", cursor: "pointer",
+                        border: `1px solid ${hubScoreRange === opt.key ? v.accent : v.border}`,
+                        background: hubScoreRange === opt.key ? alpha(v.accent, "15") : "transparent",
+                        color: hubScoreRange === opt.key ? v.accent : v.textSecondary,
+                        fontFamily: "system-ui, sans-serif",
+                      }}
+                      data-testid={`button-score-${opt.key}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                {(() => {
+                  let filtered = [...hubCompleted];
+                  if (hubSearch.trim()) {
+                    const q = hubSearch.toLowerCase();
+                    filtered = filtered.filter((e: any) =>
+                      (e.whiskyName || "").toLowerCase().includes(q) ||
+                      (e.distillery || "").toLowerCase().includes(q)
+                    );
+                  }
+                  if (hubTimePeriod !== "all") {
+                    const days = hubTimePeriod === "30d" ? 30 : hubTimePeriod === "3m" ? 90 : 365;
+                    const cutoff = Date.now() - days * 86400000;
+                    filtered = filtered.filter((e: any) => e.createdAt && new Date(e.createdAt).getTime() >= cutoff);
+                  }
+                  if (hubScoreRange !== "all") {
+                    filtered = filtered.filter((e: any) => {
+                      const s = e.personalScore;
+                      if (s == null) return false;
+                      if (hubScoreRange === "90+") return s >= 90;
+                      if (hubScoreRange === "80-89") return s >= 80 && s < 90;
+                      if (hubScoreRange === "70-79") return s >= 70 && s < 80;
+                      if (hubScoreRange === "<70") return s < 70;
+                      return true;
+                    });
+                  }
+                  filtered.sort((a: any, b: any) => {
+                    if (hubSort === "date-desc") return new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime();
+                    if (hubSort === "date-asc") return new Date(a.updatedAt || a.createdAt || 0).getTime() - new Date(b.updatedAt || b.createdAt || 0).getTime();
+                    if (hubSort === "score-desc") return (b.personalScore ?? -1) - (a.personalScore ?? -1);
+                    if (hubSort === "score-asc") return (a.personalScore ?? 101) - (b.personalScore ?? 101);
+                    if (hubSort === "name-az") return (a.whiskyName || "").localeCompare(b.whiskyName || "");
+                    return 0;
+                  });
+                  if (filtered.length === 0) {
+                    return (
+                      <div style={{ textAlign: "center", padding: "24px 16px", color: v.mutedLight, fontSize: 13 }} data-testid="text-no-filter-results">
+                        {t("m2.solo.noFilterResults", "No drams match your filters.")}
+                      </div>
+                    );
+                  }
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {filtered.map((entry: any) => (
+                        <div
+                          key={entry.id}
+                          style={{
+                            background: v.card, border: `1px solid ${v.border}`, borderRadius: 14,
+                            padding: "14px 16px", display: "flex", alignItems: "center", gap: 12,
+                            cursor: "pointer", transition: "border-color 0.2s",
+                          }}
+                          onClick={() => navigate("/m2/taste/drams")}
+                          data-testid={`card-completed-${entry.id}`}
+                        >
+                          {entry.imageUrl ? (
+                            <img src={entry.imageUrl} alt="" style={{ width: 44, height: 56, borderRadius: 8, objectFit: "cover", border: `1px solid ${v.border}`, flexShrink: 0 }} />
+                          ) : (
+                            <div style={{ width: 44, height: 56, borderRadius: 8, background: alpha(v.accent, "08"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${v.border}` }}>
+                              <Wine style={{ width: 20, height: 20, color: v.accent, opacity: 0.5 }} />
+                            </div>
+                          )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 15, fontWeight: 600, color: v.text, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {entry.whiskyName || "—"}
+                            </div>
+                            {entry.distillery && (
+                              <div style={{ fontSize: 12, color: v.mutedLight, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {entry.distillery}
+                              </div>
+                            )}
+                            <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
+                              <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                                <Calendar style={{ width: 10, height: 10 }} />
+                                {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : ""}
+                              </span>
+                              {entry.region && (
+                                <span>{entry.region}</span>
+                              )}
+                            </div>
+                          </div>
+                          {entry.personalScore != null && (
+                            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 16, fontWeight: 700, color: v.accent, fontFamily: "'Playfair Display', Georgia, serif", flexShrink: 0 }}>
+                              <Star style={{ width: 14, height: 14 }} />
+                              {Number(entry.personalScore).toFixed(1)}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             ) : hubDrafts.length === 0 && (
               <div style={{ textAlign: "center", padding: "32px 16px", color: v.mutedLight, fontSize: 14 }} data-testid="text-no-drams">

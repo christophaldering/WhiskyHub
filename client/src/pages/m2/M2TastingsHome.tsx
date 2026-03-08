@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session";
 import {
   Wine, Crown, PenLine, ChevronRight, ChevronDown,
   Calendar, CalendarDays, List, MapPin, Users, Eye,
-  Play, BarChart3, Sparkles,
+  Play, BarChart3, Sparkles, Search,
 } from "lucide-react";
 
 const TastingCalendar = lazy(() => import("@/pages/tasting-calendar"));
@@ -16,6 +16,7 @@ const TastingCalendar = lazy(() => import("@/pages/tasting-calendar"));
 type ViewMode = "list" | "calendar";
 type StatusFilter = "all" | "draft" | "open" | "closed" | "archived";
 type TimeFilter = "upcoming" | "30d" | "90d" | "1y" | "all";
+type HostFilter = "all" | "mine" | "joined";
 
 const statusBadgeColors: Record<string, { color: string; bg: string }> = {
   draft: { color: v.muted, bg: alpha(v.muted, "20") },
@@ -33,6 +34,9 @@ export default function M2TastingsHome() {
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
+  const [hostFilter, setHostFilter] = useState<HostFilter>("all");
+  const [locationFilter, setLocationFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: tastings = [], isLoading } = useQuery({
     queryKey: ["tastings", session.pid],
@@ -51,6 +55,16 @@ export default function M2TastingsHome() {
       if (counts[s] !== undefined) counts[s]++;
     }
     return counts;
+  }, [regularTastings]);
+
+  const uniqueLocations = useMemo(() => {
+    const locs = new Set<string>();
+    for (const ta of regularTastings as any[]) {
+      if (ta.location && ta.location !== "—" && ta.location.trim()) {
+        locs.add(ta.location.trim());
+      }
+    }
+    return Array.from(locs).sort((a, b) => a.localeCompare(b));
   }, [regularTastings]);
 
   const filtered = useMemo(() => {
@@ -77,8 +91,27 @@ export default function M2TastingsHome() {
       });
     }
 
+    if (hostFilter === "mine") {
+      list = list.filter((ta) => session.pid && ta.hostId === session.pid);
+    } else if (hostFilter === "joined") {
+      list = list.filter((ta) => !session.pid || ta.hostId !== session.pid);
+    }
+
+    if (locationFilter !== "all") {
+      list = list.filter((ta) => ta.location && ta.location.trim() === locationFilter);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter((ta) => {
+        const title = (ta.title || "").toLowerCase();
+        const hostName = (ta.hostName || "").toLowerCase();
+        return title.includes(q) || hostName.includes(q);
+      });
+    }
+
     return [...list].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [tastings, statusFilter, timeFilter]);
+  }, [tastings, statusFilter, timeFilter, hostFilter, locationFilter, searchQuery, session.pid]);
 
   const isHost = (ta: any) => !!(session.pid && ta.hostId === session.pid);
 
@@ -269,48 +302,98 @@ export default function M2TastingsHome() {
           <div
             style={{
               display: "flex",
+              flexDirection: "column",
               gap: 10,
               marginBottom: 16,
-              flexWrap: "wrap",
-              alignItems: "center",
             }}
             data-testid="m2-filter-bar"
           >
             <div style={{ position: "relative" }}>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                style={selectStyle}
-                data-testid="select-m2-status-filter"
-              >
-                <option value="all">{t("m2.tastings.filterAll", "All Status")} ({statusCounts.all})</option>
-                <option value="draft">{t("m2.tastings.filterDraft", "Draft")} ({statusCounts.draft})</option>
-                <option value="open">{t("m2.tastings.filterOpen", "Open")} ({statusCounts.open})</option>
-                <option value="closed">{t("m2.tastings.filterClosed", "Closed")} ({statusCounts.closed})</option>
-                <option value="archived">{t("m2.tastings.filterArchived", "Archived")} ({statusCounts.archived})</option>
-              </select>
-              <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: v.muted, pointerEvents: "none" }} />
+              <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: v.muted, pointerEvents: "none" }} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t("m2.tastings.searchPlaceholder", "Search by title or host...")}
+                style={{
+                  ...selectStyle,
+                  width: "100%",
+                  paddingLeft: 34,
+                  paddingRight: 12,
+                  boxSizing: "border-box" as const,
+                }}
+                data-testid="input-m2-search-filter"
+              />
             </div>
 
-            <div style={{ position: "relative" }}>
-              <select
-                value={timeFilter}
-                onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
-                style={selectStyle}
-                data-testid="select-m2-time-filter"
-              >
-                <option value="all">{t("m2.tastings.timeAll", "All Time")}</option>
-                <option value="upcoming">{t("m2.tastings.timeUpcoming", "Upcoming")}</option>
-                <option value="30d">{t("m2.tastings.time30d", "30 days")}</option>
-                <option value="90d">{t("m2.tastings.time90d", "3 months")}</option>
-                <option value="1y">{t("m2.tastings.time1y", "1 year")}</option>
-              </select>
-              <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: v.muted, pointerEvents: "none" }} />
-            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <div style={{ position: "relative" }}>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                  style={selectStyle}
+                  data-testid="select-m2-status-filter"
+                >
+                  <option value="all">{t("m2.tastings.filterAll", "All Status")} ({statusCounts.all})</option>
+                  <option value="draft">{t("m2.tastings.filterDraft", "Draft")} ({statusCounts.draft})</option>
+                  <option value="open">{t("m2.tastings.filterOpen", "Open")} ({statusCounts.open})</option>
+                  <option value="closed">{t("m2.tastings.filterClosed", "Closed")} ({statusCounts.closed})</option>
+                  <option value="archived">{t("m2.tastings.filterArchived", "Archived")} ({statusCounts.archived})</option>
+                </select>
+                <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: v.muted, pointerEvents: "none" }} />
+              </div>
 
-            <span style={{ fontSize: 12, color: v.muted, marginLeft: "auto" }} data-testid="text-m2-result-count">
-              {filtered.length} {filtered.length === 1 ? t("m2.tastings.session", "session") : t("m2.tastings.sessions", "sessions")}
-            </span>
+              <div style={{ position: "relative" }}>
+                <select
+                  value={timeFilter}
+                  onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
+                  style={selectStyle}
+                  data-testid="select-m2-time-filter"
+                >
+                  <option value="all">{t("m2.tastings.timeAll", "All Time")}</option>
+                  <option value="upcoming">{t("m2.tastings.timeUpcoming", "Upcoming")}</option>
+                  <option value="30d">{t("m2.tastings.time30d", "30 days")}</option>
+                  <option value="90d">{t("m2.tastings.time90d", "3 months")}</option>
+                  <option value="1y">{t("m2.tastings.time1y", "1 year")}</option>
+                </select>
+                <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: v.muted, pointerEvents: "none" }} />
+              </div>
+
+              <div style={{ position: "relative" }}>
+                <select
+                  value={hostFilter}
+                  onChange={(e) => setHostFilter(e.target.value as HostFilter)}
+                  style={selectStyle}
+                  data-testid="select-m2-host-filter"
+                >
+                  <option value="all">{t("m2.tastings.hostAll", "All Roles")}</option>
+                  <option value="mine">{t("m2.tastings.hostMine", "My Tastings")}</option>
+                  <option value="joined">{t("m2.tastings.hostJoined", "Joined")}</option>
+                </select>
+                <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: v.muted, pointerEvents: "none" }} />
+              </div>
+
+              {uniqueLocations.length > 0 && (
+                <div style={{ position: "relative" }}>
+                  <select
+                    value={locationFilter}
+                    onChange={(e) => setLocationFilter(e.target.value)}
+                    style={selectStyle}
+                    data-testid="select-m2-location-filter"
+                  >
+                    <option value="all">{t("m2.tastings.locationAll", "All Locations")}</option>
+                    {uniqueLocations.map((loc) => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
+                  <ChevronDown style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: v.muted, pointerEvents: "none" }} />
+                </div>
+              )}
+
+              <span style={{ fontSize: 12, color: v.muted, marginLeft: "auto" }} data-testid="text-m2-result-count">
+                {filtered.length} {filtered.length === 1 ? t("m2.tastings.session", "session") : t("m2.tastings.sessions", "sessions")}
+              </span>
+            </div>
           </div>
 
           {isLoading && (
@@ -357,12 +440,12 @@ export default function M2TastingsHome() {
             >
               <Wine style={{ width: 48, height: 48, color: alpha(v.accent, "25"), margin: "0 auto 16px" }} strokeWidth={1.2} />
               <p style={{ margin: "0 0 8px", color: v.text, fontSize: 16, fontWeight: 600, fontFamily: "'Playfair Display', Georgia, serif" }}>
-                {statusFilter === "all" && timeFilter === "all"
+                {statusFilter === "all" && timeFilter === "all" && hostFilter === "all" && locationFilter === "all" && !searchQuery.trim()
                   ? t("m2.tastings.noTastingsTitle", "No tastings yet")
                   : t("m2.tastings.noMatchTitle", "No matching tastings")}
               </p>
               <p style={{ margin: "0 0 16px", color: v.muted, fontSize: 13, lineHeight: 1.5, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
-                {statusFilter === "all" && timeFilter === "all"
+                {statusFilter === "all" && timeFilter === "all" && hostFilter === "all" && locationFilter === "all" && !searchQuery.trim()
                   ? t("m2.tastings.noTastingsDesc", "Create or join your first tasting to get started")
                   : t("m2.tastings.noMatchDesc", "Try adjusting your filters")}
               </p>

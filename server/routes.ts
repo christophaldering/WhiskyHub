@@ -1478,13 +1478,23 @@ export async function registerRoutes(
       if (!file) {
         return res.status(400).json({ message: "No photo provided" });
       }
-      const photoUrl = `/uploads/${file.filename}`;
 
       const imageBuffer = fs.readFileSync(file.path);
+
+      let photoUrl = `/uploads/${file.filename}`;
+      let uploadedToObjectStorage = false;
+      try {
+        const storedPath = await uploadBufferToObjectStorage(objectStorage, imageBuffer, file.mimetype || "image/jpeg");
+        photoUrl = storedPath;
+        uploadedToObjectStorage = true;
+      } catch (uploadErr: any) {
+        console.warn("[IDENTIFY] Object storage upload failed, using local path:", uploadErr.message);
+      }
       const hash = LRUCacheImpl.hashBuffer(imageBuffer);
       const cached = identifyCache.get(hash);
       if (cached) {
         console.log("[IDENTIFY] cache hit");
+        if (uploadedToObjectStorage) fs.unlink(file.path, () => {});
         return res.json({ ...cached, photoUrl });
       }
 
@@ -1529,12 +1539,14 @@ export async function registerRoutes(
           },
         };
         if (hash) identifyCache.set(hash, result);
+        if (uploadedToObjectStorage) fs.unlink(file.path, () => {});
         return res.json({ ...result, photoUrl });
       }
 
       console.log("[IDENTIFY] AI vision failed, falling back to OCR+matching");
       const ocrText = await extractTextFromImage(file.path);
       if (!ocrText.trim()) {
+        if (uploadedToObjectStorage) fs.unlink(file.path, () => {});
         return res.json({ candidates: [], photoUrl });
       }
 
@@ -1554,9 +1566,11 @@ export async function registerRoutes(
         debug: { ocrText: ocrText.substring(0, 300), tookMs, detectedMode: mode },
       };
       if (hash) identifyCache.set(hash, result);
+      if (uploadedToObjectStorage) fs.unlink(file.path, () => {});
       res.json({ ...result, photoUrl });
     } catch (e: any) {
       console.error("[IDENTIFY] error:", e.message);
+      if (uploadedToObjectStorage) fs.unlink(file.path, () => {});
       res.status(500).json({ message: e.message });
     }
   });
@@ -1713,7 +1727,15 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     try {
       const file = req.file;
       if (!file) return res.status(400).json({ message: "No file provided" });
-      const photoUrl = `/uploads/${file.filename}`;
+      let photoUrl = `/uploads/${file.filename}`;
+      try {
+        const buf = fs.readFileSync(file.path);
+        const storedPath = await uploadBufferToObjectStorage(objectStorage, buf, file.mimetype || "image/jpeg");
+        photoUrl = storedPath;
+        fs.unlink(file.path, () => {});
+      } catch (uploadErr: any) {
+        console.warn("[SIMPLE_MODE] Object storage upload failed, using local path:", uploadErr.message);
+      }
       console.log(`[SIMPLE_MODE] scan photo uploaded: ${photoUrl}`);
       res.json({ photoUrl });
     } catch (e: any) {
