@@ -4,7 +4,7 @@ import M2BackButton from "@/components/m2/M2BackButton";
 import { M2Loading } from "@/components/m2/M2Feedback";
 import AILanguageSelector from "@/components/m2/AILanguageSelector";
 import PromptEditor from "@/components/m2/PromptEditor";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { tastingApi, whiskyApi, inviteApi, guidedApi } from "@/lib/api";
 import { getSession, useSession } from "@/lib/session";
@@ -19,7 +19,7 @@ import {
   Users, BarChart3, Star, Upload, Mail, Settings, Image, Calendar,
   MapPin, FileText, RefreshCw, Send, Search, BookOpen, Heart, UserPlus,
   MessageCircle, ExternalLink, Sliders, Video, Lock, Globe, Gauge, Monitor,
-  ClipboardList, Loader2, Printer, Pencil, Sparkles,
+  ClipboardList, Loader2, Printer, Pencil, Sparkles, Camera,
 } from "lucide-react";
 
 type WizardStep = "list" | "step1" | "step2" | "step3" | "step4";
@@ -867,6 +867,17 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
   const [importItems, setImportItems] = useState<any[]>([]);
   const [importLoading, setImportLoading] = useState(false);
   const [addedFeedback, setAddedFeedback] = useState<string | null>(null);
+  const [fileImportLoading, setFileImportLoading] = useState(false);
+  const [fileImportError, setFileImportError] = useState("");
+  const [importPreview, setImportPreview] = useState<any[] | null>(null);
+  const [importPreviewMeta, setImportPreviewMeta] = useState<any>(null);
+  const [importPreviewSelected, setImportPreviewSelected] = useState<Set<number>>(new Set());
+  const [importPreviewExpanded, setImportPreviewExpanded] = useState<Set<number>>(new Set());
+  const [importAdding, setImportAdding] = useState(false);
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileImportRef = useRef<HTMLInputElement>(null);
+  const cameraImportRef = useRef<HTMLInputElement>(null);
 
   const isBlind = !!tasting.blindMode;
 
@@ -1026,6 +1037,79 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
     } catch {}
   };
 
+  const handleFileImport = async (files: File[]) => {
+    if (files.length === 0) return;
+    setFileImportLoading(true);
+    setFileImportError("");
+    try {
+      const formData = new FormData();
+      files.forEach((f) => formData.append("files", f));
+      formData.append("hostId", pid);
+      const res = await fetch("/api/tastings/ai-import", {
+        method: "POST",
+        headers: { "x-participant-id": pid },
+        body: formData,
+      });
+      if (!res.ok) throw new Error(t("m2.host.importFailed", "File analysis failed"));
+      const data = await res.json();
+      if (data.whiskies && data.whiskies.length > 0) {
+        setImportPreview(data.whiskies);
+        setImportPreviewMeta(data.tastingMeta || null);
+        setImportPreviewSelected(new Set(data.whiskies.map((_: any, i: number) => i)));
+        setImportPreviewExpanded(new Set());
+      } else {
+        setFileImportError(t("m2.host.noWhiskiesFound", "No whiskies found in the uploaded files"));
+      }
+    } catch (err: any) {
+      setFileImportError(err.message || t("m2.host.importFailed", "File analysis failed"));
+    }
+    setFileImportLoading(false);
+  };
+
+  const handleImportConfirm = async () => {
+    if (!importPreview || importPreviewSelected.size === 0) return;
+    setImportAdding(true);
+    let count = 0;
+    const selected = importPreview.filter((_: any, i: number) => importPreviewSelected.has(i));
+    for (let idx = 0; idx < selected.length; idx++) {
+      const w = selected[idx];
+      try {
+        const res = await fetch("/api/whiskies", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tastingId: tasting.id,
+            name: w.name || "Unknown",
+            distillery: w.distillery || null,
+            bottler: w.bottler || null,
+            age: w.age ? String(w.age) : null,
+            abv: w.abv ? parseFloat(String(w.abv)) : null,
+            category: w.category || null,
+            country: w.country || null,
+            region: w.region || null,
+            caskInfluence: w.caskInfluence || w.caskType || null,
+            vintage: w.vintage || null,
+            whiskybaseId: w.whiskybaseId ? String(w.whiskybaseId) : null,
+            wbScore: w.wbScore ? parseFloat(String(w.wbScore)) : null,
+            price: w.price ? parseFloat(String(w.price)) : null,
+            peatLevel: w.peatLevel || null,
+            ppm: w.ppm ? parseFloat(String(w.ppm)) : null,
+            hostNotes: w.hostNotes || null,
+            hostSummary: w.hostSummary || null,
+            sortOrder: whiskies.length + count,
+          }),
+        });
+        if (res.ok) count++;
+      } catch {}
+    }
+    setImportPreview(null);
+    setImportPreviewMeta(null);
+    setImportPreviewSelected(new Set());
+    setImportAdding(false);
+    await fetchWhiskies();
+    showFeedback(t("m2.host.importSuccess", { count }));
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={cardStyle}>
@@ -1041,89 +1125,113 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
-              {t("m2.host.whiskyNameLabel", "Whisky Name")} *
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t("m2.host.whiskyNamePlaceholder", "e.g. Lagavulin 16")}
-              style={inputStyle}
-              maxLength={200}
-              onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
-              data-testid="input-whisky-name"
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowDetails(!showDetails)}
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              background: "none", border: "none", cursor: "pointer",
-              color: v.muted, fontSize: 12, fontFamily: "system-ui, sans-serif", padding: "2px 0",
+          <input
+            ref={fileImportRef}
+            type="file"
+            accept=".xlsx,.xls,.csv,.pdf,.txt,.jpg,.jpeg,.png,.webp,.heic"
+            multiple
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              if (fileImportRef.current) fileImportRef.current.value = "";
+              handleFileImport(files);
             }}
-            data-testid="button-toggle-details"
-          >
-            <ChevronDown style={{ width: 12, height: 12, transform: showDetails ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
-            {t("m2.host.detailsOptional", "Details (optional)")}
-          </button>
+            data-testid="input-file-import"
+          />
+          <input
+            ref={cameraImportRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              if (cameraImportRef.current) cameraImportRef.current.value = "";
+              handleFileImport(files);
+            }}
+            data-testid="input-camera-import"
+          />
 
-          {showDetails && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingLeft: 4 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.distilleryLabel", "Distillery")}</label>
-                  <input type="text" value={distillery} onChange={(e) => setDistillery(e.target.value)} placeholder={t("m2.host.distilleryPlaceholder", "e.g. Lagavulin")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-distillery" />
+          {fileImportLoading ? (
+            <div style={{
+              border: `2px dashed ${v.accent}`,
+              borderRadius: 12,
+              padding: "28px 16px",
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10,
+              background: `color-mix(in srgb, ${v.accent} 5%, transparent)`,
+            }} data-testid="import-analyzing">
+              <Loader2 style={{ width: 28, height: 28, color: v.accent, animation: "spin 1s linear infinite" }} />
+              <span style={{ fontSize: 14, fontWeight: 600, color: v.accent }}>{t("m2.host.analyzingFiles", "Analyzing your files...")}</span>
+            </div>
+          ) : (
+            <div
+              style={{
+                border: `2px dashed ${dragOver ? v.accent : v.border}`,
+                borderRadius: 12,
+                padding: "20px 16px",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+                background: dragOver ? `color-mix(in srgb, ${v.accent} 10%, transparent)` : `color-mix(in srgb, ${v.accent} 3%, transparent)`,
+                cursor: "pointer",
+                transition: "border-color 0.2s, background 0.2s",
+              }}
+              onClick={() => fileImportRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
+              onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); const files = Array.from(e.dataTransfer.files); if (files.length > 0) handleFileImport(files); }}
+              data-testid="dropzone-upload"
+            >
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: `color-mix(in srgb, ${v.accent} 12%, transparent)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Upload style={{ width: 22, height: 22, color: v.accent }} />
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: v.text, fontFamily: "'Playfair Display', Georgia, serif" }}>
+                  {t("m2.host.uploadAnalyze", "Upload & Analyze")}
                 </div>
-                <div>
-                  <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.abvLabel", "ABV %")}</label>
-                  <input type="number" value={abv} onChange={(e) => setAbv(e.target.value)} placeholder={t("m2.host.abvPlaceholder", "e.g. 43")} step="0.1" min="0" max="100" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-abv" />
+                <div style={{ fontSize: 11, color: v.muted, marginTop: 3 }}>
+                  {t("m2.host.uploadDesc", "Excel, photos, PDF, text — even handwritten notes")}
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.caskTypeLabel", "Cask Type")}</label>
-                  <input type="text" value={cask} onChange={(e) => setCask(e.target.value)} placeholder={t("m2.host.caskTypePlaceholder", "e.g. Ex-Bourbon")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-cask" />
-                </div>
-                <div>
-                  <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.ageLabel", "Age")}</label>
-                  <input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder={t("m2.host.agePlaceholder", "e.g. 16")} min="0" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-age" />
-                </div>
-              </div>
-              <div>
-                <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.notesLabel", "Notes")}</label>
-                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("m2.host.notesPlaceholder", "Host notes about this whisky")} rows={2} style={{ ...inputStyle, fontSize: 13, resize: "vertical", minHeight: 40 }} data-testid="input-whisky-notes" />
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); fileImportRef.current?.click(); }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "7px 14px", fontSize: 12, fontWeight: 600,
+                    background: v.accent, color: v.bg,
+                    border: "none", borderRadius: 8,
+                    cursor: "pointer", fontFamily: "system-ui, sans-serif",
+                  }}
+                  data-testid="button-choose-files"
+                >
+                  <FileText style={{ width: 13, height: 13 }} />
+                  {t("m2.host.chooseFiles", "Choose Files")}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); cameraImportRef.current?.click(); }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "7px 14px", fontSize: 12, fontWeight: 600,
+                    background: "none", color: v.accent,
+                    border: `1px solid ${v.accent}`, borderRadius: 8,
+                    cursor: "pointer", fontFamily: "system-ui, sans-serif",
+                  }}
+                  data-testid="button-take-photo"
+                >
+                  <Camera style={{ width: 13, height: 13 }} />
+                  {t("m2.host.takePhoto", "Take Photo")}
+                </button>
               </div>
             </div>
           )}
 
-          {error && (
-            <div style={{ fontSize: 12, color: v.danger, background: `color-mix(in srgb, ${v.danger} 15%, transparent)`, padding: "6px 10px", borderRadius: 8 }} data-testid="text-whisky-error">
-              {error}
+          {fileImportError && (
+            <div style={{ fontSize: 12, color: v.danger, background: `color-mix(in srgb, ${v.danger} 15%, transparent)`, padding: "6px 10px", borderRadius: 8 }} data-testid="text-import-error">
+              {fileImportError}
             </div>
           )}
-
-          <button
-            type="button"
-            onClick={handleAdd}
-            disabled={!name.trim() || adding}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              padding: "10px", fontSize: 14, fontWeight: 600,
-              background: name.trim() ? v.accent : v.border,
-              color: name.trim() ? v.bg : v.muted,
-              border: "none", borderRadius: 10,
-              cursor: name.trim() ? "pointer" : "not-allowed",
-              fontFamily: "system-ui, sans-serif",
-            }}
-            data-testid="button-add-whisky"
-          >
-            <Plus style={{ width: 16, height: 16 }} />
-            {adding ? t("m2.host.adding", "Adding...") : t("m2.host.addWhisky", "Add Whisky")}
-          </button>
 
           <div style={{ display: "flex", gap: 8 }}>
             <button type="button" onClick={() => openImport("collection")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", fontSize: 13, fontWeight: 500, background: "none", color: v.muted, border: `1px solid ${v.border}`, borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid="button-import-collection">
@@ -1135,6 +1243,117 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
               {t("m2.host.importWishlist", "From Wishlist")}
             </button>
           </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "2px 0" }}>
+            <div style={{ flex: 1, height: 1, background: v.border }} />
+            <span style={{ fontSize: 11, color: v.muted, fontWeight: 500 }}>{t("m2.host.orSeparator", "or")}</span>
+            <div style={{ flex: 1, height: 1, background: v.border }} />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowManualForm(!showManualForm)}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "10px", fontSize: 13, fontWeight: 600,
+              background: "none", color: v.muted,
+              border: `1px solid ${v.border}`, borderRadius: 10,
+              cursor: "pointer", fontFamily: "system-ui, sans-serif",
+            }}
+            data-testid="button-toggle-manual"
+          >
+            <Pencil style={{ width: 14, height: 14 }} />
+            {t("m2.host.addManually", "Add Manually")}
+            <ChevronDown style={{ width: 12, height: 12, transform: showManualForm ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+          </button>
+
+          {showManualForm && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "10px 0 0" }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
+                  {t("m2.host.whiskyNameLabel", "Whisky Name")} *
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t("m2.host.whiskyNamePlaceholder", "e.g. Lagavulin 16")}
+                  style={inputStyle}
+                  maxLength={200}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
+                  data-testid="input-whisky-name"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowDetails(!showDetails)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  background: "none", border: "none", cursor: "pointer",
+                  color: v.muted, fontSize: 12, fontFamily: "system-ui, sans-serif", padding: "2px 0",
+                }}
+                data-testid="button-toggle-details"
+              >
+                <ChevronDown style={{ width: 12, height: 12, transform: showDetails ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+                {t("m2.host.detailsOptional", "Details (optional)")}
+              </button>
+
+              {showDetails && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingLeft: 4 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.distilleryLabel", "Distillery")}</label>
+                      <input type="text" value={distillery} onChange={(e) => setDistillery(e.target.value)} placeholder={t("m2.host.distilleryPlaceholder", "e.g. Lagavulin")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-distillery" />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.abvLabel", "ABV %")}</label>
+                      <input type="number" value={abv} onChange={(e) => setAbv(e.target.value)} placeholder={t("m2.host.abvPlaceholder", "e.g. 43")} step="0.1" min="0" max="100" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-abv" />
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.caskTypeLabel", "Cask Type")}</label>
+                      <input type="text" value={cask} onChange={(e) => setCask(e.target.value)} placeholder={t("m2.host.caskTypePlaceholder", "e.g. Ex-Bourbon")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-cask" />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.ageLabel", "Age")}</label>
+                      <input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder={t("m2.host.agePlaceholder", "e.g. 16")} min="0" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-age" />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.notesLabel", "Notes")}</label>
+                    <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("m2.host.notesPlaceholder", "Host notes about this whisky")} rows={2} style={{ ...inputStyle, fontSize: 13, resize: "vertical", minHeight: 40 }} data-testid="input-whisky-notes" />
+                  </div>
+                </div>
+              )}
+
+              {error && (
+                <div style={{ fontSize: 12, color: v.danger, background: `color-mix(in srgb, ${v.danger} 15%, transparent)`, padding: "6px 10px", borderRadius: 8 }} data-testid="text-whisky-error">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleAdd}
+                disabled={!name.trim() || adding}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  padding: "10px", fontSize: 14, fontWeight: 600,
+                  background: name.trim() ? v.accent : v.border,
+                  color: name.trim() ? v.bg : v.muted,
+                  border: "none", borderRadius: 10,
+                  cursor: name.trim() ? "pointer" : "not-allowed",
+                  fontFamily: "system-ui, sans-serif",
+                }}
+                data-testid="button-add-whisky"
+              >
+                <Plus style={{ width: 16, height: 16 }} />
+                {adding ? t("m2.host.adding", "Adding...") : t("m2.host.addWhisky", "Add Whisky")}
+              </button>
+            </div>
+          )}
         </div>
 
         {addedFeedback && (
@@ -1187,6 +1406,117 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
                   <button type="button" onClick={handleImportSelected} disabled={adding} style={{ width: "100%", padding: "12px", fontSize: 14, fontWeight: 600, background: v.accent, color: v.bg, border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} data-testid="button-confirm-import">
                     <Plus style={{ width: 16, height: 16 }} />
                     {t("m2.host.importSelected", `Add ${importSelected.size} to Lineup`)}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {importPreview && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1001, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={() => { setImportPreview(null); setImportPreviewMeta(null); }} data-testid="modal-import-preview-overlay">
+            <div style={{ width: "100%", maxWidth: 480, maxHeight: "85vh", background: v.card, borderRadius: "16px 16px 0 0", display: "flex", flexDirection: "column", overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ padding: "16px 20px", borderBottom: `1px solid ${v.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: v.text, fontFamily: "'Playfair Display', serif" }}>
+                  {t("m2.host.importPreviewTitle", "Imported Whiskies")}
+                </h3>
+                <button type="button" onClick={() => { setImportPreview(null); setImportPreviewMeta(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: v.muted, padding: 4 }} data-testid="button-close-import-preview"><X style={{ width: 18, height: 18 }} /></button>
+              </div>
+
+              {importPreviewMeta && (importPreviewMeta.title || importPreviewMeta.date || importPreviewMeta.location) && (
+                <div style={{ padding: "10px 20px", background: `color-mix(in srgb, ${v.accent} 8%, transparent)`, borderBottom: `1px solid ${v.border}`, display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: v.accent }}>
+                  <Sparkles style={{ width: 14, height: 14, flexShrink: 0 }} />
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+                    <span style={{ fontWeight: 600 }}>{t("m2.host.updateTastingMeta", "Update tasting details from import?")}</span>
+                    <span style={{ fontSize: 11, opacity: 0.8 }}>
+                      {[importPreviewMeta.title, importPreviewMeta.date, importPreviewMeta.location].filter(Boolean).join(" · ")}
+                    </span>
+                  </div>
+                  <button type="button" onClick={async () => {
+                    try {
+                      const updates: any = { hostId: pid };
+                      if (importPreviewMeta.title) updates.title = importPreviewMeta.title;
+                      if (importPreviewMeta.date) updates.date = importPreviewMeta.date;
+                      if (importPreviewMeta.location) updates.location = importPreviewMeta.location;
+                      await fetch(`/api/tastings/${tasting.id}/details`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updates) });
+                      setImportPreviewMeta(null);
+                    } catch {}
+                  }} style={{ padding: "4px 10px", fontSize: 11, fontWeight: 600, background: v.accent, color: v.bg, border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "system-ui, sans-serif", whiteSpace: "nowrap" }} data-testid="button-apply-tasting-meta">
+                    {t("m2.host.apply", "Apply")}
+                  </button>
+                </div>
+              )}
+
+              <div style={{ padding: "8px 20px", borderBottom: `1px solid ${v.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 12, color: v.muted }}>{importPreviewSelected.size} / {importPreview.length}</span>
+                <button type="button" onClick={() => {
+                  if (importPreviewSelected.size === importPreview.length) {
+                    setImportPreviewSelected(new Set());
+                  } else {
+                    setImportPreviewSelected(new Set(importPreview.map((_: any, i: number) => i)));
+                  }
+                }} style={{ background: "none", border: "none", cursor: "pointer", color: v.accent, fontSize: 12, fontWeight: 600, fontFamily: "system-ui, sans-serif", padding: "4px 0" }} data-testid="button-toggle-select-all">
+                  {importPreviewSelected.size === importPreview.length ? t("m2.host.deselectAll", "Deselect All") : t("m2.host.selectAll", "Select All")}
+                </button>
+              </div>
+
+              <div style={{ flex: 1, overflowY: "auto", padding: "8px 20px 16px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {importPreview.map((w: any, idx: number) => {
+                    const selected = importPreviewSelected.has(idx);
+                    const expanded = importPreviewExpanded.has(idx);
+                    const subtitle = [w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.region].filter(Boolean).join(" · ");
+                    const details = [
+                      w.bottler && ["Bottler", w.bottler],
+                      w.caskInfluence && ["Cask", w.caskInfluence],
+                      w.caskType && !w.caskInfluence && ["Cask", w.caskType],
+                      w.vintage && ["Vintage", w.vintage],
+                      w.country && ["Country", w.country],
+                      w.category && ["Category", w.category],
+                      w.price && ["Price", w.price],
+                      w.whiskybaseId && ["WB ID", w.whiskybaseId],
+                      w.wbScore && ["WB Score", w.wbScore],
+                      w.peatLevel && ["Peat", w.peatLevel],
+                      w.ppm && ["PPM", w.ppm],
+                      w.hostNotes && ["Notes", w.hostNotes],
+                      w.hostSummary && ["Summary", w.hostSummary],
+                    ].filter(Boolean) as [string, any][];
+                    return (
+                      <div key={idx} style={{ background: selected ? `color-mix(in srgb, ${v.accent} 8%, transparent)` : v.bg, border: `1px solid ${selected ? v.accent : v.border}`, borderRadius: 10, overflow: "hidden" }} data-testid={`import-preview-item-${idx}`}>
+                        <button type="button" onClick={() => { const next = new Set(importPreviewSelected); if (selected) next.delete(idx); else next.add(idx); setImportPreviewSelected(next); }} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "system-ui, sans-serif" }}>
+                          <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${selected ? v.accent : v.border}`, background: selected ? v.accent : "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            {selected && <Check style={{ width: 12, height: 12, color: v.bg }} />}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: v.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{w.name || "Unknown"}</div>
+                            {subtitle && <div style={{ fontSize: 11, color: v.muted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{subtitle}</div>}
+                          </div>
+                          {details.length > 0 && (
+                            <button type="button" onClick={(e) => { e.stopPropagation(); const next = new Set(importPreviewExpanded); if (expanded) next.delete(idx); else next.add(idx); setImportPreviewExpanded(next); }} style={{ background: "none", border: "none", cursor: "pointer", color: v.muted, padding: 4 }} data-testid={`button-expand-preview-${idx}`}>
+                              <ChevronDown style={{ width: 14, height: 14, transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
+                            </button>
+                          )}
+                        </button>
+                        {expanded && details.length > 0 && (
+                          <div style={{ padding: "0 12px 10px 42px", display: "flex", flexWrap: "wrap", gap: "4px 12px" }}>
+                            {details.map(([label, val]) => (
+                              <div key={label} style={{ fontSize: 11, color: v.muted }}>
+                                <span style={{ fontWeight: 600 }}>{label}:</span> {val}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {importPreviewSelected.size > 0 && (
+                <div style={{ padding: "12px 20px", borderTop: `1px solid ${v.border}` }}>
+                  <button type="button" onClick={handleImportConfirm} disabled={importAdding} style={{ width: "100%", padding: "12px", fontSize: 14, fontWeight: 600, background: v.accent, color: v.bg, border: "none", borderRadius: 10, cursor: importAdding ? "not-allowed" : "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: importAdding ? 0.7 : 1 }} data-testid="button-confirm-file-import">
+                    {importAdding ? <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} /> : <Plus style={{ width: 16, height: 16 }} />}
+                    {importAdding ? t("m2.host.adding", "Adding...") : t("m2.host.addToLineup", { count: importPreviewSelected.size, defaultValue: `Add ${importPreviewSelected.size} to Lineup` })}
                   </button>
                 </div>
               )}
