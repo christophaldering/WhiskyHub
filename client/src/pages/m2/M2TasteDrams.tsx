@@ -426,7 +426,26 @@ export default function M2TasteDrams() {
         </div>
       ) : (
         <>
-          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+          <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 14, padding: "16px 20px", marginBottom: 16 }} data-testid="drams-overview-card">
+            <h3 style={{ fontFamily: serif, fontSize: 15, fontWeight: 700, color: v.text, margin: "0 0 12px" }}>
+              {t("m2.taste.overview", "Overview")}
+            </h3>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+              {[
+                { value: journal.length + tastingWhiskies.length, label: t("m2.taste.totalDrams", "Total") },
+                { value: journal.filter((e: any) => e.status !== "draft").length, label: "Solo" },
+                { value: tastingWhiskies.length, label: t("m2.taste.fromTastings", "Tastings") },
+                { value: journal.filter((e: any) => e.status === "draft").length, label: t("m2.taste.draftsCount", "Drafts") },
+              ].map((s) => (
+                <div key={s.label} style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, fontFamily: serif, color: v.accent }}>{s.value}</div>
+                  <div style={{ fontSize: 10, color: v.muted }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 6, marginBottom: 8, overflowX: "auto" }}>
             {FILTERS.map((f) => {
               const isActive = activeFilter === f.key;
               return (
@@ -434,13 +453,14 @@ export default function M2TasteDrams() {
                   key={f.key}
                   onClick={() => setActiveFilter(f.key)}
                   style={{
-                    padding: "7px 16px", fontSize: 13,
+                    padding: "5px 12px", fontSize: 11,
                     fontWeight: isActive ? 600 : 400,
-                    color: isActive ? v.bg : v.text,
-                    background: isActive ? v.accent : v.card,
-                    border: `1px solid ${isActive ? v.accent : v.border}`,
-                    borderRadius: 20, cursor: "pointer",
-                    transition: "all 0.2s",
+                    color: isActive ? v.accent : v.muted,
+                    background: isActive ? `color-mix(in srgb, ${v.accent} 10%, transparent)` : "transparent",
+                    border: `1px solid ${isActive ? `color-mix(in srgb, ${v.accent} 40%, transparent)` : v.border}`,
+                    borderRadius: 16, cursor: "pointer",
+                    transition: "all 0.2s", whiteSpace: "nowrap", flexShrink: 0,
+                    fontFamily: "system-ui, sans-serif",
                   }}
                   data-testid={`filter-${f.key}`}
                 >
