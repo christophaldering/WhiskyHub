@@ -5,7 +5,7 @@ import { v, alpha } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { useSession } from "@/lib/session";
 import { pidHeaders } from "@/lib/api";
-import { Sparkles, Copy, Check, ChevronDown, Download, FileText, Trash2 } from "lucide-react";
+import { Sparkles, Copy, Check, ChevronDown, Download, FileText, Trash2, Lightbulb } from "lucide-react";
 import AILanguageSelector from "@/components/m2/AILanguageSelector";
 
 interface ConnoisseurReport {
@@ -197,6 +197,8 @@ export default function M2TasteConnoisseur() {
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
   const [aiLang, setAiLang] = useState<"de" | "en">(i18n.language?.startsWith("de") ? "de" : "en");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [focusHintOpen, setFocusHintOpen] = useState(false);
 
   const { data: reports = [], isLoading } = useQuery<ConnoisseurReport[]>({
     queryKey: ["connoisseur-reports", pid],
@@ -216,7 +218,7 @@ export default function M2TasteConnoisseur() {
         res = await fetch(`/api/participants/${pid}/connoisseur-report`, {
           method: "POST",
           headers: { "Content-Type": "application/json", ...pidHeaders() },
-          body: JSON.stringify({ language: aiLang }),
+          body: JSON.stringify({ language: aiLang, ...(customPrompt.trim() ? { customPrompt: customPrompt.trim() } : {}) }),
         });
       } catch {
         throw new Error(t("m2.connoisseur.networkError", "Connection lost — the AI analysis takes ~15 seconds. Please check your connection and try again."));

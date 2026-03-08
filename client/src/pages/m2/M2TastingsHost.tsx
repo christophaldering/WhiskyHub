@@ -2033,6 +2033,8 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
   const [narrativeGenerating, setNarrativeGenerating] = useState(false);
   const [narrativeError, setNarrativeError] = useState<string | null>(null);
   const [narrativeLang, setNarrativeLang] = useState<"de" | "en">(i18n.language?.startsWith("de") ? "de" : "en");
+  const [narrativeCustomPrompt, setNarrativeCustomPrompt] = useState("");
+  const [narrativeHintOpen, setNarrativeHintOpen] = useState(false);
 
   const isBlind = !!tasting.blindMode;
   const isOpen = tasting.status === "open";
@@ -2142,7 +2144,7 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
       const res = await fetch(`/api/tastings/${tasting.id}/ai-narrative`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-participant-id": pid },
-        body: JSON.stringify({ language: narrativeLang, force }),
+        body: JSON.stringify({ language: narrativeLang, force, ...(narrativeCustomPrompt.trim() ? { customPrompt: narrativeCustomPrompt.trim() } : {}) }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
