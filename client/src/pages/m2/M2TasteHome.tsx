@@ -242,7 +242,7 @@ export default function M2TasteHome() {
   const analyticsLocked = !statsLoading && whiskyCount < ANALYTICS_THRESHOLD;
   const statsReady = !statsLoading;
 
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ profile: true });
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const toggle = (key: string) => setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
   return (
