@@ -134,7 +134,7 @@ function confidenceLabel(conf: number, t?: (key: string, fallback: string) => st
 }
 
 
-type SheetView = "none" | "picker" | "describe" | "candidates" | "identifying" | "onlineSearch" | "barcode" | "fileAnalyzing";
+type SheetView = "none" | "describe" | "candidates" | "identifying" | "onlineSearch" | "barcode" | "fileAnalyzing";
 
 export default function M2TastingsSolo() {
   const { t } = useTranslation();
@@ -172,7 +172,8 @@ export default function M2TastingsSolo() {
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [finalizedAt, setFinalizedAt] = useState<string | null>(null);
-  const [soloView, setSoloView] = useState<"hub" | "editor">("hub");
+  const [soloView, setSoloView] = useState<"hub" | "capture" | "editor">("hub");
+  const [captureSource, setCaptureSource] = useState<"hub" | "editor">("hub");
   const [hubDrafts, setHubDrafts] = useState<any[]>([]);
   const [hubCompleted, setHubCompleted] = useState<any[]>([]);
   const [hubLoading, setHubLoading] = useState(true);
@@ -650,13 +651,16 @@ export default function M2TastingsSolo() {
         if (first.price) setUnknownPrice(String(first.price));
         setShowManual(true);
         setSheetView("none");
+        if (soloView === "capture") setSoloView("editor");
       } else {
         setError(t("m2.solo.noWhiskiesInFile", "No whiskies found in the uploaded file."));
         setSheetView("none");
+        if (soloView === "capture") setSoloView("editor");
       }
     } catch (err: any) {
       setError(err.message || t("m2.solo.importFailed", "File import failed"));
       setSheetView("none");
+      if (soloView === "capture") setSoloView("editor");
     }
   };
 
@@ -715,7 +719,9 @@ export default function M2TastingsSolo() {
   };
 
   const handleRetake = () => {
-    setSheetView("picker");
+    setCaptureSource("editor");
+    setSoloView("capture");
+    setSheetView("none");
     setCandidates([]);
     setPhotoUrl("");
     setLastResult(null);
@@ -1013,6 +1019,199 @@ export default function M2TastingsSolo() {
     return t("m2.solo.lastSaved", { defaultValue: "Saved {{time}}", time: new Date(isoString).toLocaleDateString() });
   };
 
+  const hiddenFileInputs = (
+    <>
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleCameraChange} style={{ display: "none" }} data-testid="input-camera" />
+      <input ref={uploadInputRef} type="file" accept="image/*" multiple onChange={handleUploadChange} style={{ display: "none" }} data-testid="input-upload" />
+      <input ref={fileInputRef} type="file" accept=".xlsx,.csv,.pdf,.docx,text/csv" onChange={handleFileUpload} style={{ display: "none" }} data-testid="input-file-upload" />
+    </>
+  );
+
+  if (soloView === "capture") {
+    return (
+      <div style={{ padding: "16px", minHeight: "100dvh", display: "flex", flexDirection: "column" }} data-testid="m2-solo-capture">
+        {hiddenFileInputs}
+        <button
+          onClick={() => setSoloView(captureSource)}
+          style={{ display: "flex", alignItems: "center", gap: 6, color: v.muted, background: "none", border: "none", cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 12 }}
+          data-testid="button-capture-back"
+        >
+          <ArrowLeft style={{ width: 16, height: 16 }} />
+          {t("m2.common.back", "Back")}
+        </button>
+
+        {error && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+            <X style={{ width: 16, height: 16, color: "#dc2626", flexShrink: 0, cursor: "pointer" }} onClick={() => setError("")} />
+            <span style={{ fontSize: 13, color: "#991b1b" }}>{error}</span>
+          </div>
+        )}
+
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 400, width: "100%", margin: "0 auto" }}>
+          <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 26, fontWeight: 700, color: v.text, margin: "0 0 6px", textAlign: "center" }}>
+            {t("m2.solo.captureTitle", "What are you tasting?")}
+          </h1>
+          <p style={{ fontSize: 14, color: v.textSecondary, marginBottom: 32, textAlign: "center", lineHeight: 1.5 }}>
+            {t("m2.solo.captureSubtitle", "Start with a photo — or choose another method.")}
+          </p>
+
+          <button
+            onClick={() => cameraInputRef.current?.click()}
+            style={{
+              width: "100%", padding: "28px 20px", borderRadius: 20,
+              background: `linear-gradient(135deg, ${v.accent}, #c4912e)`,
+              border: "none", cursor: "pointer", display: "flex", flexDirection: "column",
+              alignItems: "center", gap: 10, marginBottom: 20,
+              boxShadow: "0 4px 20px rgba(212,162,86,0.25)",
+            }}
+            data-testid="button-capture-photo"
+          >
+            <div style={{
+              width: 56, height: 56, borderRadius: "50%", background: "rgba(255,255,255,0.2)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Camera style={{ width: 28, height: 28, color: "#fff" }} />
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "#fff", letterSpacing: "0.02em" }}>
+              {t("m2.solo.capturePhotoTitle", "Take Photo")}
+            </div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", fontWeight: 400 }}>
+              {t("m2.solo.capturePhotoDesc", "AI identifies the whisky automatically")}
+            </div>
+          </button>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 28 }}>
+            <button
+              onClick={() => uploadInputRef.current?.click()}
+              style={{
+                background: v.card, border: `1px solid ${v.border}`, borderRadius: 14,
+                padding: "18px 8px", cursor: "pointer", display: "flex", flexDirection: "column",
+                alignItems: "center", gap: 8, transition: "border-color 0.2s",
+              }}
+              data-testid="button-capture-gallery"
+            >
+              <Upload style={{ width: 22, height: 22, color: v.accent }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: v.text }}>{t("m2.solo.captureGallery", "Gallery")}</span>
+            </button>
+            <button
+              onClick={() => { setSoloView("editor"); setSheetView("barcode"); setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setBarcodeManual(""); setCameraError(""); setTimeout(() => startBarcodeScanner(), 200); }}
+              style={{
+                background: v.card, border: `1px solid ${v.border}`, borderRadius: 14,
+                padding: "18px 8px", cursor: "pointer", display: "flex", flexDirection: "column",
+                alignItems: "center", gap: 8, transition: "border-color 0.2s",
+              }}
+              data-testid="button-capture-barcode"
+            >
+              <Barcode style={{ width: 22, height: 22, color: v.accent }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: v.text }}>{t("m2.solo.captureBarcode", "Barcode")}</span>
+            </button>
+            <button
+              onClick={() => { setSoloView("editor"); setSheetView("describe"); setDescribeQuery(""); }}
+              style={{
+                background: v.card, border: `1px solid ${v.border}`, borderRadius: 14,
+                padding: "18px 8px", cursor: "pointer", display: "flex", flexDirection: "column",
+                alignItems: "center", gap: 8, transition: "border-color 0.2s",
+              }}
+              data-testid="button-capture-describe"
+            >
+              <FileText style={{ width: 22, height: 22, color: v.accent }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: v.text }}>{t("m2.solo.captureDescribe", "Describe")}</span>
+            </button>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <button
+              onClick={() => { setSoloView("editor"); setShowManual(true); }}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: 14, fontWeight: 500, color: v.accent, display: "flex", alignItems: "center", gap: 6,
+              }}
+              data-testid="button-capture-skip"
+            >
+              {t("m2.solo.captureSkip", "Continue without scan")}
+              <ArrowLeft style={{ width: 14, height: 14, transform: "rotate(180deg)" }} />
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: 12, color: v.muted,
+              }}
+              data-testid="button-capture-file"
+            >
+              {t("m2.solo.captureFile", "Import file (Excel, CSV, PDF)")}
+            </button>
+          </div>
+        </div>
+
+        {sheetView !== "none" && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 99 }} onClick={() => setSheetView("none")} />
+        )}
+        {sheetView === "identifying" && (
+          <div style={{
+            position: "fixed", bottom: 0, left: 0, right: 0, background: v.card,
+            borderTop: `1px solid ${v.border}`, borderRadius: "16px 16px 0 0",
+            padding: "40px 20px 60px", zIndex: 100, textAlign: "center",
+          }}>
+            <div style={{ width: 32, height: 32, border: `3px solid ${v.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
+            <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>{t("m2.solo.identifying", "Identifying whisky...")}</p>
+            <p style={{ fontSize: 12, color: v.muted }}>{t("m2.solo.identifyingDesc", "Analyzing your input")}</p>
+          </div>
+        )}
+        {sheetView === "fileAnalyzing" && (
+          <div style={{
+            position: "fixed", bottom: 0, left: 0, right: 0, background: v.card,
+            borderTop: `1px solid ${v.border}`, borderRadius: "16px 16px 0 0",
+            padding: "40px 20px 60px", zIndex: 100, textAlign: "center",
+          }}>
+            <div style={{ width: 32, height: 32, border: `3px solid ${v.accent}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
+            <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>{t("m2.solo.analyzingFile", "Analyzing file...")}</p>
+          </div>
+        )}
+        {sheetView === "candidates" && (
+          <div style={{
+            position: "fixed", bottom: 0, left: 0, right: 0, background: v.bg,
+            borderTop: `1px solid ${v.border}`, borderRadius: "16px 16px 0 0",
+            padding: "20px 20px 40px", zIndex: 100, maxHeight: "85dvh", overflowY: "auto",
+          }}>
+            <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 16px" }} />
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: v.text, margin: "0 0 16px", fontFamily: "'Playfair Display', serif" }}>
+              {t("m2.solo.candidatesTitle", "Results")}
+            </h3>
+            {candidates.length === 0 ? (
+              <p style={{ color: v.muted, fontSize: 14, textAlign: "center", padding: "20px 0" }}>
+                {t("m2.solo.noCandidates", "No matches found. Try again or enter manually.")}
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {candidates.map((c, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { handleSelectCandidate(c); setSoloView("editor"); }}
+                    style={{ ...btnOutline, textAlign: "left", padding: "14px 16px" }}
+                    data-testid={`button-candidate-${i}`}
+                  >
+                    <div style={{ fontWeight: 600, color: v.text }}>{c.name}</div>
+                    {c.distillery && <div style={{ fontSize: 12, color: v.muted }}>{c.distillery}</div>}
+                    <div style={{ fontSize: 11, color: v.accent, marginTop: 4 }}>{Math.round((c.confidence || 0) * 100)}% {t("m2.solo.confidence", "confidence")}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button onClick={() => { setSheetView("none"); setSoloView("editor"); setShowManual(true); }} style={{ ...btnOutline, flex: 1, fontSize: 13 }} data-testid="button-candidate-manual">
+                {t("m2.solo.manualTitle", "Manual Entry")}
+              </button>
+              <button onClick={() => { setSheetView("none"); setSoloView("capture"); }} style={{ ...btnOutline, flex: 1, fontSize: 13 }} data-testid="button-candidate-retry">
+                {t("m2.solo.retryCapture", "Try again")}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (soloView === "hub") {
     return (
       <div style={{ padding: "16px" }} data-testid="m2-solo-page">
@@ -1025,7 +1224,7 @@ export default function M2TastingsSolo() {
         </p>
 
         <button
-          onClick={() => { handleReset(); setSoloView("editor"); }}
+          onClick={() => { handleReset(); setCaptureSource("hub"); setSoloView("capture"); }}
           style={{
             ...btnPrimary,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -1404,9 +1603,7 @@ export default function M2TastingsSolo() {
   return (
     <div style={{ padding: "16px", paddingBottom: 100 }} data-testid="m2-solo-page">
       <M2BackButton />
-      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleCameraChange} style={{ display: "none" }} data-testid="input-camera" />
-      <input ref={uploadInputRef} type="file" accept="image/*" multiple onChange={handleUploadChange} style={{ display: "none" }} data-testid="input-upload" />
-      <input ref={fileInputRef} type="file" accept=".xlsx,.csv,.pdf,.docx,text/csv" onChange={handleFileUpload} style={{ display: "none" }} data-testid="input-file-upload" />
+      {hiddenFileInputs}
 
       {/* Action Bar */}
       <div style={{
@@ -1591,7 +1788,7 @@ export default function M2TastingsSolo() {
               />
               <button
                 type="button"
-                onClick={() => { if (!scanning) setSheetView("picker"); }}
+                onClick={() => { if (!scanning) { setCaptureSource("editor"); setSoloView("capture"); } }}
                 data-testid="button-identify"
                 style={{
                   position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
@@ -1866,76 +2063,6 @@ export default function M2TastingsSolo() {
       {/* SHEET OVERLAYS */}
       {sheetView !== "none" && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 99 }} onClick={() => setSheetView("none")} />
-      )}
-
-      {sheetView === "picker" && (
-        <div style={{
-          position: "fixed", bottom: 0, left: 0, right: 0, background: v.bg,
-          borderTop: `1px solid ${v.border}`, borderRadius: "16px 16px 0 0",
-          padding: "20px 20px 40px", zIndex: 100, maxHeight: "85dvh", overflowY: "auto",
-        }} data-testid="sheet-identify-picker">
-          <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 16px" }} />
-          <h3 style={{ fontSize: 17, fontWeight: 700, color: v.text, margin: "0 0 4px", fontFamily: "'Playfair Display', serif" }}>
-            {t("m2.solo.identifyTitle", "Identify your whisky")}
-          </h3>
-          <p style={{ fontSize: 13, color: v.muted, margin: "0 0 20px" }}>
-            {t("m2.solo.identifySubtitle", "Choose how you'd like to identify your bottle.")}
-          </p>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <button onClick={() => { setSheetView("none"); cameraInputRef.current?.click(); }} data-testid="button-card-photo" style={{ ...btnOutline, textAlign: "left", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-              <Camera style={{ width: 22, height: 22, color: v.accent, flexShrink: 0 }} />
-              <div>
-                <div style={{ fontWeight: 600, color: v.accent }}>{t("m2.solo.photoTitle", "📷 Take Photo")}</div>
-                <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>{t("m2.solo.photoDesc", "Snap the label for AI identification")}</div>
-              </div>
-            </button>
-
-            <button onClick={() => { setSheetView("none"); uploadInputRef.current?.click(); }} data-testid="button-card-upload" style={{ ...btnOutline, textAlign: "left", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-              <Upload style={{ width: 22, height: 22, color: v.accent, flexShrink: 0 }} />
-              <div>
-                <div style={{ fontWeight: 600, color: v.accent }}>{t("m2.solo.uploadTitle", "Upload Photos")}</div>
-                <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>{t("m2.solo.uploadDesc", "Select multiple photos from gallery")}</div>
-              </div>
-            </button>
-
-            <button onClick={() => { setSheetView("describe"); setDescribeQuery(""); }} data-testid="button-card-describe" style={{ ...btnOutline, textAlign: "left", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-              <FileText style={{ width: 22, height: 22, color: v.accent, flexShrink: 0 }} />
-              <div>
-                <div style={{ fontWeight: 600, color: v.accent }}>{t("m2.solo.describeTitle", "Describe Bottle")}</div>
-                <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>{t("m2.solo.describeDesc", "Type what you see on the label")}</div>
-              </div>
-            </button>
-
-            <button onClick={() => { setSheetView("barcode"); setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setBarcodeManual(""); setCameraError(""); setTimeout(() => startBarcodeScanner(), 200); }} data-testid="button-card-barcode" style={{ ...btnOutline, textAlign: "left", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-              <Barcode style={{ width: 22, height: 22, color: v.accent, flexShrink: 0 }} />
-              <div>
-                <div style={{ fontWeight: 600, color: v.accent }}>{t("m2.solo.barcodeTitle", "Scan Barcode")}</div>
-                <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>{t("m2.solo.barcodeDesc", "Camera or manual barcode entry")}</div>
-              </div>
-            </button>
-
-            <button onClick={() => { setSheetView("none"); fileInputRef.current?.click(); }} data-testid="button-card-file" style={{ ...btnOutline, textAlign: "left", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-              <Upload style={{ width: 22, height: 22, color: v.accent, flexShrink: 0 }} />
-              <div>
-                <div style={{ fontWeight: 600, color: v.accent }}>{t("m2.solo.fileTitle", "Upload File")}</div>
-                <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>{t("m2.solo.fileDesc", "Excel, CSV, PDF extraction")}</div>
-              </div>
-            </button>
-
-            <button onClick={() => { setSheetView("none"); setShowManual(true); }} data-testid="button-card-manual" style={{ ...btnOutline, textAlign: "left", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-              <PenLine style={{ width: 22, height: 22, color: v.accent, flexShrink: 0 }} />
-              <div>
-                <div style={{ fontWeight: 600, color: v.accent }}>{t("m2.solo.manualTitle", "Manual Entry")}</div>
-                <div style={{ fontSize: 12, color: v.muted, marginTop: 2 }}>{t("m2.solo.manualDesc", "Type all details yourself")}</div>
-              </div>
-            </button>
-          </div>
-
-          <button onClick={() => setSheetView("none")} data-testid="button-close-picker" style={{ ...btnOutline, marginTop: 14, color: v.muted, fontSize: 13 }}>
-            {t("common.cancel", "Cancel")}
-          </button>
-        </div>
       )}
 
       {sheetView === "identifying" && (
