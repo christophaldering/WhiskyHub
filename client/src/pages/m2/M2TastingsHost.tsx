@@ -2792,13 +2792,49 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
   };
 
   const handleCoverUpload = async (file: File) => {
-    const previewUrl = URL.createObjectURL(file);
+    let uploadFile = file;
+    const MAX_SIZE = 2 * 1024 * 1024;
+    if (file.size > MAX_SIZE && file.type.startsWith("image/")) {
+      try {
+        uploadFile = await new Promise<File>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            const MAX_DIM = 1600;
+            let { width, height } = img;
+            if (width > MAX_DIM || height > MAX_DIM) {
+              const ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
+              width = Math.round(width * ratio);
+              height = Math.round(height * ratio);
+            }
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) { reject(new Error("Canvas not supported")); return; }
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob(
+              (blob) => {
+                if (!blob) { reject(new Error("Compression failed")); return; }
+                resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }));
+              },
+              "image/jpeg",
+              0.82,
+            );
+          };
+          img.onerror = () => reject(new Error("Image load failed"));
+          img.src = URL.createObjectURL(file);
+        });
+      } catch {}
+    }
+    const previewUrl = URL.createObjectURL(uploadFile);
     setLocalCoverUrl(previewUrl);
     try {
-      await tastingApi.uploadCoverImage(tasting.id, file, pid);
+      await tastingApi.uploadCoverImage(tasting.id, uploadFile, pid);
       queryClient.invalidateQueries({ queryKey: ["/api/tastings", tasting.id] });
-    } catch {
+    } catch (e: any) {
       setLocalCoverUrl(null);
+      setSaveStatus(e.message || t("m2.host.uploadFailed", "Upload failed"));
+      setTimeout(() => setSaveStatus(null), 3000);
     }
   };
 

@@ -94,7 +94,7 @@ const upload = multer({
 
 const memUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 2 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req: any, file: any, cb: any) => {
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (allowed.includes(file.mimetype)) cb(null, true);
@@ -1225,7 +1225,7 @@ export async function registerRoutes(
     memUpload.single("image")(req, res, (err: any) => {
       if (err) {
         if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(413).json({ message: "Image must be under 2 MB" });
+          return res.status(413).json({ message: "Image must be under 5 MB" });
         }
         return res.status(400).json({ message: err.message || "Upload failed" });
       }
@@ -2711,7 +2711,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
     memUpload.single("photo")(req, res, (err: any) => {
       if (err) {
         if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(413).json({ message: "Image must be under 2 MB" });
+          return res.status(413).json({ message: "Image must be under 5 MB" });
         }
         if (err.message) {
           return res.status(415).json({ message: err.message });
@@ -5228,7 +5228,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
     memUpload.single("image")(req, res, (err: any) => {
       if (err) {
         if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(413).json({ message: "Image must be under 2 MB" });
+          return res.status(413).json({ message: "Image must be under 5 MB" });
         }
         if (err.message) {
           return res.status(415).json({ message: err.message });
@@ -8752,7 +8752,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
   app.post("/api/tastings/:id/photos", (req: any, res: any, next: any) => {
     memUpload.single("photo")(req, res, (err: any) => {
       if (err) {
-        if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ message: "Image must be under 2 MB" });
+        if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ message: "Image must be under 5 MB" });
         return res.status(400).json({ message: err.message || "Upload failed" });
       }
       next();
