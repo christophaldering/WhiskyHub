@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -12,7 +12,7 @@ import type { JournalEntry } from "@shared/schema";
 import {
   BookOpen, Star, Plus, ArrowLeft, Pencil, Trash2, Check,
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy, Award,
-  Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw,
+  Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw, Camera, Upload,
 } from "lucide-react";
 
 const serif = "'Playfair Display', Georgia, serif";
@@ -53,6 +53,15 @@ export default function M2TasteDrams() {
   const [filterRegion, setFilterRegion] = useState("all");
   const [filterCaskType, setFilterCaskType] = useState("all");
   const [scoreRange, setScoreRange] = useState<ScoreRange>("all");
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [editStructured, setEditStructured] = useState<{
+    hasStructured: boolean;
+    generalNotes: string;
+    scores: { nose: string; taste: string; finish: string; balance: string };
+    dims: Record<string, { chips: string; text: string }>;
+  } | null>(null);
 
   const { data: journal = [], isLoading, isError, refetch } = useQuery<JournalEntry[]>({
     queryKey: ["journal", session.pid],
@@ -232,6 +241,30 @@ export default function M2TasteDrams() {
 
   const handleEdit = (entry: any) => {
     setSelectedEntry(entry);
+    setEditImageUrl(entry.imageUrl || null);
+    const raw = entry.noseNotes || "";
+    const hasStructured = /\[(SCORES|NOSE|TASTE|FINISH|BALANCE)\]/i.test(raw);
+    if (hasStructured) {
+      const parsed = parseNoseNotes(raw);
+      setEditStructured({
+        hasStructured: true,
+        generalNotes: parsed.cleanText,
+        scores: {
+          nose: parsed.scores.nose != null ? String(parsed.scores.nose) : "",
+          taste: parsed.scores.taste != null ? String(parsed.scores.taste) : "",
+          finish: parsed.scores.finish != null ? String(parsed.scores.finish) : "",
+          balance: parsed.scores.balance != null ? String(parsed.scores.balance) : "",
+        },
+        dims: {
+          nose: { chips: parsed.dims.nose?.chips.join(", ") || "", text: parsed.dims.nose?.text || "" },
+          taste: { chips: parsed.dims.taste?.chips.join(", ") || "", text: parsed.dims.taste?.text || "" },
+          finish: { chips: parsed.dims.finish?.chips.join(", ") || "", text: parsed.dims.finish?.text || "" },
+          balance: { chips: parsed.dims.balance?.chips.join(", ") || "", text: parsed.dims.balance?.text || "" },
+        },
+      });
+    } else {
+      setEditStructured(null);
+    }
     setEditForm({
       title: entry.title || entry.whiskyName || "",
       whiskyName: entry.whiskyName || "",
@@ -241,7 +274,7 @@ export default function M2TasteDrams() {
       abv: entry.abv || "",
       caskType: entry.caskType || "",
       personalScore: entry.personalScore ?? "",
-      noseNotes: entry.noseNotes || "",
+      noseNotes: raw,
       tasteNotes: entry.tasteNotes || "",
       finishNotes: entry.finishNotes || "",
       body: entry.body || "",
@@ -249,9 +282,52 @@ export default function M2TasteDrams() {
     setViewState("edit");
   };
 
+  const reassembleStructuredNotes = useCallback(() => {
+    if (!editStructured) return editForm.noseNotes;
+    let result = editStructured.generalNotes.trim();
+    const s = editStructured.scores;
+    if (s.nose || s.taste || s.finish || s.balance) {
+      result += `\n\n[SCORES] Nose:${s.nose || "0"} Taste:${s.taste || "0"} Finish:${s.finish || "0"} Balance:${s.balance || "0"} [/SCORES]`;
+    }
+    for (const dim of ["nose", "taste", "finish", "balance"] as const) {
+      const d = editStructured.dims[dim];
+      if (d && (d.chips.trim() || d.text.trim())) {
+        const tag = dim.toUpperCase();
+        const content = d.chips.trim() && d.text.trim()
+          ? `${d.chips.trim()} — ${d.text.trim()}`
+          : d.chips.trim() || d.text.trim();
+        result += `\n[${tag}] ${content} [/${tag}]`;
+      }
+    }
+    return result.trim();
+  }, [editStructured, editForm.noseNotes]);
+
+  const handleImageUpload = useCallback(async (file: File) => {
+    if (!selectedEntry || !session.pid) return;
+    setImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const res = await fetch(`/api/journal/${session.pid}/${selectedEntry.id}/image`, {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setEditImageUrl(updated.imageUrl);
+        setSelectedEntry({ ...selectedEntry, imageUrl: updated.imageUrl });
+        queryClient.invalidateQueries({ queryKey: ["journal"] });
+      }
+    } catch {}
+    setImageUploading(false);
+  }, [selectedEntry, session.pid]);
+
   const handleSaveEdit = () => {
     if (!selectedEntry) return;
     const data: any = { ...editForm };
+    if (editStructured) {
+      data.noseNotes = reassembleStructuredNotes();
+    }
     if (data.personalScore === "") data.personalScore = null;
     else data.personalScore = parseFloat(data.personalScore);
     updateMutation.mutate({ id: selectedEntry.id, data });
@@ -445,8 +521,56 @@ export default function M2TasteDrams() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <EditField label={t("m2.taste.whiskyName", "Whisky Name")} value={editForm.whiskyName} onChange={(val) => setEditForm({ ...editForm, whiskyName: val, title: val })} testId="input-edit-whiskyName" />
-          <EditField label={t("m2.taste.distillery", "Distillery")} value={editForm.distillery} onChange={(val) => setEditForm({ ...editForm, distillery: val })} testId="input-edit-distillery" />
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            {editImageUrl ? (
+              <div style={{ position: "relative", width: 72, height: 96, borderRadius: 10, overflow: "hidden", border: `1px solid ${v.border}`, flexShrink: 0 }}>
+                <img src={editImageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <button
+                  onClick={() => imageInputRef.current?.click()}
+                  style={{ position: "absolute", bottom: 4, right: 4, width: 28, height: 28, borderRadius: "50%", background: v.accent, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  data-testid="button-change-image"
+                >
+                  <Camera style={{ width: 14, height: 14, color: v.bg }} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => imageInputRef.current?.click()}
+                disabled={imageUploading}
+                style={{
+                  width: 72, height: 96, borderRadius: 10, border: `2px dashed ${v.border}`,
+                  background: alpha(v.accent, "06"), cursor: "pointer", display: "flex",
+                  flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, flexShrink: 0,
+                }}
+                data-testid="button-add-image"
+              >
+                {imageUploading ? (
+                  <div style={{ fontSize: 10, color: v.muted }}>...</div>
+                ) : (
+                  <>
+                    <Camera style={{ width: 22, height: 22, color: v.accent, opacity: 0.6 }} />
+                    <span style={{ fontSize: 9, color: v.muted, fontWeight: 500 }}>{t("m2.taste.addPhoto", "Add Photo")}</span>
+                  </>
+                )}
+              </button>
+            )}
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageUpload(file);
+                e.target.value = "";
+              }}
+              data-testid="input-image-upload"
+            />
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+              <EditField label={t("m2.taste.whiskyName", "Whisky Name")} value={editForm.whiskyName} onChange={(val) => setEditForm({ ...editForm, whiskyName: val, title: val })} testId="input-edit-whiskyName" />
+              <EditField label={t("m2.taste.distillery", "Distillery")} value={editForm.distillery} onChange={(val) => setEditForm({ ...editForm, distillery: val })} testId="input-edit-distillery" />
+            </div>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <EditField label={t("m2.taste.region", "Region")} value={editForm.region} onChange={(val) => setEditForm({ ...editForm, region: val })} testId="input-edit-region" />
             <EditField label={t("m2.taste.age", "Age")} value={editForm.age} onChange={(val) => setEditForm({ ...editForm, age: val })} testId="input-edit-age" />
@@ -456,10 +580,74 @@ export default function M2TasteDrams() {
             <EditField label={t("m2.taste.caskType", "Cask Type")} value={editForm.caskType} onChange={(val) => setEditForm({ ...editForm, caskType: val })} testId="input-edit-caskType" />
           </div>
           <EditField label={t("m2.taste.score", "Score")} value={editForm.personalScore} onChange={(val) => setEditForm({ ...editForm, personalScore: val })} testId="input-edit-score" type="number" />
-          <EditTextarea label={t("m2.taste.noseNotes", "Nose")} value={editForm.noseNotes} onChange={(val) => setEditForm({ ...editForm, noseNotes: val })} testId="input-edit-nose" />
-          <EditTextarea label={t("m2.taste.tasteNotes", "Taste")} value={editForm.tasteNotes} onChange={(val) => setEditForm({ ...editForm, tasteNotes: val })} testId="input-edit-taste" />
-          <EditTextarea label={t("m2.taste.finishNotes", "Finish")} value={editForm.finishNotes} onChange={(val) => setEditForm({ ...editForm, finishNotes: val })} testId="input-edit-finish" />
-          <EditTextarea label={t("m2.taste.notes", "Notes")} value={editForm.body} onChange={(val) => setEditForm({ ...editForm, body: val })} testId="input-edit-body" />
+
+          {editStructured ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <EditTextarea label={t("m2.taste.notes", "Notes")} value={editStructured.generalNotes} onChange={(val) => setEditStructured({ ...editStructured, generalNotes: val })} testId="input-edit-general-notes" />
+
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>{t("m2.taste.subScores", "Sub-Scores")}</label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
+                  {(["nose", "taste", "finish", "balance"] as const).map((dim) => (
+                    <div key={dim}>
+                      <label style={{ fontSize: 10, fontWeight: 500, color: v.muted, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 2 }}>
+                        {dim === "nose" ? "Nose" : dim === "taste" ? "Taste" : dim === "finish" ? "Finish" : "Balance"}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={editStructured.scores[dim]}
+                        onChange={(e) => setEditStructured({ ...editStructured, scores: { ...editStructured.scores, [dim]: e.target.value } })}
+                        style={{
+                          width: "100%", padding: "8px 6px", textAlign: "center",
+                          background: v.inputBg, border: `1px solid ${v.inputBorder}`,
+                          borderRadius: 8, fontSize: 16, fontWeight: 700, color: v.accent,
+                          fontFamily: serif, outline: "none", boxSizing: "border-box",
+                        }}
+                        data-testid={`input-edit-score-${dim}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {(["nose", "taste", "finish", "balance"] as const).map((dim) => {
+                const d = editStructured.dims[dim];
+                if (!d) return null;
+                const dimLabel = dim === "nose" ? "Nose" : dim === "taste" ? "Taste" : dim === "finish" ? "Finish" : "Balance";
+                return (
+                  <div key={dim}>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 4 }}>{dimLabel}</label>
+                    <EditField
+                      label={t("m2.taste.descriptors", "Descriptors")}
+                      value={d.chips}
+                      onChange={(val) => setEditStructured({ ...editStructured, dims: { ...editStructured.dims, [dim]: { ...d, chips: val } } })}
+                      testId={`input-edit-chips-${dim}`}
+                    />
+                    <div style={{ marginTop: 4 }}>
+                      <EditTextarea
+                        label={t("m2.taste.description", "Description")}
+                        value={d.text}
+                        onChange={(val) => setEditStructured({ ...editStructured, dims: { ...editStructured.dims, [dim]: { ...d, text: val } } })}
+                        testId={`input-edit-text-${dim}`}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              <EditTextarea label={t("m2.taste.tasteNotes", "Taste")} value={editForm.tasteNotes} onChange={(val) => setEditForm({ ...editForm, tasteNotes: val })} testId="input-edit-taste" />
+              <EditTextarea label={t("m2.taste.finishNotes", "Finish")} value={editForm.finishNotes} onChange={(val) => setEditForm({ ...editForm, finishNotes: val })} testId="input-edit-finish" />
+              <EditTextarea label={t("m2.taste.notes", "Notes")} value={editForm.body} onChange={(val) => setEditForm({ ...editForm, body: val })} testId="input-edit-body" />
+            </div>
+          ) : (
+            <>
+              <EditTextarea label={t("m2.taste.noseNotes", "Nose")} value={editForm.noseNotes} onChange={(val) => setEditForm({ ...editForm, noseNotes: val })} testId="input-edit-nose" />
+              <EditTextarea label={t("m2.taste.tasteNotes", "Taste")} value={editForm.tasteNotes} onChange={(val) => setEditForm({ ...editForm, tasteNotes: val })} testId="input-edit-taste" />
+              <EditTextarea label={t("m2.taste.finishNotes", "Finish")} value={editForm.finishNotes} onChange={(val) => setEditForm({ ...editForm, finishNotes: val })} testId="input-edit-finish" />
+              <EditTextarea label={t("m2.taste.notes", "Notes")} value={editForm.body} onChange={(val) => setEditForm({ ...editForm, body: val })} testId="input-edit-body" />
+            </>
+          )}
         </div>
       </div>
     );
@@ -826,14 +1014,14 @@ function parseNoseNotes(raw: string) {
   let scores: { nose?: number; taste?: number; finish?: number; balance?: number } = {};
   const dims: Record<string, { chips: string[]; text: string }> = {};
 
-  const scoresMatch = raw.match(/\[SCORES]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)\s*Balance:(\d+)\s*\[\/SCORES]/);
+  const scoresMatch = raw.match(/\[SCORES]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)\s*Balance:(\d+)\s*\[\/SCORES]/i);
   if (scoresMatch) {
     scores = { nose: +scoresMatch[1], taste: +scoresMatch[2], finish: +scoresMatch[3], balance: +scoresMatch[4] };
     cleanText = cleanText.replace(scoresMatch[0], "");
   }
 
   for (const d of ["NOSE", "TASTE", "FINISH", "BALANCE"]) {
-    const rx = new RegExp(`\\[${d}]\\s*(.+?)\\s*\\[\\/${d}]`, "s");
+    const rx = new RegExp(`\\[${d}]\\s*(.+?)\\s*\\[\\/${d}]`, "si");
     const m = cleanText.match(rx);
     if (m) {
       const content = m[1].trim();
