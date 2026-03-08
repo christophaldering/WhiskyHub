@@ -214,7 +214,7 @@ export default function M2TasteHome() {
     enabled: !!pid,
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["participant-stats", pid],
     queryFn: () => statsApi.get(pid!),
     enabled: !!pid,
@@ -239,7 +239,8 @@ export default function M2TasteHome() {
   const totalRatings = stats?.totalRatings ?? stats?.ratingCount ?? 0;
   const totalJournal = stats?.totalJournalEntries ?? 0;
   const whiskyCount = totalRatings + totalJournal;
-  const analyticsLocked = whiskyCount < ANALYTICS_THRESHOLD;
+  const analyticsLocked = !statsLoading && whiskyCount < ANALYTICS_THRESHOLD;
+  const statsReady = !statsLoading;
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({ profile: true });
   const toggle = (key: string) => setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -281,14 +282,76 @@ export default function M2TasteHome() {
 
       {session.signedIn && (
         <>
-          <div style={{ display: "flex", gap: 8, marginBottom: 8 }} data-testid="m2-taste-snapshot">
-            <StatBox label={t("m2.taste.stability", "Stability")} value={stability} testId="stat-stability" />
-            <StatBox label={t("m2.taste.exploration", "Exploration")} value={exploration} testId="stat-exploration" />
-          </div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-            <StatBox label={t("m2.taste.smokeAffinity", "Smoke")} value={smoke} testId="stat-smoke" />
-            <StatBox label={t("m2.taste.tastingCount", "Tastings")} value={tastingCount} testId="stat-tastings" />
-          </div>
+          {!statsReady ? null : analyticsLocked ? (
+            <div
+              style={{
+                background: `linear-gradient(135deg, ${alpha(v.accent, "08")} 0%, ${v.card} 100%)`,
+                border: `1px solid ${v.border}`,
+                borderRadius: 20,
+                padding: "28px 20px",
+                marginBottom: 24,
+                textAlign: "center",
+              }}
+              data-testid="card-taste-welcome"
+            >
+              <div style={{ fontSize: 36, marginBottom: 12 }}>🥃</div>
+              <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 20, fontWeight: 700, color: v.text, margin: "0 0 8px" }}>
+                {t("m2.taste.welcomeTitle", "Your Taste Profile")}
+              </h2>
+              <p style={{ fontSize: 14, color: v.textSecondary, lineHeight: 1.5, margin: "0 0 20px", maxWidth: 300, marginLeft: "auto", marginRight: "auto" }}>
+                {t("m2.taste.welcomeDesc", "Rate whiskies and log drams to unlock your personal taste profile — stability score, exploration index, smoke affinity and AI insights.")}
+              </p>
+
+              <div style={{ maxWidth: 260, margin: "0 auto 8px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: v.text }}>{whiskyCount} / {ANALYTICS_THRESHOLD}</span>
+                  <span style={{ fontSize: 11, color: v.muted }}>{t("m2.taste.welcomeProgress", "entries")}</span>
+                </div>
+                <div style={{ height: 6, background: v.border, borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{
+                    height: "100%",
+                    width: `${Math.min(100, (whiskyCount / ANALYTICS_THRESHOLD) * 100)}%`,
+                    background: `linear-gradient(90deg, ${v.accent}, #c4912e)`,
+                    borderRadius: 3,
+                    transition: "width 0.5s ease",
+                  }} />
+                </div>
+              </div>
+              <p style={{ fontSize: 11, color: v.muted, margin: "0 0 16px" }}>
+                {t("m2.taste.welcomeUnlock", {
+                  defaultValue: "{{remaining}} more to unlock full analytics",
+                  remaining: Math.max(0, ANALYTICS_THRESHOLD - whiskyCount),
+                })}
+              </p>
+
+              <Link href="/m2/tastings/solo" style={{ textDecoration: "none" }}>
+                <div
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 8,
+                    padding: "12px 24px", borderRadius: 12,
+                    background: v.accent, color: v.bg,
+                    fontSize: 14, fontWeight: 600, cursor: "pointer",
+                  }}
+                  data-testid="button-taste-log-dram"
+                >
+                  {whiskyCount > 0
+                  ? t("m2.taste.welcomeCtaContinue", "Log next dram")
+                  : t("m2.taste.welcomeCta", "Log your first dram")}
+                </div>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "flex", gap: 8, marginBottom: 8 }} data-testid="m2-taste-snapshot">
+                <StatBox label={t("m2.taste.stability", "Stability")} value={stability} testId="stat-stability" />
+                <StatBox label={t("m2.taste.exploration", "Exploration")} value={exploration} testId="stat-exploration" />
+              </div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+                <StatBox label={t("m2.taste.smokeAffinity", "Smoke")} value={smoke} testId="stat-smoke" />
+                <StatBox label={t("m2.taste.tastingCount", "Tastings")} value={tastingCount} testId="stat-tastings" />
+              </div>
+            </>
+          )}
 
           {insight && (
             <div
