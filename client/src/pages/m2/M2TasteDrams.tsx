@@ -12,7 +12,7 @@ import type { JournalEntry } from "@shared/schema";
 import {
   BookOpen, Star, Plus, ArrowLeft, Pencil, Trash2, Check,
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy, Award,
-  Mic, Play as PlayIcon, Pause,
+  Mic, Play as PlayIcon, Pause, ChevronDown, RotateCcw,
 } from "lucide-react";
 
 const serif = "'Playfair Display', Georgia, serif";
@@ -20,6 +20,7 @@ const serif = "'Playfair Display', Georgia, serif";
 type FilterValue = "all" | "solo" | "tasting" | "drafts";
 type ViewState = "list" | "detail" | "edit";
 type DatePeriod = "all" | "7d" | "30d" | "3m" | "1y";
+type ScoreRange = "all" | "90+" | "80-89" | "70-79" | "<70";
 
 const FILTERS: { key: FilterValue; labelKey: string }[] = [
   { key: "all", labelKey: "All" },
@@ -48,6 +49,10 @@ export default function M2TasteDrams() {
   const [deleteTarget, setDeleteTarget] = useState<JournalEntry | null>(null);
   const [search, setSearch] = useState("");
   const [deepLinkHandled, setDeepLinkHandled] = useState(false);
+  const [filterDistillery, setFilterDistillery] = useState("all");
+  const [filterRegion, setFilterRegion] = useState("all");
+  const [filterCaskType, setFilterCaskType] = useState("all");
+  const [scoreRange, setScoreRange] = useState<ScoreRange>("all");
 
   const { data: journal = [], isLoading, isError, refetch } = useQuery<JournalEntry[]>({
     queryKey: ["journal", session.pid],
@@ -99,6 +104,45 @@ export default function M2TasteDrams() {
     );
   }, [tastingHistory]);
 
+  const allItems = useMemo(() => {
+    const items: any[] = [
+      ...journal.map((e: any) => ({ ...e, source: e.source || "solo" })),
+      ...tastingWhiskies,
+    ];
+    return items;
+  }, [journal, tastingWhiskies]);
+
+  const uniqueDistilleries = useMemo(() => {
+    const set = new Set<string>();
+    allItems.forEach((e: any) => { if (e.distillery) set.add(e.distillery); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [allItems]);
+
+  const uniqueRegions = useMemo(() => {
+    const set = new Set<string>();
+    allItems.forEach((e: any) => { if (e.region) set.add(e.region); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [allItems]);
+
+  const uniqueCaskTypes = useMemo(() => {
+    const set = new Set<string>();
+    allItems.forEach((e: any) => { if (e.caskType) set.add(e.caskType); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [allItems]);
+
+  const hasAdvancedFilters = filterDistillery !== "all" || filterRegion !== "all" || filterCaskType !== "all" || scoreRange !== "all";
+  const hasAnyFilter = activeFilter !== "all" || datePeriod !== "all" || search.trim() !== "" || hasAdvancedFilters;
+
+  const resetAllFilters = () => {
+    setActiveFilter("all");
+    setDatePeriod("all");
+    setSearch("");
+    setFilterDistillery("all");
+    setFilterRegion("all");
+    setFilterCaskType("all");
+    setScoreRange("all");
+  };
+
   const filteredEntries = useMemo(() => {
     let items: any[] = [];
     if (activeFilter === "drafts") {
@@ -128,6 +172,26 @@ export default function M2TasteDrams() {
         });
       }
     }
+    if (filterDistillery !== "all") {
+      items = items.filter((e: any) => e.distillery === filterDistillery);
+    }
+    if (filterRegion !== "all") {
+      items = items.filter((e: any) => e.region === filterRegion);
+    }
+    if (filterCaskType !== "all") {
+      items = items.filter((e: any) => e.caskType === filterCaskType);
+    }
+    if (scoreRange !== "all") {
+      items = items.filter((e: any) => {
+        const s = e.personalScore;
+        if (s == null) return false;
+        if (scoreRange === "90+") return s >= 90;
+        if (scoreRange === "80-89") return s >= 80 && s < 90;
+        if (scoreRange === "70-79") return s >= 70 && s < 80;
+        if (scoreRange === "<70") return s < 70;
+        return true;
+      });
+    }
     items.sort((a: any, b: any) => {
       const isDraftA = a.status === "draft" ? 0 : 1;
       const isDraftB = b.status === "draft" ? 0 : 1;
@@ -137,7 +201,7 @@ export default function M2TasteDrams() {
       return db - da;
     });
     return items;
-  }, [journal, tastingWhiskies, activeFilter, search, datePeriod]);
+  }, [journal, tastingWhiskies, activeFilter, search, datePeriod, filterDistillery, filterRegion, filterCaskType, scoreRange]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
@@ -470,7 +534,7 @@ export default function M2TasteDrams() {
             })}
           </div>
 
-          <div style={{ display: "flex", gap: 6, marginBottom: 12, overflowX: "auto" }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 8, overflowX: "auto" }}>
             {DATE_PERIODS.map((p) => {
               const isActive = datePeriod === p.key;
               return (
@@ -493,6 +557,79 @@ export default function M2TasteDrams() {
               );
             })}
           </div>
+
+          <div style={{ display: "flex", gap: 6, marginBottom: 8, overflowX: "auto" }}>
+            {(["all", "90+", "80-89", "70-79", "<70"] as ScoreRange[]).map((sr) => {
+              const isActive = scoreRange === sr;
+              const label = sr === "all" ? t("m2.taste.scoreAll", "Score") : sr;
+              return (
+                <button
+                  key={sr}
+                  onClick={() => setScoreRange(sr)}
+                  style={{
+                    padding: "5px 12px", fontSize: 11,
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive ? v.accent : v.muted,
+                    background: isActive ? `color-mix(in srgb, ${v.accent} 10%, transparent)` : "transparent",
+                    border: `1px solid ${isActive ? `color-mix(in srgb, ${v.accent} 40%, transparent)` : v.border}`,
+                    borderRadius: 16, cursor: "pointer",
+                    transition: "all 0.2s", whiteSpace: "nowrap", flexShrink: 0,
+                    fontFamily: "system-ui, sans-serif",
+                  }}
+                  data-testid={`score-${sr}`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+            {uniqueDistilleries.length > 0 && (
+              <FilterDropdown
+                value={filterDistillery}
+                onChange={setFilterDistillery}
+                options={uniqueDistilleries}
+                placeholder={t("m2.taste.distillery", "Distillery")}
+                testId="filter-distillery"
+              />
+            )}
+            {uniqueRegions.length > 0 && (
+              <FilterDropdown
+                value={filterRegion}
+                onChange={setFilterRegion}
+                options={uniqueRegions}
+                placeholder={t("m2.taste.region", "Region")}
+                testId="filter-region"
+              />
+            )}
+            {uniqueCaskTypes.length > 0 && (
+              <FilterDropdown
+                value={filterCaskType}
+                onChange={setFilterCaskType}
+                options={uniqueCaskTypes}
+                placeholder={t("m2.taste.caskType", "Cask Type")}
+                testId="filter-cask-type"
+              />
+            )}
+          </div>
+
+          {hasAnyFilter && (
+            <button
+              onClick={resetAllFilters}
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "5px 12px", fontSize: 11, fontWeight: 500,
+                color: v.accent, background: "transparent",
+                border: `1px solid ${v.accent}`, borderRadius: 16,
+                cursor: "pointer", marginBottom: 12, fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="button-reset-filters"
+            >
+              <RotateCcw style={{ width: 12, height: 12 }} />
+              {t("m2.taste.resetFilters", "Reset filters")}
+            </button>
+          )}
 
           <div style={{ position: "relative", marginBottom: 16 }}>
             <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: v.muted }} />
@@ -537,7 +674,9 @@ export default function M2TasteDrams() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ fontSize: 12, color: v.muted, marginBottom: 4 }}>
-                {filteredEntries.length} {t("m2.taste.entries", "entries")}
+                {hasAnyFilter
+                  ? `${filteredEntries.length} ${t("m2.taste.of", "of")} ${allItems.length} ${t("m2.taste.entries", "entries")}`
+                  : `${filteredEntries.length} ${t("m2.taste.entries", "entries")}`}
               </div>
               {filteredEntries.map((entry: any) => (
                 <div
@@ -620,6 +759,47 @@ export default function M2TasteDrams() {
           isPending={deleteMutation.isPending}
         />
       )}
+    </div>
+  );
+}
+
+function FilterDropdown({ value, onChange, options, placeholder, testId }: {
+  value: string; onChange: (v: string) => void; options: string[]; placeholder: string; testId: string;
+}) {
+  const isActive = value !== "all";
+  return (
+    <div style={{ position: "relative", flex: "1 1 0", minWidth: 100 }}>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "7px 28px 7px 10px",
+          fontSize: 12,
+          fontWeight: isActive ? 600 : 400,
+          color: isActive ? v.accent : v.muted,
+          background: isActive ? `color-mix(in srgb, ${v.accent} 8%, ${v.card})` : v.card,
+          border: `1px solid ${isActive ? `color-mix(in srgb, ${v.accent} 40%, transparent)` : v.border}`,
+          borderRadius: 10,
+          cursor: "pointer",
+          appearance: "none",
+          WebkitAppearance: "none",
+          fontFamily: "system-ui, sans-serif",
+          outline: "none",
+        }}
+        data-testid={testId}
+      >
+        <option value="all">{placeholder}</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+      <ChevronDown
+        style={{
+          position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+          width: 14, height: 14, color: isActive ? v.accent : v.muted, pointerEvents: "none",
+        }}
+      />
     </div>
   );
 }
