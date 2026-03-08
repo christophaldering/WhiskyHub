@@ -5479,6 +5479,9 @@ const resources = {
           comparison: "Your Development",
           navLabel: "Connoisseur Report",
           navDesc: "AI analysis of your whisky personality",
+          networkError: "Connection lost — the AI analysis takes ~15 seconds. Please check your connection and try again.",
+          generationFailed: "Generation failed. Please try again.",
+          retry: "Try again",
         },
         forgotPin: {
           title: "Reset Password",
@@ -11231,6 +11234,9 @@ const resources = {
           comparison: "Deine Entwicklung",
           navLabel: "Connoisseur-Bericht",
           navDesc: "KI-Analyse deiner Whisky-Persönlichkeit",
+          networkError: "Verbindung verloren — die KI-Analyse dauert ca. 15 Sekunden. Bitte prüfe deine Verbindung und versuche es erneut.",
+          generationFailed: "Generierung fehlgeschlagen. Bitte versuche es erneut.",
+          retry: "Erneut versuchen",
         },
         forgotPin: {
           title: "Passwort zurücksetzen",

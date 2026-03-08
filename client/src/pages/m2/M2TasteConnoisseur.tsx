@@ -208,13 +208,18 @@ export default function M2TasteConnoisseur() {
 
   const generateMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/participants/${pid}/connoisseur-report`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...pidHeaders() },
-      });
+      let res: Response;
+      try {
+        res = await fetch(`/api/participants/${pid}/connoisseur-report`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...pidHeaders() },
+        });
+      } catch {
+        throw new Error(t("m2.connoisseur.networkError", "Connection lost — the AI analysis takes ~15 seconds. Please check your connection and try again."));
+      }
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: "Generation failed" }));
-        throw new Error(err.message || "Generation failed");
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || t("m2.connoisseur.generationFailed", "Generation failed. Please try again."));
       }
       return res.json();
     },
@@ -314,14 +319,37 @@ export default function M2TasteConnoisseur() {
             background: alpha(v.danger, "10"),
             border: `1px solid ${alpha(v.danger, "30")}`,
             borderRadius: 12,
-            padding: "12px 16px",
+            padding: "14px 16px",
             marginBottom: 16,
             fontSize: 13,
             color: v.danger,
+            lineHeight: 1.5,
           }}
           data-testid="text-connoisseur-error"
         >
-          {generateMutation.error?.message || "Something went wrong"}
+          <div style={{ marginBottom: 10 }}>
+            {generateMutation.error?.message || t("m2.connoisseur.generationFailed", "Generation failed. Please try again.")}
+          </div>
+          <button
+            onClick={() => generateMutation.mutate()}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 16px",
+              fontSize: 13,
+              fontWeight: 600,
+              background: v.accent,
+              color: v.bg,
+              border: "none",
+              borderRadius: 8,
+              cursor: "pointer",
+              fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+            }}
+            data-testid="button-retry-generate"
+          >
+            {t("m2.connoisseur.retry", "Try again")}
+          </button>
         </div>
       )}
 
