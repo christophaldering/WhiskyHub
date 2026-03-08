@@ -11,7 +11,7 @@ import { getSession, useSession } from "@/lib/session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCodeLib from "qrcode";
 import { downloadDataUrl } from "@/lib/download";
-import { generateBlankTastingSheet, generateBlankTastingMat } from "@/components/printable-tasting-sheets";
+import { generateBlankTastingSheet, generateBlankTastingMat, PrintableTastingSheets } from "@/components/printable-tasting-sheets";
 import { generateTastingMenu } from "@/components/tasting-menu-pdf";
 import {
   Plus, X, Trash2, ChevronUp, ChevronDown, ChevronRight, ArrowRight, ArrowLeft,
@@ -471,6 +471,40 @@ function HostOverview({ pid, onNewTasting, onResume }: { pid: string; onNewTasti
     }
   };
 
+  function LazyPrintButton({ tasting }: { tasting: TastingFull }) {
+    const [showPrint, setShowPrint] = useState(false);
+    const { data: wList = [] } = useQuery({
+      queryKey: ["whiskies", tasting.id],
+      queryFn: () => whiskyApi.getForTasting(tasting.id),
+      enabled: showPrint,
+    });
+    if (showPrint && wList.length > 0) {
+      return <PrintableTastingSheets tasting={tasting as any} whiskies={wList} />;
+    }
+    return (
+      <button
+        type="button"
+        onClick={() => setShowPrint(true)}
+        style={{
+          padding: "6px",
+          background: "transparent",
+          border: `1px solid ${v.border}`,
+          borderRadius: 6,
+          cursor: "pointer",
+          color: v.muted,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+        title={t("m2.host.printSheets", "Print Sheets")}
+        data-testid={`button-print-${tasting.id}`}
+      >
+        <Printer style={{ width: 14, height: 14 }} />
+      </button>
+    );
+  }
+
   const TastingCard = ({ tasting, action, actionLabel, actionIcon }: { tasting: TastingFull; action: () => void; actionLabel: string; actionIcon: React.ReactNode }) => (
     <div
       style={{
@@ -504,30 +538,33 @@ function HostOverview({ pid, onNewTasting, onResume }: { pid: string; onNewTasti
           <span>{t("m2.host.codeLabel", "Code:")}{" "}{tasting.code}</span>
         </div>
       </div>
-      <button
-        type="button"
-        onClick={action}
-        style={{
-          padding: "8px 14px",
-          fontSize: 12,
-          fontWeight: 600,
-          background: `color-mix(in srgb, ${v.accent} 12%, transparent)`,
-          color: v.accent,
-          border: `1px solid color-mix(in srgb, ${v.accent} 30%, transparent)`,
-          borderRadius: 8,
-          cursor: "pointer",
-          fontFamily: "system-ui, sans-serif",
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
-          flexShrink: 0,
-          whiteSpace: "nowrap",
-        }}
-        data-testid={`button-action-${tasting.id}`}
-      >
-        {actionIcon}
-        {actionLabel}
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <LazyPrintButton tasting={tasting} />
+        <button
+          type="button"
+          onClick={action}
+          style={{
+            padding: "8px 14px",
+            fontSize: 12,
+            fontWeight: 600,
+            background: `color-mix(in srgb, ${v.accent} 12%, transparent)`,
+            color: v.accent,
+            border: `1px solid color-mix(in srgb, ${v.accent} 30%, transparent)`,
+            borderRadius: 8,
+            cursor: "pointer",
+            fontFamily: "system-ui, sans-serif",
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            flexShrink: 0,
+            whiteSpace: "nowrap",
+          }}
+          data-testid={`button-action-${tasting.id}`}
+        >
+          {actionIcon}
+          {actionLabel}
+        </button>
+      </div>
     </div>
   );
 

@@ -11152,5 +11152,232 @@ Important rules:
     }
   });
 
+  // ===== PAPER SHEET SCANNING =====
+
+  const sheetScanUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (_req: any, file: any, cb: any) => {
+      const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (allowed.includes(file.mimetype)) cb(null, true);
+      else cb(new Error("Only image files are allowed"));
+    },
+  });
+
+  app.post("/api/tastings/:id/scan-sheet", sheetScanUpload.array("photos", 10), async (req: Request, res: Response) => {
+    try {
+      const tastingId = req.params.id;
+      const tasting = await storage.getTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+      const requesterId = req.headers["x-participant-id"] as string || req.body.participantId;
+      if (requesterId) {
+        const isHost = tasting.hostId === requesterId;
+        const isInTasting = await storage.isParticipantInTasting(tastingId, requesterId);
+        if (!isHost && !isInTasting) {
+          return res.status(403).json({ message: "Not authorized for this tasting" });
+        }
+      }
+
+      const whiskiesList = await storage.getWhiskiesForTasting(tastingId);
+      if (!whiskiesList || whiskiesList.length === 0) {
+        return res.status(400).json({ message: "No whiskies in this tasting" });
+      }
+
+      const files = (req as any).files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        return res.status(400).json({ message: "At least one photo is required" });
+      }
+
+      const participantId = req.body.participantId || null;
+
+      const { client: openai } = await getAIClient(null, "scan_sheet");
+      if (!openai) {
+        return res.status(503).json({ message: "AI is not available" });
+      }
+
+      const whiskyLineup = whiskiesList
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((w, i) => {
+          if (tasting.blindMode) {
+            return `Sample #${i + 1} (internal ID: ${w.id})`;
+          }
+          return `#${i + 1}: ${w.name}${w.distillery ? ` (${w.distillery})` : ""} (internal ID: ${w.id})`;
+        })
+        .join("\n");
+
+      const ratingScale = tasting.ratingScale || 100;
+
+      const imageMessages: any[] = files.map(f => ({
+        type: "image_url" as const,
+        image_url: {
+          url: `data:${f.mimetype};base64,${f.buffer.toString("base64")}`,
+          detail: "high" as const,
+        },
+      }));
+
+      const systemPrompt = `You are an AI that extracts whisky tasting scores from photographs of handwritten paper tasting sheets.
+
+The tasting "${tasting.title}" uses a rating scale of 0-${ratingScale}.
+The whisky lineup is:
+${whiskyLineup}
+
+Extract from the photographed sheet(s):
+1. Participant name (if visible on the sheet)
+2. For each whisky: nose score, taste score, finish score, balance score, overall score, and any handwritten tasting notes
+
+Return ONLY valid JSON in this exact format:
+{
+  "participantName": "Name from sheet or null",
+  "scores": [
+    {
+      "whiskyIndex": 0,
+      "whiskyId": "internal ID from the lineup",
+      "whiskyName": "name or Sample #N",
+      "nose": number or null,
+      "taste": number or null,
+      "finish": number or null,
+      "balance": number or null,
+      "overall": number or null,
+      "notes": "transcribed handwritten notes or empty string"
+    }
+  ]
+}
+
+Rules:
+- Match whiskies by their number/position on the sheet to the lineup above
+- Scores must be within 0-${ratingScale} range
+- If a score field is empty or unreadable, use null
+- Transcribe handwritten notes as accurately as possible
+- If participant name is not visible, set participantName to null
+- Return scores array in the same order as the whisky lineup
+- Only include whiskies that have at least one score or note on the sheet`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Extract all scores and notes from this tasting sheet photograph:" },
+              ...imageMessages,
+            ],
+          },
+        ],
+        max_tokens: 2000,
+        temperature: 0.1,
+      });
+
+      const content = response.choices[0]?.message?.content || "";
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        return res.status(422).json({ message: "Could not extract scores from the image" });
+      }
+
+      let extracted: any;
+      try {
+        extracted = JSON.parse(jsonMatch[0]);
+      } catch {
+        return res.status(422).json({ message: "Failed to parse extracted data" });
+      }
+
+      if (participantId) {
+        extracted.participantId = participantId;
+      }
+
+      res.json(extracted);
+    } catch (e: any) {
+      console.error("Scan sheet error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/tastings/:id/confirm-scores", async (req: Request, res: Response) => {
+    try {
+      const tastingId = req.params.id;
+      const tasting = await storage.getTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+
+      if (tasting.status === "archived") {
+        return res.status(400).json({ message: "Cannot add scores to an archived tasting" });
+      }
+
+      const { participantId, scores } = req.body;
+      if (!participantId) return res.status(400).json({ message: "participantId is required" });
+      if (!scores || !Array.isArray(scores) || scores.length === 0) {
+        return res.status(400).json({ message: "scores array is required" });
+      }
+
+      const participant = await storage.getParticipant(participantId);
+      if (!participant) return res.status(404).json({ message: "Participant not found" });
+
+      const isInTasting = await storage.isParticipantInTasting(tastingId, participantId);
+      if (!isInTasting) {
+        return res.status(403).json({ message: "Participant is not part of this tasting" });
+      }
+
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (requesterId && requesterId !== participantId) {
+        const isHost = tasting.hostId === requesterId;
+        if (!isHost) {
+          return res.status(403).json({ message: "Only the host can submit scores for other participants" });
+        }
+      }
+
+      const whiskiesList = await storage.getWhiskiesForTasting(tastingId);
+      const whiskyIds = new Set(whiskiesList.map(w => w.id));
+
+      const maxScale = tasting.ratingScale || 100;
+      const savedRatings = [];
+
+      for (const score of scores) {
+        if (!score.whiskyId || !whiskyIds.has(score.whiskyId)) continue;
+
+        const clamp = (v: any) => {
+          if (v == null || v === "") return null;
+          const n = Number(v);
+          if (isNaN(n)) return null;
+          return Math.max(0, Math.min(n, maxScale));
+        };
+
+        const nose = clamp(score.nose);
+        const taste = clamp(score.taste);
+        const finish = clamp(score.finish);
+        const balance = clamp(score.balance);
+        const overall = clamp(score.overall);
+
+        let normalizedScore: number | null = null;
+        if (overall != null) {
+          normalizedScore = maxScale === 100 ? overall : Math.round((overall / maxScale) * 1000) / 10;
+        }
+
+        const rating = await storage.upsertRating({
+          tastingId,
+          whiskyId: score.whiskyId,
+          participantId,
+          nose,
+          taste,
+          finish,
+          balance,
+          overall,
+          notes: score.notes || "",
+          normalizedScore,
+          source: "paper",
+        });
+        savedRatings.push(rating);
+      }
+
+      if (savedRatings.length === 0) {
+        return res.status(400).json({ message: "No valid scores could be saved — check whisky IDs" });
+      }
+
+      res.json({ saved: savedRatings.length, ratings: savedRatings });
+    } catch (e: any) {
+      console.error("Confirm scores error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }

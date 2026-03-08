@@ -4159,6 +4159,9 @@ const resources = {
         labelPalate: "Palate:",
         labelFinish: "Finish:",
         labelOverall: "Overall:   __ / 10",
+        batchTitle: "Print for All Participants",
+        batchDesc: "{{count}} personalized sheets with QR codes — one set per participant",
+        batchQrNote: "Each sheet includes a personal QR code",
       },
       sessionSheet: {
         title: "Session",
@@ -9835,6 +9838,9 @@ const resources = {
         labelPalate: "Gaumen:",
         labelFinish: "Abgang:",
         labelOverall: "Gesamt:   __ / 10",
+        batchTitle: "Für alle Teilnehmer drucken",
+        batchDesc: "{{count}} personalisierte Bögen mit QR-Codes — ein Set pro Teilnehmer",
+        batchQrNote: "Jeder Bogen enthält einen persönlichen QR-Code",
       },
       sessionSheet: {
         title: "Sitzung",

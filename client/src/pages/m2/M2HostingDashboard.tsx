@@ -14,7 +14,7 @@ import {
   Play, Lock, Eye, EyeOff, Archive, ChevronRight, CheckCircle, Clock,
   SkipForward, Users, Wine, Star, BarChart3, Radio, Monitor,
   Smartphone, ChevronDown, ChevronUp, Loader2, AlertTriangle,
-  Square, CircleDot, Hash, Minus, ArrowRight, Layers, XCircle
+  Square, CircleDot, Hash, Minus, ArrowRight, Layers, XCircle, FileText
 } from "lucide-react";
 
 const POLL_FAST = 3000;
@@ -981,64 +981,120 @@ function CenterColumn({ tasting, whiskies, participants, ratings, status, isBlin
       </div>
 
       <div style={card} data-testid="participant-panel">
-        <div style={{ ...sectionLabel, display: "flex", justifyContent: "space-between" }}>
-          <span>
-            <Users style={{ width: 12, height: 12, display: "inline", verticalAlign: "-2px", marginRight: 4 }} />
-            {t("m2.dashboard.participants", "Participants")}
-          </span>
-          {activeWhisky && (
-            <span style={{ color: v.accent, textTransform: "none", fontWeight: 700 }}>
-              {activeRatedPids.size}/{participants.length} {t("m2.dashboard.rated", "rated")}
-            </span>
-          )}
-        </div>
+        {(() => {
+          const uniqueRatersAll = new Set(ratings.map((r: any) => r.participantId));
+          const ratedCount = participants.filter((p: any) => uniqueRatersAll.has(pId(p))).length;
+          const totalP = participants.length;
+          const progressPct = totalP > 0 ? Math.round((ratedCount / totalP) * 100) : 0;
+          const getSource = (pid: string): "digital" | "paper" | "pending" => {
+            const pRatings = ratings.filter((r: any) => r.participantId === pid);
+            if (pRatings.length === 0) return "pending";
+            const hasPaper = pRatings.some((r: any) => r.source === "paper");
+            const hasApp = pRatings.some((r: any) => !r.source || r.source === "app");
+            if (hasPaper && !hasApp) return "paper";
+            return "digital";
+          };
+          const missingCount = totalP - ratedCount;
 
-        {participants.length === 0 ? (
-          <div style={{ padding: 16, textAlign: "center", color: v.muted, fontSize: 13 }}>
-            {t("m2.dashboard.noParticipants", "No participants have joined yet.")}
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {participants.map((p: any) => {
-              const participantId = pId(p);
-              const hasRatedCurrent = activeRatedPids.has(participantId);
-              const totalWhiskiesRated = new Set(
-                ratings.filter((r: any) => r.participantId === participantId).map((r: any) => r.whiskyId)
-              ).size;
+          return (
+            <>
+              <div style={{ ...sectionLabel, display: "flex", justifyContent: "space-between" }}>
+                <span>
+                  <Users style={{ width: 12, height: 12, display: "inline", verticalAlign: "-2px", marginRight: 4 }} />
+                  {t("m2.dashboard.participants", "Participants")}
+                </span>
+                <span style={{ color: v.accent, textTransform: "none", fontWeight: 700 }} data-testid="text-dashboard-rating-progress">
+                  {ratedCount}/{totalP} {t("m2.dashboard.rated", "rated")}
+                </span>
+              </div>
 
-              return (
-                <div key={participantId} style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "8px 10px", borderRadius: 8,
-                }} data-testid={`participant-row-${participantId}`}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: 14,
-                    background: hasRatedCurrent ? `color-mix(in srgb, ${v.success} 15%, transparent)` : v.elevated,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    {hasRatedCurrent
-                      ? <CheckCircle style={{ width: 14, height: 14, color: v.success }} />
-                      : <Clock style={{ width: 14, height: 14, color: v.muted }} />}
+              {totalP > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ height: 5, borderRadius: 3, background: v.elevated, overflow: "hidden" }}>
+                    <div style={{
+                      height: "100%",
+                      width: `${progressPct}%`,
+                      background: progressPct === 100 ? v.success : v.accent,
+                      borderRadius: 3,
+                      transition: "width 0.5s ease",
+                    }} />
                   </div>
-                  <span style={{ flex: 1, fontSize: 13, color: v.text, fontWeight: 500 }}>
-                    {pName(p)}
-                  </span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 11, color: v.muted, fontVariantNumeric: "tabular-nums" }}>
-                      {totalWhiskiesRated}/{whiskies.length}
-                    </span>
-                    <span style={{
-                      fontSize: 10, fontWeight: 600,
-                      color: hasRatedCurrent ? v.success : v.muted,
-                    }}>
-                      {hasRatedCurrent ? "✓" : "…"}
-                    </span>
-                  </div>
+                  {missingCount > 0 && (
+                    <div style={{ fontSize: 11, color: v.muted, marginTop: 6 }} data-testid="text-dashboard-missing-count">
+                      {missingCount} {t("m2.dashboard.missingRatings", "missing — collect their sheets")}
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        )}
+              )}
+
+              {totalP === 0 ? (
+                <div style={{ padding: 16, textAlign: "center", color: v.muted, fontSize: 13 }}>
+                  {t("m2.dashboard.noParticipants", "No participants have joined yet.")}
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  {participants.map((p: any) => {
+                    const participantId = pId(p);
+                    const hasRatedCurrent = activeRatedPids.has(participantId);
+                    const source = getSource(participantId);
+                    const totalWhiskiesRated = new Set(
+                      ratings.filter((r: any) => r.participantId === participantId).map((r: any) => r.whiskyId)
+                    ).size;
+
+                    return (
+                      <div key={participantId} style={{
+                        display: "flex", alignItems: "center", gap: 10,
+                        padding: "8px 10px", borderRadius: 8,
+                      }} data-testid={`participant-row-${participantId}`}>
+                        <div style={{
+                          width: 28, height: 28, borderRadius: 14,
+                          background: source === "digital"
+                            ? `color-mix(in srgb, ${v.success} 15%, transparent)`
+                            : source === "paper"
+                            ? `color-mix(in srgb, ${v.accent} 15%, transparent)`
+                            : v.elevated,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                          {source === "digital"
+                            ? <CheckCircle style={{ width: 14, height: 14, color: v.success }} />
+                            : source === "paper"
+                            ? <FileText style={{ width: 14, height: 14, color: v.accent }} />
+                            : <Clock style={{ width: 14, height: 14, color: v.muted }} />}
+                        </div>
+                        <span style={{ flex: 1, fontSize: 13, color: v.text, fontWeight: 500 }}>
+                          {pName(p)}
+                        </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 11, color: v.muted, fontVariantNumeric: "tabular-nums" }}>
+                            {totalWhiskiesRated}/{whiskies.length}
+                          </span>
+                          <span style={{
+                            fontSize: 9,
+                            fontWeight: 600,
+                            padding: "1px 6px",
+                            borderRadius: 8,
+                            background: source === "digital"
+                              ? `color-mix(in srgb, ${v.success} 12%, transparent)`
+                              : source === "paper"
+                              ? `color-mix(in srgb, ${v.accent} 12%, transparent)`
+                              : `color-mix(in srgb, ${v.muted} 12%, transparent)`,
+                            color: source === "digital" ? v.success : source === "paper" ? v.accent : v.muted,
+                          }} data-testid={`badge-source-dashboard-${participantId}`}>
+                            {source === "digital"
+                              ? t("m2.hostControl.sourceDigital", "Digital")
+                              : source === "paper"
+                              ? t("m2.hostControl.sourcePaper", "Paper")
+                              : t("m2.hostControl.pending", "Pending")}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
     </div>
   );

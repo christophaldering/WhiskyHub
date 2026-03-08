@@ -364,6 +364,33 @@ export const ratingApi = {
   upsert: (data: any) => fetchJSON("/ratings", { method: "POST", body: JSON.stringify(data) }),
 };
 
+// ===== Paper Sheet Scanning =====
+export const paperScanApi = {
+  scanSheet: async (tastingId: string, photos: File[], participantId?: string) => {
+    const formData = new FormData();
+    photos.forEach(p => formData.append("photos", p));
+    if (participantId) formData.append("participantId", participantId);
+    const pid = getParticipantId();
+    const headers: Record<string, string> = {};
+    if (pid) headers["x-participant-id"] = pid;
+    const res = await fetch(`${API_BASE}/tastings/${tastingId}/scan-sheet`, {
+      method: "POST",
+      body: formData,
+      headers,
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message || "Scan failed");
+    }
+    return res.json();
+  },
+  confirmScores: (tastingId: string, participantId: string, scores: any[]) =>
+    fetchJSON(`/tastings/${tastingId}/confirm-scores`, {
+      method: "POST",
+      body: JSON.stringify({ participantId, scores }),
+    }),
+};
+
 // ===== Export Notes =====
 export const exportApi = {
   getParticipantNotes: (tastingId: string, participantId: string) =>

@@ -228,6 +228,7 @@ export const ratings = pgTable("ratings", {
   calibrationDelta: real("calibration_delta"),
   blindVsOpenDelta: real("blind_vs_open_delta"),
   confidenceWeight: real("confidence_weight"),
+  source: text("source").default("app"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

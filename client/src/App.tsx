@@ -156,6 +156,7 @@ import M2DiscoverActivity from "@/pages/m2/M2DiscoverActivity";
 import M2DiscoverCommunity from "@/pages/m2/M2DiscoverCommunity";
 import M2PublicHistoricalInsights from "@/pages/m2/M2PublicHistoricalInsights";
 import M2MakingOf from "@/pages/m2/M2MakingOf";
+import M2PaperScan from "@/pages/m2/M2PaperScan";
 
 // ── V2 Dark Warm UI ──
 import LabDarkLayout from "@/lab-dark/LabDarkLayout";
@@ -314,6 +315,9 @@ function Router() {
         <Route path="/intro" component={Intro} />
 
         {/* === MODULE 2 (parallel UI, same data) === */}
+        <Route path="/m2/tastings/:id/scan">
+          <M2PaperScan />
+        </Route>
         <Route path="/m2/tastings/session/:id/results">
           <Module2Shell><M2TastingResults /></Module2Shell>
         </Route>

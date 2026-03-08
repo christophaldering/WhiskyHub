@@ -1,18 +1,20 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
-import { tastingApi, whiskyApi, ratingApi, blindModeApi, guidedApi, recapApi } from "@/lib/api";
+import { tastingApi, whiskyApi, ratingApi, blindModeApi, guidedApi, recapApi, paperScanApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { getSession, useSession } from "@/lib/session";
 import {
   Play, Lock, Eye, EyeOff, Archive, ChevronRight, CheckCircle, Clock,
   SkipForward, Sparkles, Plus, Trash2, GripVertical, ImageIcon,
-  FileText, Info, Loader2, RefreshCw, ChevronDown, ChevronUp, Edit3, Star, Monitor
+  FileText, Info, Loader2, RefreshCw, ChevronDown, ChevronUp, Edit3, Star, Monitor, Printer,
+  Camera, Upload, AlertCircle
 } from "lucide-react";
 import { Link } from "wouter";
+import { PrintableTastingSheets } from "@/components/printable-tasting-sheets";
 
 export default function M2HostControl() {
   const { t } = useTranslation();
@@ -28,6 +30,14 @@ export default function M2HostControl() {
   const [newWhisky, setNewWhisky] = useState({ name: "", distillery: "", abv: "", age: "", caskType: "", notes: "" });
   const [showAddWhisky, setShowAddWhisky] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("status");
+  const [scanPhotos, setScanPhotos] = useState<File[]>([]);
+  const [scanParticipantId, setScanParticipantId] = useState<string>("");
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanResult, setScanResult] = useState<any>(null);
+  const [scanError, setScanError] = useState<string>("");
+  const [scanSuccess, setScanSuccess] = useState<string>("");
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const scanFileRef = useRef<HTMLInputElement>(null);
 
   const { data: tasting, isLoading } = useQuery({
     queryKey: ["tasting", id],
@@ -328,6 +338,12 @@ export default function M2HostControl() {
             <div style={{ fontSize: 11, color: v.muted }}>{t("m2.hostControl.ratings", "Ratings")}</div>
           </div>
         </div>
+
+        {tasting && whiskies.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <PrintableTastingSheets tasting={tasting} whiskies={whiskies} />
+          </div>
+        )}
       </div>
 
       {/* Blind Reveal Controls */}
@@ -517,7 +533,7 @@ export default function M2HostControl() {
         </div>
       )}
 
-      {/* Participants */}
+      {/* Participants — Rating Completion Overview */}
       <div
         style={sectionHeaderStyle}
         onClick={() => toggleSection("participants")}
@@ -532,43 +548,111 @@ export default function M2HostControl() {
           <ChevronDown style={{ width: 16, height: 16, color: v.muted }} />
         )}
       </div>
-      {expandedSection === "participants" && (
-        <div style={{ ...cardStyle, marginTop: -4, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
-          {participants.map((p: any) => {
-            const hasRated = uniqueRaters.has(p.id);
-            return (
-              <div
-                key={p.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "8px 0",
-                  borderBottom: `1px solid ${v.border}`,
-                }}
-                data-testid={`m2-participant-${p.id}`}
-              >
-                {hasRated ? (
-                  <CheckCircle style={{ width: 16, height: 16, color: v.success }} />
-                ) : (
-                  <Clock style={{ width: 16, height: 16, color: v.muted }} />
-                )}
-                <span style={{ fontSize: 14, color: v.text, flex: 1 }}>
-                  {p.name || p.email || t("m2.hostControl.anonymous", "Anonymous")}
+      {expandedSection === "participants" && (() => {
+        const pid = (p: any) => p.participantId || p.id;
+        const ratedCount = participants.filter((p: any) => uniqueRaters.has(pid(p))).length;
+        const progressPct = totalParticipants > 0 ? Math.round((ratedCount / totalParticipants) * 100) : 0;
+        const getParticipantRatingSource = (pId: string): "digital" | "paper" | "pending" => {
+          const pRatings = ratings.filter((r: any) => r.participantId === pId);
+          if (pRatings.length === 0) return "pending";
+          const hasPaper = pRatings.some((r: any) => r.source === "paper");
+          const hasApp = pRatings.some((r: any) => !r.source || r.source === "app");
+          if (hasPaper && !hasApp) return "paper";
+          return "digital";
+        };
+        const missingParticipants = participants.filter((p: any) => !uniqueRaters.has(pid(p)));
+
+        return (
+          <div style={{ ...cardStyle, marginTop: -4, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+            <div style={{ marginBottom: 14 }} data-testid="rating-completion-overview">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: v.text }} data-testid="text-rating-progress">
+                  {ratedCount} {t("m2.hostControl.of", "of")} {totalParticipants} {t("m2.hostControl.participantsRated", "participants rated")}
                 </span>
-                <span style={{ fontSize: 11, color: hasRated ? v.success : v.muted }}>
-                  {hasRated ? t("m2.hostControl.rated", "Rated") : t("m2.hostControl.pending", "Pending")}
+                <span style={{ fontSize: 12, fontWeight: 700, color: v.accent, fontVariantNumeric: "tabular-nums" }}>
+                  {progressPct}%
                 </span>
               </div>
-            );
-          })}
-          {participants.length === 0 && (
-            <div style={{ fontSize: 13, color: v.muted, textAlign: "center", padding: 12 }}>
-              {t("m2.hostControl.noParticipants", "No participants yet")}
+              <div style={{ height: 6, borderRadius: 3, background: v.elevated, overflow: "hidden" }}>
+                <div style={{
+                  height: "100%",
+                  width: `${progressPct}%`,
+                  background: progressPct === 100 ? v.success : v.accent,
+                  borderRadius: 3,
+                  transition: "width 0.5s ease",
+                }} />
+              </div>
             </div>
-          )}
-        </div>
-      )}
+
+            {missingParticipants.length > 0 && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "8px 12px", borderRadius: 10, marginBottom: 12,
+                background: `color-mix(in srgb, ${v.warning || v.accent} 10%, transparent)`,
+                border: `1px solid color-mix(in srgb, ${v.warning || v.accent} 25%, transparent)`,
+              }} data-testid="missing-ratings-banner">
+                <AlertCircle style={{ width: 14, height: 14, color: v.warning || v.accent, flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: v.textSecondary }}>
+                  {missingParticipants.length} {t("m2.hostControl.missingRatings", "missing — collect their sheets")}
+                </span>
+              </div>
+            )}
+
+            {participants.map((p: any) => {
+              const pId = pid(p);
+              const source = getParticipantRatingSource(pId);
+              const hasRated = source !== "pending";
+              return (
+                <div
+                  key={pId}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 0",
+                    borderBottom: `1px solid ${v.border}`,
+                  }}
+                  data-testid={`m2-participant-${pId}`}
+                >
+                  {source === "digital" ? (
+                    <CheckCircle style={{ width: 16, height: 16, color: v.success }} />
+                  ) : source === "paper" ? (
+                    <FileText style={{ width: 16, height: 16, color: v.accent }} />
+                  ) : (
+                    <Clock style={{ width: 16, height: 16, color: v.muted }} />
+                  )}
+                  <span style={{ fontSize: 14, color: v.text, flex: 1 }}>
+                    {p.name || p.email || t("m2.hostControl.anonymous", "Anonymous")}
+                  </span>
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: "2px 8px",
+                    borderRadius: 10,
+                    background: source === "digital"
+                      ? `color-mix(in srgb, ${v.success} 12%, transparent)`
+                      : source === "paper"
+                      ? `color-mix(in srgb, ${v.accent} 12%, transparent)`
+                      : `color-mix(in srgb, ${v.muted} 12%, transparent)`,
+                    color: source === "digital" ? v.success : source === "paper" ? v.accent : v.muted,
+                  }} data-testid={`badge-source-${pId}`}>
+                    {source === "digital"
+                      ? t("m2.hostControl.sourceDigital", "Digital")
+                      : source === "paper"
+                      ? t("m2.hostControl.sourcePaper", "Paper")
+                      : t("m2.hostControl.pending", "Pending")}
+                  </span>
+                </div>
+              );
+            })}
+            {participants.length === 0 && (
+              <div style={{ fontSize: 13, color: v.muted, textAlign: "center", padding: 12 }}>
+                {t("m2.hostControl.noParticipants", "No participants yet")}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Whisky Management */}
       <div
@@ -817,6 +901,355 @@ export default function M2HostControl() {
               <Plus style={{ width: 14, height: 14 }} />
               {t("m2.hostControl.addWhisky", "Add Whisky")}
             </button>
+          )}
+        </div>
+      )}
+
+      {/* Scan Paper Sheets */}
+      <div
+        style={{ ...sectionHeaderStyle, marginTop: 4 }}
+        onClick={() => toggleSection("paperScan")}
+        data-testid="m2-paper-scan-toggle"
+      >
+        <span style={sectionTitleStyle}>
+          <Camera style={{ width: 14, height: 14, display: "inline", verticalAlign: "-2px", marginRight: 4 }} />
+          {t("m2.hostControl.scanPaperSheets", "Scan Paper Sheets")}
+        </span>
+        {expandedSection === "paperScan" ? (
+          <ChevronUp style={{ width: 16, height: 16, color: v.muted }} />
+        ) : (
+          <ChevronDown style={{ width: 16, height: 16, color: v.muted }} />
+        )}
+      </div>
+      {expandedSection === "paperScan" && (
+        <div style={{ ...cardStyle, marginTop: -4, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+          {scanSuccess && (
+            <div
+              style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "10px 12px", borderRadius: 10, marginBottom: 12,
+                background: `color-mix(in srgb, ${v.success} 12%, transparent)`,
+                border: `1px solid color-mix(in srgb, ${v.success} 30%, transparent)`,
+              }}
+              data-testid="scan-success-message"
+            >
+              <CheckCircle style={{ width: 16, height: 16, color: v.success, flexShrink: 0 }} />
+              <span style={{ fontSize: 13, color: v.success, fontWeight: 600 }}>{scanSuccess}</span>
+            </div>
+          )}
+
+          {scanError && (
+            <div
+              style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "10px 12px", borderRadius: 10, marginBottom: 12,
+                background: `color-mix(in srgb, ${v.danger} 12%, transparent)`,
+                border: `1px solid color-mix(in srgb, ${v.danger} 30%, transparent)`,
+              }}
+              data-testid="scan-error-message"
+            >
+              <AlertCircle style={{ width: 16, height: 16, color: v.danger, flexShrink: 0 }} />
+              <span style={{ fontSize: 13, color: v.danger }}>{scanError}</span>
+            </div>
+          )}
+
+          {!scanResult && (
+            <>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
+                  {t("m2.hostControl.selectParticipant", "Participant (optional)")}
+                </label>
+                <select
+                  value={scanParticipantId}
+                  onChange={(e) => setScanParticipantId(e.target.value)}
+                  style={{
+                    ...inputStyle,
+                    appearance: "auto",
+                  }}
+                  data-testid="select-scan-participant"
+                >
+                  <option value="">{t("m2.hostControl.autoDetect", "Auto-detect from sheet")}</option>
+                  {participants
+                    .filter((p: any) => !uniqueRaters.has(p.participantId || p.id))
+                    .map((p: any) => (
+                      <option key={p.participantId || p.id} value={p.participantId || p.id}>
+                        {p.name || p.participant?.name || p.email || t("m2.hostControl.anonymous", "Anonymous")} — {t("m2.hostControl.pending", "Pending")}
+                      </option>
+                    ))}
+                  {participants
+                    .filter((p: any) => uniqueRaters.has(p.participantId || p.id))
+                    .map((p: any) => (
+                      <option key={p.participantId || p.id} value={p.participantId || p.id}>
+                        {p.name || p.participant?.name || p.email || t("m2.hostControl.anonymous", "Anonymous")}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <input
+                ref={scanFileRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                multiple
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (files.length > 0) setScanPhotos(files);
+                }}
+                data-testid="input-scan-file"
+              />
+
+              {scanPhotos.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 12, color: v.muted, marginBottom: 6 }}>
+                    {scanPhotos.length} {t("m2.hostControl.photosSelected", "photo(s) selected")}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {scanPhotos.map((f, i) => (
+                      <div key={i} style={{
+                        width: 56, height: 56, borderRadius: 8, overflow: "hidden",
+                        border: `1px solid ${v.border}`, position: "relative",
+                      }}>
+                        <img
+                          src={URL.createObjectURL(f)}
+                          alt={f.name}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => scanFileRef.current?.click()}
+                  style={{
+                    ...smallBtnStyle,
+                    flex: 1,
+                    justifyContent: "center",
+                    padding: "12px",
+                    background: v.elevated,
+                    color: v.accent,
+                    border: `1px solid ${v.border}`,
+                  }}
+                  data-testid="button-scan-capture"
+                >
+                  <Camera style={{ width: 16, height: 16 }} />
+                  {scanPhotos.length > 0
+                    ? t("m2.hostControl.changePhoto", "Change Photo")
+                    : t("m2.hostControl.takePhoto", "Take Photo")}
+                </button>
+
+                {scanPhotos.length > 0 && (
+                  <button
+                    onClick={async () => {
+                      setScanLoading(true);
+                      setScanError("");
+                      setScanSuccess("");
+                      try {
+                        const result = await paperScanApi.scanSheet(
+                          id,
+                          scanPhotos,
+                          scanParticipantId || undefined
+                        );
+                        setScanResult(result);
+                      } catch (err: any) {
+                        setScanError(err.message || t("m2.hostControl.scanFailed", "Scan failed. Please try again."));
+                      }
+                      setScanLoading(false);
+                    }}
+                    disabled={scanLoading}
+                    style={{
+                      ...smallBtnStyle,
+                      flex: 1,
+                      justifyContent: "center",
+                      padding: "12px",
+                      background: v.accent,
+                      color: v.bg,
+                      opacity: scanLoading ? 0.6 : 1,
+                    }}
+                    data-testid="button-scan-upload"
+                  >
+                    {scanLoading ? (
+                      <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+                    ) : (
+                      <Upload style={{ width: 16, height: 16 }} />
+                    )}
+                    {scanLoading
+                      ? t("m2.hostControl.scanning", "Scanning...")
+                      : t("m2.hostControl.analyzeSheet", "Analyze Sheet")}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          {scanResult && (
+            <div data-testid="scan-review-section">
+              <div style={{ fontSize: 14, fontWeight: 700, color: v.text, marginBottom: 4 }}>
+                {t("m2.hostControl.reviewScores", "Review Extracted Scores")}
+              </div>
+              {scanResult.participantName && (
+                <div style={{ fontSize: 12, color: v.muted, marginBottom: 12 }}>
+                  {t("m2.hostControl.detectedParticipant", "Detected participant")}: <strong style={{ color: v.text }}>{scanResult.participantName}</strong>
+                </div>
+              )}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {(scanResult.scores || []).map((score: any, idx: number) => (
+                  <div
+                    key={idx}
+                    style={{
+                      background: v.elevated,
+                      borderRadius: 10,
+                      padding: "12px",
+                      border: `1px solid ${v.border}`,
+                    }}
+                    data-testid={`scan-score-card-${idx}`}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 700, color: v.accent, marginBottom: 8 }}>
+                      {score.whiskyName || `Whisky #${(score.whiskyIndex ?? idx) + 1}`}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                      {["nose", "taste", "finish", "balance", "overall"].map((dim) => (
+                        <div key={dim} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <label style={{ fontSize: 11, color: v.muted, width: 48, textTransform: "capitalize" }}>
+                            {t(`m2.hostControl.${dim}`, dim)}
+                          </label>
+                          <input
+                            type="number"
+                            value={score[dim] ?? ""}
+                            onChange={(e) => {
+                              const updated = [...scanResult.scores];
+                              updated[idx] = { ...updated[idx], [dim]: e.target.value === "" ? null : Number(e.target.value) };
+                              setScanResult({ ...scanResult, scores: updated });
+                            }}
+                            style={{
+                              ...inputStyle,
+                              width: 60,
+                              padding: "6px 8px",
+                              fontSize: 13,
+                              textAlign: "center",
+                            }}
+                            data-testid={`input-scan-${dim}-${idx}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    {score.notes && (
+                      <div style={{ marginTop: 8 }}>
+                        <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>
+                          {t("m2.hostControl.notes", "Notes")}
+                        </label>
+                        <textarea
+                          value={score.notes || ""}
+                          onChange={(e) => {
+                            const updated = [...scanResult.scores];
+                            updated[idx] = { ...updated[idx], notes: e.target.value };
+                            setScanResult({ ...scanResult, scores: updated });
+                          }}
+                          style={{
+                            ...inputStyle,
+                            minHeight: 48,
+                            resize: "vertical",
+                            fontSize: 12,
+                          }}
+                          data-testid={`input-scan-notes-${idx}`}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {!scanResult.participantId && !scanParticipantId && (
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: v.muted, display: "block", marginBottom: 6 }}>
+                    {t("m2.hostControl.assignParticipant", "Assign to participant")}
+                  </label>
+                  <select
+                    value={scanParticipantId}
+                    onChange={(e) => setScanParticipantId(e.target.value)}
+                    style={{ ...inputStyle, appearance: "auto" }}
+                    data-testid="select-scan-assign-participant"
+                  >
+                    <option value="">{t("m2.hostControl.selectOne", "— Select —")}</option>
+                    {participants.map((p: any) => (
+                      <option key={p.participantId || p.id} value={p.participantId || p.id}>
+                        {p.name || p.participant?.name || p.email || t("m2.hostControl.anonymous", "Anonymous")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                <button
+                  onClick={() => {
+                    setScanResult(null);
+                    setScanPhotos([]);
+                    setScanParticipantId("");
+                    setScanError("");
+                    setScanSuccess("");
+                  }}
+                  style={{
+                    ...smallBtnStyle,
+                    flex: 1,
+                    justifyContent: "center",
+                    padding: "12px",
+                    background: v.elevated,
+                    color: v.text,
+                    border: `1px solid ${v.border}`,
+                  }}
+                  data-testid="button-scan-discard"
+                >
+                  {t("common.cancel", "Cancel")}
+                </button>
+                <button
+                  onClick={async () => {
+                    const pid = scanResult.participantId || scanParticipantId;
+                    if (!pid) {
+                      setScanError(t("m2.hostControl.selectParticipantFirst", "Please select a participant first."));
+                      return;
+                    }
+                    setConfirmLoading(true);
+                    setScanError("");
+                    try {
+                      await paperScanApi.confirmScores(id, pid, scanResult.scores);
+                      const pName = participants.find((p: any) => (p.participantId || p.id) === pid)?.name || participants.find((p: any) => (p.participantId || p.id) === pid)?.participant?.name || scanResult.participantName || pid;
+                      setScanSuccess(t("m2.hostControl.scoresImported", "Scores for {{name}} imported successfully!", { name: pName }));
+                      setScanResult(null);
+                      setScanPhotos([]);
+                      setScanParticipantId("");
+                      queryClient.invalidateQueries({ queryKey: ["ratings", id] });
+                    } catch (err: any) {
+                      setScanError(err.message || t("m2.hostControl.confirmFailed", "Failed to save scores."));
+                    }
+                    setConfirmLoading(false);
+                  }}
+                  disabled={confirmLoading || (!scanResult.participantId && !scanParticipantId)}
+                  style={{
+                    ...smallBtnStyle,
+                    flex: 1,
+                    justifyContent: "center",
+                    padding: "12px",
+                    background: (!scanResult.participantId && !scanParticipantId) ? v.border : v.accent,
+                    color: (!scanResult.participantId && !scanParticipantId) ? v.muted : v.bg,
+                    opacity: confirmLoading ? 0.6 : 1,
+                  }}
+                  data-testid="button-scan-confirm"
+                >
+                  {confirmLoading ? (
+                    <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+                  ) : (
+                    <CheckCircle style={{ width: 16, height: 16 }} />
+                  )}
+                  {t("m2.hostControl.confirmSave", "Confirm & Save")}
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}
