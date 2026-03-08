@@ -1489,7 +1489,7 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
 
         {importPreview && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1001, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={() => { setImportPreview(null); setImportPreviewMeta(null); }} data-testid="modal-import-preview-overlay">
-            <div style={{ width: "100%", maxWidth: 480, maxHeight: "85vh", background: v.card, borderRadius: "16px 16px 0 0", display: "flex", flexDirection: "column", overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ width: "100%", maxWidth: 480, maxHeight: "75vh", marginBottom: "env(safe-area-inset-bottom, 0px)", background: v.card, borderRadius: "16px 16px 0 0", display: "flex", flexDirection: "column", overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
               <div style={{ padding: "16px 20px", borderBottom: `1px solid ${v.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: v.text, fontFamily: "'Playfair Display', serif" }}>
                   {t("m2.host.importPreviewTitle", "Imported Whiskies")}
@@ -1586,14 +1586,12 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
                 </div>
               </div>
 
-              {importPreviewSelected.size > 0 && (
-                <div style={{ padding: "12px 20px", borderTop: `1px solid ${v.border}` }}>
-                  <button type="button" onClick={handleImportConfirm} disabled={importAdding} style={{ width: "100%", padding: "12px", fontSize: 14, fontWeight: 600, background: v.accent, color: v.bg, border: "none", borderRadius: 10, cursor: importAdding ? "not-allowed" : "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: importAdding ? 0.7 : 1 }} data-testid="button-confirm-file-import">
-                    {importAdding ? <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} /> : <Plus style={{ width: 16, height: 16 }} />}
-                    {importAdding ? t("m2.host.adding", "Adding...") : t("m2.host.addToLineup", { count: importPreviewSelected.size, defaultValue: `Add ${importPreviewSelected.size} to Lineup` })}
-                  </button>
-                </div>
-              )}
+              <div style={{ padding: "12px 20px 16px", borderTop: `1px solid ${v.border}`, flexShrink: 0 }}>
+                <button type="button" onClick={handleImportConfirm} disabled={importAdding || importPreviewSelected.size === 0} style={{ width: "100%", padding: "14px", fontSize: 15, fontWeight: 700, background: importPreviewSelected.size > 0 ? v.accent : v.border, color: importPreviewSelected.size > 0 ? v.bg : v.muted, border: "none", borderRadius: 10, cursor: importAdding || importPreviewSelected.size === 0 ? "not-allowed" : "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: importAdding ? 0.7 : 1 }} data-testid="button-confirm-file-import">
+                  {importAdding ? <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} /> : <Plus style={{ width: 16, height: 16 }} />}
+                  {importAdding ? t("m2.host.adding", "Adding...") : importPreviewSelected.size > 0 ? t("m2.host.addToLineup", { count: importPreviewSelected.size, defaultValue: `Add ${importPreviewSelected.size} to Lineup` }) : t("m2.host.selectWhiskies", "Select whiskies to add")}
+                </button>
+              </div>
             </div>
           </div>
         )}

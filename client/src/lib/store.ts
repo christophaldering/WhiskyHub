@@ -82,7 +82,7 @@ export const useAppStore = create<AppState>()(
       setContextLevel: (level) => set({ contextLevel: level }),
       uiMode: "flow" as UIMode,
       setUIMode: (mode) => set({ uiMode: mode }),
-      theme: "dark" as Theme,
+      theme: "light" as Theme,
       setTheme: (theme) => {
         applyTheme(theme);
         set({ theme });

@@ -88,10 +88,10 @@ const themes: Record<ThemeName, Record<string, string>> = {
 const LS_KEY = "cs_theme";
 
 export function getTheme(): ThemeName {
-  if (typeof window === "undefined") return "dark-warm";
+  if (typeof window === "undefined") return "light-warm";
   const stored = localStorage.getItem(LS_KEY);
   if (stored === "light-warm" || stored === "dark-warm") return stored;
-  return "dark-warm";
+  return "light-warm";
 }
 
 export function setTheme(theme: ThemeName): void {
