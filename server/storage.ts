@@ -360,6 +360,7 @@ export interface IStorage {
   createConnoisseurReport(data: InsertConnoisseurReport): Promise<ConnoisseurReport>;
   getConnoisseurReports(participantId: string): Promise<ConnoisseurReport[]>;
   getConnoisseurReport(id: string): Promise<ConnoisseurReport | undefined>;
+  deleteConnoisseurReport(id: string): Promise<void>;
 
   // Voice Memos
   createVoiceMemo(data: InsertVoiceMemo): Promise<VoiceMemo>;
@@ -2150,6 +2151,11 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db.select().from(connoisseurReports).where(eq(connoisseurReports.id, id));
     return result;
   }
+
+  async deleteConnoisseurReport(id: string): Promise<void> {
+    await db.delete(connoisseurReports).where(eq(connoisseurReports.id, id));
+  }
+
   // --- Voice Memos ---
   async createVoiceMemo(data: InsertVoiceMemo): Promise<VoiceMemo> {
     const [result] = await db.insert(voiceMemos).values(data).returning();

@@ -5,7 +5,7 @@ import { v, alpha } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { useSession } from "@/lib/session";
 import { pidHeaders } from "@/lib/api";
-import { Sparkles, Copy, Check, ChevronDown, Download, FileText } from "lucide-react";
+import { Sparkles, Copy, Check, ChevronDown, Download, FileText, Trash2 } from "lucide-react";
 import AILanguageSelector from "@/components/m2/AILanguageSelector";
 
 interface ConnoisseurReport {
@@ -196,6 +196,7 @@ export default function M2TasteConnoisseur() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
   const [aiLang, setAiLang] = useState<"de" | "en">(i18n.language?.startsWith("de") ? "de" : "en");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const { data: reports = [], isLoading } = useQuery<ConnoisseurReport[]>({
     queryKey: ["connoisseur-reports", pid],
@@ -227,6 +228,23 @@ export default function M2TasteConnoisseur() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["connoisseur-reports", pid] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (reportId: string) => {
+      const res = await fetch(`/api/participants/${pid}/connoisseur-reports/${reportId}`, {
+        method: "DELETE",
+        headers: pidHeaders(),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Delete failed");
+      }
+    },
+    onSuccess: () => {
+      setConfirmDeleteId(null);
       queryClient.invalidateQueries({ queryKey: ["connoisseur-reports", pid] });
     },
   });
@@ -372,8 +390,15 @@ export default function M2TasteConnoisseur() {
             data-testid="card-connoisseur-summary"
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: v.accent }}>
-                Summary
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, color: v.accent }}>
+                  Summary
+                </div>
+                <div style={{ fontSize: 12, color: v.muted, marginTop: 4, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }} data-testid="text-report-timestamp">
+                  {i18n.language?.startsWith("de")
+                    ? `Erstellt am ${new Date(latestReport.generatedAt).toLocaleDateString("de-DE", { year: "numeric", month: "long", day: "numeric" })}`
+                    : `Generated on ${new Date(latestReport.generatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`}
+                </div>
               </div>
               <button
                 onClick={copySummary}
@@ -437,6 +462,30 @@ export default function M2TasteConnoisseur() {
           >
             <Download style={{ width: 16, height: 16 }} />
             {t("m2.connoisseur.downloadPdf", "Download PDF")}
+          </button>
+
+          <button
+            onClick={() => setConfirmDeleteId(latestReport.id)}
+            style={{
+              width: "100%",
+              padding: "10px 20px",
+              background: "none",
+              color: v.muted,
+              border: "none",
+              borderRadius: 12,
+              fontSize: 13,
+              cursor: "pointer",
+              fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              marginBottom: 24,
+            }}
+            data-testid="button-delete-latest-report"
+          >
+            <Trash2 style={{ width: 14, height: 14 }} />
+            {t("m2.connoisseur.deleteReport", "Delete Report")}
           </button>
 
           {latestReport.dataSnapshot && previousReports.length > 0 && previousReports[0].dataSnapshot && (
@@ -554,10 +603,112 @@ export default function M2TasteConnoisseur() {
                       <div style={{ paddingTop: 16 }}>
                         <MarkdownRenderer content={report.reportContent} />
                       </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(report.id); }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          marginTop: 12,
+                          padding: "8px 12px",
+                          background: "none",
+                          border: `1px solid ${v.border}`,
+                          borderRadius: 8,
+                          fontSize: 12,
+                          color: v.muted,
+                          cursor: "pointer",
+                          fontFamily: "system-ui, sans-serif",
+                        }}
+                        data-testid={`button-delete-report-${report.id}`}
+                      >
+                        <Trash2 style={{ width: 13, height: 13 }} />
+                        {t("m2.connoisseur.deleteReport", "Delete Report")}
+                      </button>
                     </div>
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDeleteId && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.6)",
+            backdropFilter: "blur(4px)",
+            padding: 24,
+          }}
+          onClick={() => setConfirmDeleteId(null)}
+          data-testid="dialog-confirm-delete"
+        >
+          <div
+            style={{
+              background: v.card,
+              border: `1px solid ${v.border}`,
+              borderRadius: 16,
+              padding: "24px 20px",
+              maxWidth: 340,
+              width: "100%",
+              textAlign: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Trash2 style={{ width: 28, height: 28, color: "#e55", marginBottom: 12 }} />
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: v.text, margin: "0 0 8px", fontFamily: "'Playfair Display', serif" }}>
+              {t("m2.connoisseur.deleteConfirmTitle", "Delete Report?")}
+            </h3>
+            <p style={{ fontSize: 13, color: v.muted, lineHeight: 1.5, margin: "0 0 20px", fontFamily: "system-ui, sans-serif" }}>
+              {t("m2.connoisseur.deleteConfirmText", "This action cannot be undone. The report and its data snapshot will be permanently removed.")}
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  background: v.elevated,
+                  color: v.text,
+                  border: `1px solid ${v.border}`,
+                  borderRadius: 10,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "system-ui, sans-serif",
+                }}
+                data-testid="button-cancel-delete"
+              >
+                {t("m2.connoisseur.cancel", "Cancel")}
+              </button>
+              <button
+                onClick={() => deleteMutation.mutate(confirmDeleteId)}
+                disabled={deleteMutation.isPending}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  background: "#e55",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 10,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: deleteMutation.isPending ? "wait" : "pointer",
+                  opacity: deleteMutation.isPending ? 0.7 : 1,
+                  fontFamily: "system-ui, sans-serif",
+                }}
+                data-testid="button-confirm-delete"
+              >
+                {deleteMutation.isPending
+                  ? t("m2.connoisseur.deleting", "Deleting...")
+                  : t("m2.connoisseur.delete", "Delete")}
+              </button>
             </div>
           </div>
         </div>

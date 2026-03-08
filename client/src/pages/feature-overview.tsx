@@ -9,6 +9,7 @@ import {
   Palette, Layers, Brain, Search, Wine, ClipboardList,
   Share2, Lock, UserCheck, Gauge, PieChart, TrendingUp,
   Target, Zap, MessageSquare, Image as ImageIcon,
+  Languages, ListFilter, FileText, Headphones, LayoutList,
 } from "lucide-react";
 import { v } from "@/lib/themeVars";
 import jsPDF from "jspdf";
@@ -70,6 +71,7 @@ const categories: Category[] = [
       { icon: <Eye style={{ width: 18, height: 18 }} />, title: "Context Levels", description: "Three-tier visibility control: Naked, Self, and Full — choose how much you see during a session." },
       { icon: <Shield style={{ width: 18, height: 18 }} />, title: "Guest Mode", description: "Participate as a guest with Standard Naked or Ultra Naked (ephemeral) identity." },
       { icon: <MessageSquare style={{ width: 18, height: 18 }} />, title: "Discussion Panel", description: "Share impressions in real time with other participants during a live tasting." },
+      { icon: <Headphones style={{ width: 18, height: 18 }} />, title: "Voice Memo Playback", description: "Listen to recorded audio memos and read AI-generated transcripts directly in the dram detail view." },
     ],
   },
   {
@@ -106,6 +108,7 @@ const categories: Category[] = [
       { icon: <Brain style={{ width: 18, height: 18 }} />, title: "Connoisseur Report", description: "AI-generated personal whisky profile analyzing your ratings, collection, and flavor preferences." },
       { icon: <Target style={{ width: 18, height: 18 }} />, title: "Market Price Estimation", description: "AI estimates current market prices based on bottle details." },
       { icon: <Search style={{ width: 18, height: 18 }} />, title: "Whiskybase Lookup", description: "Auto-fill whisky details via Whiskybase ID or camera-based barcode scanning." },
+      { icon: <Languages style={{ width: 18, height: 18 }} />, title: "AI Language Selection", description: "Choose between German and English for all AI-generated outputs including summaries, reports, and tasting notes." },
     ],
   },
   {
@@ -122,6 +125,8 @@ const categories: Category[] = [
       { icon: <TrendingUp style={{ width: 18, height: 18 }} />, title: "Personal Analytics", description: "Track your tasting patterns, preferred regions, and flavor evolution." },
       { icon: <ImageIcon style={{ width: 18, height: 18 }} />, title: "Photo Tasting", description: "Photograph a bottle for instant AI identification and logging." },
       { icon: <Mic style={{ width: 18, height: 18 }} />, title: "Solo Voice Memos", description: "Record voice notes for your journal entries — transcribed automatically." },
+      { icon: <ListFilter style={{ width: 18, height: 18 }} />, title: "Dram Overview", description: "Browse all your logged drams with statistics, search, and filtered views by region, type, or rating." },
+      { icon: <FileText style={{ width: 18, height: 18 }} />, title: "Parsed Tasting Notes", description: "AI-generated tasting notes are parsed into structured scores and flavor chips for quick visual reference." },
     ],
   },
   {
@@ -167,6 +172,7 @@ const categories: Category[] = [
       { icon: <Palette style={{ width: 18, height: 18 }} />, title: "Theme System", description: "Switch between Dark Warm and Light Warm themes." },
       { icon: <Trophy style={{ width: 18, height: 18 }} />, title: "Achievement Badges", description: "Earn badges for tasting milestones and participation." },
       { icon: <Sparkles style={{ width: 18, height: 18 }} />, title: "Making-Of Timeline", description: "Interactive development story told through whisky metaphors." },
+      { icon: <LayoutList style={{ width: 18, height: 18 }} />, title: "Feature Overview", description: "Comprehensive feature catalog with category navigation and one-click PDF export." },
     ],
   },
 ];

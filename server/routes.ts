@@ -3967,6 +3967,26 @@ ALWAYS respond in ${langLabel}. Use the tone of a knowledgeable master blender a
     }
   });
 
+  app.delete("/api/participants/:id/connoisseur-reports/:reportId", async (req, res) => {
+    try {
+      const participantId = req.params.id;
+      const auth = await requireOwnerOrAdmin(req, participantId);
+      if (!auth.authorized) {
+        return res.status(auth.status).json({ message: auth.message });
+      }
+
+      const report = await storage.getConnoisseurReport(req.params.reportId);
+      if (!report || report.participantId !== participantId) {
+        return res.status(404).json({ message: "Report not found" });
+      }
+
+      await storage.deleteConnoisseurReport(req.params.reportId);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== PHOTO REVEAL (per-whisky and bulk) =====
 
   app.patch("/api/whiskies/:id/reveal-photo", async (req, res) => {
