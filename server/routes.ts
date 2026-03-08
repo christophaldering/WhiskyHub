@@ -754,6 +754,62 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/user-activity", async (req, res) => {
+    try {
+      const requesterId = req.headers["x-participant-id"] as string || req.query.participantId as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+      const requester = await storage.getParticipant(requesterId);
+      if (!requester || requester.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+
+      const hours = Math.max(0, parseInt(req.query.hours as string) || 24);
+      const role = req.query.role as string | undefined;
+      const { db } = await import("./db");
+      const { sql } = await import("drizzle-orm");
+
+      const conditions: string[] = [];
+      if (hours > 0) {
+        conditions.push(`p.last_seen_at > NOW() - INTERVAL '${Number(hours)} hours'`);
+      } else {
+        conditions.push(`p.last_seen_at IS NOT NULL`);
+      }
+      if (role && ["admin", "host", "user"].includes(role)) {
+        conditions.push(`p.role = '${role}'`);
+      }
+      const whereClause = "WHERE " + conditions.join(" AND ");
+
+      const result = await db.execute(sql.raw(`
+        SELECT
+          p.id, p.name, p.email, p.role, p.experience_level,
+          p.last_seen_at, p.created_at,
+          COALESCE(tp.cnt, 0)::int AS tasting_count,
+          COALESCE(r.cnt, 0)::int AS rating_count,
+          COALESCE(j.cnt, 0)::int AS journal_count
+        FROM participants p
+        LEFT JOIN (SELECT participant_id, COUNT(*)::int AS cnt FROM tasting_participants GROUP BY participant_id) tp ON tp.participant_id = p.id
+        LEFT JOIN (SELECT participant_id, COUNT(*)::int AS cnt FROM ratings GROUP BY participant_id) r ON r.participant_id = p.id
+        LEFT JOIN (SELECT participant_id, COUNT(*)::int AS cnt FROM journal_entries GROUP BY participant_id) j ON j.participant_id = p.id
+        ${whereClause}
+        ORDER BY p.last_seen_at DESC
+      `));
+
+      const rows = (result as any).rows || result;
+      res.json(rows.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        email: r.email,
+        role: r.role,
+        experienceLevel: r.experience_level,
+        lastSeenAt: r.last_seen_at,
+        createdAt: r.created_at,
+        tastingCount: r.tasting_count,
+        ratingCount: r.rating_count,
+        journalCount: r.journal_count,
+      })));
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   app.get("/api/admin/online-users", async (req, res) => {
     try {
       const minutes = parseInt(req.query.minutes as string) || 5;

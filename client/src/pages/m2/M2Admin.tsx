@@ -16,15 +16,16 @@ import {
   Brain, Clock, Settings, FlaskConical, Wifi, XCircle, CheckCircle,
   MessageSquarePlus, Megaphone, Rocket, Filter, AlertTriangle,
   FileArchive, Play, FileWarning, Globe, Lock, UserPlus, ToggleLeft, ToggleRight,
-  BookOpen, ExternalLink
+  BookOpen, ExternalLink, Activity
 } from "lucide-react";
 
-type AdminTab = "participants" | "tastings" | "online" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback" | "making-of";
+type AdminTab = "participants" | "tastings" | "online" | "activity" | "ai" | "newsletter" | "changelog" | "cleanup" | "analytics" | "historical" | "communities" | "settings" | "feedback" | "making-of";
 
 const TAB_CONFIG: { id: AdminTab; labelKey: string; fallback: string; icon: any }[] = [
   { id: "participants", labelKey: "m2.admin.participants", fallback: "Participants", icon: Users },
   { id: "tastings", labelKey: "m2.admin.tastings", fallback: "Tastings", icon: Wine },
   { id: "online", labelKey: "m2.admin.online", fallback: "Online", icon: Wifi },
+  { id: "activity", labelKey: "m2.admin.activity", fallback: "Aktivität", icon: Activity },
   { id: "ai", labelKey: "m2.admin.ai", fallback: "AI Controls", icon: Brain },
   { id: "newsletter", labelKey: "m2.admin.newsletter", fallback: "Newsletter", icon: Mail },
   { id: "changelog", labelKey: "m2.admin.changelog", fallback: "Changelog", icon: Rocket },
@@ -181,6 +182,7 @@ export default function M2Admin() {
       {activeTab === "participants" && <ParticipantsTab data={data} pid={pid} />}
       {activeTab === "tastings" && <TastingsTab data={data} pid={pid} />}
       {activeTab === "online" && <OnlineTab />}
+      {activeTab === "activity" && <ActivityTab />}
       {activeTab === "ai" && <AITab pid={pid} />}
       {activeTab === "newsletter" && <NewsletterTab participants={data.participants} pid={pid} />}
       {activeTab === "changelog" && <ChangelogTab pid={pid} />}
@@ -547,6 +549,148 @@ function OnlineTab() {
                   {u.email && <div style={{ fontSize: 11, color: v.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</div>}
                 </div>
                 <div style={{ fontSize: 11, color: v.muted, flexShrink: 0 }}>{formatTime(u.lastSeenAt)}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const ACTIVITY_TIME_OPTIONS = [
+  { hours: 1, labelKey: "m2.admin.activity1h", fallback: "1h" },
+  { hours: 6, labelKey: "m2.admin.activity6h", fallback: "6h" },
+  { hours: 12, labelKey: "m2.admin.activity12h", fallback: "12h" },
+  { hours: 24, labelKey: "m2.admin.activity24h", fallback: "24h" },
+  { hours: 168, labelKey: "m2.admin.activity7d", fallback: "7d" },
+  { hours: 720, labelKey: "m2.admin.activity30d", fallback: "30d" },
+  { hours: 0, labelKey: "m2.admin.activityAll", fallback: "Alle" },
+];
+
+function ActivityTab() {
+  const { t } = useTranslation();
+  const [hours, setHours] = useState(24);
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [search, setSearch] = useState("");
+
+  const { data: users = [], isLoading, isError } = useQuery({
+    queryKey: ["/api/admin/user-activity", hours, roleFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams({ hours: String(hours) });
+      if (roleFilter !== "all") params.set("role", roleFilter);
+      const pid = getSession();
+      const res = await fetch(`/api/admin/user-activity?${params}`, {
+        headers: pid ? { "x-participant-id": pid } : {},
+      });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+  });
+
+  const filtered = users.filter((u: any) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return u.name?.toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q);
+  });
+
+  const formatRelative = (ts: string) => {
+    if (!ts) return "–";
+    const diffMin = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+    if (diffMin < 1) return t("m2.admin.justNow", "just now");
+    if (diffMin < 60) return `${diffMin}m`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `${diffH}h`;
+    const diffD = Math.floor(diffH / 24);
+    return `${diffD}d`;
+  };
+
+  const roleColor = (role: string) => {
+    if (role === "admin") return { bg: `${v.danger}18`, color: v.danger };
+    if (role === "host") return { bg: "#60a5fa25", color: "#60a5fa" };
+    return { bg: `${v.muted}18`, color: v.muted };
+  };
+
+  return (
+    <div data-testid="admin-activity-tab">
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <Activity style={{ width: 18, height: 18, color: v.accent }} />
+        <span style={{ fontWeight: 600, fontSize: 16, color: v.text }}>{t("m2.admin.userActivity", "Nutzer-Aktivität")}</span>
+        <span style={{ fontSize: 12, background: v.elevated, padding: "2px 8px", borderRadius: 10, color: v.textSecondary }}>{filtered.length}</span>
+      </div>
+
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 10 }}>
+        {ACTIVITY_TIME_OPTIONS.map(opt => (
+          <button key={opt.hours} type="button" onClick={() => setHours(opt.hours)} style={{ padding: "5px 10px", fontSize: 12, fontWeight: hours === opt.hours ? 700 : 500, borderRadius: 8, border: `1px solid ${hours === opt.hours ? v.accent : v.border}`, background: hours === opt.hours ? `${v.accent}18` : v.card, color: hours === opt.hours ? v.accent : v.textSecondary, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid={`activity-time-${opt.hours}`}>
+            {t(opt.labelKey, opt.fallback)}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+        <div style={{ flex: 1, position: "relative" }}>
+          <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 14, height: 14, color: v.muted }} />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t("m2.admin.searchActivity", "Name oder E-Mail...")} style={{ width: "100%", padding: "8px 8px 8px 30px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 13, fontFamily: "system-ui, sans-serif" }} data-testid="input-search-activity" />
+        </div>
+        <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, border: `1px solid ${v.inputBorder}`, background: v.inputBg, color: v.inputText, fontSize: 13, fontFamily: "system-ui, sans-serif" }} data-testid="select-activity-role">
+          <option value="all">{t("m2.admin.allRoles", "All Roles")}</option>
+          <option value="admin">{t("m2.admin.roleAdmin", "Admin")}</option>
+          <option value="host">{t("m2.admin.roleHost", "Host")}</option>
+          <option value="user">{t("m2.admin.roleUser", "User")}</option>
+        </select>
+      </div>
+
+      {isLoading ? (
+        <div style={{ display: "flex", justifyContent: "center", padding: 48 }}>
+          <Loader2 style={{ width: 24, height: 24, color: v.accent, animation: "spin 1s linear infinite" }} />
+        </div>
+      ) : isError ? (
+        <div style={{ textAlign: "center", padding: 48, color: v.danger }}>{t("m2.admin.activityError", "Fehler beim Laden der Aktivitätsdaten.")}</div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 48, color: v.muted }}>{t("m2.admin.noActivityUsers", "Keine Nutzer im gewählten Zeitraum.")}</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtered.map((u: any) => {
+            const rc = roleColor(u.role);
+            return (
+              <div key={u.id} style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 12, padding: 14 }} data-testid={`activity-user-${u.id}`}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontWeight: 600, fontSize: 14, color: v.text }}>{u.name}</span>
+                      <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: rc.bg, color: rc.color, fontWeight: 600, textTransform: "uppercase" }}>{u.role}</span>
+                      {u.experienceLevel && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: `${v.accent}12`, color: v.accent, fontWeight: 500 }}>{u.experienceLevel}</span>}
+                    </div>
+                    {u.email && <div style={{ fontSize: 11, color: v.muted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</div>}
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: v.text }}>{formatRelative(u.lastSeenAt)}</div>
+                    <div style={{ fontSize: 10, color: v.muted }}>{t("m2.admin.lastSeen", "zuletzt")}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 12, marginTop: 10, paddingTop: 8, borderTop: `1px solid ${v.border}` }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <Wine style={{ width: 12, height: 12, color: v.muted }} />
+                    <span style={{ fontSize: 12, color: v.textSecondary, fontWeight: 500 }}>{u.tastingCount}</span>
+                    <span style={{ fontSize: 10, color: v.muted }}>{t("m2.admin.tastings", "Tastings")}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <BarChart3 style={{ width: 12, height: 12, color: v.muted }} />
+                    <span style={{ fontSize: 12, color: v.textSecondary, fontWeight: 500 }}>{u.ratingCount}</span>
+                    <span style={{ fontSize: 10, color: v.muted }}>{t("m2.admin.ratings", "Ratings")}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <BookOpen style={{ width: 12, height: 12, color: v.muted }} />
+                    <span style={{ fontSize: 12, color: v.textSecondary, fontWeight: 500 }}>{u.journalCount}</span>
+                    <span style={{ fontSize: 10, color: v.muted }}>{t("m2.admin.journal", "Journal")}</span>
+                  </div>
+                  {u.createdAt && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
+                      <Calendar style={{ width: 12, height: 12, color: v.muted }} />
+                      <span style={{ fontSize: 10, color: v.muted }}>{new Date(u.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "2-digit" })}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
