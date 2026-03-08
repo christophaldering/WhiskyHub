@@ -579,7 +579,8 @@ function ActivityTab() {
     queryFn: async () => {
       const params = new URLSearchParams({ hours: String(hours) });
       if (roleFilter !== "all") params.set("role", roleFilter);
-      const pid = getSession();
+      const session = getSession();
+      const pid = session.pid;
       const res = await fetch(`/api/admin/user-activity?${params}`, {
         headers: pid ? { "x-participant-id": pid } : {},
       });
