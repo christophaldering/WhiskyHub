@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -12,6 +12,7 @@ import type { JournalEntry } from "@shared/schema";
 import {
   BookOpen, Star, Plus, ArrowLeft, Pencil, Trash2, Check,
   Wine, Calendar, MapPin, X, Search, ScrollText, Trophy, Award,
+  Mic, Play as PlayIcon, Pause,
 } from "lucide-react";
 
 const serif = "'Playfair Display', Georgia, serif";
@@ -307,7 +308,9 @@ export default function M2TasteDrams() {
           )}
 
           {selectedEntry.noseNotes && (
-            <NoteSection label={t("m2.taste.noseNotes", "Nose")} value={selectedEntry.noseNotes} />
+            /\[(SCORES|NOSE|TASTE|FINISH|BALANCE)\]/i.test(selectedEntry.noseNotes)
+              ? <ParsedNotesSection raw={selectedEntry.noseNotes} />
+              : <NoteSection label={t("m2.taste.noseNotes", "Nose")} value={selectedEntry.noseNotes} />
           )}
           {selectedEntry.tasteNotes && (
             <NoteSection label={t("m2.taste.tasteNotes", "Taste")} value={selectedEntry.tasteNotes} />
@@ -318,6 +321,12 @@ export default function M2TasteDrams() {
           {selectedEntry.body && (
             <NoteSection label={t("m2.taste.notes", "Notes")} value={selectedEntry.body} />
           )}
+
+          <VoiceMemoSection
+            url={(selectedEntry as any).voiceMemoUrl}
+            transcript={(selectedEntry as any).voiceMemoTranscript}
+            duration={(selectedEntry as any).voiceMemoDuration}
+          />
 
           {(selectedEntry as any).tastingTitle && (
             <div style={{ marginTop: 16, padding: "10px 12px", background: v.elevated, borderRadius: 8, fontSize: 12, color: v.textSecondary }}>
@@ -521,7 +530,12 @@ export default function M2TasteDrams() {
                   }}
                   data-testid={`m2-dram-${entry.id}`}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                    {entry.imageUrl && (
+                      <div style={{ width: 40, height: 52, borderRadius: 6, overflow: "hidden", border: `1px solid ${v.border}`, flexShrink: 0 }}>
+                        <img src={entry.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                    )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <div style={{ fontSize: 15, fontWeight: 600, color: v.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -599,11 +613,169 @@ function MetaBadge({ label, value }: { label: string; value: string }) {
   );
 }
 
+function parseNoseNotes(raw: string) {
+  let cleanText = raw;
+  let scores: { nose?: number; taste?: number; finish?: number; balance?: number } = {};
+  const dims: Record<string, { chips: string[]; text: string }> = {};
+
+  const scoresMatch = raw.match(/\[SCORES]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)\s*Balance:(\d+)\s*\[\/SCORES]/);
+  if (scoresMatch) {
+    scores = { nose: +scoresMatch[1], taste: +scoresMatch[2], finish: +scoresMatch[3], balance: +scoresMatch[4] };
+    cleanText = cleanText.replace(scoresMatch[0], "");
+  }
+
+  for (const d of ["NOSE", "TASTE", "FINISH", "BALANCE"]) {
+    const rx = new RegExp(`\\[${d}]\\s*(.+?)\\s*\\[\\/${d}]`, "s");
+    const m = cleanText.match(rx);
+    if (m) {
+      const content = m[1].trim();
+      const parts = content.split(" — ");
+      const chipStr = parts[0] || "";
+      const textStr = parts.length > 1 ? parts.slice(1).join(" — ") : "";
+      dims[d.toLowerCase()] = {
+        chips: chipStr ? chipStr.split(",").map((c: string) => c.trim()).filter(Boolean) : [],
+        text: textStr.trim(),
+      };
+      cleanText = cleanText.replace(m[0], "");
+    }
+  }
+
+  cleanText = cleanText.trim();
+  return { cleanText, scores, dims };
+}
+
+function ParsedNotesSection({ raw }: { raw: string }) {
+  const { cleanText, scores, dims } = parseNoseNotes(raw);
+  const hasScores = Object.keys(scores).length > 0;
+  const hasDims = Object.keys(dims).length > 0;
+  const dimLabels: Record<string, string> = { nose: "Nose", taste: "Taste", finish: "Finish", balance: "Balance" };
+
+  return (
+    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${v.border}` }}>
+      {cleanText && (
+        <div style={{ marginBottom: hasDims || hasScores ? 12 : 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: v.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Notes</div>
+          <div style={{ fontSize: 14, color: v.textSecondary, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{cleanText}</div>
+        </div>
+      )}
+
+      {hasScores && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: hasDims ? 12 : 0 }}>
+          {(["nose", "taste", "finish", "balance"] as const).map((k) =>
+            scores[k] != null ? (
+              <div key={k} style={{ background: v.elevated, borderRadius: 8, padding: "6px 12px", textAlign: "center", minWidth: 56 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: v.accent, fontFamily: serif }}>{scores[k]}</div>
+                <div style={{ fontSize: 10, color: v.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>{dimLabels[k]}</div>
+              </div>
+            ) : null
+          )}
+        </div>
+      )}
+
+      {hasDims && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {(["nose", "taste", "finish", "balance"] as const).map((k) => {
+            const dim = dims[k];
+            if (!dim) return null;
+            return (
+              <div key={k}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: v.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{dimLabels[k]}</div>
+                {dim.chips.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: dim.text ? 4 : 0 }}>
+                    {dim.chips.map((chip) => (
+                      <span key={chip} style={{
+                        fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 999,
+                        background: "rgba(212,162,86,0.12)", color: "#d4a256", border: "1px solid rgba(212,162,86,0.2)",
+                      }}>{chip}</span>
+                    ))}
+                  </div>
+                )}
+                {dim.text && (
+                  <div style={{ fontSize: 13, color: v.textSecondary, lineHeight: 1.5 }}>{dim.text}</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function NoteSection({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${v.border}` }}>
       <div style={{ fontSize: 11, fontWeight: 600, color: v.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 14, color: v.textSecondary, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{value}</div>
+    </div>
+  );
+}
+
+function VoiceMemoSection({ url, transcript, duration }: { url?: string | null; transcript?: string | null; duration?: number | null }) {
+  const [playing, setPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (!url) { audioRef.current = null; return; }
+    const a = new Audio(url);
+    a.onended = () => setPlaying(false);
+    audioRef.current = a;
+    return () => { a.pause(); a.onended = null; audioRef.current = null; };
+  }, [url]);
+
+  useEffect(() => () => { audioRef.current?.pause(); }, []);
+
+  if (!url && !transcript) return null;
+
+  const togglePlay = () => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (playing) {
+      a.pause();
+      setPlaying(false);
+    } else {
+      a.play().catch(() => setPlaying(false));
+      setPlaying(true);
+    }
+  };
+
+  const fmtDuration = duration && duration > 0 ? `${Math.floor(duration / 60)}:${String(Math.round(duration % 60)).padStart(2, "0")}` : null;
+
+  return (
+    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${v.border}` }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: v.muted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+        <Mic style={{ width: 12, height: 12 }} />
+        Voice Memo
+        {fmtDuration && <span style={{ fontWeight: 400, fontSize: 10 }}>({fmtDuration})</span>}
+      </div>
+      {url && (
+        <button
+          type="button"
+          onClick={togglePlay}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "6px 14px", borderRadius: 8,
+            background: playing ? "rgba(229,115,115,0.15)" : "rgba(212,162,86,0.12)",
+            border: `1px solid ${playing ? "rgba(229,115,115,0.3)" : "rgba(212,162,86,0.2)"}`,
+            color: playing ? "#e57373" : "#d4a256",
+            fontSize: 12, fontWeight: 600, cursor: "pointer",
+            marginBottom: transcript ? 8 : 0,
+          }}
+          data-testid="button-play-voice-memo"
+        >
+          {playing ? <Pause style={{ width: 13, height: 13 }} /> : <PlayIcon style={{ width: 13, height: 13 }} />}
+          {playing ? "Pause" : "Play"}
+        </button>
+      )}
+      {transcript && (
+        <div style={{
+          fontSize: 13, color: v.textSecondary, lineHeight: 1.6,
+          fontStyle: "italic", padding: "8px 12px", borderRadius: 8,
+          background: v.elevated,
+        }}>
+          "{transcript}"
+        </div>
+      )}
     </div>
   );
 }
