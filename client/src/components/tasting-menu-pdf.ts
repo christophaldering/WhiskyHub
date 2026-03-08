@@ -288,7 +288,8 @@ export async function generateTastingMenu(
     doc.text(`${l("page", language)} ${pageNum} / ${totalPages}`, pageW - marginX, pageH - 8, { align: "right" });
   };
 
-  const totalContentPages = 1 + Math.ceil(whiskies.length / (isLandscape ? 3 : 4));
+  const whiskiesPerPage = 12;
+  const totalContentPages = 1 + Math.ceil(whiskies.length / whiskiesPerPage);
   const totalPages = 1 + totalContentPages;
 
   doc.setFillColor(...bg);
@@ -492,8 +493,11 @@ export async function generateTastingMenu(
 
   addFooter(2, totalPages);
 
-  const whiskiesPerPage = isLandscape ? 3 : 4;
   const whiskyPages = Math.ceil(whiskies.length / whiskiesPerPage);
+  const colCount = 2;
+  const perCol = Math.ceil(whiskiesPerPage / colCount);
+  const colGap = 8;
+  const colW = (contentW - colGap) / colCount;
 
   for (let page = 0; page < whiskyPages; page++) {
     doc.addPage();
@@ -516,110 +520,63 @@ export async function generateTastingMenu(
 
     const pageItems = whiskies.slice(page * whiskiesPerPage, (page + 1) * whiskiesPerPage);
     const availableH = pageH - wy - 15;
-    const itemH = availableH / whiskiesPerPage;
+    const rowH = availableH / perCol;
 
     pageItems.forEach((w, i) => {
       const idx = page * whiskiesPerPage + i;
-      const cardY = wy + i * itemH;
-
-      if (i > 0) {
-        doc.setDrawColor(...secondary);
-        doc.setLineWidth(0.1);
-        doc.line(marginX + 10, cardY - 3, pageW - marginX - 10, cardY - 3);
-      }
+      const col = i < perCol ? 0 : 1;
+      const row = i < perCol ? i : i - perCol;
+      const colX = marginX + col * (colW + colGap);
+      const cardY = wy + row * rowH;
 
       doc.setFillColor(240, 243, 248);
-      doc.roundedRect(marginX, cardY, contentW, 8, 1, 1, "F");
+      doc.roundedRect(colX, cardY, colW, 7, 1, 1, "F");
 
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
+      doc.setFontSize(10);
       doc.setTextColor(...primary);
 
+      const maxNameLen = isLandscape ? 28 : 22;
+
       if (blindMode) {
-        doc.text(`#${idx + 1}`, marginX + 3, cardY + 6);
+        doc.text(`#${idx + 1}`, colX + 2, cardY + 5);
         doc.setFont("helvetica", "italic");
-        doc.setFontSize(11);
+        doc.setFontSize(9);
         doc.setTextColor(...secondary);
-        doc.text(l("mysteryWhisky", language), marginX + 18, cardY + 6);
+        doc.text(l("mysteryWhisky", language), colX + 12, cardY + 5);
       } else {
-        doc.text(`${idx + 1}.`, marginX + 3, cardY + 6);
+        doc.text(`${idx + 1}.`, colX + 2, cardY + 5);
         const numW = doc.getTextWidth(`${idx + 1}. `);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
+        doc.setFontSize(10);
         doc.setTextColor(30, 41, 59);
-        const dispName = w.name.length > 45 ? w.name.slice(0, 43) + "\u2026" : w.name;
-        doc.text(dispName, marginX + 3 + numW, cardY + 6);
+        const dispName = w.name.length > maxNameLen ? w.name.slice(0, maxNameLen - 2) + "\u2026" : w.name;
+        doc.text(dispName, colX + 2 + numW, cardY + 5);
       }
 
-      let detailY = cardY + 14;
-
       if (!blindMode) {
+        let detailY = cardY + 11;
         const details: string[] = [];
-        if (w.distillery) details.push(`${l("distillery", language)}: ${w.distillery}`);
-        if (w.region) details.push(`${l("region", language)}: ${w.region}`);
+        if (w.distillery && w.distillery !== w.name) details.push(w.distillery);
         if (w.age) {
-          const ageDisplay = w.age === "NAS" || w.age === "n.a.s." ? "NAS" : `${w.age} years`;
-          details.push(`${l("age", language)}: ${ageDisplay}`);
+          const ageDisplay = w.age === "NAS" || w.age === "n.a.s." ? "NAS" : `${w.age}y`;
+          details.push(ageDisplay);
         }
-        if (w.abv != null) details.push(`${l("abv", language)}: ${w.abv}%`);
-        if (w.caskInfluence) details.push(`${l("cask", language)}: ${w.caskInfluence}`);
-        if (w.bottler) details.push(`${l("bottler", language)}: ${w.bottler}`);
-        if (w.vintage) details.push(`${l("vintage", language)}: ${w.vintage}`);
+        if (w.abv != null) details.push(`${w.abv}%`);
+        if (w.caskInfluence) details.push(w.caskInfluence);
+        if (w.region) details.push(w.region);
 
         if (details.length > 0) {
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(8);
+          doc.setFontSize(7);
           doc.setTextColor(...secondary);
-
-          const line1 = details.slice(0, 4).join("  •  ");
-          doc.text(line1, marginX + 3, detailY);
-          detailY += 5;
-
-          if (details.length > 4) {
-            const line2 = details.slice(4).join("  •  ");
-            doc.text(line2, marginX + 3, detailY);
-            detailY += 5;
-          }
+          const detailStr = details.join(" · ");
+          const maxW = colW - 4;
+          const truncated = doc.getTextWidth(detailStr) > maxW
+            ? detailStr.slice(0, Math.floor(detailStr.length * maxW / doc.getTextWidth(detailStr))) + "\u2026"
+            : detailStr;
+          doc.text(truncated, colX + 2, detailY);
         }
-      }
-
-      detailY += 2;
-
-      const noteFields = [l("nose", language), l("palate", language), l("finish", language)];
-      const fieldStartX = marginX + 3;
-      const fieldW = contentW - 6;
-
-      for (const field of noteFields) {
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(7);
-        doc.setTextColor(...primary);
-        doc.text(`${field}:`, fieldStartX, detailY);
-        const labelW = doc.getTextWidth(`${field}: `);
-
-        doc.setDrawColor(200, 210, 220);
-        doc.setLineWidth(0.2);
-        doc.line(fieldStartX + labelW, detailY + 0.5, fieldStartX + fieldW, detailY + 0.5);
-        detailY += 5;
-      }
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(7);
-      doc.setTextColor(...primary);
-      doc.text(`${l("rating", language)}:`, fieldStartX, detailY);
-
-      const ratingX = fieldStartX + doc.getTextWidth(`${l("rating", language)}:  `);
-      const circleR = 3;
-      const circleGap = 1.5;
-      const maxCircles = Math.min(tasting.ratingScale, 10);
-      for (let s = 1; s <= maxCircles; s++) {
-        const cx = ratingX + (s - 1) * (circleR * 2 + circleGap) + circleR;
-        doc.setDrawColor(...secondary);
-        doc.setLineWidth(0.25);
-        doc.circle(cx, detailY - 0.8, circleR);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(6);
-        doc.setTextColor(...secondary);
-        doc.text(`${s}`, cx, detailY - 0.1, { align: "center" });
       }
     });
 
