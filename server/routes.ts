@@ -3289,6 +3289,7 @@ Respond ONLY with valid JSON, no markdown.`;
   app.post("/api/whiskies/ai-insights", async (req, res) => {
     try {
       const { participantId, whiskyId, whiskyName, distillery, region, age, abv, caskInfluence, category, peatLevel, language } = req.body;
+      const customPrompt = typeof req.body?.customPrompt === "string" ? req.body.customPrompt.trim().slice(0, 500) : "";
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
       const { client: openai } = await getAIClient(participantId, "ai_insights");
@@ -3296,7 +3297,7 @@ Respond ONLY with valid JSON, no markdown.`;
       const lang = language === "de" ? "German" : "English";
       const cacheKey = language === "de" ? "de" : "en";
 
-      if (whiskyId) {
+      if (whiskyId && !customPrompt) {
         const whisky = await storage.getWhisky(whiskyId);
         if (whisky?.aiInsightsCache) {
           try {
@@ -3335,7 +3336,7 @@ Write in a warm, conversational tone. ALWAYS respond in ${lang}. Do NOT use mark
           },
           {
             role: "user",
-            content: `Tell me fascinating background information about this whisky: ${details}`
+            content: `Tell me fascinating background information about this whisky: ${details}${customPrompt ? `\n\nAdditional focus from the user: ${customPrompt}` : ""}`
           }
         ],
         max_tokens: 800,
@@ -3474,6 +3475,7 @@ Be specific with names and numbers. Make it entertaining and create "aha" moment
       const requesterId = req.headers["x-participant-id"] as string | undefined;
       if (!requesterId) return res.status(401).json({ message: "Missing participant ID" });
       const { language, force } = req.body;
+      const customPrompt = typeof req.body?.customPrompt === "string" ? req.body.customPrompt.trim().slice(0, 500) : "";
       const lang = language === "de" ? "German" : "English";
       const tasting = await storage.getTasting(req.params.id);
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
@@ -3613,7 +3615,7 @@ ${discussionThemes.length > 0 ? `Discussion highlights:\n${discussionThemes.join
 
 ${reflectionThemes.length > 0 ? `Reflection themes (anonymous):\n${reflectionThemes.join("\n")}` : ""}
 
-${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live during tasting — these are spontaneous first-hand reactions, weave them into the narrative):\n${voiceMemoData.join("\n")}` : ""}`
+${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live during tasting — these are spontaneous first-hand reactions, weave them into the narrative):\n${voiceMemoData.join("\n")}` : ""}${customPrompt ? `\n\nAdditional focus from the host: ${customPrompt}` : ""}`
           }
         ],
         max_tokens: 1500,
@@ -3786,6 +3788,7 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
       if (!openai) return res.status(503).json({ message: "AI not available" });
 
       const requestedLang = req.body?.language;
+      const customPrompt = typeof req.body?.customPrompt === "string" ? req.body.customPrompt.trim().slice(0, 500) : "";
       const acceptLang = req.headers["accept-language"] || "";
       const lang = requestedLang === "de" || requestedLang === "en"
         ? requestedLang
@@ -3898,7 +3901,7 @@ ALWAYS respond in ${langLabel}. Use the tone of a knowledgeable master blender a
           },
           {
             role: "user",
-            content: `Generate a Connoisseur Report for this whisky enthusiast:\n\n${JSON.stringify(profileData, null, 2)}`
+            content: `Generate a Connoisseur Report for this whisky enthusiast:\n\n${JSON.stringify(profileData, null, 2)}${customPrompt ? `\n\nAdditional focus from the user: ${customPrompt}` : ""}`
           }
         ],
         max_tokens: 3000,
@@ -5350,6 +5353,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
     try {
       if (await isAIDisabled("wishlist_summary")) return res.status(503).json({ message: "AI feature disabled by admin" });
       const { participantId, whiskyName, distillery, region, age, abv, caskType, notes, language } = req.body;
+      const customPrompt = typeof req.body?.customPrompt === "string" ? req.body.customPrompt.trim().slice(0, 500) : "";
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
 
@@ -5393,7 +5397,7 @@ ${flavorProfile.topWhiskies?.length ? `Top-rated whiskies: ${flavorProfile.topWh
           },
           {
             role: "user",
-            content: `Whisky on the wishlist:\n${whiskyDesc}\n\nTaster's profile:\n${profileContext}`,
+            content: `Whisky on the wishlist:\n${whiskyDesc}\n\nTaster's profile:\n${profileContext}${customPrompt ? `\n\nAdditional focus from the user: ${customPrompt}` : ""}`,
           },
         ],
         max_tokens: 300,

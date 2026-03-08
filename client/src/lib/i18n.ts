@@ -5511,6 +5511,15 @@ const resources = {
           delete: "Delete",
           deleting: "Deleting...",
         },
+        customPrompt: {
+          label: "Focus Hint",
+          optional: "Optional",
+          placeholder: "e.g. 'Focus on smoky whiskies'",
+          connoisseurPlaceholder: "e.g. 'Focus on smoky whiskies' or 'Compare with my last tasting'",
+          narrativePlaceholder: "e.g. 'Highlight the group's favorite' or 'Focus on the blind reveal'",
+          wishlistPlaceholder: "e.g. 'Focus on value for money' or 'Compare with similar bottlings'",
+          insightsPlaceholder: "e.g. 'Compare with other Islay malts' or 'Focus on cask influence'",
+        },
         forgotPin: {
           title: "Reset Password",
           description: "Enter your email and we'll send you a verification code.",
@@ -11293,6 +11302,15 @@ const resources = {
           cancel: "Abbrechen",
           delete: "Löschen",
           deleting: "Wird gelöscht...",
+        },
+        customPrompt: {
+          label: "Fokus-Hinweis",
+          optional: "Optional",
+          placeholder: "z.B. 'Fokus auf rauchige Whiskys'",
+          connoisseurPlaceholder: "z.B. 'Fokus auf rauchige Whiskys' oder 'Vergleich mit meinem letzten Tasting'",
+          narrativePlaceholder: "z.B. 'Den Gruppenfavoriten hervorheben' oder 'Fokus auf die Blind-Enthüllung'",
+          wishlistPlaceholder: "z.B. 'Fokus auf Preis-Leistung' oder 'Vergleich mit ähnlichen Abfüllungen'",
+          insightsPlaceholder: "z.B. 'Vergleich mit anderen Islay Malts' oder 'Fokus auf Fasseinfluss'",
         },
         forgotPin: {
           title: "Passwort zurücksetzen",
