@@ -650,6 +650,9 @@ export default function M2TasteSettings() {
                     onClick={() => {
                       i18n.changeLanguage(lng);
                       localStorage.setItem("i18nextLng", lng);
+                      if (pid) {
+                        participantApi.setLanguage(pid, lng).catch(() => {});
+                      }
                       toast({ title: t("profile.languageUpdated", "Language updated"), duration: 1500 });
                     }}
                     style={{

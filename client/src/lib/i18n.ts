@@ -4259,6 +4259,9 @@ const resources = {
         whisky_plural: "whiskies",
       },
       m2: {
+        ai: {
+          reportLanguage: "Report language",
+        },
         tabs: {
           tastings: "Tastings",
           taste: "Taste",
@@ -9887,6 +9890,9 @@ const resources = {
         whisky_plural: "Whiskys",
       },
       m2: {
+        ai: {
+          reportLanguage: "Berichtssprache",
+        },
         tabs: {
           tastings: "Tastings",
           taste: "Taste",

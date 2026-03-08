@@ -3785,8 +3785,11 @@ ${voiceMemoData.length > 0 ? `Voice memos from participants (recorded live durin
       const { client: openai } = await getAIClient(participantId, "connoisseur_report");
       if (!openai) return res.status(503).json({ message: "AI not available" });
 
+      const requestedLang = req.body?.language;
       const acceptLang = req.headers["accept-language"] || "";
-      const lang = participant.language === "de" || acceptLang.startsWith("de") ? "de" : "en";
+      const lang = requestedLang === "de" || requestedLang === "en"
+        ? requestedLang
+        : participant.language === "de" || acceptLang.startsWith("de") ? "de" : "en";
       const langLabel = lang === "de" ? "German" : "English";
 
       const flavorProfile = await storage.getFlavorProfile(participantId);
@@ -5326,7 +5329,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL whiskies found. If on
   app.post("/api/wishlist/generate-summary", async (req: Request, res: Response) => {
     try {
       if (await isAIDisabled("wishlist_summary")) return res.status(503).json({ message: "AI feature disabled by admin" });
-      const { participantId, whiskyName, distillery, region, age, abv, caskType, notes } = req.body;
+      const { participantId, whiskyName, distillery, region, age, abv, caskType, notes, language } = req.body;
       if (!participantId) return res.status(400).json({ message: "participantId required" });
       if (!whiskyName) return res.status(400).json({ message: "whiskyName required" });
 
@@ -5366,7 +5369,7 @@ ${flavorProfile.topWhiskies?.length ? `Top-rated whiskies: ${flavorProfile.topWh
         messages: [
           {
             role: "system",
-            content: `You are a knowledgeable whisky sommelier. Given a whisky and a taster's personal flavor profile, write a brief, engaging summary (3-4 sentences max) explaining why this whisky is an interesting dram for THIS specific taster. Compare it to their known preferences — highlight what aligns with their taste, and what might be a new or exciting discovery. Be warm and encouraging, like a friend recommending a dram. Do not use bullet points. Write in flowing prose.`,
+            content: `You are a knowledgeable whisky sommelier. Given a whisky and a taster's personal flavor profile, write a brief, engaging summary (3-4 sentences max) explaining why this whisky is an interesting dram for THIS specific taster. Compare it to their known preferences — highlight what aligns with their taste, and what might be a new or exciting discovery. Be warm and encouraging, like a friend recommending a dram. Do not use bullet points. Write in flowing prose. ALWAYS respond in ${language === "de" ? "German" : "English"}.`,
           },
           {
             role: "user",

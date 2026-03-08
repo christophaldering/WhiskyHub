@@ -61,7 +61,7 @@ const btnBase: React.CSSProperties = {
 };
 
 export default function Wishlist() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentParticipant, setWishlistTransfer } = useAppStore();
   const [, navigate] = useLocation();
   const [view, setView] = useState<View>("list");
@@ -391,6 +391,7 @@ function WishlistForm({
   t: any;
 }) {
   const { toast } = useToast();
+  const { i18n } = useTranslation();
   const { isFeatureDisabled } = useAIStatus();
   const aiScanDisabled = isFeatureDisabled("wishlist_identify");
   const [whiskyName, setWhiskyName] = useState(entry?.whiskyName || "");
@@ -418,8 +419,9 @@ function WishlistForm({
     try {
       const result = await wishlistScanApi.generateSummary({
         participantId,
+        language: i18n.language?.startsWith("de") ? "de" : "en",
         ...whisky,
-      });
+      } as any);
       if (result.summary) {
         setAiSummary(result.summary);
         setAiSummaryDate(result.summaryDate);

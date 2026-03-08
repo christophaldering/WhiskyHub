@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { M2Loading } from "@/components/m2/M2Feedback";
+import AILanguageSelector from "@/components/m2/AILanguageSelector";
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { tastingApi, whiskyApi, inviteApi, guidedApi } from "@/lib/api";
@@ -2031,6 +2032,7 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [narrativeGenerating, setNarrativeGenerating] = useState(false);
   const [narrativeError, setNarrativeError] = useState<string | null>(null);
+  const [narrativeLang, setNarrativeLang] = useState<"de" | "en">(i18n.language?.startsWith("de") ? "de" : "en");
 
   const isBlind = !!tasting.blindMode;
   const isOpen = tasting.status === "open";
@@ -2137,11 +2139,10 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
     setNarrativeGenerating(true);
     setNarrativeError(null);
     try {
-      const lang = i18n.language?.startsWith("de") ? "de" : "en";
       const res = await fetch(`/api/tastings/${tasting.id}/ai-narrative`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-participant-id": pid },
-        body: JSON.stringify({ language: lang, force }),
+        body: JSON.stringify({ language: narrativeLang, force }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -2295,32 +2296,35 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
             >
               {tasting.aiNarrative}
             </div>
-            <button
-              type="button"
-              onClick={() => handleGenerateNarrative(true)}
-              disabled={narrativeGenerating}
-              style={{
-                marginTop: 14,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                background: "none",
-                border: `1px solid ${v.border}`,
-                borderRadius: 8,
-                padding: "8px 14px",
-                color: v.muted,
-                fontSize: 12,
-                cursor: narrativeGenerating ? "not-allowed" : "pointer",
-                fontFamily: "system-ui, sans-serif",
-              }}
-              data-testid="button-regenerate-narrative"
-            >
-              {narrativeGenerating ? <Loader2 style={{ width: 13, height: 13, animation: "spin 1s linear infinite" }} /> : <RefreshCw style={{ width: 13, height: 13 }} />}
-              {narrativeGenerating ? t("m2.host.generatingNarrative", "Writing your tasting story...") : t("m2.host.regenerateNarrative", "Regenerate")}
-            </button>
+            <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <AILanguageSelector value={narrativeLang} onChange={setNarrativeLang} compact />
+              <button
+                type="button"
+                onClick={() => handleGenerateNarrative(true)}
+                disabled={narrativeGenerating}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: "none",
+                  border: `1px solid ${v.border}`,
+                  borderRadius: 8,
+                  padding: "8px 14px",
+                  color: v.muted,
+                  fontSize: 12,
+                  cursor: narrativeGenerating ? "not-allowed" : "pointer",
+                  fontFamily: "system-ui, sans-serif",
+                }}
+                data-testid="button-regenerate-narrative"
+              >
+                {narrativeGenerating ? <Loader2 style={{ width: 13, height: 13, animation: "spin 1s linear infinite" }} /> : <RefreshCw style={{ width: 13, height: 13 }} />}
+                {narrativeGenerating ? t("m2.host.generatingNarrative", "Writing your tasting story...") : t("m2.host.regenerateNarrative", "Regenerate")}
+              </button>
+            </div>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <AILanguageSelector value={narrativeLang} onChange={setNarrativeLang} />
             <button
               type="button"
               onClick={handleGenerateNarrative}

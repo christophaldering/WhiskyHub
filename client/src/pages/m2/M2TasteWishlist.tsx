@@ -45,7 +45,7 @@ const btnBase: React.CSSProperties = {
 };
 
 export default function M2TasteWishlist() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const session = useSession();
   const participantId = session.pid;
   const [, navigate] = useLocation();
@@ -226,6 +226,7 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId, t }: {
   entry: WishlistEntry | null; onBack: () => void; onSave: (data: any) => void; isSaving: boolean; participantId?: string; t: any;
 }) {
   const { toast } = useToast();
+  const { i18n } = useTranslation();
   const { isFeatureDisabled } = useAIStatus();
   const aiScanDisabled = isFeatureDisabled("wishlist_identify");
   const [whiskyName, setWhiskyName] = useState(entry?.whiskyName || "");
@@ -251,7 +252,8 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId, t }: {
     if (!participantId || !w.whiskyName) return;
     setGeneratingSummary(true);
     try {
-      const result = await wishlistScanApi.generateSummary({ participantId, ...w });
+      const lang = i18n.language?.startsWith("de") ? "de" : "en";
+      const result = await wishlistScanApi.generateSummary({ participantId, language: lang, ...w } as any);
       if (result.summary) { setAiSummary(result.summary); setAiSummaryDate(result.summaryDate); }
     } catch { } finally { setGeneratingSummary(false); }
   };
