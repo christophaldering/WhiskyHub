@@ -380,14 +380,31 @@ async function drawCoverPage(
   doc.text("1 / 2", pageW / 2, pageH - 9, { align: "center" });
 }
 
-function drawRatingCircles(doc: jsPDF, x: number, y: number, circleR: number, circleGap: number) {
-  for (let s = 1; s <= 10; s++) {
-    const cx = x + (s - 1) * (circleR * 2 + circleGap) + circleR;
+function drawRatingCircles(doc: jsPDF, x: number, y: number, circleR: number, circleGap: number, maxScore: number, availableW: number) {
+  if (maxScore >= 100) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(circleR >= 2.5 ? 7 : 6);
+    doc.setTextColor(...MUTED);
+    doc.text("__ / " + maxScore, x + 2, y + (circleR >= 2.5 ? 1 : 0.5));
+    doc.setDrawColor(...LINE_GRAY);
+    doc.setLineWidth(0.2);
+    const fieldW = doc.getTextWidth("__ / " + maxScore) + 6;
+    doc.line(x, y + 2, x + fieldW, y + 2);
+    return;
+  }
+
+  const effectiveR = Math.min(circleR, (availableW - (maxScore - 1) * circleGap) / (2 * maxScore));
+  const effectiveGap = Math.min(circleGap, (availableW - maxScore * effectiveR * 2) / Math.max(1, maxScore - 1));
+  const finalR = Math.max(1.2, effectiveR);
+  const finalGap = Math.max(0.3, effectiveGap);
+
+  for (let s = 1; s <= maxScore; s++) {
+    const cx = x + (s - 1) * (finalR * 2 + finalGap) + finalR;
     doc.setDrawColor(...MUTED);
     doc.setLineWidth(0.25);
-    doc.circle(cx, y, circleR);
+    doc.circle(cx, y, finalR);
     doc.setFont("helvetica", "normal");
-    const fontSize = circleR >= 3 ? 6 : circleR >= 2.2 ? 5 : 4;
+    const fontSize = finalR >= 3 ? 6 : finalR >= 2.2 ? 5 : finalR >= 1.6 ? 4 : 3.5;
     doc.setFontSize(fontSize);
     doc.setTextColor(...MUTED);
     doc.text(`${s}`, cx, y + (fontSize * 0.12), { align: "center" });
@@ -542,6 +559,8 @@ async function drawScoringPage(
 
     const labelColW = Math.max(14, Math.min(22, criteriaFontSize * 3.2));
     const circlesX = marginX + 2 + labelColW;
+    const ratingScale = tasting.ratingScale || 10;
+    const circlesAvailW = contentW - labelColW - 6;
 
     for (let cIdx = 0; cIdx < criteriaLabels.length; cIdx++) {
       doc.setFont("helvetica", "bold");
@@ -549,7 +568,7 @@ async function drawScoringPage(
       doc.setTextColor(...SLATE);
       doc.text(criteriaLabels[cIdx], marginX + 2, y + circleR * 0.3);
 
-      drawRatingCircles(doc, circlesX, y, circleR, circleGap);
+      drawRatingCircles(doc, circlesX, y, circleR, circleGap, ratingScale, circlesAvailW);
 
       y += criteriaSpacing;
     }
