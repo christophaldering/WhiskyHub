@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { v } from "@/lib/themeVars";
+import { v, alpha } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { M2Loading, M2Error } from "@/components/m2/M2Feedback";
 import { getSession, useSession } from "@/lib/session";
@@ -328,9 +328,13 @@ export default function M2TasteDrams() {
 
         <div style={{ background: v.card, border: `1px solid ${v.border}`, borderRadius: 14, padding: "20px" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 16 }}>
-            {selectedEntry.imageUrl && (
+            {selectedEntry.imageUrl ? (
               <div style={{ width: 64, height: 88, borderRadius: 8, overflow: "hidden", border: `1px solid ${v.border}`, flexShrink: 0 }}>
                 <img src={selectedEntry.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+            ) : (
+              <div style={{ width: 64, height: 88, borderRadius: 8, background: alpha(v.accent, "08"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${v.border}` }}>
+                <Wine style={{ width: 28, height: 28, color: v.accent, opacity: 0.5 }} />
               </div>
             )}
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -690,9 +694,13 @@ export default function M2TasteDrams() {
                   data-testid={`m2-dram-${entry.id}`}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                    {entry.imageUrl && (
+                    {entry.imageUrl ? (
                       <div style={{ width: 40, height: 52, borderRadius: 6, overflow: "hidden", border: `1px solid ${v.border}`, flexShrink: 0 }}>
                         <img src={entry.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                    ) : (
+                      <div style={{ width: 40, height: 52, borderRadius: 6, background: alpha(v.accent, "08"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${v.border}` }}>
+                        <Wine style={{ width: 18, height: 18, color: v.accent, opacity: 0.5 }} />
                       </div>
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>

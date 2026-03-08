@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { v, alpha } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { getSession, useSession, signIn, setSessionPid } from "@/lib/session";
@@ -8,7 +8,7 @@ import { participantApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { queryClient } from "@/lib/queryClient";
 import {
-  Camera, PenLine, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ArrowLeft, Plus, Trash2, Clock, Wine, Save, ExternalLink
+  Camera, PenLine, Check, ChevronDown, Mic, Loader2, Search, Upload, FileText, Barcode, X, WifiOff, ArrowLeft, Plus, Trash2, Clock, Wine, Save, ExternalLink, Star, Calendar
 } from "lucide-react";
 import M2RatingPanel from "@/components/m2/M2RatingPanel";
 import type { DimKey } from "@/components/m2/M2RatingPanel";
@@ -138,6 +138,7 @@ type SheetView = "none" | "picker" | "describe" | "candidates" | "identifying" |
 
 export default function M2TastingsSolo() {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const { currentParticipant, setParticipant } = useAppStore();
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -173,6 +174,7 @@ export default function M2TastingsSolo() {
   const [finalizedAt, setFinalizedAt] = useState<string | null>(null);
   const [soloView, setSoloView] = useState<"hub" | "editor">("hub");
   const [hubDrafts, setHubDrafts] = useState<any[]>([]);
+  const [hubCompleted, setHubCompleted] = useState<any[]>([]);
   const [hubLoading, setHubLoading] = useState(true);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
@@ -216,15 +218,28 @@ export default function M2TastingsSolo() {
     if (!unlocked || !pid) { setHubLoading(false); return; }
     setHubLoading(true);
     try {
-      const res = await fetch(`/api/journal/${pid}?status=draft`, {
-        headers: { "x-participant-id": pid },
-      });
-      if (!res.ok) { setHubLoading(false); return; }
-      const drafts = await res.json();
-      const sorted = [...drafts].sort((a: any, b: any) =>
-        new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()
-      );
-      setHubDrafts(sorted);
+      const [draftsRes, completedRes] = await Promise.all([
+        fetch(`/api/journal/${pid}?status=draft`, { headers: { "x-participant-id": pid } }),
+        fetch(`/api/journal/${pid}?status=final`, { headers: { "x-participant-id": pid } }),
+      ]);
+      if (draftsRes.ok) {
+        const drafts = await draftsRes.json();
+        const sorted = [...drafts].sort((a: any, b: any) =>
+          new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()
+        );
+        setHubDrafts(sorted);
+      } else {
+        setHubDrafts([]);
+      }
+      if (completedRes.ok) {
+        const completed = await completedRes.json();
+        const sorted = [...completed].sort((a: any, b: any) =>
+          new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()
+        );
+        setHubCompleted(sorted);
+      } else {
+        setHubCompleted([]);
+      }
     } catch {}
     setHubLoading(false);
   }, [unlocked, pid]);
@@ -1021,105 +1036,164 @@ export default function M2TastingsSolo() {
           <div style={{ textAlign: "center", padding: "32px 0" }}>
             <Loader2 style={{ width: 24, height: 24, color: v.mutedLight, animation: "m2spin 1s linear infinite" }} />
           </div>
-        ) : hubDrafts.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "32px 16px", color: v.mutedLight, fontSize: 14 }} data-testid="text-no-drafts">
-            {t("m2.solo.noDrafts", "No open drafts — start a new one!")}
-          </div>
         ) : (
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: v.mutedLight, marginBottom: 10 }}>
-              {t("m2.solo.openDrafts", "Open drafts")}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {hubDrafts.map((draft: any) => (
-                <div
-                  key={draft.id}
-                  style={{
-                    background: v.card, border: `1px solid ${v.border}`, borderRadius: 14,
-                    padding: "14px 16px", display: "flex", alignItems: "center", gap: 12,
-                  }}
-                  data-testid={`card-draft-${draft.id}`}
-                >
-                  {draft.imageUrl ? (
-                    <img src={draft.imageUrl} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", border: `1px solid ${v.border}`, flexShrink: 0 }} />
-                  ) : (
-                    <div style={{ width: 44, height: 44, borderRadius: 8, background: alpha(v.accent, "12"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <Wine style={{ width: 20, height: 20, color: v.accent }} />
-                    </div>
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: v.text, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {draft.whiskyName || "—"}
-                    </div>
-                    {draft.distillery && (
-                      <div style={{ fontSize: 12, color: v.mutedLight, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {draft.distillery}
+          <>
+            {hubDrafts.length > 0 && (
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: v.mutedLight, marginBottom: 10 }}>
+                  {t("m2.solo.openDrafts", "Open drafts")}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {hubDrafts.map((draft: any) => (
+                    <div
+                      key={draft.id}
+                      style={{
+                        background: v.card, border: `1px solid ${v.border}`, borderRadius: 14,
+                        padding: "14px 16px", display: "flex", alignItems: "center", gap: 12,
+                      }}
+                      data-testid={`card-draft-${draft.id}`}
+                    >
+                      {draft.imageUrl ? (
+                        <img src={draft.imageUrl} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", border: `1px solid ${v.border}`, flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: 44, height: 44, borderRadius: 8, background: alpha(v.accent, "12"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Wine style={{ width: 20, height: 20, color: v.accent }} />
+                        </div>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: v.text, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {draft.whiskyName || "—"}
+                        </div>
+                        {draft.distillery && (
+                          <div style={{ fontSize: 12, color: v.mutedLight, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {draft.distillery}
+                          </div>
+                        )}
+                        <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
+                          <Clock style={{ width: 10, height: 10 }} />
+                          {draft.updatedAt || draft.createdAt
+                            ? new Date(draft.updatedAt || draft.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+                            : ""}
+                          {draft.personalScore != null && (
+                            <span style={{ marginLeft: 8, fontWeight: 600, color: v.accent }}>{draft.personalScore}/100</span>
+                          )}
+                        </div>
                       </div>
-                    )}
-                    <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
-                      <Clock style={{ width: 10, height: 10 }} />
-                      {draft.updatedAt || draft.createdAt
-                        ? new Date(draft.updatedAt || draft.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
-                        : ""}
-                      {draft.personalScore != null && (
-                        <span style={{ marginLeft: 8, fontWeight: 600, color: v.accent }}>{draft.personalScore}/100</span>
+                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                        <button
+                          onClick={() => loadDraftIntoForm(draft)}
+                          style={{
+                            background: v.accent, color: "#fff", border: "none", borderRadius: 8,
+                            padding: "7px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                            fontFamily: "system-ui, sans-serif",
+                          }}
+                          data-testid={`button-continue-draft-${draft.id}`}
+                        >
+                          {t("m2.solo.continueDraft", "Continue")}
+                        </button>
+                        {deleteConfirmId === draft.id ? (
+                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                            <button
+                              onClick={() => handleDeleteDraft(draft.id)}
+                              style={{
+                                background: v.danger, color: "#fff", border: "none", borderRadius: 8,
+                                padding: "7px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                                fontFamily: "system-ui, sans-serif",
+                              }}
+                              data-testid={`button-confirm-delete-${draft.id}`}
+                            >
+                              {t("m2.solo.deleteDraft", "Delete draft")}
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirmId(null)}
+                              style={{
+                                background: "none", border: `1px solid ${v.border}`, borderRadius: 8,
+                                padding: "7px 10px", fontSize: 12, cursor: "pointer", color: v.textSecondary,
+                                fontFamily: "system-ui, sans-serif",
+                              }}
+                              data-testid={`button-cancel-delete-${draft.id}`}
+                            >
+                              {t("m2.solo.cancel", "Cancel")}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setDeleteConfirmId(draft.id)}
+                            style={{
+                              background: "none", border: `1px solid ${v.border}`, borderRadius: 8,
+                              padding: "7px 8px", cursor: "pointer", display: "flex", alignItems: "center",
+                            }}
+                            data-testid={`button-delete-draft-${draft.id}`}
+                          >
+                            <Trash2 style={{ width: 14, height: 14, color: v.mutedLight }} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {hubCompleted.length > 0 ? (
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: v.mutedLight, marginBottom: 10 }}>
+                  {t("m2.solo.completedDrams", "Completed drams")} ({hubCompleted.length})
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {hubCompleted.map((entry: any) => (
+                    <div
+                      key={entry.id}
+                      style={{
+                        background: v.card, border: `1px solid ${v.border}`, borderRadius: 14,
+                        padding: "14px 16px", display: "flex", alignItems: "center", gap: 12,
+                        cursor: "pointer", transition: "border-color 0.2s",
+                      }}
+                      onClick={() => navigate("/m2/taste/drams")}
+                      data-testid={`card-completed-${entry.id}`}
+                    >
+                      {entry.imageUrl ? (
+                        <img src={entry.imageUrl} alt="" style={{ width: 44, height: 56, borderRadius: 8, objectFit: "cover", border: `1px solid ${v.border}`, flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: 44, height: 56, borderRadius: 8, background: alpha(v.accent, "08"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${v.border}` }}>
+                          <Wine style={{ width: 20, height: 20, color: v.accent, opacity: 0.5 }} />
+                        </div>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: v.text, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {entry.whiskyName || "—"}
+                        </div>
+                        {entry.distillery && (
+                          <div style={{ fontSize: 12, color: v.mutedLight, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {entry.distillery}
+                          </div>
+                        )}
+                        <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                            <Calendar style={{ width: 10, height: 10 }} />
+                            {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : ""}
+                          </span>
+                          {entry.region && (
+                            <span>{entry.region}</span>
+                          )}
+                        </div>
+                      </div>
+                      {entry.personalScore != null && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 16, fontWeight: 700, color: v.accent, fontFamily: "'Playfair Display', Georgia, serif", flexShrink: 0 }}>
+                          <Star style={{ width: 14, height: 14 }} />
+                          {Number(entry.personalScore).toFixed(1)}
+                        </div>
                       )}
                     </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                    <button
-                      onClick={() => loadDraftIntoForm(draft)}
-                      style={{
-                        background: v.accent, color: "#fff", border: "none", borderRadius: 8,
-                        padding: "7px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                        fontFamily: "system-ui, sans-serif",
-                      }}
-                      data-testid={`button-continue-draft-${draft.id}`}
-                    >
-                      {t("m2.solo.continueDraft", "Continue")}
-                    </button>
-                    {deleteConfirmId === draft.id ? (
-                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                        <button
-                          onClick={() => handleDeleteDraft(draft.id)}
-                          style={{
-                            background: v.danger, color: "#fff", border: "none", borderRadius: 8,
-                            padding: "7px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer",
-                            fontFamily: "system-ui, sans-serif",
-                          }}
-                          data-testid={`button-confirm-delete-${draft.id}`}
-                        >
-                          {t("m2.solo.deleteDraft", "Delete draft")}
-                        </button>
-                        <button
-                          onClick={() => setDeleteConfirmId(null)}
-                          style={{
-                            background: "none", border: `1px solid ${v.border}`, borderRadius: 8,
-                            padding: "7px 10px", fontSize: 12, cursor: "pointer", color: v.textSecondary,
-                            fontFamily: "system-ui, sans-serif",
-                          }}
-                          data-testid={`button-cancel-delete-${draft.id}`}
-                        >
-                          {t("m2.solo.cancel", "Cancel")}
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setDeleteConfirmId(draft.id)}
-                        style={{
-                          background: "none", border: `1px solid ${v.border}`, borderRadius: 8,
-                          padding: "7px 8px", cursor: "pointer", display: "flex", alignItems: "center",
-                        }}
-                        data-testid={`button-delete-draft-${draft.id}`}
-                      >
-                        <Trash2 style={{ width: 14, height: 14, color: v.mutedLight }} />
-                      </button>
-                    )}
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            ) : hubDrafts.length === 0 && (
+              <div style={{ textAlign: "center", padding: "32px 16px", color: v.mutedLight, fontSize: 14 }} data-testid="text-no-drams">
+                {t("m2.solo.noDrams", "No drams yet — start your first one!")}
+              </div>
+            )}
+          </>
         )}
       </div>
     );
