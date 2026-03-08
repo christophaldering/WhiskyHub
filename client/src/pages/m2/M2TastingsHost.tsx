@@ -1534,6 +1534,13 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
                 </button>
               </div>
 
+              <div style={{ padding: "10px 20px", borderBottom: `1px solid ${v.border}`, flexShrink: 0 }}>
+                <button type="button" onClick={handleImportConfirm} disabled={importAdding || importPreviewSelected.size === 0} style={{ width: "100%", padding: "14px", fontSize: 15, fontWeight: 700, background: importPreviewSelected.size > 0 ? v.accent : v.border, color: importPreviewSelected.size > 0 ? v.bg : v.muted, border: "none", borderRadius: 10, cursor: importAdding || importPreviewSelected.size === 0 ? "not-allowed" : "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: importAdding ? 0.7 : 1 }} data-testid="button-confirm-file-import">
+                  {importAdding ? <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} /> : <Plus style={{ width: 16, height: 16 }} />}
+                  {importAdding ? t("m2.host.adding", "Adding...") : importPreviewSelected.size > 0 ? t("m2.host.addToLineup", { count: importPreviewSelected.size, defaultValue: `Add ${importPreviewSelected.size} to Lineup` }) : t("m2.host.selectWhiskies", "Select whiskies to add")}
+                </button>
+              </div>
+
               <div style={{ flex: 1, overflowY: "auto", padding: "8px 20px 16px" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {importPreview.map((w: any, idx: number) => {
@@ -1586,12 +1593,6 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
                 </div>
               </div>
 
-              <div style={{ padding: "12px 20px 16px", borderTop: `1px solid ${v.border}`, flexShrink: 0 }}>
-                <button type="button" onClick={handleImportConfirm} disabled={importAdding || importPreviewSelected.size === 0} style={{ width: "100%", padding: "14px", fontSize: 15, fontWeight: 700, background: importPreviewSelected.size > 0 ? v.accent : v.border, color: importPreviewSelected.size > 0 ? v.bg : v.muted, border: "none", borderRadius: 10, cursor: importAdding || importPreviewSelected.size === 0 ? "not-allowed" : "pointer", fontFamily: "system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: importAdding ? 0.7 : 1 }} data-testid="button-confirm-file-import">
-                  {importAdding ? <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} /> : <Plus style={{ width: 16, height: 16 }} />}
-                  {importAdding ? t("m2.host.adding", "Adding...") : importPreviewSelected.size > 0 ? t("m2.host.addToLineup", { count: importPreviewSelected.size, defaultValue: `Add ${importPreviewSelected.size} to Lineup` }) : t("m2.host.selectWhiskies", "Select whiskies to add")}
-                </button>
-              </div>
             </div>
           </div>
         )}
