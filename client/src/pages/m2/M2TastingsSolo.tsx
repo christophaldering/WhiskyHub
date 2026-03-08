@@ -820,8 +820,26 @@ export default function M2TastingsSolo() {
   useEffect(() => {
     if (sheetView !== "barcode") {
       stopBarcodeScanner();
+      return;
     }
-  }, [sheetView, stopBarcodeScanner]);
+    if (soloView !== "editor") return;
+    if (barcodeStatus !== "scanning") return;
+    if (cameraActive || barcodeScannerRef.current) return;
+
+    let cancelled = false;
+    let attempt = 0;
+    const tryStart = () => {
+      if (cancelled) return;
+      if (barcodeVideoRef.current) {
+        startBarcodeScanner();
+      } else if (attempt < 10) {
+        attempt++;
+        setTimeout(tryStart, 100);
+      }
+    };
+    tryStart();
+    return () => { cancelled = true; };
+  }, [sheetView, soloView, barcodeStatus, cameraActive, stopBarcodeScanner, startBarcodeScanner]);
 
   useEffect(() => {
     return () => { stopBarcodeScanner(); };
@@ -1094,7 +1112,7 @@ export default function M2TastingsSolo() {
               <span style={{ fontSize: 12, fontWeight: 600, color: v.text }}>{t("m2.solo.captureGallery", "Gallery")}</span>
             </button>
             <button
-              onClick={() => { setSoloView("editor"); setSheetView("barcode"); setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setBarcodeManual(""); setCameraError(""); setTimeout(() => startBarcodeScanner(), 200); }}
+              onClick={() => { setSoloView("editor"); setSheetView("barcode"); setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setBarcodeManual(""); setCameraError(""); }}
               style={{
                 background: v.card, border: `1px solid ${v.border}`, borderRadius: 14,
                 padding: "18px 8px", cursor: "pointer", display: "flex", flexDirection: "column",
@@ -2351,7 +2369,7 @@ export default function M2TastingsSolo() {
                 ✎ {t("m2.solo.orEnterManually", "Or enter details manually")}
               </button>
               <button
-                onClick={() => { setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setTimeout(() => startBarcodeScanner(), 200); }}
+                onClick={() => { setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setCameraActive(false); }}
                 style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui", textDecoration: "underline" }}
                 data-testid="button-barcode-retry"
               >
@@ -2364,7 +2382,7 @@ export default function M2TastingsSolo() {
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 20 }}>
               <p style={{ fontSize: 40, margin: 0 }}>⚠️</p>
               <p style={{ fontSize: 15, fontWeight: 600, color: v.text }}>{barcodeError || t("m2.solo.wbError", "Error")}</p>
-              <button onClick={() => { setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setTimeout(() => startBarcodeScanner(), 200); }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }}>{t("m2.solo.tryAgain", "Try again")}</button>
+              <button onClick={() => { setBarcodeStatus("scanning"); barcodeProcessedRef.current = false; setCameraActive(false); }} style={{ ...btnOutline, width: "auto", padding: "10px 24px", fontSize: 13 }}>{t("m2.solo.tryAgain", "Try again")}</button>
               <button onClick={() => { stopBarcodeScanner(); setSheetView("none"); }} style={{ background: "none", border: "none", color: v.muted, cursor: "pointer", fontSize: 13, fontFamily: "system-ui" }}>{t("m2.solo.cancel", "Cancel")}</button>
             </div>
           )}
