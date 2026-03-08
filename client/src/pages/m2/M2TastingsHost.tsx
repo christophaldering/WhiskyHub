@@ -2265,7 +2265,7 @@ function TastingMenuSection({ tasting, pid }: { tasting: TastingFull; pid: strin
 
   const { data: whiskies = [] } = useQuery({
     queryKey: ["whiskies", tasting.id],
-    queryFn: () => whiskyApi.getByTasting(tasting.id),
+    queryFn: () => whiskyApi.getForTasting(tasting.id),
     enabled: expanded,
   });
 
