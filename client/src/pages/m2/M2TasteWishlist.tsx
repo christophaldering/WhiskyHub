@@ -8,6 +8,7 @@ import { useAIStatus } from "@/hooks/use-ai-status";
 import { getSession, useSession } from "@/lib/session";
 import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
+import PromptEditor from "@/components/m2/PromptEditor";
 import { CaskTypeSelect } from "@/components/cask-type-select";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -411,31 +412,15 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId, t }: {
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("wishlist.notesPlaceholder", "Your notes…")} rows={3} style={{ ...inputStyle, resize: "vertical" }} data-testid="input-m2-wishlist-notes" />
         </div>
 
-        <div style={{ marginBottom: 8 }}>
-          <label style={{ fontSize: 12, color: v.muted, display: "block", marginBottom: 6 }}>
-            {t("customPrompt.label", "Focus Hint")} <span style={{ fontWeight: 400, opacity: 0.7 }}>({t("customPrompt.optional", "Optional")})</span>
-          </label>
-          <input
-            type="text"
-            value={customPrompt}
-            onChange={(e) => setCustomPrompt(e.target.value)}
-            maxLength={500}
-            placeholder={t("customPrompt.wishlistPlaceholder", "e.g. 'Compare with my Islay collection'")}
-            style={{
-              width: "100%",
-              padding: "8px 12px",
-              fontSize: 13,
-              color: v.text,
-              background: v.inputBg || v.elevated,
-              border: `1px solid ${v.border}`,
-              borderRadius: 8,
-              outline: "none",
-              fontFamily: "system-ui, sans-serif",
-              boxSizing: "border-box" as const,
-            }}
-            data-testid="input-wishlist-custom-prompt"
-          />
-        </div>
+        <PromptEditor
+          value={customPrompt}
+          onChange={setCustomPrompt}
+          basePromptKey="promptEditor.wishlistBase"
+          placeholderKey="customPrompt.wishlistPlaceholder"
+          placeholderFallback="e.g. 'Compare with my Islay collection'"
+          testIdPrefix="wishlist-prompt"
+          variant="inline"
+        />
 
         {(generatingSummary || aiSummary) && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: 16, background: "linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.03), transparent)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 12 }} data-testid="section-m2-ai-summary">

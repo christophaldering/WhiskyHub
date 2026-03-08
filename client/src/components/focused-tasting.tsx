@@ -7,7 +7,9 @@ import { ratingApi, tastingApi, whiskyApi, blindModeApi } from "@/lib/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import { v } from "@/lib/themeVars";
 import { Button } from "@/components/ui/button";
+import PromptEditor from "@/components/m2/PromptEditor";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -202,15 +204,15 @@ function AiInsightsPanel({ whisky, tasting }: { whisky: Whisky; tasting: Tasting
         )}
       </Button>
       {expanded && (
-        <div className="flex gap-2 items-center">
-          <input
-            type="text"
+        <div>
+          <PromptEditor
             value={insightsPrompt}
-            onChange={(e) => setInsightsPrompt(e.target.value)}
-            maxLength={500}
-            placeholder={t("customPrompt.insightsPlaceholder", "e.g. 'Focus on production process'")}
-            className="flex-1 text-xs px-3 py-1.5 rounded-md border border-border/40 bg-background text-foreground placeholder:text-muted-foreground/50 outline-none"
-            data-testid="input-insights-custom-prompt"
+            onChange={setInsightsPrompt}
+            basePromptKey="promptEditor.insightsBase"
+            placeholderKey="customPrompt.insightsPlaceholder"
+            placeholderFallback="e.g. 'Focus on production process'"
+            testIdPrefix="insights-prompt"
+            variant="inline"
           />
           {insights && (
             <Button

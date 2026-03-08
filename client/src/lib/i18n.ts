@@ -5521,6 +5521,16 @@ const resources = {
           insightsPlaceholder: "e.g. 'Compare with other Islay malts' or 'Focus on cask influence'",
           regenerate: "Refresh",
         },
+        promptEditor: {
+          label: "AI Prompt",
+          showBasePrompt: "Show AI instructions",
+          hideBasePrompt: "Hide AI instructions",
+          customLabel: "Your additions",
+          connoisseurBase: "The AI analyzes your complete whisky profile — your ratings, collection, journal entries, and flavor preferences — to create a personalized Connoisseur Report. It acts as a master blender assessing your palate development, identifying your taste patterns, and providing recommendations tailored to your profile.",
+          narrativeBase: "The AI writes a narrative story of your tasting evening as a whisky journalist. It captures the atmosphere, the whiskies tasted, group dynamics, discussion highlights, and voice memo transcripts to produce a vivid 400–600 word account of the session.",
+          wishlistBase: "The AI acts as a whisky sommelier who knows your personal taste profile. It compares the selected whisky with your flavor preferences and collection to explain why this bottle is especially interesting for you.",
+          insightsBase: "The AI provides fascinating background information about this whisky — its history, distillery, production methods, regional character, and tasting context. It writes in flowing prose without bullet points.",
+        },
         forgotPin: {
           title: "Reset Password",
           description: "Enter your email and we'll send you a verification code.",
@@ -11313,6 +11323,16 @@ const resources = {
           wishlistPlaceholder: "z.B. 'Fokus auf Preis-Leistung' oder 'Vergleich mit ähnlichen Abfüllungen'",
           insightsPlaceholder: "z.B. 'Vergleich mit anderen Islay Malts' oder 'Fokus auf Fasseinfluss'",
           regenerate: "Aktualisieren",
+        },
+        promptEditor: {
+          label: "KI-Prompt",
+          showBasePrompt: "KI-Anweisungen anzeigen",
+          hideBasePrompt: "KI-Anweisungen ausblenden",
+          customLabel: "Deine Ergänzungen",
+          connoisseurBase: "Die KI analysiert dein komplettes Whisky-Profil — deine Bewertungen, Sammlung, Journal-Einträge und Geschmackspräferenzen — um einen personalisierten Connoisseur Report zu erstellen. Sie agiert als Master Blender, der deine Gaumenentwicklung beurteilt, Geschmacksmuster erkennt und auf dein Profil zugeschnittene Empfehlungen gibt.",
+          narrativeBase: "Die KI schreibt als Whisky-Journalist eine erzählerische Geschichte eures Tasting-Abends. Sie fängt die Atmosphäre, die verkosteten Whiskys, Gruppendynamik, Diskussionshöhepunkte und Sprachmemo-Transkripte ein, um einen lebendigen Bericht von 400–600 Wörtern zu verfassen.",
+          wishlistBase: "Die KI agiert als Whisky-Sommelier, der dein persönliches Geschmacksprofil kennt. Sie vergleicht den ausgewählten Whisky mit deinen Geschmackspräferenzen und deiner Sammlung, um zu erklären, warum diese Flasche für dich besonders interessant ist.",
+          insightsBase: "Die KI liefert faszinierende Hintergrundinformationen über diesen Whisky — seine Geschichte, Destillerie, Produktionsmethoden, regionalen Charakter und Verkostungskontext. Sie schreibt in fließender Prosa ohne Aufzählungszeichen.",
         },
         forgotPin: {
           title: "Passwort zurücksetzen",

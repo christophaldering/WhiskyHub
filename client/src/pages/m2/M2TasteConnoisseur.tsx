@@ -5,8 +5,9 @@ import { v, alpha } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { useSession } from "@/lib/session";
 import { pidHeaders } from "@/lib/api";
-import { Sparkles, Copy, Check, ChevronDown, Download, FileText, Trash2, Lightbulb } from "lucide-react";
+import { Sparkles, Copy, Check, ChevronDown, Download, FileText, Trash2 } from "lucide-react";
 import AILanguageSelector from "@/components/m2/AILanguageSelector";
+import PromptEditor from "@/components/m2/PromptEditor";
 
 interface ConnoisseurReport {
   id: string;
@@ -198,7 +199,6 @@ export default function M2TasteConnoisseur() {
   const [aiLang, setAiLang] = useState<"de" | "en">(i18n.language?.startsWith("de") ? "de" : "en");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [customPrompt, setCustomPrompt] = useState("");
-  const [focusHintOpen, setFocusHintOpen] = useState(false);
 
   const { data: reports = [], isLoading } = useQuery<ConnoisseurReport[]>({
     queryKey: ["connoisseur-reports", pid],
@@ -305,74 +305,15 @@ export default function M2TasteConnoisseur() {
 
       <AILanguageSelector value={aiLang} onChange={setAiLang} />
 
-      <div style={{ marginBottom: 16 }}>
-        <button
-          type="button"
-          onClick={() => setFocusHintOpen(!focusHintOpen)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "10px 4px",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            WebkitTapHighlightColor: "transparent",
-            width: "100%",
-          }}
-          data-testid="button-toggle-focus-hint"
-        >
-          <Lightbulb style={{ width: 16, height: 16, color: v.accent }} />
-          <span style={{ flex: 1, textAlign: "left", fontSize: 13, fontWeight: 600, color: v.textSecondary, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
-            {t("customPrompt.label", "Focus Hint")}
-            <span style={{ fontWeight: 400, color: v.muted, marginLeft: 6, fontSize: 12 }}>
-              ({t("customPrompt.optional", "Optional")})
-            </span>
-          </span>
-          <ChevronDown
-            style={{
-              width: 14,
-              height: 14,
-              color: v.muted,
-              transition: "transform 0.25s ease",
-              transform: focusHintOpen ? "rotate(180deg)" : "rotate(0deg)",
-            }}
-            strokeWidth={2}
-          />
-        </button>
-        <div style={{ display: "grid", gridTemplateRows: focusHintOpen ? "1fr" : "0fr", transition: "grid-template-rows 0.3s ease" }}>
-          <div style={{ overflow: "hidden" }}>
-            <textarea
-              value={customPrompt}
-              onChange={(e) => setCustomPrompt(e.target.value.slice(0, 500))}
-              placeholder={t("customPrompt.connoisseurPlaceholder", "e.g. 'Focus on smoky whiskies' or 'Compare with my last tasting'")}
-              rows={2}
-              style={{
-                width: "100%",
-                padding: "12px 14px",
-                fontSize: 14,
-                fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
-                color: v.text,
-                background: v.card,
-                border: `1px solid ${v.border}`,
-                borderRadius: 10,
-                resize: "vertical",
-                outline: "none",
-                lineHeight: 1.5,
-                transition: "border-color 0.2s ease",
-                boxSizing: "border-box",
-                marginTop: 4,
-              }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = v.accent; }}
-              onBlur={(e) => { e.currentTarget.style.borderColor = v.border; }}
-              data-testid="input-custom-prompt"
-            />
-            <div style={{ textAlign: "right", fontSize: 11, color: v.muted, marginTop: 4, fontFamily: "system-ui, sans-serif" }}>
-              {customPrompt.length}/500
-            </div>
-          </div>
-        </div>
-      </div>
+      <PromptEditor
+        value={customPrompt}
+        onChange={setCustomPrompt}
+        basePromptKey="promptEditor.connoisseurBase"
+        placeholderKey="customPrompt.connoisseurPlaceholder"
+        placeholderFallback="e.g. 'Focus on smoky whiskies' or 'Compare with my last tasting'"
+        testIdPrefix="connoisseur-prompt"
+        variant="collapsible"
+      />
 
       <button
         onClick={() => generateMutation.mutate()}

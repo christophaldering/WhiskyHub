@@ -3,6 +3,7 @@ import { v } from "@/lib/themeVars";
 import M2BackButton from "@/components/m2/M2BackButton";
 import { M2Loading } from "@/components/m2/M2Feedback";
 import AILanguageSelector from "@/components/m2/AILanguageSelector";
+import PromptEditor from "@/components/m2/PromptEditor";
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { tastingApi, whiskyApi, inviteApi, guidedApi } from "@/lib/api";
@@ -2034,7 +2035,6 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
   const [narrativeError, setNarrativeError] = useState<string | null>(null);
   const [narrativeLang, setNarrativeLang] = useState<"de" | "en">(i18n.language?.startsWith("de") ? "de" : "en");
   const [narrativeCustomPrompt, setNarrativeCustomPrompt] = useState("");
-  const [narrativeHintOpen, setNarrativeHintOpen] = useState(false);
 
   const isBlind = !!tasting.blindMode;
   const isOpen = tasting.status === "open";
@@ -2299,46 +2299,15 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
               {tasting.aiNarrative}
             </div>
             <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
-              <button
-                type="button"
-                onClick={() => setNarrativeHintOpen(!narrativeHintOpen)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  background: "none",
-                  border: "none",
-                  padding: "4px 0",
-                  cursor: "pointer",
-                  color: narrativeCustomPrompt.trim() ? v.accent : v.muted,
-                  fontSize: 12,
-                  fontFamily: "system-ui, sans-serif",
-                }}
-                data-testid="button-toggle-narrative-hint-regen"
-              >
-                <Sparkles style={{ width: 12, height: 12 }} />
-                <span>{t("customPrompt.label", "Focus Hint")}</span>
-                <span style={{ fontSize: 10, opacity: 0.7 }}>({t("customPrompt.optional", "Optional")})</span>
-                <ChevronDown style={{ width: 12, height: 12, transform: narrativeHintOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", marginLeft: "auto" }} />
-              </button>
-              {narrativeHintOpen && (
-                <textarea
-                  value={narrativeCustomPrompt}
-                  onChange={(e) => setNarrativeCustomPrompt(e.target.value.slice(0, 500))}
-                  placeholder={t("customPrompt.narrativePlaceholder", "e.g. 'Highlight the group's favorite' or 'Focus on the blind reveal'")}
-                  rows={2}
-                  style={{
-                    ...inputStyle,
-                    resize: "vertical",
-                    minHeight: 48,
-                    fontSize: 13,
-                    transition: "border-color 0.2s",
-                  }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = v.accent; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = v.inputBorder; }}
-                  data-testid="input-narrative-custom-prompt-regen"
-                />
-              )}
+              <PromptEditor
+                value={narrativeCustomPrompt}
+                onChange={setNarrativeCustomPrompt}
+                basePromptKey="promptEditor.narrativeBase"
+                placeholderKey="customPrompt.narrativePlaceholder"
+                placeholderFallback="e.g. 'Highlight the group's favorite' or 'Focus on the blind reveal'"
+                testIdPrefix="narrative-prompt-regen"
+                variant="collapsible"
+              />
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <AILanguageSelector value={narrativeLang} onChange={setNarrativeLang} compact />
                 <button
@@ -2369,46 +2338,15 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <AILanguageSelector value={narrativeLang} onChange={setNarrativeLang} />
-            <button
-              type="button"
-              onClick={() => setNarrativeHintOpen(!narrativeHintOpen)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                background: "none",
-                border: "none",
-                padding: "4px 0",
-                cursor: "pointer",
-                color: narrativeCustomPrompt.trim() ? v.accent : v.muted,
-                fontSize: 12,
-                fontFamily: "system-ui, sans-serif",
-              }}
-              data-testid="button-toggle-narrative-hint"
-            >
-              <Sparkles style={{ width: 12, height: 12 }} />
-              <span>{t("customPrompt.label", "Focus Hint")}</span>
-              <span style={{ fontSize: 10, opacity: 0.7 }}>({t("customPrompt.optional", "Optional")})</span>
-              <ChevronDown style={{ width: 12, height: 12, transform: narrativeHintOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", marginLeft: "auto" }} />
-            </button>
-            {narrativeHintOpen && (
-              <textarea
-                value={narrativeCustomPrompt}
-                onChange={(e) => setNarrativeCustomPrompt(e.target.value.slice(0, 500))}
-                placeholder={t("customPrompt.narrativePlaceholder", "e.g. 'Highlight the group's favorite' or 'Focus on the blind reveal'")}
-                rows={2}
-                style={{
-                  ...inputStyle,
-                  resize: "vertical",
-                  minHeight: 48,
-                  fontSize: 13,
-                  transition: "border-color 0.2s",
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = v.accent; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = v.inputBorder; }}
-                data-testid="input-narrative-custom-prompt"
-              />
-            )}
+            <PromptEditor
+              value={narrativeCustomPrompt}
+              onChange={setNarrativeCustomPrompt}
+              basePromptKey="promptEditor.narrativeBase"
+              placeholderKey="customPrompt.narrativePlaceholder"
+              placeholderFallback="e.g. 'Highlight the group's favorite' or 'Focus on the blind reveal'"
+              testIdPrefix="narrative-prompt"
+              variant="collapsible"
+            />
             <button
               type="button"
               onClick={handleGenerateNarrative}
