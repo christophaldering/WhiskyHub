@@ -10820,6 +10820,98 @@ Important rules:
     }
   });
 
+  // ===== PDF STYLE THEME (AI-generated cover page styling) =====
+  app.post("/api/tastings/:id/pdf-style", async (req: Request, res: Response) => {
+    try {
+      const tastingId = req.params.id;
+      const requesterId = req.headers["x-participant-id"] as string;
+      if (!requesterId) return res.status(403).json({ message: "Forbidden" });
+
+      const tasting = await storage.getTasting(tastingId);
+      if (!tasting) return res.status(404).json({ message: "Tasting not found" });
+      if (tasting.hostId !== requesterId) return res.status(403).json({ message: "Host only" });
+
+      const { prompt, whiskies, tastingTitle } = req.body;
+      if (!prompt || typeof prompt !== "string") return res.status(400).json({ message: "Prompt required" });
+
+      const { client } = await getAIClient(requesterId, "pdf-style");
+      if (!client) return res.status(503).json({ message: "AI not available" });
+
+      const sanitizedPrompt = prompt.trim().slice(0, 500);
+
+      const whiskyContext = (whiskies || []).slice(0, 12).map((w: any) =>
+        [w.name, w.region, w.caskInfluence].filter(Boolean).join(", ")
+      ).join("; ");
+
+      const systemPrompt = `You are a graphic design assistant for CaskSense, a premium whisky tasting platform.
+Your job: generate a PDF cover page color scheme and tagline based on the user's mood description and the whiskies in the tasting.
+
+DESIGN CONSTRAINTS (Apple-level premium aesthetic):
+- Colors must stay within warm, sophisticated tones: navy, slate, amber, cream, copper, mahogany, forest green, charcoal
+- NEVER use neon, bright blue, bright red, pink, or saturated colors
+- Background should be subtle and printable (not too dark for paper)
+- The palette should feel like a premium whisky label or a high-end magazine cover
+
+Return ONLY valid JSON with this exact structure:
+{
+  "tagline": "A short, evocative subtitle (max 60 chars) fitting the tasting mood, in the same language as the user's prompt",
+  "colorScheme": {
+    "primary": [r, g, b],
+    "accent": [r, g, b],
+    "background": [r, g, b],
+    "textDark": [r, g, b],
+    "textLight": [r, g, b]
+  },
+  "mood": "one-word mood descriptor in English"
+}
+
+RGB values must be 0-255 integers. Background should be light enough for text readability on paper.`;
+
+      const userMsg = `Tasting: "${tastingTitle || tasting.title}"
+Whiskies: ${whiskyContext || "not specified"}
+User's style request: ${sanitizedPrompt}`;
+
+      const completion = await client.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMsg },
+        ],
+        temperature: 0.7,
+        max_tokens: 300,
+        response_format: { type: "json_object" },
+      });
+
+      const raw = completion.choices[0]?.message?.content;
+      if (!raw) return res.status(500).json({ message: "No AI response" });
+
+      const parsed = JSON.parse(raw);
+      const clampRgb = (v: any): [number, number, number] => {
+        if (!Array.isArray(v) || v.length < 3) return [30, 41, 59];
+        return [Math.max(0, Math.min(255, Math.round(Number(v[0])))), Math.max(0, Math.min(255, Math.round(Number(v[1])))), Math.max(0, Math.min(255, Math.round(Number(v[2]))))];
+      };
+      const cs = parsed.colorScheme;
+      if (!cs || !parsed.tagline || typeof parsed.tagline !== "string") {
+        return res.status(500).json({ message: "Invalid AI response format" });
+      }
+
+      res.json({
+        tagline: parsed.tagline.slice(0, 120),
+        colorScheme: {
+          primary: clampRgb(cs.primary),
+          accent: clampRgb(cs.accent),
+          background: clampRgb(cs.background),
+          textDark: clampRgb(cs.textDark),
+          textLight: clampRgb(cs.textLight),
+        },
+        mood: typeof parsed.mood === "string" ? parsed.mood.slice(0, 30) : "elegant",
+      });
+    } catch (e: any) {
+      console.error("PDF style generation error:", e.message);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // ===== TASTING MENU COVER IMAGE (AI-generated) =====
   app.post("/api/tastings/:id/menu-cover", async (req: Request, res: Response) => {
     try {

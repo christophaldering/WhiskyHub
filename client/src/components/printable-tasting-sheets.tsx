@@ -5,7 +5,8 @@ import { profileApi, tastingApi } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, FileDown, ClipboardList, EyeOff, Download, Users, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Printer, FileDown, ClipboardList, EyeOff, Download, Users, Loader2, Monitor, Smartphone, Sparkles, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import type { Whisky, Tasting } from "@shared/schema";
 import jsPDF from "jspdf";
 import { saveOrPrintJsPdf } from "@/lib/pdf";
@@ -25,6 +26,18 @@ interface ParticipantInfo {
   name: string;
   photoUrl?: string | null;
   id?: string;
+}
+
+export interface PdfStyleTheme {
+  tagline: string;
+  colorScheme: {
+    primary: RGB;
+    accent: RGB;
+    background: RGB;
+    textDark: RGB;
+    textLight: RGB;
+  };
+  mood: string;
 }
 
 async function generateQRDataUrl(url: string): Promise<string> {
@@ -181,40 +194,57 @@ async function drawCoverPage(
   participant?: ParticipantInfo,
   coverImageBase64?: string | null,
   hostName?: string,
+  orientation: "portrait" | "landscape" = "portrait",
+  styleTheme?: PdfStyleTheme | null,
 ) {
-  const pageW = 210;
-  const pageH = 297;
-  const marginX = 18;
+  const pageW = orientation === "landscape" ? 297 : 210;
+  const pageH = orientation === "landscape" ? 210 : 297;
+  const marginX = orientation === "landscape" ? 22 : 18;
   const contentW = pageW - marginX * 2;
 
-  doc.setFillColor(252, 251, 248);
+  const bgColor: RGB = styleTheme?.colorScheme?.background || [252, 251, 248];
+  const primaryColor: RGB = styleTheme?.colorScheme?.primary || NAVY;
+  const accentColor: RGB = styleTheme?.colorScheme?.accent || AMBER;
+  const textDark: RGB = styleTheme?.colorScheme?.textDark || NAVY;
+  const textLight: RGB = styleTheme?.colorScheme?.textLight || [255, 255, 255];
+
+  doc.setFillColor(...bgColor);
   doc.rect(0, 0, pageW, pageH, "F");
 
-  doc.setFillColor(...NAVY);
+  doc.setFillColor(...primaryColor);
   doc.rect(0, 0, pageW, 6, "F");
-  doc.setFillColor(...AMBER);
+  doc.setFillColor(...accentColor);
   doc.rect(0, 6, pageW, 1.5, "F");
 
   let y = 22;
 
   if (isBlind) {
-    doc.setFillColor(180, 130, 30);
+    doc.setFillColor(...accentColor);
     doc.roundedRect(marginX, y - 5, 42, 10, 2, 2, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(...textLight);
     doc.text(tp("printableSheets.pdfBlindTasting", lang), marginX + 21, y + 1, { align: "center" });
     y += 12;
   }
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(24);
-  doc.setTextColor(...NAVY);
+  doc.setTextColor(...textDark);
   const titleLines = doc.splitTextToSize(tasting.title, contentW);
   doc.text(titleLines, marginX, y);
   y += titleLines.length * 10 + 4;
 
-  doc.setDrawColor(...AMBER);
+  if (styleTheme?.tagline) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(11);
+    doc.setTextColor(...accentColor);
+    const taglineLines = doc.splitTextToSize(styleTheme.tagline, contentW);
+    doc.text(taglineLines, marginX, y);
+    y += taglineLines.length * 5 + 2;
+  }
+
+  doc.setDrawColor(...accentColor);
   doc.setLineWidth(1);
   doc.line(marginX, y, marginX + 40, y);
   y += 8;
@@ -231,7 +261,7 @@ async function drawCoverPage(
     doc.text(tp("printableSheets.pdfCoverHost", lang).toUpperCase(), marginX, y);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(metaFontSize);
-    doc.setTextColor(...NAVY);
+    doc.setTextColor(...textDark);
     doc.text(hostName, marginX + 22, y);
     y += 6;
   }
@@ -243,7 +273,7 @@ async function drawCoverPage(
   doc.text(tp("printableSheets.pdfCoverDate", lang).toUpperCase(), marginX, y);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(metaFontSize);
-  doc.setTextColor(...NAVY);
+  doc.setTextColor(...textDark);
   doc.text(dateStr, marginX + 22, y);
   y += 6;
 
@@ -254,7 +284,7 @@ async function drawCoverPage(
     doc.text(tp("printableSheets.pdfCoverLocation", lang).toUpperCase(), marginX, y);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(metaFontSize);
-    doc.setTextColor(...NAVY);
+    doc.setTextColor(...textDark);
     doc.text(tasting.location, marginX + 22, y);
     y += 6;
   }
@@ -265,7 +295,7 @@ async function drawCoverPage(
   doc.text("CODE", marginX, y);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(metaFontSize);
-  doc.setTextColor(...NAVY);
+  doc.setTextColor(...textDark);
   doc.text(tasting.code, marginX + 22, y);
   y += 10;
 
@@ -300,7 +330,7 @@ async function drawCoverPage(
   if (!isBlind) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.setTextColor(...NAVY);
+    doc.setTextColor(...textDark);
     doc.text(tp("printableSheets.pdfCoverLineup", lang).toUpperCase(), marginX, y);
     y += 6;
 
@@ -318,7 +348,7 @@ async function drawCoverPage(
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(lineupFontSize);
-      doc.setTextColor(...NAVY);
+      doc.setTextColor(...textDark);
       const numStr = `${i + 1}.`;
       doc.text(numStr, marginX + 2, y);
 
@@ -364,7 +394,7 @@ async function drawCoverPage(
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
-      doc.setTextColor(...NAVY);
+      doc.setTextColor(...textDark);
       doc.text(`#${i + 1}`, cx + cellW / 2, cy + cellH / 2 + 1, { align: "center" });
     }
   }
@@ -377,7 +407,9 @@ async function drawCoverPage(
   doc.setTextColor(...MUTED);
   doc.text("CaskSense", marginX, pageH - 9);
   doc.text("casksense.com", pageW - marginX, pageH - 9, { align: "right" });
-  doc.text("1 / 2", pageW / 2, pageH - 9, { align: "center" });
+  const totalScoringPages = Math.max(1, Math.ceil(whiskies.length / 12));
+  const totalPages = 1 + totalScoringPages;
+  doc.text(`1 / ${totalPages}`, pageW / 2, pageH - 9, { align: "center" });
 }
 
 function drawRatingCircles(doc: jsPDF, x: number, y: number, circleR: number, circleGap: number, maxScore: number, availableW: number) {
@@ -418,75 +450,21 @@ async function drawScoringPage(
   lang: string,
   isBlind: boolean,
   participant?: ParticipantInfo,
+  orientation: "portrait" | "landscape" = "portrait",
 ) {
-  const pageW = 210;
-  const pageH = 297;
+  const pageW = orientation === "portrait" ? 210 : 297;
+  const pageH = orientation === "portrait" ? 297 : 210;
   const marginX = 12;
   const contentW = pageW - marginX * 2;
   const footerH = 12;
   const headerH = 28;
+  const gutterW = 5;
+  const colW = (contentW - gutterW) / 2;
+  const maxPerColumn = 6;
+  const maxPerPage = maxPerColumn * 2;
 
-  doc.setFillColor(252, 251, 248);
-  doc.rect(0, 0, pageW, pageH, "F");
-
-  doc.setFillColor(...NAVY);
-  doc.rect(0, 0, pageW, headerH, "F");
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(255, 255, 255);
-  const sheetTitle = isBlind
-    ? tp("printableSheets.pdfBlindTitle", lang)
-    : tp("printableSheets.pdfScoringSheet", lang);
-  doc.text(sheetTitle, marginX, 12);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(200, 210, 220);
-  doc.text(tasting.title, marginX, 19);
-
-  if (isBlind) {
-    doc.setFillColor(...AMBER);
-    doc.roundedRect(pageW - marginX - 24, 6, 24, 8, 1.5, 1.5, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(6);
-    doc.setTextColor(255, 255, 255);
-    doc.text("BLIND", pageW - marginX - 12, 11.5, { align: "center" });
-  }
-
-  doc.text("CaskSense", pageW - marginX, 19, { align: "right" });
-
-  let y = headerH + 4;
-
-  if (participant) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7);
-    doc.setTextColor(...SLATE);
-    const nameLabel = tp("printableSheets.pdfParticipant", lang);
-    doc.text(`${nameLabel}: `, marginX, y + 3);
-    doc.setFont("helvetica", "normal");
-    doc.text(participant.name, marginX + doc.getTextWidth(`${nameLabel}: `), y + 3);
-
-    if (participant.id && tasting.id) {
-      try {
-        const scanUrl = `${window.location.origin}/m2/tastings/${tasting.id}/scan?participant=${participant.id}`;
-        const qrDataUrl = await generateQRDataUrl(scanUrl);
-        doc.addImage(qrDataUrl, "PNG", pageW - marginX - 12, y - 1, 12, 12, undefined, "FAST");
-      } catch {}
-    }
-    y += 8;
-  } else {
-    const nameLabel = tp("printableSheets.pdfParticipant", lang);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7);
-    doc.setTextColor(...SLATE);
-    doc.text(`${nameLabel}: `, marginX, y + 3);
-    const nameFieldX = marginX + doc.getTextWidth(`${nameLabel}: `);
-    doc.setDrawColor(...LINE_GRAY);
-    doc.setLineWidth(0.3);
-    doc.line(nameFieldX, y + 4, pageW - marginX, y + 4);
-    y += 8;
-  }
+  const totalScoringPages = Math.max(1, Math.ceil(whiskies.length / maxPerPage));
+  const totalPages = 1 + totalScoringPages;
 
   const labels = {
     nose: tp("printableSheets.pdfNose", lang),
@@ -502,160 +480,250 @@ async function drawScoringPage(
   };
 
   const criteriaLabels = [labels.nose, labels.palate, labels.finish, labels.balance, labels.overall];
+  const ratingScale = tasting.ratingScale || 10;
 
-  const numWhiskies = whiskies.length;
-  const availableH = pageH - y - footerH - 2;
-  const whiskySlotH = availableH / numWhiskies;
+  for (let pageIdx = 0; pageIdx < totalScoringPages; pageIdx++) {
+    doc.addPage([pageW, pageH]);
 
-  const titleRowH = Math.max(4, Math.min(7, whiskySlotH * 0.15));
-  const separatorH = 2;
-  const coreRows = 5;
-  const baseContentH = whiskySlotH - titleRowH - separatorH;
+    doc.setFillColor(252, 251, 248);
+    doc.rect(0, 0, pageW, pageH, "F");
 
-  const hasNotes = baseContentH > coreRows * 4.5 + 5;
-  const hasGuessFields = isBlind && baseContentH > coreRows * 4.5 + 9;
-  const extraRows = (hasNotes ? 1 : 0) + (hasGuessFields ? 1 : 0);
-  const totalRows = coreRows + extraRows;
-  const criteriaSpacing = Math.max(3.2, Math.min(5.5, baseContentH / totalRows));
-  const circleR = Math.max(1.5, Math.min(3.0, criteriaSpacing * 0.5));
-  const circleGap = Math.max(0.6, Math.min(1.5, circleR * 0.5));
-  const titleFontSize = Math.max(6, Math.min(9, whiskySlotH * 0.25));
-  const criteriaFontSize = Math.max(4.5, Math.min(6.5, criteriaSpacing * 0.95));
+    doc.setFillColor(...NAVY);
+    doc.rect(0, 0, pageW, headerH, "F");
 
-  for (let wIdx = 0; wIdx < numWhiskies; wIdx++) {
-    const w = whiskies[wIdx];
-
-    doc.setFillColor(240, 243, 248);
-    doc.roundedRect(marginX, y - 1, contentW, titleFontSize * 0.6 + 2, 1, 1, "F");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(titleFontSize);
-    doc.setTextColor(...NAVY);
+    doc.setFontSize(12);
+    doc.setTextColor(255, 255, 255);
+    const sheetTitle = isBlind
+      ? tp("printableSheets.pdfBlindTitle", lang)
+      : tp("printableSheets.pdfScoringSheet", lang);
+    doc.text(sheetTitle, marginX, 12);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(200, 210, 220);
+    doc.text(tasting.title, marginX, 19);
 
     if (isBlind) {
-      doc.text(`${labels.sample} #${wIdx + 1}`, marginX + 2, y + titleFontSize * 0.35);
-    } else {
-      const numStr = `${wIdx + 1}`;
-      doc.text(numStr, marginX + 2, y + titleFontSize * 0.35);
-      const numW = doc.getTextWidth(numStr + " ");
-      const maxNameW = contentW * 0.4;
-      const nameText = doc.splitTextToSize(w.name, maxNameW)[0];
-      doc.text(nameText, marginX + 2 + numW + 2, y + titleFontSize * 0.35);
+      doc.setFillColor(...AMBER);
+      doc.roundedRect(pageW - marginX - 24, 6, 24, 8, 1.5, 1.5, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6);
+      doc.setTextColor(255, 255, 255);
+      doc.text("BLIND", pageW - marginX - 12, 11.5, { align: "center" });
+    }
 
-      const meta = getWhiskyMeta(w);
-      if (meta) {
-        const afterName = marginX + 2 + numW + 2 + doc.getTextWidth(nameText + "  ");
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(criteriaFontSize);
-        doc.setTextColor(...MUTED);
-        const availW = marginX + contentW - afterName - 4;
-        if (availW > 20) {
-          const metaText = doc.splitTextToSize(meta, availW)[0];
-          doc.text(metaText, afterName, y + titleFontSize * 0.35);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(200, 210, 220);
+    doc.text("CaskSense", pageW - marginX, 19, { align: "right" });
+
+    let participantY = headerH + 4;
+
+    if (participant) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(...SLATE);
+      const nameLabel = tp("printableSheets.pdfParticipant", lang);
+      doc.text(`${nameLabel}: `, marginX, participantY + 3);
+      doc.setFont("helvetica", "normal");
+      doc.text(participant.name, marginX + doc.getTextWidth(`${nameLabel}: `), participantY + 3);
+
+      if (participant.id && tasting.id) {
+        try {
+          const scanUrl = `${window.location.origin}/m2/tastings/${tasting.id}/scan?participant=${participant.id}`;
+          const qrDataUrl = await generateQRDataUrl(scanUrl);
+          doc.addImage(qrDataUrl, "PNG", pageW - marginX - 12, participantY - 1, 12, 12, undefined, "FAST");
+        } catch {}
+      }
+      participantY += 8;
+    } else {
+      const nameLabel = tp("printableSheets.pdfParticipant", lang);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(...SLATE);
+      doc.text(`${nameLabel}: `, marginX, participantY + 3);
+      const nameFieldX = marginX + doc.getTextWidth(`${nameLabel}: `);
+      doc.setDrawColor(...LINE_GRAY);
+      doc.setLineWidth(0.3);
+      doc.line(nameFieldX, participantY + 4, pageW - marginX, participantY + 4);
+      participantY += 8;
+    }
+
+    const columnTopY = participantY;
+    const availableH = pageH - columnTopY - footerH - 2;
+
+    const startIdx = pageIdx * maxPerPage;
+    const endIdx = Math.min(startIdx + maxPerPage, whiskies.length);
+    const pageWhiskies = whiskies.slice(startIdx, endIdx);
+    const numOnPage = pageWhiskies.length;
+    const leftCount = Math.min(numOnPage, maxPerColumn);
+    const rightCount = Math.max(0, numOnPage - maxPerColumn);
+
+    const whiskiesPerCol = Math.max(leftCount, rightCount);
+    const whiskySlotH = availableH / whiskiesPerCol;
+
+    const coreRows = 5;
+    const titleRowH = Math.max(4, Math.min(7, whiskySlotH * 0.15));
+    const separatorH = 2;
+    const baseContentH = whiskySlotH - titleRowH - separatorH;
+
+    const hasNotes = baseContentH > coreRows * 4.5 + 5;
+    const hasGuessFields = isBlind && baseContentH > coreRows * 4.5 + 9;
+    const extraRows = (hasNotes ? 1 : 0) + (hasGuessFields ? 1 : 0);
+    const totalRows = coreRows + extraRows;
+    const criteriaSpacing = Math.max(3.2, Math.min(5.5, baseContentH / totalRows));
+    const circleR = Math.max(1.5, Math.min(3.0, criteriaSpacing * 0.5));
+    const circleGap = Math.max(0.6, Math.min(1.5, circleR * 0.5));
+    const titleFontSize = Math.max(6, Math.min(9, whiskySlotH * 0.25));
+    const criteriaFontSize = Math.max(4.5, Math.min(6.5, criteriaSpacing * 0.95));
+
+    for (let wLocalIdx = 0; wLocalIdx < numOnPage; wLocalIdx++) {
+      const w = pageWhiskies[wLocalIdx];
+      const globalIdx = startIdx + wLocalIdx;
+      const colIdx = wLocalIdx < maxPerColumn ? 0 : 1;
+      const rowInCol = wLocalIdx < maxPerColumn ? wLocalIdx : wLocalIdx - maxPerColumn;
+
+      const colX = marginX + colIdx * (colW + gutterW);
+      let y = columnTopY + rowInCol * whiskySlotH;
+
+      doc.setFillColor(240, 243, 248);
+      doc.roundedRect(colX, y - 1, colW, titleFontSize * 0.6 + 2, 1, 1, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(titleFontSize);
+      doc.setTextColor(...NAVY);
+
+      if (isBlind) {
+        doc.text(`${labels.sample} #${globalIdx + 1}`, colX + 2, y + titleFontSize * 0.35);
+      } else {
+        const numStr = `${globalIdx + 1}`;
+        doc.text(numStr, colX + 2, y + titleFontSize * 0.35);
+        const numW = doc.getTextWidth(numStr + " ");
+        const maxNameW = colW * 0.45;
+        const nameText = doc.splitTextToSize(w.name, maxNameW)[0];
+        doc.text(nameText, colX + 2 + numW + 2, y + titleFontSize * 0.35);
+
+        const meta = getWhiskyMeta(w);
+        if (meta) {
+          const afterName = colX + 2 + numW + 2 + doc.getTextWidth(nameText + "  ");
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(criteriaFontSize);
+          doc.setTextColor(...MUTED);
+          const availW = colX + colW - afterName - 4;
+          if (availW > 15) {
+            const metaText = doc.splitTextToSize(meta, availW)[0];
+            doc.text(metaText, afterName, y + titleFontSize * 0.35);
+          }
         }
       }
-    }
 
-    y += titleFontSize * 0.6 + 3;
+      y += titleFontSize * 0.6 + 3;
 
-    const labelColW = Math.max(14, Math.min(22, criteriaFontSize * 3.2));
-    const circlesX = marginX + 2 + labelColW;
-    const ratingScale = tasting.ratingScale || 10;
-    const circlesAvailW = contentW - labelColW - 6;
+      const labelColW2 = Math.max(12, Math.min(18, criteriaFontSize * 2.8));
+      const circlesX = colX + 2 + labelColW2;
+      const circlesAvailW = colW - labelColW2 - 6;
 
-    for (let cIdx = 0; cIdx < criteriaLabels.length; cIdx++) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(criteriaFontSize);
-      doc.setTextColor(...SLATE);
-      doc.text(criteriaLabels[cIdx], marginX + 2, y + circleR * 0.3);
+      for (let cIdx = 0; cIdx < criteriaLabels.length; cIdx++) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(criteriaFontSize);
+        doc.setTextColor(...SLATE);
+        doc.text(criteriaLabels[cIdx], colX + 2, y + circleR * 0.3);
 
-      drawRatingCircles(doc, circlesX, y, circleR, circleGap, ratingScale, circlesAvailW);
+        drawRatingCircles(doc, circlesX, y, circleR, circleGap, ratingScale, circlesAvailW);
 
-      y += criteriaSpacing;
-    }
+        y += criteriaSpacing;
+      }
 
-    if (hasGuessFields) {
-      const guessFontSize = criteriaFontSize - 0.5;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(guessFontSize);
-      doc.setTextColor(...SLATE);
-      const thirdW = (contentW - 4) / 3;
-      const guesses = [
-        { label: labels.guessRegion, x: marginX + 2 },
-        { label: labels.guessAge, x: marginX + 2 + thirdW },
-        { label: labels.guessAbv, x: marginX + 2 + thirdW * 2 },
-      ];
-      for (const g of guesses) {
-        doc.text(g.label + ":", g.x, y);
-        const gLW = doc.getTextWidth(g.label + ": ");
+      if (hasGuessFields) {
+        const guessFontSize = criteriaFontSize - 0.5;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(guessFontSize);
+        doc.setTextColor(...SLATE);
+        const thirdW = (colW - 4) / 3;
+        const guesses = [
+          { label: labels.guessRegion, x: colX + 2 },
+          { label: labels.guessAge, x: colX + 2 + thirdW },
+          { label: labels.guessAbv, x: colX + 2 + thirdW * 2 },
+        ];
+        for (const g of guesses) {
+          doc.text(g.label + ":", g.x, y);
+          const gLW = doc.getTextWidth(g.label + ": ");
+          doc.setDrawColor(...LINE_GRAY);
+          doc.setLineWidth(0.2);
+          doc.line(g.x + gLW, y + 0.5, g.x + thirdW - 4, y + 0.5);
+        }
+        y += criteriaSpacing;
+      }
+
+      if (hasNotes) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(criteriaFontSize);
+        doc.setTextColor(...SLATE);
+        doc.text(labels.notes + ":", colX + 2, y);
+        const notesLW = doc.getTextWidth(labels.notes + ": ");
         doc.setDrawColor(...LINE_GRAY);
         doc.setLineWidth(0.2);
-        doc.line(g.x + gLW, y + 0.5, g.x + thirdW - 4, y + 0.5);
+        doc.line(colX + 2 + notesLW, y + 0.5, colX + colW - 2, y + 0.5);
+        y += criteriaSpacing;
       }
-      y += criteriaSpacing;
+
+      const isLastInCol = (colIdx === 0 && rowInCol === leftCount - 1) || (colIdx === 1 && rowInCol === rightCount - 1);
+      if (!isLastInCol) {
+        y += 1;
+        doc.setDrawColor(...LINE_GRAY);
+        doc.setLineWidth(0.15);
+        doc.line(colX + 8, y - 1, colX + colW - 8, y - 1);
+      }
     }
 
-    if (hasNotes) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(criteriaFontSize);
-      doc.setTextColor(...SLATE);
-      doc.text(labels.notes + ":", marginX + 2, y);
-      const notesLW = doc.getTextWidth(labels.notes + ": ");
+    if (leftCount > 0 && rightCount > 0) {
       doc.setDrawColor(...LINE_GRAY);
       doc.setLineWidth(0.2);
-      doc.line(marginX + 2 + notesLW, y + 0.5, marginX + contentW - 2, y + 0.5);
-      y += criteriaSpacing;
+      const gutterX = marginX + colW + gutterW / 2;
+      doc.line(gutterX, columnTopY, gutterX, pageH - footerH - 2);
     }
 
-    if (wIdx < numWhiskies - 1) {
-      y += 1;
-      doc.setDrawColor(...LINE_GRAY);
-      doc.setLineWidth(0.15);
-      doc.line(marginX + 10, y - 1, pageW - marginX - 10, y - 1);
-      y += 1;
-    }
+    const currentPageNum = 1 + pageIdx + 1;
+    doc.setDrawColor(...LINE_GRAY);
+    doc.setLineWidth(0.3);
+    doc.line(marginX, pageH - footerH, pageW - marginX, pageH - footerH);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...MUTED);
+    doc.text("CaskSense", marginX, pageH - footerH + 5);
+    doc.text(`${currentPageNum} / ${totalPages}`, pageW / 2, pageH - footerH + 5, { align: "center" });
+    doc.text("casksense.com", pageW - marginX, pageH - footerH + 5, { align: "right" });
   }
-
-  doc.setDrawColor(...LINE_GRAY);
-  doc.setLineWidth(0.3);
-  doc.line(marginX, pageH - footerH, pageW - marginX, pageH - footerH);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(...MUTED);
-  doc.text("CaskSense", marginX, pageH - footerH + 5);
-  doc.text("2 / 2", pageW / 2, pageH - footerH + 5, { align: "center" });
-  doc.text("casksense.com", pageW - marginX, pageH - footerH + 5, { align: "right" });
 }
 
-async function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], lang: string, participant?: ParticipantInfo, mode: "download" | "print" = "download", hostName?: string) {
+async function generateTastingNotesSheet(tasting: Tasting, whiskies: Whisky[], lang: string, participant?: ParticipantInfo, mode: "download" | "print" = "download", hostName?: string, orientation: "portrait" | "landscape" = "portrait", styleTheme?: PdfStyleTheme | null) {
   if (whiskies.length === 0) return;
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
 
   let coverImageBase64: string | null = null;
   if (tasting.coverImageUrl) {
     coverImageBase64 = await loadImageAsBase64(tasting.coverImageUrl);
   }
 
-  await drawCoverPage(doc, tasting, whiskies, lang, false, participant, coverImageBase64, hostName);
+  await drawCoverPage(doc, tasting, whiskies, lang, false, participant, coverImageBase64, hostName, orientation, styleTheme);
 
-  doc.addPage();
-  await drawScoringPage(doc, tasting, whiskies, lang, false, participant);
+  await drawScoringPage(doc, tasting, whiskies, lang, false, participant, orientation);
 
   saveOrPrintJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Notizblatt.pdf`, mode);
 }
 
-async function generateBlindEvaluationSheet(tasting: Tasting, whiskies: Whisky[], lang: string, participant?: ParticipantInfo, mode: "download" | "print" = "download", hostName?: string) {
+async function generateBlindEvaluationSheet(tasting: Tasting, whiskies: Whisky[], lang: string, participant?: ParticipantInfo, mode: "download" | "print" = "download", hostName?: string, orientation: "portrait" | "landscape" = "portrait", styleTheme?: PdfStyleTheme | null) {
   if (whiskies.length === 0) return;
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
 
   let coverImageBase64: string | null = null;
   if (tasting.coverImageUrl) {
     coverImageBase64 = await loadImageAsBase64(tasting.coverImageUrl);
   }
 
-  await drawCoverPage(doc, tasting, whiskies, lang, true, participant, coverImageBase64, hostName);
+  await drawCoverPage(doc, tasting, whiskies, lang, true, participant, coverImageBase64, hostName, orientation, styleTheme);
 
-  doc.addPage();
-  await drawScoringPage(doc, tasting, whiskies, lang, true, participant);
+  await drawScoringPage(doc, tasting, whiskies, lang, true, participant, orientation);
 
   saveOrPrintJsPdf(doc, `${tasting.title.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")}_Bewertungsbogen.pdf`, mode);
 }
@@ -668,10 +736,12 @@ async function generateBatchPersonalizedPdf(
   type: "tasting" | "blind",
   mode: "download" | "print" = "download",
   hostName?: string,
+  orientation: "portrait" | "landscape" = "portrait",
+  styleTheme?: PdfStyleTheme | null,
 ) {
   if (whiskies.length === 0 || participants.length === 0) return;
 
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
   const isBlind = type === "blind";
 
   let coverImageBase64: string | null = null;
@@ -687,10 +757,9 @@ async function generateBatchPersonalizedPdf(
       doc.addPage();
     }
 
-    await drawCoverPage(doc, tasting, whiskies, lang, isBlind, participantInfo, coverImageBase64, hostName);
+    await drawCoverPage(doc, tasting, whiskies, lang, isBlind, participantInfo, coverImageBase64, hostName, orientation, styleTheme);
 
-    doc.addPage();
-    await drawScoringPage(doc, tasting, whiskies, lang, isBlind, participantInfo);
+    await drawScoringPage(doc, tasting, whiskies, lang, isBlind, participantInfo, orientation);
   }
 
   const suffix = isBlind ? "Bewertungsbogen" : "Notizblatt";
@@ -702,10 +771,24 @@ interface PrintableTastingSheetsProps {
   whiskies: Whisky[];
 }
 
+function hexToRgb(hex: string): RGB {
+  const h = hex.replace("#", "");
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+
+function rgbToHex(rgb: RGB): string {
+  return "#" + rgb.map(c => c.toString(16).padStart(2, "0")).join("");
+}
+
 export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSheetsProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [batchLoading, setBatchLoading] = useState(false);
+  const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
+  const [styleTheme, setStyleTheme] = useState<PdfStyleTheme | null>(null);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiStyleOpen, setAiStyleOpen] = useState(false);
   const lang = i18n.language;
   const isBlind = tasting.blindMode;
   const { currentParticipant } = useAppStore();
@@ -732,9 +815,9 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
 
   const handleAction = (type: "tasting" | "blind", mode: "download" | "print") => {
     if (type === "tasting") {
-      generateTastingNotesSheet(tasting, whiskies, lang, participantInfo, mode, hostName);
+      generateTastingNotesSheet(tasting, whiskies, lang, participantInfo, mode, hostName, orientation, styleTheme);
     } else {
-      generateBlindEvaluationSheet(tasting, whiskies, lang, participantInfo, mode, hostName);
+      generateBlindEvaluationSheet(tasting, whiskies, lang, participantInfo, mode, hostName, orientation, styleTheme);
     }
   };
 
@@ -746,9 +829,44 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
         id: p.participantId || p.id,
         name: p.name || p.participant?.name || "Unknown",
       }));
-      await generateBatchPersonalizedPdf(tasting, whiskies, pList, lang, type, mode, hostName);
+      await generateBatchPersonalizedPdf(tasting, whiskies, pList, lang, type, mode, hostName, orientation, styleTheme);
     } finally {
       setBatchLoading(false);
+    }
+  };
+
+  const handleGenerateStyle = async () => {
+    if (!aiPrompt.trim()) return;
+    setAiLoading(true);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (currentParticipant?.id) headers["x-participant-id"] = currentParticipant.id;
+      const res = await fetch(`/api/tastings/${tasting.id}/pdf-style`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          prompt: aiPrompt.trim(),
+          whiskies: whiskies.map(w => ({ name: w.name, region: w.region, caskInfluence: w.caskInfluence })),
+          tastingTitle: tasting.title,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      const cs = data.colorScheme;
+      setStyleTheme({
+        tagline: data.tagline,
+        colorScheme: {
+          primary: typeof cs.primary === "string" ? hexToRgb(cs.primary) : cs.primary,
+          accent: typeof cs.accent === "string" ? hexToRgb(cs.accent) : cs.accent,
+          background: typeof cs.background === "string" ? hexToRgb(cs.background) : cs.background,
+          textDark: typeof cs.textDark === "string" ? hexToRgb(cs.textDark) : cs.textDark,
+          textLight: typeof cs.textLight === "string" ? hexToRgb(cs.textLight) : cs.textLight,
+        },
+        mood: data.mood,
+      });
+    } catch {
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -772,6 +890,98 @@ export function PrintableTastingSheets({ tasting, whiskies }: PrintableTastingSh
         </DialogHeader>
 
         <div className="space-y-3 mt-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">{t("printableSheets.orientation")}</span>
+            <div className="flex rounded-md border border-border overflow-hidden">
+              <button
+                onClick={() => setOrientation("portrait")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${orientation === "portrait" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                data-testid="button-orientation-portrait"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                {t("printableSheets.portrait")}
+              </button>
+              <button
+                onClick={() => setOrientation("landscape")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${orientation === "landscape" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                data-testid="button-orientation-landscape"
+              >
+                <Monitor className="w-3.5 h-3.5" />
+                {t("printableSheets.landscape")}
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border overflow-hidden">
+            <button
+              onClick={() => setAiStyleOpen(!aiStyleOpen)}
+              className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/50 transition-colors"
+              data-testid="button-toggle-ai-style"
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span className="text-sm font-medium">{t("printableSheets.aiStyle")}</span>
+              </div>
+              {aiStyleOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+            </button>
+            {aiStyleOpen && (
+              <div className="p-3 pt-0 space-y-2 border-t border-border">
+                <p className="text-[11px] text-muted-foreground">{t("printableSheets.aiStyleDesc")}</p>
+                <Textarea
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  placeholder={t("printableSheets.aiStylePromptPlaceholder")}
+                  className="text-xs min-h-[60px] resize-none"
+                  data-testid="input-ai-style-prompt"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    disabled={!aiPrompt.trim() || aiLoading}
+                    onClick={handleGenerateStyle}
+                    className="flex-1 text-xs"
+                    data-testid="button-generate-style"
+                  >
+                    {aiLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5 mr-1" />
+                    )}
+                    {aiLoading ? t("printableSheets.generatingStyle") : t("printableSheets.generateStyle")}
+                  </Button>
+                  {styleTheme && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setStyleTheme(null); setAiPrompt(""); }}
+                      className="text-xs"
+                      data-testid="button-reset-style"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                      {t("printableSheets.resetStyle")}
+                    </Button>
+                  )}
+                </div>
+                {styleTheme && (
+                  <div className="p-2 rounded-md bg-muted/50 space-y-1.5" data-testid="style-preview">
+                    <p className="text-[11px] italic text-foreground">"{styleTheme.tagline}"</p>
+                    <div className="flex items-center gap-1.5">
+                      {Object.entries(styleTheme.colorScheme).map(([key, rgb]) => (
+                        <div
+                          key={key}
+                          className="w-5 h-5 rounded-full border border-border"
+                          style={{ backgroundColor: rgbToHex(rgb) }}
+                          title={key}
+                        />
+                      ))}
+                      <span className="text-[10px] text-muted-foreground ml-1">{styleTheme.mood}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="p-4 rounded-lg border border-border space-y-3">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
