@@ -2298,35 +2298,117 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
             >
               {tasting.aiNarrative}
             </div>
-            <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <AILanguageSelector value={narrativeLang} onChange={setNarrativeLang} compact />
+            <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
               <button
                 type="button"
-                onClick={() => handleGenerateNarrative(true)}
-                disabled={narrativeGenerating}
+                onClick={() => setNarrativeHintOpen(!narrativeHintOpen)}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: 6,
                   background: "none",
-                  border: `1px solid ${v.border}`,
-                  borderRadius: 8,
-                  padding: "8px 14px",
-                  color: v.muted,
+                  border: "none",
+                  padding: "4px 0",
+                  cursor: "pointer",
+                  color: narrativeCustomPrompt.trim() ? v.accent : v.muted,
                   fontSize: 12,
-                  cursor: narrativeGenerating ? "not-allowed" : "pointer",
                   fontFamily: "system-ui, sans-serif",
                 }}
-                data-testid="button-regenerate-narrative"
+                data-testid="button-toggle-narrative-hint-regen"
               >
-                {narrativeGenerating ? <Loader2 style={{ width: 13, height: 13, animation: "spin 1s linear infinite" }} /> : <RefreshCw style={{ width: 13, height: 13 }} />}
-                {narrativeGenerating ? t("m2.host.generatingNarrative", "Writing your tasting story...") : t("m2.host.regenerateNarrative", "Regenerate")}
+                <Sparkles style={{ width: 12, height: 12 }} />
+                <span>{t("customPrompt.label", "Focus Hint")}</span>
+                <span style={{ fontSize: 10, opacity: 0.7 }}>({t("customPrompt.optional", "Optional")})</span>
+                <ChevronDown style={{ width: 12, height: 12, transform: narrativeHintOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", marginLeft: "auto" }} />
               </button>
+              {narrativeHintOpen && (
+                <textarea
+                  value={narrativeCustomPrompt}
+                  onChange={(e) => setNarrativeCustomPrompt(e.target.value.slice(0, 500))}
+                  placeholder={t("customPrompt.narrativePlaceholder", "e.g. 'Highlight the group's favorite' or 'Focus on the blind reveal'")}
+                  rows={2}
+                  style={{
+                    ...inputStyle,
+                    resize: "vertical",
+                    minHeight: 48,
+                    fontSize: 13,
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = v.accent; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = v.inputBorder; }}
+                  data-testid="input-narrative-custom-prompt-regen"
+                />
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <AILanguageSelector value={narrativeLang} onChange={setNarrativeLang} compact />
+                <button
+                  type="button"
+                  onClick={() => handleGenerateNarrative(true)}
+                  disabled={narrativeGenerating}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    background: "none",
+                    border: `1px solid ${v.border}`,
+                    borderRadius: 8,
+                    padding: "8px 14px",
+                    color: v.muted,
+                    fontSize: 12,
+                    cursor: narrativeGenerating ? "not-allowed" : "pointer",
+                    fontFamily: "system-ui, sans-serif",
+                  }}
+                  data-testid="button-regenerate-narrative"
+                >
+                  {narrativeGenerating ? <Loader2 style={{ width: 13, height: 13, animation: "spin 1s linear infinite" }} /> : <RefreshCw style={{ width: 13, height: 13 }} />}
+                  {narrativeGenerating ? t("m2.host.generatingNarrative", "Writing your tasting story...") : t("m2.host.regenerateNarrative", "Regenerate")}
+                </button>
+              </div>
             </div>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <AILanguageSelector value={narrativeLang} onChange={setNarrativeLang} />
+            <button
+              type="button"
+              onClick={() => setNarrativeHintOpen(!narrativeHintOpen)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                background: "none",
+                border: "none",
+                padding: "4px 0",
+                cursor: "pointer",
+                color: narrativeCustomPrompt.trim() ? v.accent : v.muted,
+                fontSize: 12,
+                fontFamily: "system-ui, sans-serif",
+              }}
+              data-testid="button-toggle-narrative-hint"
+            >
+              <Sparkles style={{ width: 12, height: 12 }} />
+              <span>{t("customPrompt.label", "Focus Hint")}</span>
+              <span style={{ fontSize: 10, opacity: 0.7 }}>({t("customPrompt.optional", "Optional")})</span>
+              <ChevronDown style={{ width: 12, height: 12, transform: narrativeHintOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", marginLeft: "auto" }} />
+            </button>
+            {narrativeHintOpen && (
+              <textarea
+                value={narrativeCustomPrompt}
+                onChange={(e) => setNarrativeCustomPrompt(e.target.value.slice(0, 500))}
+                placeholder={t("customPrompt.narrativePlaceholder", "e.g. 'Highlight the group's favorite' or 'Focus on the blind reveal'")}
+                rows={2}
+                style={{
+                  ...inputStyle,
+                  resize: "vertical",
+                  minHeight: 48,
+                  fontSize: 13,
+                  transition: "border-color 0.2s",
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = v.accent; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = v.inputBorder; }}
+                data-testid="input-narrative-custom-prompt"
+              />
+            )}
             <button
               type="button"
               onClick={handleGenerateNarrative}

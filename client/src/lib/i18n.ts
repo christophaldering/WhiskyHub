@@ -5519,6 +5519,7 @@ const resources = {
           narrativePlaceholder: "e.g. 'Highlight the group's favorite' or 'Focus on the blind reveal'",
           wishlistPlaceholder: "e.g. 'Focus on value for money' or 'Compare with similar bottlings'",
           insightsPlaceholder: "e.g. 'Compare with other Islay malts' or 'Focus on cask influence'",
+          regenerate: "Refresh",
         },
         forgotPin: {
           title: "Reset Password",
@@ -11311,6 +11312,7 @@ const resources = {
           narrativePlaceholder: "z.B. 'Den Gruppenfavoriten hervorheben' oder 'Fokus auf die Blind-Enthüllung'",
           wishlistPlaceholder: "z.B. 'Fokus auf Preis-Leistung' oder 'Vergleich mit ähnlichen Abfüllungen'",
           insightsPlaceholder: "z.B. 'Vergleich mit anderen Islay Malts' oder 'Fokus auf Fasseinfluss'",
+          regenerate: "Aktualisieren",
         },
         forgotPin: {
           title: "Passwort zurücksetzen",

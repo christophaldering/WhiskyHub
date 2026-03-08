@@ -511,7 +511,7 @@ export const wishlistScanApi = {
     }
     return res.json();
   },
-  generateSummary: (data: { participantId: string; whiskyName: string; distillery?: string; region?: string; age?: string; abv?: string; caskType?: string; notes?: string }) =>
+  generateSummary: (data: { participantId: string; whiskyName: string; distillery?: string; region?: string; age?: string; abv?: string; caskType?: string; notes?: string; customPrompt?: string; language?: string }) =>
     fetchJSON("/wishlist/generate-summary", { method: "POST", body: JSON.stringify(data) }),
 };
 

@@ -140,9 +140,10 @@ function AiInsightsPanel({ whisky, tasting }: { whisky: Whisky; tasting: Tasting
   const [insights, setInsights] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [insightsPrompt, setInsightsPrompt] = useState("");
 
-  const fetchInsights = async () => {
-    if (insights) {
+  const fetchInsights = async (forceRefresh = false) => {
+    if (insights && !forceRefresh) {
       setExpanded(!expanded);
       return;
     }
@@ -164,6 +165,7 @@ function AiInsightsPanel({ whisky, tasting }: { whisky: Whisky; tasting: Tasting
           category: whisky.category,
           peatLevel: whisky.peatLevel,
           language: i18n.language,
+          customPrompt: insightsPrompt.trim() || undefined,
         }),
       });
       if (!res.ok) throw new Error("Failed");
@@ -199,6 +201,31 @@ function AiInsightsPanel({ whisky, tasting }: { whisky: Whisky; tasting: Tasting
           <ChevronDown className="w-3.5 h-3.5" />
         )}
       </Button>
+      {expanded && (
+        <div className="flex gap-2 items-center">
+          <input
+            type="text"
+            value={insightsPrompt}
+            onChange={(e) => setInsightsPrompt(e.target.value)}
+            maxLength={500}
+            placeholder={t("customPrompt.insightsPlaceholder", "e.g. 'Focus on production process'")}
+            className="flex-1 text-xs px-3 py-1.5 rounded-md border border-border/40 bg-background text-foreground placeholder:text-muted-foreground/50 outline-none"
+            data-testid="input-insights-custom-prompt"
+          />
+          {insights && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => fetchInsights(true)}
+              disabled={loading}
+              className="text-xs px-2 py-1 h-auto"
+              data-testid="button-regenerate-insights"
+            >
+              {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : t("customPrompt.regenerate", "Refresh")}
+            </Button>
+          )}
+        </div>
+      )}
       <AnimatePresence>
         {expanded && insights && (
           <motion.div

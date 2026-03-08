@@ -247,13 +247,14 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId, t }: {
   const [aiSummaryDate, setAiSummaryDate] = useState(entry?.aiSummaryDate || "");
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
+  const [customPrompt, setCustomPrompt] = useState("");
 
   const generateSummary = async (w: { whiskyName: string; distillery?: string; region?: string; age?: string; abv?: string; caskType?: string; notes?: string }) => {
     if (!participantId || !w.whiskyName) return;
     setGeneratingSummary(true);
     try {
       const lang = i18n.language?.startsWith("de") ? "de" : "en";
-      const result = await wishlistScanApi.generateSummary({ participantId, language: lang, ...w } as any);
+      const result = await wishlistScanApi.generateSummary({ participantId, language: lang, customPrompt: customPrompt.trim() || undefined, ...w });
       if (result.summary) { setAiSummary(result.summary); setAiSummaryDate(result.summaryDate); }
     } catch { } finally { setGeneratingSummary(false); }
   };
@@ -408,6 +409,32 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId, t }: {
         <div>
           <label style={labelStyle}>{t("wishlist.notes", "Notes")}</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("wishlist.notesPlaceholder", "Your notes…")} rows={3} style={{ ...inputStyle, resize: "vertical" }} data-testid="input-m2-wishlist-notes" />
+        </div>
+
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ fontSize: 12, color: v.muted, display: "block", marginBottom: 6 }}>
+            {t("customPrompt.label", "Focus Hint")} <span style={{ fontWeight: 400, opacity: 0.7 }}>({t("customPrompt.optional", "Optional")})</span>
+          </label>
+          <input
+            type="text"
+            value={customPrompt}
+            onChange={(e) => setCustomPrompt(e.target.value)}
+            maxLength={500}
+            placeholder={t("customPrompt.wishlistPlaceholder", "e.g. 'Compare with my Islay collection'")}
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              fontSize: 13,
+              color: v.text,
+              background: v.inputBg || v.elevated,
+              border: `1px solid ${v.border}`,
+              borderRadius: 8,
+              outline: "none",
+              fontFamily: "system-ui, sans-serif",
+              boxSizing: "border-box" as const,
+            }}
+            data-testid="input-wishlist-custom-prompt"
+          />
         </div>
 
         {(generatingSummary || aiSummary) && (
