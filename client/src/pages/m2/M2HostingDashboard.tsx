@@ -311,7 +311,16 @@ export default function M2HostingDashboard() {
     return labels[s] || labels[0];
   };
 
+  const dashRevealOrder: string[][] | null = (() => { try { return (tasting as any).revealOrder ? JSON.parse((tasting as any).revealOrder) : null; } catch { return null; } })();
+  const dashMaxSteps = dashRevealOrder ? dashRevealOrder.length : 3;
+
   const getRevealActionLabel = () => {
+    if (dashRevealOrder && revealStep < dashMaxSteps) {
+      const stage = dashRevealOrder[revealStep];
+      const fieldLabels: Record<string, string> = { name: "Name", distillery: "Distillery", age: "Age", abv: "ABV", region: "Region", country: "Country", category: "Category", caskInfluence: "Cask", bottler: "Bottler", vintage: "Vintage", peatLevel: "Peat", ppm: "PPM", price: "Price", wbId: "WB ID", wbScore: "WB Score", hostNotes: "Notes", hostSummary: "Summary", image: "Photo" };
+      const label = stage.length <= 3 ? stage.map(k => fieldLabels[k] || k).join(", ") : `${t("m2.dashboard.revealDetailsBtn", "Details")} (${stage.length})`;
+      return `${t("m2.host.revealStage", "Reveal")} ${revealStep + 1}: ${label}`;
+    }
     if (revealStep === 0) return t("m2.dashboard.revealNameBtn", "Reveal Name");
     if (revealStep === 1) return t("m2.dashboard.revealDetailsBtn", "Reveal Details");
     if (revealStep === 2) return t("m2.dashboard.revealImageBtn", "Reveal Image");

@@ -502,6 +502,7 @@ export class DatabaseStorage implements IStorage {
     if (data.showRanking !== undefined) updateData.showRanking = data.showRanking;
     if (data.showGroupAvg !== undefined) updateData.showGroupAvg = data.showGroupAvg;
     if (data.showReveal !== undefined) updateData.showReveal = data.showReveal;
+    if ((data as any).revealOrder !== undefined) updateData.revealOrder = (data as any).revealOrder;
     if (Object.keys(updateData).length === 0) return this.getTasting(id);
     const [result] = await db.update(tastings).set(updateData).where(eq(tastings.id, id)).returning();
     return result;

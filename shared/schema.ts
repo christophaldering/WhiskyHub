@@ -48,6 +48,7 @@ export const tastings = pgTable("tastings", {
   guidedRevealStep: integer("guided_reveal_step").default(0), // 0=blind, 1=name, 2=meta, 3=image+links
   revealIndex: integer("reveal_index").default(0),
   revealStep: integer("reveal_step").default(0), // 0=blind, 1=name, 2=meta, 3=image
+  revealOrder: text("reveal_order"), // JSON: array of field group arrays, null=classic 3-stage
   reflectionEnabled: boolean("reflection_enabled").default(false),
   reflectionMode: text("reflection_mode").default("standard"), // standard | custom
   reflectionVisibility: text("reflection_visibility").default("named"), // named | anonymous | optional

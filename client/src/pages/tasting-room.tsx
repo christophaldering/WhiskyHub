@@ -1854,16 +1854,31 @@ export default function TastingRoom() {
   const revealIndex = tasting.revealIndex ?? 0;
   const revealStep = tasting.revealStep ?? 0;
 
+  const revealOrderParsed: string[][] | null = (() => { try { return tasting.revealOrder ? JSON.parse(tasting.revealOrder) : null; } catch { return null; } })();
+
   const getBlindState = (whiskyIdx: number, whisky?: Whisky) => {
     if (!isBlind) return { showName: true, showMeta: true, showImage: true };
     if (isHost) return { showName: true, showMeta: true, showImage: true };
     if (whiskyIdx < revealIndex) return { showName: true, showMeta: true, showImage: true };
     const photoRevealed = whisky?.photoRevealed ?? false;
-    if (whiskyIdx === revealIndex) return {
-      showName: revealStep >= 1,
-      showMeta: revealStep >= 2,
-      showImage: revealStep >= 3 || photoRevealed,
-    };
+    if (whiskyIdx === revealIndex) {
+      if (revealOrderParsed) {
+        const revealed = new Set<string>();
+        for (let i = 0; i < Math.min(revealStep, revealOrderParsed.length); i++) {
+          for (const f of revealOrderParsed[i]) revealed.add(f);
+        }
+        return {
+          showName: revealed.has("name"),
+          showMeta: revealed.has("distillery") || revealed.has("age") || revealed.has("abv") || revealed.has("region"),
+          showImage: revealed.has("image") || photoRevealed,
+        };
+      }
+      return {
+        showName: revealStep >= 1,
+        showMeta: revealStep >= 2,
+        showImage: revealStep >= 3 || photoRevealed,
+      };
+    }
     return { showName: false, showMeta: false, showImage: photoRevealed };
   };
 

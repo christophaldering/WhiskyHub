@@ -134,6 +134,8 @@ export default function M2HostControl() {
   const currentAct = tasting.currentAct || "act1";
   const revealIndex = tasting.revealIndex ?? 0;
   const revealStep = tasting.revealStep ?? 0;
+  const hcRevealOrder: string[][] | null = (() => { try { return tasting.revealOrder ? JSON.parse(tasting.revealOrder) : null; } catch { return null; } })();
+  const hcMaxSteps = hcRevealOrder ? hcRevealOrder.length : 3;
   const guidedWhiskyIndex = tasting.guidedWhiskyIndex ?? -1;
   const isBlind = tasting.blindMode;
   const isGuided = tasting.guidedMode;
@@ -445,13 +447,20 @@ export default function M2HostControl() {
               ) : (
                 <Eye style={{ width: 16, height: 16 }} />
               )}
-              {revealStep === 0
-                ? t("m2.hostControl.revealNameBtn", "Reveal Name")
-                : revealStep === 1
-                ? t("m2.hostControl.revealDetailsBtn", "Reveal Details")
-                : revealStep === 2
-                ? t("m2.hostControl.revealImageBtn", "Reveal Image")
-                : t("m2.hostControl.revealNextWhisky", "Next Whisky")}
+              {revealStep >= hcMaxSteps
+                ? t("m2.hostControl.revealNextWhisky", "Next Whisky")
+                : hcRevealOrder
+                  ? (() => {
+                      const stage = hcRevealOrder[revealStep];
+                      const fieldLabels: Record<string, string> = { name: "Name", distillery: "Distillery", age: "Age", abv: "ABV", region: "Region", country: "Country", category: "Category", caskInfluence: "Cask", bottler: "Bottler", vintage: "Vintage", peatLevel: "Peat", ppm: "PPM", price: "Price", wbId: "WB ID", wbScore: "WB Score", hostNotes: "Notes", hostSummary: "Summary", image: "Photo" };
+                      const label = stage.length <= 3 ? stage.map(k => fieldLabels[k] || k).join(", ") : `${t("m2.hostControl.revealDetailsBtn", "Details")} (${stage.length})`;
+                      return `${t("m2.host.revealStage", "Reveal")} ${revealStep + 1}: ${label}`;
+                    })()
+                  : revealStep === 0
+                  ? t("m2.hostControl.revealNameBtn", "Reveal Name")
+                  : revealStep === 1
+                  ? t("m2.hostControl.revealDetailsBtn", "Reveal Details")
+                  : t("m2.hostControl.revealImageBtn", "Reveal Image")}
             </button>
           )}
 

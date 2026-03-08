@@ -24,6 +24,69 @@ import {
 
 type WizardStep = "list" | "step1" | "step2" | "step3" | "step4";
 
+const REVEAL_FIELDS = {
+  name: "Name",
+  distillery: "Distillery",
+  age: "Age",
+  abv: "ABV",
+  region: "Region",
+  country: "Country",
+  category: "Category",
+  caskInfluence: "Cask",
+  bottler: "Bottler",
+  vintage: "Vintage",
+  peatLevel: "Peat",
+  ppm: "PPM",
+  price: "Price",
+  wbId: "WB ID",
+  wbScore: "WB Score",
+  hostNotes: "Notes",
+  hostSummary: "Summary",
+  image: "Photo",
+} as const;
+
+type RevealFieldKey = keyof typeof REVEAL_FIELDS;
+
+const REVEAL_PRESETS = {
+  classic: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
+  photoFirst: [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
+  oneByOne: [["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler", "vintage"], ["hostNotes", "hostSummary"], ["image"]],
+  detailsFirst: [["distillery", "age", "abv", "region", "caskInfluence"], ["name"], ["image"]],
+} as const;
+
+function getRevealPresetKey(order: string[][] | null): string {
+  if (!order) return "classic";
+  const str = JSON.stringify(order);
+  for (const [key, preset] of Object.entries(REVEAL_PRESETS)) {
+    if (JSON.stringify(preset) === str) return key;
+  }
+  return "custom";
+}
+
+function getFieldsRevealedAtStep(revealOrder: string[][] | null, step: number): Set<string> {
+  const stages = revealOrder || REVEAL_PRESETS.classic;
+  const fields = new Set<string>();
+  for (let i = 0; i < Math.min(step, stages.length); i++) {
+    for (const f of stages[i]) fields.add(f);
+  }
+  return fields;
+}
+
+function getRevealStageLabel(stage: string[], t: (key: string, def?: string) => string): string {
+  if (stage.length === 1) {
+    const key = stage[0] as RevealFieldKey;
+    return REVEAL_FIELDS[key] || key;
+  }
+  if (stage.length <= 3) {
+    return stage.map(k => REVEAL_FIELDS[k as RevealFieldKey] || k).join(", ");
+  }
+  const hasImage = stage.includes("image");
+  const hasName = stage.includes("name");
+  if (hasImage && stage.length === 1) return t("m2.host.revealPhoto", "Photo");
+  if (hasName && stage.length === 1) return t("m2.host.revealName", "Name");
+  return t("m2.host.revealDetails", "Details") + ` (${stage.length})`;
+}
+
 interface TastingFull {
   id: string;
   title: string;
@@ -51,6 +114,9 @@ interface TastingFull {
   reflectionVisibility?: string;
   videoLink?: string | null;
   aiNarrative?: string | null;
+  revealOrder?: string | null;
+  revealIndex?: number;
+  revealStep?: number;
 }
 
 interface Rating {
@@ -1070,6 +1136,7 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
     if (!importPreview || importPreviewSelected.size === 0) return;
     setImportAdding(true);
     let count = 0;
+    let failed = 0;
     const selected = importPreview.filter((_: any, i: number) => importPreviewSelected.has(i));
     for (let idx = 0; idx < selected.length; idx++) {
       const w = selected[idx];
@@ -1100,14 +1167,21 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
           }),
         });
         if (res.ok) count++;
-      } catch {}
+        else failed++;
+      } catch { failed++; }
     }
     setImportPreview(null);
     setImportPreviewMeta(null);
     setImportPreviewSelected(new Set());
     setImportAdding(false);
     await fetchWhiskies();
-    showFeedback(t("m2.host.importSuccess", { count }));
+    if (failed > 0 && count > 0) {
+      showFeedback(t("m2.host.importPartial", { count, failed, defaultValue: `${count} imported, ${failed} failed` }));
+    } else if (failed > 0 && count === 0) {
+      showFeedback(t("m2.host.importFailed", "File analysis failed"));
+    } else {
+      showFeedback(t("m2.host.importSuccess", { count }));
+    }
   };
 
   return (
@@ -2262,6 +2336,9 @@ function Step1Edit({ tasting, pid, onUpdated }: { tasting: TastingFull; pid: str
   const [videoLink, setVideoLink] = useState(tasting.videoLink || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const parsedRevealOrder = tasting.revealOrder ? JSON.parse(tasting.revealOrder) : null;
+  const [revealOrderPreset, setRevealOrderPreset] = useState(() => getRevealPresetKey(parsedRevealOrder));
+  const [revealOrderStages, setRevealOrderStages] = useState<string[][]>(parsedRevealOrder || (REVEAL_PRESETS.classic as unknown as string[][]));
 
   const canSubmit = title.trim().length > 0 && !saving;
 
@@ -2288,10 +2365,12 @@ function Step1Edit({ tasting, pid, onUpdated }: { tasting: TastingFull; pid: str
           reflectionMode,
           reflectionVisibility,
           videoLink: videoLink.trim() || null,
+          revealOrder: blindMode && revealOrderPreset !== "classic" ? JSON.stringify(revealOrderStages) : null,
         }),
       });
       if (!res.ok) throw new Error(t("m2.host.failedUpdate", "Failed to update tasting"));
-      onUpdated({ ...tasting, title: title.trim(), date, location: location.trim(), description: description.trim(), blindMode, ratingScale, guidedMode, guestMode, sessionUiMode, reflectionEnabled, reflectionMode, reflectionVisibility, videoLink });
+      const savedRevealOrder = blindMode && revealOrderPreset !== "classic" ? JSON.stringify(revealOrderStages) : null;
+      onUpdated({ ...tasting, title: title.trim(), date, location: location.trim(), description: description.trim(), blindMode, ratingScale, guidedMode, guestMode, sessionUiMode, reflectionEnabled, reflectionMode, reflectionVisibility, videoLink, revealOrder: savedRevealOrder });
     } catch (e: any) {
       setError(e.message || t("m2.host.genericError", "Something went wrong"));
     }
@@ -2326,6 +2405,47 @@ function Step1Edit({ tasting, pid, onUpdated }: { tasting: TastingFull; pid: str
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("m2.host.descriptionPlaceholder", "Optional notes for your guests...")} rows={2} style={{ ...inputStyle, resize: "vertical", minHeight: 48 }} data-testid="input-edit-tasting-description" />
         </div>
         <Toggle checked={blindMode} onChange={setBlindMode} label={t("m2.host.blindMode", "Blind Mode")} />
+        {blindMode && (
+          <div style={{ background: v.elevated, border: `1px solid ${v.border}`, borderRadius: 10, padding: 12 }} data-testid="reveal-order-config">
+            <div style={{ fontSize: 12, fontWeight: 600, color: v.muted, marginBottom: 8 }}>
+              <Sliders style={{ width: 12, height: 12, display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+              {t("m2.host.revealOrderLabel", "Reveal Order")}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+              {(["classic", "photoFirst", "detailsFirst", "oneByOne"] as const).map((preset) => {
+                const labels: Record<string, string> = {
+                  classic: t("m2.host.revealPresetClassic", "Classic"),
+                  photoFirst: t("m2.host.revealPresetPhotoFirst", "Photo First"),
+                  detailsFirst: t("m2.host.revealPresetDetailsFirst", "Details First"),
+                  oneByOne: t("m2.host.revealPresetOneByOne", "One by One"),
+                };
+                const active = revealOrderPreset === preset;
+                return (
+                  <button key={preset} type="button" onClick={() => { setRevealOrderPreset(preset); setRevealOrderStages([...(REVEAL_PRESETS[preset] as unknown as string[][])]); }} style={{ padding: "5px 10px", fontSize: 11, fontWeight: active ? 700 : 500, background: active ? v.accent : "none", color: active ? v.bg : v.muted, border: `1px solid ${active ? v.accent : v.border}`, borderRadius: 6, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid={`button-reveal-preset-${preset}`}>
+                    {labels[preset]}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {revealOrderStages.map((stage, idx) => (
+                <div key={idx} style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: "6px 8px", background: v.bg, borderRadius: 6, border: `1px solid ${v.border}` }} data-testid={`reveal-stage-${idx}`}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: v.accent, minWidth: 16, lineHeight: "20px" }}>{idx + 1}</span>
+                  <div style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: 3 }}>
+                    {stage.map((field) => (
+                      <span key={field} style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: `color-mix(in srgb, ${v.accent} 12%, transparent)`, color: v.text, fontWeight: 500 }}>
+                        {REVEAL_FIELDS[field as RevealFieldKey] || field}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 10, color: v.muted, marginTop: 6 }}>
+              {t("m2.host.revealOrderHint", "Each step reveals the listed fields to your guests")}
+            </div>
+          </div>
+        )}
         <RatingScaleSelector value={ratingScale} onChange={setRatingScale} />
         <AdvancedConfigSection
           guidedMode={guidedMode} setGuidedMode={setGuidedMode}
@@ -2411,6 +2531,8 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
   const activeIndex = tasting.guidedWhiskyIndex ?? -1;
   const activeWhisky = activeIndex >= 0 && activeIndex < whiskies.length ? whiskies[activeIndex] : null;
   const revealStep = tasting.guidedRevealStep ?? 0;
+  const cockpitRevealOrder: string[][] | null = (() => { try { return tasting.revealOrder ? JSON.parse(tasting.revealOrder) : null; } catch { return null; } })();
+  const maxRevealSteps = cockpitRevealOrder ? cockpitRevealOrder.length : 3;
   const showResults = !!tasting.showGroupAvg;
 
   const patchTasting = async (body: Record<string, any>) => {
@@ -2904,19 +3026,23 @@ function Step4Live({ tasting: initialTasting, pid, onBack, onEditWhiskies }: { t
             <button
               type="button"
               onClick={handleReveal}
-              disabled={revealStep >= 3}
+              disabled={revealStep >= maxRevealSteps}
               style={{
                 width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 padding: "14px", fontSize: 15, fontWeight: 700,
-                background: revealStep < 3 ? `color-mix(in srgb, ${v.accent} 15%, transparent)` : v.border,
-                color: revealStep < 3 ? v.accent : v.muted,
-                border: `1.5px solid ${revealStep < 3 ? `color-mix(in srgb, ${v.accent} 50%, transparent)` : v.border}`,
-                borderRadius: 12, cursor: revealStep < 3 ? "pointer" : "not-allowed", fontFamily: "system-ui, sans-serif",
+                background: revealStep < maxRevealSteps ? `color-mix(in srgb, ${v.accent} 15%, transparent)` : v.border,
+                color: revealStep < maxRevealSteps ? v.accent : v.muted,
+                border: `1.5px solid ${revealStep < maxRevealSteps ? `color-mix(in srgb, ${v.accent} 50%, transparent)` : v.border}`,
+                borderRadius: 12, cursor: revealStep < maxRevealSteps ? "pointer" : "not-allowed", fontFamily: "system-ui, sans-serif",
               }}
               data-testid="button-reveal"
             >
               <Eye style={{ width: 18, height: 18 }} />
-              {revealStep === 0 ? t("m2.host.revealName", "Reveal Name") : revealStep === 1 ? t("m2.host.revealDetails", "Reveal Details") : revealStep === 2 ? t("m2.host.revealImage", "Reveal Image") : t("m2.host.fullyRevealed", "Fully Revealed")}
+              {revealStep >= maxRevealSteps
+                ? t("m2.host.fullyRevealed", "Fully Revealed")
+                : cockpitRevealOrder
+                  ? `${t("m2.host.revealStage", "Reveal")} ${revealStep + 1}: ${getRevealStageLabel(cockpitRevealOrder[revealStep], t)}`
+                  : revealStep === 0 ? t("m2.host.revealName", "Reveal Name") : revealStep === 1 ? t("m2.host.revealDetails", "Reveal Details") : t("m2.host.revealImage", "Reveal Image")}
             </button>
           )}
 

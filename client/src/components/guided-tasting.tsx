@@ -366,8 +366,23 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
   }, [triggerAutoSave, scale, step, overallManual, computeAvg]);
 
 
+  const guidedRevealOrder: string[][] | null = (() => { try { return (tasting as any).revealOrder ? JSON.parse((tasting as any).revealOrder) : null; } catch { return null; } })();
+  const guidedMaxSteps = guidedRevealOrder ? guidedRevealOrder.length : 3;
+
   const getGuidedBlindState = (forEval = false) => {
-    if (isHost && !forEval) return { showName: true, showMeta: true, showImage: true, showLinks: guidedStep >= 3 };
+    if (isHost && !forEval) return { showName: true, showMeta: true, showImage: true, showLinks: guidedStep >= guidedMaxSteps };
+    if (guidedRevealOrder) {
+      const revealed = new Set<string>();
+      for (let i = 0; i < Math.min(guidedStep, guidedRevealOrder.length); i++) {
+        for (const f of guidedRevealOrder[i]) revealed.add(f);
+      }
+      return {
+        showName: revealed.has("name"),
+        showMeta: revealed.has("distillery") || revealed.has("age") || revealed.has("abv") || revealed.has("region"),
+        showImage: revealed.has("image"),
+        showLinks: revealed.has("image"),
+      };
+    }
     return {
       showName: guidedStep >= 1,
       showMeta: guidedStep >= 2,
@@ -532,7 +547,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
                 variant="outline"
                 className="font-serif text-xs gap-1 border-primary/30 text-primary"
                 onClick={() => {
-                  if (guidedStep >= 3 && guidedIdx < whiskies.length - 1) {
+                  if (guidedStep >= guidedMaxSteps && guidedIdx < whiskies.length - 1) {
                     setShowNextConfirm(true);
                   } else {
                     advanceMutation.mutate();
@@ -543,7 +558,7 @@ export function GuidedTasting({ tasting, whiskies, onExit }: GuidedTastingProps)
               >
                 {advanceMutation.isPending ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : guidedStep < 3 ? (
+                ) : guidedStep < guidedMaxSteps ? (
                   <>
                     <Eye className="w-3.5 h-3.5" />
                     {t("guided.revealNext")}

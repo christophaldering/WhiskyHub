@@ -1148,6 +1148,16 @@ export async function registerRoutes(
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
       const { hostId, ...details } = req.body;
       if (hostId !== tasting.hostId) return res.status(403).json({ message: "Only the host can edit tasting details" });
+      if (details.revealOrder !== undefined && details.revealOrder !== null) {
+        try {
+          const parsed = JSON.parse(details.revealOrder);
+          if (!Array.isArray(parsed) || !parsed.every((s: any) => Array.isArray(s) && s.every((f: any) => typeof f === "string"))) {
+            return res.status(400).json({ message: "Invalid revealOrder format" });
+          }
+        } catch {
+          return res.status(400).json({ message: "Invalid revealOrder JSON" });
+        }
+      }
       const updated = await storage.updateTastingDetails(req.params.id, details);
       res.json(updated);
     } catch (e: any) {
@@ -3099,10 +3109,13 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const totalExpressions = whiskies.length;
       if (totalExpressions === 0) return res.status(400).json({ message: "No expressions to reveal" });
 
+      let maxSteps = 3;
+      try { if (tasting.revealOrder) maxSteps = JSON.parse(tasting.revealOrder).length; } catch {}
+
       let revealIndex = tasting.revealIndex ?? 0;
       let revealStep = tasting.revealStep ?? 0;
 
-      if (revealStep < 3) {
+      if (revealStep < maxSteps) {
         revealStep++;
       } else {
         if (revealIndex < totalExpressions - 1) {
@@ -3114,7 +3127,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       }
 
       const updated = await storage.updateTastingBlindMode(req.params.id, { revealIndex, revealStep });
-      const allRevealed = revealIndex >= totalExpressions - 1 && revealStep >= 3;
+      const allRevealed = revealIndex >= totalExpressions - 1 && revealStep >= maxSteps;
       res.json({ ...updated, allRevealed });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -3151,13 +3164,16 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       const totalWhiskies = whiskyList.length;
       if (totalWhiskies === 0) return res.status(400).json({ message: "No whiskies in tasting" });
 
+      let maxSteps = 3;
+      try { if (tasting.revealOrder) maxSteps = JSON.parse(tasting.revealOrder).length; } catch {}
+
       let idx = tasting.guidedWhiskyIndex ?? -1;
       let step = tasting.guidedRevealStep ?? 0;
 
       if (idx === -1) {
         idx = 0;
         step = 0;
-      } else if (step < 3) {
+      } else if (step < maxSteps) {
         step++;
       } else {
         if (idx < totalWhiskies - 1) {
@@ -3169,7 +3185,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       }
 
       const updated = await storage.updateTastingBlindMode(req.params.id, { guidedWhiskyIndex: idx, guidedRevealStep: step });
-      const allComplete = idx >= totalWhiskies - 1 && step >= 3;
+      const allComplete = idx >= totalWhiskies - 1 && step >= maxSteps;
       res.json({ ...updated, allComplete });
     } catch (e: any) {
       res.status(500).json({ message: e.message });

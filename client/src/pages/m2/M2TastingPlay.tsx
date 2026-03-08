@@ -993,9 +993,22 @@ export default function M2TastingPlay() {
     (currentRating.nose + currentRating.taste + currentRating.finish + currentRating.balance) / 4
   );
 
+  const revealOrderParsed: string[][] | null = (() => { try { return tasting?.revealOrder ? JSON.parse(tasting.revealOrder) : null; } catch { return null; } })();
+
   const getWhiskyDisplay = (whisky: WhiskyItem, index: number) => {
     if (!isBlind) {
       return { name: whisky.name || `Dram ${index + 1}`, showDetails: true, showImage: true };
+    }
+    if (revealOrderParsed) {
+      const revealed = new Set<string>();
+      for (let i = 0; i < Math.min(revealStep, revealOrderParsed.length); i++) {
+        for (const f of revealOrderParsed[i]) revealed.add(f);
+      }
+      return {
+        name: revealed.has("name") ? (whisky.name || `Dram ${index + 1}`) : `Dram ${blindLabel(index)}`,
+        showDetails: revealed.has("distillery") || revealed.has("age") || revealed.has("abv") || revealed.has("region"),
+        showImage: revealed.has("image") || !!whisky.photoRevealed,
+      };
     }
     if (revealStep >= 1) {
       return {
