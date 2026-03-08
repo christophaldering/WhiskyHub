@@ -117,8 +117,8 @@ export default function M2TastingsHome() {
 
   const actions = [
     { href: "/m2/tastings/join", icon: Wine, labelKey: "m2.tastings.join", fallback: "Joyn", subKey: "m2.tastings.joinSub", subFallback: "An Tasting teilnehmen", color: v.accent },
-    { href: "/m2/tastings/host", icon: Crown, labelKey: "m2.tastings.host", fallback: "Host", subKey: "m2.tastings.hostSub", subFallback: "Eigenes Tasting leiten", color: v.success },
     { href: "/m2/tastings/solo", icon: PenLine, labelKey: "m2.tastings.solo", fallback: "Solo", subKey: "m2.tastings.soloSub", subFallback: "Dram für dich loggen", color: v.textSecondary },
+    { href: "/m2/tastings/host", icon: Crown, labelKey: "m2.tastings.host", fallback: "Host", subKey: "m2.tastings.hostSub", subFallback: "Eigenes Tasting leiten", color: v.success },
   ];
 
   const selectStyle: React.CSSProperties = {
