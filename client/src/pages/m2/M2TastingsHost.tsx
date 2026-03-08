@@ -2308,13 +2308,22 @@ function TastingMenuSection({ tasting, pid }: { tasting: TastingFull; pid: strin
   const handleDownload = async () => {
     setGeneratingPdf(true);
     try {
+      let wList = whiskies;
+      if (!wList || wList.length === 0) {
+        try {
+          const res = await fetch(`/api/tastings/${tasting.id}/whiskies`, {
+            headers: { "Content-Type": "application/json", ...(pid ? { "x-participant-id": pid } : {}) },
+          });
+          if (res.ok) wList = await res.json();
+        } catch {}
+      }
       const participants = tastingParticipants.map((p: any) => ({
         name: p.participant?.name || p.name || p.participantName || "Guest",
         isHost: p.participantId === tasting.hostId,
       }));
       await generateTastingMenu({
         tasting: tasting as any,
-        whiskies,
+        whiskies: wList,
         participants,
         hostName,
         coverImageBase64: coverImage,

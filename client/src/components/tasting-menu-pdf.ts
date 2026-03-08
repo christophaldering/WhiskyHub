@@ -159,9 +159,12 @@ export interface TastingMenuOptions {
   language: string;
 }
 
-function formatDateLocalized(dateStr: string, lang: string): string {
+function formatDateLocalized(dateStr: string | null | undefined, lang: string): string {
+  if (!dateStr) return "";
   try {
-    return new Date(dateStr).toLocaleDateString(lang === "de" ? "de-DE" : "en-GB", {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString(lang === "de" ? "de-DE" : "en-GB", {
       day: "numeric",
       month: "long",
       year: "numeric",
