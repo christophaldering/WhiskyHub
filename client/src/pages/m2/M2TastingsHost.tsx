@@ -142,7 +142,19 @@ interface Whisky {
   sortOrder: number;
   caskInfluence: string | null;
   imageUrl: string | null;
-  age?: number | null;
+  age?: string | null;
+  category?: string | null;
+  country?: string | null;
+  region?: string | null;
+  bottler?: string | null;
+  vintage?: string | null;
+  whiskybaseId?: string | null;
+  wbScore?: number | null;
+  price?: number | null;
+  peatLevel?: string | null;
+  ppm?: number | null;
+  hostNotes?: string | null;
+  hostSummary?: string | null;
 }
 
 const inputStyle: React.CSSProperties = {
@@ -918,6 +930,17 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
   const [cask, setCask] = useState("");
   const [age, setAge] = useState("");
   const [notes, setNotes] = useState("");
+  const [bottler, setBottler] = useState("");
+  const [category, setCategory] = useState("");
+  const [country, setCountry] = useState("");
+  const [region, setRegion] = useState("");
+  const [vintage, setVintage] = useState("");
+  const [whiskybaseId, setWhiskybaseId] = useState("");
+  const [wbScore, setWbScore] = useState("");
+  const [price, setPrice] = useState("");
+  const [peatLevel, setPeatLevel] = useState("");
+  const [ppm, setPpm] = useState("");
+  const [hostSummary, setHostSummary] = useState("");
   const [showDetails, setShowDetails] = useState(false);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
@@ -927,6 +950,18 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
   const [editAbv, setEditAbv] = useState("");
   const [editCask, setEditCask] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editBottler, setEditBottler] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editCountry, setEditCountry] = useState("");
+  const [editRegion, setEditRegion] = useState("");
+  const [editVintage, setEditVintage] = useState("");
+  const [editAge, setEditAge] = useState("");
+  const [editWhiskybaseId, setEditWhiskybaseId] = useState("");
+  const [editWbScore, setEditWbScore] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editPeatLevel, setEditPeatLevel] = useState("");
+  const [editPpm, setEditPpm] = useState("");
+  const [editHostSummary, setEditHostSummary] = useState("");
   const [showImport, setShowImport] = useState<"collection" | "wishlist" | null>(null);
   const [importSearch, setImportSearch] = useState("");
   const [importSelected, setImportSelected] = useState<Set<string>>(new Set());
@@ -1029,14 +1064,29 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
           tastingId: tasting.id,
           name: name.trim(),
           distillery: distillery.trim() || null,
+          age: age.trim() || null,
           abv: abv ? parseFloat(abv) : null,
+          category: category.trim() || null,
+          country: country.trim() || null,
+          region: region.trim() || null,
           caskInfluence: cask.trim() || null,
+          bottler: bottler.trim() || null,
+          vintage: vintage.trim() || null,
+          whiskybaseId: whiskybaseId.trim() || null,
+          wbScore: wbScore ? parseFloat(wbScore) : null,
+          price: price ? parseFloat(price) : null,
+          peatLevel: peatLevel.trim() || null,
+          ppm: ppm ? parseFloat(ppm) : null,
           notes: notes.trim() || null,
+          hostSummary: hostSummary.trim() || null,
           sortOrder: whiskies.length,
         }),
       });
       if (!res.ok) throw new Error(t("m2.host.failedAddWhisky", "Failed to add whisky"));
-      setName(""); setDistillery(""); setAbv(""); setCask(""); setAge(""); setNotes(""); setShowDetails(false);
+      setName(""); setDistillery(""); setAbv(""); setCask(""); setAge(""); setNotes("");
+      setBottler(""); setCategory(""); setCountry(""); setRegion(""); setVintage("");
+      setWhiskybaseId(""); setWbScore(""); setPrice(""); setPeatLevel(""); setPpm(""); setHostSummary("");
+      setShowDetails(false);
       await fetchWhiskies();
       showFeedback(t("m2.host.whiskyAdded", "Whisky added"));
     } catch (e: any) {
@@ -1075,6 +1125,18 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
     setEditAbv(w.abv ? String(w.abv) : "");
     setEditCask(w.caskInfluence || "");
     setEditNotes(w.notes || "");
+    setEditBottler(w.bottler || "");
+    setEditCategory(w.category || "");
+    setEditCountry(w.country || "");
+    setEditRegion(w.region || "");
+    setEditAge(w.age || "");
+    setEditVintage(w.vintage || "");
+    setEditWhiskybaseId(w.whiskybaseId || "");
+    setEditWbScore(w.wbScore ? String(w.wbScore) : "");
+    setEditPrice(w.price ? String(w.price) : "");
+    setEditPeatLevel(w.peatLevel || "");
+    setEditPpm(w.ppm ? String(w.ppm) : "");
+    setEditHostSummary(w.hostSummary || "");
   };
 
   const handleSaveEdit = async () => {
@@ -1086,9 +1148,21 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
         body: JSON.stringify({
           name: editName.trim(),
           distillery: editDistillery.trim() || null,
+          age: editAge.trim() || null,
           abv: editAbv ? parseFloat(editAbv) : null,
+          category: editCategory.trim() || null,
+          country: editCountry.trim() || null,
+          region: editRegion.trim() || null,
           caskInfluence: editCask.trim() || null,
+          bottler: editBottler.trim() || null,
+          vintage: editVintage.trim() || null,
+          whiskybaseId: editWhiskybaseId.trim() || null,
+          wbScore: editWbScore ? parseFloat(editWbScore) : null,
+          price: editPrice ? parseFloat(editPrice) : null,
+          peatLevel: editPeatLevel.trim() || null,
+          ppm: editPpm ? parseFloat(editPpm) : null,
           notes: editNotes.trim() || null,
+          hostSummary: editHostSummary.trim() || null,
         }),
       });
       setEditingId(null);
@@ -1375,29 +1449,96 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
 
               {showDetails && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingLeft: 4 }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: v.accent, textTransform: "uppercase", letterSpacing: 0.5 }}>{t("m2.host.sectionCore", "Kern")}</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <div>
                       <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.distilleryLabel", "Distillery")}</label>
                       <input type="text" value={distillery} onChange={(e) => setDistillery(e.target.value)} placeholder={t("m2.host.distilleryPlaceholder", "e.g. Lagavulin")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-distillery" />
                     </div>
                     <div>
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.categoryLabel", "Kategorie")}</label>
+                      <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} placeholder={t("m2.host.categoryPlaceholder", "e.g. Single Malt")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-category" />
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.ageLabel", "Age")}</label>
+                      <input type="text" value={age} onChange={(e) => setAge(e.target.value)} placeholder={t("m2.host.agePlaceholder", "e.g. 16")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-age" />
+                    </div>
+                    <div>
                       <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.abvLabel", "ABV %")}</label>
                       <input type="number" value={abv} onChange={(e) => setAbv(e.target.value)} placeholder={t("m2.host.abvPlaceholder", "e.g. 43")} step="0.1" min="0" max="100" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-abv" />
                     </div>
                   </div>
+
+                  <div style={{ fontSize: 10, fontWeight: 600, color: v.accent, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 4 }}>{t("m2.host.sectionOrigin", "Herkunft")}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.countryLabel", "Land")}</label>
+                      <input type="text" value={country} onChange={(e) => setCountry(e.target.value)} placeholder={t("m2.host.countryPlaceholder", "e.g. Scotland")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-country" />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.regionLabel", "Region")}</label>
+                      <input type="text" value={region} onChange={(e) => setRegion(e.target.value)} placeholder={t("m2.host.regionPlaceholder", "e.g. Speyside")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-region" />
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: 10, fontWeight: 600, color: v.accent, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 4 }}>{t("m2.host.sectionCask", "Fass & Charakter")}</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <div>
                       <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.caskTypeLabel", "Cask Type")}</label>
                       <input type="text" value={cask} onChange={(e) => setCask(e.target.value)} placeholder={t("m2.host.caskTypePlaceholder", "e.g. Ex-Bourbon")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-cask" />
                     </div>
                     <div>
-                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.ageLabel", "Age")}</label>
-                      <input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder={t("m2.host.agePlaceholder", "e.g. 16")} min="0" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-age" />
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.peatLevelLabel", "Peat Level")}</label>
+                      <input type="text" value={peatLevel} onChange={(e) => setPeatLevel(e.target.value)} placeholder={t("m2.host.peatLevelPlaceholder", "e.g. heavily peated")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-peat" />
                     </div>
                   </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
+                    <div>
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.ppmLabel", "PPM")}</label>
+                      <input type="number" value={ppm} onChange={(e) => setPpm(e.target.value)} placeholder={t("m2.host.ppmPlaceholder", "e.g. 40")} step="0.1" min="0" style={{ ...inputStyle, fontSize: 13, maxWidth: "50%" }} data-testid="input-whisky-ppm" />
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: 10, fontWeight: 600, color: v.accent, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 4 }}>{t("m2.host.sectionBottling", "Abfüllung")}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.bottlerLabel", "Bottler")}</label>
+                      <input type="text" value={bottler} onChange={(e) => setBottler(e.target.value)} placeholder={t("m2.host.bottlerPlaceholder", "e.g. Official Bottling")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-bottler" />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.vintageLabel", "Vintage")}</label>
+                      <input type="text" value={vintage} onChange={(e) => setVintage(e.target.value)} placeholder={t("m2.host.vintagePlaceholder", "e.g. 2010 - 2025")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-vintage" />
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
+                    <div>
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.priceLabel", "Preis (0,7l)")}</label>
+                      <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={t("m2.host.pricePlaceholder", "e.g. 75")} step="0.01" min="0" style={{ ...inputStyle, fontSize: 13, maxWidth: "50%" }} data-testid="input-whisky-price" />
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: 10, fontWeight: 600, color: v.accent, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 4 }}>{t("m2.host.sectionReference", "Referenz")}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.wbIdLabel", "Whiskybase ID")}</label>
+                      <input type="text" value={whiskybaseId} onChange={(e) => setWhiskybaseId(e.target.value)} placeholder={t("m2.host.wbIdPlaceholder", "e.g. 286114")} style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-wbid" />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.wbScoreLabel", "WB Score")}</label>
+                      <input type="number" value={wbScore} onChange={(e) => setWbScore(e.target.value)} placeholder={t("m2.host.wbScorePlaceholder", "e.g. 87.8")} step="0.1" min="0" max="100" style={{ ...inputStyle, fontSize: 13 }} data-testid="input-whisky-wbscore" />
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: 10, fontWeight: 600, color: v.accent, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 4 }}>{t("m2.host.sectionNotes", "Notizen")}</div>
                   <div>
-                    <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.notesLabel", "Notes")}</label>
+                    <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.notesLabel", "Host-Notizen")}</label>
                     <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("m2.host.notesPlaceholder", "Host notes about this whisky")} rows={2} style={{ ...inputStyle, fontSize: 13, resize: "vertical", minHeight: 40 }} data-testid="input-whisky-notes" />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: v.muted, display: "block", marginBottom: 4 }}>{t("m2.host.hostSummaryLabel", "Host-Zusammenfassung")}</label>
+                    <textarea value={hostSummary} onChange={(e) => setHostSummary(e.target.value)} placeholder={t("m2.host.hostSummaryPlaceholder", "Detailed tasting description for reveal")} rows={3} style={{ ...inputStyle, fontSize: 13, resize: "vertical", minHeight: 50 }} data-testid="input-whisky-summary" />
                   </div>
                 </div>
               )}
@@ -1637,12 +1778,44 @@ function Step2Whiskies({ tasting, pid, onNext, onBack }: { tasting: TastingFull;
                           </label>
                         </div>
                         <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} style={{ ...inputStyle, fontSize: 13 }} data-testid={`input-edit-name-${w.id}`} />
+                        <div style={{ fontSize: 10, fontWeight: 600, color: v.accent, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 2 }}>{t("m2.host.sectionCore", "Kern")}</div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                           <input type="text" value={editDistillery} onChange={(e) => setEditDistillery(e.target.value)} placeholder={t("m2.host.distilleryLabel", "Distillery")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-distillery-${w.id}`} />
+                          <input type="text" value={editCategory} onChange={(e) => setEditCategory(e.target.value)} placeholder={t("m2.host.categoryLabel", "Kategorie")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-category-${w.id}`} />
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          <input type="text" value={editAge} onChange={(e) => setEditAge(e.target.value)} placeholder={t("m2.host.ageLabel", "Age")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-age-${w.id}`} />
                           <input type="number" value={editAbv} onChange={(e) => setEditAbv(e.target.value)} placeholder={t("m2.host.abvLabel", "ABV %")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-abv-${w.id}`} />
                         </div>
-                        <input type="text" value={editCask} onChange={(e) => setEditCask(e.target.value)} placeholder={t("m2.host.caskTypeLabel", "Cask type")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-cask-${w.id}`} />
-                        <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder={t("m2.host.notesLabel", "Notes")} rows={2} style={{ ...inputStyle, fontSize: 12, resize: "vertical" }} data-testid={`input-edit-notes-${w.id}`} />
+                        <div style={{ fontSize: 10, fontWeight: 600, color: v.accent, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 2 }}>{t("m2.host.sectionOrigin", "Herkunft")}</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          <input type="text" value={editCountry} onChange={(e) => setEditCountry(e.target.value)} placeholder={t("m2.host.countryLabel", "Land")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-country-${w.id}`} />
+                          <input type="text" value={editRegion} onChange={(e) => setEditRegion(e.target.value)} placeholder={t("m2.host.regionLabel", "Region")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-region-${w.id}`} />
+                        </div>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: v.accent, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 2 }}>{t("m2.host.sectionCask", "Fass & Charakter")}</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          <input type="text" value={editCask} onChange={(e) => setEditCask(e.target.value)} placeholder={t("m2.host.caskTypeLabel", "Cask type")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-cask-${w.id}`} />
+                          <input type="text" value={editPeatLevel} onChange={(e) => setEditPeatLevel(e.target.value)} placeholder={t("m2.host.peatLevelLabel", "Peat Level")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-peat-${w.id}`} />
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
+                          <input type="number" value={editPpm} onChange={(e) => setEditPpm(e.target.value)} placeholder={t("m2.host.ppmLabel", "PPM")} step="0.1" min="0" style={{ ...inputStyle, fontSize: 12, maxWidth: "50%" }} data-testid={`input-edit-ppm-${w.id}`} />
+                        </div>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: v.accent, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 2 }}>{t("m2.host.sectionBottling", "Abfüllung")}</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          <input type="text" value={editBottler} onChange={(e) => setEditBottler(e.target.value)} placeholder={t("m2.host.bottlerLabel", "Bottler")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-bottler-${w.id}`} />
+                          <input type="text" value={editVintage} onChange={(e) => setEditVintage(e.target.value)} placeholder={t("m2.host.vintageLabel", "Vintage")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-vintage-${w.id}`} />
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
+                          <input type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} placeholder={t("m2.host.priceLabel", "Preis (0,7l)")} step="0.01" min="0" style={{ ...inputStyle, fontSize: 12, maxWidth: "50%" }} data-testid={`input-edit-price-${w.id}`} />
+                        </div>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: v.accent, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 2 }}>{t("m2.host.sectionReference", "Referenz")}</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          <input type="text" value={editWhiskybaseId} onChange={(e) => setEditWhiskybaseId(e.target.value)} placeholder={t("m2.host.wbIdLabel", "Whiskybase ID")} style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-wbid-${w.id}`} />
+                          <input type="number" value={editWbScore} onChange={(e) => setEditWbScore(e.target.value)} placeholder={t("m2.host.wbScoreLabel", "WB Score")} step="0.1" min="0" max="100" style={{ ...inputStyle, fontSize: 12 }} data-testid={`input-edit-wbscore-${w.id}`} />
+                        </div>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: v.accent, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 2 }}>{t("m2.host.sectionNotes", "Notizen")}</div>
+                        <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder={t("m2.host.notesLabel", "Host-Notizen")} rows={2} style={{ ...inputStyle, fontSize: 12, resize: "vertical" }} data-testid={`input-edit-notes-${w.id}`} />
+                        <textarea value={editHostSummary} onChange={(e) => setEditHostSummary(e.target.value)} placeholder={t("m2.host.hostSummaryLabel", "Host-Zusammenfassung")} rows={3} style={{ ...inputStyle, fontSize: 12, resize: "vertical" }} data-testid={`input-edit-summary-${w.id}`} />
                         <div style={{ display: "flex", gap: 8 }}>
                           <button type="button" onClick={() => setEditingId(null)} style={{ flex: 1, padding: "8px", fontSize: 13, background: "none", color: v.muted, border: `1px solid ${v.border}`, borderRadius: 8, cursor: "pointer", fontFamily: "system-ui, sans-serif" }} data-testid={`button-cancel-edit-${w.id}`}>
                             {t("m2.host.cancel", "Cancel")}
