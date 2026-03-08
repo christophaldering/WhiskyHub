@@ -1192,40 +1192,113 @@ export default function M2TastingsSolo() {
           <div style={{
             position: "fixed", bottom: 0, left: 0, right: 0, background: v.bg,
             borderTop: `1px solid ${v.border}`, borderRadius: "16px 16px 0 0",
-            padding: "20px 20px 40px", zIndex: 100, maxHeight: "85dvh", overflowY: "auto",
+            padding: "20px 20px calc(40px + env(safe-area-inset-bottom, 0px) + 60px)", zIndex: 100, maxHeight: "85dvh", overflowY: "auto",
           }}>
             <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 16px" }} />
-            <h3 style={{ fontSize: 17, fontWeight: 700, color: v.text, margin: "0 0 16px", fontFamily: "'Playfair Display', serif" }}>
-              {t("m2.solo.candidatesTitle", "Results")}
-            </h3>
-            {candidates.length === 0 ? (
-              <p style={{ color: v.muted, fontSize: 14, textAlign: "center", padding: "20px 0" }}>
-                {t("m2.solo.noCandidates", "No matches found. Try again or enter manually.")}
-              </p>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {candidates.map((c, i) => (
-                  <button
-                    key={i}
-                    onClick={() => { handleSelectCandidate(c); setSoloView("editor"); }}
-                    style={{ ...btnOutline, textAlign: "left", padding: "14px 16px" }}
-                    data-testid={`button-candidate-${i}`}
-                  >
-                    <div style={{ fontWeight: 600, color: v.text }}>{c.name}</div>
-                    {c.distillery && <div style={{ fontSize: 12, color: v.muted }}>{c.distillery}</div>}
-                    <div style={{ fontSize: 11, color: v.accent, marginTop: 4 }}>{Math.round((c.confidence || 0) * 100)}% {t("m2.solo.confidence", "confidence")}</div>
+
+            <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+              {photoUrl && (
+                <img src={photoUrl} alt="Scanned" style={{ width: 56, height: 56, borderRadius: 8, objectFit: "cover", border: `1px solid ${v.border}` }} data-testid="img-capture-scan-preview" />
+              )}
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: 0 }}>
+                  {candidates.length > 0 ? t("m2.solo.matchesFound", "Matches found") : t("m2.solo.noMatches", "No matches")}
+                </h3>
+                <p style={{ fontSize: 12, color: v.muted, margin: "2px 0 0" }}>
+                  {candidates.length > 0 ? t("m2.solo.selectMatch", "Select the best match") : t("m2.solo.tryAgain", "Try another method")}
+                </p>
+              </div>
+            </div>
+
+            {candidates.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                {candidates.map((c, i) => {
+                  const badge = confidenceLabel(c.confidence, t);
+                  const isOnline = c.source === "external";
+                  const isAiVision = c.source === "ai_vision" || c.source === "ai_text";
+                  const details = [c.age ? `${c.age}y` : "", c.abv || "", c.caskType || ""].filter(Boolean).join(" · ");
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => { handleSelectCandidate(c); setSoloView("editor"); }}
+                      data-testid={`button-candidate-${i}`}
+                      style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        width: "100%", padding: "12px 14px",
+                        background: i === 0 ? alpha(v.accent, "15") : "transparent",
+                        border: `1px solid ${i === 0 ? v.accent : v.border}`,
+                        borderRadius: 10, cursor: "pointer", textAlign: "left", fontFamily: "system-ui, sans-serif",
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: v.text }}>{c.name}</div>
+                        <div style={{ fontSize: 12, color: v.muted }}>{c.distillery}</div>
+                        {details && <div style={{ fontSize: 11, color: v.mutedLight, marginTop: 2 }}>{details}</div>}
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: isAiVision ? v.accent : isOnline ? "#6ba3d6" : badge.color, background: isAiVision ? alpha(v.accent, "18") : isOnline ? "#6ba3d620" : `${badge.color}20`, padding: "3px 8px", borderRadius: 6, flexShrink: 0 }}>
+                        {isAiVision ? t("m2.solo.aiIdentified", "AI identified") : isOnline ? t("m2.solo.online", "Online") : badge.text}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {candidates.length === 0 && (
+                <button onClick={() => { handleCreateUnknown(); setSoloView("editor"); }} data-testid="button-capture-add-manually" style={btnPrimary}>{t("m2.solo.addManually", "Add manually")}</button>
+              )}
+              <button onClick={() => { setOnlineSearched(false); setOnlineCandidates([]); setOnlineError(""); setSheetView("onlineSearch"); }} data-testid="button-capture-search-online" style={{ ...btnOutline, color: "#6ba3d6", borderColor: "#6ba3d640" }}>
+                {t("m2.solo.searchOnline", "Search online (Beta)")}
+              </button>
+              <button onClick={() => { setSheetView("none"); setCandidates([]); setPhotoUrl(""); setLastResult(null); }} data-testid="button-capture-retake" style={btnOutline}>{t("m2.solo.tryAgain", "Try again")}</button>
+              {candidates.length > 0 && (
+                <button onClick={() => { handleCreateUnknown(); setSoloView("editor"); }} data-testid="button-capture-manual-alt" style={{ ...btnOutline, color: v.mutedLight }}>{t("m2.solo.addManually", "Add manually")}</button>
+              )}
+            </div>
+          </div>
+        )}
+        {sheetView === "onlineSearch" && (
+          <div style={{
+            position: "fixed", bottom: 0, left: 0, right: 0, background: v.card,
+            borderTop: `1px solid ${v.border}`, borderRadius: "16px 16px 0 0",
+            padding: "20px 20px calc(40px + env(safe-area-inset-bottom, 0px) + 60px)", zIndex: 100, maxHeight: "80vh", overflowY: "auto",
+          }}>
+            <div style={{ width: 40, height: 4, background: v.border, borderRadius: 2, margin: "0 auto 16px" }} />
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: v.text, margin: "0 0 8px" }}>{t("m2.solo.searchOnline", "Search online (Beta)")}</h3>
+            <p style={{ fontSize: 12, color: v.muted, margin: "0 0 16px" }}>
+              {t("m2.solo.searchingFor", "Searching for:")} <span style={{ color: v.text }}>{onlineQuery.substring(0, 60)}</span>
+            </p>
+            {!onlineSearched && (
+              <button onClick={doOnlineSearch} disabled={onlineSearching} data-testid="button-capture-run-online-search" style={{ ...btnPrimary, background: "#6ba3d6", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                {onlineSearching ? t("m2.solo.searching", "Searching...") : t("m2.solo.searchNow", "Search now")}
+              </button>
+            )}
+            {onlineSearched && onlineCandidates.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                {onlineCandidates.map((cand, i) => (
+                  <button key={i} onClick={() => { handleSelectCandidate(cand); setSoloView("editor"); }} data-testid={`button-capture-online-candidate-${i}`} style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    width: "100%", padding: "12px 14px",
+                    background: i === 0 ? alpha(v.accent, "15") : "transparent",
+                    border: `1px solid ${i === 0 ? v.accent : v.border}`,
+                    borderRadius: 10, cursor: "pointer", textAlign: "left", fontFamily: "system-ui, sans-serif",
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: v.text }}>{cand.name}</div>
+                      <div style={{ fontSize: 12, color: v.muted }}>{cand.distillery}</div>
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#6ba3d6", background: "#6ba3d620", padding: "3px 8px", borderRadius: 6 }}>{t("m2.solo.online", "Online")}</span>
                   </button>
                 ))}
               </div>
             )}
-            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-              <button onClick={() => { setSheetView("none"); setSoloView("editor"); setShowManual(true); }} style={{ ...btnOutline, flex: 1, fontSize: 13 }} data-testid="button-candidate-manual">
-                {t("m2.solo.manualTitle", "Manual Entry")}
-              </button>
-              <button onClick={() => { setSheetView("none"); setSoloView("capture"); }} style={{ ...btnOutline, flex: 1, fontSize: 13 }} data-testid="button-candidate-retry">
-                {t("m2.solo.retryCapture", "Try again")}
-              </button>
-            </div>
+            {onlineSearched && onlineError && (
+              <p style={{ fontSize: 13, color: v.muted, textAlign: "center", margin: "12px 0" }}>{onlineError}</p>
+            )}
+            <button onClick={() => setSheetView("candidates")} style={{ ...btnOutline, marginTop: 8, color: v.muted, fontSize: 13 }}>
+              {t("m2.solo.back", "Back")}
+            </button>
           </div>
         )}
       </div>
