@@ -1098,7 +1098,7 @@ export default function M2TastingsSolo() {
             </div>
           </button>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 28 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 28 }}>
             <button
               onClick={() => uploadInputRef.current?.click()}
               style={{
@@ -1135,9 +1135,21 @@ export default function M2TastingsSolo() {
               <FileText style={{ width: 22, height: 22, color: v.accent }} />
               <span style={{ fontSize: 12, fontWeight: 600, color: v.text }}>{t("m2.solo.captureDescribe", "Describe")}</span>
             </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                background: v.card, border: `1px solid ${v.border}`, borderRadius: 14,
+                padding: "18px 8px", cursor: "pointer", display: "flex", flexDirection: "column",
+                alignItems: "center", gap: 8, transition: "border-color 0.2s",
+              }}
+              data-testid="button-capture-file"
+            >
+              <FileText style={{ width: 22, height: 22, color: v.accent }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: v.text }}>{t("m2.solo.captureImport", "Import")}</span>
+            </button>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             <button
               onClick={() => { setSoloView("editor"); setShowManual(true); }}
               style={{
@@ -1148,16 +1160,6 @@ export default function M2TastingsSolo() {
             >
               {t("m2.solo.captureSkip", "Continue without scan")}
               <ArrowLeft style={{ width: 14, height: 14, transform: "rotate(180deg)" }} />
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontSize: 12, color: v.muted,
-              }}
-              data-testid="button-capture-file"
-            >
-              {t("m2.solo.captureFile", "Import file (Excel, CSV, PDF)")}
             </button>
           </div>
         </div>
