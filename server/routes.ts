@@ -8776,6 +8776,18 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     },
   });
 
+  function cellToString(v: any): string | null {
+    if (v == null || v === "") return null;
+    if (typeof v === "object") {
+      if (v.richText && Array.isArray(v.richText)) return v.richText.map((r: any) => r.text || "").join("").trim() || null;
+      if (v.text != null) return String(v.text).trim() || null;
+      if (v.hyperlink && v.text != null) return String(v.text).trim() || null;
+      if (v.result != null) return String(v.result).trim() || null;
+      if (v.formula) return null;
+    }
+    return String(v).trim() || null;
+  }
+
   async function parseTransposedExcel(buffer: Buffer): Promise<{ whiskies: any[]; tastingMeta: any; hostNotes: Record<number, string> }> {
     const wb = await readExcelBuffer(buffer);
     const whiskies: any[] = [];
@@ -8787,24 +8799,78 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
       const sheet = wb.Sheets[lineUpSheet];
       const raw: any[][] = sheetToArrayOfArrays(sheet);
 
+      let labelCol = -1;
+      let dataCols: number[] = [];
+      for (const row of raw) {
+        if (!row) continue;
+        for (let c = 0; c < row.length; c++) {
+          const s = cellToString(row[c]);
+          if (s && /^nr\.?$/i.test(s)) {
+            labelCol = c;
+            for (let d = c + 1; d < row.length; d++) {
+              const dv = cellToString(row[d]);
+              if (dv != null && dv !== "") dataCols.push(d);
+            }
+            break;
+          }
+        }
+        if (labelCol >= 0) break;
+      }
+
+      if (labelCol < 0) {
+        for (const row of raw) {
+          if (!row) continue;
+          for (let c = 0; c < row.length; c++) {
+            const s = cellToString(row[c]);
+            if (s && (/name/i.test(s) || /protagonist/i.test(s))) {
+              labelCol = c;
+              for (let d = c + 1; d < row.length; d++) {
+                const dv = cellToString(row[d]);
+                if (dv != null && dv !== "") dataCols.push(d);
+              }
+              break;
+            }
+          }
+          if (labelCol >= 0) break;
+        }
+      }
+
+      if (labelCol < 0) {
+        for (const row of raw) {
+          if (!row) continue;
+          for (let c = 0; c < row.length; c++) {
+            if (cellToString(row[c]) != null) { labelCol = c; break; }
+          }
+          if (labelCol >= 0) break;
+        }
+      }
+
       const rowMap: Record<string, any[]> = {};
-      let whiskyCount = 0;
+      const whiskyCount = dataCols.length || 0;
 
       for (const row of raw) {
-        if (!row || !row[0]) continue;
-        const label = String(row[0]).trim().toLowerCase();
+        if (!row) continue;
+        const labelRaw = cellToString(row[labelCol]);
+        if (!labelRaw) continue;
+        const label = labelRaw.toLowerCase();
+
         const values: any[] = [];
-        for (let i = 1; i < row.length; i++) {
-          if (row[i] != null && row[i] !== "") values.push(row[i]);
+        if (dataCols.length > 0) {
+          for (const dc of dataCols) {
+            values.push(dc < row.length ? row[dc] : null);
+          }
+        } else {
+          for (let i = labelCol + 1; i < row.length; i++) {
+            if (row[i] != null && row[i] !== "") values.push(row[i]);
+          }
         }
-        if (values.length > whiskyCount) whiskyCount = values.length;
 
         if (label.startsWith("nr")) {
           rowMap["nr"] = values;
         } else if (label.includes("name") || label.includes("protagonist")) {
           rowMap["name"] = values;
-        } else if (label.includes("typ") || label.includes("kat") || label.includes("category") || label.includes("type")) {
-          rowMap["cask"] = values;
+        } else if ((label.includes("typ") || label.includes("kat") || label.includes("category") || label.includes("type")) && !label.includes("cask")) {
+          rowMap["category"] = values;
         } else if (label.includes("land") || label.includes("reg") || label.includes("country") || label.includes("region")) {
           rowMap["region"] = values;
         } else if (label.includes("distill") || label.includes("ib") || label.includes("bottler") || label.includes("abfüller")) {
@@ -8830,8 +8896,13 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
         }
       }
 
-      for (let i = 0; i < whiskyCount; i++) {
-        const getName = (arr: any[] | undefined) => arr && arr[i] != null ? String(arr[i]).replace(/\r?\n/g, " ").trim() : null;
+      const actualCount = whiskyCount > 0 ? whiskyCount : Math.max(...Object.values(rowMap).map(a => a.length), 0);
+      for (let i = 0; i < actualCount; i++) {
+        const getName = (arr: any[] | undefined) => {
+          if (!arr || arr[i] == null) return null;
+          const s = cellToString(arr[i]);
+          return s ? s.replace(/\r?\n/g, " ").trim() : null;
+        };
         const name = getName(rowMap["name"]);
         if (!name) continue;
 
@@ -8888,7 +8959,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
         let abv: number | null = null;
         const abvRaw = rowMap["abv"]?.[i];
         if (abvRaw != null) {
-          const abvStr = String(abvRaw).replace(/%/g, "").trim();
+          const abvStr = (cellToString(abvRaw) || String(abvRaw)).replace(/%/g, "").trim();
           const abvNum = parseFloat(abvStr);
           if (!isNaN(abvNum)) abv = abvNum <= 1 ? abvNum * 100 : abvNum;
         }
@@ -8907,7 +8978,10 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
 
         let whiskybaseId: string | null = null;
         const widRaw = rowMap["wid"]?.[i];
-        if (widRaw != null) whiskybaseId = String(widRaw).trim();
+        if (widRaw != null) {
+          const ws = cellToString(widRaw);
+          if (ws) whiskybaseId = ws.replace(/\D/g, "") || ws;
+        }
 
         whiskies.push({
           name,
@@ -8915,7 +8989,7 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
           bottler,
           age,
           abv: abv != null ? Math.round(abv * 10) / 10 : null,
-          category: null,
+          category: getName(rowMap["category"]),
           country,
           region,
           caskInfluence: getName(rowMap["cask"]),
@@ -8936,19 +9010,39 @@ IMPORTANT: Return {"whiskies": [...]} with an array of ALL bottles found. If onl
     if (metaSheet) {
       const sheet = wb.Sheets[metaSheet];
       const raw: any[][] = sheetToArrayOfArrays(sheet);
-      if (raw[0]?.[0]) tastingMeta.title = String(raw[0][0]).trim();
-      if (raw[1]?.[0]) {
-        const dateStr = String(raw[1][0]).trim();
-        tastingMeta.date = dateStr;
-        const match = dateStr.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-        if (match) tastingMeta.dateISO = `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
+      const firstNonEmpty = (row: any[] | undefined): string | null => {
+        if (!row) return null;
+        for (const cell of row) { const s = cellToString(cell); if (s) return s; }
+        return null;
+      };
+      for (const row of raw) {
+        const s = firstNonEmpty(row);
+        if (s && /whisky|tasting/i.test(s) && !tastingMeta.title) {
+          tastingMeta.title = s;
+        }
+        if (s && /\d{1,2}\.\d{1,2}\.\d{4}/.test(s)) {
+          tastingMeta.date = s;
+          const match = s.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+          if (match) tastingMeta.dateISO = `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
+        }
       }
 
       tastingMeta.participants = [];
-      for (let r = 3; r < raw.length; r++) {
-        const name = raw[r]?.[0];
-        if (name && typeof name === "string" && name.trim() && !name.toLowerCase().includes("summe") && !name.toLowerCase().includes("total") && !name.toLowerCase().includes("gesamt")) {
-          tastingMeta.participants.push(name.trim());
+      let foundParticipantHeader = false;
+      let emptyRowStreak = 0;
+      for (const row of raw) {
+        if (!row) { if (foundParticipantHeader) emptyRowStreak++; continue; }
+        const s = firstNonEmpty(row);
+        if (!s) { if (foundParticipantHeader) emptyRowStreak++; continue; }
+        if (s && /teilnehmer/i.test(s)) { foundParticipantHeader = true; emptyRowStreak = 0; continue; }
+        if (foundParticipantHeader) {
+          if (emptyRowStreak >= 2) break;
+          emptyRowStreak = 0;
+          if (/summe|total|gesamt|kosten|logistik|sample|fläsch|glas/i.test(s)) break;
+          const nameStr = cellToString(row[1]) || s;
+          if (nameStr && nameStr.length > 1 && nameStr.length < 60 && !/^\d+$/.test(nameStr) && !/^(teams?|offline|online|\.\/\.)$/i.test(nameStr)) {
+            tastingMeta.participants.push(nameStr);
+          }
         }
       }
     }
