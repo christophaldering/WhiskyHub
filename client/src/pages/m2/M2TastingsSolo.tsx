@@ -1982,16 +1982,29 @@ export default function M2TastingsSolo() {
                         {t("m2.solo.viewOnWhiskybase", "View on Whiskybase")}
                       </a>
                     ) : whiskyName.trim() ? (
-                      <a
-                        href={`https://www.whiskybase.com/search?q=${encodeURIComponent(whiskyName.trim())}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ fontSize: 11, color: v.accent, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3, marginTop: 4 }}
-                        data-testid="link-search-whiskybase"
-                      >
-                        <ExternalLink style={{ width: 10, height: 10 }} />
-                        {t("m2.solo.searchOnWhiskybase", "Search on Whiskybase")}
-                      </a>
+                      <div style={{ marginTop: 6 }}>
+                        <p style={{ fontSize: 11, color: v.muted, margin: "0 0 4px", lineHeight: 1.4 }}>
+                          {t("m2.solo.wbSearchHint", "Find the ID on Whiskybase and paste it above.")}
+                        </p>
+                        <a
+                          href={`https://www.whiskybase.com/search?q=${encodeURIComponent(whiskyName.trim())}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: 12, color: v.accent, textDecoration: "none",
+                            display: "inline-flex", alignItems: "center", gap: 5,
+                            padding: "5px 10px", borderRadius: 8,
+                            border: `1px solid ${v.accent}40`, background: `${v.accent}08`,
+                          }}
+                          data-testid="link-search-whiskybase"
+                        >
+                          <Search style={{ width: 12, height: 12 }} />
+                          {t("m2.solo.searchOnWhiskybaseFor", {
+                            defaultValue: "\"{{name}}\" on Whiskybase →",
+                            name: whiskyName.trim().length > 30 ? whiskyName.trim().substring(0, 30) + "…" : whiskyName.trim(),
+                          })}
+                        </a>
+                      </div>
                     ) : null}
                   </div>
                   <div style={{ flex: 1 }}>
