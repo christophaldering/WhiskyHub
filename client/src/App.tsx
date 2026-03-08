@@ -25,6 +25,7 @@ import NakedTasting from "@/pages/naked-tasting";
 import QuickTasting from "@/pages/quick-tasting";
 import PublicLanding from "@/pages/public-landing";
 import LandingNew from "@/pages/landing-new";
+import FeatureOverview from "@/pages/feature-overview";
 
 // ── My Taste subpages (eager: frequently accessed) ──
 import MyJournal from "@/pages/my-journal";
@@ -236,6 +237,7 @@ function Router() {
         <Route path="/landing">{() => <Redirect to="/" />}</Route>
         <Route path="/start">{() => <Redirect to="/" />}</Route>
         <Route path="/menu">{() => <Redirect to="/app-entry" />}</Route>
+        <Route path="/feature-overview" component={FeatureOverview} />
         <Route path="/feature-tour" component={FeatureTour} />
         <Route path="/tour" component={Tour} />
         <Route path="/background" component={Background} />

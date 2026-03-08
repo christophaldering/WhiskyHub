@@ -4,6 +4,9 @@ import { motion, useInView, AnimatePresence } from "framer-motion";
 import {
   ChevronRight, BarChart3, Star, Sparkles,
   Camera, Heart, BookOpen, Download, QrCode, Play,
+  Users, Zap, FileText, Shield, Eye, EyeOff,
+  Mic, TrendingUp, Cpu, Printer, Database,
+  UserPlus, Lock,
 } from "lucide-react";
 import { v } from "@/lib/themeVars";
 import heroImage from "@/assets/images/hero-whisky.png";
@@ -166,86 +169,314 @@ function HeroSection() {
   );
 }
 
-const pillars = [
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{
+      fontFamily: font.body, fontSize: 13, fontWeight: 600,
+      letterSpacing: "0.12em", textTransform: "uppercase",
+      color: ACCENT_DIM, marginBottom: 16,
+    }}>
+      {children}
+    </p>
+  );
+}
+
+function SectionHeadline({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 style={{
+      fontFamily: font.display, fontSize: "clamp(28px, 4vw, 44px)",
+      fontWeight: 400, color: v.text, letterSpacing: "-0.02em",
+      lineHeight: 1.15, marginBottom: 16,
+    }}>
+      {children}
+    </h2>
+  );
+}
+
+function SectionSub({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{
+      fontFamily: font.body, fontSize: 16, color: v.muted,
+      lineHeight: 1.6, maxWidth: 520, margin: "0 auto",
+    }}>
+      {children}
+    </p>
+  );
+}
+
+function FeatureBullet({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 14 }}>
+      <div style={{
+        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+        background: `${ACCENT}10`, display: "flex",
+        alignItems: "center", justifyContent: "center", color: ACCENT,
+      }}>
+        {icon}
+      </div>
+      <p style={{
+        fontFamily: font.body, fontSize: 15, color: v.textSecondary,
+        lineHeight: 1.5, paddingTop: 6,
+      }}>
+        {text}
+      </p>
+    </div>
+  );
+}
+
+const howItWorksSteps = [
   {
-    icon: <QrCode style={{ width: 22, height: 22 }} />,
+    num: "1",
+    icon: <QrCode style={{ width: 24, height: 24 }} />,
     title: "Join",
-    sub: "Scan a QR code. You're in.",
+    desc: "Enter the code or scan the QR. No app, no signup — you're in.",
   },
   {
-    icon: <Play style={{ width: 22, height: 22 }} />,
-    title: "Host",
-    sub: "Create a blind tasting in 60 seconds.",
+    num: "2",
+    icon: <Star style={{ width: 24, height: 24 }} />,
+    title: "Rate",
+    desc: "Score each dram across four dimensions: nose, palate, finish, overall.",
   },
   {
-    icon: <BookOpen style={{ width: 22, height: 22 }} />,
-    title: "Solo",
-    sub: "Log a dram. Build your journal.",
-  },
-  {
-    icon: <BarChart3 style={{ width: 22, height: 22 }} />,
-    title: "Analyse",
-    sub: "Your flavor profile grows with every sip.",
-  },
-  {
-    icon: <Camera style={{ width: 22, height: 22 }} />,
-    title: "AI",
-    sub: "Point your camera. We identify the bottle.",
-  },
-  {
-    icon: <Heart style={{ width: 22, height: 22 }} />,
-    title: "Circle",
-    sub: "Find your Taste Twins. Compare palates.",
+    num: "3",
+    icon: <Eye style={{ width: 24, height: 24 }} />,
+    title: "Reveal",
+    desc: "The host reveals the whisky. See how your blind score compares.",
   },
 ];
 
-function PillarsSection() {
+function HowItWorksSection() {
   return (
-    <section style={{ padding: "100px 24px" }}>
+    <section style={{ padding: "100px 24px" }} data-testid="section-how-it-works">
       <div style={container}>
         <FadeUp>
           <div style={{ textAlign: "center", marginBottom: 64 }}>
-            <h2 style={{
-              fontFamily: font.display, fontSize: "clamp(28px, 4vw, 44px)",
-              fontWeight: 400, color: v.text, letterSpacing: "-0.02em",
-              lineHeight: 1.15, marginBottom: 16,
-            }}>
-              Everything you need.
-            </h2>
-            <p style={{ fontFamily: font.body, fontSize: 16, color: v.muted }}>
-              Six ways to explore whisky — together or alone.
-            </p>
+            <SectionLabel>How it works</SectionLabel>
+            <SectionHeadline>Three steps to your first blind tasting.</SectionHeadline>
+            <SectionSub>
+              No installation. No learning curve. Just whisky.
+            </SectionSub>
           </div>
         </FadeUp>
 
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: 20, maxWidth: 940, margin: "0 auto",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+          gap: 24, maxWidth: 900, margin: "0 auto",
         }}>
-          {pillars.map((p, i) => (
-            <FadeUp key={p.title} delay={0.06 + i * 0.06}>
+          {howItWorksSteps.map((step, i) => (
+            <FadeUp key={step.num} delay={0.08 + i * 0.1}>
               <div style={{
                 background: v.card, border: `1px solid ${v.border}`,
-                borderRadius: 14, padding: "28px 24px",
-              }} data-testid={`card-pillar-${p.title.toLowerCase()}`}>
+                borderRadius: 16, padding: "36px 28px",
+                textAlign: "center", position: "relative",
+              }} data-testid={`card-step-${step.num}`}>
                 <div style={{
-                  width: 44, height: 44, borderRadius: 12,
+                  fontFamily: font.display, fontSize: 56, fontWeight: 300,
+                  color: `${ACCENT}20`, lineHeight: 1, marginBottom: 12,
+                  position: "absolute", top: 16, right: 20,
+                }}>
+                  {step.num}
+                </div>
+                <div style={{
+                  width: 52, height: 52, borderRadius: 14,
                   background: `${ACCENT}10`, display: "flex",
                   alignItems: "center", justifyContent: "center",
-                  color: ACCENT, marginBottom: 16,
-                }}>{p.icon}</div>
+                  color: ACCENT, margin: "0 auto 20px",
+                }}>
+                  {step.icon}
+                </div>
                 <h3 style={{
-                  fontFamily: font.display, fontSize: 22, fontWeight: 500,
-                  color: v.text, marginBottom: 8, letterSpacing: "-0.01em",
-                }}>{p.title}</h3>
-                <p style={{ fontFamily: font.body, fontSize: 13, color: v.muted, lineHeight: 1.6 }}>
-                  {p.sub}
+                  fontFamily: font.display, fontSize: 24, fontWeight: 500,
+                  color: v.text, marginBottom: 10, letterSpacing: "-0.01em",
+                }}>
+                  {step.title}
+                </h3>
+                <p style={{
+                  fontFamily: font.body, fontSize: 14, color: v.muted, lineHeight: 1.6,
+                }}>
+                  {step.desc}
                 </p>
               </div>
             </FadeUp>
           ))}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function ForHostsSection() {
+  return (
+    <section style={{ padding: "100px 24px" }} data-testid="section-for-hosts">
+      <div style={{ ...container, maxWidth: 780 }}>
+        <FadeUp>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <SectionLabel>For Hosts</SectionLabel>
+            <SectionHeadline>Create a tasting in 60 seconds.</SectionHeadline>
+            <SectionSub>
+              Everything you need to run a professional blind tasting — from setup to sharing results.
+            </SectionSub>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={0.15}>
+          <div style={{
+            background: v.card, border: `1px solid ${v.border}`,
+            borderRadius: 20, padding: "36px 32px",
+          }} data-testid="card-for-hosts">
+            <FeatureBullet
+              icon={<FileText style={{ width: 18, height: 18 }} />}
+              text="Upload your whiskys — paste, import, or enter manually."
+            />
+            <FeatureBullet
+              icon={<Printer style={{ width: 18, height: 18 }} />}
+              text="Generate printable tasting menus and flight sheets."
+            />
+            <FeatureBullet
+              icon={<UserPlus style={{ width: 18, height: 18 }} />}
+              text="Invite participants with a code or QR — no accounts needed."
+            />
+            <FeatureBullet
+              icon={<Play style={{ width: 18, height: 18 }} />}
+              text="Guide your group flight by flight, at your own pace."
+            />
+            <FeatureBullet
+              icon={<EyeOff style={{ width: 18, height: 18 }} />}
+              text="Blind mode hides all labels. Open mode shows everything."
+            />
+          </div>
+        </FadeUp>
+      </div>
+    </section>
+  );
+}
+
+function InstantResultsSection() {
+  return (
+    <section style={{ padding: "100px 24px" }} data-testid="section-instant-results">
+      <div style={{ ...container, maxWidth: 780 }}>
+        <FadeUp>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <SectionLabel>Instant Results</SectionLabel>
+            <SectionHeadline>Results at the push of a button.</SectionHeadline>
+            <SectionSub>
+              AI-powered analytics turn every tasting into actionable insight.
+            </SectionSub>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={0.15}>
+          <div style={{
+            background: v.card, border: `1px solid ${v.border}`,
+            borderRadius: 20, padding: "36px 32px",
+          }} data-testid="card-instant-results">
+            <FeatureBullet
+              icon={<Zap style={{ width: 18, height: 18 }} />}
+              text="Instant scoring and ranking as participants submit."
+            />
+            <FeatureBullet
+              icon={<Users style={{ width: 18, height: 18 }} />}
+              text="Group comparison — see how the table voted, dimension by dimension."
+            />
+            <FeatureBullet
+              icon={<Cpu style={{ width: 18, height: 18 }} />}
+              text="AI-generated tasting notes and session summaries."
+            />
+            <FeatureBullet
+              icon={<Printer style={{ width: 18, height: 18 }} />}
+              text="Print-ready reports — PDF export with one click."
+            />
+            <FeatureBullet
+              icon={<Database style={{ width: 18, height: 18 }} />}
+              text="Growing benchmarks — every tasting sharpens the data."
+            />
+          </div>
+        </FadeUp>
+      </div>
+    </section>
+  );
+}
+
+function SoloCompanionSection() {
+  return (
+    <section style={{ padding: "100px 24px" }} data-testid="section-solo-companion">
+      <div style={{ ...container, maxWidth: 780 }}>
+        <FadeUp>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <SectionLabel>Your Personal Whisky Companion</SectionLabel>
+            <SectionHeadline>Log your evening dram in three taps.</SectionHeadline>
+            <SectionSub>
+              Snap a photo — AI identifies the bottle — rate it — done. Your personal journal grows with every sip.
+            </SectionSub>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={0.15}>
+          <div style={{
+            background: v.card, border: `1px solid ${v.border}`,
+            borderRadius: 20, padding: "36px 32px",
+          }} data-testid="card-solo-companion">
+            <FeatureBullet
+              icon={<Camera style={{ width: 18, height: 18 }} />}
+              text="Point your camera at the bottle — AI recognizes the whisky instantly."
+            />
+            <FeatureBullet
+              icon={<Star style={{ width: 18, height: 18 }} />}
+              text="Rate and add personal notes — quick or detailed, your choice."
+            />
+            <FeatureBullet
+              icon={<BookOpen style={{ width: 18, height: 18 }} />}
+              text="Your tasting journal — searchable, sortable, always with you."
+            />
+            <FeatureBullet
+              icon={<TrendingUp style={{ width: 18, height: 18 }} />}
+              text="A personal flavor profile that evolves with every whisky you log."
+            />
+          </div>
+        </FadeUp>
+      </div>
+    </section>
+  );
+}
+
+function CircleSection() {
+  return (
+    <section style={{ padding: "100px 24px" }} data-testid="section-circle">
+      <div style={{ ...container, maxWidth: 780 }}>
+        <FadeUp>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <SectionLabel>Together, but private</SectionLabel>
+            <SectionHeadline>Not a social network. Something better.</SectionHeadline>
+            <SectionSub>
+              Compare palates with friends. Discover your Taste Twins. Plan tastings together — without a public feed.
+            </SectionSub>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={0.15}>
+          <div style={{
+            background: v.card, border: `1px solid ${v.border}`,
+            borderRadius: 20, padding: "36px 32px",
+          }} data-testid="card-circle">
+            <FeatureBullet
+              icon={<Heart style={{ width: 18, height: 18 }} />}
+              text="Taste Twins — find people who taste like you."
+            />
+            <FeatureBullet
+              icon={<BarChart3 style={{ width: 18, height: 18 }} />}
+              text="Compare your flavor profile with friends, side by side."
+            />
+            <FeatureBullet
+              icon={<Users style={{ width: 18, height: 18 }} />}
+              text="Plan and schedule tastings within your private circle."
+            />
+            <FeatureBullet
+              icon={<Lock style={{ width: 18, height: 18 }} />}
+              text="Private by design — no public profiles, no social noise."
+            />
+          </div>
+        </FadeUp>
       </div>
     </section>
   );
@@ -547,7 +778,7 @@ function CTASection() {
               <Download style={{ width: 14, height: 14 }} />
               {downloading ? "Creating PDF..." : "Download Presentation"}
             </button>
-            <Link href="/presentation" style={{
+            <Link href="/feature-overview" style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               fontFamily: font.body, fontSize: 13, fontWeight: 500,
               color: v.muted, textDecoration: "none",
@@ -569,6 +800,7 @@ function Footer() {
           CaskSense — Where tasting becomes reflection.
         </p>
         <div style={{ display: "flex", gap: 24, justifyContent: "center", marginTop: 12 }}>
+          <Link href="/feature-overview" data-testid="link-footer-features" style={{ fontFamily: font.body, fontSize: 12, color: v.muted, textDecoration: "none" }}>The Full Picture</Link>
           <Link href="/impressum" data-testid="link-footer-impressum" style={{ fontFamily: font.body, fontSize: 12, color: v.muted, textDecoration: "none" }}>Impressum</Link>
           <Link href="/privacy" data-testid="link-footer-privacy" style={{ fontFamily: font.body, fontSize: 12, color: v.muted, textDecoration: "none" }}>Privacy</Link>
         </div>
@@ -590,7 +822,11 @@ export default function LandingNew() {
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
       `}</style>
       <HeroSection />
-      <PillarsSection />
+      <HowItWorksSection />
+      <ForHostsSection />
+      <InstantResultsSection />
+      <SoloCompanionSection />
+      <CircleSection />
       <RevealSection />
       <DemoSection />
       <CTASection />
