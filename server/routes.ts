@@ -30,16 +30,21 @@ import { searchOnline, getProviderStatus } from "./lib/onlineSearch.js";
 const identifyCache = new LRUCacheImpl<any>(200, 24 * 60 * 60 * 1000);
 
 const identifyRateLimit = new Map<string, { count: number; resetAt: number }>();
-function checkIdentifyRateLimit(ip: string): boolean {
+const IDENTIFY_RATE_LIMIT = 10;
+const IDENTIFY_RATE_WINDOW_MS = 3 * 60 * 1000;
+function checkIdentifyRateLimit(key: string): { allowed: boolean; retryAfterSeconds?: number } {
   const now = Date.now();
-  const entry = identifyRateLimit.get(ip);
+  const entry = identifyRateLimit.get(key);
   if (!entry || now > entry.resetAt) {
-    identifyRateLimit.set(ip, { count: 1, resetAt: now + 5 * 60 * 1000 });
-    return true;
+    identifyRateLimit.set(key, { count: 1, resetAt: now + IDENTIFY_RATE_WINDOW_MS });
+    return { allowed: true };
   }
-  if (entry.count >= 5) return false;
+  if (entry.count >= IDENTIFY_RATE_LIMIT) {
+    const retryAfterSeconds = Math.ceil((entry.resetAt - now) / 1000);
+    return { allowed: false, retryAfterSeconds };
+  }
   entry.count++;
-  return true;
+  return { allowed: true };
 }
 
 const aiScanCache = new Map<string, { result: any; timestamp: number }>();
@@ -1534,9 +1539,10 @@ export async function registerRoutes(
   app.post("/api/whisky/identify", scanUpload.single("photo"), async (req: any, res: Response) => {
     const startMs = Date.now();
     try {
-      const clientIp = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
-      if (!checkIdentifyRateLimit(clientIp)) {
-        return res.status(429).json({ message: "Too many requests. Please wait a few minutes." });
+      const rateLimitKey = (req.headers["x-participant-id"] as string) || (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
+      const rateCheck = checkIdentifyRateLimit(rateLimitKey);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ message: "Too many requests.", retryAfter: rateCheck.retryAfterSeconds });
       }
 
       console.log("[IDENTIFY] request received");
@@ -1644,9 +1650,10 @@ export async function registerRoutes(
   app.post("/api/whisky/identify-text", async (req: Request, res: Response) => {
     const startMs = Date.now();
     try {
-      const clientIp = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
-      if (!checkIdentifyRateLimit(clientIp)) {
-        return res.status(429).json({ message: "Too many requests. Please wait a few minutes." });
+      const rateLimitKey = (req.headers["x-participant-id"] as string) || (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
+      const rateCheck = checkIdentifyRateLimit(rateLimitKey);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ message: "Too many requests.", retryAfter: rateCheck.retryAfterSeconds });
       }
 
       const { query } = req.body || {};
@@ -1744,9 +1751,10 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
   app.post("/api/whisky/identify-online", async (req: Request, res: Response) => {
     const startMs = Date.now();
     try {
-      const clientIp = (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
-      if (!checkIdentifyRateLimit(clientIp)) {
-        return res.status(429).json({ message: "Too many requests. Please wait a few minutes." });
+      const rateLimitKey = (req.headers["x-participant-id"] as string) || (req.ip || req.headers["x-forwarded-for"] || "unknown") as string;
+      const rateCheck = checkIdentifyRateLimit(rateLimitKey);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ message: "Too many requests.", retryAfter: rateCheck.retryAfterSeconds });
       }
 
       const { query, ocrText, sendPhoto, photoUrl } = req.body || {};

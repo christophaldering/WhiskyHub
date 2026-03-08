@@ -585,10 +585,14 @@ export default function M2TastingsSolo() {
       for (const file of files.slice(0, 5)) {
         const formData = new FormData();
         formData.append("photo", file);
-        const res = await fetch("/api/whisky/identify", { method: "POST", body: formData });
+        const pid = getSession().pid;
+        const res = await fetch("/api/whisky/identify", { method: "POST", body: formData, headers: pid ? { "x-participant-id": pid } : {} });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          if (res.status === 429) throw new Error(t("m2.solo.tooManyRequests", "Too many requests. Please wait."));
+          if (res.status === 429) {
+            const mins = Math.ceil((err.retryAfter || 180) / 60);
+            throw new Error(t("m2.solo.tooManyRequests", "Limit reached — try again in {{minutes}} min.", { minutes: mins }));
+          }
           throw new Error(err.message || t("m2.solo.identificationFailed", "Identification failed."));
         }
         const data: IdentifyResult = await res.json();
@@ -669,14 +673,18 @@ export default function M2TastingsSolo() {
     setSheetView("identifying");
     setError("");
     try {
+      const pid = getSession().pid;
       const res = await fetch("/api/whisky/identify-text", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(pid ? { "x-participant-id": pid } : {}) },
         body: JSON.stringify({ query }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        if (res.status === 429) throw new Error(t("m2.solo.tooManyRequests", "Too many requests. Please wait."));
+        if (res.status === 429) {
+          const mins = Math.ceil((err.retryAfter || 180) / 60);
+          throw new Error(t("m2.solo.tooManyRequests", "Limit reached — try again in {{minutes}} min.", { minutes: mins }));
+        }
         throw new Error(err.message || t("m2.solo.searchFailed", "Search failed."));
       }
       const data: IdentifyResult = await res.json();
@@ -849,13 +857,18 @@ export default function M2TastingsSolo() {
     setOnlineSearching(true);
     setOnlineError("");
     try {
+      const pidOnline = getSession().pid;
       const res = await fetch("/api/whisky/identify-online", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(pidOnline ? { "x-participant-id": pidOnline } : {}) },
         body: JSON.stringify({ query: onlineQuery }),
       });
       if (!res.ok) {
-        if (res.status === 429) throw new Error(t("m2.solo.tooManyRequests", "Too many requests. Please wait."));
+        if (res.status === 429) {
+          const body = await res.json().catch(() => ({}));
+          const mins = Math.ceil((body.retryAfter || 180) / 60);
+          throw new Error(t("m2.solo.tooManyRequests", "Limit reached — try again in {{minutes}} min.", { minutes: mins }));
+        }
         throw new Error(t("m2.solo.onlineSearchFailed", "Online search failed"));
       }
       const data = await res.json();
