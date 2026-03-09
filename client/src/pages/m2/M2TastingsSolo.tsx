@@ -282,7 +282,12 @@ export default function M2TastingsSolo() {
       setError("");
 
       if (d.noseNotes) {
-        const cleaned = d.noseNotes.replace(/\n\[SCORES\][\s\S]*$/, "").trim();
+        let cleaned = d.noseNotes;
+        cleaned = cleaned.replace(/\[SCORES\]\s*Nose:\d+\s*Taste:\d+\s*Finish:\d+\s*Balance:\d+\s*\[\/SCORES\]/gi, "");
+        for (const tag of ["NOSE", "TASTE", "FINISH", "BALANCE"]) {
+          cleaned = cleaned.replace(new RegExp(`\\[${tag}\\]\\s*[\\s\\S]*?\\[\\/${tag}\\]`, "gi"), "");
+        }
+        cleaned = cleaned.trim();
         setNotes(cleaned);
 
         const scoresMatch = d.noseNotes.match(/\[SCORES\]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)\s*Balance:(\d+)\s*\[\/SCORES\]/);

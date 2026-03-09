@@ -1014,15 +1014,17 @@ function parseNoseNotes(raw: string) {
   let scores: { nose?: number; taste?: number; finish?: number; balance?: number } = {};
   const dims: Record<string, { chips: string[]; text: string }> = {};
 
+  const scoresRx = /\[SCORES]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)\s*Balance:(\d+)\s*\[\/SCORES]/gi;
   const scoresMatch = raw.match(/\[SCORES]\s*Nose:(\d+)\s*Taste:(\d+)\s*Finish:(\d+)\s*Balance:(\d+)\s*\[\/SCORES]/i);
   if (scoresMatch) {
     scores = { nose: +scoresMatch[1], taste: +scoresMatch[2], finish: +scoresMatch[3], balance: +scoresMatch[4] };
-    cleanText = cleanText.replace(scoresMatch[0], "");
+    cleanText = cleanText.replace(scoresRx, "");
   }
 
   for (const d of ["NOSE", "TASTE", "FINISH", "BALANCE"]) {
-    const rx = new RegExp(`\\[${d}]\\s*(.+?)\\s*\\[\\/${d}]`, "si");
-    const m = cleanText.match(rx);
+    const rxFirst = new RegExp(`\\[${d}]\\s*(.+?)\\s*\\[\\/${d}]`, "si");
+    const rxAll = new RegExp(`\\[${d}]\\s*(.+?)\\s*\\[\\/${d}]`, "gsi");
+    const m = cleanText.match(rxFirst);
     if (m) {
       const content = m[1].trim();
       const parts = content.split(" — ");
@@ -1032,7 +1034,7 @@ function parseNoseNotes(raw: string) {
         chips: chipStr ? chipStr.split(",").map((c: string) => c.trim()).filter(Boolean) : [],
         text: textStr.trim(),
       };
-      cleanText = cleanText.replace(m[0], "");
+      cleanText = cleanText.replace(rxAll, "");
     }
   }
 
