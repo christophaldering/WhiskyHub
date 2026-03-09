@@ -1133,7 +1133,7 @@ export async function registerRoutes(
 
     const allowedTransitions: Record<string, string[]> = {
       draft: ["open", "deleted"],
-      open: ["closed", "draft"],
+      open: ["closed", "draft", "deleted"],
       closed: ["reveal", "open"],
       reveal: ["archived", "closed"],
       archived: ["deleted"],

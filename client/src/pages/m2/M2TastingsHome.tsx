@@ -8,8 +8,9 @@ import { useSession } from "@/lib/session";
 import {
   Wine, Crown, PenLine, ChevronRight, ChevronDown,
   Calendar, CalendarDays, List, MapPin, Users, Eye,
-  Play, BarChart3, Sparkles, Search,
+  Play, BarChart3, Sparkles, Search, Trash2,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const TastingCalendar = lazy(() => import("@/pages/tasting-calendar"));
 
@@ -459,6 +460,8 @@ export default function M2TastingsHome() {
                   key={tasting.id}
                   tasting={tasting}
                   host={isHost(tasting)}
+                  isAdmin={session.role === "admin"}
+                  pid={session.pid}
                   formatDate={formatDate}
                   navigate={navigate}
                   index={idx}
@@ -560,144 +563,226 @@ function DemoTastingCard({ navigate }: { navigate: (to: string) => void }) {
 function TastingCard({
   tasting,
   host,
+  isAdmin,
+  pid,
   formatDate,
   navigate,
   index = 0,
 }: {
   tasting: any;
   host: boolean;
+  isAdmin: boolean;
+  pid?: string;
   formatDate: (d: string) => string;
   navigate: (to: string) => void;
   index?: number;
 }) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const canDelete = (host || isAdmin) && (tasting.status === "draft" || tasting.status === "open");
+
+  const handleDelete = async () => {
+    if (!pid) return;
+    setDeleting(true);
+    try {
+      await tastingApi.updateStatus(tasting.id, "deleted", undefined, pid);
+      queryClient.invalidateQueries({ queryKey: ["tastings"] });
+    } catch {
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
 
   const colors = statusBadgeColors[tasting.status] || { color: v.muted, bg: alpha(v.muted, "20") };
   const statusLabel = t("m2.tastings.status" + tasting.status.charAt(0).toUpperCase() + tasting.status.slice(1), tasting.status);
   const isOpen = tasting.status === "open" || tasting.status === "reveal";
 
   return (
-    <div
-      style={{
-        background: v.card,
-        border: `1px solid ${isOpen ? alpha(colors.color, "25") : v.border}`,
-        borderRadius: 16,
-        padding: "16px 16px 16px 12px",
-        cursor: "pointer",
-        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-        display: "flex",
-        gap: 12,
-        boxShadow: isOpen ? `0 0 12px ${alpha(colors.color, "08")}` : "none",
-        WebkitTapHighlightColor: "transparent",
-        animation: `m2fadeInUp 0.35s ease both`,
-        animationDelay: `${index * 50}ms`,
-      }}
-      onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(0.98)"; }}
-      onPointerUp={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
-      onPointerLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
-      onPointerCancel={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
-      data-testid={`m2-tasting-card-${tasting.id}`}
-      onClick={() => {
-        if (tasting.status === "draft" && host) {
-          navigate(`/m2/tastings/host/${tasting.id}`);
-        } else {
-          navigate(`/m2/tastings/session/${tasting.id}`);
-        }
-      }}
-    >
-      <div style={{
-        width: 4,
-        borderRadius: 2,
-        background: colors.color,
-        flexShrink: 0,
-        opacity: 0.7,
-        alignSelf: "stretch",
-        ...(isOpen ? { animation: "m2livePulse 2.5s ease-in-out infinite" } : {}),
-      }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-          <span
-            style={{
-              fontSize: 16,
-              fontWeight: 600,
-              color: v.text,
-              fontFamily: "'Playfair Display', Georgia, serif",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              flex: 1,
-              minWidth: 0,
-            }}
-            data-testid={`text-m2-tasting-title-${tasting.id}`}
-          >
-            {tasting.title || t("m2.tastings.untitled", "Untitled Tasting")}
-          </span>
-          {host && (
+    <div style={{ position: "relative" }}>
+      <div
+        style={{
+          background: v.card,
+          border: `1px solid ${isOpen ? alpha(colors.color, "25") : v.border}`,
+          borderRadius: 16,
+          padding: "16px 16px 16px 12px",
+          cursor: "pointer",
+          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+          display: "flex",
+          gap: 12,
+          boxShadow: isOpen ? `0 0 12px ${alpha(colors.color, "08")}` : "none",
+          WebkitTapHighlightColor: "transparent",
+          animation: `m2fadeInUp 0.35s ease both`,
+          animationDelay: `${index * 50}ms`,
+        }}
+        onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(0.98)"; }}
+        onPointerUp={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
+        onPointerLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
+        onPointerCancel={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
+        data-testid={`m2-tasting-card-${tasting.id}`}
+        onClick={() => {
+          if (confirmDelete) return;
+          if (tasting.status === "draft" && host) {
+            navigate(`/m2/tastings/host/${tasting.id}`);
+          } else {
+            navigate(`/m2/tastings/session/${tasting.id}`);
+          }
+        }}
+      >
+        <div style={{
+          width: 4,
+          borderRadius: 2,
+          background: colors.color,
+          flexShrink: 0,
+          opacity: 0.7,
+          alignSelf: "stretch",
+          ...(isOpen ? { animation: "m2livePulse 2.5s ease-in-out infinite" } : {}),
+        }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <span
               style={{
-                fontSize: 9,
-                color: v.accent,
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                background: alpha(v.accent, "12"),
-                padding: "2px 6px",
-                borderRadius: 4,
-                flexShrink: 0,
+                fontSize: 16,
+                fontWeight: 600,
+                color: v.text,
+                fontFamily: "'Playfair Display', Georgia, serif",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                flex: 1,
+                minWidth: 0,
               }}
-              data-testid={`badge-host-${tasting.id}`}
+              data-testid={`text-m2-tasting-title-${tasting.id}`}
             >
-              {t("m2.tastings.hostBadge", "HOST")}
+              {tasting.title || t("m2.tastings.untitled", "Untitled Tasting")}
             </span>
-          )}
+            {host && (
+              <span
+                style={{
+                  fontSize: 9,
+                  color: v.accent,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  background: alpha(v.accent, "12"),
+                  padding: "2px 6px",
+                  borderRadius: 4,
+                  flexShrink: 0,
+                }}
+                data-testid={`badge-host-${tasting.id}`}
+              >
+                {t("m2.tastings.hostBadge", "HOST")}
+              </span>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            {tasting.hostName && !host && (
+              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
+                <Crown style={{ width: 11, height: 11 }} />
+                {tasting.hostName}
+              </span>
+            )}
+            {tasting.date && (
+              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
+                <Calendar style={{ width: 11, height: 11 }} />
+                {formatDate(tasting.date)}
+              </span>
+            )}
+            {tasting.location && tasting.location !== "—" && (
+              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
+                <MapPin style={{ width: 11, height: 11 }} />
+                {tasting.location}
+              </span>
+            )}
+            {tasting.participantCount != null && (
+              <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
+                <Users style={{ width: 11, height: 11 }} />
+                {tasting.participantCount}
+              </span>
+            )}
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          {tasting.hostName && !host && (
-            <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
-              <Crown style={{ width: 11, height: 11 }} />
-              {tasting.hostName}
-            </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          {canDelete && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }}
+              style={{
+                background: "none", border: "none", cursor: "pointer", padding: 4,
+                color: v.muted, borderRadius: 6, display: "flex", alignItems: "center",
+                transition: "color 0.15s",
+              }}
+              data-testid={`button-delete-tasting-${tasting.id}`}
+            >
+              <Trash2 style={{ width: 15, height: 15 }} />
+            </button>
           )}
-          {tasting.date && (
-            <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
-              <Calendar style={{ width: 11, height: 11 }} />
-              {formatDate(tasting.date)}
-            </span>
-          )}
-          {tasting.location && tasting.location !== "—" && (
-            <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
-              <MapPin style={{ width: 11, height: 11 }} />
-              {tasting.location}
-            </span>
-          )}
-          {tasting.participantCount != null && (
-            <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: v.muted, fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif" }}>
-              <Users style={{ width: 11, height: 11 }} />
-              {tasting.participantCount}
-            </span>
-          )}
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              color: colors.color,
+              background: colors.bg,
+              padding: "3px 10px",
+              borderRadius: 8,
+              fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
+              ...(isOpen ? { animation: "m2badgePulse 2.5s ease-in-out infinite", "--pulse-color": alpha(colors.color, "15") } as React.CSSProperties : {}),
+            }}
+            data-testid={`badge-status-${tasting.id}`}
+          >
+            {statusLabel}
+          </span>
+          <ChevronRight style={{ width: 16, height: 16, color: v.muted }} />
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-        <span
+
+      {confirmDelete && (
+        <div
           style={{
-            fontSize: 11,
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            color: colors.color,
-            background: colors.bg,
-            padding: "3px 10px",
-            borderRadius: 8,
-            fontFamily: "-apple-system, 'SF Pro Text', system-ui, sans-serif",
-            ...(isOpen ? { animation: "m2badgePulse 2.5s ease-in-out infinite", "--pulse-color": alpha(colors.color, "15") } as React.CSSProperties : {}),
+            position: "absolute", inset: 0, borderRadius: 16, zIndex: 10,
+            background: `color-mix(in srgb, ${v.card} 95%, transparent)`,
+            backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            gap: 12, padding: "0 20px",
           }}
-          data-testid={`badge-status-${tasting.id}`}
+          onClick={(e) => e.stopPropagation()}
         >
-          {statusLabel}
-        </span>
-        <ChevronRight style={{ width: 16, height: 16, color: v.muted }} />
-      </div>
+          <span style={{ fontSize: 13, color: v.text, fontWeight: 500, flex: 1, fontFamily: "system-ui, sans-serif" }}>
+            {t("m2.tastings.confirmDeleteMsg", "Delete \"{{title}}\"?", { title: tasting.title || t("m2.tastings.untitled", "Untitled Tasting") })}
+          </span>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting}
+            style={{
+              padding: "7px 14px", fontSize: 12, fontWeight: 600,
+              background: v.danger, color: "#fff", border: "none",
+              borderRadius: 8, cursor: "pointer", fontFamily: "system-ui, sans-serif",
+              opacity: deleting ? 0.6 : 1,
+            }}
+            data-testid={`button-confirm-delete-${tasting.id}`}
+          >
+            {t("m2.tastings.confirmDeleteYes", "Delete")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(false)}
+            style={{
+              padding: "7px 14px", fontSize: 12,
+              background: "none", color: v.muted, border: `1px solid ${v.border}`,
+              borderRadius: 8, cursor: "pointer", fontFamily: "system-ui, sans-serif",
+            }}
+            data-testid={`button-cancel-delete-${tasting.id}`}
+          >
+            {t("m2.tastings.confirmDeleteNo", "Cancel")}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
