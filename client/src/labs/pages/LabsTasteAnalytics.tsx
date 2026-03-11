@@ -3,7 +3,40 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useSession } from "@/lib/session";
 import { statsApi, flavorProfileApi, journalApi, ratingNotesApi, participantApi } from "@/lib/api";
-import { ChevronLeft, Lock, TrendingUp, TrendingDown, Minus, PenLine } from "lucide-react";
+import { ChevronLeft, Lock, TrendingUp, TrendingDown, Minus, PenLine, Sparkles } from "lucide-react";
+
+interface RatingNote {
+  id: string;
+  normalizedScore?: number | null;
+  overall?: number | null;
+  createdAt?: string | null;
+  notes?: string | null;
+}
+
+interface JournalEntry {
+  id: string;
+  personalScore?: number | null;
+  createdAt?: string | null;
+}
+
+interface ParticipantStats {
+  totalRatings?: number;
+  totalJournalEntries?: number;
+}
+
+interface ParticipantDetail {
+  ratingStabilityScore?: number | null;
+}
+
+interface WhiskyProfileResponse {
+  ratingStyle?: {
+    meanScore: number;
+    stdDev: number;
+    scaleRange: { min: number; max: number };
+    nRatings: number;
+  } | null;
+  confidence?: Record<string, { n: number }>;
+}
 
 const THRESHOLD = 10;
 
@@ -24,13 +57,13 @@ function TasteEvolutionCard({ pid }: { pid: string }) {
 
   const dataPoints: { date: string; score: number }[] = [];
   if (Array.isArray(notes)) {
-    for (const n of notes) {
-      const score = (n as any).normalizedScore ?? (n as any).overall;
-      if (score && (n as any).createdAt) dataPoints.push({ date: (n as any).createdAt, score: Number(score) });
+    for (const n of notes as RatingNote[]) {
+      const score = n.normalizedScore ?? n.overall;
+      if (score && n.createdAt) dataPoints.push({ date: n.createdAt, score: Number(score) });
     }
   }
   if (Array.isArray(journal)) {
-    for (const j of journal as any[]) {
+    for (const j of journal as JournalEntry[]) {
       if (j.personalScore && j.createdAt) dataPoints.push({ date: j.createdAt, score: Number(j.personalScore) });
     }
   }
@@ -129,13 +162,15 @@ function RatingConsistencyCard({ pid }: { pid: string }) {
     enabled: !!pid,
   });
 
-  const stability = (participant as any)?.ratingStabilityScore ?? null;
-  const ratingStyle = (profile as any)?.ratingStyle;
+  const typedParticipant = participant as ParticipantDetail | undefined;
+  const typedProfile = profile as WhiskyProfileResponse | undefined;
+  const stability = typedParticipant?.ratingStabilityScore ?? null;
+  const ratingStyle = typedProfile?.ratingStyle;
   const stdDev = ratingStyle?.stdDev ?? null;
-  const mean = ratingStyle?.meanScore ?? ratingStyle?.mean ?? null;
-  const min = ratingStyle?.scaleRange?.min ?? ratingStyle?.min ?? null;
-  const max = ratingStyle?.scaleRange?.max ?? ratingStyle?.max ?? null;
-  const n = ratingStyle?.nRatings ?? ratingStyle?.n ?? (profile as any)?.confidence?.overall?.n ?? null;
+  const mean = ratingStyle?.meanScore ?? null;
+  const min = ratingStyle?.scaleRange?.min ?? null;
+  const max = ratingStyle?.scaleRange?.max ?? null;
+  const n = ratingStyle?.nRatings ?? typedProfile?.confidence?.overall?.n ?? null;
   const hasData = stability != null || stdDev != null;
 
   let consistencyLabel = "—";
@@ -192,6 +227,36 @@ function RatingConsistencyCard({ pid }: { pid: string }) {
   );
 }
 
+function AIInsightCard({ pid }: { pid: string }) {
+  const { data: insightData, isLoading } = useQuery({
+    queryKey: ["labs-participant-insights", pid],
+    queryFn: () => fetch(`/api/participants/${pid}/insights`, { headers: { "x-participant-id": pid } }).then(r => r.ok ? r.json() : null),
+    enabled: !!pid,
+    staleTime: 300000,
+  });
+
+  const insight = insightData?.insight;
+  if (isLoading) return null;
+  if (!insight) return null;
+
+  return (
+    <div className="labs-card p-5" data-testid="card-ai-insight">
+      <div className="flex items-center gap-2 mb-3">
+        <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+        <p className="labs-section-label" style={{ marginBottom: 0 }}>AI Insight</p>
+      </div>
+      <p className="text-sm" style={{ color: "var(--labs-text)", lineHeight: 1.7 }} data-testid="text-ai-insight-message">
+        {insight.message}
+      </p>
+      {insight.type && (
+        <span className="labs-badge labs-badge-accent mt-3" style={{ fontSize: 10, display: "inline-block" }}>
+          {insight.type}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function StatMini({ value, label }: { value: string; label: string }) {
   return (
     <div style={{ background: "var(--labs-bg)", borderRadius: 8, padding: "8px 10px", textAlign: "center" }}>
@@ -227,7 +292,8 @@ export default function LabsTasteAnalytics() {
     staleTime: 60000,
   });
 
-  const totalRatings = ((stats as any)?.totalRatings ?? 0) + ((stats as any)?.totalJournalEntries ?? 0);
+  const typedStats = stats as ParticipantStats | undefined;
+  const totalRatings = (typedStats?.totalRatings ?? 0) + (typedStats?.totalJournalEntries ?? 0);
   const isUnlocked = totalRatings >= THRESHOLD;
   const justUnlocked = isUnlocked && totalRatings < THRESHOLD + 3;
   const pct = Math.min((totalRatings / THRESHOLD) * 100, 100);
@@ -289,6 +355,7 @@ export default function LabsTasteAnalytics() {
           {justUnlocked && <UnlockBanner />}
           <TasteEvolutionCard pid={pid} />
           <RatingConsistencyCard pid={pid} />
+          <AIInsightCard pid={pid} />
         </div>
       )}
     </div>

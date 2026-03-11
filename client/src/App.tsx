@@ -178,6 +178,7 @@ import LabsTaste from "@/labs/pages/LabsTaste";
 import LabsTasteProfile from "@/labs/pages/LabsTasteProfile";
 import LabsTasteAnalytics from "@/labs/pages/LabsTasteAnalytics";
 import LabsTasteWheel from "@/labs/pages/LabsTasteWheel";
+import LabsTasteCompare from "@/labs/pages/LabsTasteCompare";
 import LabsCircle from "@/labs/pages/LabsCircle";
 import LabsExplore from "@/labs/pages/LabsExplore";
 import LabsSolo from "@/labs/pages/LabsSolo";
@@ -557,6 +558,7 @@ function Router() {
               <Route path="/labs/taste/profile" component={LabsTasteProfile} />
               <Route path="/labs/taste/analytics" component={LabsTasteAnalytics} />
               <Route path="/labs/taste/wheel" component={LabsTasteWheel} />
+              <Route path="/labs/taste/compare" component={LabsTasteCompare} />
               <Route path="/labs/taste/drams" component={LabsTasteDrams} />
               <Route path="/labs/taste/collection" component={LabsTasteCollection} />
               <Route path="/labs/taste/wishlist" component={LabsTasteWishlist} />

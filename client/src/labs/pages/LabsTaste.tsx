@@ -247,7 +247,7 @@ export default function LabsTaste() {
           <NavItem icon={Activity} label="CaskSense Profile" description="Flavor radar, style & sweet spot" href="/labs/taste/profile" testId="labs-taste-link-profile" locked={analyticsLocked} />
           <NavItem icon={BarChart3} label="Analytics" description="Evolution, consistency & stats" href="/labs/taste/analytics" testId="labs-taste-link-analytics" />
           <NavItem icon={PieChart} label="Flavor Wheel" description="Aroma categories from your notes" href="/labs/taste/wheel" testId="labs-taste-link-wheel" />
-          <NavItem icon={GitCompareArrows} label="Compare" description="Your scores vs. community" href="/labs/taste/profile" testId="labs-taste-link-compare" locked={analyticsLocked} />
+          <NavItem icon={GitCompareArrows} label="Compare" description="Your scores vs. community" href="/labs/taste/compare" testId="labs-taste-link-compare" locked={analyticsLocked} />
         </div>
       </div>
 
