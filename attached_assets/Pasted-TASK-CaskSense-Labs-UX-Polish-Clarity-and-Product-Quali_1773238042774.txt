@@ -1,0 +1,414 @@
+TASK: CaskSense Labs – UX Polish, Clarity, and Product Quality Pass
+PROJECT MODE: Labs refinement phase
+GOAL: Elevate CaskSense Labs from technically stable to clearly premium, intuitive, calm, and test-user-ready.
+
+MISSION
+Run a focused UX and product-quality pass on CaskSense Labs.
+
+The objective is NOT to add major new features.
+The objective is to improve:
+
+• clarity
+• usability
+• visual calm
+• wording
+• status communication
+• empty states
+• error states
+• flow coherence
+• perceived product quality
+
+CaskSense Labs should feel more like a refined tasting environment and less like a prototype.
+
+The legacy CaskSense application must remain fully untouched.
+
+NON-NEGOTIABLE RULES
+
+1. DO NOT build large new features.
+2. DO NOT redesign the architecture.
+3. DO NOT destabilize the working Labs flows.
+4. DO NOT change the legacy application.
+5. ONLY improve UX quality, clarity, and interface polish.
+6. Keep all changes inside the Labs layer unless a tiny shared fix is strictly necessary.
+7. Prefer simple, elegant improvements over flashy additions.
+
+STEP 1 — CURRENT UX AUDIT
+
+Inspect the current Labs experience and identify weaknesses in:
+
+• landing clarity
+• Join / Host / Solo entry understanding
+• Labs navigation
+• tasting overview readability
+• tasting detail clarity
+• live tasting room guidance
+• host dashboard control clarity
+• results page structure
+• Taste page readability
+• Circle page usefulness
+• Explore page discoverability
+• empty states
+• loading states
+• error states
+• wording / microcopy
+• visual hierarchy
+• spacing
+• responsive polish
+
+Output a concise UX audit grouped by page/route.
+
+STEP 2 — UX PRINCIPLES TO APPLY
+
+Use the following design and UX principles consistently:
+
+• warm dark premium
+• Apple-inspired clarity
+• restrained elegance
+• generous spacing
+• strong visual hierarchy
+• no clutter
+• clear next action
+• one primary job per screen
+• calm and confident language
+• no overly technical jargon
+• no admin-panel feeling
+• no excessive decoration
+• mobile practical, desktop refined
+
+Every Labs screen should answer three questions clearly:
+
+1. Where am I?
+2. What is happening right now?
+3. What should I do next?
+
+STEP 3 — LANDING PAGE POLISH
+
+Route:
+`/labs`
+
+Improve the Labs landing page so that it immediately communicates:
+
+• what CaskSense Labs is
+• why it is different
+• what the three main entry options mean
+
+Refine:
+
+• hero hierarchy
+• title/subtitle
+• Join / Host / Solo action clarity
+• trust and calmness of the layout
+• concise supportive copy
+
+Avoid marketing fluff.
+Make it feel elegant and self-explanatory.
+
+STEP 4 — NAVIGATION POLISH
+
+Refine Labs navigation so it feels clean, obvious, and consistent.
+
+Verify and improve:
+
+• active state visibility
+• route labels
+• spacing
+• placement of Profile access
+• mobile navigation behavior
+• desktop navigation calmness
+
+Navigation labels must feel intuitive and premium, not technical.
+
+STEP 5 — TASTINGS FLOW POLISH
+
+Routes:
+`/labs/tastings`
+`/labs/tastings/:id`
+
+Improve:
+
+• list readability
+• status badges
+• card hierarchy
+• action clarity
+• date/time visibility
+• role visibility
+• empty list states
+• directness of next action
+
+Users should instantly understand:
+
+• whether a tasting is upcoming / live / past
+• whether they are host or participant
+• what they can do from here
+
+STEP 6 — LIVE TASTING ROOM UX POLISH
+
+Route:
+`/labs/live/:id`
+
+This is one of the most important Labs screens.
+
+Refine:
+
+• current step visibility
+• progress communication
+• blind/reveal communication
+• rating form structure
+• submit/update clarity
+• locked/unlocked state messaging
+• mobile ergonomics
+• host-triggered change feedback
+
+Participants must always understand:
+
+• which step they are in
+• whether rating is open
+• whether reveal already happened
+• whether their rating was saved
+• what happens next
+
+Improve wording and visual feedback accordingly.
+
+STEP 7 — HOST DASHBOARD UX POLISH
+
+Refine the host dashboard with emphasis on operational clarity.
+
+Improve:
+
+• grouping of controls
+• differentiation between session control / reveal / progression
+• participant status visibility
+• step status visibility
+• readability of the current session state
+• confidence of destructive or final actions
+• spacing and scanability on desktop
+
+Goal:
+A host should feel in control at a glance.
+
+Avoid:
+• clutter
+• ambiguous buttons
+• unclear action consequences
+
+STEP 8 — RESULTS PAGE POLISH
+
+Route:
+`/labs/results/:id`
+
+Refine the results page into a more insight-oriented experience.
+
+Improve:
+
+• section order
+• result hierarchy
+• summary visibility
+• bottle reveal section clarity
+• participant vs group reading logic
+• personal vs group comparison readability
+• headings and subheadings
+• overall reflection framing
+
+Results should feel like:
+a calm debrief, not a raw data dump.
+
+STEP 9 — TASTE PAGE POLISH
+
+Route:
+`/labs/taste`
+
+Improve:
+
+• section names
+• hierarchy between summary / recent tastings / recent ratings / signals
+• readability of preference summaries
+• empty states if user has little data
+• sense of personal reflection
+
+This page should feel personal and informative, not analytical overload.
+
+STEP 10 — CIRCLE PAGE POLISH
+
+Route:
+`/labs/circle`
+
+Improve:
+
+• framing of shared tasting relationships
+• clarity of shared sessions
+• usefulness of comparison areas
+• empty states for users with little community data
+• layout calmness
+
+This page should feel lightly social, not noisy.
+
+STEP 11 — EXPLORE PAGE POLISH
+
+Routes:
+`/labs/explore`
+`/labs/explore/bottles/:id`
+`/labs/explore/distilleries/:id` (if implemented)
+
+Improve:
+
+• discoverability
+• card hierarchy
+• bottle detail readability
+• metadata grouping
+• user context clarity
+• sense of curation instead of database overload
+
+Explore should feel elegant, browseable, and premium.
+
+STEP 12 — MICROCOPY PASS
+
+Run a full wording pass across Labs.
+
+Refine all major user-facing text:
+
+• page titles
+• subtitles
+• section labels
+• buttons
+• empty states
+• error messages
+• loading text
+• confirmations
+• rating lock messages
+• reveal messages
+• host control labels
+
+Tone:
+• clear
+• calm
+• confident
+• concise
+• not robotic
+• not overly playful
+• not overly technical
+
+Prefer product language that sounds thoughtful and polished.
+
+STEP 13 — STATUS / FEEDBACK IMPROVEMENTS
+
+Improve user feedback wherever needed.
+
+Ensure Labs provides clear visible feedback for:
+
+• loading
+• saving
+• rating submitted
+• rating updated
+• session started
+• reveal triggered
+• step advanced
+• session completed
+• errors or permission problems
+
+Users should never wonder whether an important action worked.
+
+STEP 14 — EMPTY STATE PASS
+
+Add or improve elegant empty states for pages with sparse data.
+
+Examples:
+
+• no tastings yet
+• no recent ratings
+• no shared sessions
+• no bottles found
+• no results available
+
+Each empty state should:
+• explain the situation
+• feel graceful
+• point to the next sensible action
+
+Do not leave barren screens.
+
+STEP 15 — LOADING AND ERROR STATE PASS
+
+Review all Labs pages and improve:
+
+• loading skeletons or loading placeholders where useful
+• fallback UI
+• error messages
+• retry messaging
+• unauthorized state handling
+• invalid ID handling
+
+The experience must feel composed even when something goes wrong.
+
+STEP 16 — VISUAL CONSISTENCY PASS
+
+Review all Labs screens for:
+
+• consistent spacing
+• typography hierarchy
+• status badge styling
+• button hierarchy
+• card rhythm
+• alignment
+• dark-theme readability
+• responsive consistency
+
+Fix inconsistencies without introducing redesign churn.
+
+STEP 17 — MOBILE / DESKTOP POLISH
+
+Validate and refine both contexts:
+
+Participant-mobile:
+• live tasting flow
+• readability
+• button reach
+• form usability
+
+Host-desktop:
+• dashboard scanability
+• control grouping
+• clarity of actions
+• density balance
+
+Optimize each route for its primary context.
+
+STEP 18 — LEGACY REGRESSION CHECK
+
+Confirm again:
+
+• legacy homepage loads
+• legacy login works
+• legacy tasting flows remain intact
+• no route collisions
+• no shared style regressions
+
+Fix immediately if anything was affected.
+
+STEP 19 — FINAL QUALITY VALIDATION
+
+Run a page-by-page Labs review and confirm the following for each page:
+
+• clear purpose
+• clear next action
+• clear state communication
+• polished wording
+• no broken layouts
+• no unfinished placeholders
+• no weak empty/error states
+
+STEP 20 — FINAL DELIVERY REPORT
+
+Provide a structured report with:
+
+UX IMPROVEMENTS COMPLETED  
+PAGES POLISHED  
+MICROCOPY IMPROVEMENTS  
+EMPTY / ERROR / LOADING STATES IMPROVED  
+FILES MODIFIED  
+KNOWN UX LIMITATIONS  
+RECOMMENDED NEXT STEP BEFORE REAL USER TEST
+
+SUCCESS CRITERION
+
+CaskSense Labs should now feel like a **coherent, calm, premium, test-user-ready product layer**:
+technically stable, clearly understandable, visually polished, and suitable for a real pilot tasting with external users.
