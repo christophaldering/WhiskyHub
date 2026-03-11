@@ -5,7 +5,7 @@ import {
   Plus, X, Trash2, Copy, Check, EyeOff, Eye, Play, Square,
   Users, Calendar, MapPin, ArrowLeft, Loader2,
   Wine, BarChart3, CheckCircle2, Clock, CircleDashed,
-  ChevronDown, ChevronUp, Compass, SkipForward, StopCircle,
+  ChevronDown, ChevronUp, Compass, SkipForward, StopCircle, AlertTriangle,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi } from "@/lib/api";
@@ -414,10 +414,18 @@ function GuidedTastingEngine({
   const activeWhisky = !isLobby && !isCompleted && whiskyList[guidedIndex] ? whiskyList[guidedIndex] : null;
   const maxRevealStep = 3;
 
+  const [engineError, setEngineError] = useState<string | null>(null);
+
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
     queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
     queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] });
+  };
+
+  const handleMutationError = (err: any) => {
+    const msg = err?.message || "Action failed";
+    setEngineError(msg);
+    setTimeout(() => setEngineError(null), 5000);
   };
 
   const startMutation = useMutation({
@@ -431,23 +439,27 @@ function GuidedTastingEngine({
         await tastingApi.updateStatus(tastingId, "open", undefined, currentParticipant.id);
       }
     },
-    onSuccess: invalidateAll,
+    onSuccess: () => { setEngineError(null); invalidateAll(); },
+    onError: handleMutationError,
   });
 
   const advanceMutation = useMutation({
     mutationFn: () => guidedApi.advance(tastingId, currentParticipant.id),
-    onSuccess: invalidateAll,
+    onSuccess: () => { setEngineError(null); invalidateAll(); },
+    onError: handleMutationError,
   });
 
   const endMutation = useMutation({
     mutationFn: () => tastingApi.updateStatus(tastingId, "closed", undefined, currentParticipant.id),
-    onSuccess: invalidateAll,
+    onSuccess: () => { setEngineError(null); invalidateAll(); },
+    onError: handleMutationError,
   });
 
   const goToMutation = useMutation({
     mutationFn: ({ idx, step }: { idx: number; step?: number }) =>
       guidedApi.goTo(tastingId, currentParticipant.id, idx, step),
-    onSuccess: invalidateAll,
+    onSuccess: () => { setEngineError(null); invalidateAll(); },
+    onError: handleMutationError,
   });
 
   const anyPending = startMutation.isPending || advanceMutation.isPending || endMutation.isPending || goToMutation.isPending;
@@ -606,6 +618,19 @@ function GuidedTastingEngine({
           )}
         </div>
       </div>
+
+      {engineError && (
+        <div
+          className="labs-card p-3 flex items-center gap-2"
+          style={{ background: "var(--labs-danger-muted, rgba(239,68,68,0.1))", border: "1px solid var(--labs-danger, #ef4444)" }}
+          data-testid="guided-engine-error"
+        >
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-danger, #ef4444)" }} />
+          <span className="text-xs font-medium" style={{ color: "var(--labs-danger, #ef4444)" }}>
+            {engineError}
+          </span>
+        </div>
+      )}
 
       {activeWhisky && (
         <div className="labs-card p-4" data-testid="guided-current-dram">

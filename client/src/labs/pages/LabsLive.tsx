@@ -197,12 +197,26 @@ function GuidedStepView({
     },
   });
 
+  const tastingStatusRef = useRef(tasting?.status);
+  useEffect(() => { tastingStatusRef.current = tasting?.status; }, [tasting?.status]);
+
+  useEffect(() => {
+    setSaveError(null);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+  }, [whisky?.id]);
+
+  useEffect(() => {
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, []);
+
   const debouncedSave = useCallback(
     (newScores: typeof scores, newNotes: string) => {
       if (!currentParticipant || !whisky || !tasting) return;
       if (tasting.status !== "open" && tasting.status !== "draft") return;
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
+        const s = tastingStatusRef.current;
+        if (s !== "open" && s !== "draft") return;
         rateMutation.mutate({
           tastingId,
           whiskyId: whisky.id,
@@ -551,6 +565,17 @@ export default function LabsLive({ params }: LabsLiveProps) {
   }, [myRating, currentWhisky?.id]);
 
   const [saveError, setSaveError] = useState<string | null>(null);
+  const tastingStatusRef2 = useRef(tasting?.status);
+  useEffect(() => { tastingStatusRef2.current = tasting?.status; }, [tasting?.status]);
+
+  useEffect(() => {
+    setSaveError(null);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+  }, [currentWhisky?.id]);
+
+  useEffect(() => {
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, []);
 
   const rateMutation = useMutation({
     mutationFn: (data: any) => ratingApi.upsert(data),
@@ -570,6 +595,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
       if (tasting.status !== "open" && tasting.status !== "draft") return;
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
+        const s = tastingStatusRef2.current;
+        if (s !== "open" && s !== "draft") return;
         rateMutation.mutate({
           tastingId,
           whiskyId: currentWhisky.id,
@@ -951,7 +978,17 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   </span>
                 </div>
 
-                {rateMutation.isSuccess && (
+                {saveError && (
+                  <div
+                    className="flex items-center gap-1.5 mt-3 text-xs"
+                    style={{ color: "var(--labs-danger, #ef4444)" }}
+                    data-testid="labs-live-save-error"
+                  >
+                    <AlertTriangle className="w-3 h-3" />
+                    {saveError}
+                  </div>
+                )}
+                {!saveError && rateMutation.isSuccess && (
                   <div
                     className="flex items-center gap-1.5 mt-3 text-xs"
                     style={{ color: "var(--labs-success)" }}
