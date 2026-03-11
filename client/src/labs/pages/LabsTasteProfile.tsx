@@ -188,14 +188,14 @@ export default function LabsTasteProfile() {
         dimension: dimLabels[d],
         value: whiskyProfile.tasteStructure![d] || 0,
         ...(whiskyProfile.comparisonData ? { comparison: whiskyProfile.comparisonData.medians[d] || 0 } : {}),
-        ...(globalAvg && compareMode === "none" ? { global: (globalAvg as any)[d] ?? 0 } : {}),
+        ...(globalAvg && compareMode === "none" ? { global: globalAvg[d] ?? 0 } : {}),
         fullMark: 100,
       }))
     : profile?.avgScores
       ? dims.map(d => ({
           dimension: dimLabels[d],
-          value: (profile.avgScores as any)[d],
-          ...(globalAvg ? { global: (globalAvg as any)[d] ?? 0 } : {}),
+          value: profile.avgScores[d as keyof typeof profile.avgScores],
+          ...(globalAvg ? { global: globalAvg[d] ?? 0 } : {}),
           fullMark: 100,
         }))
       : [];

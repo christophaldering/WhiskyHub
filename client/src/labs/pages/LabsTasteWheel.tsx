@@ -116,19 +116,19 @@ export default function LabsTasteWheel() {
       ...(journalEntries || []),
       ...(ratingNotes || []).map(r => ({ id: r.id, noseNotes: null, tasteNotes: null, finishNotes: null, body: r.notes })),
     ];
-    if (combined.length === 0) return { categoryFreqs: {} as Record<string, number>, subFreqs: {} as Record<string, Record<string, number>>, totalMentions: 0, topCategory: null as FlavorCategory | null, mostUniqueFlavor: null as any, innerData: [] as any[], outerData: [] as any[] };
+    if (combined.length === 0) return { categoryFreqs: {} as Record<string, number>, subFreqs: {} as Record<string, Record<string, number>>, totalMentions: 0, topCategory: null as FlavorCategory | null, mostUniqueFlavor: null as { cat: FlavorCategory; sub: { id: string; en: string }; count: number } | null, innerData: [] as { name: string; value: number; actualValue: number; color: string; id: string }[], outerData: [] as { name: string; value: number; actualValue: number; color: string; catId: string; subId: string }[] };
 
     const { categoryFreqs, subFreqs } = computeFlavorFrequencies(combined);
     const totalMentions = Object.values(categoryFreqs).reduce((s, v) => s + v, 0);
     let topCategory: FlavorCategory | null = null;
     let topCount = 0;
     for (const cat of FLAVOR_WHEEL_DATA) { if (categoryFreqs[cat.id] > topCount) { topCount = categoryFreqs[cat.id]; topCategory = cat; } }
-    let mostUniqueFlavor: any = null;
+    let mostUniqueFlavor: { cat: FlavorCategory; sub: { id: string; en: string }; count: number } | null = null;
     let minC = Infinity;
     for (const cat of FLAVOR_WHEEL_DATA) { for (const sub of cat.subcategories) { const c = subFreqs[cat.id][sub.id]; if (c > 0 && c < minC) { minC = c; mostUniqueFlavor = { cat, sub, count: c }; } } }
 
     const innerData = FLAVOR_WHEEL_DATA.map(cat => ({ name: cat.en, value: Math.max(categoryFreqs[cat.id], 1), actualValue: categoryFreqs[cat.id], color: cat.color, id: cat.id }));
-    const outerData: any[] = [];
+    const outerData: { name: string; value: number; actualValue: number; color: string; catId: string; subId: string }[] = [];
     for (const cat of FLAVOR_WHEEL_DATA) { for (const sub of cat.subcategories) { outerData.push({ name: sub.en, value: Math.max(subFreqs[cat.id][sub.id], 0.3), actualValue: subFreqs[cat.id][sub.id], color: cat.color, catId: cat.id, subId: sub.id }); } }
     return { categoryFreqs, subFreqs, totalMentions, topCategory, mostUniqueFlavor, innerData, outerData };
   }, [journalEntries, ratingNotes]);

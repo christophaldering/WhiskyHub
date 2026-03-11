@@ -91,11 +91,11 @@ export default function LabsTaste() {
     enabled: !!pid,
   });
 
-  const tastingIds = tastings?.map((t: any) => t.id) || [];
+  const tastingIds = tastings?.map((t: { id: string }) => t.id) || [];
   const { data: allRatingsMap } = useQuery({
     queryKey: ["allTastingRatings", currentParticipant?.id, tastingIds],
     queryFn: async () => {
-      const results: Record<string, any[]> = {};
+      const results: Record<string, { participantId: string; overall: number }[]> = {};
       for (const tid of tastingIds) {
         try { const ratings = await ratingApi.getForTasting(tid); results[tid] = ratings || []; } catch { results[tid] = []; }
       }
@@ -115,10 +115,10 @@ export default function LabsTaste() {
     );
   }
 
-  const myRatings: any[] = [];
+  const myRatings: { participantId: string; overall: number; _tastingId: string }[] = [];
   if (allRatingsMap) {
     for (const [tid, ratings] of Object.entries(allRatingsMap)) {
-      for (const r of ratings as any[]) {
+      for (const r of ratings) {
         if (r.participantId === currentParticipant.id) myRatings.push({ ...r, _tastingId: tid });
       }
     }
@@ -128,12 +128,14 @@ export default function LabsTaste() {
   const totalRatings = myRatings.length;
   const avgOverall = totalRatings > 0 ? Math.round((myRatings.reduce((sum, r) => sum + (r.overall || 0), 0) / totalRatings) * 10) / 10 : 0;
   const journalCount = Array.isArray(journal) ? journal.length : 0;
-  const whiskyCount = ((stats as any)?.totalRatings ?? 0) + ((stats as any)?.totalJournalEntries ?? 0);
+  const statsObj = stats as { totalRatings?: number; totalJournalEntries?: number } | null;
+  const whiskyCount = (statsObj?.totalRatings ?? 0) + (statsObj?.totalJournalEntries ?? 0);
   const analyticsLocked = whiskyCount < ANALYTICS_THRESHOLD;
 
-  const stability = (participant as any)?.ratingStabilityScore ?? null;
-  const exploration = (participant as any)?.explorationIndex ?? null;
-  const smoke = (participant as any)?.smokeAffinityIndex ?? null;
+  const participantObj = participant as { ratingStabilityScore?: number; explorationIndex?: number; smokeAffinityIndex?: number } | null;
+  const stability = participantObj?.ratingStabilityScore ?? null;
+  const exploration = participantObj?.explorationIndex ?? null;
+  const smoke = participantObj?.smokeAffinityIndex ?? null;
   const insight = insightData?.insight ?? null;
 
   const avgScores = flavorProfile?.avgScores || { nose: 0, taste: 0, finish: 0, balance: 0, overall: 0 };
