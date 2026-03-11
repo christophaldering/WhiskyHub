@@ -91,6 +91,13 @@ Labs Tasting Session pages port key M2 features into the Labs dark-theme design 
 -   **Ambient Sounds** (in `LabsLive.tsx`): `LabsAmbientPanel` component with 4 soundscapes (fireplace, rain, night, bagpipe), volume slider, play/stop toggle. Uses existing `lib/ambient.ts` engine.
 -   **Voice Memos in Sessions** (in `LabsLive.tsx`): `LabsVoiceMemoRecorder` integrated in tasting notes area. Transcriptions auto-append to notes.
 
+### Labs Host Dashboard & History Features (Task #3)
+Labs Host Dashboard, Calendar, and Historical Archive pages ported from M2 into the Labs dark-theme design system:
+-   **Host Dashboard** (`LabsHostDashboard.tsx`, route `/labs/dashboard`): Command center with 3-stat overview (tastings/guests/whiskies), average scores bar chart (recharts), embedded calendar widget, recent tastings list, top whiskies list, invitations panel (QR + email), quick tool links.
+-   **Tasting Calendar** (`LabsCalendar.tsx`, route `/labs/calendar`): Full-page calendar with monthly grid, all/mine/friends filter tabs, event day-dots with status colors, selected-day event cards, upcoming events sidebar, stats panel.
+-   **Historical Archive** (`LabsHistory.tsx`, route `/labs/history`): Searchable, sortable list of historical tastings with community membership gating, stat cards (tastings/whiskies/regions/smoky%), insights link card. Archive items link to `/labs/results/:id`.
+-   **Historical Insights** (`LabsHistory.tsx`, route `/labs/history/insights`): Cross-tasting analytics with stat cards, top 20 whiskies list, regional bar chart, smoky vs non-smoky pie chart, cask type comparison bars, score distribution histogram, group taste profile radar chart, summary cards (top region/cask/peat level).
+
 ### Test Suite
 A comprehensive test framework using Vitest covers unit, API, E2E, and smoke tests, including Module2Shell rendering, authentication flows, API endpoints, and historical tasting helpers.
 
