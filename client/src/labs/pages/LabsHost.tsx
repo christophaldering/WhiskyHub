@@ -7,11 +7,14 @@ import {
   Wine, BarChart3, CheckCircle2, Clock, CircleDashed,
   ChevronDown, ChevronUp, Compass, SkipForward, StopCircle, AlertTriangle,
   QrCode, Mail, Send, Star, Monitor, Gauge, Globe, Sliders,
-  MessageCircle, Video, FileText,
+  MessageCircle, Video, FileText, Settings, Upload, Share2,
+  Sparkles, RefreshCw, Camera, BookOpen, Heart, Pencil, Image,
+  Download, ExternalLink, Lock,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi } from "@/lib/api";
+import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
+import { downloadDataUrl } from "@/lib/download";
 import QRCode from "qrcode";
 
 interface LabsHostProps {
@@ -703,6 +706,13 @@ function CreateTastingForm() {
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [blindMode, setBlindMode] = useState(false);
+  const [revealOrder, setRevealOrder] = useState("classic");
+  const REVEAL_PRESETS: Record<string, string[][]> = {
+    classic: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
+    "photo-first": [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
+    "one-by-one": [["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler", "vintage"], ["hostNotes", "hostSummary"], ["image"]],
+    "details-first": [["distillery", "age", "abv", "region", "caskInfluence"], ["name"], ["image"]],
+  };
   const [ratingScale, setRatingScale] = useState(100);
   const [guidedMode, setGuidedMode] = useState(false);
   const [guestMode, setGuestMode] = useState("standard");
@@ -725,9 +735,11 @@ function CreateTastingForm() {
         title: title.trim(),
         date,
         location: location.trim() || "",
+        description: description.trim() || "",
         hostId: currentParticipant.id,
         code,
         blindMode,
+        revealOrder: blindMode && revealOrder !== "classic" ? JSON.stringify(REVEAL_PRESETS[revealOrder] || REVEAL_PRESETS.classic) : null,
         ratingScale,
         guidedMode,
         guestMode,
@@ -837,6 +849,25 @@ function CreateTastingForm() {
           description="Hide whisky details until reveal"
           testId="labs-host-toggle-blind"
         />
+
+        {blindMode && (
+          <div>
+            <label className="labs-section-label">
+              <Eye className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
+              Reveal Order
+            </label>
+            <LabsSegmentedSelect
+              value={revealOrder}
+              options={[
+                { value: "classic", label: "Classic", desc: "Name then details" },
+                { value: "photo-first", label: "Photo First", desc: "Photo then name" },
+                { value: "details-first", label: "Details", desc: "Details then name" },
+                { value: "one-by-one", label: "One by One", desc: "Reveal individually" },
+              ]}
+              onChange={setRevealOrder}
+            />
+          </div>
+        )}
 
         <div>
           <label className="labs-section-label">
@@ -1557,6 +1588,489 @@ function GuidedTastingEngine({
   );
 }
 
+function LabsSettingsPanel({
+  tasting,
+  tastingId,
+  pid,
+  queryClient,
+  navigate,
+}: {
+  tasting: Record<string, unknown>;
+  tastingId: string;
+  pid: string;
+  queryClient: ReturnType<typeof useQueryClient>;
+  navigate: (path: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [ratingPrompt, setRatingPrompt] = useState((tasting.ratingPrompt as string) || "");
+  const [savingPrompt, setSavingPrompt] = useState(false);
+  const [videoLinkLocal, setVideoLinkLocal] = useState((tasting.videoLink as string) || "");
+  const [savingVideo, setSavingVideo] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
+  const [localCoverUrl, setLocalCoverUrl] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+
+  const isDraft = tasting.status === "draft";
+
+  const patchDetails = async (body: Record<string, unknown>) => {
+    const res = await fetch(`/api/tastings/${tastingId}/details`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hostId: pid, ...body }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      setSaveStatus(err.message || "Save failed");
+      setTimeout(() => setSaveStatus(null), 3000);
+      throw new Error(err.message || "Save failed");
+    }
+    queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+    setSaveStatus("Saved");
+    setTimeout(() => setSaveStatus(null), 2000);
+  };
+
+  const handleToggle = async (field: string, currentValue: boolean) => {
+    try { await patchDetails({ [field]: !currentValue }); } catch {}
+  };
+
+  const handleSavePrompt = async () => {
+    setSavingPrompt(true);
+    try { await patchDetails({ ratingPrompt: ratingPrompt.trim() || null }); } catch {}
+    setSavingPrompt(false);
+  };
+
+  const handleSaveVideo = async () => {
+    setSavingVideo(true);
+    try { await patchDetails({ videoLink: videoLinkLocal.trim() || null }); } catch {}
+    setSavingVideo(false);
+  };
+
+  const handleChangeScale = async (scale: number) => {
+    try { await patchDetails({ ratingScale: scale }); } catch {}
+  };
+
+  const handleChangeGuestMode = async (mode: string) => {
+    try { await patchDetails({ guestMode: mode }); } catch {}
+  };
+
+  const handleChangeSessionUi = async (mode: string) => {
+    try { await patchDetails({ sessionUiMode: mode || null }); } catch {}
+  };
+
+  const handleToggleReflection = async () => {
+    try { await patchDetails({ reflectionEnabled: !tasting.reflectionEnabled }); } catch {}
+  };
+
+  const handleChangeReflectionMode = async (mode: string) => {
+    try { await patchDetails({ reflectionMode: mode }); } catch {}
+  };
+
+  const handleChangeReflectionVis = async (vis: string) => {
+    try { await patchDetails({ reflectionVisibility: vis }); } catch {}
+  };
+
+  const handleCoverUpload = async (file: File) => {
+    const previewUrl = URL.createObjectURL(file);
+    setLocalCoverUrl(previewUrl);
+    try {
+      await tastingApi.uploadCoverImage(tastingId, file, pid);
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+    } catch {
+      setLocalCoverUrl(null);
+      setSaveStatus("Upload failed");
+      setTimeout(() => setSaveStatus(null), 3000);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    setDuplicating(true);
+    try {
+      const newTasting = await tastingApi.duplicate(tastingId, pid);
+      if (newTasting?.id) {
+        navigate(`/labs/host/${newTasting.id}`);
+      }
+    } catch {}
+    setDuplicating(false);
+  };
+
+  const handleDelete = async () => {
+    try {
+      await tastingApi.hardDelete(tastingId, pid);
+      navigate("/labs/tastings");
+    } catch {}
+  };
+
+  return (
+    <div className="labs-card overflow-hidden" data-testid="labs-settings-panel">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between"
+        style={{
+          padding: "14px 16px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: "var(--labs-text)",
+          fontSize: 14,
+          fontWeight: 600,
+        }}
+        data-testid="labs-toggle-settings"
+      >
+        <span className="flex items-center gap-2">
+          <Settings className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+          Settings & Actions
+        </span>
+        <ChevronDown
+          className="w-4 h-4 transition-transform"
+          style={{
+            color: "var(--labs-text-muted)",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+        />
+      </button>
+
+      {saveStatus && (
+        <div className="px-4 pb-2 flex items-center gap-2" style={{ fontSize: 12, color: "var(--labs-success)" }}>
+          <Check className="w-3 h-3" />
+          {saveStatus}
+        </div>
+      )}
+
+      {open && (
+        <div style={{ padding: "0 16px 16px" }} className="space-y-4">
+          <div>
+            <p className="labs-section-label">Session</p>
+          </div>
+
+          <div>
+            <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
+              <Gauge className="w-3 h-3" />
+              Rating Scale
+              {!isDraft && <Lock className="w-2.5 h-2.5" style={{ color: "var(--labs-text-muted)" }} />}
+            </label>
+            {isDraft ? (
+              <LabsSegmentedSelect
+                value={(tasting.ratingScale as number) ?? 100}
+                options={[
+                  { value: 5, label: "5", desc: "Simple" },
+                  { value: 10, label: "10", desc: "Classic" },
+                  { value: 20, label: "20", desc: "Detailed" },
+                  { value: 100, label: "100", desc: "Pro" },
+                ]}
+                onChange={handleChangeScale}
+              />
+            ) : (
+              <div className="text-sm labs-card p-3" style={{ color: "var(--labs-text)" }}>
+                {(tasting.ratingScale as number) ?? 100}-point scale
+                <span className="text-xs ml-2" style={{ color: "var(--labs-text-muted)" }}>(locked while active)</span>
+              </div>
+            )}
+          </div>
+
+          <LabsToggle
+            checked={!!tasting.blindMode}
+            onChange={() => handleToggle("blindMode", !!tasting.blindMode)}
+            icon={<EyeOff className="w-5 h-5" style={{ color: tasting.blindMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+            label="Blind Tasting"
+            description="Hide whisky names until reveal"
+            testId="labs-settings-toggle-blind"
+          />
+
+          {tasting.blindMode && (
+            <div>
+              <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
+                <Eye className="w-3 h-3" />
+                Reveal Order
+              </label>
+              <LabsSegmentedSelect
+                value={(() => {
+                  if (!tasting.revealOrder) return "classic";
+                  try {
+                    const parsed = JSON.parse(tasting.revealOrder as string);
+                    const presets: Record<string, string> = {
+                      [JSON.stringify([["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]])]: "classic",
+                      [JSON.stringify([["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]])]: "photo-first",
+                      [JSON.stringify([["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler", "vintage"], ["hostNotes", "hostSummary"], ["image"]])]: "one-by-one",
+                      [JSON.stringify([["distillery", "age", "abv", "region", "caskInfluence"], ["name"], ["image"]])]: "details-first",
+                    };
+                    return presets[JSON.stringify(parsed)] || "classic";
+                  } catch { return "classic"; }
+                })()}
+                options={[
+                  { value: "classic", label: "Classic", desc: "Name then details" },
+                  { value: "photo-first", label: "Photo First", desc: "Photo then name" },
+                  { value: "details-first", label: "Details", desc: "Details then name" },
+                  { value: "one-by-one", label: "One by One", desc: "Reveal individually" },
+                ]}
+                onChange={(val: string | number) => {
+                  const PRESETS: Record<string, string[][]> = {
+                    classic: [["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"], ["image"]],
+                    "photo-first": [["image"], ["name"], ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"]],
+                    "one-by-one": [["name"], ["distillery"], ["age", "abv"], ["region", "country"], ["category", "caskInfluence"], ["peatLevel", "bottler", "vintage"], ["hostNotes", "hostSummary"], ["image"]],
+                    "details-first": [["distillery", "age", "abv", "region", "caskInfluence"], ["name"], ["image"]],
+                  };
+                  const key = String(val);
+                  patchDetails({ revealOrder: key === "classic" ? null : JSON.stringify(PRESETS[key] || PRESETS.classic) });
+                }}
+              />
+            </div>
+          )}
+
+          <LabsToggle
+            checked={!!tasting.guidedMode}
+            onChange={() => handleToggle("guidedMode", !!tasting.guidedMode)}
+            icon={<Compass className="w-5 h-5" style={{ color: tasting.guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+            label="Host Controls the Pace"
+            description="Guide all guests through each dram"
+            testId="labs-settings-toggle-guided"
+          />
+
+          <div>
+            <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
+              <Sliders className="w-3 h-3" />
+              Tasting Experience
+            </label>
+            <LabsSegmentedSelect
+              value={(tasting.sessionUiMode as string) || "flow"}
+              options={[
+                { value: "flow", label: "Free", desc: "Explore freely" },
+                { value: "focus", label: "One at a Time", desc: "Focus mode" },
+                { value: "journal", label: "Journal", desc: "Guided notes" },
+              ]}
+              onChange={handleChangeSessionUi}
+            />
+          </div>
+
+          <div>
+            <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
+              <Globe className="w-3 h-3" />
+              How Guests Join
+            </label>
+            <LabsSegmentedSelect
+              value={(tasting.guestMode as string) || "standard"}
+              options={[
+                { value: "standard", label: "Account", desc: "Saved ratings" },
+                { value: "ultra", label: "Instant", desc: "No sign-in" },
+              ]}
+              onChange={handleChangeGuestMode}
+            />
+          </div>
+
+          <div>
+            <p className="labs-section-label">What Guests See</p>
+          </div>
+
+          <LabsToggle
+            checked={!!tasting.showRanking}
+            onChange={() => handleToggle("showRanking", !!tasting.showRanking)}
+            icon={<BarChart3 className="w-5 h-5" style={{ color: tasting.showRanking ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+            label="Show Ranking"
+            description="Guests see how whiskies rank"
+            testId="labs-settings-toggle-ranking"
+          />
+
+          <LabsToggle
+            checked={!!tasting.showGroupAvg}
+            onChange={() => handleToggle("showGroupAvg", !!tasting.showGroupAvg)}
+            icon={<Users className="w-5 h-5" style={{ color: tasting.showGroupAvg ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+            label="Show Group Scores"
+            description="Guests see average scores"
+            testId="labs-settings-toggle-avg"
+          />
+
+          <LabsToggle
+            checked={tasting.showReveal !== false}
+            onChange={() => handleToggle("showReveal", tasting.showReveal !== false)}
+            icon={<Eye className="w-5 h-5" style={{ color: tasting.showReveal !== false ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+            label="Show Results After Tasting"
+            description="Guests access results when done"
+            testId="labs-settings-toggle-reveal"
+          />
+
+          <div>
+            <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
+              <Star className="w-3 h-3" />
+              Rating Prompt
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={ratingPrompt}
+                onChange={e => setRatingPrompt(e.target.value)}
+                placeholder="e.g. Rate your overall impression"
+                className="labs-input flex-1"
+                data-testid="labs-settings-rating-prompt"
+              />
+              <button
+                className="labs-btn-primary px-3"
+                onClick={handleSavePrompt}
+                disabled={savingPrompt}
+                data-testid="labs-settings-save-prompt"
+              >
+                {savingPrompt ? "..." : "Save"}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <p className="labs-section-label">Extras</p>
+          </div>
+
+          <div>
+            <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
+              <MessageCircle className="w-3 h-3" />
+              Group Discussion
+            </label>
+            <LabsToggle
+              checked={!!tasting.reflectionEnabled}
+              onChange={handleToggleReflection}
+              icon={<MessageCircle className="w-5 h-5" style={{ color: tasting.reflectionEnabled ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+              label="Enable Discussion Round"
+              description="Add a discussion phase after tasting"
+              testId="labs-settings-toggle-reflection"
+            />
+            {tasting.reflectionEnabled && (
+              <div className="space-y-3 mt-3">
+                <div>
+                  <label className="labs-section-label" style={{ fontSize: 11 }}>Discussion Format</label>
+                  <LabsSegmentedSelect
+                    value={(tasting.reflectionMode as string) || "standard"}
+                    options={[
+                      { value: "standard", label: "Standard", desc: "Pre-set questions" },
+                      { value: "custom", label: "Custom", desc: "Your own questions" },
+                    ]}
+                    onChange={handleChangeReflectionMode}
+                  />
+                </div>
+                <div>
+                  <label className="labs-section-label" style={{ fontSize: 11 }}>Show Names</label>
+                  <LabsSegmentedSelect
+                    value={(tasting.reflectionVisibility as string) || "named"}
+                    options={[
+                      { value: "named", label: "Named", desc: "Names shown" },
+                      { value: "anonymous", label: "Anonymous", desc: "Hidden" },
+                      { value: "optional", label: "Optional", desc: "Guest decides" },
+                    ]}
+                    onChange={handleChangeReflectionVis}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
+              <Video className="w-3 h-3" />
+              Video Call Link
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={videoLinkLocal}
+                onChange={e => setVideoLinkLocal(e.target.value)}
+                placeholder="https://zoom.us/j/..."
+                className="labs-input flex-1"
+                data-testid="labs-settings-video-link"
+              />
+              <button
+                className="labs-btn-primary px-3"
+                onClick={handleSaveVideo}
+                disabled={savingVideo}
+                data-testid="labs-settings-save-video"
+              >
+                {savingVideo ? "..." : "Save"}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="labs-section-label flex items-center gap-1" style={{ fontSize: 12 }}>
+              <Image className="w-3 h-3" />
+              Cover Image
+            </label>
+            <label
+              className="flex items-center justify-center gap-2 p-3 rounded-lg cursor-pointer text-sm"
+              style={{
+                border: "1px dashed var(--labs-border)",
+                color: "var(--labs-text-muted)",
+                background: "var(--labs-surface)",
+              }}
+              data-testid="labs-settings-upload-cover"
+            >
+              <Upload className="w-4 h-4" />
+              {(tasting.coverImageUrl as string) ? "Change Cover" : "Upload Cover Image"}
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={e => { if (e.target.files?.[0]) handleCoverUpload(e.target.files[0]); }}
+              />
+            </label>
+            {(localCoverUrl || (tasting.coverImageUrl as string)) && (
+              <img
+                src={localCoverUrl || (tasting.coverImageUrl as string) || ""}
+                alt="Cover"
+                className="w-full rounded-lg mt-2"
+                style={{ height: 120, objectFit: "cover" }}
+                data-testid="labs-settings-cover-preview"
+              />
+            )}
+          </div>
+
+          <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 16 }} className="space-y-2">
+            <button
+              className="labs-btn-secondary w-full flex items-center justify-center gap-2"
+              onClick={handleDuplicate}
+              disabled={duplicating}
+              data-testid="labs-settings-duplicate"
+            >
+              <RefreshCw className="w-4 h-4" />
+              {duplicating ? "Duplicating..." : "Duplicate Tasting"}
+            </button>
+
+            {!confirmDelete ? (
+              <button
+                className="w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg cursor-pointer"
+                style={{
+                  background: "none",
+                  color: "var(--labs-danger, #e74c3c)",
+                  border: "1px solid color-mix(in srgb, var(--labs-danger, #e74c3c) 40%, transparent)",
+                }}
+                onClick={() => setConfirmDelete(true)}
+                data-testid="labs-settings-delete"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Tasting
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  className="flex-1 py-2.5 text-sm font-semibold rounded-lg cursor-pointer"
+                  style={{ background: "var(--labs-danger, #e74c3c)", color: "#fff", border: "none" }}
+                  onClick={handleDelete}
+                  data-testid="labs-settings-confirm-delete"
+                >
+                  Yes, Delete
+                </button>
+                <button
+                  className="flex-1 py-2.5 text-sm rounded-lg cursor-pointer"
+                  style={{ background: "none", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" }}
+                  onClick={() => setConfirmDelete(false)}
+                  data-testid="labs-settings-cancel-delete"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ManageTasting({ tastingId }: { tastingId: string }) {
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
@@ -1618,12 +2132,32 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
   const [newWhiskyName, setNewWhiskyName] = useState("");
   const [showAddWhisky, setShowAddWhisky] = useState(false);
+  const [showExtendedFields, setShowExtendedFields] = useState(false);
+  const [extFields, setExtFields] = useState<Record<string, string>>({});
+  const [editingWhiskyId, setEditingWhiskyId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState<Record<string, string>>({});
+  const [showAiImport, setShowAiImport] = useState(false);
+  const [aiImportFiles, setAiImportFiles] = useState<File[]>([]);
+  const [aiImportText, setAiImportText] = useState("");
+  const [aiImportLoading, setAiImportLoading] = useState(false);
+  const [aiImportResults, setAiImportResults] = useState<any[]>([]);
+  const [aiImportSelected, setAiImportSelected] = useState<Set<number>>(new Set());
+  const [showCollectionImport, setShowCollectionImport] = useState(false);
+  const [showWishlistImport, setShowWishlistImport] = useState(false);
+  const [showEditTasting, setShowEditTasting] = useState(false);
+  const [editTastingFields, setEditTastingFields] = useState<Record<string, string>>({});
+  const [showSocial, setShowSocial] = useState(false);
+  const [aiNarrative, setAiNarrative] = useState<string | null>(null);
+  const [narrativeLoading, setNarrativeLoading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   const addWhiskyMutation = useMutation({
     mutationFn: (data: any) => whiskyApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
       setNewWhiskyName("");
+      setExtFields({});
+      setShowExtendedFields(false);
       setShowAddWhisky(false);
     },
   });
@@ -1634,6 +2168,213 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
     },
   });
+
+  const updateWhiskyMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => whiskyApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+      setEditingWhiskyId(null);
+      setEditFields({});
+    },
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: (order: { id: string; sortOrder: number }[]) => whiskyApi.reorder(tastingId, order),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+    },
+  });
+
+  const handleMoveWhisky = (index: number, direction: "up" | "down") => {
+    if (!whiskies) return;
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= whiskies.length) return;
+    const reordered = [...whiskies];
+    [reordered[index], reordered[newIndex]] = [reordered[newIndex], reordered[index]];
+    reorderMutation.mutate(reordered.map((w: any, i: number) => ({ id: w.id, sortOrder: i + 1 })));
+  };
+
+  const handleWhiskyImageUpload = async (whiskyId: string, file: File) => {
+    try {
+      await whiskyApi.uploadImage(whiskyId, file);
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+    } catch {}
+  };
+
+  const handleAiImport = async () => {
+    if (aiImportFiles.length === 0 && !aiImportText.trim()) return;
+    setAiImportLoading(true);
+    try {
+      const result = await tastingApi.aiImport(aiImportFiles, aiImportText.trim(), currentParticipant?.id || "");
+      if (result?.whiskies?.length) {
+        setAiImportResults(result.whiskies);
+        setAiImportSelected(new Set(result.whiskies.map((_: any, i: number) => i)));
+      }
+    } catch {}
+    setAiImportLoading(false);
+  };
+
+  const [aiImportStatus, setAiImportStatus] = useState("");
+
+  const handleAiImportConfirm = async () => {
+    let added = 0;
+    let failed = 0;
+    for (const idx of Array.from(aiImportSelected)) {
+      const w = aiImportResults[idx];
+      if (w) {
+        try {
+          await whiskyApi.create({
+            tastingId,
+            name: w.name || "",
+            distillery: w.distillery || "",
+            abv: w.abv ? String(w.abv) : "",
+            caskType: w.caskType || w.cask || "",
+            age: w.age ? String(w.age) : "",
+            category: w.category || "",
+            country: w.country || "",
+            region: w.region || "",
+            sortOrder: (whiskies?.length || 0) + added + 1,
+          });
+          added++;
+        } catch {
+          failed++;
+        }
+      }
+    }
+    queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+    if (failed > 0) {
+      setAiImportStatus(`Added ${added}, failed ${failed}`);
+      setTimeout(() => setAiImportStatus(""), 4000);
+    }
+    setAiImportResults([]);
+    setAiImportSelected(new Set());
+    setAiImportFiles([]);
+    setAiImportText("");
+    setShowAiImport(false);
+  };
+
+  const handleAddWhiskyExtended = () => {
+    if (!newWhiskyName.trim()) return;
+    addWhiskyMutation.mutate({
+      tastingId,
+      name: newWhiskyName.trim(),
+      distillery: extFields.distillery || "",
+      abv: extFields.abv || "",
+      caskType: extFields.caskType || "",
+      age: extFields.age || "",
+      category: extFields.category || "",
+      country: extFields.country || "",
+      region: extFields.region || "",
+      bottler: extFields.bottler || "",
+      vintage: extFields.vintage || "",
+      whiskybaseId: extFields.whiskybaseId || "",
+      wbScore: extFields.wbScore || "",
+      price: extFields.price || "",
+      peatLevel: extFields.peatLevel || "",
+      ppm: extFields.ppm || "",
+      hostSummary: extFields.hostSummary || "",
+      notes: extFields.notes || "",
+      sortOrder: (whiskies?.length || 0) + 1,
+    });
+  };
+
+  const handleSaveEditWhisky = (whiskyId: string) => {
+    updateWhiskyMutation.mutate({ id: whiskyId, data: editFields });
+  };
+
+  const startEditWhisky = (w: any) => {
+    setEditingWhiskyId(w.id);
+    setEditFields({
+      name: w.name || "",
+      distillery: w.distillery || "",
+      abv: w.abv ? String(w.abv) : "",
+      caskType: w.caskType || "",
+      age: w.age ? String(w.age) : "",
+      category: w.category || "",
+      country: w.country || "",
+      region: w.region || "",
+      bottler: w.bottler || "",
+      vintage: w.vintage || "",
+      price: w.price ? String(w.price) : "",
+      hostSummary: w.hostSummary || "",
+      notes: w.notes || "",
+    });
+  };
+
+  const [editTastingError, setEditTastingError] = useState("");
+
+  const handleEditTastingSave = async () => {
+    const body: Record<string, unknown> = { hostId: currentParticipant?.id };
+    if (editTastingFields.title) body.title = editTastingFields.title;
+    if (editTastingFields.date !== undefined) body.date = editTastingFields.date;
+    if (editTastingFields.location !== undefined) body.location = editTastingFields.location;
+    if (editTastingFields.description !== undefined) body.description = editTastingFields.description;
+    setEditTastingError("");
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/details`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to save");
+      }
+      queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+      setShowEditTasting(false);
+    } catch (e: any) {
+      setEditTastingError(e.message || "Failed to save");
+    }
+  };
+
+  const handleGenerateNarrative = async () => {
+    setNarrativeLoading(true);
+    try {
+      const res = await fetch(`/api/tastings/${tastingId}/ai-narrative`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hostId: currentParticipant?.id }),
+      });
+      const data = await res.json();
+      if (data?.narrative) setAiNarrative(data.narrative);
+    } catch {}
+    setNarrativeLoading(false);
+  };
+
+  const joinUrl = tasting ? `${window.location.origin}/labs/join?code=${tasting?.code}` : "";
+
+  const handleShareSocial = (platform: string) => {
+    if (!tasting) return;
+    const text = `Join my whisky tasting "${tasting.title}" on CaskSense!`;
+    const url = joinUrl;
+    const encodedText = encodeURIComponent(text);
+    const encodedUrl = encodeURIComponent(url);
+    const links: Record<string, string> = {
+      whatsapp: `https://wa.me/?text=${encodedText}%20${encodedUrl}`,
+      telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+      email: `mailto:?subject=${encodeURIComponent(`Join: ${tasting.title}`)}&body=${encodedText}%20${encodedUrl}`,
+    };
+    if (links[platform]) window.open(links[platform], "_blank");
+  };
+
+  const handleNativeShare = async () => {
+    if (!tasting || !navigator.share) return;
+    try {
+      await navigator.share({
+        title: tasting.title,
+        text: `Join my whisky tasting "${tasting.title}" on CaskSense!`,
+        url: joinUrl,
+      });
+    } catch {}
+  };
+
+  const handleDownloadQr = () => {
+    if (qrDataUrl && tasting) {
+      downloadDataUrl(qrDataUrl, `casksense-${tasting.code}-qr.png`);
+    }
+  };
 
   const copyCode = () => {
     if (tasting?.code) {
@@ -1684,11 +2425,15 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
 
   const handleAddWhisky = () => {
     if (!newWhiskyName.trim()) return;
-    addWhiskyMutation.mutate({
-      tastingId,
-      name: newWhiskyName.trim(),
-      sortOrder: (whiskies?.length || 0) + 1,
-    });
+    if (showExtendedFields) {
+      handleAddWhiskyExtended();
+    } else {
+      addWhiskyMutation.mutate({
+        tastingId,
+        name: newWhiskyName.trim(),
+        sortOrder: (whiskies?.length || 0) + 1,
+      });
+    }
   };
 
   if (tastingError) {
@@ -1762,13 +2507,30 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       </button>
 
       <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1
-            className="labs-serif text-xl font-semibold mb-1"
-            data-testid="labs-host-tasting-title"
-          >
-            {tasting.title}
-          </h1>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h1
+              className="labs-serif text-xl font-semibold mb-1"
+              data-testid="labs-host-tasting-title"
+            >
+              {tasting.title}
+            </h1>
+            <button
+              className="labs-btn-ghost p-1"
+              onClick={() => {
+                setEditTastingFields({
+                  title: tasting.title || "",
+                  date: tasting.date || "",
+                  location: tasting.location || "",
+                  description: tasting.description || "",
+                });
+                setShowEditTasting(!showEditTasting);
+              }}
+              data-testid="labs-host-edit-tasting"
+            >
+              <Pencil className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+            </button>
+          </div>
           <div className="flex items-center gap-4 text-xs" style={{ color: "var(--labs-text-muted)" }}>
             {tasting.date && (
               <span className="flex items-center gap-1">
@@ -1782,16 +2544,79 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 {tasting.location}
               </span>
             )}
+            {tasting.description && (
+              <span className="truncate max-w-[200px]">{tasting.description}</span>
+            )}
           </div>
         </div>
         <span
-          className="labs-badge"
+          className="labs-badge flex-shrink-0"
           style={{ background: statusCfg.bg, color: statusCfg.color }}
           data-testid="labs-host-status"
         >
           {statusCfg.label}
         </span>
       </div>
+
+      {showEditTasting && (
+        <div className="labs-card p-4 mb-5 space-y-3" data-testid="labs-edit-tasting-form">
+          <div className="flex items-center gap-2 mb-2">
+            <Pencil className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+            <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Edit Tasting Details</span>
+          </div>
+          <input
+            className="labs-input w-full"
+            placeholder="Title"
+            value={editTastingFields.title || ""}
+            onChange={e => setEditTastingFields({ ...editTastingFields, title: e.target.value })}
+            data-testid="labs-edit-tasting-title"
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              className="labs-input"
+              type="date"
+              value={editTastingFields.date || ""}
+              onChange={e => setEditTastingFields({ ...editTastingFields, date: e.target.value })}
+              data-testid="labs-edit-tasting-date"
+            />
+            <input
+              className="labs-input"
+              placeholder="Location"
+              value={editTastingFields.location || ""}
+              onChange={e => setEditTastingFields({ ...editTastingFields, location: e.target.value })}
+              data-testid="labs-edit-tasting-location"
+            />
+          </div>
+          <textarea
+            className="labs-input w-full"
+            rows={2}
+            placeholder="Description (optional)"
+            value={editTastingFields.description || ""}
+            onChange={e => setEditTastingFields({ ...editTastingFields, description: e.target.value })}
+            style={{ resize: "vertical" }}
+            data-testid="labs-edit-tasting-description"
+          />
+          {editTastingError && (
+            <p className="text-xs" style={{ color: "var(--labs-danger, #e74c3c)" }} data-testid="labs-edit-tasting-error">{editTastingError}</p>
+          )}
+          <div className="flex gap-2 justify-end">
+            <button
+              className="labs-btn-ghost text-sm"
+              onClick={() => setShowEditTasting(false)}
+              data-testid="labs-edit-tasting-cancel"
+            >
+              Cancel
+            </button>
+            <button
+              className="labs-btn-primary text-sm"
+              onClick={handleEditTastingSave}
+              data-testid="labs-edit-tasting-save"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      )}
 
       {tasting.code && (
         <div className="labs-card p-4 mb-5">
@@ -1831,6 +2656,14 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 <Mail className="w-4 h-4" />
                 Invite
               </button>
+              <button
+                className="labs-btn-ghost flex items-center gap-1.5"
+                onClick={() => setShowSocial(!showSocial)}
+                data-testid="labs-host-toggle-social"
+              >
+                <Share2 className="w-4 h-4" />
+                Share
+              </button>
             </div>
           </div>
 
@@ -1848,6 +2681,77 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
                 Scan to join this tasting
               </p>
+              <button
+                className="labs-btn-ghost flex items-center gap-1.5 text-xs mt-1"
+                onClick={handleDownloadQr}
+                data-testid="labs-host-download-qr"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download QR
+              </button>
+            </div>
+          )}
+
+          {showSocial && (
+            <div
+              className="pt-4 space-y-3"
+              style={{ borderTop: "1px solid var(--labs-border-subtle)" }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Share2 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Share Tasting</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { key: "whatsapp", label: "WhatsApp", color: "#25d366" },
+                  { key: "telegram", label: "Telegram", color: "#0088cc" },
+                  { key: "facebook", label: "Facebook", color: "#1877f2" },
+                  { key: "twitter", label: "X", color: "#1da1f2" },
+                  { key: "email", label: "Email", color: "var(--labs-text-muted)" },
+                ].map(p => (
+                  <button
+                    key={p.key}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer"
+                    style={{
+                      background: "var(--labs-surface)",
+                      border: "1px solid var(--labs-border)",
+                      color: p.color,
+                    }}
+                    onClick={() => handleShareSocial(p.key)}
+                    data-testid={`labs-host-share-${p.key}`}
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    {p.label}
+                  </button>
+                ))}
+                {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
+                  <button
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium labs-btn-primary"
+                    onClick={handleNativeShare}
+                    data-testid="labs-host-native-share"
+                  >
+                    <Share2 className="w-3 h-3" />
+                    Share
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  readOnly
+                  value={joinUrl}
+                  className="labs-input flex-1 text-xs"
+                  style={{ fontFamily: "monospace" }}
+                  onClick={e => (e.target as HTMLInputElement).select()}
+                  data-testid="labs-host-share-link"
+                />
+                <button
+                  className="labs-btn-ghost text-xs"
+                  onClick={() => { navigator.clipboard.writeText(joinUrl); }}
+                  data-testid="labs-host-copy-link"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           )}
 
@@ -2089,35 +2993,210 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         <div className="flex items-center justify-between mb-3">
           <h2 className="labs-section-label mb-0">Whiskies ({whiskyCount})</h2>
           {tasting.status === "draft" && (
-            <button
-              className="labs-btn-ghost flex items-center gap-1 text-xs"
-              onClick={() => setShowAddWhisky(!showAddWhisky)}
-              data-testid="labs-host-add-whisky-toggle"
-            >
-              {showAddWhisky ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-              {showAddWhisky ? "Cancel" : "Add"}
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                className="labs-btn-ghost flex items-center gap-1 text-xs"
+                onClick={() => setShowAiImport(!showAiImport)}
+                data-testid="labs-host-ai-import-toggle"
+              >
+                <Sparkles className="w-3 h-3" />
+                AI Import
+              </button>
+              <button
+                className="labs-btn-ghost flex items-center gap-1 text-xs"
+                onClick={() => setShowAddWhisky(!showAddWhisky)}
+                data-testid="labs-host-add-whisky-toggle"
+              >
+                {showAddWhisky ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                {showAddWhisky ? "Cancel" : "Add"}
+              </button>
+            </div>
           )}
         </div>
 
-        {showAddWhisky && tasting.status === "draft" && (
-          <div className="labs-card p-4 mb-3 flex gap-2">
-            <input
-              className="labs-input flex-1"
-              placeholder="Whisky name..."
-              value={newWhiskyName}
-              onChange={(e) => setNewWhiskyName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddWhisky()}
-              data-testid="labs-host-whisky-name-input"
-            />
-            <button
-              className="labs-btn-primary px-4"
-              onClick={handleAddWhisky}
-              disabled={!newWhiskyName.trim() || addWhiskyMutation.isPending}
-              data-testid="labs-host-whisky-add-btn"
+        {showAiImport && tasting.status === "draft" && (
+          <div className="labs-card p-4 mb-3 space-y-3" data-testid="labs-ai-import-panel">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+              <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>AI Import</span>
+            </div>
+            <div
+              className="flex flex-col items-center justify-center gap-2 p-4 rounded-lg text-sm cursor-pointer"
+              style={{
+                border: `2px dashed ${dragOver ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                color: "var(--labs-text-muted)",
+                background: dragOver ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+                transition: "all 0.2s",
+              }}
+              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={e => {
+                e.preventDefault();
+                setDragOver(false);
+                const files = Array.from(e.dataTransfer.files);
+                if (files.length) setAiImportFiles(prev => [...prev, ...files]);
+              }}
             >
-              {addWhiskyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
-            </button>
+              <Upload className="w-6 h-6" />
+              <p>Drop photos or files here</p>
+              <div className="flex gap-2 mt-1">
+                <label className="labs-btn-ghost text-xs cursor-pointer">
+                  <Camera className="w-3 h-3 inline mr-1" />
+                  Camera
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    style={{ display: "none" }}
+                    onChange={e => { if (e.target.files) setAiImportFiles(prev => [...prev, ...Array.from(e.target.files!)]); }}
+                  />
+                </label>
+                <label className="labs-btn-ghost text-xs cursor-pointer">
+                  <Upload className="w-3 h-3 inline mr-1" />
+                  Browse
+                  <input
+                    type="file"
+                    accept="image/*,.pdf,.csv,.txt,.xlsx"
+                    multiple
+                    style={{ display: "none" }}
+                    onChange={e => { if (e.target.files) setAiImportFiles(prev => [...prev, ...Array.from(e.target.files!)]); }}
+                  />
+                </label>
+              </div>
+            </div>
+            {aiImportFiles.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {aiImportFiles.map((f, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>
+                    {f.name}
+                    <button onClick={() => setAiImportFiles(prev => prev.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <textarea
+              className="labs-input w-full"
+              rows={2}
+              placeholder="Or paste whisky names, tasting notes, menu text..."
+              value={aiImportText}
+              onChange={e => setAiImportText(e.target.value)}
+              style={{ resize: "vertical" }}
+              data-testid="labs-ai-import-text"
+            />
+            <div className="flex gap-2 justify-end">
+              <button className="labs-btn-ghost text-sm" onClick={() => { setShowAiImport(false); setAiImportFiles([]); setAiImportText(""); setAiImportResults([]); }}>Cancel</button>
+              <button
+                className="labs-btn-primary text-sm flex items-center gap-1.5"
+                onClick={handleAiImport}
+                disabled={aiImportLoading || (aiImportFiles.length === 0 && !aiImportText.trim())}
+                data-testid="labs-ai-import-analyze"
+              >
+                {aiImportLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                {aiImportLoading ? "Analyzing..." : "Analyze"}
+              </button>
+            </div>
+
+            {aiImportResults.length > 0 && (
+              <div className="space-y-2 mt-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>Found {aiImportResults.length} whiskies</span>
+                  <button
+                    className="labs-btn-ghost text-xs"
+                    onClick={() => {
+                      if (aiImportSelected.size === aiImportResults.length) {
+                        setAiImportSelected(new Set());
+                      } else {
+                        setAiImportSelected(new Set(aiImportResults.map((_, i) => i)));
+                      }
+                    }}
+                    data-testid="labs-ai-import-select-all"
+                  >
+                    {aiImportSelected.size === aiImportResults.length ? "Deselect All" : "Select All"}
+                  </button>
+                </div>
+                {aiImportResults.map((w: any, i: number) => (
+                  <label
+                    key={i}
+                    className="labs-card p-3 flex items-center gap-3 cursor-pointer"
+                    style={{ opacity: aiImportSelected.has(i) ? 1 : 0.5 }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={aiImportSelected.has(i)}
+                      onChange={() => {
+                        const s = new Set(aiImportSelected);
+                        s.has(i) ? s.delete(i) : s.add(i);
+                        setAiImportSelected(s);
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{w.name}</p>
+                      <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                        {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                  </label>
+                ))}
+                <button
+                  className="labs-btn-primary w-full text-sm"
+                  onClick={handleAiImportConfirm}
+                  disabled={aiImportSelected.size === 0}
+                  data-testid="labs-ai-import-confirm"
+                >
+                  Add {aiImportSelected.size} Whiskies
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {showAddWhisky && tasting.status === "draft" && (
+          <div className="labs-card p-4 mb-3 space-y-3">
+            <div className="flex gap-2">
+              <input
+                className="labs-input flex-1"
+                placeholder="Whisky name..."
+                value={newWhiskyName}
+                onChange={(e) => setNewWhiskyName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !showExtendedFields && handleAddWhisky()}
+                data-testid="labs-host-whisky-name-input"
+              />
+              <button
+                className="labs-btn-ghost text-xs"
+                onClick={() => setShowExtendedFields(!showExtendedFields)}
+                data-testid="labs-host-toggle-extended"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+              </button>
+              <button
+                className="labs-btn-primary px-4"
+                onClick={handleAddWhisky}
+                disabled={!newWhiskyName.trim() || addWhiskyMutation.isPending}
+                data-testid="labs-host-whisky-add-btn"
+              >
+                {addWhiskyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
+              </button>
+            </div>
+            {showExtendedFields && (
+              <div className="grid grid-cols-2 gap-2">
+                <input className="labs-input" placeholder="Distillery" value={extFields.distillery || ""} onChange={e => setExtFields({ ...extFields, distillery: e.target.value })} data-testid="labs-ext-distillery" />
+                <input className="labs-input" placeholder="ABV %" value={extFields.abv || ""} onChange={e => setExtFields({ ...extFields, abv: e.target.value })} data-testid="labs-ext-abv" />
+                <input className="labs-input" placeholder="Cask Type" value={extFields.caskType || ""} onChange={e => setExtFields({ ...extFields, caskType: e.target.value })} data-testid="labs-ext-cask" />
+                <input className="labs-input" placeholder="Age" value={extFields.age || ""} onChange={e => setExtFields({ ...extFields, age: e.target.value })} data-testid="labs-ext-age" />
+                <input className="labs-input" placeholder="Category" value={extFields.category || ""} onChange={e => setExtFields({ ...extFields, category: e.target.value })} data-testid="labs-ext-category" />
+                <input className="labs-input" placeholder="Country" value={extFields.country || ""} onChange={e => setExtFields({ ...extFields, country: e.target.value })} data-testid="labs-ext-country" />
+                <input className="labs-input" placeholder="Region" value={extFields.region || ""} onChange={e => setExtFields({ ...extFields, region: e.target.value })} data-testid="labs-ext-region" />
+                <input className="labs-input" placeholder="Bottler" value={extFields.bottler || ""} onChange={e => setExtFields({ ...extFields, bottler: e.target.value })} data-testid="labs-ext-bottler" />
+                <input className="labs-input" placeholder="Vintage" value={extFields.vintage || ""} onChange={e => setExtFields({ ...extFields, vintage: e.target.value })} data-testid="labs-ext-vintage" />
+                <input className="labs-input" placeholder="Price" value={extFields.price || ""} onChange={e => setExtFields({ ...extFields, price: e.target.value })} data-testid="labs-ext-price" />
+                <input className="labs-input" placeholder="Peat Level" value={extFields.peatLevel || ""} onChange={e => setExtFields({ ...extFields, peatLevel: e.target.value })} data-testid="labs-ext-peat" />
+                <input className="labs-input" placeholder="PPM" value={extFields.ppm || ""} onChange={e => setExtFields({ ...extFields, ppm: e.target.value })} data-testid="labs-ext-ppm" />
+                <textarea className="labs-input col-span-2" rows={2} placeholder="Host summary" value={extFields.hostSummary || ""} onChange={e => setExtFields({ ...extFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-summary" />
+                <textarea className="labs-input col-span-2" rows={2} placeholder="Notes" value={extFields.notes || ""} onChange={e => setExtFields({ ...extFields, notes: e.target.value })} style={{ resize: "vertical" }} data-testid="labs-ext-notes" />
+              </div>
+            )}
           </div>
         )}
 
@@ -2136,46 +3215,111 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 ? Math.round(whiskyRatings.reduce((sum: number, r: any) => sum + (r.overall || 0), 0) / whiskyRatings.length)
                 : null;
 
+              if (editingWhiskyId === w.id) {
+                return (
+                  <div key={w.id} className="labs-card p-4 space-y-2" data-testid={`labs-host-whisky-edit-${w.id}`}>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input className="labs-input col-span-2" placeholder="Name" value={editFields.name || ""} onChange={e => setEditFields({ ...editFields, name: e.target.value })} data-testid="labs-edit-whisky-name" />
+                      <input className="labs-input" placeholder="Distillery" value={editFields.distillery || ""} onChange={e => setEditFields({ ...editFields, distillery: e.target.value })} />
+                      <input className="labs-input" placeholder="ABV %" value={editFields.abv || ""} onChange={e => setEditFields({ ...editFields, abv: e.target.value })} />
+                      <input className="labs-input" placeholder="Cask Type" value={editFields.caskType || ""} onChange={e => setEditFields({ ...editFields, caskType: e.target.value })} />
+                      <input className="labs-input" placeholder="Age" value={editFields.age || ""} onChange={e => setEditFields({ ...editFields, age: e.target.value })} />
+                      <input className="labs-input" placeholder="Category" value={editFields.category || ""} onChange={e => setEditFields({ ...editFields, category: e.target.value })} />
+                      <input className="labs-input" placeholder="Country" value={editFields.country || ""} onChange={e => setEditFields({ ...editFields, country: e.target.value })} />
+                      <input className="labs-input" placeholder="Region" value={editFields.region || ""} onChange={e => setEditFields({ ...editFields, region: e.target.value })} />
+                      <input className="labs-input" placeholder="Bottler" value={editFields.bottler || ""} onChange={e => setEditFields({ ...editFields, bottler: e.target.value })} />
+                      <input className="labs-input" placeholder="Price" value={editFields.price || ""} onChange={e => setEditFields({ ...editFields, price: e.target.value })} />
+                      <textarea className="labs-input col-span-2" rows={2} placeholder="Host summary" value={editFields.hostSummary || ""} onChange={e => setEditFields({ ...editFields, hostSummary: e.target.value })} style={{ resize: "vertical" }} />
+                      <textarea className="labs-input col-span-2" rows={2} placeholder="Notes" value={editFields.notes || ""} onChange={e => setEditFields({ ...editFields, notes: e.target.value })} style={{ resize: "vertical" }} />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <button className="labs-btn-ghost text-sm" onClick={() => setEditingWhiskyId(null)}>Cancel</button>
+                      <button className="labs-btn-primary text-sm" onClick={() => handleSaveEditWhisky(w.id)} disabled={updateWhiskyMutation.isPending} data-testid="labs-edit-whisky-save">
+                        {updateWhiskyMutation.isPending ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div
                   key={w.id}
                   className="labs-card p-4 flex items-center gap-3"
                   data-testid={`labs-host-whisky-${w.id}`}
                 >
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
-                    style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                  >
-                    {String.fromCharCode(65 + i)}
-                  </div>
+                  {w.imageUrl ? (
+                    <img
+                      src={w.imageUrl}
+                      alt={w.name}
+                      className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
+                      style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                    >
+                      {String.fromCharCode(65 + i)}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{w.name || `Whisky ${i + 1}`}</p>
                     <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                      {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null]
+                      {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country, w.caskType]
                         .filter(Boolean)
                         .join(" · ") || "No details"}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
                       {whiskyRatings.length}/{participantCount} rated
                     </span>
                     {avgScore !== null && (
-                      <span
-                        className="text-sm font-bold"
-                        style={{ color: "var(--labs-accent)" }}
-                      >
+                      <span className="text-sm font-bold" style={{ color: "var(--labs-accent)" }}>
                         {avgScore}
                       </span>
                     )}
                     {tasting.status === "draft" && (
-                      <button
-                        className="labs-btn-ghost p-1"
-                        onClick={() => deleteWhiskyMutation.mutate(w.id)}
-                        data-testid={`labs-host-delete-whisky-${w.id}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--labs-danger)" }} />
-                      </button>
+                      <>
+                        <div className="flex flex-col">
+                          <button
+                            className="labs-btn-ghost p-0.5"
+                            onClick={() => handleMoveWhisky(i, "up")}
+                            disabled={i === 0 || reorderMutation.isPending}
+                            style={{ opacity: i === 0 ? 0.3 : 1 }}
+                            data-testid={`labs-host-move-up-${w.id}`}
+                          >
+                            <ChevronUp className="w-3 h-3" />
+                          </button>
+                          <button
+                            className="labs-btn-ghost p-0.5"
+                            onClick={() => handleMoveWhisky(i, "down")}
+                            disabled={i === (whiskies?.length || 0) - 1 || reorderMutation.isPending}
+                            style={{ opacity: i === (whiskies?.length || 0) - 1 ? 0.3 : 1 }}
+                            data-testid={`labs-host-move-down-${w.id}`}
+                          >
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <label className="labs-btn-ghost p-1 cursor-pointer" data-testid={`labs-host-upload-img-${w.id}`}>
+                          <Image className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                          <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) handleWhiskyImageUpload(w.id, e.target.files[0]); }} />
+                        </label>
+                        <button
+                          className="labs-btn-ghost p-1"
+                          onClick={() => startEditWhisky(w)}
+                          data-testid={`labs-host-edit-whisky-${w.id}`}
+                        >
+                          <Pencil className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)" }} />
+                        </button>
+                        <button
+                          className="labs-btn-ghost p-1"
+                          onClick={() => deleteWhiskyMutation.mutate(w.id)}
+                          data-testid={`labs-host-delete-whisky-${w.id}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--labs-danger)" }} />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -2202,6 +3346,58 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
             tastingId={tastingId}
             participantId={currentParticipant.id}
             ratingScale={tasting.ratingScale || 100}
+          />
+        </div>
+      )}
+
+      {(tasting.status === "closed" || tasting.status === "archived") && (
+        <div className="mb-6">
+          <h2 className="labs-section-label">AI Narrative</h2>
+          <div className="labs-card p-4">
+            {tasting.aiNarrative || aiNarrative ? (
+              <div>
+                <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--labs-text)", lineHeight: 1.7 }} data-testid="labs-host-narrative-text">
+                  {aiNarrative || (tasting.aiNarrative as string)}
+                </p>
+                <button
+                  className="labs-btn-ghost text-xs mt-3 flex items-center gap-1.5"
+                  onClick={handleGenerateNarrative}
+                  disabled={narrativeLoading}
+                  data-testid="labs-host-regenerate-narrative"
+                >
+                  {narrativeLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                  Regenerate
+                </button>
+              </div>
+            ) : (
+              <div className="text-center py-3">
+                <Sparkles className="w-6 h-6 mx-auto mb-2" style={{ color: "var(--labs-accent)" }} />
+                <p className="text-sm mb-3" style={{ color: "var(--labs-text-muted)" }}>
+                  Generate an AI summary of this tasting session
+                </p>
+                <button
+                  className="labs-btn-primary text-sm flex items-center gap-1.5 mx-auto"
+                  onClick={handleGenerateNarrative}
+                  disabled={narrativeLoading}
+                  data-testid="labs-host-generate-narrative"
+                >
+                  {narrativeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  {narrativeLoading ? "Generating..." : "Generate Narrative"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {currentParticipant && (
+        <div className="mb-6">
+          <LabsSettingsPanel
+            tasting={tasting}
+            tastingId={tastingId}
+            pid={currentParticipant.id}
+            queryClient={queryClient}
+            navigate={navigate}
           />
         </div>
       )}
