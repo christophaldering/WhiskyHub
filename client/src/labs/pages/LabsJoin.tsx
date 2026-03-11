@@ -242,10 +242,10 @@ export default function LabsJoin() {
           Join a Tasting
         </h1>
         <p
-          className="text-sm"
+          className="text-sm leading-relaxed"
           style={{ color: "var(--labs-text-muted)" }}
         >
-          Enter the tasting code shared by your host to join the session.
+          Enter the code your host shared to join the session.
         </p>
       </div>
 

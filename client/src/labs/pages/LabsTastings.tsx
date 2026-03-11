@@ -81,10 +81,10 @@ export default function LabsTastings() {
       <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
         <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
         <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>
-          Sign in to see your tastings
+          Your Tastings
         </p>
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>
-          Join or host whisky tastings with your circle
+          Sign in to see your sessions and join new ones
         </p>
         <Link href="/labs">
           <button className="labs-btn-secondary" data-testid="labs-tastings-goto-home">
@@ -196,14 +196,14 @@ export default function LabsTastings() {
         <div className="labs-empty labs-fade-in">
           <Clock className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
           <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
-            No tastings found
+            {searchQuery ? "No matching tastings" : "No tastings yet"}
           </p>
           <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
             {searchQuery
               ? "Try a different search term"
               : timeFilter
               ? "No tastings match this filter"
-              : "Join or host your first tasting to get started"}
+              : "Join a session or host one to get started"}
           </p>
         </div>
       ) : (

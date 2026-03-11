@@ -94,7 +94,7 @@ export default function LabsCircle() {
           Your Circle
         </p>
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)", maxWidth: 280 }}>
-          Sign in to discover people from your tastings, find taste twins, and track activity
+          Sign in to see your tasting connections and discover taste twins
         </p>
         <button
           className="labs-btn-primary"
@@ -127,7 +127,7 @@ export default function LabsCircle() {
         Circle
       </h1>
       <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>
-        People you've shared a dram with
+        The people you've tasted with
       </p>
 
       <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
@@ -361,7 +361,7 @@ export default function LabsCircle() {
                     No connections yet
                   </p>
                   <p className="text-xs mb-5" style={{ color: "var(--labs-text-muted)", maxWidth: 280 }}>
-                    Join or host a tasting to discover your taste twins and build your whisky circle
+                    Your circle grows as you taste with others — join or host a session to get started
                   </p>
                   <div className="flex gap-3">
                     <button
@@ -484,7 +484,7 @@ export default function LabsCircle() {
                 No shared sessions yet
               </p>
               <p className="text-xs mb-5" style={{ color: "var(--labs-text-muted)", maxWidth: 280 }}>
-                Complete a tasting with others to see your shared sessions here
+                Completed sessions will appear here once you've tasted with others
               </p>
               <button
                 className="labs-btn-primary text-sm px-5 py-2.5"
@@ -597,7 +597,7 @@ export default function LabsCircle() {
                 No activity yet
               </p>
               <p className="text-xs mb-5" style={{ color: "var(--labs-text-muted)", maxWidth: 280 }}>
-                Activity from your friends and tasting partners will appear here as they log whiskies and join tastings
+                Activity from your tasting circle will appear here as they rate and join sessions
               </p>
               <button
                 className="labs-btn-secondary text-sm px-5 py-2.5"

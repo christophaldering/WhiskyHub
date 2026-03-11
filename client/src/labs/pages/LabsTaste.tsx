@@ -54,7 +54,7 @@ export default function LabsTaste() {
           Your Taste Profile
         </p>
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>
-          Sign in to see your personal tasting snapshot
+          Sign in to discover your personal tasting patterns
         </p>
         <button
           className="labs-btn-secondary"
@@ -133,7 +133,7 @@ export default function LabsTaste() {
         className="text-sm mb-6 labs-fade-in labs-stagger-1"
         style={{ color: "var(--labs-text-muted)" }}
       >
-        Your personal tasting snapshot & preference signals
+        Your personal tasting patterns and preferences
       </p>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8 labs-fade-in labs-stagger-2">
@@ -159,7 +159,7 @@ export default function LabsTaste() {
         <div className="mb-8 labs-fade-in labs-stagger-3">
           <p className="labs-section-label flex items-center gap-2">
             <Target className="w-3.5 h-3.5" />
-            Dimension Breakdown
+            Your Palate
           </p>
           <div className="labs-card p-5">
             <div className="space-y-3">
@@ -364,10 +364,10 @@ export default function LabsTaste() {
         <div className="labs-empty labs-fade-in labs-stagger-2">
           <TrendingUp className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
           <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
-            No activity yet
+            Your profile is waiting
           </p>
           <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-            Join a tasting or log a whisky to build your taste profile
+            Join a tasting session to start building your taste profile
           </p>
         </div>
       )}

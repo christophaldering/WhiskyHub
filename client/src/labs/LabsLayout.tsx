@@ -103,10 +103,16 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
             return (
               <Link key={item.href} href={item.href}>
                 <div
-                  className="flex flex-col items-center gap-0.5 px-4 py-1 cursor-pointer transition-colors"
+                  className="flex flex-col items-center gap-0.5 px-4 py-1 cursor-pointer transition-colors relative"
                   style={{ color }}
                   data-testid={`labs-nav-${item.label.toLowerCase()}`}
                 >
+                  {isActive && (
+                    <div
+                      className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full"
+                      style={{ background: "var(--labs-accent)" }}
+                    />
+                  )}
                   {item.icon === "glencairn" ? (
                     <GlencairnIcon color={color} size={22} />
                   ) : item.icon === "radar" ? (

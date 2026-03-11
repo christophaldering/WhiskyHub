@@ -63,7 +63,7 @@ export default function LabsExplore() {
         className="text-sm mb-5 labs-fade-in labs-stagger-1"
         style={{ color: "var(--labs-text-muted)" }}
       >
-        Discover whiskies from the community
+        Browse whiskies tasted across all sessions
       </p>
 
       <div className="relative mb-4 labs-fade-in labs-stagger-1">
@@ -172,12 +172,12 @@ export default function LabsExplore() {
         <div className="labs-empty labs-fade-in" style={{ minHeight: "40vh" }} data-testid="labs-explore-empty">
           <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
           <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
-            No whiskies found
+            {searchText || selectedRegion ? "No matching whiskies" : "No whiskies yet"}
           </p>
           <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
             {searchText || selectedRegion
-              ? "Try adjusting your search or filter"
-              : "Whiskies from tastings will appear here"}
+              ? "Try adjusting your search or filters"
+              : "Whiskies will appear here once they're added to a tasting session"}
           </p>
         </div>
       )}

@@ -140,8 +140,8 @@ export default function LabsResults({ params }: LabsResultsProps) {
     return (
       <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
         <Wine className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
-        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting doesn't exist or you don't have access.</p>
+        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Results not available</p>
+        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting may have been removed or the link is incorrect.</p>
         <button
           className="labs-btn-secondary"
           onClick={() => navigate("/labs/tastings")}
@@ -169,9 +169,10 @@ export default function LabsResults({ params }: LabsResultsProps) {
     return (
       <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
         <Wine className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Tasting not found</p>
+        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Results not available</p>
+        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting could not be loaded.</p>
         <button
-          className="labs-btn-ghost mt-4"
+          className="labs-btn-secondary"
           onClick={() => navigate("/labs/tastings")}
           data-testid="results-back-tastings"
         >
@@ -595,8 +596,11 @@ export default function LabsResults({ params }: LabsResultsProps) {
       {sorted.length === 0 && (
         <div className="labs-empty">
           <Wine className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
-          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
-            No whiskies or ratings yet
+          <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
+            No results yet
+          </p>
+          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+            Results will appear once participants have submitted their ratings
           </p>
         </div>
       )}

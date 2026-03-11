@@ -37,7 +37,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
           Bottle not found
         </p>
         <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>
-          This whisky may not exist or has been removed.
+          This whisky may have been removed or the link is incorrect.
         </p>
         <button
           className="labs-btn-secondary"
@@ -197,13 +197,15 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
           <p className="labs-section-label">Rating Distribution</p>
           <div className="labs-card p-4" data-testid="labs-bottle-distribution">
             <div className="space-y-2">
-              {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((score) => {
+              {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((bucket) => {
+                const bucketLabel = bucket === 1 ? "1–10" : `${(bucket - 1) * 10 + 1}–${bucket * 10}`;
+                const score = bucket;
                 const count = distribution[score] || 0;
                 const pct = (count / maxBucket) * 100;
                 return (
                   <div key={score} className="flex items-center gap-3">
-                    <span className="text-xs w-6 text-right font-medium" style={{ color: "var(--labs-text-secondary)" }}>
-                      {score}
+                    <span className="text-xs w-14 text-right font-medium" style={{ color: "var(--labs-text-secondary)" }}>
+                      {bucketLabel}
                     </span>
                     <div className="flex-1 h-4 rounded-full overflow-hidden" style={{ background: "var(--labs-border)" }}>
                       <div
@@ -310,10 +312,10 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
         <div className="labs-empty labs-fade-in labs-stagger-2" data-testid="labs-bottle-no-ratings">
           <Star className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
           <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
-            No ratings yet
+            No community ratings yet
           </p>
           <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-            This bottle hasn't been rated in any tasting yet
+            Ratings will appear here once this bottle is tasted in a session
           </p>
         </div>
       )}
@@ -323,7 +325,7 @@ export default function LabsBottleDetail({ params }: LabsBottleDetailProps) {
 
 function DimensionBar({ label, value }: { label: string; value: string }) {
   const numVal = parseFloat(value);
-  const pct = Math.min((numVal / 10) * 100, 100);
+  const pct = Math.min((numVal / 100) * 100, 100);
   return (
     <div>
       <div className="flex items-center justify-between mb-0.5">
@@ -345,10 +347,10 @@ function computeDistribution(ratings: any[]): Record<number, number> {
   for (let i = 1; i <= 10; i++) dist[i] = 0;
   for (const r of ratings) {
     if (r.overall != null) {
-      const bucket = Math.round(Number(r.overall));
-      if (bucket >= 1 && bucket <= 10) {
-        dist[bucket]++;
-      }
+      const val = Number(r.overall);
+      if (isNaN(val) || val <= 0) continue;
+      const bucket = Math.min(Math.max(Math.ceil(val / 10), 1), 10);
+      dist[bucket]++;
     }
   }
   return dist;

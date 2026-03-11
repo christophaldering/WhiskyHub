@@ -59,10 +59,10 @@ export default function LabsHome() {
         </h1>
         <p
           className="text-base leading-relaxed"
-          style={{ color: "var(--labs-text-secondary)", maxWidth: 340 }}
+          style={{ color: "var(--labs-text-secondary)", maxWidth: 360 }}
           data-testid="labs-home-tagline"
         >
-          A calm space for structured whisky tasting — solo&nbsp;or&nbsp;together.
+          A focused space for structured whisky tasting&nbsp;— blind&nbsp;or&nbsp;revealed, solo&nbsp;or&nbsp;together.
         </p>
       </div>
 
@@ -105,7 +105,7 @@ export default function LabsHome() {
         style={{ color: "var(--labs-text-muted)", opacity: 0.6 }}
         data-testid="labs-home-footer"
       >
-        Experimental · Premium · Focused
+        Refined · Structured · Thoughtful
       </p>
     </div>
   );
