@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
@@ -6,9 +6,10 @@ import {
   Users, Calendar, MapPin, ArrowLeft, Loader2,
   Wine, BarChart3, CheckCircle2, Clock, CircleDashed,
   ChevronDown, ChevronUp, Compass, SkipForward, StopCircle, AlertTriangle,
-  QrCode, Mail, Send,
+  QrCode, Mail, Send, Star, Monitor,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi } from "@/lib/api";
 import QRCode from "qrcode";
 
@@ -23,6 +24,609 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   reveal: { label: "Reveal", color: "var(--labs-info)", bg: "var(--labs-info-muted)" },
   archived: { label: "Completed", color: "var(--labs-text-muted)", bg: "var(--labs-surface)" },
 };
+
+type DimKey = "nose" | "taste" | "finish" | "balance";
+
+const FLAVOR_CHIPS: Record<DimKey, string[]> = {
+  nose: ["Fruity", "Floral", "Spicy", "Smoky", "Woody", "Sweet", "Malty", "Sherry", "Citrus", "Peaty"],
+  taste: ["Sweet", "Dry", "Oily", "Spicy", "Fruity", "Nutty", "Chocolate", "Vanilla", "Salty", "Peaty"],
+  finish: ["Short", "Medium", "Long", "Warm", "Dry", "Spicy", "Smoky", "Sweet", "Bitter"],
+  balance: ["Harmonious", "Complex", "Rough", "Elegant", "Powerful", "Thin"],
+};
+
+const DIM_LABELS: Record<DimKey, string> = { nose: "Nose", taste: "Taste", finish: "Finish", balance: "Balance" };
+const DIM_COLORS: Record<DimKey, string> = { nose: "#D9A15B", taste: "#C97845", finish: "#9C6A5E", balance: "#7F8C5A" };
+const DIM_KEYS: DimKey[] = ["nose", "taste", "finish", "balance"];
+
+interface HostRatingState {
+  nose: number;
+  taste: number;
+  finish: number;
+  balance: number;
+  overall: number;
+  notes: string;
+}
+
+function HostRatingPanel({
+  whiskies,
+  tastingId,
+  participantId,
+  ratingScale,
+}: {
+  whiskies: Array<{ id: string; name?: string; distillery?: string; age?: number; abv?: number }>;
+  tastingId: string;
+  participantId: string;
+  ratingScale: number;
+}) {
+  const queryClient = useQueryClient();
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [ratings, setRatings] = useState<Record<string, HostRatingState>>({});
+  const [chips, setChips] = useState<Record<string, Record<DimKey, string[]>>>({});
+  const [texts, setTexts] = useState<Record<string, Record<DimKey, string>>>({});
+  const [saving, setSaving] = useState(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scaleMax = ratingScale || 100;
+  const scaleDefault = Math.round(scaleMax / 2);
+  const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
+  const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
+
+  const ratingUpsertMut = useMutation({
+    mutationFn: (data: Record<string, unknown>) => ratingApi.upsert(data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] }),
+  });
+
+  const buildScoresBlock = useCallback((wId: string) => {
+    const ch = chips[wId] || emptyChips;
+    const tx = texts[wId] || emptyTexts;
+    const hasDimData = DIM_KEYS.some((d) => ch[d].length > 0 || tx[d].trim());
+    if (!hasDimData) return "";
+    const parts: string[] = [];
+    for (const d of DIM_KEYS) {
+      const chipStr = ch[d].length > 0 ? ch[d].join(", ") : "";
+      const textStr = tx[d].trim();
+      if (chipStr || textStr) {
+        parts.push(`[${d.toUpperCase()}] ${[chipStr, textStr].filter(Boolean).join(" — ")} [/${d.toUpperCase()}]`);
+      }
+    }
+    return parts.length > 0 ? "\n" + parts.join("\n") : "";
+  }, [chips, texts]);
+
+  const parseSavedNotes = useCallback((rawNotes: string) => {
+    const parsedChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
+    const parsedTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
+    let cleanNotes = rawNotes;
+    for (const d of DIM_KEYS) {
+      const re = new RegExp(`\\[${d.toUpperCase()}\\]\\s*(.*?)\\s*\\[\\/${d.toUpperCase()}\\]`, "s");
+      const m = rawNotes.match(re);
+      if (m) {
+        cleanNotes = cleanNotes.replace(m[0], "");
+        const content = m[1].trim();
+        const dimParts = content.split(" — ");
+        if (dimParts.length >= 2) {
+          parsedChips[d] = dimParts[0].split(",").map(s => s.trim()).filter(Boolean);
+          parsedTexts[d] = dimParts.slice(1).join(" — ");
+        } else if (dimParts.length === 1) {
+          const maybeChips = dimParts[0].split(",").map(s => s.trim()).filter(Boolean);
+          if (maybeChips.every(c => c.length < 20)) parsedChips[d] = maybeChips;
+          else parsedTexts[d] = dimParts[0];
+        }
+      }
+    }
+    cleanNotes = cleanNotes.replace(/\[SCORES\].*?\[\/SCORES\]/s, "");
+    return { chips: parsedChips, texts: parsedTexts, cleanNotes: cleanNotes.trim() };
+  }, []);
+
+  useEffect(() => {
+    if (whiskies.length === 0) return;
+    const loadExisting = async () => {
+      for (const w of whiskies) {
+        if (ratings[w.id]) continue;
+        try {
+          const existing = await ratingApi.getMyRating(participantId, w.id);
+          if (existing) {
+            const parsed = parseSavedNotes(existing.notes || "");
+            setRatings(prev => ({
+              ...prev,
+              [w.id]: {
+                nose: existing.nose ?? scaleDefault,
+                taste: existing.taste ?? scaleDefault,
+                finish: existing.finish ?? scaleDefault,
+                balance: existing.balance ?? scaleDefault,
+                overall: existing.overall ?? scaleDefault,
+                notes: parsed.cleanNotes,
+              },
+            }));
+            setChips(prev => ({ ...prev, [w.id]: parsed.chips }));
+            setTexts(prev => ({ ...prev, [w.id]: parsed.texts }));
+          }
+        } catch {
+          // Rating doesn't exist yet
+        }
+      }
+    };
+    loadExisting();
+  }, [whiskies.length, participantId]);
+
+  const debouncedSave = useCallback((whiskyId: string, vals: HostRatingState) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      const scoresBlock = buildScoresBlock(whiskyId);
+      const combinedNotes = ((vals.notes || "") + scoresBlock).trim();
+      setSaving(true);
+      ratingUpsertMut.mutate({
+        participantId,
+        whiskyId,
+        tastingId,
+        nose: vals.nose,
+        taste: vals.taste,
+        finish: vals.finish,
+        balance: vals.balance,
+        overall: vals.overall,
+        notes: combinedNotes,
+      }, {
+        onSettled: () => setSaving(false),
+      });
+    }, 800);
+  }, [participantId, tastingId, buildScoresBlock]);
+
+  const chipSaveRef = useRef(0);
+  useEffect(() => {
+    if (!whiskies.length) return;
+    const wId = whiskies[activeIdx]?.id;
+    if (!wId) return;
+    const currentRating = getRating(wId);
+    if (!ratings[wId]) {
+      setRatings(prev => ({ ...prev, [wId]: currentRating }));
+    }
+    chipSaveRef.current++;
+    const gen = chipSaveRef.current;
+    const timer = setTimeout(() => {
+      if (gen !== chipSaveRef.current) return;
+      debouncedSave(wId, currentRating);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [chips, texts]);
+
+  const getRating = (whiskyId: string): HostRatingState => {
+    return ratings[whiskyId] || {
+      nose: scaleDefault, taste: scaleDefault, finish: scaleDefault,
+      balance: scaleDefault, overall: scaleDefault, notes: "",
+    };
+  };
+
+  const updateRating = (whiskyId: string, field: string, value: number | string) => {
+    const current = getRating(whiskyId);
+    const updated = { ...current, [field]: value };
+    if (field !== "overall" && field !== "notes") {
+      updated.overall = Math.round(((updated.nose + updated.taste + updated.finish + updated.balance) / 4) * 10) / 10;
+    }
+    setRatings(prev => ({ ...prev, [whiskyId]: updated }));
+    debouncedSave(whiskyId, updated);
+  };
+
+  const toggleChip = (whiskyId: string, dim: DimKey, chip: string) => {
+    setChips(prev => {
+      const current = prev[whiskyId] || emptyChips;
+      const dimChips = current[dim];
+      const next = dimChips.includes(chip) ? dimChips.filter(c => c !== chip) : [...dimChips, chip];
+      return { ...prev, [whiskyId]: { ...current, [dim]: next } };
+    });
+  };
+
+  const updateText = (whiskyId: string, dim: DimKey, text: string) => {
+    setTexts(prev => {
+      const current = prev[whiskyId] || emptyTexts;
+      return { ...prev, [whiskyId]: { ...current, [dim]: text } };
+    });
+  };
+
+  const currentWhisky = whiskies[activeIdx];
+  if (!currentWhisky) {
+    return (
+      <div className="labs-card p-5 text-center" data-testid="host-rating-empty">
+        <Star className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--labs-text-muted)" }} />
+        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>No whiskies to rate yet.</p>
+      </div>
+    );
+  }
+
+  const rating = getRating(currentWhisky.id);
+  const currentChips = chips[currentWhisky.id] || emptyChips;
+  const currentTexts = texts[currentWhisky.id] || emptyTexts;
+
+  return (
+    <div className="labs-card" style={{ padding: 0 }} data-testid="host-rating-panel">
+      <div style={{
+        padding: "14px 16px",
+        borderBottom: "1px solid var(--labs-border-subtle)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Star className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+          <span className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>Host Rating</span>
+        </div>
+        {saving && (
+          <span style={{ fontSize: 10, color: "var(--labs-accent)", display: "flex", alignItems: "center", gap: 4 }}>
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Saving...
+          </span>
+        )}
+      </div>
+
+      <div style={{
+        padding: "10px 16px",
+        display: "flex",
+        gap: 4,
+        flexWrap: "wrap",
+        borderBottom: "1px solid var(--labs-border-subtle)",
+      }}>
+        {whiskies.map((w, idx) => (
+          <button
+            key={w.id}
+            onClick={() => setActiveIdx(idx)}
+            style={{
+              padding: "4px 10px",
+              borderRadius: 8,
+              border: idx === activeIdx ? "2px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+              background: idx === activeIdx ? "var(--labs-surface-elevated)" : "transparent",
+              color: idx === activeIdx ? "var(--labs-accent)" : "var(--labs-text-muted)",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+            data-testid={`host-rating-tab-${idx}`}
+          >
+            {String.fromCharCode(65 + idx)}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ padding: 16 }}>
+        <div style={{ marginBottom: 16 }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>
+            {currentWhisky.name || `Whisky ${activeIdx + 1}`}
+          </p>
+          <p className="text-xs" style={{ color: "var(--labs-text-muted)", marginTop: 2 }}>
+            {[currentWhisky.distillery, currentWhisky.age ? `${currentWhisky.age}y` : null, currentWhisky.abv ? `${currentWhisky.abv}%` : null].filter(Boolean).join(" · ") || "—"}
+          </p>
+        </div>
+
+        {DIM_KEYS.map(dim => {
+          const dimColor = DIM_COLORS[dim];
+          const value = rating[dim];
+          return (
+            <div key={dim} style={{ marginBottom: 16 }} data-testid={`host-rating-dim-${dim}`}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: dimColor }}>{DIM_LABELS[dim]}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: dimColor, fontVariantNumeric: "tabular-nums" }}>
+                  {value}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={scaleMax}
+                step={1}
+                value={value}
+                onChange={e => updateRating(currentWhisky.id, dim, Number(e.target.value))}
+                style={{
+                  width: "100%",
+                  accentColor: dimColor,
+                  height: 4,
+                }}
+                data-testid={`host-rating-slider-${dim}`}
+              />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
+                {FLAVOR_CHIPS[dim].map(chip => {
+                  const selected = currentChips[dim].includes(chip);
+                  return (
+                    <button
+                      key={chip}
+                      onClick={() => toggleChip(currentWhisky.id, dim, chip)}
+                      style={{
+                        padding: "4px 10px",
+                        fontSize: 11,
+                        fontWeight: 500,
+                        borderRadius: 16,
+                        border: `1px solid ${selected ? dimColor : "var(--labs-border)"}`,
+                        background: selected ? `${dimColor}20` : "transparent",
+                        color: selected ? dimColor : "var(--labs-text-muted)",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        transition: "all 0.15s",
+                        whiteSpace: "nowrap",
+                      }}
+                      data-testid={`chip-${dim}-${chip.toLowerCase()}`}
+                    >
+                      {chip}
+                    </button>
+                  );
+                })}
+              </div>
+              <input
+                type="text"
+                placeholder={`${DIM_LABELS[dim]} notes...`}
+                value={currentTexts[dim]}
+                onChange={e => updateText(currentWhisky.id, dim, e.target.value)}
+                style={{
+                  width: "100%",
+                  marginTop: 6,
+                  padding: "6px 10px",
+                  fontSize: 12,
+                  borderRadius: 8,
+                  border: "1px solid var(--labs-border)",
+                  background: "var(--labs-surface)",
+                  color: "var(--labs-text)",
+                  outline: "none",
+                  fontFamily: "inherit",
+                }}
+                data-testid={`host-text-${dim}`}
+              />
+            </div>
+          );
+        })}
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-accent)" }}>Overall</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>
+              {rating.overall}
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={scaleMax}
+            step={1}
+            value={rating.overall}
+            onChange={e => updateRating(currentWhisky.id, "overall", Number(e.target.value))}
+            style={{ width: "100%", accentColor: "var(--labs-accent)", height: 4 }}
+            data-testid="host-rating-slider-overall"
+          />
+        </div>
+
+        <textarea
+          value={rating.notes}
+          onChange={e => updateRating(currentWhisky.id, "notes", e.target.value)}
+          placeholder="Your tasting notes..."
+          rows={3}
+          style={{
+            width: "100%",
+            padding: "10px 12px",
+            borderRadius: 10,
+            border: "1px solid var(--labs-border)",
+            background: "var(--labs-surface)",
+            color: "var(--labs-text)",
+            fontSize: 13,
+            fontFamily: "inherit",
+            resize: "vertical",
+            outline: "none",
+          }}
+          data-testid="host-rating-notes"
+        />
+      </div>
+    </div>
+  );
+}
+
+function MobileCompanion({
+  tasting,
+  whiskies,
+  participants,
+  ratings,
+  currentParticipant,
+  queryClient,
+  tastingId,
+  navigate,
+}: {
+  tasting: Record<string, unknown>;
+  whiskies: Array<Record<string, unknown>>;
+  participants: Array<Record<string, unknown>>;
+  ratings: Array<Record<string, unknown>>;
+  currentParticipant: Record<string, unknown>;
+  queryClient: ReturnType<typeof useQueryClient>;
+  tastingId: string;
+  navigate: (path: string) => void;
+}) {
+  const statusCfg = STATUS_CONFIG[(tasting.status as string)] || STATUS_CONFIG.draft;
+  const whiskyCount = whiskies.length;
+  const participantCount = participants.length;
+  const ratingCount = ratings.length;
+  const isLive = tasting.status === "open";
+  const isDraft = tasting.status === "draft";
+  const isEnded = tasting.status === "closed" || tasting.status === "archived" || tasting.status === "reveal";
+  const pid = currentParticipant?.id as string;
+
+  const statusMutation = useMutation({
+    mutationFn: ({ status }: { status: string }) =>
+      tastingApi.updateStatus(tastingId, status, undefined, pid),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] }),
+  });
+
+  const guidedAdvanceMut = useMutation({
+    mutationFn: () => guidedApi.advance(tastingId, pid),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] }),
+  });
+
+  const revealMutation = useMutation({
+    mutationFn: () => blindModeApi.revealNext(tastingId, pid),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] }),
+  });
+
+  const guidedIdx = (tasting.guidedWhiskyIndex as number) ?? -1;
+  const activeWhisky = tasting.guidedMode && guidedIdx >= 0 && guidedIdx < whiskyCount ? whiskies[guidedIdx] : null;
+  const activeRatedPids = new Set(
+    activeWhisky ? ratings.filter((r: Record<string, unknown>) => r.whiskyId === (activeWhisky as Record<string, unknown>).id).map((r: Record<string, unknown>) => r.participantId) : []
+  );
+
+  return (
+    <div className="px-4 py-5 labs-fade-in" style={{ paddingBottom: 120 }} data-testid="labs-mobile-companion">
+      <button
+        onClick={() => navigate("/labs/tastings")}
+        className="flex items-center gap-1.5 mb-4 text-sm labs-btn-ghost px-0"
+        data-testid="labs-mobile-back"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Tastings
+      </button>
+
+      <div className="labs-card p-4 mb-4" style={{
+        borderBottom: "1px solid var(--labs-border-subtle)",
+        background: `color-mix(in srgb, var(--labs-accent) 5%, var(--labs-surface))`,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <Monitor className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+          <span className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>
+            Full dashboard optimized for desktop
+          </span>
+        </div>
+      </div>
+
+      <div className="labs-card p-4 mb-4">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <h1 className="labs-serif text-lg font-semibold" style={{ color: "var(--labs-text)", margin: 0 }}>
+            {(tasting.title as string) || "Untitled Tasting"}
+          </h1>
+          <span className="labs-badge" style={{ background: statusCfg.bg, color: statusCfg.color }}>
+            {isLive && (
+              <span style={{
+                width: 6, height: 6, borderRadius: 3, background: statusCfg.color,
+                display: "inline-block", marginRight: 4, animation: "pulse 2s infinite",
+              }} />
+            )}
+            {statusCfg.label}
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {[
+            { value: whiskyCount, label: "Drams" },
+            { value: participantCount, label: "Guests" },
+            { value: ratingCount, label: "Ratings" },
+          ].map(({ value, label }) => (
+            <div key={label} style={{ flex: 1, background: "var(--labs-surface-elevated)", borderRadius: 10, padding: 10, textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>{value}</div>
+              <div style={{ fontSize: 10, color: "var(--labs-text-muted)" }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {tasting.guidedMode && isLive && activeWhisky && (
+        <div className="labs-card p-4 mb-4">
+          <p className="labs-section-label">Current Dram</p>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <p className="text-base font-semibold" style={{ color: "var(--labs-text)" }}>
+                {tasting.blindMode ? `Dram ${String.fromCharCode(65 + guidedIdx)}` : ((activeWhisky as Record<string, unknown>).name as string) || `Whisky ${guidedIdx + 1}`}
+              </p>
+            </div>
+            <span className="text-sm font-bold" style={{ color: "var(--labs-accent)" }}>
+              {activeRatedPids.size}/{participantCount} rated
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {isDraft && (
+          <button
+            className="labs-btn-primary flex items-center justify-center gap-2 w-full"
+            onClick={async () => {
+              if (tasting.guidedMode) {
+                await guidedApi.updateMode(tastingId, pid, { guidedMode: true, guidedWhiskyIndex: 0, guidedRevealStep: 0 });
+              }
+              await tastingApi.updateStatus(tastingId, "open", undefined, pid);
+              queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+            }}
+            disabled={whiskyCount === 0}
+            style={{ opacity: whiskyCount === 0 ? 0.5 : 1 }}
+            data-testid="mobile-start-tasting"
+          >
+            <Play className="w-4 h-4" />
+            Start Tasting
+          </button>
+        )}
+
+        {isLive && tasting.guidedMode && (
+          <button
+            className="labs-btn-primary flex items-center justify-center gap-2 w-full"
+            onClick={() => guidedAdvanceMut.mutate()}
+            disabled={guidedAdvanceMut.isPending || guidedIdx >= whiskyCount - 1}
+            style={{ opacity: guidedIdx >= whiskyCount - 1 ? 0.5 : 1 }}
+            data-testid="mobile-next-dram"
+          >
+            {guidedAdvanceMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <SkipForward className="w-4 h-4" />}
+            {guidedIdx < 0 ? "Start First Dram" : guidedIdx >= whiskyCount - 1 ? "All Drams Done" : "Next Dram"}
+          </button>
+        )}
+
+        {isLive && tasting.blindMode && (
+          <button
+            className="labs-btn-secondary flex items-center justify-center gap-2 w-full"
+            onClick={() => revealMutation.mutate()}
+            disabled={revealMutation.isPending}
+            data-testid="mobile-reveal"
+          >
+            <Eye className="w-4 h-4" />
+            Reveal Next
+          </button>
+        )}
+
+        {isLive && (
+          <button
+            className="labs-btn-secondary flex items-center justify-center gap-2 w-full"
+            onClick={() => statusMutation.mutate({ status: "closed" })}
+            disabled={statusMutation.isPending}
+            data-testid="mobile-end-tasting"
+          >
+            <Square className="w-4 h-4" />
+            Close Ratings
+          </button>
+        )}
+
+        {isEnded && (
+          <button
+            className="labs-btn-primary flex items-center justify-center gap-2 w-full"
+            onClick={() => navigate(`/labs/results/${tastingId}`)}
+            data-testid="mobile-view-results"
+          >
+            <BarChart3 className="w-4 h-4" />
+            View Results
+          </button>
+        )}
+
+        {isLive && (
+          <button
+            className="labs-btn-secondary flex items-center justify-center gap-2 w-full"
+            onClick={() => navigate(`/labs/live/${tastingId}`)}
+            style={{ background: `color-mix(in srgb, var(--labs-accent) 15%, transparent)`, color: "var(--labs-accent)" }}
+            data-testid="mobile-rate-btn"
+          >
+            <Star className="w-4 h-4" />
+            Rate Whiskies
+          </button>
+        )}
+      </div>
+
+      {pid && whiskies.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <HostRatingPanel
+            whiskies={whiskies as Array<{ id: string; name?: string; distillery?: string; age?: number; abv?: number }>}
+            tastingId={tastingId}
+            participantId={pid}
+            ratingScale={(tasting.ratingScale as number) || 100}
+          />
+        </div>
+      )}
+
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
+    </div>
+  );
+}
 
 function CreateTastingForm() {
   const [, navigate] = useLocation();
@@ -733,6 +1337,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [codeCopied, setCodeCopied] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
@@ -905,6 +1510,21 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const ratingCount = ratings?.length || 0;
   const totalExpected = whiskyCount * participantCount;
   const ratingProgress = totalExpected > 0 ? Math.round((ratingCount / totalExpected) * 100) : 0;
+
+  if (isMobile && currentParticipant) {
+    return (
+      <MobileCompanion
+        tasting={tasting}
+        whiskies={whiskies || []}
+        participants={participants || []}
+        ratings={ratings || []}
+        currentParticipant={currentParticipant}
+        queryClient={queryClient}
+        tastingId={tastingId}
+        navigate={navigate}
+      />
+    );
+  }
 
   return (
     <div className="px-5 py-6 max-w-5xl mx-auto labs-fade-in">
@@ -1348,6 +1968,18 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           whiskies={whiskies}
           whiskyCount={whiskyCount}
         />
+      )}
+
+      {currentParticipant && whiskyCount > 0 && (
+        <div className="mb-6">
+          <h2 className="labs-section-label">Host Rating</h2>
+          <HostRatingPanel
+            whiskies={whiskies}
+            tastingId={tastingId}
+            participantId={currentParticipant.id}
+            ratingScale={tasting.ratingScale || 100}
+          />
+        </div>
       )}
 
       <div className="flex gap-3">

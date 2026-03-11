@@ -540,10 +540,10 @@ function Router() {
           <LabsLayout>
             <Switch>
               <Route path="/labs/join" component={LabsJoin} />
-              <Route path="/labs/dashboard" component={LabsHostDashboard} />
-              <Route path="/labs/calendar" component={LabsCalendar} />
-              <Route path="/labs/history/insights" component={LabsHistory} />
-              <Route path="/labs/history" component={LabsHistory} />
+              <Route path="/labs/host/dashboard" component={LabsHostDashboard} />
+              <Route path="/labs/host/calendar" component={LabsCalendar} />
+              <Route path="/labs/host/history/insights" component={LabsHistory} />
+              <Route path="/labs/host/history" component={LabsHistory} />
               <Route path="/labs/host/:id" component={LabsHost} />
               <Route path="/labs/host" component={LabsHost} />
               <Route path="/labs/tastings/:id/scan" component={LabsPaperScan} />

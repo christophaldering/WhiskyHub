@@ -173,7 +173,7 @@ function LabsHistoryList() {
       )}
 
       {isMember && (
-        <Link href="/labs/history/insights" style={{ textDecoration: "none" }}>
+        <Link href="/labs/host/history/insights" style={{ textDecoration: "none" }}>
           <div
             className="labs-card-interactive"
             style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}
@@ -567,7 +567,7 @@ function EmptyState() {
 }
 
 export default function LabsHistory() {
-  const [isInsights] = useRoute("/labs/history/insights");
+  const [isInsights] = useRoute("/labs/host/history/insights");
 
   return (
     <div className="px-4 py-5 max-w-3xl mx-auto labs-fade-in" style={{ paddingBottom: 100 }} data-testid="labs-history-page">

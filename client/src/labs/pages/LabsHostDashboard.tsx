@@ -620,9 +620,9 @@ export default function LabsHostDashboard() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
           {[
             { href: "/labs/host", icon: Plus, label: t("m2.hostDash.newTasting", "New Tasting"), desc: "Create a new session" },
-            { href: "/labs/calendar", icon: Calendar, label: t("m2.hostDash.fullCalendar", "Full Calendar"), desc: "View all events" },
-            { href: "/labs/history", icon: Archive, label: t("m2.hostDash.archive", "Historical Archive"), desc: "Browse past events" },
-            { href: "/labs/history/insights", icon: BarChart3, label: t("m2.hostDash.insights", "Cross-Tasting Insights"), desc: "Top whiskies & trends" },
+            { href: "/labs/host/calendar", icon: Calendar, label: t("m2.hostDash.fullCalendar", "Full Calendar"), desc: "View all events" },
+            { href: "/labs/host/history", icon: Archive, label: t("m2.hostDash.archive", "Historical Archive"), desc: "Browse past events" },
+            { href: "/labs/host/history/insights", icon: BarChart3, label: t("m2.hostDash.insights", "Cross-Tasting Insights"), desc: "Top whiskies & trends" },
           ].map(({ href, icon: Icon, label, desc }) => (
             <Link key={href} href={href}>
               <div
