@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
@@ -6,9 +6,11 @@ import {
   Users, Calendar, MapPin, ArrowLeft, Loader2,
   Wine, BarChart3, CheckCircle2, Clock, CircleDashed,
   ChevronDown, ChevronUp, Compass, SkipForward, StopCircle, AlertTriangle,
+  QrCode, Mail, Send,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi } from "@/lib/api";
+import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi } from "@/lib/api";
+import QRCode from "qrcode";
 
 interface LabsHostProps {
   params?: { id?: string };
@@ -732,6 +734,14 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [codeCopied, setCodeCopied] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [showQr, setShowQr] = useState(false);
+  const [showEmailInvite, setShowEmailInvite] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [emailList, setEmailList] = useState<string[]>([]);
+  const [personalNote, setPersonalNote] = useState("");
+  const [sendingInvites, setSendingInvites] = useState(false);
+  const [inviteSent, setInviteSent] = useState(false);
 
   const { data: tasting, isLoading: tastingLoading, isError: tastingError } = useQuery({
     queryKey: ["tasting", tastingId],
@@ -801,6 +811,45 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       navigator.clipboard.writeText(tasting.code);
       setCodeCopied(true);
       setTimeout(() => setCodeCopied(false), 2000);
+    }
+  };
+
+  useEffect(() => {
+    if (tasting?.code) {
+      const joinUrl = `${window.location.origin}/labs/join?code=${tasting.code}`;
+      QRCode.toDataURL(joinUrl, {
+        width: 200,
+        margin: 2,
+        color: { dark: "#1a1714", light: "#f5f0e8" },
+      }).then(setQrDataUrl).catch(() => {});
+    }
+  }, [tasting?.code]);
+
+  const addEmail = () => {
+    const email = emailInput.trim().toLowerCase();
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !emailList.includes(email)) {
+      setEmailList([...emailList, email]);
+      setEmailInput("");
+    }
+  };
+
+  const removeEmail = (email: string) => {
+    setEmailList(emailList.filter(e => e !== email));
+  };
+
+  const handleSendInvites = async () => {
+    if (emailList.length === 0) return;
+    setSendingInvites(true);
+    try {
+      await inviteApi.sendInvites(tastingId, emailList, personalNote.trim() || undefined);
+      setInviteSent(true);
+      setEmailList([]);
+      setPersonalNote("");
+      setTimeout(() => setInviteSent(false), 3000);
+    } catch (err) {
+      console.error("Failed to send invites:", err);
+    } finally {
+      setSendingInvites(false);
     }
   };
 
@@ -901,25 +950,167 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       </div>
 
       {tasting.code && (
-        <div className="labs-card p-4 mb-5 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium mb-1" style={{ color: "var(--labs-text-muted)" }}>Join Code</p>
-            <p
-              className="text-2xl font-bold tracking-widest"
-              style={{ color: "var(--labs-accent)", fontFamily: "monospace" }}
-              data-testid="labs-host-code"
-            >
-              {tasting.code}
-            </p>
+        <div className="labs-card p-4 mb-5">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-xs font-medium mb-1" style={{ color: "var(--labs-text-muted)" }}>Join Code</p>
+              <p
+                className="text-2xl font-bold tracking-widest"
+                style={{ color: "var(--labs-accent)", fontFamily: "monospace" }}
+                data-testid="labs-host-code"
+              >
+                {tasting.code}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                className="labs-btn-ghost flex items-center gap-1.5"
+                onClick={copyCode}
+                data-testid="labs-host-copy-code"
+              >
+                {codeCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {codeCopied ? "Copied" : "Copy"}
+              </button>
+              <button
+                className="labs-btn-ghost flex items-center gap-1.5"
+                onClick={() => setShowQr(!showQr)}
+                data-testid="labs-host-toggle-qr"
+              >
+                <QrCode className="w-4 h-4" />
+                {showQr ? "Hide QR" : "QR"}
+              </button>
+              <button
+                className="labs-btn-ghost flex items-center gap-1.5"
+                onClick={() => setShowEmailInvite(!showEmailInvite)}
+                data-testid="labs-host-toggle-email"
+              >
+                <Mail className="w-4 h-4" />
+                Invite
+              </button>
+            </div>
           </div>
-          <button
-            className="labs-btn-ghost flex items-center gap-1.5"
-            onClick={copyCode}
-            data-testid="labs-host-copy-code"
-          >
-            {codeCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            {codeCopied ? "Copied" : "Copy"}
-          </button>
+
+          {showQr && qrDataUrl && (
+            <div
+              className="flex flex-col items-center gap-2 py-4"
+              style={{ borderTop: "1px solid var(--labs-border-subtle)" }}
+            >
+              <img
+                src={qrDataUrl}
+                alt="QR Code"
+                style={{ width: 180, height: 180, borderRadius: 10 }}
+                data-testid="img-labs-host-qr"
+              />
+              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                Scan to join this tasting
+              </p>
+            </div>
+          )}
+
+          {showEmailInvite && (
+            <div
+              className="pt-4 space-y-3"
+              style={{ borderTop: "1px solid var(--labs-border-subtle)" }}
+            >
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-accent)" }} />
+                <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Email Invitations</span>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={emailInput}
+                  onChange={e => setEmailInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addEmail(); } }}
+                  placeholder="Enter email address"
+                  className="labs-input flex-1"
+                  style={{
+                    background: "var(--labs-surface)",
+                    border: "1px solid var(--labs-border)",
+                    borderRadius: 8,
+                    padding: "8px 12px",
+                    color: "var(--labs-text)",
+                    fontSize: 13,
+                    outline: "none",
+                    fontFamily: "inherit",
+                  }}
+                  data-testid="input-labs-invite-email"
+                />
+                <button
+                  className="labs-btn-secondary"
+                  onClick={addEmail}
+                  data-testid="button-labs-add-email"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+
+              {emailList.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {emailList.map(email => (
+                    <span
+                      key={email}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
+                      style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                      data-testid={`badge-labs-invite-${email}`}
+                    >
+                      {email}
+                      <button
+                        onClick={() => removeEmail(email)}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0, lineHeight: 1 }}
+                        data-testid={`button-labs-remove-email-${email}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <textarea
+                value={personalNote}
+                onChange={e => setPersonalNote(e.target.value)}
+                placeholder="Add a personal note (optional)"
+                rows={2}
+                style={{
+                  width: "100%",
+                  background: "var(--labs-surface)",
+                  border: "1px solid var(--labs-border)",
+                  borderRadius: 8,
+                  padding: "8px 12px",
+                  color: "var(--labs-text)",
+                  fontSize: 13,
+                  resize: "vertical",
+                  outline: "none",
+                  fontFamily: "inherit",
+                }}
+                data-testid="textarea-labs-invite-note"
+              />
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                  {emailList.length} recipient{emailList.length !== 1 ? "s" : ""}
+                </span>
+                <button
+                  className="labs-btn-primary flex items-center gap-2"
+                  onClick={handleSendInvites}
+                  disabled={emailList.length === 0 || sendingInvites}
+                  style={{ opacity: emailList.length === 0 ? 0.5 : 1 }}
+                  data-testid="button-labs-send-invites"
+                >
+                  {sendingInvites ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : inviteSent ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  {sendingInvites ? "Sending..." : inviteSent ? "Sent!" : "Send Invites"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

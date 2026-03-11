@@ -517,17 +517,19 @@ export default function LabsResults({ params }: LabsResultsProps) {
       </button>
 
       <div className="mb-6 labs-stagger-1 labs-fade-in">
-        <h1
-          className="labs-serif text-xl font-semibold mb-1"
-          style={{ color: "var(--labs-text)" }}
-          data-testid="results-title"
-        >
-          {tasting.title}
-        </h1>
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
-            {tasting.date} · {tasting.location}
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1
+              className="labs-serif text-xl font-semibold mb-1"
+              style={{ color: "var(--labs-text)" }}
+              data-testid="results-title"
+            >
+              {tasting.title}
+            </h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
+                {tasting.date} · {tasting.location}
+              </p>
           {tasting.guidedMode && (
             <span
               className="labs-badge text-[10px]"
@@ -536,6 +538,11 @@ export default function LabsResults({ params }: LabsResultsProps) {
             >
               Guided Tasting
             </span>
+          )}
+            </div>
+          </div>
+          {sorted.length > 0 && (
+            <LabsExportDropdown tastingId={tastingId} tasting={tasting} whiskyResults={whiskyResults} />
           )}
         </div>
       </div>

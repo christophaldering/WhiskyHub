@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Wine, ArrowRight, AlertCircle, LogIn } from "lucide-react";
 import { useSession, getSession } from "@/lib/session";
@@ -11,7 +11,8 @@ export default function LabsJoin() {
   const session = useSession();
   const { currentParticipant } = useAppStore();
 
-  const [code, setCode] = useState("");
+  const queryCode = new URLSearchParams(window.location.search).get("code") || "";
+  const [code, setCode] = useState(queryCode);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -23,6 +24,50 @@ export default function LabsJoin() {
   const [loginLoading, setLoginLoading] = useState(false);
 
   const isLoggedIn = session.signedIn && !!currentParticipant;
+  const [autoJoinAttempted, setAutoJoinAttempted] = useState(false);
+
+  useEffect(() => {
+    if (queryCode && isLoggedIn && !autoJoinAttempted) {
+      setAutoJoinAttempted(true);
+      handleJoinWithCode(queryCode);
+    }
+  }, [queryCode, isLoggedIn, autoJoinAttempted]);
+
+  const handleJoinWithCode = async (joinCode: string) => {
+    const trimmed = joinCode.trim().toUpperCase();
+    if (!trimmed) return;
+    setError("");
+    setLoading(true);
+    try {
+      const tasting = await tastingApi.getByCode(trimmed);
+      if (!tasting || !tasting.id) {
+        setError("No tasting found with this code. Please check and try again.");
+        setLoading(false);
+        return;
+      }
+      if (!isLoggedIn) {
+        setPendingCode(trimmed);
+        setShowLogin(true);
+        setLoading(false);
+        return;
+      }
+      await tastingApi.join(tasting.id, currentParticipant!.id, trimmed);
+      navigate(`/labs/tastings/${tasting.id}`);
+    } catch (e: any) {
+      const msg = e.message || "";
+      if (msg.toLowerCase().includes("already")) {
+        const tasting = await tastingApi.getByCode(trimmed).catch(() => null);
+        if (tasting?.id) { navigate(`/labs/tastings/${tasting.id}`); return; }
+      }
+      if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("invalid")) {
+        setError("No tasting found with this code.");
+      } else {
+        setError(msg || "Something went wrong. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleJoin = async () => {
     const trimmed = code.trim().toUpperCase();

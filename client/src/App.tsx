@@ -192,6 +192,7 @@ import LabsTasteCollection from "@/labs/pages/LabsTasteCollection";
 import LabsTasteWishlist from "@/labs/pages/LabsTasteWishlist";
 import LabsTasteDownloads from "@/labs/pages/LabsTasteDownloads";
 import LabsTasteSettings from "@/labs/pages/LabsTasteSettings";
+import LabsInvite from "@/labs/pages/LabsInvite";
 import { AppShellV2 } from "@/v2/components";
 import V2Home from "@/v2/pages/V2Home";
 import V2Sessions from "@/v2/pages/V2Sessions";
@@ -561,6 +562,7 @@ function Router() {
               <Route path="/labs/taste/wishlist" component={LabsTasteWishlist} />
               <Route path="/labs/taste/downloads" component={LabsTasteDownloads} />
               <Route path="/labs/taste/settings" component={LabsTasteSettings} />
+              <Route path="/labs/invite/:token" component={LabsInvite} />
               <Route path="/labs/taste" component={LabsTaste} />
               <Route path="/labs/circle" component={LabsCircle} />
               <Route path="/labs/solo" component={LabsSolo} />
