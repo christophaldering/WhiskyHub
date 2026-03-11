@@ -1252,7 +1252,7 @@ export default function LabsSolo() {
                         </button>
                         {deleteConfirmId === draft.id ? (
                           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                            <button onClick={() => handleDeleteDraft(draft.id)} style={{ background: "var(--labs-danger)", color: "#fff", border: "none", borderRadius: "var(--labs-radius-sm)", padding: "7px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }} data-testid={`button-confirm-delete-${draft.id}`}>
+                            <button onClick={() => handleDeleteDraft(draft.id)} style={{ background: "var(--labs-danger)", color: "var(--labs-bg)", border: "none", borderRadius: "var(--labs-radius-sm)", padding: "7px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }} data-testid={`button-confirm-delete-${draft.id}`}>
                               {t("m2.solo.deleteDraft", "Delete draft")}
                             </button>
                             <button onClick={() => setDeleteConfirmId(null)} className="labs-btn-secondary" style={{ padding: "7px 10px", fontSize: 12 }} data-testid={`button-cancel-delete-${draft.id}`}>
@@ -1527,7 +1527,7 @@ export default function LabsSolo() {
         }} data-testid="delete-confirm-bar">
           <span>{t("m2.solo.deleteDraftConfirm", "Delete this draft?")}</span>
           <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={() => handleDeleteDraft(deleteConfirmId)} style={{ background: "var(--labs-danger)", color: "#fff", border: "none", borderRadius: "var(--labs-radius-sm)", padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }} data-testid="button-confirm-delete-editor">
+            <button onClick={() => handleDeleteDraft(deleteConfirmId)} style={{ background: "var(--labs-danger)", color: "var(--labs-bg)", border: "none", borderRadius: "var(--labs-radius-sm)", padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }} data-testid="button-confirm-delete-editor">
               {t("m2.solo.deleteDraft", "Delete draft")}
             </button>
             <button onClick={() => setDeleteConfirmId(null)} className="labs-btn-secondary" style={{ padding: "5px 12px", fontSize: 12 }} data-testid="button-cancel-delete-editor">
@@ -1880,7 +1880,7 @@ export default function LabsSolo() {
                 style={{
                   width: "100%", maxWidth: 400, margin: "0 auto",
                   aspectRatio: "4/3", borderRadius: "var(--labs-radius)", overflow: "hidden",
-                  background: cameraActive ? "#000" : "var(--labs-surface-elevated)",
+                  background: cameraActive ? "var(--labs-bg)" : "var(--labs-surface-elevated)",
                   border: "1px solid var(--labs-border)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}

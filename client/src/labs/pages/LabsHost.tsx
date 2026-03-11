@@ -1126,10 +1126,10 @@ function GuidedTastingEngine({
               let dotBorder = "transparent";
               if (i < guidedIndex) {
                 dotBg = "var(--labs-success)";
-                dotColor = "#fff";
+                dotColor = "var(--labs-bg)";
               } else if (i === guidedIndex && !isCompleted) {
                 dotBg = "var(--labs-accent)";
-                dotColor = "#fff";
+                dotColor = "var(--labs-bg)";
                 dotBorder = "var(--labs-accent-hover)";
               }
               return (
@@ -1310,7 +1310,7 @@ function GuidedTastingEngine({
                     className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
                     style={{
                       background: hasRated ? "var(--labs-success)" : "var(--labs-border)",
-                      color: hasRated ? "#fff" : "var(--labs-text-muted)",
+                      color: hasRated ? "var(--labs-bg)" : "var(--labs-text-muted)",
                     }}
                   >
                     {hasRated ? <Check className="w-3.5 h-3.5" /> : (p.name || "?").charAt(0).toUpperCase()}
