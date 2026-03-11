@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "LfBQXI4Ptd9oMsgu5cPah"
+uri = "file://.local/m2-vs-labs-features.md"
+type = "text"
+title = "M2 vs Labs — Vollständige Feature-Übersicht"
