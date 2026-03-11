@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useAppStore } from "@/lib/store";
-import { hostDashboardApi, inviteApi, pidHeaders, calendarApi } from "@/lib/api";
+import { hostDashboardApi, inviteApi, pidHeaders } from "@/lib/api";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import {
   GlassWater, Users, Wine, Star, Calendar, Trophy,
