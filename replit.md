@@ -107,6 +107,15 @@ Labs Taste Profile, Analytics, and Flavor Wheel pages ported from M2 into Labs d
 -   **Analytics** (`LabsTasteAnalytics.tsx`, route `/labs/taste/analytics`): Taste evolution SVG time series chart (monthly avg scores), trend detection (rising/dropping/consistent), rating consistency card with stability score circle + label, spread analysis, locked state with progress bar (10-whisky threshold), unlock banner animation.
 -   **Flavor Wheel** (`LabsTasteWheel.tsx`, route `/labs/taste/wheel`): Recharts nested PieChart (inner categories, outer subcategories), 8 flavor categories (fruity/floral/sweet/spicy/woody/smoky/malty/maritime), keyword frequency analysis from journal entries + rating notes, interactive category selection with detail panel, stat cards (total mentions/top category/most unique), legend with category toggle buttons.
 
+### Labs AI & Insights Pages (Task #6)
+Six AI-powered Labs pages ported from M2 into Labs dark-theme design system, accessible from "AI & Insights" nav section in `LabsTaste.tsx`:
+-   **Recommendations** (`LabsRecommendations.tsx`, route `/labs/taste/recommendations`): Client-side scoring engine with factor toggles (region, cask, peat, age, ABV), recommendation cards with match scores, locked behind 10-whisky analytics threshold.
+-   **Pairings** (`LabsPairings.tsx`, route `/labs/taste/pairings`): Select a tasting, view lineup summary with score rings, get AI pairing suggestions per whisky.
+-   **Benchmark** (`LabsBenchmark.tsx`, route `/labs/taste/benchmark`): Host/admin-only file upload (text/PDF), AI text extraction to structured whisky entries, library tabs (all/wishlist/journal), classify entries to wishlist or journal, search/remove saved entries.
+-   **Collection Analysis** (`LabsCollectionAnalysis.tsx`, route `/labs/taste/collection-analysis`): Deep stats on collection — region/age/ABV/cask/price/rating horizontal bar breakdowns, top rated bottles, vintage timeline, expandable lists.
+-   **Connoisseur Report** (`LabsConnoisseur.tsx`, route `/labs/taste/connoisseur`): AI report generation with inline language selector (EN/DE), markdown renderer, copy/download/delete actions, expandable report history.
+-   **AI Curation** (`LabsAICuration.tsx`, route `/labs/taste/ai-curation`): Select a tasting, get curated whisky discovery suggestions based on lineup context.
+
 ### Test Suite
 A comprehensive test framework using Vitest covers unit, API, E2E, and smoke tests, including Module2Shell rendering, authentication flows, API endpoints, and historical tasting helpers.
 

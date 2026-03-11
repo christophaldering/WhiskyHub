@@ -127,10 +127,12 @@ export default function LabsBenchmark() {
 
   const { data: savedEntries, isLoading: loadingSaved } = useQuery<SavedEntry[]>({
     queryKey: ["/api/benchmark", categoryFilter],
-    queryFn: () => {
+    queryFn: async () => {
       let url = `/api/benchmark?participantId=${pid}`;
       if (categoryFilter) url += `&category=${categoryFilter}`;
-      return fetch(url).then(r => r.json());
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to load saved entries");
+      return res.json();
     },
     enabled: !!pid && hasAccess && isLibraryTab,
   });
@@ -229,7 +231,7 @@ export default function LabsBenchmark() {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto">
         <Link href="/labs/taste" style={{ textDecoration: "none" }}>
-          <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }}><ChevronLeft className="w-4 h-4" /> Back</button>
+          <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-denied"><ChevronLeft className="w-4 h-4" /> Back</button>
         </Link>
         <div className="labs-empty" data-testid="text-access-denied">
           <AlertCircle className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
@@ -367,7 +369,7 @@ export default function LabsBenchmark() {
                           {entry.noseNotes && <p className="text-xs mt-1 truncate" style={{ color: "var(--labs-text-muted)", maxWidth: 500 }}>Nose: {entry.noseNotes}</p>}
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
-                          <button className="labs-btn-ghost" style={{ width: 28, height: 28, padding: 0 }} onClick={e => { e.stopPropagation(); removeEntry(idx); }}>
+                          <button className="labs-btn-ghost" style={{ width: 28, height: 28, padding: 0 }} onClick={e => { e.stopPropagation(); removeEntry(idx); }} data-testid={`button-remove-entry-${idx}`}>
                             <X className="w-3.5 h-3.5" />
                           </button>
                           {expandedIdx === idx ? <ChevronUp className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} /> : <ChevronDown className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />}

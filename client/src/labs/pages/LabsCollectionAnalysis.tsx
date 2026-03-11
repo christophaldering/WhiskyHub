@@ -97,6 +97,7 @@ function ExpandableList({ items, limit = 5 }: { items: { label: string; count: n
           onClick={() => setExpanded(!expanded)}
           className="labs-btn-ghost"
           style={{ fontSize: 12, marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}
+          data-testid="button-expand-list"
         >
           {expanded ? <ChevronUp style={{ width: 14, height: 14 }} /> : <ChevronDown style={{ width: 14, height: 14 }} />}
           {expanded ? "Less" : `+${items.length - limit} more`}
@@ -149,7 +150,7 @@ export default function LabsCollectionAnalysis() {
     return (
       <div className="px-5 py-6 max-w-2xl mx-auto">
         <Link href="/labs/taste" style={{ textDecoration: "none" }}>
-          <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }}><ChevronLeft className="w-4 h-4" /> Back</button>
+          <button className="labs-btn-ghost mb-4" style={{ display: "flex", alignItems: "center", gap: 4 }} data-testid="button-back-empty"><ChevronLeft className="w-4 h-4" /> Back</button>
         </Link>
         <div className="labs-empty">
           <Library className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
@@ -298,14 +299,14 @@ export default function LabsCollectionAnalysis() {
       <div className="labs-card p-4 mb-4 labs-fade-in" data-testid="card-collection-age">
         <p className="labs-section-label mb-1">Age Distribution</p>
         <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>How old are the whiskies in your collection?</p>
-        <HBar entries={ageEntries} color="#a78bfa" testIdPrefix="bar-age" />
+        <HBar entries={ageEntries} color="var(--labs-info)" testIdPrefix="bar-age" />
       </div>
 
       {caskEntries.length > 0 && (
         <div className="labs-card p-4 mb-4 labs-fade-in" data-testid="card-collection-cask">
           <p className="labs-section-label mb-1">Cask Types</p>
           <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>Which cask types dominate your collection?</p>
-          <HBar entries={caskEntries} color="#f59e0b" testIdPrefix="bar-cask" />
+          <HBar entries={caskEntries} color="var(--labs-accent)" testIdPrefix="bar-cask" />
         </div>
       )}
 
@@ -384,7 +385,7 @@ export default function LabsCollectionAnalysis() {
         <div className="labs-card p-4 mb-4 labs-fade-in" data-testid="card-collection-vintage">
           <p className="labs-section-label mb-1">Vintage Timeline</p>
           <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>When were your whiskies distilled?</p>
-          <HBar entries={vintageEntries} color="#e879f9" testIdPrefix="bar-vintage" />
+          <HBar entries={vintageEntries} color="var(--labs-success)" testIdPrefix="bar-vintage" />
         </div>
       )}
 

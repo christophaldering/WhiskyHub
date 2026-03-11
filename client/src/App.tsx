@@ -193,6 +193,12 @@ import LabsTasteCollection from "@/labs/pages/LabsTasteCollection";
 import LabsTasteWishlist from "@/labs/pages/LabsTasteWishlist";
 import LabsTasteDownloads from "@/labs/pages/LabsTasteDownloads";
 import LabsTasteSettings from "@/labs/pages/LabsTasteSettings";
+import LabsRecommendations from "@/labs/pages/LabsRecommendations";
+import LabsPairings from "@/labs/pages/LabsPairings";
+import LabsBenchmark from "@/labs/pages/LabsBenchmark";
+import LabsCollectionAnalysis from "@/labs/pages/LabsCollectionAnalysis";
+import LabsConnoisseur from "@/labs/pages/LabsConnoisseur";
+import LabsAICuration from "@/labs/pages/LabsAICuration";
 import LabsInvite from "@/labs/pages/LabsInvite";
 import { AppShellV2 } from "@/v2/components";
 import V2Home from "@/v2/pages/V2Home";
@@ -564,6 +570,12 @@ function Router() {
               <Route path="/labs/taste/wishlist" component={LabsTasteWishlist} />
               <Route path="/labs/taste/downloads" component={LabsTasteDownloads} />
               <Route path="/labs/taste/settings" component={LabsTasteSettings} />
+              <Route path="/labs/taste/recommendations" component={LabsRecommendations} />
+              <Route path="/labs/taste/pairings" component={LabsPairings} />
+              <Route path="/labs/taste/benchmark" component={LabsBenchmark} />
+              <Route path="/labs/taste/collection-analysis" component={LabsCollectionAnalysis} />
+              <Route path="/labs/taste/connoisseur" component={LabsConnoisseur} />
+              <Route path="/labs/taste/ai-curation" component={LabsAICuration} />
               <Route path="/labs/invite/:token" component={LabsInvite} />
               <Route path="/labs/taste" component={LabsTaste} />
               <Route path="/labs/circle" component={LabsCircle} />

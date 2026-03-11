@@ -4,7 +4,7 @@ import {
   Wine, Star, Calendar, ChevronRight, TrendingUp, BookOpen,
   MapPin, Droplets, BarChart3, Target, Compass, Award,
   Activity, PieChart, Sparkles, GitCompareArrows, Lock,
-  Archive, Download, Settings,
+  Archive, Download, Settings, Brain, Utensils, Library,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useSession } from "@/lib/session";
@@ -248,6 +248,21 @@ export default function LabsTaste() {
           <NavItem icon={BarChart3} label="Analytics" description="Evolution, consistency & stats" href="/labs/taste/analytics" testId="labs-taste-link-analytics" />
           <NavItem icon={PieChart} label="Flavor Wheel" description="Aroma categories from your notes" href="/labs/taste/wheel" testId="labs-taste-link-wheel" />
           <NavItem icon={GitCompareArrows} label="Compare" description="Your scores vs. community" href="/labs/taste/compare" testId="labs-taste-link-compare" locked={analyticsLocked} />
+        </div>
+      </div>
+
+      <div className="mt-8 labs-fade-in labs-stagger-3">
+        <p className="labs-section-label flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5" />
+          AI & Insights
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <NavItem icon={Sparkles} label="Recommendations" description="AI-powered whisky suggestions" href="/labs/taste/recommendations" testId="labs-taste-link-recommendations" locked={analyticsLocked} />
+          <NavItem icon={Utensils} label="Pairings" description="Lineup-based pairing suggestions" href="/labs/taste/pairings" testId="labs-taste-link-pairings" />
+          <NavItem icon={Brain} label="Benchmark" description="AI text extraction & library" href="/labs/taste/benchmark" testId="labs-taste-link-benchmark" />
+          <NavItem icon={Library} label="Collection Analysis" description="Deep stats on your bottles" href="/labs/taste/collection-analysis" testId="labs-taste-link-collection-analysis" />
+          <NavItem icon={Award} label="Connoisseur Report" description="Personal AI whisky profile" href="/labs/taste/connoisseur" testId="labs-taste-link-connoisseur" />
+          <NavItem icon={Compass} label="AI Curation" description="Curated whisky discovery" href="/labs/taste/ai-curation" testId="labs-taste-link-ai-curation" />
         </div>
       </div>
 

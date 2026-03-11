@@ -367,6 +367,7 @@ export default function LabsConnoisseur() {
                     onClick={() => setExpandedReport(expandedReport === report.id ? null : report.id)}
                     className="w-full labs-btn-ghost"
                     style={{ display: "flex", alignItems: "center", padding: "12px 16px", gap: 12, textAlign: "left" }}
+                    data-testid={`button-expand-report-${report.id}`}
                   >
                     <div style={{ flex: 1 }}>
                       <p className="text-xs mb-1" style={{ color: "var(--labs-text-muted)" }}>
