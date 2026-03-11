@@ -1,0 +1,239 @@
+TASK: CaskSense Labs – Stability Hardening & End-to-End Validation
+PROJECT MODE: Labs stabilization phase
+GOAL: Convert the current CaskSense Labs build into a stable, test-ready environment for real tastings.
+
+MISSION
+Run a full stability and robustness hardening cycle for CaskSense Labs.
+
+The objective is NOT to add new features but to ensure the entire system behaves reliably under real usage conditions.
+
+This includes:
+
+• end-to-end workflow validation
+• session state stability
+• rating consistency
+• reveal synchronization
+• error handling
+• reload resilience
+• mobile usability
+• host dashboard reliability
+
+The legacy CaskSense application must remain fully functional and unchanged.
+
+NON-NEGOTIABLE RULES
+
+1. DO NOT introduce new product features.
+2. DO NOT redesign architecture.
+3. DO NOT modify legacy application behavior.
+4. ONLY improve stability, resilience, and reliability.
+5. All fixes must be minimal, targeted, and safe.
+6. Protect the shared backend models.
+7. Avoid schema changes unless absolutely required.
+
+STEP 1 — SYSTEM STATE INSPECTION
+
+Inspect the current implementation and identify:
+
+• tasting session state handling
+• reveal state logic
+• rating submission flow
+• rating locking after reveal
+• host control logic
+• participant update mechanism
+• error handling coverage
+• refresh/reload behavior
+
+Output a short structured system inspection report.
+
+STEP 2 — END-TO-END WORKFLOW VALIDATION
+
+Simulate the full guided tasting workflow.
+
+Test sequence:
+
+1 Create tasting
+2 Add lineup
+3 Participants join
+4 Host opens session
+5 Step becomes active
+6 Participants submit ratings
+7 Host reveals bottle
+8 Ratings lock
+9 Host advances step
+10 Repeat until tasting complete
+11 Session ends
+12 Results displayed
+
+Verify every stage works without:
+
+• runtime errors
+• state inconsistencies
+• missing data
+• broken navigation
+
+Fix any failure immediately.
+
+STEP 3 — SESSION STATE HARDENING
+
+Verify the tasting session state machine behaves consistently.
+
+Ensure:
+
+• state transitions are deterministic
+• illegal transitions are prevented
+• host actions cannot create invalid states
+• participants cannot trigger state changes
+• state remains consistent after page reload
+
+If necessary, add guard checks.
+
+STEP 4 — REVEAL SYNCHRONIZATION
+
+Validate reveal behavior.
+
+Ensure:
+
+• reveal state propagates correctly
+• participants see reveal immediately on refresh
+• hidden bottle information remains hidden before reveal
+• reveal occurs simultaneously for all participants
+
+Fix any reveal desynchronization.
+
+STEP 5 — RATING FLOW VALIDATION
+
+Test rating logic thoroughly.
+
+Confirm:
+
+Before reveal
+• ratings editable
+• submission stored correctly
+
+After reveal
+• ratings locked
+• edits prevented
+
+Verify rating persistence across reloads.
+
+STEP 6 — REFRESH / RELOAD RESILIENCE
+
+Simulate page refresh at multiple stages:
+
+• before session start
+• during active step
+• after rating submission
+• after reveal
+• during next step transition
+
+Ensure the user returns to the correct state without breaking the flow.
+
+STEP 7 — MOBILE PARTICIPANT TEST
+
+Validate participant interface on small screens.
+
+Confirm:
+
+• rating interface usable
+• text readable
+• navigation reachable
+• buttons accessible
+• no layout overlap
+
+Fix responsive issues if found.
+
+STEP 8 — HOST DASHBOARD RELIABILITY
+
+Test host controls thoroughly.
+
+Confirm:
+
+• participant status updates correctly
+• host controls never create inconsistent state
+• step progression works repeatedly
+• reveal actions behave correctly
+• session completion works safely
+
+Host dashboard must remain stable under repeated actions.
+
+STEP 9 — ERROR HANDLING HARDENING
+
+Test failure scenarios:
+
+• invalid tasting ID
+• missing lineup entry
+• unauthorized participant
+• host permission errors
+• API request failure
+• empty data sets
+
+Ensure:
+
+• graceful error messages
+• no blank screens
+• no uncaught runtime errors
+
+Add defensive checks where necessary.
+
+STEP 10 — PERFORMANCE SANITY CHECK
+
+Verify the system behaves smoothly with a realistic group:
+
+5–20 participants.
+
+Ensure:
+
+• page loads remain responsive
+• rating submission remains quick
+• session transitions remain smooth
+
+No heavy infrastructure changes should be introduced.
+
+STEP 11 — UI CONSISTENCY CHECK
+
+Verify the interface remains coherent:
+
+• no overlapping components
+• no broken dark theme contrast
+• no placeholder text
+• no hidden buttons
+• no dead navigation links
+
+Fix minor layout problems if needed.
+
+STEP 12 — LEGACY REGRESSION TEST
+
+Confirm the legacy application remains unaffected.
+
+Verify:
+
+• homepage loads
+• login works
+• legacy tasting flows work
+• navigation unchanged
+• shared services still functional
+
+Any regression must be fixed immediately.
+
+STEP 13 — FINAL VALIDATION RUN
+
+Re-execute the complete workflow:
+
+Join → Live Tasting → Reveal → Results.
+
+Confirm that the system operates smoothly.
+
+STEP 14 — FINAL STATUS REPORT
+
+Produce a structured report containing:
+
+SYSTEM STABILITY STATUS  
+END-TO-END TEST RESULTS  
+FILES MODIFIED DURING HARDENING  
+ISSUES FIXED  
+KNOWN LIMITATIONS  
+RECOMMENDED NEXT STEP BEFORE LIVE TEST
+
+SUCCESS CRITERION
+
+CaskSense Labs must now support a **stable, end-to-end guided tasting session** with host control, synchronized reveal, reliable ratings, and resilient participant behavior without affecting the legacy CaskSense application.

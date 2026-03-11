@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Users, Calendar, Trophy } from "lucide-react";
+import { ArrowLeft, Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Users, Calendar, Trophy, AlertTriangle } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -183,16 +183,24 @@ function GuidedStepView({
     }
   }, [myRating, whisky?.id]);
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const rateMutation = useMutation({
     mutationFn: (data: any) => ratingApi.upsert(data),
     onSuccess: () => {
+      setSaveError(null);
       queryClient.invalidateQueries({ queryKey: ["myRating", currentParticipant?.id, whisky?.id] });
+    },
+    onError: (err: any) => {
+      const msg = err?.message || "Save failed";
+      setSaveError(msg.includes("locked") || msg.includes("403") ? "Ratings are locked" : msg);
     },
   });
 
   const debouncedSave = useCallback(
     (newScores: typeof scores, newNotes: string) => {
       if (!currentParticipant || !whisky || !tasting) return;
+      if (tasting.status !== "open" && tasting.status !== "draft") return;
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         rateMutation.mutate({
@@ -445,7 +453,17 @@ function GuidedStepView({
               </span>
             </div>
 
-            {rateMutation.isSuccess && (
+            {saveError && (
+              <div
+                className="flex items-center gap-1.5 mt-3 text-xs"
+                style={{ color: "var(--labs-danger, #ef4444)" }}
+                data-testid="guided-save-error"
+              >
+                <AlertTriangle className="w-3 h-3" />
+                {saveError}
+              </div>
+            )}
+            {!saveError && rateMutation.isSuccess && (
               <div
                 className="flex items-center gap-1.5 mt-3 text-xs"
                 style={{ color: "var(--labs-success)" }}
@@ -532,16 +550,24 @@ export default function LabsLive({ params }: LabsLiveProps) {
     }
   }, [myRating, currentWhisky?.id]);
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const rateMutation = useMutation({
     mutationFn: (data: any) => ratingApi.upsert(data),
     onSuccess: () => {
+      setSaveError(null);
       queryClient.invalidateQueries({ queryKey: ["myRating", currentParticipant?.id, currentWhisky?.id] });
+    },
+    onError: (err: any) => {
+      const msg = err?.message || "Save failed";
+      setSaveError(msg.includes("locked") || msg.includes("403") ? "Ratings are locked" : msg);
     },
   });
 
   const debouncedSave = useCallback(
     (newScores: typeof scores, newNotes: string) => {
       if (!currentParticipant || !currentWhisky || !tasting) return;
+      if (tasting.status !== "open" && tasting.status !== "draft") return;
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         rateMutation.mutate({
