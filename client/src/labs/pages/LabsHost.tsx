@@ -5,10 +5,10 @@ import {
   Plus, X, Trash2, Copy, Check, EyeOff, Eye, Play, Square,
   Users, Calendar, MapPin, ArrowLeft, Loader2,
   Wine, BarChart3, CheckCircle2, Clock, CircleDashed,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, Compass, SkipForward, StopCircle,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, whiskyApi, blindModeApi, ratingApi } from "@/lib/api";
+import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi } from "@/lib/api";
 
 interface LabsHostProps {
   params?: { id?: string };
@@ -29,6 +29,7 @@ function CreateTastingForm() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [location, setLocation] = useState("");
   const [blindMode, setBlindMode] = useState(false);
+  const [guidedMode, setGuidedMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const handleCreate = async () => {
@@ -41,6 +42,7 @@ function CreateTastingForm() {
         location: location.trim() || undefined,
         hostId: currentParticipant.id,
         blindMode,
+        guidedMode,
         status: "draft",
       });
       if (result?.id) {
@@ -139,6 +141,39 @@ function CreateTastingForm() {
             style={{
               background: blindMode ? "var(--labs-accent)" : "var(--labs-border)",
               justifyContent: blindMode ? "flex-end" : "flex-start",
+            }}
+          >
+            <div
+              className="w-6 h-6 rounded-full transition-all"
+              style={{ background: "var(--labs-bg)" }}
+            />
+          </div>
+        </div>
+
+        <div
+          className="labs-card p-4 flex items-center justify-between cursor-pointer"
+          onClick={() => setGuidedMode(!guidedMode)}
+          data-testid="labs-host-toggle-guided"
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: guidedMode ? "var(--labs-accent-muted)" : "var(--labs-surface)" }}
+            >
+              <Compass className="w-5 h-5" style={{ color: guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
+            </div>
+            <div>
+              <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Guided Tasting</p>
+              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                Host controls the pace — participants rate one dram at a time
+              </p>
+            </div>
+          </div>
+          <div
+            className="w-12 h-7 rounded-full transition-all flex items-center px-0.5"
+            style={{
+              background: guidedMode ? "var(--labs-accent)" : "var(--labs-border)",
+              justifyContent: guidedMode ? "flex-end" : "flex-start",
             }}
           >
             <div
@@ -341,6 +376,322 @@ function ParticipantStatusSection({
                       })}
                     </div>
                   )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GuidedTastingEngine({
+  tasting,
+  whiskies,
+  participants,
+  ratings,
+  currentParticipant,
+  queryClient,
+  tastingId,
+}: {
+  tasting: any;
+  whiskies: any[];
+  participants: any[];
+  ratings: any[];
+  currentParticipant: any;
+  queryClient: any;
+  tastingId: string;
+}) {
+  const whiskyList = whiskies || [];
+  const participantList = participants || [];
+  const ratingList = ratings || [];
+  const whiskyCount = whiskyList.length;
+  const guidedIndex = tasting.guidedWhiskyIndex ?? -1;
+  const revealStep = tasting.guidedRevealStep ?? 0;
+  const isLobby = guidedIndex === -1;
+  const isCompleted = guidedIndex >= whiskyCount && whiskyCount > 0;
+  const activeWhisky = !isLobby && !isCompleted && whiskyList[guidedIndex] ? whiskyList[guidedIndex] : null;
+  const maxRevealStep = 3;
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["tasting", tastingId] });
+    queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+    queryClient.invalidateQueries({ queryKey: ["tasting-ratings", tastingId] });
+  };
+
+  const startMutation = useMutation({
+    mutationFn: async () => {
+      await guidedApi.updateMode(tastingId, currentParticipant.id, {
+        guidedMode: true,
+        guidedWhiskyIndex: 0,
+        guidedRevealStep: 0,
+      });
+      if (tasting.status === "draft") {
+        await tastingApi.updateStatus(tastingId, "open", undefined, currentParticipant.id);
+      }
+    },
+    onSuccess: invalidateAll,
+  });
+
+  const advanceMutation = useMutation({
+    mutationFn: () => guidedApi.advance(tastingId, currentParticipant.id),
+    onSuccess: invalidateAll,
+  });
+
+  const endMutation = useMutation({
+    mutationFn: () => tastingApi.updateStatus(tastingId, "closed", undefined, currentParticipant.id),
+    onSuccess: invalidateAll,
+  });
+
+  const goToMutation = useMutation({
+    mutationFn: ({ idx, step }: { idx: number; step?: number }) =>
+      guidedApi.goTo(tastingId, currentParticipant.id, idx, step),
+    onSuccess: invalidateAll,
+  });
+
+  const anyPending = startMutation.isPending || advanceMutation.isPending || endMutation.isPending || goToMutation.isPending;
+
+  const activeWhiskyRatings = activeWhisky
+    ? ratingList.filter((r: any) => r.whiskyId === activeWhisky.id)
+    : [];
+  const ratedParticipantIds = new Set(activeWhiskyRatings.map((r: any) => r.participantId));
+
+  let stateLabel = "LOBBY";
+  let stateBg = "var(--labs-info-muted)";
+  let stateColor = "var(--labs-info)";
+  if (isCompleted) {
+    stateLabel = "COMPLETED";
+    stateBg = "var(--labs-success-muted)";
+    stateColor = "var(--labs-success)";
+  } else if (!isLobby) {
+    stateLabel = `DRAM ${guidedIndex + 1} of ${whiskyCount}`;
+    stateBg = "var(--labs-accent-muted)";
+    stateColor = "var(--labs-accent)";
+  }
+
+  const revealLabels = ["Blind", "Name", "Details", "Image"];
+
+  return (
+    <div className="mb-6 space-y-4" data-testid="guided-engine">
+      <div
+        className="labs-card p-4 flex items-center justify-between"
+        data-testid="guided-state-bar"
+      >
+        <div className="flex items-center gap-3">
+          <Compass className="w-5 h-5" style={{ color: stateColor }} />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--labs-text-muted)" }}>
+              Guided Mode
+            </p>
+            <p className="text-base font-bold" style={{ color: stateColor }}>
+              {stateLabel}
+            </p>
+          </div>
+        </div>
+        <span
+          className="labs-badge"
+          style={{ background: stateBg, color: stateColor }}
+          data-testid="guided-state-badge"
+        >
+          {isLobby ? "Waiting" : isCompleted ? "Done" : `Reveal: ${revealLabels[revealStep] || revealStep}`}
+        </span>
+      </div>
+
+      {whiskyCount > 0 && (
+        <div className="labs-card p-4" data-testid="guided-progress">
+          <p className="labs-section-label">Progress</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {whiskyList.map((w: any, i: number) => {
+              let dotBg = "var(--labs-border)";
+              let dotColor = "var(--labs-text-muted)";
+              let dotBorder = "transparent";
+              if (i < guidedIndex) {
+                dotBg = "var(--labs-success)";
+                dotColor = "#fff";
+              } else if (i === guidedIndex && !isCompleted) {
+                dotBg = "var(--labs-accent)";
+                dotColor = "#fff";
+                dotBorder = "var(--labs-accent-hover)";
+              }
+              return (
+                <button
+                  key={w.id}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all"
+                  style={{
+                    background: dotBg,
+                    color: dotColor,
+                    border: `2px solid ${dotBorder}`,
+                    cursor: !isLobby && !isCompleted ? "pointer" : "default",
+                    opacity: 1,
+                  }}
+                  title={w.name || `Whisky ${i + 1}`}
+                  onClick={() => {
+                    if (!isLobby && !isCompleted && i !== guidedIndex) {
+                      goToMutation.mutate({ idx: i, step: 0 });
+                    }
+                  }}
+                  disabled={isLobby || isCompleted || anyPending}
+                  data-testid={`guided-dot-${i}`}
+                >
+                  {i < guidedIndex ? (
+                    <Check className="w-3.5 h-3.5" />
+                  ) : (
+                    String.fromCharCode(65 + i)
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="labs-card p-4" data-testid="guided-controls">
+        <p className="labs-section-label">Controls</p>
+        <div className="flex flex-wrap gap-2">
+          {isLobby && (
+            <button
+              className="labs-btn-primary flex items-center gap-2"
+              onClick={() => startMutation.mutate()}
+              disabled={anyPending || whiskyCount === 0}
+              data-testid="guided-start"
+            >
+              {startMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+              Start Tasting
+            </button>
+          )}
+          {!isLobby && !isCompleted && revealStep < maxRevealStep && (
+            <button
+              className="labs-btn-primary flex items-center gap-2"
+              onClick={() => advanceMutation.mutate()}
+              disabled={anyPending}
+              data-testid="guided-reveal"
+            >
+              {advanceMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+              Reveal Bottle
+            </button>
+          )}
+          {!isLobby && !isCompleted && revealStep >= maxRevealStep && guidedIndex < whiskyCount - 1 && (
+            <button
+              className="labs-btn-primary flex items-center gap-2"
+              onClick={() => advanceMutation.mutate()}
+              disabled={anyPending}
+              data-testid="guided-next"
+            >
+              {advanceMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <SkipForward className="w-4 h-4" />}
+              Next Dram
+            </button>
+          )}
+          {!isLobby && !isCompleted && revealStep >= maxRevealStep && guidedIndex === whiskyCount - 1 && (
+            <button
+              className="labs-btn-primary flex items-center gap-2"
+              onClick={() => advanceMutation.mutate()}
+              disabled={anyPending}
+              data-testid="guided-finish"
+            >
+              {advanceMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+              Finish Last Dram
+            </button>
+          )}
+          {!isLobby && tasting.status === "open" && (
+            <button
+              className="labs-btn-secondary flex items-center gap-2"
+              onClick={() => endMutation.mutate()}
+              disabled={anyPending}
+              data-testid="guided-end"
+            >
+              {endMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <StopCircle className="w-4 h-4" />}
+              End Tasting
+            </button>
+          )}
+        </div>
+      </div>
+
+      {activeWhisky && (
+        <div className="labs-card p-4" data-testid="guided-current-dram">
+          <p className="labs-section-label">Current Dram</p>
+          <div className="flex items-center gap-3 mb-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
+              style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+            >
+              {String.fromCharCode(65 + guidedIndex)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-base font-semibold truncate" style={{ color: "var(--labs-text)" }}>
+                {revealStep >= 1 ? (activeWhisky.name || `Whisky ${guidedIndex + 1}`) : `Dram ${String.fromCharCode(65 + guidedIndex)} (Blind)`}
+              </p>
+              {revealStep >= 2 && (
+                <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                  {[activeWhisky.distillery, activeWhisky.age ? `${activeWhisky.age}y` : null, activeWhisky.abv ? `${activeWhisky.abv}%` : null]
+                    .filter(Boolean)
+                    .join(" · ") || "No additional details"}
+                </p>
+              )}
+            </div>
+            <div className="text-right flex-shrink-0">
+              <p className="text-lg font-bold" style={{ color: ratedParticipantIds.size === participantList.length && participantList.length > 0 ? "var(--labs-success)" : "var(--labs-accent)" }}>
+                {ratedParticipantIds.size}/{participantList.length}
+              </p>
+              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>rated</p>
+            </div>
+          </div>
+          <div className="flex gap-1">
+            {revealLabels.map((label, idx) => (
+              <div
+                key={label}
+                className="flex-1 h-1.5 rounded-full"
+                style={{
+                  background: idx <= revealStep ? "var(--labs-accent)" : "var(--labs-border)",
+                  transition: "background 300ms ease",
+                }}
+              />
+            ))}
+          </div>
+          <div className="flex justify-between mt-1">
+            {revealLabels.map((label, idx) => (
+              <span key={label} className="text-[10px]" style={{ color: idx <= revealStep ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeWhisky && participantList.length > 0 && (
+        <div className="labs-card p-4" data-testid="guided-participant-grid">
+          <p className="labs-section-label">Participant Status — Dram {String.fromCharCode(65 + guidedIndex)}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {participantList.map((p: any) => {
+              const hasRated = ratedParticipantIds.has(p.id);
+              return (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-2 p-2 rounded-lg"
+                  style={{
+                    background: hasRated ? "var(--labs-success-muted)" : "var(--labs-surface)",
+                    border: `1px solid ${hasRated ? "var(--labs-success)" : "var(--labs-border-subtle)"}`,
+                    opacity: hasRated ? 1 : 0.7,
+                  }}
+                  data-testid={`guided-participant-${p.id}`}
+                >
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
+                    style={{
+                      background: hasRated ? "var(--labs-success)" : "var(--labs-border)",
+                      color: hasRated ? "#fff" : "var(--labs-text-muted)",
+                    }}
+                  >
+                    {hasRated ? <Check className="w-3.5 h-3.5" /> : (p.name || "?").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                      {p.name || "Anonymous"}
+                    </p>
+                    <p className="text-[10px]" style={{ color: hasRated ? "var(--labs-success)" : "var(--labs-text-muted)" }}>
+                      {hasRated ? "SUBMITTED" : "NOT STARTED"}
+                    </p>
+                  </div>
                 </div>
               );
             })}
@@ -565,6 +916,19 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         </div>
       </div>
 
+      {tasting.guidedMode && (
+        <GuidedTastingEngine
+          tasting={tasting}
+          whiskies={whiskies || []}
+          participants={participants || []}
+          ratings={ratings || []}
+          currentParticipant={currentParticipant}
+          queryClient={queryClient}
+          tastingId={tastingId}
+        />
+      )}
+
+      {!tasting.guidedMode && (
       <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
           <h2 className="labs-section-label">Session Controls</h2>
@@ -659,6 +1023,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           </div>
         )}
       </div>
+      )}
 
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
@@ -760,7 +1125,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         )}
       </div>
 
-      {participantCount > 0 && (
+      {participantCount > 0 && !tasting.guidedMode && (
         <ParticipantStatusSection
           participants={participants}
           ratings={ratings}

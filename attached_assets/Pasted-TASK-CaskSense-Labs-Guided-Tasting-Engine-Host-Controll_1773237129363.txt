@@ -1,0 +1,291 @@
+TASK: CaskSense Labs – Guided Tasting Engine & Host-Controlled Reveal System
+PROJECT MODE: Parallel Labs Layer Expansion
+SCOPE: Add a structured, host-guided tasting workflow to CaskSense Labs
+
+MISSION
+Extend CaskSense Labs with a **true guided tasting engine** that allows a host to control the flow of a tasting session step-by-step.
+
+The system must support:
+
+• structured tasting progression
+• host-controlled reveal
+• synchronized participant experience
+• blind tasting support
+• clean participant rating flow
+• clear session state management
+
+The implementation must reuse the existing CaskSense backend models and APIs wherever possible.
+
+The legacy CaskSense application must remain completely untouched.
+
+NON-NEGOTIABLE RULES
+
+1. DO NOT break the legacy CaskSense system.
+2. DO NOT modify legacy UX flows.
+3. All new functionality must live inside the Labs layer.
+4. Reuse existing models and APIs whenever possible.
+5. Avoid duplicating entities already present in the backend.
+6. Implement only stable, deterministic state transitions.
+7. Ensure that host control is authoritative for session progression.
+8. Avoid building speculative features not backed by current data models.
+9. Keep the system debuggable and predictable.
+
+STEP 1 — CURRENT ARCHITECTURE INSPECTION
+
+Before implementing anything, inspect the existing codebase and determine:
+
+• how tastings are represented
+• how lineup entries are stored
+• how participant ratings are recorded
+• whether reveal state already exists
+• whether tasting progression exists
+• how participant roles are determined
+• how session state is handled (if at all)
+
+Produce a short architecture summary:
+
+TASTING ENTITY  
+LINEUP ENTITY  
+RATING ENTITY  
+PARTICIPANT ENTITY  
+CURRENT SESSION STATE LOGIC (if any)
+
+Then adapt the guided tasting engine to fit the existing structures.
+
+STEP 2 — SESSION STATE MODEL
+
+Introduce a simple, explicit session state machine for Labs tastings.
+
+Allowed states:
+
+CREATED  
+LOBBY  
+ACTIVE  
+STEP_ACTIVE  
+STEP_REVEALED  
+COMPLETED
+
+These states must apply only to the Labs experience and must not interfere with legacy behavior.
+
+State transitions must be controlled primarily by the host.
+
+Participant clients should react to state changes but never drive them.
+
+STEP 3 — TASTING STEP CONCEPT
+
+Introduce the concept of a **Tasting Step** mapped to lineup entries.
+
+Each step represents a dram or flight within the tasting.
+
+Required fields for a step:
+
+• lineupEntryId
+• stepIndex
+• stepState
+• revealState
+• startTimestamp
+• endTimestamp (optional)
+
+The step state should include:
+
+WAITING  
+ACTIVE  
+RATING_OPEN  
+REVEALED  
+FINISHED
+
+If the backend already has partial equivalents, reuse them.
+
+STEP 4 — HOST SESSION CONTROLS
+
+Extend the Labs Host Dashboard with real session control.
+
+Host must be able to:
+
+Start Session  
+Advance to Next Step  
+Open Rating Phase  
+Reveal Bottle  
+Close Step  
+End Session
+
+These controls must update the session state in a consistent way.
+
+Participants must see the updates in near real time when the page refreshes or polling occurs.
+
+STEP 5 — PARTICIPANT EXPERIENCE
+
+Participants entering `/labs/live/:id` must see a structured guided flow.
+
+Participant view must show:
+
+• current step number
+• dram placeholder (if blind)
+• rating interface
+• step progress indicator
+• reveal state
+
+Participant must be able to:
+
+Submit rating  
+Update rating until reveal  
+See reveal after host triggers it
+
+Participant must NOT control session progression.
+
+STEP 6 — BLIND TASTING SUPPORT
+
+Add a simple blind tasting capability.
+
+During the rating phase:
+
+Bottle identity must remain hidden.
+
+After the host presses **Reveal Bottle**, the following becomes visible:
+
+• bottle name
+• distillery
+• ABV
+• cask information (if available)
+
+Reveal must apply to all participants simultaneously.
+
+STEP 7 — RATING LOCKING LOGIC
+
+Ratings should behave as follows:
+
+Before reveal  
+Participants may edit their rating.
+
+After reveal  
+Ratings become locked.
+
+If backend limitations exist, implement the closest safe approximation.
+
+STEP 8 — SESSION PROGRESS DISPLAY
+
+Participants should always understand where they are in the tasting.
+
+Display:
+
+Step 1 / N  
+Step status (rating open, revealed, etc.)  
+Host actions that just occurred
+
+Avoid clutter; keep the UI readable.
+
+STEP 9 — RESULTS INTEGRATION
+
+When a step finishes:
+
+Store ratings normally using the existing rating system.
+
+Ensure results later appear correctly in:
+
+`/labs/results/:id`
+
+Results page should remain compatible with the new step-based tasting structure.
+
+STEP 10 — HOST VISIBILITY
+
+Host dashboard should display:
+
+• participant list
+• rating completion indicators
+• step progress
+• reveal status
+
+Simple status indicators are sufficient:
+
+NOT_STARTED  
+IN_PROGRESS  
+SUBMITTED
+
+STEP 11 — ROUTING
+
+Ensure guided tasting behavior integrates into existing Labs routes:
+
+`/labs/live/:id` → participant guided session  
+`/labs/tastings/:id` → session overview  
+`/labs/results/:id` → post-session analysis
+
+Do not introduce additional top-level routes.
+
+STEP 12 — ERROR HANDLING
+
+Handle safely:
+
+• missing tasting
+• step index out of range
+• participant without permission
+• host not authorized
+• session already completed
+
+Participants should see clear messages instead of blank screens.
+
+STEP 13 — PERFORMANCE SAFETY
+
+Avoid complex real-time infrastructure for now.
+
+Use one of the following safe approaches:
+
+• polling  
+or
+• simple state refresh
+
+The system must remain stable under small tasting groups (5–20 participants).
+
+STEP 14 — VALIDATION
+
+After implementation run the following tests.
+
+LEGACY SYSTEM
+
+Confirm:
+
+• original application still loads
+• legacy tasting flows work
+• login works
+• no route conflicts occurred
+
+LABS GUIDED TASTING
+
+Test sequence:
+
+1 Create tasting  
+2 Add lineup  
+3 Host starts session  
+4 Step becomes active  
+5 Participants rate  
+6 Host reveals bottle  
+7 Host advances step  
+8 Repeat until finished  
+9 Session ends  
+10 Results page displays ratings
+
+Confirm that all stages work without runtime errors.
+
+STEP 15 — UI VALIDATION
+
+Ensure:
+
+• participant view readable on mobile
+• host dashboard usable on desktop
+• reveal transition understandable
+• step progress visible
+• no broken layout elements
+
+STEP 16 — FINAL DELIVERY REPORT
+
+Provide a structured summary:
+
+GUIDED TASTING FEATURES IMPLEMENTED  
+SESSION STATE MODEL USED  
+FILES CREATED OR MODIFIED  
+BACKEND SERVICES REUSED  
+KNOWN LIMITATIONS  
+NEXT IMPROVEMENT OPPORTUNITIES
+
+SUCCESS CRITERION
+
+CaskSense Labs must now support **true host-guided tastings** where a host controls step progression and reveal while participants rate each dram in a structured, synchronized flow.

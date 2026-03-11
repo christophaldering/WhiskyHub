@@ -244,9 +244,20 @@ export default function LabsResults({ params }: LabsResultsProps) {
         >
           {tasting.title}
         </h1>
-        <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
-          {tasting.date} · {tasting.location}
-        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
+            {tasting.date} · {tasting.location}
+          </p>
+          {tasting.guidedMode && (
+            <span
+              className="labs-badge text-[10px]"
+              style={{ background: "var(--labs-info-muted)", color: "var(--labs-info)" }}
+              data-testid="results-guided-badge"
+            >
+              Guided Tasting
+            </span>
+          )}
+        </div>
       </div>
 
       <div
