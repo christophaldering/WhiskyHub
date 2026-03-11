@@ -6,7 +6,7 @@ import {
   Camera, Heart, BookOpen, Download, QrCode, Play,
   Users, Zap, FileText, Shield, Eye, EyeOff,
   Mic, TrendingUp, Cpu, Printer, Database,
-  UserPlus, Lock,
+  UserPlus, Lock, FlaskConical,
 } from "lucide-react";
 import { v } from "@/lib/themeVars";
 import heroImage from "@/assets/images/hero-whisky.png";
@@ -140,6 +140,19 @@ function HeroSection() {
           >
             Try the Demo <ChevronRight style={{ width: 18, height: 18 }} />
           </a>
+          <Link href="/labs/home" data-testid="link-hero-labs" style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "14px 36px",
+            background: "#1a1714", color: "#d4a256",
+            fontFamily: font.body, fontSize: 15, fontWeight: 600,
+            borderRadius: 50, textDecoration: "none",
+            border: "2px solid #d4a256",
+            transition: "transform 0.2s, box-shadow 0.2s",
+            letterSpacing: "0.02em",
+          }}>
+            <FlaskConical style={{ width: 16, height: 16 }} />
+            CaskSense Labs
+          </Link>
           <Link href="/m2" style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "8px 0",
