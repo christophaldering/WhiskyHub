@@ -542,7 +542,7 @@ function Router() {
         <Route path="/app/naked/:code" component={NakedTasting} />
 
         {/* === V2 DARK WARM UI === */}
-        <Route path="/app/:rest*">
+        <Route path="/app/*">
           <AppShellV2>
             <Switch>
               <Route path="/app/home" component={V2Home} />
@@ -561,7 +561,7 @@ function Router() {
 
         {/* === CASKSENSE LABS === */}
         <Route path="/labs">{() => <Redirect to="/labs/home" />}</Route>
-        <Route path="/labs/:rest*">
+        <Route path="/labs/*">
           <LabsLayout>
             <Switch>
               <Route path="/labs/join/:code" component={LabsJoin} />
@@ -635,7 +635,7 @@ function Router() {
         </Route>
 
         {/* === LAB DARK (experimental) === */}
-        <Route path="/lab-dark/:rest*">
+        <Route path="/lab-dark/*">
           <LabDarkLayout>
             <Switch>
               <Route path="/lab-dark/home" component={LabHome} />
@@ -648,7 +648,7 @@ function Router() {
         </Route>
 
         {/* === LEGACY UI (wrapped in Simple Mode shell for nav continuity) === */}
-        <Route path="/legacy/:rest*">
+        <Route path="/legacy/*">
           <SimpleLegacyShell>
             <Switch>
               <Route path="/legacy/home" component={HomeDashboard} />
