@@ -1,0 +1,246 @@
+TASK: CaskSense Labs – Full Validation, Stabilization, and Fix Cycle
+
+MISSION
+Run a full validation and stabilization cycle for the newly created **CaskSense Labs** parallel application layer.
+
+This task is NOT about building new features.
+This task is about verifying that the Labs implementation works, that the legacy CaskSense system remains untouched, and that all core Labs flows function reliably.
+
+The goal is to reach a **stable, testable Labs MVP**.
+
+NON-NEGOTIABLE RULES
+
+1. DO NOT introduce new features.
+2. DO NOT redesign architecture.
+3. DO NOT modify the legacy CaskSense experience unless a bug was introduced.
+4. DO NOT refactor core systems unnecessarily.
+5. ONLY fix real problems affecting stability, routing, or functionality.
+6. Always preserve backward compatibility with the legacy system.
+7. If a change is required, keep it minimal and isolated.
+
+STEP 1 — CODEBASE INSPECTION
+
+Inspect the current codebase and identify:
+
+• all newly added CaskSense Labs routes  
+• new components related to Labs  
+• any modifications to existing components  
+• reused backend services  
+• reused models and schemas  
+• any schema changes introduced
+
+Output a structured summary:
+
+LABS ROUTES  
+LABS COMPONENTS  
+REUSED SERVICES  
+MODIFIED FILES  
+SCHEMA CHANGES (if any)
+
+STEP 2 — ROUTING VALIDATION
+
+Verify that the following routes exist and render correctly:
+
+/labs  
+/labs/join  
+/labs/host  
+/labs/solo  
+/labs/tastings  
+/labs/tastings/:id  
+/labs/live/:id  
+/labs/results/:id  
+/labs/taste  
+/labs/circle  
+
+For each route confirm:
+
+• route loads  
+• page renders without runtime errors  
+• navigation works  
+• data loads correctly  
+• user session respected
+
+If any route fails, fix the issue.
+
+STEP 3 — LEGACY REGRESSION TEST
+
+Ensure the original CaskSense application is still fully functional.
+
+Verify:
+
+• main homepage loads  
+• login flow works  
+• existing navigation unchanged  
+• existing tasting flows work  
+• no routing collisions occurred  
+• no shared component broke
+
+If any regression exists, fix it immediately with minimal changes.
+
+STEP 4 — LABS FUNCTIONALITY TEST
+
+Simulate the key product flow.
+
+Test the following sequence:
+
+A. Labs Entry
+
+Open:
+`/labs`
+
+Confirm:
+
+• page renders  
+• Join / Host / Solo options visible  
+• navigation works
+
+B. Join Flow
+
+Open:
+`/labs/join`
+
+Verify:
+
+• login redirect works  
+• authenticated users enter correctly  
+• redirect back to Labs works  
+• invalid invite handled gracefully
+
+C. Tastings Overview
+
+Open:
+`/labs/tastings`
+
+Verify:
+
+• tastings list loads  
+• data from backend visible  
+• empty state handled  
+• navigation into tasting works
+
+D. Tasting Detail
+
+Open:
+`/labs/tastings/:id`
+
+Verify:
+
+• tasting metadata loads  
+• participant list loads  
+• status displayed correctly  
+• action buttons work
+
+E. Live Tasting Room
+
+Open:
+`/labs/live/:id`
+
+Verify:
+
+• page loads  
+• dram / step visible  
+• rating interface works  
+• submit rating works  
+• progress indicators render
+
+F. Host Dashboard
+
+For host role:
+
+Verify:
+
+• participant status visible  
+• session controls render  
+• step progression works if backend supports  
+• reveal state visible  
+• no layout breakage
+
+G. Results Page
+
+Open:
+`/labs/results/:id`
+
+Verify:
+
+• aggregated ratings render  
+• participant scores visible  
+• bottle reveal data visible  
+• layout readable
+
+STEP 5 — MOBILE AND DESKTOP SANITY CHECK
+
+Validate:
+
+Mobile participant flow:
+
+• rating interface usable  
+• navigation accessible  
+• layout responsive
+
+Desktop host flow:
+
+• host dashboard readable  
+• controls usable  
+• layout stable
+
+Fix layout issues if found.
+
+STEP 6 — ERROR HANDLING VALIDATION
+
+Test the following cases:
+
+• invalid tasting ID  
+• missing data  
+• unauthorized access  
+• empty tasting list  
+• API failure
+
+Ensure:
+
+• graceful error message  
+• no crashes  
+• no blank pages
+
+STEP 7 — FIX PASS
+
+If any of the above tests fail:
+
+Fix the problems immediately with minimal code changes.
+
+Prefer:
+
+• small targeted fixes  
+• isolated component patches  
+• avoiding large refactors
+
+STEP 8 — FINAL VALIDATION
+
+Re-run validation for:
+
+Legacy system  
+Labs system  
+Routing  
+Authentication  
+Core tasting flows
+
+Confirm that both systems operate correctly.
+
+STEP 9 — FINAL STATUS REPORT
+
+Output a structured final report containing:
+
+IMPLEMENTED LABS ROUTES  
+WORKING FLOWS  
+FILES MODIFIED DURING FIX PASS  
+LEGACY SYSTEM STATUS  
+LABS SYSTEM STATUS  
+KNOWN LIMITATIONS  
+RECOMMENDED NEXT DEVELOPMENT PHASE
+
+IMPORTANT
+
+Do not stop after analysis.
+
+Perform the validation and fix cycle fully.
+
+Ensure the result is a **stable, testable CaskSense Labs environment running alongside the legacy CaskSense application without regressions.**
