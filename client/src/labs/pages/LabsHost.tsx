@@ -445,6 +445,39 @@ function MobileCompanion({
   const isEnded = tasting.status === "closed" || tasting.status === "archived" || tasting.status === "reveal";
   const pid = currentParticipant?.id as string;
 
+  const [mobileWhiskyName, setMobileWhiskyName] = useState("");
+  const [mobileShowAdd, setMobileShowAdd] = useState(isDraft && whiskyCount === 0);
+  const [mobileAiImport, setMobileAiImport] = useState(false);
+  const [mobileAiFiles, setMobileAiFiles] = useState<File[]>([]);
+  const [mobileAiText, setMobileAiText] = useState("");
+  const [mobileAiLoading, setMobileAiLoading] = useState(false);
+  const [mobileAiResults, setMobileAiResults] = useState<any[]>([]);
+  const [mobileAiSelected, setMobileAiSelected] = useState<Set<number>>(new Set());
+  const [mobileDragOver, setMobileDragOver] = useState(false);
+  const [mobileEditId, setMobileEditId] = useState<string | null>(null);
+  const [mobileEditName, setMobileEditName] = useState("");
+
+  const addWhiskyMut = useMutation({
+    mutationFn: (data: any) => whiskyApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+      setMobileWhiskyName("");
+    },
+  });
+
+  const deleteWhiskyMut = useMutation({
+    mutationFn: (id: string) => whiskyApi.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] }),
+  });
+
+  const updateWhiskyMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => whiskyApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+      setMobileEditId(null);
+    },
+  });
+
   const statusMutation = useMutation({
     mutationFn: ({ status }: { status: string }) =>
       tastingApi.updateStatus(tastingId, status, undefined, pid),
@@ -467,6 +500,70 @@ function MobileCompanion({
     activeWhisky ? ratings.filter((r: Record<string, unknown>) => r.whiskyId === (activeWhisky as Record<string, unknown>).id).map((r: Record<string, unknown>) => r.participantId) : []
   );
 
+  const handleMobileAdd = () => {
+    if (!mobileWhiskyName.trim()) return;
+    addWhiskyMut.mutate({
+      tastingId,
+      name: mobileWhiskyName.trim(),
+      sortOrder: whiskyCount + 1,
+    });
+  };
+
+  const [mobileAiError, setMobileAiError] = useState("");
+  const [mobileAiConfirmMsg, setMobileAiConfirmMsg] = useState("");
+
+  const handleMobileAiImport = async () => {
+    if (mobileAiFiles.length === 0 && !mobileAiText.trim()) return;
+    setMobileAiLoading(true);
+    setMobileAiError("");
+    try {
+      const result = await tastingApi.aiImport(mobileAiFiles, mobileAiText.trim(), pid);
+      if (result?.whiskies?.length) {
+        setMobileAiResults(result.whiskies);
+        setMobileAiSelected(new Set(result.whiskies.map((_: any, i: number) => i)));
+      } else {
+        setMobileAiError("No whiskies found. Try a clearer photo or text.");
+      }
+    } catch (e: any) {
+      setMobileAiError(e?.message || "AI import failed. Please try again.");
+    }
+    setMobileAiLoading(false);
+  };
+
+  const handleMobileAiConfirm = async () => {
+    let ok = 0, fail = 0;
+    for (const idx of Array.from(mobileAiSelected)) {
+      const w = mobileAiResults[idx];
+      if (w) {
+        try {
+          await whiskyApi.create({
+            tastingId,
+            name: w.name || "",
+            distillery: w.distillery || "",
+            abv: w.abv ? String(w.abv) : "",
+            caskType: w.caskType || w.cask || "",
+            age: w.age ? String(w.age) : "",
+            category: w.category || "",
+            country: w.country || "",
+            region: w.region || "",
+            sortOrder: whiskyCount + idx + 1,
+          });
+          ok++;
+        } catch { fail++; }
+      }
+    }
+    queryClient.invalidateQueries({ queryKey: ["whiskies", tastingId] });
+    if (fail > 0) {
+      setMobileAiConfirmMsg(`Added ${ok}, ${fail} failed`);
+    } else {
+      setMobileAiResults([]);
+      setMobileAiSelected(new Set());
+      setMobileAiFiles([]);
+      setMobileAiText("");
+      setMobileAiImport(false);
+    }
+  };
+
   return (
     <div className="px-4 py-5 labs-fade-in" style={{ paddingBottom: 120 }} data-testid="labs-mobile-companion">
       <button
@@ -477,18 +574,6 @@ function MobileCompanion({
         <ArrowLeft className="w-4 h-4" />
         Tastings
       </button>
-
-      <div className="labs-card p-4 mb-4" style={{
-        borderBottom: "1px solid var(--labs-border-subtle)",
-        background: `color-mix(in srgb, var(--labs-accent) 5%, var(--labs-surface))`,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-          <Monitor className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
-          <span className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>
-            Full dashboard optimized for desktop
-          </span>
-        </div>
-      </div>
 
       <div className="labs-card p-4 mb-4">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
@@ -518,6 +603,230 @@ function MobileCompanion({
           ))}
         </div>
       </div>
+
+      {isDraft && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="labs-section-label mb-0">Whiskies ({whiskyCount})</p>
+            <div className="flex items-center gap-1">
+              <button
+                className="labs-btn-ghost flex items-center gap-1 text-xs"
+                onClick={() => { setMobileAiImport(!mobileAiImport); setMobileShowAdd(false); }}
+                data-testid="mobile-ai-import-toggle"
+              >
+                <Sparkles className="w-3 h-3" />
+                AI
+              </button>
+              <button
+                className="labs-btn-ghost flex items-center gap-1 text-xs"
+                onClick={() => { setMobileShowAdd(!mobileShowAdd); setMobileAiImport(false); }}
+                data-testid="mobile-add-whisky-toggle"
+              >
+                {mobileShowAdd ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                {mobileShowAdd ? "Close" : "Add"}
+              </button>
+            </div>
+          </div>
+
+          {mobileAiImport && (
+            <div className="labs-card p-3 mb-3 space-y-2" data-testid="mobile-ai-import-panel">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+                <span className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>AI Import</span>
+              </div>
+              <div
+                className="flex flex-col items-center justify-center gap-2 p-3 rounded-lg text-sm"
+                style={{
+                  border: `2px dashed ${mobileDragOver ? "var(--labs-accent)" : "var(--labs-border)"}`,
+                  color: "var(--labs-text-muted)",
+                  background: mobileDragOver ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+                }}
+                onDragOver={e => { e.preventDefault(); setMobileDragOver(true); }}
+                onDragLeave={() => setMobileDragOver(false)}
+                onDrop={e => {
+                  e.preventDefault();
+                  setMobileDragOver(false);
+                  const files = Array.from(e.dataTransfer.files);
+                  if (files.length) setMobileAiFiles(prev => [...prev, ...files]);
+                }}
+              >
+                <Upload className="w-5 h-5" />
+                <div className="flex gap-2">
+                  <label className="labs-btn-ghost text-xs cursor-pointer">
+                    <Camera className="w-3 h-3 inline mr-1" />
+                    Camera
+                    <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
+                  </label>
+                  <label className="labs-btn-ghost text-xs cursor-pointer">
+                    <Upload className="w-3 h-3 inline mr-1" />
+                    Browse
+                    <input type="file" accept="image/*,.pdf,.csv,.txt,.xlsx" multiple style={{ display: "none" }} onChange={e => { if (e.target.files) setMobileAiFiles(prev => [...prev, ...Array.from(e.target.files!)]); }} />
+                  </label>
+                </div>
+              </div>
+              {mobileAiFiles.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {mobileAiFiles.map((f, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>
+                      {f.name.length > 15 ? f.name.slice(0, 12) + "..." : f.name}
+                      <button onClick={() => setMobileAiFiles(prev => prev.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <textarea
+                className="labs-input w-full"
+                rows={2}
+                placeholder="Or paste whisky names, menu text..."
+                value={mobileAiText}
+                onChange={e => setMobileAiText(e.target.value)}
+                style={{ resize: "none", fontSize: 13 }}
+                data-testid="mobile-ai-import-text"
+              />
+              <div className="flex gap-2 justify-end">
+                <button className="labs-btn-ghost text-xs" onClick={() => { setMobileAiImport(false); setMobileAiFiles([]); setMobileAiText(""); setMobileAiResults([]); }}>Cancel</button>
+                <button
+                  className="labs-btn-primary text-xs flex items-center gap-1"
+                  onClick={handleMobileAiImport}
+                  disabled={mobileAiLoading || (mobileAiFiles.length === 0 && !mobileAiText.trim())}
+                  data-testid="mobile-ai-import-analyze"
+                >
+                  {mobileAiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  {mobileAiLoading ? "..." : "Analyze"}
+                </button>
+              </div>
+
+              {mobileAiError && (
+                <div className="text-xs p-2 rounded" style={{ background: "color-mix(in srgb, var(--labs-danger) 15%, transparent)", color: "var(--labs-danger)" }}>
+                  {mobileAiError}
+                </div>
+              )}
+
+              {mobileAiConfirmMsg && (
+                <div className="text-xs p-2 rounded" style={{ background: "color-mix(in srgb, var(--labs-accent) 15%, transparent)", color: "var(--labs-accent)" }}>
+                  {mobileAiConfirmMsg}
+                </div>
+              )}
+
+              {mobileAiResults.length > 0 && (
+                <div className="space-y-2 mt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>Found {mobileAiResults.length}</span>
+                    <button
+                      className="labs-btn-ghost text-xs"
+                      onClick={() => setMobileAiSelected(mobileAiSelected.size === mobileAiResults.length ? new Set() : new Set(mobileAiResults.map((_, i) => i)))}
+                      data-testid="mobile-ai-select-all"
+                    >
+                      {mobileAiSelected.size === mobileAiResults.length ? "Deselect" : "Select All"}
+                    </button>
+                  </div>
+                  {mobileAiResults.map((w: any, i: number) => (
+                    <label key={i} className="labs-card p-2 flex items-center gap-2 cursor-pointer" style={{ opacity: mobileAiSelected.has(i) ? 1 : 0.5 }}>
+                      <input type="checkbox" checked={mobileAiSelected.has(i)} onChange={() => { const s = new Set(mobileAiSelected); s.has(i) ? s.delete(i) : s.add(i); setMobileAiSelected(s); }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{w.name}</p>
+                        <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
+                          {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ")}
+                        </p>
+                      </div>
+                    </label>
+                  ))}
+                  <button className="labs-btn-primary w-full text-sm" onClick={handleMobileAiConfirm} disabled={mobileAiSelected.size === 0} data-testid="mobile-ai-confirm">
+                    Add {mobileAiSelected.size} Whiskies
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {mobileShowAdd && (
+            <div className="labs-card p-3 mb-3 flex gap-2">
+              <input
+                className="labs-input flex-1"
+                placeholder="Whisky name..."
+                value={mobileWhiskyName}
+                onChange={e => setMobileWhiskyName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleMobileAdd()}
+                data-testid="mobile-whisky-name-input"
+                autoFocus
+              />
+              <button
+                className="labs-btn-primary px-4"
+                onClick={handleMobileAdd}
+                disabled={!mobileWhiskyName.trim() || addWhiskyMut.isPending}
+                data-testid="mobile-whisky-add-btn"
+              >
+                {addWhiskyMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
+              </button>
+            </div>
+          )}
+
+          {whiskyCount > 0 && (
+            <div className="space-y-2 mb-3">
+              {whiskies.map((w: any, i: number) => (
+                <div key={w.id} className="labs-card p-3 flex items-center gap-2" data-testid={`mobile-whisky-${w.id}`}>
+                  {mobileEditId === w.id ? (
+                    <>
+                      <input
+                        className="labs-input flex-1"
+                        value={mobileEditName}
+                        onChange={e => setMobileEditName(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") updateWhiskyMut.mutate({ id: w.id, data: { name: mobileEditName } }); }}
+                        autoFocus
+                        data-testid="mobile-edit-whisky-input"
+                      />
+                      <button className="labs-btn-primary px-2 text-xs" onClick={() => updateWhiskyMut.mutate({ id: w.id, data: { name: mobileEditName } })} data-testid="mobile-edit-whisky-save">
+                        {updateWhiskyMut.isPending ? "..." : <Check className="w-3 h-3" />}
+                      </button>
+                      <button className="labs-btn-ghost px-1" onClick={() => setMobileEditId(null)}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+                        style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                      >
+                        {String.fromCharCode(65 + i)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{w.name || `Whisky ${i + 1}`}</p>
+                        <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
+                          {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ") || "No details"}
+                        </p>
+                      </div>
+                      <button className="labs-btn-ghost p-1" onClick={() => { setMobileEditId(w.id); setMobileEditName(w.name || ""); }} data-testid={`mobile-edit-whisky-${w.id}`}>
+                        <Pencil className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />
+                      </button>
+                      <button className="labs-btn-ghost p-1" onClick={() => deleteWhiskyMut.mutate(w.id)} data-testid={`mobile-delete-whisky-${w.id}`}>
+                        <Trash2 className="w-3 h-3" style={{ color: "var(--labs-danger)" }} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {whiskyCount === 0 && !mobileShowAdd && !mobileAiImport && (
+            <div className="labs-card p-4 text-center mb-3">
+              <Wine className="w-6 h-6 mx-auto mb-2" style={{ color: "var(--labs-text-muted)" }} />
+              <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>No whiskies yet</p>
+              <button
+                className="labs-btn-primary text-sm flex items-center gap-1.5 mx-auto"
+                onClick={() => setMobileShowAdd(true)}
+                data-testid="mobile-add-first-whisky"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Your First Whisky
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {tasting.guidedMode && isLive && activeWhisky && (
         <div className="labs-card p-4 mb-4">
@@ -615,6 +924,30 @@ function MobileCompanion({
           </button>
         )}
       </div>
+
+      {!isDraft && whiskyCount > 0 && (
+        <div className="mt-4">
+          <p className="labs-section-label">Whiskies ({whiskyCount})</p>
+          <div className="space-y-2">
+            {whiskies.map((w: any, i: number) => (
+              <div key={w.id} className="labs-card p-3 flex items-center gap-2" data-testid={`mobile-whisky-readonly-${w.id}`}>
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                >
+                  {String.fromCharCode(65 + i)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{w.name || `Whisky ${i + 1}`}</p>
+                  <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
+                    {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ") || "No details"}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {pid && whiskies.length > 0 && (
         <div style={{ marginTop: 16 }}>
