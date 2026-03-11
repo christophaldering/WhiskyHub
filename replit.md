@@ -82,6 +82,15 @@ All M2-specific keyframe animations are defined centrally in a single `<style>` 
 -   `prefers-reduced-motion` media query disables all animations globally
 Page-specific animations (`m2spin`, `m2shimmer`) remain inline in their respective components.
 
+### Labs Tasting Session Features (Task #2)
+Labs Tasting Session pages port key M2 features into the Labs dark-theme design system:
+-   **Paper Sheet Scanner** (`LabsPaperScan.tsx`, route `/labs/tastings/:id/scan`): Multi-step flow (select participant → confirm → capture photos → AI scan → review/edit scores → success). Host-initiated with participant picker when no participant ID in URL.
+-   **Tasting Recap** (`LabsTastingRecap.tsx`, route `/labs/tastings/:id/recap`): Post-session summary with top-rated whiskies (medals), most divisive, overall averages bar chart (recharts), participant highlights, PDF export (jsPDF), copy/print actions.
+-   **QR Code & Join Code** (in `LabsTastingDetail.tsx`): QR code generation via `qrcode` library with Labs-themed colors, join code display with copy, link copy, and QR download.
+-   **Email Invitations** (in `LabsTastingDetail.tsx`): Host-only collapsible invite panel with email textarea, personal note, send via `inviteApi`, result display with status badges.
+-   **Ambient Sounds** (in `LabsLive.tsx`): `LabsAmbientPanel` component with 4 soundscapes (fireplace, rain, night, bagpipe), volume slider, play/stop toggle. Uses existing `lib/ambient.ts` engine.
+-   **Voice Memos in Sessions** (in `LabsLive.tsx`): `LabsVoiceMemoRecorder` integrated in tasting notes area. Transcriptions auto-append to notes.
+
 ### Test Suite
 A comprehensive test framework using Vitest covers unit, API, E2E, and smoke tests, including Module2Shell rendering, authentication flows, API endpoints, and historical tasting helpers.
 

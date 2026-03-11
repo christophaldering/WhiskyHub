@@ -4,10 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useRoute, useSearch } from "wouter";
 import { tastingApi, paperScanApi, participantApi } from "@/lib/api";
 import {
-  Camera, Upload, Loader2, CheckCircle, AlertCircle, Trash2, Wine
+  Camera, Upload, Loader2, CheckCircle, AlertCircle, Trash2, Wine, User
 } from "lucide-react";
 
-type ScanStep = "confirm" | "capture" | "scanning" | "review" | "success";
+type ScanStep = "select-participant" | "confirm" | "capture" | "scanning" | "review" | "success";
 
 export default function LabsPaperScan() {
   const { t } = useTranslation();
@@ -15,9 +15,12 @@ export default function LabsPaperScan() {
   const search = useSearch();
   const tastingId = params?.id || "";
   const urlParams = new URLSearchParams(search);
-  const participantId = urlParams.get("participant") || "";
+  const urlParticipantId = urlParams.get("participant") || "";
 
-  const [step, setStep] = useState<ScanStep>("confirm");
+  const [selectedParticipantId, setSelectedParticipantId] = useState(urlParticipantId);
+  const participantId = selectedParticipantId;
+
+  const [step, setStep] = useState<ScanStep>(urlParticipantId ? "confirm" : "select-participant");
   const [photos, setPhotos] = useState<File[]>([]);
   const [scanResult, setScanResult] = useState<any>(null);
   const [error, setError] = useState("");
@@ -28,6 +31,12 @@ export default function LabsPaperScan() {
   const { data: tasting, isLoading: tastingLoading } = useQuery({
     queryKey: ["tasting", tastingId],
     queryFn: () => tastingApi.get(tastingId),
+    enabled: !!tastingId,
+  });
+
+  const { data: participants } = useQuery({
+    queryKey: ["tasting-participants", tastingId],
+    queryFn: () => tastingApi.getParticipants(tastingId),
     enabled: !!tastingId,
   });
 
@@ -156,6 +165,70 @@ export default function LabsPaperScan() {
           {t("m2.paperScan.subtitle", "Paper Sheet Scanner")}
         </p>
       </div>
+
+      {step === "select-participant" && participants && (
+        <div data-testid="scan-step-select-participant">
+          <div className="labs-card" style={{ padding: 16, marginBottom: 12 }}>
+            <div className="labs-section-label">{t("m2.paperScan.tasting", "Tasting")}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-text)", marginBottom: 4 }}>
+              {tasting.title}
+            </div>
+          </div>
+          <div className="labs-card" style={{ padding: 16, marginBottom: 12 }}>
+            <div className="labs-section-label" style={{ marginBottom: 12 }}>Select Participant</div>
+            <p style={{ fontSize: 13, color: "var(--labs-text-secondary)", margin: "0 0 12px" }}>
+              Whose paper sheet are you scanning?
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {(participants || []).map((p: any) => (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    setSelectedParticipantId(p.id);
+                    setStep("confirm");
+                  }}
+                  className="labs-card-interactive"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 14px",
+                    background: "var(--labs-surface-elevated)",
+                    border: "1px solid var(--labs-border)",
+                    borderRadius: "var(--labs-radius-sm)",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    textAlign: "left",
+                    width: "100%",
+                  }}
+                  data-testid={`button-select-participant-${p.id}`}
+                >
+                  <div style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    background: "var(--labs-accent-muted)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}>
+                    <User style={{ width: 14, height: 14, color: "var(--labs-accent)" }} />
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "var(--labs-text)" }}>
+                    {p.name || "Anonymous"}
+                  </span>
+                </button>
+              ))}
+            </div>
+            {(!participants || participants.length === 0) && (
+              <p className="labs-empty" style={{ padding: "24px 0", fontSize: 13 }}>
+                No participants found for this tasting.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {step === "confirm" && (
         <div data-testid="scan-step-confirm">
