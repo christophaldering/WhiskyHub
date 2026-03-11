@@ -18,6 +18,12 @@
   --labs-danger-muted: rgba(212, 106, 106, 0.12);
   --labs-info: #6aa8d4;
   --labs-info-muted: rgba(106, 168, 212, 0.12);
+  --labs-dim-nose: #D9A15B;
+  --labs-dim-taste: #C97845;
+  --labs-dim-finish: #9C6A5E;
+  --labs-dim-balance: #7F8C5A;
+  --labs-accent-dark: #1a1410;
+  --labs-on-accent: #ffffff;
   --labs-radius: 16px;
   --labs-radius-sm: 10px;
   --labs-radius-lg: 22px;

@@ -177,6 +177,7 @@ import LabsResults from "@/labs/pages/LabsResults";
 import LabsTaste from "@/labs/pages/LabsTaste";
 import LabsCircle from "@/labs/pages/LabsCircle";
 import LabsExplore from "@/labs/pages/LabsExplore";
+import LabsSolo from "@/labs/pages/LabsSolo";
 import LabsBottleDetail from "@/labs/pages/LabsBottleDetail";
 import { AppShellV2 } from "@/v2/components";
 import V2Home from "@/v2/pages/V2Home";
@@ -535,7 +536,7 @@ function Router() {
               <Route path="/labs/explore" component={LabsExplore} />
               <Route path="/labs/taste" component={LabsTaste} />
               <Route path="/labs/circle" component={LabsCircle} />
-              <Route path="/labs/solo">{() => <Redirect to="/m2/tastings/solo" />}</Route>
+              <Route path="/labs/solo" component={LabsSolo} />
               <Route path="/labs/home" component={LabsHome} />
             </Switch>
           </LabsLayout>
