@@ -1,0 +1,396 @@
+PROJECT: CaskSense Labs
+
+MISSION
+Build a fully functional parallel product experience called **“CaskSense Labs”** inside the existing CaskSense codebase.  
+CaskSense Labs must reuse the stable backend, authentication, database models, and services of the current system while introducing a new UX layer and navigation model.
+
+The existing CaskSense application must remain fully operational and unchanged in behavior.
+
+CaskSense Labs is an experimental but real product layer focused on a refined whisky tasting experience built around:
+
+• Host-guided tastings  
+• Elegant rating flows  
+• Reflection on taste  
+• Lightweight community  
+• Calm, Apple-inspired design  
+
+NON-NEGOTIABLE SAFETY RULES
+
+1. NEVER break the current CaskSense application.
+2. NEVER overwrite existing routes, pages, or core logic.
+3. DO NOT refactor stable core systems unless strictly required.
+4. All Labs functionality must be additive and isolated.
+5. Legacy UX and Labs UX must coexist safely.
+6. The current app must still run exactly as before.
+7. Labs must reuse backend infrastructure rather than duplicating it.
+8. Any schema change must be backward-compatible.
+9. Prefer wrapper components over modifying shared components.
+10. Validate both systems before completion.
+
+ARCHITECTURE STRATEGY
+
+Implement CaskSense Labs as a **parallel UX layer** inside the same project.
+
+Create a **new route namespace**:
+
+/labs
+/labs/join
+/labs/host
+/labs/solo
+/labs/tastings
+/labs/tastings/:id
+/labs/live/:id
+/labs/results/:id
+/labs/taste
+/labs/circle
+
+Legacy routes must remain untouched.
+
+Labs must reuse the same database, authentication system, user entities, and tasting models.
+
+The Labs implementation should prioritize frontend UX isolation while using the same backend services.
+
+CODEBASE ANALYSIS (FIRST STEP)
+
+Before writing code, analyze the current project and identify:
+
+• routing architecture  
+• auth/session management  
+• database schema and entities  
+• tasting-related models  
+• role and permission system  
+• shared UI components  
+• state management strategy  
+• API endpoints  
+• server structure  
+
+Adapt the Labs implementation to the existing architecture rather than forcing a new one.
+
+REUSE THESE SYSTEMS
+
+Reuse existing infrastructure whenever stable:
+
+• authentication and session handling  
+• user and profile entities  
+• role system (guest / participant / host / admin)  
+• tasting entities and session structures  
+• bottle and distillery entities  
+• database connection  
+• schema validators and types  
+• stable API endpoints  
+• shared server services  
+• stable UI primitives if helpful
+
+DO NOT duplicate the backend unless absolutely necessary.
+
+LABS UX STRUCTURE
+
+Labs introduces a simplified navigation system.
+
+Primary navigation:
+
+Tastings  
+Taste  
+Circle  
+
+Profile access on the right/top.
+
+Labs landing entry provides three core actions:
+
+Join  
+Host  
+Solo
+
+These actions must be real flows, not placeholders.
+
+PHASE 1 — LABS CORE MVP
+
+Implement only the essential product flow first.
+
+A. LABS LANDING PAGE
+
+Route:
+/labs
+
+Must contain:
+
+• title: CaskSense Labs  
+• short explanation of the Labs experience  
+• three clear entry points
+
+Join  
+Host  
+Solo
+
+Design goals:
+
+• calm  
+• premium  
+• minimal visual noise  
+• warm dark theme  
+• elegant spacing and typography  
+
+B. LABS NAVIGATION
+
+Create a dedicated Labs navigation component.
+
+Primary sections:
+
+Tastings  
+Taste  
+Circle  
+Profile
+
+Do NOT alter legacy navigation.
+
+C. JOIN FLOW
+
+Route:
+/labs/join
+
+Requirements:
+
+• invitation-aware join logic if available  
+• reuse existing authentication system  
+• if not logged in → login → redirect back to Labs destination  
+• if logged in → enter tasting immediately  
+• clear error handling  
+• no dead ends  
+
+D. LABS TASTINGS OVERVIEW
+
+Route:
+/labs/tastings
+
+Display:
+
+• upcoming tastings  
+• live tastings  
+• past tastings  
+• tastings hosted by current user  
+• tastings joined by current user  
+
+Use existing tasting models and APIs.
+
+E. LABS TASTING DETAIL
+
+Route:
+/labs/tastings/:id
+
+Display:
+
+• tasting title  
+• description  
+• host  
+• participants  
+• status  
+• timing  
+• role  
+• relevant actions
+
+UX must be clean and readable.
+
+F. LABS LIVE TASTING ROOM
+
+Route:
+/labs/live/:id
+
+Participant interface must include:
+
+• current dram / step  
+• structured rating interface  
+• visible tasting progress  
+• reveal state indicator  
+• ability to submit ratings  
+• responsive layout
+
+Mobile usability is required.
+
+Desktop layout should feel calm and premium.
+
+G. LABS HOST DASHBOARD
+
+Host control interface for the tasting session.
+
+Capabilities:
+
+• view participants  
+• see rating status per participant  
+• start tasting session  
+• advance tasting step / dram if supported  
+• control reveal state if supported  
+• close session  
+• view participant progress
+
+Desktop first.
+
+If backend limitations exist, implement the safest working subset.
+
+H. LABS RESULTS PAGE
+
+Route:
+/labs/results/:id
+
+Display:
+
+• tasting outcome  
+• participant ratings  
+• aggregated results  
+• revealed bottle data  
+• structured layout for reflection
+
+Avoid clutter.
+
+I. LABS TASTE PAGE (LIGHT VERSION)
+
+Route:
+/labs/taste
+
+Show:
+
+• recent ratings  
+• recent tastings  
+• simple personal snapshot
+
+J. LABS CIRCLE PAGE (LIGHT VERSION)
+
+Route:
+/labs/circle
+
+Prepare for community layer.
+
+Show minimal useful information such as:
+
+• people from shared tastings  
+• recent shared sessions
+
+Avoid empty placeholder pages.
+
+DESIGN PRINCIPLES
+
+CaskSense Labs must follow these UX principles:
+
+• warm dark premium theme  
+• Apple-inspired clarity  
+• generous spacing  
+• minimal UI noise  
+• strong typography hierarchy  
+• calm interactions  
+• no admin-dashboard aesthetics  
+• mobile usable  
+• desktop elegant
+
+Use existing design system tokens if stable.
+
+If needed, introduce a Labs layout layer without affecting legacy styles.
+
+IMPLEMENTATION RULES
+
+1. Prefer additive code over modification.
+2. Avoid editing existing production pages.
+3. Wrap shared services instead of rewriting them.
+4. Avoid schema changes unless necessary.
+5. Avoid duplicate logic.
+6. Separate Labs components clearly.
+7. Keep routing isolated.
+
+DATA MODEL POLICY
+
+Labs must use the same domain entities:
+
+User  
+Profile  
+Tasting  
+Participant  
+LineupEntry  
+Bottle  
+Distillery  
+Rating  
+
+Do NOT create duplicate models.
+
+TESTING REQUIREMENTS
+
+Before finishing, validate both systems.
+
+LEGACY CHECKS
+
+Confirm:
+
+• legacy homepage loads  
+• legacy login works  
+• legacy navigation works  
+• legacy tasting features still operate  
+
+LABS CHECKS
+
+Confirm:
+
+• /labs loads  
+• Labs navigation works  
+• Join flow works  
+• tastings overview loads  
+• tasting detail loads  
+• live tasting room loads  
+• host dashboard loads  
+• results page loads  
+• mobile rating works  
+• desktop hosting usable  
+
+ERROR HANDLING
+
+Test:
+
+• missing tasting id  
+• unauthorized access  
+• empty lists  
+• loading states  
+• failed API calls  
+
+UI SANITY
+
+Ensure:
+
+• no broken layouts  
+• no placeholder text  
+• no overlapping elements  
+• readable contrast  
+• consistent spacing  
+
+DELIVERABLE SUMMARY
+
+At completion provide:
+
+1. summary of implemented features  
+2. list of all new Labs routes  
+3. reused backend services  
+4. any unavoidable limitations  
+5. recommended phase-2 development steps  
+
+WORK PROCESS
+
+1. inspect current codebase  
+2. design Labs integration strategy  
+3. implement incrementally  
+4. test legacy and Labs systems  
+5. fix issues  
+6. deliver summary  
+
+PRIORITY ORDER
+
+If complexity forces trade-offs, prioritize:
+
+1 legacy stability  
+2 route isolation  
+3 join flow  
+4 tastings overview  
+5 tasting detail  
+6 live tasting room  
+7 host dashboard  
+8 results page  
+9 taste page  
+10 circle page  
+
+SUCCESS CRITERION
+
+A user must be able to open **/labs**, enter the CaskSense Labs experience, join or review tastings through a refined UX, while the original CaskSense application continues to function exactly as before.
