@@ -1059,7 +1059,8 @@ function CreateTastingForm() {
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const handleCreate = async () => {
-    if (!title.trim() || !currentParticipant) return;
+    if (!title.trim()) { setError("Title is required"); return; }
+    if (!currentParticipant) { setError("Please sign in to create a tasting"); return; }
     setSubmitting(true);
     setError("");
     try {
@@ -1377,10 +1378,24 @@ function CreateTastingForm() {
           </div>
         )}
 
+        {!currentParticipant && (
+          <div
+            className="text-sm p-3 rounded-lg flex items-center gap-2"
+            style={{
+              background: "color-mix(in srgb, var(--labs-accent) 12%, transparent)",
+              color: "var(--labs-accent)",
+            }}
+            data-testid="labs-host-signin-hint"
+          >
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            Please sign in to create a tasting
+          </div>
+        )}
+
         <button
           className="labs-btn-primary w-full flex items-center justify-center gap-2"
           onClick={handleCreate}
-          disabled={!title.trim() || submitting}
+          disabled={!title.trim() || submitting || !currentParticipant}
           data-testid="labs-host-create-btn"
         >
           {submitting ? (
