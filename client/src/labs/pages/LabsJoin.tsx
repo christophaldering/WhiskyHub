@@ -53,11 +53,15 @@ export default function LabsJoin() {
       await tastingApi.join(tasting.id, currentParticipant!.id, trimmed);
       navigate(`/labs/tastings/${tasting.id}`);
     } catch (e: any) {
-      const msg = e.message || "Could not join tasting.";
+      const msg = e.message || "";
       if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("invalid")) {
-        setError("No tasting found with this code. Please check and try again.");
+        setError("No tasting found with this code. Double-check the code and try again.");
+      } else if (msg.toLowerCase().includes("session code") || msg.toLowerCase().includes("invitation")) {
+        setError("This code wasn't accepted. Make sure you have the correct code from your host.");
+      } else if (msg.toLowerCase().includes("network") || msg.toLowerCase().includes("fetch")) {
+        setError("Connection issue — please check your internet and try again.");
       } else {
-        setError(msg);
+        setError(msg || "Something went wrong. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -101,7 +105,12 @@ export default function LabsJoin() {
               navigate(`/labs/tastings/${tasting.id}`);
             }
           } catch (e: any) {
-            setError(e.message || "Could not join tasting after login.");
+            const msg = e.message || "";
+            if (msg.toLowerCase().includes("already")) {
+              navigate(`/labs/tastings`);
+            } else {
+              setError(msg || "Could not join the tasting after signing in. Please try entering the code again.");
+            }
           }
         }, 300);
       }

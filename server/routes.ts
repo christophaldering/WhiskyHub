@@ -1153,6 +1153,7 @@ export async function registerRoutes(
     }
     const updated = await storage.updateTastingStatus(req.params.id, status, currentAct);
     if (!updated) return res.status(404).json({ message: "Not found" });
+    console.log(`[LABS] Session status: ${tasting.status} → ${status} | tasting=${req.params.id} "${tasting.title}"`);
 
     if (status === "reveal") {
       try {
@@ -1364,7 +1365,10 @@ export async function registerRoutes(
       if (!tasting) return res.status(404).json({ message: "Tasting not found" });
 
       const already = await storage.isParticipantInTasting(tastingId, participantId);
-      if (already) return res.json({ message: "Already joined" });
+      if (already) {
+        console.log(`[LABS] Join (already member): participant=${participantId} tasting=${tastingId}`);
+        return res.json({ message: "Already joined" });
+      }
 
       if (tasting.hostId === participantId) {
         const tp = await storage.addParticipantToTasting({ tastingId, participantId });
@@ -1387,6 +1391,7 @@ export async function registerRoutes(
       }
 
       const tp = await storage.addParticipantToTasting({ tastingId, participantId });
+      console.log(`[LABS] Participant joined: participant=${participantId} tasting=${tastingId} "${tasting.title}"`);
 
       try {
         const joiner = await storage.getParticipant(participantId);
@@ -2386,6 +2391,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       }
 
       const rating = await storage.upsertRating({ ...data, normalizedScore });
+      if (process.env.LABS_DEBUG) console.log(`[LABS] Rating submitted: participant=${data.participantId} whisky=${data.whiskyId} overall=${data.overall} normalized=${normalizedScore} tasting=${data.tastingId}`);
       res.json(rating);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -3192,6 +3198,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
       const updated = await storage.updateTastingBlindMode(req.params.id, { revealIndex, revealStep });
       const allRevealed = revealIndex >= totalExpressions - 1 && revealStep >= maxSteps;
+      console.log(`[LABS] Reveal advance: idx=${revealIndex} step=${revealStep} allRevealed=${allRevealed} tasting=${req.params.id}`);
       res.json({ ...updated, allRevealed });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -3211,6 +3218,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
       if (req.body.guidedWhiskyIndex !== undefined) updates.guidedWhiskyIndex = req.body.guidedWhiskyIndex;
       if (req.body.guidedRevealStep !== undefined) updates.guidedRevealStep = req.body.guidedRevealStep;
       const updated = await storage.updateTastingBlindMode(req.params.id, updates);
+      console.log(`[LABS] Guided mode updated: ${JSON.stringify(updates)} tasting=${req.params.id}`);
       res.json(updated);
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -3250,6 +3258,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
 
       const updated = await storage.updateTastingBlindMode(req.params.id, { guidedWhiskyIndex: idx, guidedRevealStep: step });
       const allComplete = idx >= totalWhiskies - 1 && step >= maxSteps;
+      console.log(`[LABS] Guided advance: whisky=${idx}/${totalWhiskies} step=${step}/${maxSteps} complete=${allComplete} tasting=${req.params.id}`);
       res.json({ ...updated, allComplete });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
@@ -3270,6 +3279,7 @@ If the text is too vague to identify a specific whisky, return {"name": "", "con
         guidedWhiskyIndex: whiskyIndex,
         guidedRevealStep: revealStep ?? 0,
       });
+      console.log(`[LABS] Guided goto: whisky=${whiskyIndex} step=${revealStep ?? 0} tasting=${req.params.id}`);
       res.json(updated);
     } catch (e: any) {
       res.status(500).json({ message: e.message });

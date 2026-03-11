@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Radar, Users, User, ArrowLeft, Compass } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
+import LabsErrorBoundary from "./LabsErrorBoundary";
 import "./labs-theme.css";
 
 interface LabsLayoutProps {
@@ -77,7 +78,9 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
       </header>
 
       <main className="pb-20 min-h-[calc(100dvh-52px)]">
-        {children}
+        <LabsErrorBoundary>
+          {children}
+        </LabsErrorBoundary>
       </main>
 
       {!isLabsHome && (
