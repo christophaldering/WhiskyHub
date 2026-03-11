@@ -420,7 +420,7 @@ export default function LabsConnoisseur() {
                 disabled={deleteMutation.isPending}
                 data-testid="button-confirm-delete"
                 style={{
-                  flex: 1, padding: "10px 16px", background: "var(--labs-danger)", color: "#fff", border: "none",
+                  flex: 1, padding: "10px 16px", background: "var(--labs-danger)", color: "var(--labs-bg)", border: "none",
                   borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: deleteMutation.isPending ? "wait" : "pointer",
                   opacity: deleteMutation.isPending ? 0.7 : 1, fontFamily: "inherit",
                 }}

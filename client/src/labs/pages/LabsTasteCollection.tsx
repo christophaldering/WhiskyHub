@@ -333,7 +333,7 @@ export default function LabsTasteCollection() {
             <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>Remove "{deleteTarget.name}" from your collection?</p>
             <div className="flex justify-end gap-2.5">
               <button onClick={() => setDeleteTarget(null)} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }}>Cancel</button>
-              <button onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)} disabled={deleteMutation.isPending} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "#fff", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer", opacity: deleteMutation.isPending ? 0.6 : 1 }}>Delete</button>
+              <button onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)} disabled={deleteMutation.isPending} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer", opacity: deleteMutation.isPending ? 0.6 : 1 }}>Delete</button>
             </div>
           </div>
         </div>
@@ -346,7 +346,7 @@ export default function LabsTasteCollection() {
             <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>This cannot be undone.</p>
             <div className="flex justify-end gap-2.5">
               <button onClick={() => setBulkDeleteConfirm(false)} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }}>Cancel</button>
-              <button onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))} disabled={bulkDeleteMutation.isPending} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "#fff", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer" }}>Delete</button>
+              <button onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))} disabled={bulkDeleteMutation.isPending} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer" }}>Delete</button>
             </div>
           </div>
         </div>

@@ -500,7 +500,7 @@ export default function LabsBenchmark() {
                             {deleteConfirmId === entry.id ? (
                               <div className="flex items-center gap-1">
                                 <button
-                                  style={{ width: 24, height: 24, background: "var(--labs-danger)", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                  style={{ width: 24, height: 24, background: "var(--labs-danger)", color: "var(--labs-bg)", border: "none", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                                   onClick={() => deleteMutation.mutate(entry.id)}
                                   disabled={deleteMutation.isPending}
                                   data-testid={`button-confirm-delete-${entry.id}`}

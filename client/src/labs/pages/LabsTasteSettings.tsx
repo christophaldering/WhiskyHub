@@ -332,7 +332,7 @@ export default function LabsTasteSettings() {
                 {deletePinError && <p className="text-xs" style={{ color: "var(--labs-danger)" }}>{deletePinError}</p>}
                 <div className="flex gap-2">
                   <button onClick={() => { setDeleteConfirm(false); setDeletePin(""); setDeletePinError(""); }} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 13 }}>Cancel</button>
-                  <button onClick={() => deleteMutation.mutate(deletePin)} disabled={!deletePin || deleteMutation.isPending} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#fff", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer", opacity: !deletePin ? 0.5 : 1 }} data-testid="button-labs-confirm-delete-account">
+                  <button onClick={() => deleteMutation.mutate(deletePin)} disabled={!deletePin || deleteMutation.isPending} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer", opacity: !deletePin ? 0.5 : 1 }} data-testid="button-labs-confirm-delete-account">
                     {deleteMutation.isPending ? "..." : "Confirm Delete"}
                   </button>
                 </div>

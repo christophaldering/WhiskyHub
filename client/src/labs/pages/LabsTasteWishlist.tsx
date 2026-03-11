@@ -173,7 +173,7 @@ export default function LabsTasteWishlist() {
             <p className="text-sm mb-5" style={{ color: "var(--labs-text-muted)" }}>Are you sure?</p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setDeleteTarget(null)} className="labs-btn-secondary" style={{ padding: "8px 16px" }} data-testid="button-labs-cancel-delete">Cancel</button>
-              <button onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "#fff", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer" }} data-testid="button-labs-confirm-delete">Delete</button>
+              <button onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer" }} data-testid="button-labs-confirm-delete">Delete</button>
             </div>
           </div>
         </div>

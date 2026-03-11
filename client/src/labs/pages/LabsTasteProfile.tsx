@@ -300,7 +300,7 @@ export default function LabsTasteProfile() {
                       <Radar
                         name={whiskyProfile?.comparisonData?.mode === "friends" ? "Friends" : "Global"}
                         dataKey={whiskyProfile?.comparisonData ? "comparison" : "global"}
-                        stroke="#9ca3af" fill="#9ca3af" fillOpacity={0.08} strokeDasharray="4 4"
+                        stroke="var(--labs-text-muted)" fill="var(--labs-text-muted)" fillOpacity={0.08} strokeDasharray="4 4"
                       />
                     )}
                     <Radar name="You" dataKey="value" stroke="var(--labs-accent)" fill="var(--labs-accent)" fillOpacity={0.25} strokeWidth={2} />

@@ -797,7 +797,7 @@ function DeleteDialog({ onCancel, onConfirm, isPending }: { onCancel: () => void
         <p className="text-sm mb-5" style={{ color: "var(--labs-text-secondary)" }}>Are you sure you want to delete this entry? This cannot be undone.</p>
         <div className="flex justify-end gap-2.5">
           <button onClick={onCancel} className="labs-btn-secondary" style={{ padding: "8px 16px", fontSize: 14 }} data-testid="button-labs-cancel-delete">Cancel</button>
-          <button onClick={onConfirm} disabled={isPending} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "#fff", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer", opacity: isPending ? 0.6 : 1 }} data-testid="button-labs-confirm-delete">
+          <button onClick={onConfirm} disabled={isPending} style={{ padding: "8px 16px", fontSize: 14, fontWeight: 600, color: "var(--labs-bg)", background: "var(--labs-danger)", border: "none", borderRadius: 8, cursor: "pointer", opacity: isPending ? 0.6 : 1 }} data-testid="button-labs-confirm-delete">
             {isPending ? "..." : "Delete"}
           </button>
         </div>
