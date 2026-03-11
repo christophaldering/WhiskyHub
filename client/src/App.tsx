@@ -188,6 +188,7 @@ import LabsTastingRecap from "@/labs/pages/LabsTastingRecap";
 import LabsHostDashboard from "@/labs/pages/LabsHostDashboard";
 import LabsCalendar from "@/labs/pages/LabsCalendar";
 import LabsHistory from "@/labs/pages/LabsHistory";
+import LabsHistoricalDetail from "@/labs/pages/LabsHistoricalDetail";
 import LabsTasteDrams from "@/labs/pages/LabsTasteDrams";
 import LabsTasteCollection from "@/labs/pages/LabsTasteCollection";
 import LabsTasteWishlist from "@/labs/pages/LabsTasteWishlist";
@@ -563,10 +564,12 @@ function Router() {
         <Route path="/labs/:rest*">
           <LabsLayout>
             <Switch>
+              <Route path="/labs/join/:code" component={LabsJoin} />
               <Route path="/labs/join" component={LabsJoin} />
               <Route path="/labs/host/dashboard" component={LabsHostDashboard} />
               <Route path="/labs/host/calendar" component={LabsCalendar} />
               <Route path="/labs/host/history/insights" component={LabsHistory} />
+              <Route path="/labs/host/history/:id" component={LabsHistoricalDetail} />
               <Route path="/labs/host/history" component={LabsHistory} />
               <Route path="/labs/host/:id" component={LabsHost} />
               <Route path="/labs/host" component={LabsHost} />

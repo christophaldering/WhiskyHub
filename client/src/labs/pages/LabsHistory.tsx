@@ -256,7 +256,7 @@ function LabsHistoryList() {
             {sorted.map(tasting => {
               const winnerLabel = [tasting.winnerDistillery, tasting.winnerName].filter(Boolean).join(" \u2014 ");
               return (
-                <Link key={tasting.id} href={`/labs/results/${tasting.id}`} style={{ textDecoration: "none" }}>
+                <Link key={tasting.id} href={`/labs/host/history/${tasting.id}`} style={{ textDecoration: "none" }}>
                   <div className="labs-card-interactive" style={{ padding: "14px 16px" }} data-testid={`tasting-card-${tasting.tastingNumber}`}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                       <div style={{

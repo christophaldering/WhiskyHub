@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { Wine, ArrowRight, AlertCircle, LogIn } from "lucide-react";
 import { useSession, getSession } from "@/lib/session";
 import { useAppStore } from "@/lib/store";
@@ -10,8 +10,9 @@ export default function LabsJoin() {
   const [, navigate] = useLocation();
   const session = useSession();
   const { currentParticipant } = useAppStore();
+  const params = useParams<{ code?: string }>();
 
-  const queryCode = new URLSearchParams(window.location.search).get("code") || "";
+  const queryCode = params.code || new URLSearchParams(window.location.search).get("code") || "";
   const [code, setCode] = useState(queryCode);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

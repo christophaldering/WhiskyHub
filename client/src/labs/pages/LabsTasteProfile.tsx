@@ -235,7 +235,7 @@ export default function LabsTasteProfile() {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div className="grid grid-cols-3 gap-3 labs-fade-in labs-stagger-1">
+          <div className="grid grid-cols-3 gap-3 labs-fade-in labs-stagger-1" data-testid="section-snapshot">
             <div className="labs-card p-4 text-center" data-testid="card-your-style">
               <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--labs-text-muted)" }}>Your Style</p>
               <p className="text-sm font-semibold" style={{ color: styleLabel ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
