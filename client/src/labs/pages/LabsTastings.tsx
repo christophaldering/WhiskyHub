@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useLocation, Link } from "wouter";
-import { Wine, Calendar, MapPin, ChevronRight, Clock, Search } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, Clock, Search, Crown, PenLine } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
 
@@ -110,6 +110,36 @@ export default function LabsTastings() {
             {counts.live} Live
           </span>
         )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mb-5 labs-fade-in labs-stagger-1">
+        <Link href="/labs/join">
+          <div className="labs-card labs-card-interactive text-center p-4" data-testid="labs-action-join">
+            <div className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center" style={{ background: "var(--labs-accent-muted)" }}>
+              <Wine className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+            </div>
+            <div className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>Join</div>
+            <div className="text-[10px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>Participate</div>
+          </div>
+        </Link>
+        <Link href="/labs/solo">
+          <div className="labs-card labs-card-interactive text-center p-4" data-testid="labs-action-solo">
+            <div className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center" style={{ background: "var(--labs-surface-elevated)" }}>
+              <PenLine className="w-5 h-5" style={{ color: "var(--labs-text-secondary)" }} />
+            </div>
+            <div className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>Solo</div>
+            <div className="text-[10px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>Log a dram</div>
+          </div>
+        </Link>
+        <Link href="/labs/host">
+          <div className="labs-card labs-card-interactive text-center p-4" data-testid="labs-action-host">
+            <div className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center" style={{ background: "var(--labs-success-muted)" }}>
+              <Crown className="w-5 h-5" style={{ color: "var(--labs-success)" }} />
+            </div>
+            <div className="text-xs font-semibold" style={{ color: "var(--labs-text)" }}>Host</div>
+            <div className="text-[10px] mt-0.5" style={{ color: "var(--labs-text-muted)" }}>Create session</div>
+          </div>
+        </Link>
       </div>
 
       <div className="relative mb-4">

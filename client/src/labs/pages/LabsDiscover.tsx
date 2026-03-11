@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import {
   Compass, BookOpen, Building2, Package, FileText, Map,
   FlaskConical, BookMarked, MessageSquare, ChevronRight, ChevronLeft,
+  Sparkles, Info, Heart, Rss, Users, BarChart3,
 } from "lucide-react";
 import type { ElementType } from "react";
 
@@ -22,6 +23,12 @@ const LINKS: DiscoverLink[] = [
   { icon: FlaskConical, label: "Research", description: "Science of perception & bibliography", href: "/labs/discover/research", testId: "labs-link-discover-research" },
   { icon: BookMarked, label: "Rabbit Hole", description: "Rating models, statistics & deep dives", href: "/labs/discover/rabbit-hole", testId: "labs-link-discover-rabbit-hole" },
   { icon: MessageSquare, label: "Vocabulary", description: "Copy-paste vocabulary cards", href: "/labs/discover/vocabulary", testId: "labs-link-discover-vocabulary" },
+  { icon: Sparkles, label: "AI Curation", description: "AI whisky recommendations for lineups", href: "/labs/taste/ai-curation", testId: "labs-link-discover-ai-curation" },
+  { icon: BarChart3, label: "Historical Insights", description: "Cross-tasting analytics & trends", href: "/labs/host/history/insights", testId: "labs-link-discover-historical-insights" },
+  { icon: Info, label: "About", description: "Story, founder info & contact", href: "/labs/about", testId: "labs-link-discover-about" },
+  { icon: Heart, label: "Donate", description: "Support CaskSense & Hospice", href: "/labs/donate", testId: "labs-link-discover-donate" },
+  { icon: Rss, label: "Activity Feed", description: "See what your friends are up to", href: "/labs/activity", testId: "labs-link-discover-activity" },
+  { icon: Users, label: "Community", description: "Community features & archive", href: "/labs/community", testId: "labs-link-discover-community" },
 ];
 
 export default function LabsDiscover() {
