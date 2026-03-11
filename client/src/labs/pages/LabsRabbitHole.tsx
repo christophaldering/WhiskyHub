@@ -6,8 +6,8 @@ import type { ElementType } from "react";
 interface RCard { icon: ElementType; titleKey: string; descKey: string; href: string; testId: string; }
 
 const CARDS: RCard[] = [
-  { icon: SlidersHorizontal, titleKey: "rabbitHole.ratingModelsTitle", descKey: "rabbitHole.ratingModelsDesc", href: "/method", testId: "labs-rabbit-rating-models" },
-  { icon: BarChart3, titleKey: "rabbitHole.statisticsTitle", descKey: "rabbitHole.statisticsDesc", href: "/background", testId: "labs-rabbit-statistics" },
+  { icon: SlidersHorizontal, titleKey: "rabbitHole.ratingModelsTitle", descKey: "rabbitHole.ratingModelsDesc", href: "/labs/discover/method", testId: "labs-rabbit-rating-models" },
+  { icon: BarChart3, titleKey: "rabbitHole.statisticsTitle", descKey: "rabbitHole.statisticsDesc", href: "/labs/discover/background", testId: "labs-rabbit-statistics" },
   { icon: BookOpen, titleKey: "rabbitHole.researchTitle", descKey: "rabbitHole.researchDesc", href: "/labs/discover/research", testId: "labs-rabbit-research" },
 ];
 

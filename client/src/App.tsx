@@ -209,6 +209,8 @@ import LabsTemplates from "@/labs/pages/LabsTemplates";
 import LabsGuide from "@/labs/pages/LabsGuide";
 import LabsResearch from "@/labs/pages/LabsResearch";
 import LabsRabbitHole from "@/labs/pages/LabsRabbitHole";
+import LabsMethod from "@/labs/pages/LabsMethod";
+import LabsBackground from "@/labs/pages/LabsBackground";
 import LabsVocabulary from "@/labs/pages/LabsVocabulary";
 import LabsAbout from "@/labs/pages/LabsAbout";
 import LabsDonate from "@/labs/pages/LabsDonate";
@@ -588,6 +590,8 @@ function Router() {
               <Route path="/labs/discover/guide" component={LabsGuide} />
               <Route path="/labs/discover/research" component={LabsResearch} />
               <Route path="/labs/discover/rabbit-hole" component={LabsRabbitHole} />
+              <Route path="/labs/discover/method" component={LabsMethod} />
+              <Route path="/labs/discover/background" component={LabsBackground} />
               <Route path="/labs/discover/vocabulary" component={LabsVocabulary} />
               <Route path="/labs/discover" component={LabsDiscover} />
               <Route path="/labs/taste/profile" component={LabsTasteProfile} />
