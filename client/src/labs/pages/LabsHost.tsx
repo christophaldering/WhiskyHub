@@ -6,7 +6,8 @@ import {
   Users, Calendar, MapPin, ArrowLeft, Loader2,
   Wine, BarChart3, CheckCircle2, Clock, CircleDashed,
   ChevronDown, ChevronUp, Compass, SkipForward, StopCircle, AlertTriangle,
-  QrCode, Mail, Send, Star, Monitor,
+  QrCode, Mail, Send, Star, Monitor, Gauge, Globe, Sliders,
+  MessageCircle, Video, FileText,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -628,19 +629,96 @@ function MobileCompanion({
   );
 }
 
+function LabsToggle({ checked, onChange, icon, label, description, testId }: {
+  checked: boolean; onChange: (v: boolean) => void;
+  icon: React.ReactNode; label: string; description: string; testId: string;
+}) {
+  return (
+    <div
+      className="labs-card p-4 flex items-center justify-between cursor-pointer"
+      onClick={() => onChange(!checked)}
+      data-testid={testId}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ background: checked ? "var(--labs-accent-muted)" : "var(--labs-surface)" }}
+        >
+          {icon}
+        </div>
+        <div>
+          <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>{label}</p>
+          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{description}</p>
+        </div>
+      </div>
+      <div
+        className="w-12 h-7 rounded-full transition-all flex items-center px-0.5"
+        style={{
+          background: checked ? "var(--labs-accent)" : "var(--labs-border)",
+          justifyContent: checked ? "flex-end" : "flex-start",
+        }}
+      >
+        <div className="w-6 h-6 rounded-full transition-all" style={{ background: "var(--labs-bg)" }} />
+      </div>
+    </div>
+  );
+}
+
+function LabsSegmentedSelect({ value, options, onChange }: {
+  value: string | number; options: { value: string | number; label: string; desc?: string }[];
+  onChange: (v: any) => void;
+}) {
+  return (
+    <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(options.length, 4)}, 1fr)` }}>
+      {options.map((opt) => {
+        const active = value === opt.value;
+        return (
+          <button
+            key={String(opt.value)}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className="rounded-lg transition-all text-center"
+            style={{
+              padding: "10px 4px",
+              background: active ? "var(--labs-accent-muted)" : "var(--labs-surface)",
+              border: `1.5px solid ${active ? "var(--labs-accent)" : "var(--labs-border)"}`,
+              cursor: "pointer",
+            }}
+            data-testid={`labs-opt-${opt.value}`}
+          >
+            <div className="font-bold" style={{ fontSize: 16, color: active ? "var(--labs-accent)" : "var(--labs-text)" }}>{opt.label}</div>
+            {opt.desc && <div style={{ fontSize: 10, color: "var(--labs-text-muted)", lineHeight: 1.2, marginTop: 2 }}>{opt.desc}</div>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function CreateTastingForm() {
   const [, navigate] = useLocation();
   const { currentParticipant } = useAppStore();
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [location, setLocation] = useState("");
+  const [description, setDescription] = useState("");
   const [blindMode, setBlindMode] = useState(false);
+  const [ratingScale, setRatingScale] = useState(100);
   const [guidedMode, setGuidedMode] = useState(false);
+  const [guestMode, setGuestMode] = useState("standard");
+  const [sessionUiMode, setSessionUiMode] = useState("flow");
+  const [reflectionEnabled, setReflectionEnabled] = useState(false);
+  const [reflectionMode, setReflectionMode] = useState("standard");
+  const [reflectionVisibility, setReflectionVisibility] = useState("named");
+  const [videoLink, setVideoLink] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const handleCreate = async () => {
     if (!title.trim() || !currentParticipant) return;
     setSubmitting(true);
+    setError("");
     try {
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const result = await tastingApi.create({
@@ -650,14 +728,22 @@ function CreateTastingForm() {
         hostId: currentParticipant.id,
         code,
         blindMode,
+        ratingScale,
         guidedMode,
+        guestMode,
+        sessionUiMode: sessionUiMode || null,
+        reflectionEnabled,
+        reflectionMode,
+        reflectionVisibility,
+        videoLink: videoLink.trim() || null,
         status: "draft",
       });
       if (result?.id) {
         navigate(`/labs/host/${result.id}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to create tasting:", err);
+      setError(err.message || "Failed to create tasting. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -689,13 +775,14 @@ function CreateTastingForm() {
 
       <div className="space-y-5">
         <div>
-          <label className="labs-section-label" htmlFor="tasting-title">Title</label>
+          <label className="labs-section-label" htmlFor="tasting-title">Title *</label>
           <input
             id="tasting-title"
             className="labs-input"
             placeholder="e.g. Highland Evening, Spring Tasting..."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            maxLength={200}
             data-testid="labs-host-input-title"
           />
         </div>
@@ -725,71 +812,206 @@ function CreateTastingForm() {
           </div>
         </div>
 
-        <div
-          className="labs-card p-4 flex items-center justify-between cursor-pointer"
-          onClick={() => setBlindMode(!blindMode)}
-          data-testid="labs-host-toggle-blind"
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: blindMode ? "var(--labs-accent-muted)" : "var(--labs-surface)" }}
-            >
-              <EyeOff className="w-5 h-5" style={{ color: blindMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
-            </div>
-            <div>
-              <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Blind Tasting</p>
-              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                Hide whisky details until reveal
-              </p>
-            </div>
-          </div>
-          <div
-            className="w-12 h-7 rounded-full transition-all flex items-center px-0.5"
-            style={{
-              background: blindMode ? "var(--labs-accent)" : "var(--labs-border)",
-              justifyContent: blindMode ? "flex-end" : "flex-start",
-            }}
-          >
-            <div
-              className="w-6 h-6 rounded-full transition-all"
-              style={{ background: "var(--labs-bg)" }}
-            />
-          </div>
+        <div>
+          <label className="labs-section-label" htmlFor="tasting-description">
+            <FileText className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
+            Description
+          </label>
+          <textarea
+            id="tasting-description"
+            className="labs-input"
+            placeholder="Optional notes for your guests..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            style={{ resize: "vertical", minHeight: 48 }}
+            data-testid="labs-host-input-description"
+          />
         </div>
 
-        <div
-          className="labs-card p-4 flex items-center justify-between cursor-pointer"
-          onClick={() => setGuidedMode(!guidedMode)}
-          data-testid="labs-host-toggle-guided"
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: guidedMode ? "var(--labs-accent-muted)" : "var(--labs-surface)" }}
-            >
-              <Compass className="w-5 h-5" style={{ color: guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />
-            </div>
-            <div>
-              <p className="text-sm font-medium" style={{ color: "var(--labs-text)" }}>Guided Tasting</p>
-              <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                Host controls the pace — participants rate one dram at a time
-              </p>
-            </div>
-          </div>
-          <div
-            className="w-12 h-7 rounded-full transition-all flex items-center px-0.5"
-            style={{
-              background: guidedMode ? "var(--labs-accent)" : "var(--labs-border)",
-              justifyContent: guidedMode ? "flex-end" : "flex-start",
-            }}
-          >
-            <div
-              className="w-6 h-6 rounded-full transition-all"
-              style={{ background: "var(--labs-bg)" }}
-            />
-          </div>
+        <LabsToggle
+          checked={blindMode}
+          onChange={setBlindMode}
+          icon={<EyeOff className="w-5 h-5" style={{ color: blindMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+          label="Blind Tasting"
+          description="Hide whisky details until reveal"
+          testId="labs-host-toggle-blind"
+        />
+
+        <div>
+          <label className="labs-section-label">
+            <Gauge className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
+            Rating Scale
+          </label>
+          <LabsSegmentedSelect
+            value={ratingScale}
+            options={[
+              { value: 5, label: "5", desc: "Simple 5-star" },
+              { value: 10, label: "10", desc: "Classic 10-point" },
+              { value: 20, label: "20", desc: "Detailed 20-point" },
+              { value: 100, label: "100", desc: "Professional 100-point" },
+            ]}
+            onChange={setRatingScale}
+          />
         </div>
+
+        <div className="labs-card overflow-hidden" style={{ border: "1px solid var(--labs-border)" }}>
+          <button
+            type="button"
+            onClick={() => setAdvancedOpen(!advancedOpen)}
+            className="w-full flex items-center justify-between"
+            style={{
+              padding: "14px 16px",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--labs-text)",
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+            data-testid="labs-host-toggle-advanced"
+          >
+            <span className="flex items-center gap-2">
+              <Sliders className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+              Advanced Options
+            </span>
+            <ChevronDown
+              className="w-4 h-4 transition-transform"
+              style={{
+                color: "var(--labs-text-muted)",
+                transform: advancedOpen ? "rotate(180deg)" : "rotate(0deg)",
+              }}
+            />
+          </button>
+
+          {advancedOpen && (
+            <div style={{ padding: "0 16px 16px" }} className="space-y-5">
+              <LabsToggle
+                checked={guidedMode}
+                onChange={setGuidedMode}
+                icon={<Compass className="w-5 h-5" style={{ color: guidedMode ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+                label="Host Controls the Pace"
+                description="Guide all guests through each dram together"
+                testId="labs-host-toggle-guided"
+              />
+
+              <div>
+                <label className="labs-section-label">
+                  <Globe className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
+                  How Guests Join
+                </label>
+                <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>
+                  Choose whether guests need an account or can join instantly
+                </p>
+                <LabsSegmentedSelect
+                  value={guestMode}
+                  options={[
+                    { value: "standard", label: "With Account", desc: "Ratings are saved" },
+                    { value: "ultra", label: "Instant Join", desc: "No sign-in needed" },
+                  ]}
+                  onChange={setGuestMode}
+                />
+              </div>
+
+              <div>
+                <label className="labs-section-label">
+                  <Sliders className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
+                  Tasting Experience
+                </label>
+                <p className="text-xs mb-2" style={{ color: "var(--labs-text-muted)" }}>
+                  How guests navigate through the whiskies
+                </p>
+                <LabsSegmentedSelect
+                  value={sessionUiMode}
+                  options={[
+                    { value: "flow", label: "Free Tasting", desc: "Explore all drams freely" },
+                    { value: "focus", label: "One at a Time", desc: "Focus on one dram" },
+                    { value: "journal", label: "Tasting Journal", desc: "Step-by-step guided notes" },
+                  ]}
+                  onChange={setSessionUiMode}
+                />
+              </div>
+
+              <div style={{ borderTop: "1px solid var(--labs-border)", paddingTop: 16 }}>
+                <label className="labs-section-label">
+                  <MessageCircle className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
+                  Group Discussion
+                </label>
+                <p className="text-xs mb-3" style={{ color: "var(--labs-text-muted)" }}>
+                  Let guests share thoughts and comments on each whisky
+                </p>
+                <LabsToggle
+                  checked={reflectionEnabled}
+                  onChange={setReflectionEnabled}
+                  icon={<MessageCircle className="w-5 h-5" style={{ color: reflectionEnabled ? "var(--labs-accent)" : "var(--labs-text-muted)" }} />}
+                  label="Enable Discussion Round"
+                  description="Add a discussion phase after tasting"
+                  testId="labs-host-toggle-reflection"
+                />
+                {reflectionEnabled && (
+                  <div className="space-y-4 mt-4">
+                    <div>
+                      <label className="labs-section-label" style={{ fontSize: 11 }}>Discussion Format</label>
+                      <LabsSegmentedSelect
+                        value={reflectionMode}
+                        options={[
+                          { value: "standard", label: "Standard", desc: "Pre-set questions" },
+                          { value: "custom", label: "Custom", desc: "Your own questions" },
+                        ]}
+                        onChange={setReflectionMode}
+                      />
+                    </div>
+                    <div>
+                      <label className="labs-section-label" style={{ fontSize: 11 }}>Show Names in Discussion</label>
+                      <LabsSegmentedSelect
+                        value={reflectionVisibility}
+                        options={[
+                          { value: "named", label: "Named", desc: "Names shown" },
+                          { value: "anonymous", label: "Anonymous", desc: "Names hidden" },
+                          { value: "optional", label: "Optional", desc: "Guest decides" },
+                        ]}
+                        onChange={setReflectionVisibility}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="labs-section-label">
+                  <Video className="w-3 h-3 inline mr-1" style={{ verticalAlign: "middle" }} />
+                  Video Call Link
+                </label>
+                <input
+                  type="url"
+                  className="labs-input"
+                  value={videoLink}
+                  onChange={(e) => setVideoLink(e.target.value)}
+                  placeholder="https://zoom.us/j/..."
+                  data-testid="labs-host-input-video"
+                />
+                <p className="text-xs mt-1" style={{ color: "var(--labs-text-muted)" }}>
+                  Add a Zoom, Teams or Google Meet link for remote guests
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <div
+            className="rounded-lg text-sm"
+            style={{
+              padding: "10px 14px",
+              color: "var(--labs-danger, #e74c3c)",
+              background: "rgba(231, 76, 60, 0.1)",
+              border: "1px solid rgba(231, 76, 60, 0.2)",
+            }}
+            data-testid="labs-host-create-error"
+          >
+            {error}
+          </div>
+        )}
 
         <button
           className="labs-btn-primary w-full flex items-center justify-center gap-2"
@@ -802,7 +1024,7 @@ function CreateTastingForm() {
           ) : (
             <Plus className="w-4 h-4" />
           )}
-          {submitting ? "Creating..." : "Create Tasting"}
+          {submitting ? "Creating..." : "Create & Add Whiskies"}
         </button>
       </div>
     </div>
