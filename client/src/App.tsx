@@ -618,6 +618,18 @@ function Router() {
               <Route path="/labs/making-of" component={LabsMakingOf} />
               <Route path="/labs/admin" component={LabsAdmin} />
               <Route path="/labs/home" component={LabsHome} />
+              <Route>{() => (
+                <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
+                  <div className="text-center">
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "var(--labs-accent-muted)" }}>
+                      <span style={{ fontSize: 24 }}>🥃</span>
+                    </div>
+                    <h2 className="labs-serif text-lg font-semibold mb-2" style={{ color: "var(--labs-text)" }}>Page not found</h2>
+                    <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This page doesn't exist in Labs yet.</p>
+                    <a href="/labs/home" className="labs-btn-primary" data-testid="labs-404-home">Back to Labs</a>
+                  </div>
+                </div>
+              )}</Route>
             </Switch>
           </LabsLayout>
         </Route>

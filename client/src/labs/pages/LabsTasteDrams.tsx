@@ -744,7 +744,7 @@ function HistoricalAppearances({ distillery, whiskyName }: { distillery: string;
       </div>
       <div className="flex flex-col gap-1.5">
         {data.appearances.slice(0, 5).map((a: any, i: number) => (
-          <button key={i} onClick={() => navigate(`/labs/history/${a.tastingId}`)} className="labs-card labs-card-interactive flex items-center gap-2.5 p-2.5 w-full text-left" data-testid={`labs-historical-appearance-${i}`}>
+          <button key={i} onClick={() => navigate(`/labs/host/history/${a.tastingId}`)} className="labs-card labs-card-interactive flex items-center gap-2.5 p-2.5 w-full text-left" data-testid={`labs-historical-appearance-${i}`}>
             <div style={{ width: 28, height: 28, borderRadius: 8, background: "var(--labs-accent-muted)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "var(--labs-accent)", flexShrink: 0 }}>
               #{a.tastingNumber}
             </div>
