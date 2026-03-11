@@ -63,8 +63,8 @@ function usePwaInstall() {
 
   const install = async () => {
     if (!deferredPrompt) return;
-    (deferredPrompt as { prompt: () => void }).prompt();
-    const result = await (deferredPrompt as { userChoice: Promise<{ outcome: string }> }).userChoice;
+    (deferredPrompt as unknown as { prompt: () => void }).prompt();
+    const result = await (deferredPrompt as unknown as { userChoice: Promise<{ outcome: string }> }).userChoice;
     if (result.outcome === "accepted") setIsInstalled(true);
     setDeferredPrompt(null);
   };

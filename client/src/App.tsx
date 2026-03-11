@@ -209,6 +209,14 @@ import LabsGuide from "@/labs/pages/LabsGuide";
 import LabsResearch from "@/labs/pages/LabsResearch";
 import LabsRabbitHole from "@/labs/pages/LabsRabbitHole";
 import LabsVocabulary from "@/labs/pages/LabsVocabulary";
+import LabsAbout from "@/labs/pages/LabsAbout";
+import LabsDonate from "@/labs/pages/LabsDonate";
+import LabsImpressum from "@/labs/pages/LabsImpressum";
+import LabsPrivacy from "@/labs/pages/LabsPrivacy";
+import LabsActivityPage from "@/labs/pages/LabsActivity";
+import LabsCommunity from "@/labs/pages/LabsCommunity";
+import LabsMakingOf from "@/labs/pages/LabsMakingOf";
+import LabsAdmin from "@/labs/pages/LabsAdmin";
 import { AppShellV2 } from "@/v2/components";
 import V2Home from "@/v2/pages/V2Home";
 import V2Sessions from "@/v2/pages/V2Sessions";
@@ -598,6 +606,14 @@ function Router() {
               <Route path="/labs/taste" component={LabsTaste} />
               <Route path="/labs/circle" component={LabsCircle} />
               <Route path="/labs/solo" component={LabsSolo} />
+              <Route path="/labs/about" component={LabsAbout} />
+              <Route path="/labs/donate" component={LabsDonate} />
+              <Route path="/labs/impressum" component={LabsImpressum} />
+              <Route path="/labs/privacy" component={LabsPrivacy} />
+              <Route path="/labs/activity" component={LabsActivityPage} />
+              <Route path="/labs/community" component={LabsCommunity} />
+              <Route path="/labs/making-of" component={LabsMakingOf} />
+              <Route path="/labs/admin" component={LabsAdmin} />
               <Route path="/labs/home" component={LabsHome} />
             </Switch>
           </LabsLayout>
