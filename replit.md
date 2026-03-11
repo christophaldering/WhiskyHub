@@ -116,6 +116,19 @@ Six AI-powered Labs pages ported from M2 into Labs dark-theme design system, acc
 -   **Connoisseur Report** (`LabsConnoisseur.tsx`, route `/labs/taste/connoisseur`): AI report generation with inline language selector (EN/DE), markdown renderer, copy/download/delete actions, expandable report history.
 -   **AI Curation** (`LabsAICuration.tsx`, route `/labs/taste/ai-curation`): Select a tasting, get curated whisky discovery suggestions based on lineup context.
 
+### Labs Discover & Knowledge Hub (Task #7)
+Nine Labs Discover pages ported from M2 into Labs dark-theme design system, accessible from "Discover" bottom nav tab:
+-   **Discover Hub** (`LabsDiscover.tsx`, route `/labs/discover`): Central navigation page with cards linking to all knowledge sub-pages.
+-   **Lexicon** (`LabsLexicon.tsx`, route `/labs/discover/lexicon`): Searchable, categorized whisky dictionary (5 categories, EN/DE).
+-   **Distilleries** (`LabsDistilleries.tsx`, route `/labs/discover/distilleries`): List + map views, country filter chips, search, expandable detail cards.
+-   **Bottlers** (`LabsBottlers.tsx`, route `/labs/discover/bottlers`): Searchable/sortable bottler database with Whiskybase links, notable releases.
+-   **Templates** (`LabsTemplates.tsx`, route `/labs/discover/templates`): Copy-paste vocabulary cards per whisky style (Islay/Speyside/etc), nose/palate/finish sections.
+-   **Guide** (`LabsGuide.tsx`, route `/labs/discover/guide`): Step-by-step tasting guide with section images.
+-   **Research** (`LabsResearch.tsx`, route `/labs/discover/research`): Science of perception wrapper using shared Research component.
+-   **Rabbit Hole** (`LabsRabbitHole.tsx`, route `/labs/discover/rabbit-hole`): Deep-dive navigation hub (rating models, statistics, research).
+-   **Vocabulary** (`LabsVocabulary.tsx`, route `/labs/discover/vocabulary`): Copy-paste vocabulary cards by region/style with expert tips.
+-   **Bottom Nav**: "Discover" tab added to `LabsLayout.tsx` with BookOpen icon.
+
 ### Test Suite
 A comprehensive test framework using Vitest covers unit, API, E2E, and smoke tests, including Module2Shell rendering, authentication flows, API endpoints, and historical tasting helpers.
 

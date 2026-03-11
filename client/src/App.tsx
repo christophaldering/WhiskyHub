@@ -200,6 +200,15 @@ import LabsCollectionAnalysis from "@/labs/pages/LabsCollectionAnalysis";
 import LabsConnoisseur from "@/labs/pages/LabsConnoisseur";
 import LabsAICuration from "@/labs/pages/LabsAICuration";
 import LabsInvite from "@/labs/pages/LabsInvite";
+import LabsDiscover from "@/labs/pages/LabsDiscover";
+import LabsLexicon from "@/labs/pages/LabsLexicon";
+import LabsDistilleries from "@/labs/pages/LabsDistilleries";
+import LabsBottlers from "@/labs/pages/LabsBottlers";
+import LabsTemplates from "@/labs/pages/LabsTemplates";
+import LabsGuide from "@/labs/pages/LabsGuide";
+import LabsResearch from "@/labs/pages/LabsResearch";
+import LabsRabbitHole from "@/labs/pages/LabsRabbitHole";
+import LabsVocabulary from "@/labs/pages/LabsVocabulary";
 import { AppShellV2 } from "@/v2/components";
 import V2Home from "@/v2/pages/V2Home";
 import V2Sessions from "@/v2/pages/V2Sessions";
@@ -561,6 +570,15 @@ function Router() {
               <Route path="/labs/results/:id" component={LabsResults} />
               <Route path="/labs/explore/bottles/:id" component={LabsBottleDetail} />
               <Route path="/labs/explore" component={LabsExplore} />
+              <Route path="/labs/discover/lexicon" component={LabsLexicon} />
+              <Route path="/labs/discover/distilleries" component={LabsDistilleries} />
+              <Route path="/labs/discover/bottlers" component={LabsBottlers} />
+              <Route path="/labs/discover/templates" component={LabsTemplates} />
+              <Route path="/labs/discover/guide" component={LabsGuide} />
+              <Route path="/labs/discover/research" component={LabsResearch} />
+              <Route path="/labs/discover/rabbit-hole" component={LabsRabbitHole} />
+              <Route path="/labs/discover/vocabulary" component={LabsVocabulary} />
+              <Route path="/labs/discover" component={LabsDiscover} />
               <Route path="/labs/taste/profile" component={LabsTasteProfile} />
               <Route path="/labs/taste/analytics" component={LabsTasteAnalytics} />
               <Route path="/labs/taste/wheel" component={LabsTasteWheel} />
