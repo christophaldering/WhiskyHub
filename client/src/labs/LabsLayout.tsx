@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Radar, Users, User, ArrowLeft, Compass, BookOpen, Bell, Download, X, Volume2, VolumeX, RefreshCw } from "lucide-react";
+import { Radar, Users, User, ArrowLeft, Compass, BookOpen, Bell, Download, X, Volume2, VolumeX, RefreshCw, Sun, Moon } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
@@ -347,6 +347,18 @@ function LabsAmbientToggle() {
   );
 }
 
+function useLabsTheme() {
+  const [theme, setThemeState] = useState<"dark" | "light">(() => {
+    try { return (localStorage.getItem("cs_labs_theme") as "dark" | "light") || "dark"; } catch { return "dark"; }
+  });
+  const setTheme = useCallback((t: "dark" | "light") => {
+    setThemeState(t);
+    try { localStorage.setItem("cs_labs_theme", t); } catch {}
+  }, []);
+  const toggle = useCallback(() => setTheme(theme === "dark" ? "light" : "dark"), [theme, setTheme]);
+  return { theme, toggle };
+}
+
 export default function LabsLayout({ children }: LabsLayoutProps) {
   const [location] = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -356,15 +368,16 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   const { pullDistance, refreshing } = usePullToRefresh(mainRef);
   useHeartbeat();
   useFriendOnlineNotifications();
+  const { theme, toggle: toggleTheme } = useLabsTheme();
 
   const isLabsHome = location === "/labs" || location === "/labs/";
 
   return (
-    <div className="labs-shell">
+    <div className={`labs-shell${theme === "light" ? " labs-light" : ""}`}>
       <header
         className="sticky top-0 z-40 flex items-center justify-between px-5 py-3"
         style={{
-          background: "rgba(26, 23, 20, 0.88)",
+          background: theme === "light" ? "rgba(245, 240, 232, 0.92)" : "rgba(26, 23, 20, 0.88)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
           borderBottom: "1px solid var(--labs-border-subtle)",
@@ -381,6 +394,22 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
         </Link>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="flex items-center justify-center rounded-full transition-all"
+            style={{
+              width: 32,
+              height: 32,
+              background: "var(--labs-accent-muted)",
+              color: "var(--labs-accent)",
+              border: "none",
+              cursor: "pointer",
+            }}
+            title={theme === "dark" ? "Switch to Light" : "Switch to Dark"}
+            data-testid="labs-theme-toggle"
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
           <LabsAmbientToggle />
           <LabsNotificationBell />
           <button
@@ -468,7 +497,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
         <nav
           className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around"
           style={{
-            background: "rgba(26, 23, 20, 0.92)",
+            background: theme === "light" ? "rgba(245, 240, 232, 0.95)" : "rgba(26, 23, 20, 0.92)",
             backdropFilter: "blur(16px)",
             WebkitBackdropFilter: "blur(16px)",
             borderTop: "1px solid var(--labs-border-subtle)",

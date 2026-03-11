@@ -37,6 +37,42 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.labs-shell.labs-light {
+  --labs-bg: #f5f0e8;
+  --labs-surface: #ffffff;
+  --labs-surface-hover: #f0ebe2;
+  --labs-surface-elevated: #faf7f2;
+  --labs-border: #d9cfbf;
+  --labs-border-subtle: #e8e0d4;
+  --labs-text: #2c2418;
+  --labs-text-secondary: #5c4f3a;
+  --labs-text-muted: #8a7e6d;
+  --labs-accent: #b8872e;
+  --labs-accent-hover: #a07526;
+  --labs-accent-muted: rgba(184, 135, 46, 0.10);
+  --labs-accent-glow: rgba(184, 135, 46, 0.05);
+  --labs-success: #4a9a52;
+  --labs-success-muted: rgba(74, 154, 82, 0.10);
+  --labs-danger: #c05050;
+  --labs-danger-muted: rgba(192, 80, 80, 0.10);
+  --labs-info: #4a82b0;
+  --labs-info-muted: rgba(74, 130, 176, 0.10);
+  --labs-dim-nose: #c08a3a;
+  --labs-dim-taste: #a86830;
+  --labs-dim-finish: #8a5848;
+  --labs-dim-balance: #6a7a48;
+  --labs-accent-dark: #f5f0e8;
+  --labs-on-accent: #ffffff;
+}
+
+.labs-shell.labs-light .labs-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.labs-shell.labs-light .labs-card-elevated {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
 .labs-shell * {
   border-color: var(--labs-border-subtle);
 }
