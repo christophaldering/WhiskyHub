@@ -156,9 +156,7 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
         </div>
       </Link>
 
-      {profileOpen && (
-        <M2ProfileMenu onClose={() => setProfileOpen(false)} />
-      )}
+      <M2ProfileMenu open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
 }

@@ -535,7 +535,7 @@ function Router() {
               <Route path="/labs/explore" component={LabsExplore} />
               <Route path="/labs/taste" component={LabsTaste} />
               <Route path="/labs/circle" component={LabsCircle} />
-              <Route path="/labs/solo">{() => <Redirect to="/m2/solo" />}</Route>
+              <Route path="/labs/solo">{() => <Redirect to="/m2/tastings/solo" />}</Route>
               <Route path="/labs/home" component={LabsHome} />
             </Switch>
           </LabsLayout>
