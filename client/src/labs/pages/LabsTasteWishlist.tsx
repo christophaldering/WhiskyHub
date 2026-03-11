@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { wishlistApi, wishlistScanApi, textExtractApi } from "@/lib/api";
+import { wishlistApi, wishlistScanApi } from "@/lib/api";
 import { useAIStatus } from "@/hooks/use-ai-status";
 import { useSession } from "@/lib/session";
 import { useLocation, Link } from "wouter";
@@ -16,9 +16,9 @@ import type { WishlistEntry } from "@shared/schema";
 type View = "list" | "form";
 
 const PRIORITY_COLORS: Record<string, { text: string; bg: string; border: string }> = {
-  high: { text: "#f87171", bg: "rgba(239,68,68,0.1)", border: "rgba(239,68,68,0.2)" },
-  medium: { text: "#fbbf24", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.2)" },
-  low: { text: "#60a5fa", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.2)" },
+  high: { text: "var(--labs-danger)", bg: "rgba(212,106,106,0.1)", border: "rgba(212,106,106,0.2)" },
+  medium: { text: "var(--labs-accent)", bg: "var(--labs-accent-muted)", border: "rgba(212,162,86,0.2)" },
+  low: { text: "var(--labs-info)", bg: "rgba(106,168,212,0.1)", border: "rgba(106,168,212,0.2)" },
 };
 
 const PRIORITY_ICONS: Record<string, any> = { high: Flame, medium: Sparkles, low: Clock };
@@ -130,10 +130,10 @@ export default function LabsTasteWishlist() {
                           </div>
                           {entry.notes && <p className="text-xs mt-2" style={{ color: "var(--labs-text-muted)", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{entry.notes}</p>}
                           {entry.aiSummary && (
-                            <div className="mt-2.5 p-2.5 rounded-lg" style={{ background: "rgba(245,158,11,0.05)", border: "1px solid rgba(245,158,11,0.15)" }}>
+                            <div className="mt-2.5 p-2.5 rounded-lg" style={{ background: "var(--labs-accent-muted)", border: "1px solid rgba(212,162,86,0.15)" }}>
                               <div className="flex items-center gap-1.5 mb-1">
-                                <Sparkles className="w-3 h-3" style={{ color: "#f59e0b" }} />
-                                <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#fbbf24" }}>Why Interesting</span>
+                                <Sparkles className="w-3 h-3" style={{ color: "var(--labs-accent)" }} />
+                                <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>Why Interesting</span>
                               </div>
                               <p className="text-xs" style={{ color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }} data-testid={`text-labs-summary-${entry.id}`}>{entry.aiSummary}</p>
                             </div>
@@ -319,10 +319,10 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
         )}
 
         {aiSummary && (
-          <div className="labs-card p-3" style={{ border: "1px solid rgba(245,158,11,0.15)" }}>
+          <div className="labs-card p-3" style={{ border: "1px solid rgba(212,162,86,0.15)" }}>
             <div className="flex items-center gap-1.5 mb-1">
-              <Sparkles className="w-3 h-3" style={{ color: "#f59e0b" }} />
-              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#fbbf24" }}>AI Summary</span>
+              <Sparkles className="w-3 h-3" style={{ color: "var(--labs-accent)" }} />
+              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>AI Summary</span>
             </div>
             <p className="text-xs" style={{ color: "var(--labs-text-secondary)", lineHeight: 1.6, margin: 0 }}>{aiSummary}</p>
           </div>

@@ -251,6 +251,20 @@ export default function LabsTaste() {
         </div>
       </div>
 
+      <div className="mt-8 labs-fade-in labs-stagger-4">
+        <p className="labs-section-label flex items-center gap-2">
+          <BookOpen className="w-3.5 h-3.5" />
+          Data & Tools
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <NavItem icon={BookOpen} label="Drams Journal" description="Your tasting diary & entries" href="/labs/taste/drams" testId="labs-taste-link-drams" badge={journalCount || null} />
+          <NavItem icon={Archive} label="Collection" description="Manage your whisky bottles" href="/labs/taste/collection" testId="labs-taste-link-collection" />
+          <NavItem icon={Star} label="Wishlist" description="Whiskies you want to try" href="/labs/taste/wishlist" testId="labs-taste-link-wishlist" />
+          <NavItem icon={Download} label="Downloads" description="Export data & templates" href="/labs/taste/downloads" testId="labs-taste-link-downloads" />
+          <NavItem icon={Settings} label="Settings" description="Profile, preferences & account" href="/labs/taste/settings" testId="labs-taste-link-settings" />
+        </div>
+      </div>
+
       {recentTastings.length > 0 && (
         <div className="mt-8 labs-fade-in labs-stagger-4">
           <p className="labs-section-label flex items-center gap-2">
