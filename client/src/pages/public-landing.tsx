@@ -203,6 +203,25 @@ function HeroSection() {
           }} data-testid="link-hero-open-app">
             Open App <ChevronRight style={{ width: 16, height: 16 }} />
           </Link>
+          <Link href="/labs/home" data-testid="link-hero-labs" style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "14px 36px",
+            background: "#1a1714",
+            color: "#d4a256",
+            fontFamily: font.body,
+            fontSize: 15,
+            fontWeight: 600,
+            borderRadius: 50,
+            textDecoration: "none",
+            border: "2px solid #d4a256",
+            transition: "transform 0.2s, box-shadow 0.2s",
+            letterSpacing: "0.02em",
+          }}>
+            <FlaskConical style={{ width: 16, height: 16 }} />
+            Labs
+          </Link>
           <Link href="/presentation" data-testid="link-hero-presentation" style={{
             display: "inline-flex",
             alignItems: "center",
@@ -253,25 +272,6 @@ function HeroSection() {
             transition: "border-color 0.2s, background 0.2s",
           }}>
             {i18n.language === "de" ? "Modul 2 testen (05.03.26)" : "Try Module 2 (05.03.26)"}
-          </Link>
-          <Link href="/labs/home" data-testid="link-hero-labs" style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "10px 24px",
-            background: "#1a1714",
-            color: "#d4a256",
-            fontFamily: font.body,
-            fontSize: 13,
-            fontWeight: 600,
-            borderRadius: 50,
-            textDecoration: "none",
-            border: "1px solid #3d3529",
-            transition: "transform 0.2s, box-shadow 0.2s",
-            letterSpacing: "0.02em",
-          }}>
-            <FlaskConical style={{ width: 14, height: 14 }} />
-            Labs
           </Link>
         </div>
       </FadeUp>
