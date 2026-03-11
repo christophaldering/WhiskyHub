@@ -4,6 +4,7 @@ import {
   Wine, Star, Calendar, ChevronRight, TrendingUp, BookOpen,
   MapPin, Droplets, BarChart3, Target, Compass, Award,
   Activity, PieChart, Sparkles, GitCompareArrows, Lock,
+  Archive, Download, Settings,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useSession } from "@/lib/session";
