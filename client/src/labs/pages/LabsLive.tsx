@@ -302,8 +302,11 @@ function GuidedStepView({
       setScores({ nose: 50, taste: 50, finish: 50, balance: 50, overall: 50 });
       setNotes("");
     }
-    setGuidedMemo(null);
   }, [myRating, whisky?.id]);
+
+  useEffect(() => {
+    setGuidedMemo(null);
+  }, [whisky?.id]);
 
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -698,8 +701,11 @@ export default function LabsLive({ params }: LabsLiveProps) {
       setScores({ nose: 50, taste: 50, finish: 50, balance: 50, overall: 50 });
       setNotes("");
     }
-    setFreeformMemo(null);
   }, [myRating, currentWhisky?.id]);
+
+  useEffect(() => {
+    setFreeformMemo(null);
+  }, [currentWhisky?.id]);
 
   const [saveError, setSaveError] = useState<string | null>(null);
   const tastingStatusRef2 = useRef(tasting?.status);
