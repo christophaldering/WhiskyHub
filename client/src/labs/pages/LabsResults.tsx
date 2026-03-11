@@ -96,10 +96,12 @@ function labsExportPdf(tasting: any, whiskyResults: any[]) {
     }
 
     if (i < 3) {
-      doc.setFillColor(accent[0], accent[1], accent[2]);
-      doc.setGState(new (doc as any).GState({ opacity: 0.12 }));
+      doc.setFillColor(
+        Math.round(bg[0] + (accent[0] - bg[0]) * 0.12),
+        Math.round(bg[1] + (accent[1] - bg[1]) * 0.12),
+        Math.round(bg[2] + (accent[2] - bg[2]) * 0.12),
+      );
       doc.roundedRect(marginX, y - 4, contentW, blockH - 2, 2, 2, "F");
-      doc.setGState(new (doc as any).GState({ opacity: 1 }));
     }
 
     doc.setFont("helvetica", "bold");
