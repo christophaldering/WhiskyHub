@@ -6,7 +6,7 @@ import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { playSoundscape, stopSoundscape, setVolume, type Soundscape } from "@/lib/ambient";
-import LabsVoiceMemoRecorder from "@/labs/components/LabsVoiceMemoRecorder";
+import LabsVoiceMemoRecorder, { type LabsVoiceMemoData } from "@/labs/components/LabsVoiceMemoRecorder";
 
 interface LabsLiveProps {
   params: { id: string };
@@ -275,7 +275,7 @@ function GuidedStepView({
   const [activeDim, setActiveDim] = useState<Dimension>("nose");
   const [scores, setScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50, overall: 50 });
   const [notes, setNotes] = useState("");
-  const [guidedMemo, setGuidedMemo] = useState<any>(null);
+  const [guidedMemo, setGuidedMemo] = useState<LabsVoiceMemoData | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const revealStep = tasting.guidedRevealStep ?? 0;
@@ -302,6 +302,7 @@ function GuidedStepView({
       setScores({ nose: 50, taste: 50, finish: 50, balance: 50, overall: 50 });
       setNotes("");
     }
+    setGuidedMemo(null);
   }, [myRating, whisky?.id]);
 
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -681,7 +682,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
   const [scores, setScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50, overall: 50 });
   const [notes, setNotes] = useState("");
-  const [freeformMemo, setFreeformMemo] = useState<any>(null);
+  const [freeformMemo, setFreeformMemo] = useState<LabsVoiceMemoData | null>(null);
 
   useEffect(() => {
     if (myRating) {
@@ -697,6 +698,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
       setScores({ nose: 50, taste: 50, finish: 50, balance: 50, overall: 50 });
       setNotes("");
     }
+    setFreeformMemo(null);
   }, [myRating, currentWhisky?.id]);
 
   const [saveError, setSaveError] = useState<string | null>(null);

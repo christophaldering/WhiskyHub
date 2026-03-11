@@ -4,7 +4,7 @@ import { Mic, Square, Loader2, Play, Pause, Trash2 } from "lucide-react";
 
 const MAX_DURATION = 30;
 
-interface LabsVoiceMemoData {
+export interface LabsVoiceMemoData {
   audioUrl: string | null;
   transcript: string;
   durationSeconds: number;
