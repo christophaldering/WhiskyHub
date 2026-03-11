@@ -275,6 +275,7 @@ function GuidedStepView({
   const [activeDim, setActiveDim] = useState<Dimension>("nose");
   const [scores, setScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50, overall: 50 });
   const [notes, setNotes] = useState("");
+  const [guidedMemo, setGuidedMemo] = useState<any>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const revealStep = tasting.guidedRevealStep ?? 0;
@@ -542,6 +543,19 @@ function GuidedStepView({
               style={{ resize: "vertical" }}
               data-testid="guided-notes"
             />
+            <div className="mt-3">
+              <LabsVoiceMemoRecorder
+                participantId={currentParticipant?.id || ""}
+                memo={guidedMemo}
+                onMemoChange={(memoData) => {
+                  setGuidedMemo(memoData);
+                  if (memoData?.transcript) {
+                    const updated = notes ? `${notes}\n${memoData.transcript}` : memoData.transcript;
+                    updateNotes(updated);
+                  }
+                }}
+              />
+            </div>
           </div>
 
           <div className="labs-card-elevated p-5 labs-fade-in labs-stagger-4">
@@ -667,6 +681,7 @@ export default function LabsLive({ params }: LabsLiveProps) {
 
   const [scores, setScores] = useState({ nose: 50, taste: 50, finish: 50, balance: 50, overall: 50 });
   const [notes, setNotes] = useState("");
+  const [freeformMemo, setFreeformMemo] = useState<any>(null);
 
   useEffect(() => {
     if (myRating) {
@@ -1057,8 +1072,9 @@ export default function LabsLive({ params }: LabsLiveProps) {
                 <div className="mt-3">
                   <LabsVoiceMemoRecorder
                     participantId={currentParticipant?.id || ""}
-                    memo={null}
+                    memo={freeformMemo}
                     onMemoChange={(memoData) => {
+                      setFreeformMemo(memoData);
                       if (memoData?.transcript) {
                         const updated = notes ? `${notes}\n${memoData.transcript}` : memoData.transcript;
                         updateNotes(updated);
