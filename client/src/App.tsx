@@ -179,6 +179,8 @@ import LabsCircle from "@/labs/pages/LabsCircle";
 import LabsExplore from "@/labs/pages/LabsExplore";
 import LabsSolo from "@/labs/pages/LabsSolo";
 import LabsBottleDetail from "@/labs/pages/LabsBottleDetail";
+import LabsPaperScan from "@/labs/pages/LabsPaperScan";
+import LabsTastingRecap from "@/labs/pages/LabsTastingRecap";
 import { AppShellV2 } from "@/v2/components";
 import V2Home from "@/v2/pages/V2Home";
 import V2Sessions from "@/v2/pages/V2Sessions";
@@ -528,6 +530,8 @@ function Router() {
               <Route path="/labs/join" component={LabsJoin} />
               <Route path="/labs/host/:id" component={LabsHost} />
               <Route path="/labs/host" component={LabsHost} />
+              <Route path="/labs/tastings/:id/scan" component={LabsPaperScan} />
+              <Route path="/labs/tastings/:id/recap" component={LabsTastingRecap} />
               <Route path="/labs/tastings/:id" component={LabsTastingDetail} />
               <Route path="/labs/tastings" component={LabsTastings} />
               <Route path="/labs/live/:id" component={LabsLive} />

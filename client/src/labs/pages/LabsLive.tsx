@@ -1,13 +1,133 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Users, Calendar, Trophy, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Wine, ChevronLeft, ChevronRight, Eye, EyeOff, Check, Clock, Users, Calendar, Trophy, AlertTriangle, Volume2, VolumeX } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
+import { playSoundscape, stopSoundscape, setVolume, type Soundscape } from "@/lib/ambient";
+import LabsVoiceMemoRecorder from "@/labs/components/LabsVoiceMemoRecorder";
 
 interface LabsLiveProps {
   params: { id: string };
+}
+
+const SOUNDSCAPE_OPTIONS: { id: Soundscape; label: string; icon: string }[] = [
+  { id: "fireplace", label: "Fireplace", icon: "\uD83D\uDD25" },
+  { id: "rain", label: "Rain", icon: "\uD83C\uDF27" },
+  { id: "night", label: "Night", icon: "\uD83C\uDF19" },
+  { id: "bagpipe", label: "Bagpipe", icon: "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F" },
+];
+
+function LabsAmbientPanel() {
+  const {
+    ambientPlaying,
+    ambientSoundscape,
+    ambientVolume,
+    setAmbientPlaying,
+    setAmbientSoundscape,
+    setAmbientVolume,
+  } = useAppStore();
+  const [expanded, setExpanded] = useState(false);
+
+  const start = (soundscape: Soundscape, vol: number) => {
+    playSoundscape(soundscape);
+    setVolume(vol);
+    setAmbientPlaying(true);
+    setAmbientSoundscape(soundscape);
+  };
+
+  const stop = () => {
+    stopSoundscape();
+    setAmbientPlaying(false);
+  };
+
+  const toggle = () => {
+    if (ambientPlaying) stop();
+    else start(ambientSoundscape, ambientVolume);
+  };
+
+  const selectSs = (s: Soundscape) => {
+    setAmbientSoundscape(s);
+    if (ambientPlaying) {
+      playSoundscape(s);
+      setVolume(ambientVolume);
+    }
+  };
+
+  const changeVol = (val: number) => {
+    setAmbientVolume(val);
+    setVolume(val);
+  };
+
+  return (
+    <div className="labs-card p-3 mb-4" data-testid="labs-ambient-panel">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, width: "100%", fontFamily: "inherit" }}
+        className="flex items-center justify-between"
+        data-testid="button-labs-ambient-toggle"
+      >
+        <div className="flex items-center gap-2">
+          {ambientPlaying ? (
+            <Volume2 className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+          ) : (
+            <VolumeX className="w-4 h-4" style={{ color: "var(--labs-text-muted)" }} />
+          )}
+          <span className="text-xs font-medium" style={{ color: ambientPlaying ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
+            Ambient Sounds {ambientPlaying ? "On" : "Off"}
+          </span>
+        </div>
+        <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>{expanded ? "\u25B2" : "\u25BC"}</span>
+      </button>
+      {expanded && (
+        <div className="mt-3 space-y-3">
+          <div className="flex gap-2">
+            {SOUNDSCAPE_OPTIONS.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => selectSs(s.id)}
+                className="flex-1 py-2 rounded-lg text-center text-xs transition-all"
+                style={{
+                  background: ambientSoundscape === s.id ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
+                  border: ambientSoundscape === s.id ? "1px solid var(--labs-accent)" : "1px solid var(--labs-border)",
+                  color: ambientSoundscape === s.id ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+                data-testid={`button-labs-soundscape-${s.id}`}
+              >
+                <span style={{ fontSize: 16 }}>{s.icon}</span>
+                <div style={{ fontSize: 10, marginTop: 2 }}>{s.label}</div>
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>Vol</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={ambientVolume}
+              onChange={(e) => changeVol(Number(e.target.value))}
+              className="flex-1"
+              style={{ accentColor: "var(--labs-accent)" }}
+              data-testid="slider-labs-ambient-volume"
+            />
+          </div>
+          <button
+            onClick={toggle}
+            className={ambientPlaying ? "labs-btn-ghost" : "labs-btn-secondary"}
+            style={{ width: "100%", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+            data-testid="button-labs-ambient-play"
+          >
+            {ambientPlaying ? <><VolumeX className="w-3.5 h-3.5" /> Stop</> : <><Volume2 className="w-3.5 h-3.5" /> Play</>}
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 const DIMENSIONS = ["nose", "taste", "finish", "balance"] as const;
@@ -697,6 +817,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
           Back to tasting
         </button>
 
+        <LabsAmbientPanel />
+
         {isSessionComplete ? (
           <GuidedComplete tastingId={tastingId} />
         ) : isLobby ? (
@@ -728,6 +850,8 @@ export default function LabsLive({ params }: LabsLiveProps) {
         <ArrowLeft className="w-4 h-4" />
         Back to tasting
       </button>
+
+      <LabsAmbientPanel />
 
       <div className="mb-5">
         <div className="flex items-center gap-3 mb-2">
@@ -930,6 +1054,18 @@ export default function LabsLive({ params }: LabsLiveProps) {
                   style={{ resize: "vertical" }}
                   data-testid="labs-live-notes"
                 />
+                <div className="mt-3">
+                  <LabsVoiceMemoRecorder
+                    participantId={currentParticipant?.id || ""}
+                    memo={null}
+                    onMemoChange={(memoData) => {
+                      if (memoData?.transcript) {
+                        const updated = notes ? `${notes}\n${memoData.transcript}` : memoData.transcript;
+                        updateNotes(updated);
+                      }
+                    }}
+                  />
+                </div>
               </div>
 
               <div className="labs-card-elevated p-5 labs-fade-in labs-stagger-4">
