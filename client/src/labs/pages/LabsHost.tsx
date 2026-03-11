@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
   Plus, X, Trash2, Copy, Check, EyeOff, Eye, Play, Square,
-  Users, Calendar, MapPin, ChevronRight, ArrowLeft, Loader2,
-  Wine, Settings, BarChart3, Share2,
+  Users, Calendar, MapPin, ArrowLeft, Loader2,
+  Wine, BarChart3,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { getSession } from "@/lib/session";
@@ -172,7 +172,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const queryClient = useQueryClient();
   const [codeCopied, setCodeCopied] = useState(false);
 
-  const { data: tasting, isLoading: tastingLoading } = useQuery({
+  const { data: tasting, isLoading: tastingLoading, isError: tastingError } = useQuery({
     queryKey: ["tasting", tastingId],
     queryFn: () => tastingApi.get(tastingId),
     enabled: !!tastingId,
@@ -251,6 +251,19 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       sortOrder: (whiskies?.length || 0) + 1,
     });
   };
+
+  if (tastingError) {
+    return (
+      <div className="labs-empty" style={{ minHeight: "60vh" }}>
+        <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
+        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
+        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting doesn't exist or you don't have access.</p>
+        <button className="labs-btn-secondary" onClick={() => navigate("/labs/tastings")} data-testid="labs-host-error-back">
+          Back to Tastings
+        </button>
+      </div>
+    );
+  }
 
   if (tastingLoading) {
     return (

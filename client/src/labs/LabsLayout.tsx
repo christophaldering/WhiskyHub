@@ -1,8 +1,7 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Wine, Radar, Users, User, ArrowLeft } from "lucide-react";
+import { Radar, Users, User, ArrowLeft } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { getSession } from "@/lib/session";
 import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
 import "./labs-theme.css";
 
@@ -32,7 +31,6 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
   const [location] = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
   const { currentParticipant } = useAppStore();
-  const session = getSession();
 
   const isLabsHome = location === "/labs" || location === "/labs/";
 
@@ -130,13 +128,14 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
 
       <Link href="/m2/tastings">
         <div
-          className="fixed top-3 right-[120px] z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-all"
+          className="fixed top-[13px] z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-all"
           style={{
             background: "var(--labs-surface)",
             border: "1px solid var(--labs-border)",
             color: "var(--labs-text-muted)",
             fontSize: 11,
             fontWeight: 500,
+            right: "clamp(80px, 30vw, 140px)",
           }}
           data-testid="labs-exit-btn"
         >

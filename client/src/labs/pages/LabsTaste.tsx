@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Wine, Star, Calendar, ChevronRight, TrendingUp, BookOpen } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { tastingApi, journalApi, ratingApi, flavorProfileApi } from "@/lib/api";
+import { tastingApi, journalApi, flavorProfileApi } from "@/lib/api";
 
 export default function LabsTaste() {
   const { currentParticipant } = useAppStore();

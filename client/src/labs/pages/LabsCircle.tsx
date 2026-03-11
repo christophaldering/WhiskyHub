@@ -86,9 +86,7 @@ export default function LabsCircle() {
         {(["people", "activity"] as const).map((t) => (
           <button
             key={t}
-            className={`labs-btn-ghost px-4 py-2 rounded-full text-sm transition-all ${
-              tab === t ? "" : ""
-            }`}
+            className="labs-btn-ghost px-4 py-2 rounded-full text-sm transition-all"
             style={{
               background: tab === t ? "var(--labs-accent-muted)" : "var(--labs-surface)",
               color: tab === t ? "var(--labs-accent)" : "var(--labs-text-secondary)",
@@ -118,12 +116,12 @@ export default function LabsCircle() {
               {[1, 2, 3].map((i) => (
                 <div key={i} className="labs-card p-4" style={{ opacity: 0.5 }}>
                   <div
-                    className="h-4 rounded"
-                    style={{ background: "var(--labs-border)", width: "60%", animation: "pulse 1.5s infinite" }}
+                    className="h-4 rounded animate-pulse"
+                    style={{ background: "var(--labs-border)", width: "60%" }}
                   />
                   <div
-                    className="h-3 mt-2 rounded"
-                    style={{ background: "var(--labs-border)", width: "40%", animation: "pulse 1.5s infinite" }}
+                    className="h-3 mt-2 rounded animate-pulse"
+                    style={{ background: "var(--labs-border)", width: "40%" }}
                   />
                 </div>
               ))}
@@ -254,12 +252,12 @@ export default function LabsCircle() {
               {[1, 2, 3].map((i) => (
                 <div key={i} className="labs-card p-4" style={{ opacity: 0.5 }}>
                   <div
-                    className="h-4 rounded"
-                    style={{ background: "var(--labs-border)", width: "70%", animation: "pulse 1.5s infinite" }}
+                    className="h-4 rounded animate-pulse"
+                    style={{ background: "var(--labs-border)", width: "70%" }}
                   />
                   <div
-                    className="h-3 mt-2 rounded"
-                    style={{ background: "var(--labs-border)", width: "50%", animation: "pulse 1.5s infinite" }}
+                    className="h-3 mt-2 rounded animate-pulse"
+                    style={{ background: "var(--labs-border)", width: "50%" }}
                   />
                 </div>
               ))}
