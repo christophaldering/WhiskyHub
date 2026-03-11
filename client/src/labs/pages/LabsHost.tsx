@@ -7,7 +7,6 @@ import {
   Wine, BarChart3,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { getSession } from "@/lib/session";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi } from "@/lib/api";
 
 interface LabsHostProps {

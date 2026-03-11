@@ -70,7 +70,7 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
     );
   }
 
-  if (isLoading || !tasting) {
+  if (isLoading) {
     return (
       <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
         <div
@@ -78,6 +78,17 @@ export default function LabsTastingDetail({ params }: LabsTastingDetailProps) {
           style={{ borderColor: "var(--labs-border)", borderTopColor: "var(--labs-accent)" }}
         />
         <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>Loading tasting…</p>
+      </div>
+    );
+  }
+
+  if (!tasting) {
+    return (
+      <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
+        <Wine className="w-10 h-10 mb-4" style={{ color: "var(--labs-text-muted)" }} />
+        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
+        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting may not exist or you don't have access.</p>
+        <button className="labs-btn-secondary" onClick={() => navigate("/labs/tastings")} data-testid="labs-detail-notfound-back">Back to Tastings</button>
       </div>
     );
   }

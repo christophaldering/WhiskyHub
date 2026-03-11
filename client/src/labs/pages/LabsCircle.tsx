@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Users, Heart, Wine, ChevronRight, Activity, UserPlus } from "lucide-react";
+import { Users, Heart, Wine, ChevronRight, Activity } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { communityApi, friendsApi, activityApi, tastingApi } from "@/lib/api";
 import { getSession } from "@/lib/session";

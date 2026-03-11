@@ -15,7 +15,7 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const [, navigate] = useLocation();
   const [expandedWhisky, setExpandedWhisky] = useState<string | null>(null);
 
-  const { data: tasting, isLoading: loadingTasting } = useQuery({
+  const { data: tasting, isLoading: loadingTasting, isError: tastingError } = useQuery({
     queryKey: ["tasting", tastingId],
     queryFn: () => tastingApi.get(tastingId),
     enabled: !!tastingId,
@@ -40,6 +40,23 @@ export default function LabsResults({ params }: LabsResultsProps) {
   });
 
   const isLoading = loadingTasting || loadingWhiskies;
+
+  if (tastingError) {
+    return (
+      <div className="labs-empty labs-fade-in" style={{ minHeight: "60vh" }}>
+        <Wine className="w-10 h-10 mb-3" style={{ color: "var(--labs-text-muted)" }} />
+        <p className="text-base font-medium mb-2" style={{ color: "var(--labs-text)" }}>Tasting not found</p>
+        <p className="text-sm mb-6" style={{ color: "var(--labs-text-muted)" }}>This tasting doesn't exist or you don't have access.</p>
+        <button
+          className="labs-btn-secondary"
+          onClick={() => navigate("/labs/tastings")}
+          data-testid="results-error-back"
+        >
+          Back to Tastings
+        </button>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

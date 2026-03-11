@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useLocation, Link } from "wouter";
-import { Wine, Calendar, MapPin, ChevronRight, Clock, Users, Search, Filter } from "lucide-react";
+import { Wine, Calendar, MapPin, ChevronRight, Clock, Search } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
 
 type FilterTab = "all" | "hosting" | "joined";
 type TimeFilter = "upcoming" | "live" | "past";
