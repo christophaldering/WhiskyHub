@@ -164,6 +164,18 @@ import LabHome from "@/lab-dark/pages/LabHome";
 import LabSessions from "@/lab-dark/pages/LabSessions";
 import LabDiscover from "@/lab-dark/pages/LabDiscover";
 import LabSessionDetail from "@/lab-dark/pages/LabSessionDetail";
+
+// ── CaskSense Labs ──
+import LabsLayout from "@/labs/LabsLayout";
+import LabsHome from "@/labs/pages/LabsHome";
+import LabsJoin from "@/labs/pages/LabsJoin";
+import LabsTastings from "@/labs/pages/LabsTastings";
+import LabsTastingDetail from "@/labs/pages/LabsTastingDetail";
+import LabsLive from "@/labs/pages/LabsLive";
+import LabsHost from "@/labs/pages/LabsHost";
+import LabsResults from "@/labs/pages/LabsResults";
+import LabsTaste from "@/labs/pages/LabsTaste";
+import LabsCircle from "@/labs/pages/LabsCircle";
 import { AppShellV2 } from "@/v2/components";
 import V2Home from "@/v2/pages/V2Home";
 import V2Sessions from "@/v2/pages/V2Sessions";
@@ -503,6 +515,26 @@ function Router() {
               <Route path="/app">{() => <Redirect to="/app/home" />}</Route>
             </Switch>
           </AppShellV2>
+        </Route>
+
+        {/* === CASKSENSE LABS === */}
+        <Route path="/labs/:rest*">
+          <LabsLayout>
+            <Switch>
+              <Route path="/labs/join" component={LabsJoin} />
+              <Route path="/labs/host/:id" component={LabsHost} />
+              <Route path="/labs/host" component={LabsHost} />
+              <Route path="/labs/tastings/:id" component={LabsTastingDetail} />
+              <Route path="/labs/tastings" component={LabsTastings} />
+              <Route path="/labs/live/:id" component={LabsLive} />
+              <Route path="/labs/results/:id" component={LabsResults} />
+              <Route path="/labs/taste" component={LabsTaste} />
+              <Route path="/labs/circle" component={LabsCircle} />
+              <Route path="/labs/solo">{() => <Redirect to="/m2/solo" />}</Route>
+              <Route path="/labs/home" component={LabsHome} />
+              <Route path="/labs">{() => <Redirect to="/labs/home" />}</Route>
+            </Switch>
+          </LabsLayout>
         </Route>
 
         {/* === LAB DARK (experimental) === */}

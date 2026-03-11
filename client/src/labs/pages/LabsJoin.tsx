@@ -1,0 +1,326 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { Wine, ArrowRight, AlertCircle, LogIn } from "lucide-react";
+import { useSession, getSession } from "@/lib/session";
+import { useAppStore } from "@/lib/store";
+import { tastingApi } from "@/lib/api";
+import { signIn } from "@/lib/session";
+
+export default function LabsJoin() {
+  const [, navigate] = useLocation();
+  const session = useSession();
+  const { currentParticipant } = useAppStore();
+
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [pendingCode, setPendingCode] = useState("");
+
+  const [loginPin, setLoginPin] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const isLoggedIn = session.signedIn && !!currentParticipant;
+
+  const handleJoin = async () => {
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) {
+      setError("Please enter a tasting code.");
+      return;
+    }
+
+    setError("");
+    setLoading(true);
+
+    try {
+      const tasting = await tastingApi.getByCode(trimmed);
+
+      if (!tasting || !tasting.id) {
+        setError("No tasting found with this code. Please check and try again.");
+        setLoading(false);
+        return;
+      }
+
+      if (!isLoggedIn) {
+        setPendingCode(trimmed);
+        setShowLogin(true);
+        setLoading(false);
+        return;
+      }
+
+      await tastingApi.join(tasting.id, currentParticipant!.id, trimmed);
+      navigate(`/labs/tastings/${tasting.id}`);
+    } catch (e: any) {
+      const msg = e.message || "Could not join tasting.";
+      if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("invalid")) {
+        setError("No tasting found with this code. Please check and try again.");
+      } else {
+        setError(msg);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!loginEmail.trim() || !loginPin.trim()) {
+      setLoginError("Please enter your email and PIN.");
+      return;
+    }
+
+    setLoginError("");
+    setLoginLoading(true);
+
+    try {
+      const result = await signIn({
+        pin: loginPin,
+        email: loginEmail.trim(),
+        mode: "tasting",
+        remember: true,
+      });
+
+      if (!result.ok) {
+        setLoginError(result.error || "Sign in failed.");
+        setLoginLoading(false);
+        return;
+      }
+
+      setShowLogin(false);
+      setLoginPin("");
+      setLoginEmail("");
+
+      if (pendingCode) {
+        setTimeout(async () => {
+          try {
+            const s = getSession();
+            const tasting = await tastingApi.getByCode(pendingCode);
+            if (tasting?.id && s.pid) {
+              await tastingApi.join(tasting.id, s.pid, pendingCode);
+              navigate(`/labs/tastings/${tasting.id}`);
+            }
+          } catch (e: any) {
+            setError(e.message || "Could not join tasting after login.");
+          }
+        }, 300);
+      }
+    } catch (e: any) {
+      setLoginError(e.message || "Sign in failed.");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleJoin();
+    }
+  };
+
+  const handleLoginKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleLogin();
+    }
+  };
+
+  if (showLogin) {
+    return (
+      <div className="px-5 py-8 max-w-md mx-auto labs-fade-in">
+        <div className="text-center mb-8">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: "var(--labs-accent-muted)" }}
+          >
+            <LogIn className="w-7 h-7" style={{ color: "var(--labs-accent)" }} />
+          </div>
+          <h1
+            className="labs-serif text-2xl font-semibold mb-2"
+            style={{ color: "var(--labs-text)" }}
+            data-testid="labs-join-login-title"
+          >
+            Sign In to Join
+          </h1>
+          <p
+            className="text-sm"
+            style={{ color: "var(--labs-text-muted)" }}
+          >
+            Sign in with your CaskSense account to join the tasting.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label
+              className="text-xs font-medium mb-1.5 block"
+              style={{ color: "var(--labs-text-muted)" }}
+            >
+              Email
+            </label>
+            <input
+              className="labs-input"
+              type="email"
+              placeholder="your@email.com"
+              value={loginEmail}
+              onChange={(e) => setLoginEmail(e.target.value)}
+              onKeyDown={handleLoginKeyDown}
+              autoFocus
+              data-testid="labs-join-login-email"
+            />
+          </div>
+
+          <div>
+            <label
+              className="text-xs font-medium mb-1.5 block"
+              style={{ color: "var(--labs-text-muted)" }}
+            >
+              PIN
+            </label>
+            <input
+              className="labs-input"
+              type="password"
+              placeholder="Your PIN"
+              value={loginPin}
+              onChange={(e) => setLoginPin(e.target.value)}
+              onKeyDown={handleLoginKeyDown}
+              data-testid="labs-join-login-pin"
+            />
+          </div>
+
+          {loginError && (
+            <div
+              className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm"
+              style={{
+                background: "var(--labs-danger-muted)",
+                color: "var(--labs-danger)",
+              }}
+              data-testid="labs-join-login-error"
+            >
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {loginError}
+            </div>
+          )}
+
+          <button
+            className="labs-btn-primary w-full flex items-center justify-center gap-2"
+            onClick={handleLogin}
+            disabled={loginLoading}
+            data-testid="labs-join-login-submit"
+          >
+            {loginLoading ? "Signing in..." : "Sign In & Join"}
+          </button>
+
+          <button
+            className="labs-btn-ghost w-full"
+            onClick={() => {
+              setShowLogin(false);
+              setLoginError("");
+            }}
+            data-testid="labs-join-login-back"
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-5 py-8 max-w-md mx-auto labs-fade-in">
+      <div className="text-center mb-8">
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+          style={{ background: "var(--labs-accent-muted)" }}
+        >
+          <Wine className="w-7 h-7" style={{ color: "var(--labs-accent)" }} />
+        </div>
+        <h1
+          className="labs-serif text-2xl font-semibold mb-2"
+          style={{ color: "var(--labs-text)" }}
+          data-testid="labs-join-title"
+        >
+          Join a Tasting
+        </h1>
+        <p
+          className="text-sm"
+          style={{ color: "var(--labs-text-muted)" }}
+        >
+          Enter the tasting code shared by your host to join the session.
+        </p>
+      </div>
+
+      <div className="labs-card p-6 labs-stagger-1 labs-fade-in">
+        <label
+          className="labs-section-label"
+          style={{ display: "block", marginBottom: 8 }}
+        >
+          Tasting Code
+        </label>
+        <input
+          className="labs-input text-center text-lg tracking-widest font-semibold"
+          placeholder="ABC123"
+          value={code}
+          onChange={(e) => {
+            setCode(e.target.value.toUpperCase());
+            setError("");
+          }}
+          onKeyDown={handleKeyDown}
+          maxLength={10}
+          autoFocus
+          style={{ letterSpacing: "0.2em", textTransform: "uppercase" }}
+          data-testid="labs-join-code-input"
+        />
+
+        {error && (
+          <div
+            className="flex items-center gap-2 mt-3 px-4 py-3 rounded-xl text-sm"
+            style={{
+              background: "var(--labs-danger-muted)",
+              color: "var(--labs-danger)",
+            }}
+            data-testid="labs-join-error"
+          >
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {error}
+          </div>
+        )}
+
+        <button
+          className="labs-btn-primary w-full mt-4 flex items-center justify-center gap-2"
+          onClick={handleJoin}
+          disabled={loading || !code.trim()}
+          data-testid="labs-join-submit"
+        >
+          {loading ? (
+            "Looking up tasting..."
+          ) : (
+            <>
+              Join Tasting
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
+        </button>
+      </div>
+
+      {!isLoggedIn && (
+        <p
+          className="text-center text-xs mt-6 labs-stagger-2 labs-fade-in"
+          style={{ color: "var(--labs-text-muted)" }}
+          data-testid="labs-join-login-hint"
+        >
+          You'll be asked to sign in before joining.
+        </p>
+      )}
+
+      {isLoggedIn && (
+        <p
+          className="text-center text-xs mt-6 labs-stagger-2 labs-fade-in"
+          style={{ color: "var(--labs-text-muted)" }}
+          data-testid="labs-join-signed-in-hint"
+        >
+          Signed in as <span style={{ color: "var(--labs-accent)" }}>{currentParticipant?.name}</span>
+        </p>
+      )}
+    </div>
+  );
+}
