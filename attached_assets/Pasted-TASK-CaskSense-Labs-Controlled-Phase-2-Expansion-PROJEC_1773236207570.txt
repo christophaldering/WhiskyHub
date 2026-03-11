@@ -1,0 +1,402 @@
+TASK: CaskSense Labs – Controlled Phase 2 Expansion
+PROJECT MODE: Parallel Labs Layer Only
+TARGET: Deepen the Labs experience without touching or destabilizing the legacy CaskSense application
+
+MISSION
+Expand the already stabilized **CaskSense Labs** MVP into a clearly stronger parallel product layer by building the next priority modules:
+
+1. Taste
+2. Circle
+3. Explore
+4. Host Dashboard depth
+5. Results / Reflection enrichment
+
+This is NOT a full rewrite.
+This is NOT a redesign of the legacy application.
+This is a controlled Phase-2 build-out of the Labs layer on top of the existing shared backend and data model.
+
+NON-NEGOTIABLE RULES
+
+1. DO NOT break the legacy CaskSense application.
+2. DO NOT replace existing routes or UX flows in the legacy app.
+3. DO NOT duplicate the backend unless absolutely necessary.
+4. DO NOT introduce uncontrolled feature sprawl.
+5. Every change must remain inside the Labs route space or in safe shared backend/service layers.
+6. Reuse stable existing models, APIs, auth, and entities wherever possible.
+7. If schema changes are required, keep them minimal, backward-compatible, and documented.
+8. Maintain Labs as a clearly isolated parallel UX layer.
+9. Prefer real, working features over decorative placeholders.
+10. Validate legacy + Labs after implementation.
+
+CURRENT ASSUMPTION
+CaskSense Labs Phase 1 already exists and is stable enough to support:
+- /labs
+- /labs/tastings
+- tasting detail
+- live tasting room
+- host dashboard basic
+- results basic
+- taste page light
+- circle page light
+
+First inspect the real current state before building.
+Do not assume implementation details blindly.
+
+STEP 1 — CURRENT STATE ASSESSMENT
+
+Inspect the current codebase and summarize:
+
+• which Labs routes already exist
+• which Labs pages are only stubs
+• which data is already available for Taste, Circle, Explore
+• which host controls already work
+• which result data is already accessible
+• which backend services can be reused safely
+• whether bottle/distillery/community entities already exist and are populated
+
+Output a concise Phase-2 readiness report before implementation.
+
+STEP 2 — PHASE-2 BUILD PRIORITIES
+
+Implement the following priorities in this exact order:
+
+PRIORITY A — TASTE
+PRIORITY B — CIRCLE
+PRIORITY C — EXPLORE
+PRIORITY D — HOST DASHBOARD DEPTH
+PRIORITY E — RESULTS / REFLECTION DEPTH
+
+Do not jump to lower-priority polish if higher-priority functional gaps remain.
+
+PRIORITY A — TASTE
+
+Goal:
+Turn `/labs/taste` from a lightweight snapshot into a meaningful personal reflection space.
+
+Build a proper Labs Taste page with the following sections:
+
+1. Personal Snapshot
+Show:
+• total tastings joined
+• total ratings submitted
+• recent activity
+• average rating behavior if available
+• favorite profile indicators if data supports it
+
+2. Recent Tastings
+List recent tastings with:
+• title
+• date
+• role
+• direct link to results or tasting detail
+
+3. Recent Ratings
+List recent rated drams with:
+• bottle name
+• score
+• tasting context
+• link to result context if possible
+
+4. Preference Signals
+Using existing available data only, derive simple, robust preference summaries such as:
+• preferred regions
+• preferred style categories
+• favored ABV range if data exists
+• smoke / sweetness / fruit / spice tendencies if rating data supports it
+
+Do NOT invent fake analytics if the data model does not support them.
+If only partial analytics are possible, implement the strongest real subset.
+
+5. Clean Information Hierarchy
+The Taste page must feel like:
+personal reflection, not a database dump.
+
+ROUTE:
+`/labs/taste`
+
+PRIORITY B — CIRCLE
+
+Goal:
+Turn `/labs/circle` into a lightweight but real social layer.
+
+Build a proper Labs Circle page with the following sections:
+
+1. Shared Tasting People
+Show people the user has tasted with, if supported by existing data:
+• name
+• number of shared tastings
+• link or reference to shared sessions if feasible
+
+2. Shared Sessions
+List past tastings involving the current user and others:
+• tasting title
+• date
+• participants count
+• direct link to results or detail
+
+3. Lightweight Similarity / Community Layer
+If data exists safely, implement one minimal real comparison view such as:
+• users with most shared tastings
+or
+• users with closest average scoring pattern across shared sessions
+
+IMPORTANT:
+Only implement similarity logic if it can be done safely and honestly with existing data.
+No fake “taste twin” claims without real basis.
+
+4. Empty States
+If community data is sparse, provide elegant empty states and invite the user to join more tastings.
+
+ROUTE:
+`/labs/circle`
+
+PRIORITY C — EXPLORE
+
+Goal:
+Add a real discovery layer to Labs without building an overgrown database experience.
+
+Create a new Labs route space:
+
+/labs/explore
+/labs/explore/bottles/:id
+/labs/explore/distilleries/:id   (only if distillery data exists cleanly)
+
+Build:
+
+1. Explore Overview
+Route:
+`/labs/explore`
+
+Show:
+• searchable or browsable bottle list if available
+• recent / relevant / discovered bottles
+• elegant discovery cards
+• links into bottle details
+
+2. Bottle Detail
+Route:
+`/labs/explore/bottles/:id`
+
+Display, if available:
+• bottle name
+• distillery
+• region
+• ABV
+• cask / maturation info
+• tasting history in Labs / current user context
+• community rating summary if available
+• user’s own ratings if available
+
+3. Distillery Detail
+Only if the data model already supports it cleanly.
+Otherwise skip safely.
+
+IMPORTANT:
+Do not build Explore as a cluttered admin catalog.
+Make it feel curated, readable, premium.
+
+PRIORITY D — HOST DASHBOARD DEPTH
+
+Goal:
+Strengthen the existing Labs host experience without destabilizing the current working flow.
+
+Inspect current host dashboard and extend it with the strongest safe subset of the following:
+
+1. Better participant status visibility
+Show clearly:
+• joined
+• not yet active
+• rating submitted / pending
+• completion state if available
+
+2. Better step / dram progression clarity
+Make current tasting stage more understandable.
+
+3. Cleaner host action grouping
+Group host controls into:
+• session controls
+• reveal controls
+• progression controls
+• participant monitoring
+
+4. Participant view awareness
+If feasible without instability, improve the host’s awareness of what participants currently see.
+
+5. Desktop usability
+Host dashboard must remain clearly desktop-first and operationally readable.
+
+Do not over-engineer.
+Prefer clearer workflow over more controls.
+
+PRIORITY E — RESULTS / REFLECTION DEPTH
+
+Goal:
+Upgrade the Labs results experience from a raw results screen to a reflection-oriented page.
+
+Enhance `/labs/results/:id` with the strongest safely supported subset of:
+
+1. Better results structure
+Sections:
+• summary
+• revealed bottles
+• aggregated results
+• participant-level view
+• reflection context
+
+2. Ranking / comparison view
+If data supports it:
+• top-rated drams
+• spread / variance
+• agreement vs divergence across participants
+
+3. Personal vs group comparison
+If safely possible:
+• current user score vs group average
+• highlight notable differences
+
+4. Reflection framing
+Use layout and headings that support insight and discussion, not just score display.
+
+Do not add fake charts.
+Use only real, supportable information.
+
+STEP 3 — NAVIGATION UPDATE
+
+Update Labs-only navigation to include Explore if appropriate:
+
+Tastings  
+Taste  
+Circle  
+Explore  
+Profile
+
+Do NOT modify legacy navigation.
+
+STEP 4 — ROUTING AND INTEGRATION RULES
+
+All new routes must remain isolated inside Labs.
+
+Allowed new routes:
+• /labs/explore
+• /labs/explore/bottles/:id
+• /labs/explore/distilleries/:id (optional if safe)
+
+Keep route registration clean and collision-free.
+
+STEP 5 — DATA POLICY
+
+Reuse existing entities and services whenever possible:
+• users
+• profiles
+• tastings
+• participants
+• ratings
+• bottles
+• distilleries
+• lineup entries
+• results data
+
+Do not create shadow models for Labs unless absolutely necessary.
+
+If any derived analytics are introduced:
+• compute from real existing data
+• be transparent in logic
+• keep them lightweight and stable
+
+STEP 6 — DESIGN DIRECTION
+
+Maintain and deepen the Labs design language:
+
+• warm dark premium
+• Apple-inspired clarity
+• spacious layout
+• restrained elegance
+• readable hierarchy
+• no admin clutter
+• no gamification noise
+• mobile practical
+• desktop polished
+
+Labs should feel like a refined tasting environment, not a generic data tool.
+
+STEP 7 — IMPLEMENTATION STYLE
+
+Work in this order:
+
+1. assess current state
+2. implement Taste
+3. implement Circle
+4. implement Explore
+5. deepen Host Dashboard
+6. deepen Results
+7. update Labs navigation
+8. validate everything
+
+Do not wander into unrelated areas.
+
+STEP 8 — VALIDATION REQUIREMENTS
+
+After implementation, validate:
+
+LEGACY REGRESSION
+• legacy homepage loads
+• legacy login works
+• legacy navigation unchanged
+• legacy tasting flows still work
+
+LABS VALIDATION
+• /labs/taste works
+• /labs/circle works
+• /labs/explore works
+• bottle detail works if implemented
+• host dashboard still works
+• results page still works
+• Labs navigation updated and stable
+• no route collisions
+• no broken shared services
+
+DATA VALIDATION
+• recent tastings show real data
+• recent ratings show real data
+• preference summaries are based on real data
+• community/shared tasting views reflect real relationships
+• explore pages pull from real bottle data
+• results enhancements display real values
+
+UI VALIDATION
+• no overlapping layout
+• no broken dark contrast
+• no dead placeholder sections
+• responsive behavior remains acceptable
+
+STEP 9 — FIX PASS
+
+If problems are found:
+• fix them immediately
+• keep fixes minimal
+• protect legacy app
+• re-run validation
+
+STEP 10 — FINAL DELIVERY REPORT
+
+At the end provide a structured report containing:
+
+1. PHASE-2 FEATURES IMPLEMENTED
+2. NEW OR UPDATED LABS ROUTES
+3. FILES CREATED OR MODIFIED
+4. REUSED SERVICES / MODELS
+5. ANALYTICS OR DERIVED LOGIC INTRODUCED
+6. KNOWN LIMITATIONS
+7. RECOMMENDED NEXT PHASE
+
+SUCCESS CRITERION
+
+CaskSense Labs should evolve from a stable MVP into a clearly stronger parallel experience with:
+
+• a meaningful Taste page
+• a real Circle layer
+• a curated Explore layer
+• a clearer Host dashboard
+• a more reflective Results page
+
+All while the legacy CaskSense application remains fully intact and operational.
