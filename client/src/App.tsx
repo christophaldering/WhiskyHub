@@ -175,6 +175,9 @@ import LabsLive from "@/labs/pages/LabsLive";
 import LabsHost from "@/labs/pages/LabsHost";
 import LabsResults from "@/labs/pages/LabsResults";
 import LabsTaste from "@/labs/pages/LabsTaste";
+import LabsTasteProfile from "@/labs/pages/LabsTasteProfile";
+import LabsTasteAnalytics from "@/labs/pages/LabsTasteAnalytics";
+import LabsTasteWheel from "@/labs/pages/LabsTasteWheel";
 import LabsCircle from "@/labs/pages/LabsCircle";
 import LabsExplore from "@/labs/pages/LabsExplore";
 import LabsSolo from "@/labs/pages/LabsSolo";
@@ -545,6 +548,9 @@ function Router() {
               <Route path="/labs/results/:id" component={LabsResults} />
               <Route path="/labs/explore/bottles/:id" component={LabsBottleDetail} />
               <Route path="/labs/explore" component={LabsExplore} />
+              <Route path="/labs/taste/profile" component={LabsTasteProfile} />
+              <Route path="/labs/taste/analytics" component={LabsTasteAnalytics} />
+              <Route path="/labs/taste/wheel" component={LabsTasteWheel} />
               <Route path="/labs/taste" component={LabsTaste} />
               <Route path="/labs/circle" component={LabsCircle} />
               <Route path="/labs/solo" component={LabsSolo} />

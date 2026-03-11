@@ -98,6 +98,13 @@ Labs Host Dashboard, Calendar, and Historical Archive pages ported from M2 into 
 -   **Historical Archive** (`LabsHistory.tsx`, route `/labs/history`): Searchable, sortable list of historical tastings with community membership gating, stat cards (tastings/whiskies/regions/smoky%), insights link card. Archive items link to `/labs/results/:id`.
 -   **Historical Insights** (`LabsHistory.tsx`, route `/labs/history/insights`): Cross-tasting analytics with stat cards, top 20 whiskies list, regional bar chart, smoky vs non-smoky pie chart, cask type comparison bars, score distribution histogram, group taste profile radar chart, summary cards (top region/cask/peat level).
 
+### Labs Taste Profile & Analytics (Task #4)
+Labs Taste Profile, Analytics, and Flavor Wheel pages ported from M2 into Labs dark-theme design system:
+-   **Taste Hub** (`LabsTaste.tsx`, route `/labs/taste`): Hub page with stat snapshot (stability/exploration/smoke/tastings), AI insight card, palate bars (nose/taste/finish/balance), progress tracker for analytics unlock (10-whisky threshold), navigation to sub-pages (Profile, Analytics, Flavor Wheel, Compare), recent tastings list.
+-   **CaskSense Profile** (`LabsTasteProfile.tsx`, route `/labs/taste/profile`): Recharts RadarChart with nose/taste/finish/balance/overall dimensions, compare modes (Just Me/Friends/Global), confidence badges per dimension, style/sweet spot/stability snapshot cards, rating style stats (mean/stddev/range/count), systematic deviation vs platform, expandable breakdown sections (region/cask/peat), whisky comparison table (You vs Platform with delta).
+-   **Analytics** (`LabsTasteAnalytics.tsx`, route `/labs/taste/analytics`): Taste evolution SVG time series chart (monthly avg scores), trend detection (rising/dropping/consistent), rating consistency card with stability score circle + label, spread analysis, locked state with progress bar (10-whisky threshold), unlock banner animation.
+-   **Flavor Wheel** (`LabsTasteWheel.tsx`, route `/labs/taste/wheel`): Recharts nested PieChart (inner categories, outer subcategories), 8 flavor categories (fruity/floral/sweet/spicy/woody/smoky/malty/maritime), keyword frequency analysis from journal entries + rating notes, interactive category selection with detail panel, stat cards (total mentions/top category/most unique), legend with category toggle buttons.
+
 ### Test Suite
 A comprehensive test framework using Vitest covers unit, API, E2E, and smoke tests, including Module2Shell rendering, authentication flows, API endpoints, and historical tasting helpers.
 
