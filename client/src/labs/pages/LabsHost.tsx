@@ -642,11 +642,13 @@ function CreateTastingForm() {
     if (!title.trim() || !currentParticipant) return;
     setSubmitting(true);
     try {
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const result = await tastingApi.create({
         title: title.trim(),
         date,
-        location: location.trim() || undefined,
+        location: location.trim() || "",
         hostId: currentParticipant.id,
+        code,
         blindMode,
         guidedMode,
         status: "draft",
