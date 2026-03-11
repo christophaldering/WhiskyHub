@@ -300,7 +300,7 @@ function TastingsTab({ data, pid }: { data: AdminOverview; pid: string }) {
   const statusColor = (s: string) => {
     if (s === "open") return "var(--labs-success)";
     if (s === "closed") return "var(--labs-accent)";
-    if (s === "reveal") return "#a855f7";
+    if (s === "reveal") return "var(--labs-info)";
     return "var(--labs-text-muted)";
   };
 
@@ -759,12 +759,12 @@ function ChangelogTab({ pid }: { pid: string }) {
             </select>
             <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ ...labsSelect, fontSize: 12 }} data-testid="labs-admin-changelog-date" />
             <label className="flex items-center gap-1 text-xs cursor-pointer" style={{ color: "var(--labs-text)" }}>
-              <input type="checkbox" checked={visible} onChange={e => setVisible(e.target.checked)} /> Visible
+              <input type="checkbox" checked={visible} onChange={e => setVisible(e.target.checked)} data-testid="labs-admin-changelog-visible" /> Visible
             </label>
           </div>
           <div className="flex gap-2">
             <button onClick={() => editingId ? updateMutation.mutate() : createMutation.mutate()} disabled={!title || !description} className="px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: "var(--labs-accent)", color: "var(--labs-bg)", border: "none", cursor: "pointer" }} data-testid="labs-admin-changelog-save">{editingId ? "Update" : "Create"}</button>
-            <button onClick={resetForm} className="px-3 py-1.5 rounded-lg text-xs" style={{ border: "1px solid var(--labs-border)", background: "transparent", color: "var(--labs-text)", cursor: "pointer" }}>Cancel</button>
+            <button onClick={resetForm} className="px-3 py-1.5 rounded-lg text-xs" style={{ border: "1px solid var(--labs-border)", background: "transparent", color: "var(--labs-text)", cursor: "pointer" }} data-testid="labs-admin-changelog-cancel">Cancel</button>
           </div>
         </div>
       )}
@@ -831,7 +831,7 @@ function CleanupTab({ data, pid }: { data: AdminOverview; pid: string }) {
             </div>
           ))}
         </div>
-        <button onClick={() => { if (selectedIds.size > 0 && confirm(`Delete ${selectedIds.size} tastings?`)) deleteMutation.mutate(Array.from(selectedIds)); }} disabled={selectedIds.size === 0 || deleteMutation.isPending} className="w-full py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5" style={{ background: selectedIds.size > 0 ? "var(--labs-danger)" : "var(--labs-text-muted)", color: "#fff", border: "none", cursor: selectedIds.size > 0 ? "pointer" : "not-allowed" }} data-testid="labs-admin-cleanup-delete">
+        <button onClick={() => { if (selectedIds.size > 0 && confirm(`Delete ${selectedIds.size} tastings?`)) deleteMutation.mutate(Array.from(selectedIds)); }} disabled={selectedIds.size === 0 || deleteMutation.isPending} className="w-full py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5" style={{ background: selectedIds.size > 0 ? "var(--labs-danger)" : "var(--labs-text-muted)", color: "var(--labs-bg)", border: "none", cursor: selectedIds.size > 0 ? "pointer" : "not-allowed" }} data-testid="labs-admin-cleanup-delete">
           {deleteMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
           Delete {selectedIds.size} Selected
         </button>
@@ -1177,8 +1177,8 @@ function MakingOfTab({ pid, participants }: { pid: string; participants: AdminPa
 
       <a href="/labs/making-of" className="labs-card flex items-center justify-between p-4 mb-5" style={{ textDecoration: "none" }} data-testid="labs-admin-link-makingof">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #F5DEB3, #8B4513)" }}>
-            <BookOpen className="w-5 h-5" style={{ color: "#fff" }} />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--labs-accent), var(--labs-surface-elevated))" }}>
+            <BookOpen className="w-5 h-5" style={{ color: "var(--labs-text)" }} />
           </div>
           <div>
             <div className="text-sm font-semibold" style={{ color: "var(--labs-text)" }}>View Making-Of Timeline</div>
@@ -1278,7 +1278,7 @@ function ToggleSwitch({ on, onToggle, testId, disabled, small }: { on: boolean; 
       data-testid={testId}
     >
       <div style={{
-        width: dot, height: dot, borderRadius: "50%", background: "#fff",
+        width: dot, height: dot, borderRadius: "50%", background: "var(--labs-text)",
         position: "absolute", top: pad,
         left: on ? w - dot - pad : pad, transition: "left 0.2s",
         boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
