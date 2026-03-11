@@ -1,0 +1,258 @@
+TASK: CaskSense Labs – Pilot Readiness & Real-World Tasting Simulation
+PROJECT MODE: Pre-Pilot Validation Phase
+GOAL: Prepare CaskSense Labs for the first real external tasting session with multiple participants.
+
+MISSION
+Transform the current stable and polished CaskSense Labs system into a **pilot-ready environment** that can safely host real whisky tastings with external users.
+
+This phase focuses on:
+
+• realistic test data
+• multi-user simulation
+• role validation (host vs participants)
+• invitation flow
+• logging and diagnostics
+• session robustness under real usage
+• operational readiness
+
+No large new features should be introduced.
+This phase ensures the system works reliably in real-life conditions.
+
+The legacy CaskSense application must remain untouched.
+
+NON-NEGOTIABLE RULES
+
+1. DO NOT change legacy application behavior.
+2. DO NOT introduce experimental features.
+3. DO NOT refactor working architecture.
+4. DO NOT modify core data models unless strictly necessary.
+5. Only improve operational readiness and observability.
+6. Prefer lightweight additions over complex infrastructure.
+
+STEP 1 — SYSTEM READINESS CHECK
+
+Inspect the current system and verify:
+
+• Labs routes stable
+• guided tasting engine operational
+• rating flow reliable
+• reveal logic correct
+• host controls working
+• results page consistent
+
+Output a short readiness report:
+
+CORE SYSTEM STATUS  
+KNOWN LIMITATIONS  
+PILOT RISKS
+
+STEP 2 — TEST DATA GENERATION
+
+Create realistic seed data for testing.
+
+Generate:
+
+• 1 host user
+• 5–8 participant users
+• 2–3 sample tastings
+• 3–5 lineup entries per tasting
+• realistic bottle metadata
+• participant ratings
+
+Ensure these test users can simulate a real tasting environment.
+
+Label all seed data clearly as:
+
+LABS_TEST_DATA
+
+Do NOT interfere with real user data.
+
+STEP 3 — MULTI-USER SIMULATION
+
+Simulate a full tasting with multiple participants.
+
+Sequence:
+
+1 host creates tasting  
+2 lineup added  
+3 participants join via join flow  
+4 host starts session  
+5 step becomes active  
+6 participants submit ratings  
+7 host reveals bottle  
+8 ratings lock  
+9 host advances step  
+10 repeat for multiple steps  
+11 tasting ends  
+12 results generated
+
+Verify:
+
+• participant synchronization
+• rating persistence
+• reveal correctness
+• step transitions stable
+
+Fix any issues discovered.
+
+STEP 4 — INVITATION FLOW HARDENING
+
+Test the invitation and join flow thoroughly.
+
+Validate:
+
+• invite link navigation
+• login redirect behavior
+• session restoration
+• invalid invite handling
+• duplicate join attempts
+• host vs participant access rules
+
+Improve error messages where necessary.
+
+STEP 5 — SESSION RECOVERY TEST
+
+Test resilience under interruption.
+
+Simulate:
+
+• participant refresh during step
+• host refresh during reveal
+• network interruption during rating
+• participant reconnect after session start
+
+Ensure the system restores the correct session state.
+
+STEP 6 — BASIC LOGGING LAYER
+
+Introduce lightweight logging for pilot diagnostics.
+
+Log key events:
+
+• session start
+• step progression
+• reveal actions
+• rating submissions
+• participant joins
+• session completion
+
+Logging must remain lightweight and must not degrade performance.
+
+Logs should help diagnose problems during pilot testing.
+
+STEP 7 — ERROR BOUNDARY PASS
+
+Ensure all Labs routes have proper error protection.
+
+Handle gracefully:
+
+• failed API calls
+• missing tasting
+• unauthorized user
+• missing lineup entry
+• unexpected server response
+
+Users should see clear error feedback rather than blank pages.
+
+STEP 8 — PERFORMANCE SANITY CHECK
+
+Simulate realistic load:
+
+5–10 participants actively rating during a session.
+
+Verify:
+
+• rating submissions remain responsive
+• host actions propagate correctly
+• page reloads recover correctly
+• results calculation remains fast
+
+Do not introduce heavy infrastructure.
+
+STEP 9 — MOBILE PARTICIPANT VALIDATION
+
+Re-test participant experience on small screens.
+
+Confirm:
+
+• rating form usable
+• step progress visible
+• reveal message clear
+• navigation reachable
+• no layout overlap
+
+Fix responsive issues if needed.
+
+STEP 10 — HOST OPERATION CHECK
+
+Confirm a host can comfortably run a tasting session.
+
+Verify:
+
+• host dashboard clarity
+• step progression reliability
+• reveal actions safe
+• participant status readable
+• session completion intuitive
+
+Host must be able to run the tasting without confusion.
+
+STEP 11 — RESULTS CONSISTENCY CHECK
+
+After simulated tastings confirm:
+
+• results page shows correct rankings
+• ratings match participant submissions
+• bottle reveal data correct
+• participant vs group views correct
+• no duplicate or missing entries
+
+STEP 12 — LEGACY SYSTEM REGRESSION TEST
+
+Confirm again that the legacy system remains unaffected.
+
+Verify:
+
+• legacy homepage loads
+• login works
+• legacy tasting flows still function
+• no routing conflicts
+• no shared style breakage
+
+STEP 13 — PILOT SAFETY PASS
+
+Ensure the system behaves safely if something unexpected happens.
+
+Validate:
+
+• host cannot accidentally skip all steps
+• participants cannot alter session state
+• reveal cannot occur twice incorrectly
+• ratings cannot overwrite other users
+• unauthorized users blocked from session control
+
+STEP 14 — FINAL PILOT SIMULATION
+
+Run one final complete simulated tasting from start to finish.
+
+Sequence:
+
+Join → Live Tasting → Multiple Steps → Reveal → Session End → Results.
+
+Ensure the entire workflow runs smoothly.
+
+STEP 15 — FINAL READINESS REPORT
+
+Provide a structured summary including:
+
+PILOT READINESS STATUS  
+SIMULATION RESULTS  
+TEST DATA CREATED  
+FILES MODIFIED  
+LOGGING IMPLEMENTED  
+KNOWN LIMITATIONS  
+RECOMMENDED PILOT PROCEDURE
+
+SUCCESS CRITERION
+
+CaskSense Labs must now be capable of running a **real pilot whisky tasting session with multiple participants**, with reliable session control, consistent ratings, stable reveal behavior, and clear operational visibility while leaving the legacy CaskSense system fully intact.
