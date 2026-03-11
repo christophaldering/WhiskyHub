@@ -1,0 +1,245 @@
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { Search, SlidersHorizontal, Star, Wine, ChevronRight, TrendingUp, Hash, ArrowUpDown } from "lucide-react";
+import { exploreApi } from "@/lib/api";
+
+type SortOption = "avg_score" | "most_rated" | "alphabetical";
+
+export default function LabsExplore() {
+  const [, navigate] = useLocation();
+  const [searchText, setSearchText] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>("most_rated");
+  const [showSortMenu, setShowSortMenu] = useState(false);
+
+  const { data: whiskies, isLoading } = useQuery({
+    queryKey: ["labs-explore-whiskies", searchText, selectedRegion],
+    queryFn: () => exploreApi.getWhiskies(searchText || undefined, selectedRegion || undefined),
+  });
+
+  const regions = useMemo(() => {
+    if (!whiskies || !Array.isArray(whiskies)) return [];
+    const regionSet = new Set<string>();
+    whiskies.forEach((w: any) => {
+      if (w.region) regionSet.add(w.region);
+    });
+    return Array.from(regionSet).sort();
+  }, [whiskies]);
+
+  const sortedWhiskies = useMemo(() => {
+    if (!whiskies || !Array.isArray(whiskies)) return [];
+    const list = [...whiskies];
+    switch (sortBy) {
+      case "avg_score":
+        list.sort((a: any, b: any) => (b.avgOverall || 0) - (a.avgOverall || 0));
+        break;
+      case "most_rated":
+        list.sort((a: any, b: any) => (b.ratingCount || 0) - (a.ratingCount || 0));
+        break;
+      case "alphabetical":
+        list.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || ""));
+        break;
+    }
+    return list;
+  }, [whiskies, sortBy]);
+
+  const sortLabels: Record<SortOption, string> = {
+    avg_score: "Avg Score",
+    most_rated: "Most Rated",
+    alphabetical: "A–Z",
+  };
+
+  return (
+    <div className="px-5 py-6 max-w-2xl mx-auto">
+      <h1
+        className="labs-serif text-xl font-semibold mb-1 labs-fade-in"
+        style={{ color: "var(--labs-text)" }}
+        data-testid="labs-explore-title"
+      >
+        Explore
+      </h1>
+      <p
+        className="text-sm mb-5 labs-fade-in labs-stagger-1"
+        style={{ color: "var(--labs-text-muted)" }}
+      >
+        Discover whiskies from the community
+      </p>
+
+      <div className="relative mb-4 labs-fade-in labs-stagger-1">
+        <Search
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4"
+          style={{ color: "var(--labs-text-muted)" }}
+        />
+        <input
+          className="labs-input pl-11 pr-4"
+          placeholder="Search by name, distillery, region…"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          data-testid="labs-explore-search"
+        />
+      </div>
+
+      {regions.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-4 labs-fade-in labs-stagger-2" style={{ scrollbarWidth: "none" }}>
+          <button
+            className={`labs-badge whitespace-nowrap flex-shrink-0 cursor-pointer transition-colors ${
+              !selectedRegion ? "labs-badge-accent" : ""
+            }`}
+            style={selectedRegion ? { background: "var(--labs-surface)", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" } : {}}
+            onClick={() => setSelectedRegion(null)}
+            data-testid="labs-explore-region-all"
+          >
+            All Regions
+          </button>
+          {regions.map((region) => (
+            <button
+              key={region}
+              className={`labs-badge whitespace-nowrap flex-shrink-0 cursor-pointer transition-colors ${
+                selectedRegion === region ? "labs-badge-accent" : ""
+              }`}
+              style={selectedRegion !== region ? { background: "var(--labs-surface)", color: "var(--labs-text-muted)", border: "1px solid var(--labs-border)" } : {}}
+              onClick={() => setSelectedRegion(selectedRegion === region ? null : region)}
+              data-testid={`labs-explore-region-${region}`}
+            >
+              {region}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between mb-4 labs-fade-in labs-stagger-2">
+        <p className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
+          {sortedWhiskies.length} {sortedWhiskies.length === 1 ? "whisky" : "whiskies"}
+        </p>
+        <div className="relative">
+          <button
+            className="labs-btn-ghost flex items-center gap-1.5 text-xs py-1.5 px-3"
+            onClick={() => setShowSortMenu(!showSortMenu)}
+            data-testid="labs-explore-sort-toggle"
+          >
+            <ArrowUpDown className="w-3.5 h-3.5" />
+            {sortLabels[sortBy]}
+          </button>
+          {showSortMenu && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
+              <div
+                className="absolute right-0 top-full mt-1 z-20 py-1 min-w-[140px]"
+                style={{
+                  background: "var(--labs-surface-elevated)",
+                  border: "1px solid var(--labs-border)",
+                  borderRadius: "var(--labs-radius-sm)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+                }}
+              >
+                {(["avg_score", "most_rated", "alphabetical"] as SortOption[]).map((opt) => (
+                  <button
+                    key={opt}
+                    className="w-full text-left px-4 py-2.5 text-sm transition-colors"
+                    style={{
+                      color: sortBy === opt ? "var(--labs-accent)" : "var(--labs-text-secondary)",
+                      background: sortBy === opt ? "var(--labs-accent-muted)" : "transparent",
+                    }}
+                    onClick={() => {
+                      setSortBy(opt);
+                      setShowSortMenu(false);
+                    }}
+                    data-testid={`labs-explore-sort-${opt}`}
+                  >
+                    {sortLabels[opt]}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {isLoading && (
+        <div className="labs-empty" style={{ minHeight: "40vh" }}>
+          <div
+            className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin mb-4"
+            style={{ borderColor: "var(--labs-accent)", borderTopColor: "transparent" }}
+          />
+          <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
+            Loading whiskies…
+          </p>
+        </div>
+      )}
+
+      {!isLoading && sortedWhiskies.length === 0 && (
+        <div className="labs-empty labs-fade-in" style={{ minHeight: "40vh" }} data-testid="labs-explore-empty">
+          <Wine className="w-12 h-12 mb-4" style={{ color: "var(--labs-text-muted)" }} />
+          <p className="text-sm font-medium mb-1" style={{ color: "var(--labs-text-secondary)" }}>
+            No whiskies found
+          </p>
+          <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+            {searchText || selectedRegion
+              ? "Try adjusting your search or filter"
+              : "Whiskies from tastings will appear here"}
+          </p>
+        </div>
+      )}
+
+      {!isLoading && sortedWhiskies.length > 0 && (
+        <div className="space-y-2 labs-fade-in labs-stagger-3">
+          {sortedWhiskies.map((w: any) => (
+            <div
+              key={w.id}
+              className="labs-card labs-card-interactive flex items-center gap-4 p-4"
+              onClick={() => navigate(`/labs/explore/bottles/${w.id}`)}
+              data-testid={`labs-explore-whisky-${w.id}`}
+            >
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "var(--labs-accent-muted)" }}
+              >
+                <Wine className="w-5 h-5" style={{ color: "var(--labs-accent)" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                  {w.name}
+                </p>
+                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  {w.distillery && (
+                    <span className="text-xs" style={{ color: "var(--labs-text-secondary)" }}>
+                      {w.distillery}
+                    </span>
+                  )}
+                  {w.region && (
+                    <span
+                      className="text-xs px-1.5 py-0.5 rounded"
+                      style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)", fontSize: "10px" }}
+                    >
+                      {w.region}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                {w.avgOverall != null && w.avgOverall > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
+                    <span className="text-sm font-semibold" style={{ color: "var(--labs-accent)" }}>
+                      {Number(w.avgOverall).toFixed(1)}
+                    </span>
+                  </div>
+                )}
+                {w.ratingCount != null && w.ratingCount > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Hash className="w-3 h-3" style={{ color: "var(--labs-text-muted)" }} />
+                    <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                      {w.ratingCount} {w.ratingCount === 1 ? "rating" : "ratings"}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

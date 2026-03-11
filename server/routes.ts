@@ -11645,5 +11645,139 @@ Rules:
     }
   });
 
+  app.get("/api/labs/explore/whiskies", async (req, res) => {
+    try {
+      const search = (req.query.search as string || "").toLowerCase().trim();
+      const region = (req.query.region as string || "").toLowerCase().trim();
+
+      const allWhiskies = await storage.getActiveWhiskies();
+      const allRatingsData = await storage.getAllRatings();
+
+      const whiskyMap = new Map<string, any>();
+
+      for (const w of allWhiskies) {
+        const key = `${(w.name || "").toLowerCase()}::${(w.distillery || "").toLowerCase()}`;
+        const whiskyRatings = allRatingsData.filter(r => r.whiskyId === w.id);
+        const overallScores = whiskyRatings.map(r => r.overall).filter((v): v is number => v != null && v > 0);
+        const avgOverall = overallScores.length > 0 ? Math.round(overallScores.reduce((a, b) => a + b, 0) / overallScores.length) : null;
+
+        if (whiskyMap.has(key)) {
+          const existing = whiskyMap.get(key);
+          existing.ratingCount += overallScores.length;
+          existing.tastingCount += 1;
+          if (avgOverall != null) {
+            if (existing.avgOverall != null) {
+              existing.avgOverall = Math.round((existing.avgOverall * (existing.tastingCount - 1) + avgOverall) / existing.tastingCount);
+            } else {
+              existing.avgOverall = avgOverall;
+            }
+          }
+          if (!existing.age && w.age) existing.age = w.age;
+          if (!existing.abv && w.abv) existing.abv = w.abv;
+          if (!existing.region && w.region) existing.region = w.region;
+          if (!existing.country && w.country) existing.country = w.country;
+          if (!existing.category && w.category) existing.category = w.category;
+          if (!existing.caskType && w.caskType) existing.caskType = w.caskType;
+        } else {
+          whiskyMap.set(key, {
+            id: w.id,
+            name: w.name,
+            distillery: w.distillery || null,
+            region: w.region || null,
+            country: w.country || null,
+            category: w.category || null,
+            age: w.age || null,
+            abv: w.abv || null,
+            caskType: w.caskType || null,
+            avgOverall,
+            ratingCount: overallScores.length,
+            tastingCount: 1,
+          });
+        }
+      }
+
+      let results = Array.from(whiskyMap.values());
+
+      if (search) {
+        results = results.filter(w =>
+          (w.name || "").toLowerCase().includes(search) ||
+          (w.distillery || "").toLowerCase().includes(search) ||
+          (w.region || "").toLowerCase().includes(search)
+        );
+      }
+
+      if (region) {
+        results = results.filter(w => (w.region || "").toLowerCase() === region);
+      }
+
+      results.sort((a, b) => (b.ratingCount || 0) - (a.ratingCount || 0));
+
+      res.json(results);
+    } catch (e: any) {
+      console.error("Labs explore whiskies error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/labs/explore/whiskies/:id", async (req, res) => {
+    try {
+      const whiskyId = req.params.id;
+      const allWhiskies = await storage.getActiveWhiskies();
+      const whisky = allWhiskies.find(w => w.id === whiskyId);
+      if (!whisky) return res.status(404).json({ message: "Whisky not found" });
+
+      const whiskyRatings = await storage.getRatingsForWhisky(whiskyId);
+      const allTastings = await storage.getAllTastings();
+
+      const tasting = allTastings.find(t => t.id === whisky.tastingId);
+
+      const noseScores = whiskyRatings.map(r => r.nose).filter((v): v is number => v != null && v > 0);
+      const tasteScores = whiskyRatings.map(r => r.taste).filter((v): v is number => v != null && v > 0);
+      const finishScores = whiskyRatings.map(r => r.finish).filter((v): v is number => v != null && v > 0);
+      const balanceScores = whiskyRatings.map(r => r.balance).filter((v): v is number => v != null && v > 0);
+      const overallScores = whiskyRatings.map(r => r.overall).filter((v): v is number => v != null && v > 0);
+
+      const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
+      const minMax = (arr: number[]) => arr.length > 0 ? { min: Math.min(...arr), max: Math.max(...arr) } : null;
+
+      const sameNameWhiskies = allWhiskies.filter(w =>
+        w.id !== whiskyId &&
+        (w.name || "").toLowerCase() === (whisky.name || "").toLowerCase() &&
+        (w.distillery || "").toLowerCase() === (whisky.distillery || "").toLowerCase()
+      );
+      const relatedTastingIds = [whisky.tastingId, ...sameNameWhiskies.map(w => w.tastingId)].filter(Boolean);
+      const relatedTastings = allTastings.filter(t => relatedTastingIds.includes(t.id)).map(t => ({
+        id: t.id, title: t.title, date: t.date, status: t.status,
+      }));
+
+      res.json({
+        ...whisky,
+        ratings: whiskyRatings.map(r => ({
+          id: r.id,
+          participantId: r.participantId,
+          nose: r.nose,
+          taste: r.taste,
+          finish: r.finish,
+          balance: r.balance,
+          overall: r.overall,
+        })),
+        aggregated: {
+          avgNose: avg(noseScores),
+          avgTaste: avg(tasteScores),
+          avgFinish: avg(finishScores),
+          avgBalance: avg(balanceScores),
+          avgOverall: avg(overallScores),
+          ratingCount: whiskyRatings.length,
+          overallRange: minMax(overallScores),
+        },
+        tastingContext: tasting ? { id: tasting.id, title: tasting.title, date: tasting.date } : null,
+        relatedTastings,
+      });
+    } catch (e: any) {
+      console.error("Labs explore whisky detail error:", e);
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   return httpServer;
 }

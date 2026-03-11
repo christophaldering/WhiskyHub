@@ -4,7 +4,8 @@ import { useLocation } from "wouter";
 import {
   Plus, X, Trash2, Copy, Check, EyeOff, Eye, Play, Square,
   Users, Calendar, MapPin, ArrowLeft, Loader2,
-  Wine, BarChart3,
+  Wine, BarChart3, CheckCircle2, Clock, CircleDashed,
+  ChevronDown, ChevronUp,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi } from "@/lib/api";
@@ -165,6 +166,191 @@ function CreateTastingForm() {
   );
 }
 
+function ParticipantStatusSection({
+  participants,
+  ratings,
+  whiskies,
+  whiskyCount,
+}: {
+  participants: any[];
+  ratings: any[];
+  whiskies: any[];
+  whiskyCount: number;
+}) {
+  const [expandedWhisky, setExpandedWhisky] = useState<string | null>(null);
+
+  const grouped = (participants || []).reduce(
+    (acc: { done: any[]; progress: any[]; none: any[] }, p: any) => {
+      const count = (ratings || []).filter((r: any) => r.participantId === p.id).length;
+      if (whiskyCount > 0 && count >= whiskyCount) acc.done.push({ ...p, ratedCount: count });
+      else if (count > 0) acc.progress.push({ ...p, ratedCount: count });
+      else acc.none.push({ ...p, ratedCount: 0 });
+      return acc;
+    },
+    { done: [], progress: [], none: [] },
+  );
+
+  const statusGroups = [
+    {
+      key: "done",
+      label: "Rated All",
+      icon: CheckCircle2,
+      color: "var(--labs-success)",
+      bg: "var(--labs-success-muted)",
+      items: grouped.done,
+    },
+    {
+      key: "progress",
+      label: "In Progress",
+      icon: Clock,
+      color: "var(--labs-accent)",
+      bg: "var(--labs-accent-muted)",
+      items: grouped.progress,
+    },
+    {
+      key: "none",
+      label: "Not Started",
+      icon: CircleDashed,
+      color: "var(--labs-text-muted)",
+      bg: "var(--labs-surface)",
+      items: grouped.none,
+    },
+  ];
+
+  return (
+    <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
+        <h2 className="labs-section-label">Participants ({(participants || []).length})</h2>
+        <div className="space-y-3">
+          {statusGroups.map((group) =>
+            group.items.length > 0 ? (
+              <div key={group.key} className="labs-card overflow-hidden">
+                <div
+                  className="flex items-center gap-2 px-4 py-3"
+                  style={{ borderBottom: `1px solid var(--labs-border-subtle)` }}
+                >
+                  <group.icon className="w-4 h-4" style={{ color: group.color }} />
+                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: group.color }}>
+                    {group.label}
+                  </span>
+                  <span
+                    className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: group.bg, color: group.color }}
+                  >
+                    {group.items.length}
+                  </span>
+                </div>
+                <div className="divide-y" style={{ borderColor: "var(--labs-border-subtle)" }}>
+                  {group.items.map((p: any) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-3 px-4 py-3"
+                      data-testid={`labs-host-participant-${p.id}`}
+                    >
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
+                        style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                      >
+                        {(p.name || "?").charAt(0).toUpperCase()}
+                      </div>
+                      <p className="text-sm font-medium truncate flex-1 min-w-0">{p.name || "Anonymous"}</p>
+                      <span className="text-xs flex-shrink-0" style={{ color: "var(--labs-text-muted)" }}>
+                        {p.ratedCount}/{whiskyCount}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null,
+          )}
+        </div>
+      </div>
+
+      {whiskyCount > 0 && (participants || []).length > 0 && (
+        <div>
+          <h2 className="labs-section-label">Per-Whisky Completion</h2>
+          <div className="space-y-2">
+            {(whiskies || []).map((w: any, i: number) => {
+              const whiskyRatings = (ratings || []).filter((r: any) => r.whiskyId === w.id);
+              const ratedIds = new Set(whiskyRatings.map((r: any) => r.participantId));
+              const isExpanded = expandedWhisky === w.id;
+              return (
+                <div key={w.id} className="labs-card overflow-hidden">
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                    onClick={() => setExpandedWhisky(isExpanded ? null : w.id)}
+                    style={{ background: "transparent", border: "none", color: "inherit", cursor: "pointer", font: "inherit" }}
+                    data-testid={`labs-host-whisky-completion-${w.id}`}
+                  >
+                    <div
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+                      style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                    >
+                      {String.fromCharCode(65 + i)}
+                    </div>
+                    <span className="text-sm font-medium truncate flex-1 min-w-0">
+                      {w.name || `Whisky ${i + 1}`}
+                    </span>
+                    <span className="text-xs flex-shrink-0 mr-1" style={{ color: "var(--labs-text-muted)" }}>
+                      {ratedIds.size}/{(participants || []).length}
+                    </span>
+                    <div
+                      className="w-16 h-1.5 rounded-full overflow-hidden flex-shrink-0"
+                      style={{ background: "var(--labs-border)" }}
+                    >
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${(participants || []).length > 0 ? (ratedIds.size / (participants || []).length) * 100 : 0}%`,
+                          background: ratedIds.size === (participants || []).length ? "var(--labs-success)" : "var(--labs-accent)",
+                        }}
+                      />
+                    </div>
+                    {isExpanded ? (
+                      <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                    )}
+                  </button>
+                  {isExpanded && (
+                    <div
+                      className="px-4 pb-3 pt-1 grid grid-cols-2 gap-1.5"
+                      style={{ borderTop: `1px solid var(--labs-border-subtle)` }}
+                    >
+                      {(participants || []).map((p: any) => {
+                        const hasRated = ratedIds.has(p.id);
+                        return (
+                          <div
+                            key={p.id}
+                            className="flex items-center gap-2 py-1"
+                            data-testid={`labs-host-completion-${w.id}-${p.id}`}
+                          >
+                            {hasRated ? (
+                              <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-success)" }} />
+                            ) : (
+                              <CircleDashed className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--labs-text-muted)" }} />
+                            )}
+                            <span
+                              className="text-xs truncate"
+                              style={{ color: hasRated ? "var(--labs-text-secondary)" : "var(--labs-text-muted)" }}
+                            >
+                              {p.name || "Anonymous"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ManageTasting({ tastingId }: { tastingId: string }) {
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
@@ -296,7 +482,7 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
   const ratingProgress = totalExpected > 0 ? Math.round((ratingCount / totalExpected) * 100) : 0;
 
   return (
-    <div className="px-5 py-6 max-w-3xl mx-auto labs-fade-in">
+    <div className="px-5 py-6 max-w-5xl mx-auto labs-fade-in">
       <button
         onClick={() => navigate("/labs/tastings")}
         className="flex items-center gap-1.5 mb-4 text-sm labs-btn-ghost px-0"
@@ -379,25 +565,23 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
         </div>
       </div>
 
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="labs-section-label mb-0">Session Control</h2>
-        </div>
-        <div className="labs-card p-4">
-          <div className="flex flex-wrap gap-2">
-            {tasting.status === "draft" && (
-              <button
-                className="labs-btn-primary flex items-center gap-2"
-                onClick={() => statusMutation.mutate({ status: "open" })}
-                disabled={statusMutation.isPending}
-                data-testid="labs-host-start"
-              >
-                <Play className="w-4 h-4" />
-                Start Session
-              </button>
-            )}
-            {tasting.status === "open" && (
-              <>
+      <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div>
+          <h2 className="labs-section-label">Session Controls</h2>
+          <div className="labs-card p-4">
+            <div className="flex flex-wrap gap-2">
+              {tasting.status === "draft" && (
+                <button
+                  className="labs-btn-primary flex items-center gap-2"
+                  onClick={() => statusMutation.mutate({ status: "open" })}
+                  disabled={statusMutation.isPending}
+                  data-testid="labs-host-start"
+                >
+                  <Play className="w-4 h-4" />
+                  Start Session
+                </button>
+              )}
+              {tasting.status === "open" && (
                 <button
                   className="labs-btn-secondary flex items-center gap-2"
                   onClick={() => statusMutation.mutate({ status: "closed" })}
@@ -407,62 +591,29 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   <Square className="w-4 h-4" />
                   Close Ratings
                 </button>
-                {tasting.blindMode && (
+              )}
+              {tasting.status === "closed" && (
+                <>
                   <button
-                    className="labs-btn-secondary flex items-center gap-2"
-                    onClick={() => statusMutation.mutate({ status: "reveal" })}
+                    className="labs-btn-primary flex items-center gap-2"
+                    onClick={() => statusMutation.mutate({ status: "open" })}
                     disabled={statusMutation.isPending}
-                    data-testid="labs-host-reveal-mode"
+                    data-testid="labs-host-reopen"
                   >
-                    <Eye className="w-4 h-4" />
-                    Enter Reveal
+                    <Play className="w-4 h-4" />
+                    Reopen
                   </button>
-                )}
-              </>
-            )}
-            {tasting.status === "closed" && (
-              <>
-                <button
-                  className="labs-btn-primary flex items-center gap-2"
-                  onClick={() => statusMutation.mutate({ status: "open" })}
-                  disabled={statusMutation.isPending}
-                  data-testid="labs-host-reopen"
-                >
-                  <Play className="w-4 h-4" />
-                  Reopen
-                </button>
-                {tasting.blindMode && (
                   <button
-                    className="labs-btn-secondary flex items-center gap-2"
-                    onClick={() => statusMutation.mutate({ status: "reveal" })}
+                    className="labs-btn-ghost flex items-center gap-2"
+                    onClick={() => statusMutation.mutate({ status: "archived" })}
                     disabled={statusMutation.isPending}
-                    data-testid="labs-host-enter-reveal"
+                    data-testid="labs-host-archive"
                   >
-                    <Eye className="w-4 h-4" />
-                    Enter Reveal
+                    Archive
                   </button>
-                )}
-                <button
-                  className="labs-btn-ghost flex items-center gap-2"
-                  onClick={() => statusMutation.mutate({ status: "archived" })}
-                  disabled={statusMutation.isPending}
-                  data-testid="labs-host-archive"
-                >
-                  Archive
-                </button>
-              </>
-            )}
-            {tasting.status === "reveal" && (
-              <>
-                <button
-                  className="labs-btn-primary flex items-center gap-2"
-                  onClick={() => revealMutation.mutate()}
-                  disabled={revealMutation.isPending}
-                  data-testid="labs-host-reveal-next"
-                >
-                  <Eye className="w-4 h-4" />
-                  Reveal Next
-                </button>
+                </>
+              )}
+              {tasting.status === "reveal" && (
                 <button
                   className="labs-btn-ghost flex items-center gap-2"
                   onClick={() => statusMutation.mutate({ status: "archived" })}
@@ -471,10 +622,42 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 >
                   Complete & Archive
                 </button>
-              </>
-            )}
+              )}
+            </div>
           </div>
         </div>
+
+        {tasting.blindMode && (tasting.status === "open" || tasting.status === "closed" || tasting.status === "reveal") && (
+          <div>
+            <h2 className="labs-section-label">Reveal Controls</h2>
+            <div className="labs-card p-4">
+              <div className="flex flex-wrap gap-2">
+                {(tasting.status === "open" || tasting.status === "closed") && (
+                  <button
+                    className="labs-btn-secondary flex items-center gap-2"
+                    onClick={() => statusMutation.mutate({ status: "reveal" })}
+                    disabled={statusMutation.isPending}
+                    data-testid={tasting.status === "open" ? "labs-host-reveal-mode" : "labs-host-enter-reveal"}
+                  >
+                    <Eye className="w-4 h-4" />
+                    Enter Reveal
+                  </button>
+                )}
+                {tasting.status === "reveal" && (
+                  <button
+                    className="labs-btn-primary flex items-center gap-2"
+                    onClick={() => revealMutation.mutate()}
+                    disabled={revealMutation.isPending}
+                    data-testid="labs-host-reveal-next"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Reveal Next
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="mb-6">
@@ -578,34 +761,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
       </div>
 
       {participantCount > 0 && (
-        <div className="mb-6">
-          <h2 className="labs-section-label">Participants ({participantCount})</h2>
-          <div className="labs-card divide-y" style={{ borderColor: "var(--labs-border-subtle)" }}>
-            {participants?.map((p: any) => {
-              const pRatings = ratings?.filter((r: any) => r.participantId === p.id) || [];
-              return (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-3 p-4"
-                  data-testid={`labs-host-participant-${p.id}`}
-                >
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0"
-                    style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                  >
-                    {(p.name || "?").charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{p.name || "Anonymous"}</p>
-                  </div>
-                  <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                    {pRatings.length}/{whiskyCount} rated
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <ParticipantStatusSection
+          participants={participants}
+          ratings={ratings}
+          whiskies={whiskies}
+          whiskyCount={whiskyCount}
+        />
       )}
 
       <div className="flex gap-3">

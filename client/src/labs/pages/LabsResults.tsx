@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Award, Sparkles } from "lucide-react";
+import { useState, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 
@@ -40,6 +40,101 @@ export default function LabsResults({ params }: LabsResultsProps) {
   });
 
   const isLoading = loadingTasting || loadingWhiskies;
+
+  const whiskyResults = useMemo(() => {
+    return (whiskies || []).map((w: any) => {
+      const ratings = (allRatings || []).filter((r: any) => r.whiskyId === w.id);
+      const count = ratings.length;
+
+      const avg = (dim: string) => {
+        const vals = ratings.map((r: any) => r[dim]).filter((v: any) => v != null && v > 0);
+        if (vals.length === 0) return null;
+        return Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length);
+      };
+
+      const minMax = (dim: string) => {
+        const vals = ratings.map((r: any) => r[dim]).filter((v: any) => v != null && v > 0);
+        if (vals.length === 0) return { min: null, max: null, spread: null };
+        const min = Math.min(...vals);
+        const max = Math.max(...vals);
+        return { min, max, spread: max - min };
+      };
+
+      const stdDev = (dim: string) => {
+        const vals = ratings.map((r: any) => r[dim]).filter((v: any) => v != null && v > 0);
+        if (vals.length < 2) return null;
+        const mean = vals.reduce((a: number, b: number) => a + b, 0) / vals.length;
+        const variance = vals.reduce((sum: number, v: number) => sum + (v - mean) ** 2, 0) / vals.length;
+        return Math.sqrt(variance);
+      };
+
+      const avgOverall = avg("overall");
+      const avgNose = avg("nose");
+      const avgTaste = avg("taste");
+      const avgFinish = avg("finish");
+      const avgBalance = avg("balance");
+      const overallRange = minMax("overall");
+      const overallStdDev = stdDev("overall");
+
+      const myRating = currentParticipant
+        ? ratings.find((r: any) => r.participantId === currentParticipant.id)
+        : null;
+
+      const myDelta = myRating?.overall != null && avgOverall != null
+        ? myRating.overall - avgOverall
+        : null;
+
+      return {
+        ...w,
+        ratings,
+        ratingCount: count,
+        avgOverall,
+        avgNose,
+        avgTaste,
+        avgFinish,
+        avgBalance,
+        myRating,
+        myDelta,
+        overallRange,
+        overallStdDev,
+      };
+    });
+  }, [whiskies, allRatings, currentParticipant]);
+
+  const sorted = useMemo(() => [...whiskyResults].sort((a, b) => (b.avgOverall || 0) - (a.avgOverall || 0)), [whiskyResults]);
+
+  const summaryData = useMemo(() => {
+    const rated = sorted.filter(w => w.avgOverall != null);
+    const groupAvg = rated.length > 0
+      ? Math.round(rated.reduce((s, w) => s + (w.avgOverall || 0), 0) / rated.length)
+      : null;
+
+    const myRated = sorted.filter(w => w.myRating?.overall != null);
+    const userAvg = myRated.length > 0
+      ? Math.round(myRated.reduce((s, w) => s + (w.myRating?.overall || 0), 0) / myRated.length)
+      : null;
+
+    const withStdDev = sorted.filter(w => w.overallStdDev != null && w.ratingCount >= 2);
+    const mostAgreed = withStdDev.length > 0
+      ? withStdDev.reduce((best, w) => (w.overallStdDev! < best.overallStdDev!) ? w : best)
+      : null;
+    const mostDebated = withStdDev.length > 0
+      ? withStdDev.reduce((best, w) => (w.overallStdDev! > best.overallStdDev!) ? w : best)
+      : null;
+
+    const consensusWhiskies = withStdDev.filter(w => w.overallStdDev! <= 5);
+    const debatedWhiskies = withStdDev.filter(w => w.overallStdDev! > 10);
+
+    const myHighlights = myRated
+      .filter(w => w.myDelta != null && w.myDelta > 5)
+      .sort((a, b) => (b.myDelta || 0) - (a.myDelta || 0));
+
+    const myLowlights = myRated
+      .filter(w => w.myDelta != null && w.myDelta < -5)
+      .sort((a, b) => (a.myDelta || 0) - (b.myDelta || 0));
+
+    return { groupAvg, userAvg, mostAgreed, mostDebated, consensusWhiskies, debatedWhiskies, myHighlights, myLowlights };
+  }, [sorted]);
 
   if (tastingError) {
     return (
@@ -86,44 +181,47 @@ export default function LabsResults({ params }: LabsResultsProps) {
     );
   }
 
-  const whiskyResults = (whiskies || []).map((w: any) => {
-    const ratings = (allRatings || []).filter((r: any) => r.whiskyId === w.id);
-    const count = ratings.length;
-    const avg = (dim: string) => {
-      const vals = ratings.map((r: any) => r[dim]).filter((v: any) => v != null && v > 0);
-      if (vals.length === 0) return null;
-      return Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length);
-    };
-    const avgOverall = avg("overall");
-    const avgNose = avg("nose");
-    const avgTaste = avg("taste");
-    const avgFinish = avg("finish");
-    const avgBalance = avg("balance");
-
-    const myRating = currentParticipant
-      ? ratings.find((r: any) => r.participantId === currentParticipant.id)
-      : null;
-
-    return {
-      ...w,
-      ratings,
-      ratingCount: count,
-      avgOverall,
-      avgNose,
-      avgTaste,
-      avgFinish,
-      avgBalance,
-      myRating,
-    };
-  });
-
-  const sorted = [...whiskyResults].sort((a, b) => (b.avgOverall || 0) - (a.avgOverall || 0));
   const topWhisky = sorted[0];
   const participantCount = participants?.length || 0;
   const totalRatings = allRatings?.length || 0;
 
   const toggleExpand = (id: string) => {
     setExpandedWhisky(expandedWhisky === id ? null : id);
+  };
+
+  const DeltaIndicator = ({ delta }: { delta: number | null }) => {
+    if (delta == null) return null;
+    const absDelta = Math.abs(delta);
+    if (absDelta < 1) return (
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-medium" style={{ color: "var(--labs-text-muted)" }}>
+        <Minus className="w-3 h-3" /> ±0
+      </span>
+    );
+    if (delta > 0) return (
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-medium" style={{ color: "var(--labs-success)" }}>
+        <TrendingUp className="w-3 h-3" /> +{delta}
+      </span>
+    );
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-medium" style={{ color: "var(--labs-danger)" }}>
+        <TrendingDown className="w-3 h-3" /> {delta}
+      </span>
+    );
+  };
+
+  const AgreementBadge = ({ stdDev, count }: { stdDev: number | null; count: number }) => {
+    if (stdDev == null || count < 2) return null;
+    if (stdDev <= 5) return (
+      <span className="labs-badge labs-badge-success text-[10px]" data-testid="badge-consensus">
+        <Target className="w-3 h-3" /> Consensus
+      </span>
+    );
+    if (stdDev > 10) return (
+      <span className="labs-badge labs-badge-danger text-[10px]" data-testid="badge-debated">
+        <MessageCircle className="w-3 h-3" /> Debated
+      </span>
+    );
+    return null;
   };
 
   return (
@@ -151,37 +249,66 @@ export default function LabsResults({ params }: LabsResultsProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-6 labs-stagger-2 labs-fade-in">
-        <div
-          className="labs-card p-4 text-center"
-          data-testid="results-stat-whiskies"
-        >
-          <Wine className="w-5 h-5 mx-auto mb-1.5" style={{ color: "var(--labs-accent)" }} />
-          <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }}>
-            {whiskies?.length || 0}
-          </p>
-          <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Whiskies</p>
+      <div
+        className="labs-card-elevated p-5 mb-6 labs-stagger-2 labs-fade-in"
+        data-testid="results-summary-card"
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles className="w-4 h-4" style={{ color: "var(--labs-accent)" }} />
+          <span className="labs-section-label" style={{ marginBottom: 0 }}>Session Summary</span>
         </div>
-        <div
-          className="labs-card p-4 text-center"
-          data-testid="results-stat-participants"
-        >
-          <Users className="w-5 h-5 mx-auto mb-1.5" style={{ color: "var(--labs-accent)" }} />
-          <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }}>
-            {participantCount}
-          </p>
-          <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Tasters</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+          <div className="text-center">
+            <Wine className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--labs-accent)" }} />
+            <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }}>{whiskies?.length || 0}</p>
+            <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Whiskies</p>
+          </div>
+          <div className="text-center">
+            <Users className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--labs-accent)" }} />
+            <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }}>{participantCount}</p>
+            <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Tasters</p>
+          </div>
+          <div className="text-center">
+            <BarChart3 className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--labs-accent)" }} />
+            <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }}>{summaryData.groupAvg ?? "—"}</p>
+            <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Group Avg</p>
+          </div>
+          <div className="text-center">
+            <Star className="w-4 h-4 mx-auto mb-1" style={{ color: "var(--labs-accent)" }} />
+            <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }}>{summaryData.userAvg ?? "—"}</p>
+            <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Your Avg</p>
+          </div>
         </div>
-        <div
-          className="labs-card p-4 text-center"
-          data-testid="results-stat-ratings"
-        >
-          <BarChart3 className="w-5 h-5 mx-auto mb-1.5" style={{ color: "var(--labs-accent)" }} />
-          <p className="text-lg font-bold" style={{ color: "var(--labs-text)" }}>
-            {totalRatings}
-          </p>
-          <p className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>Ratings</p>
-        </div>
+
+        {(summaryData.mostAgreed || summaryData.mostDebated) && (
+          <div
+            className="pt-3 grid grid-cols-1 sm:grid-cols-2 gap-3"
+            style={{ borderTop: "1px solid var(--labs-border-subtle)" }}
+          >
+            {summaryData.mostAgreed && (
+              <div className="flex items-start gap-2" data-testid="results-most-agreed">
+                <Target className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "var(--labs-success)" }} />
+                <div>
+                  <p className="text-[11px] font-medium" style={{ color: "var(--labs-success)" }}>Most Agreed</p>
+                  <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                    {summaryData.mostAgreed.name || "Unknown"}
+                  </p>
+                </div>
+              </div>
+            )}
+            {summaryData.mostDebated && (
+              <div className="flex items-start gap-2" data-testid="results-most-debated">
+                <MessageCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "var(--labs-danger)" }} />
+                <div>
+                  <p className="text-[11px] font-medium" style={{ color: "var(--labs-danger)" }}>Most Debated</p>
+                  <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                    {summaryData.mostDebated.name || "Unknown"}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {topWhisky && topWhisky.avgOverall != null && (
@@ -216,9 +343,75 @@ export default function LabsResults({ params }: LabsResultsProps) {
         </div>
       )}
 
-      <div className="labs-section-label labs-stagger-3 labs-fade-in">Rankings</div>
+      {summaryData.myHighlights.length > 0 && (
+        <div className="mb-6 labs-fade-in">
+          <div className="labs-section-label flex items-center gap-1.5">
+            <TrendingUp className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} />
+            Your Highlights
+          </div>
+          <div className="space-y-2">
+            {summaryData.myHighlights.slice(0, 3).map(w => (
+              <div key={w.id} className="labs-card p-3 flex items-center justify-between" data-testid={`results-highlight-${w.id}`}>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{w.name || "Unknown"}</p>
+                  <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                    You: {w.myRating?.overall} · Group: {w.avgOverall}
+                  </p>
+                </div>
+                <DeltaIndicator delta={w.myDelta} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-      <div className="space-y-2 mb-8 labs-stagger-4 labs-fade-in">
+      {summaryData.consensusWhiskies.length > 0 && (
+        <div className="mb-6 labs-fade-in">
+          <div className="labs-section-label flex items-center gap-1.5">
+            <Target className="w-3.5 h-3.5" style={{ color: "var(--labs-success)" }} />
+            Group Consensus
+          </div>
+          <div className="space-y-2">
+            {summaryData.consensusWhiskies.slice(0, 3).map(w => (
+              <div key={w.id} className="labs-card p-3 flex items-center justify-between" data-testid={`results-consensus-${w.id}`}>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{w.name || "Unknown"}</p>
+                  <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                    Avg: {w.avgOverall} · Range: {w.overallRange.min}–{w.overallRange.max}
+                  </p>
+                </div>
+                <AgreementBadge stdDev={w.overallStdDev} count={w.ratingCount} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {summaryData.debatedWhiskies.length > 0 && (
+        <div className="mb-6 labs-fade-in">
+          <div className="labs-section-label flex items-center gap-1.5">
+            <MessageCircle className="w-3.5 h-3.5" style={{ color: "var(--labs-danger)" }} />
+            Most Debated
+          </div>
+          <div className="space-y-2">
+            {summaryData.debatedWhiskies.slice(0, 3).map(w => (
+              <div key={w.id} className="labs-card p-3 flex items-center justify-between" data-testid={`results-debated-${w.id}`}>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>{w.name || "Unknown"}</p>
+                  <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                    Avg: {w.avgOverall} · Range: {w.overallRange.min}–{w.overallRange.max}
+                  </p>
+                </div>
+                <AgreementBadge stdDev={w.overallStdDev} count={w.ratingCount} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="labs-section-label labs-fade-in">Rankings</div>
+
+      <div className="space-y-2 mb-8 labs-fade-in">
         {sorted.map((w, idx) => {
           const isExpanded = expandedWhisky === w.id;
           const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : null;
@@ -240,12 +433,20 @@ export default function LabsResults({ params }: LabsResultsProps) {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
-                    {w.name || "Unknown"}
-                  </p>
-                  <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
-                    {[w.distillery, w.region].filter(Boolean).join(" · ") || "—"}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium truncate" style={{ color: "var(--labs-text)" }}>
+                      {w.name || "Unknown"}
+                    </p>
+                    <AgreementBadge stdDev={w.overallStdDev} count={w.ratingCount} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
+                      {[w.distillery, w.region].filter(Boolean).join(" · ") || "—"}
+                    </p>
+                    {w.myDelta != null && (
+                      <DeltaIndicator delta={w.myDelta} />
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -293,6 +494,40 @@ export default function LabsResults({ params }: LabsResultsProps) {
                     {w.age && <span>{w.age} years</span>}
                   </div>
 
+                  {w.overallRange.min != null && w.overallRange.max != null && w.ratingCount >= 2 && (
+                    <div
+                      className="p-3 rounded-lg mb-3"
+                      style={{ background: "var(--labs-surface-elevated)" }}
+                      data-testid={`results-variance-${w.id}`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-medium" style={{ color: "var(--labs-text-muted)" }}>Score Range</span>
+                        <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
+                          Spread: {w.overallRange.spread}
+                        </span>
+                      </div>
+                      <div className="relative h-2 rounded-full" style={{ background: "var(--labs-border)" }}>
+                        <div
+                          className="absolute h-full rounded-full"
+                          style={{
+                            background: "var(--labs-accent)",
+                            opacity: 0.4,
+                            left: `${w.overallRange.min}%`,
+                            width: `${Math.max(w.overallRange.max - w.overallRange.min, 2)}%`,
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className="text-[11px] font-semibold" style={{ color: "var(--labs-text-secondary)" }}>
+                          {w.overallRange.min}
+                        </span>
+                        <span className="text-[11px] font-semibold" style={{ color: "var(--labs-text-secondary)" }}>
+                          {w.overallRange.max}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {w.caskType && (
                     <span className="labs-badge labs-badge-accent text-[11px]">{w.caskType}</span>
                   )}
@@ -302,11 +537,19 @@ export default function LabsResults({ params }: LabsResultsProps) {
                       className="mt-3 p-3 rounded-lg"
                       style={{ background: "var(--labs-accent-glow)", border: "1px solid var(--labs-border-subtle)" }}
                     >
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <Star className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
-                        <span className="text-xs font-medium" style={{ color: "var(--labs-accent)" }}>
-                          Your Rating
-                        </span>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-1.5">
+                          <Star className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
+                          <span className="text-xs font-medium" style={{ color: "var(--labs-accent)" }}>
+                            Your Rating
+                          </span>
+                        </div>
+                        {w.myDelta != null && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px]" style={{ color: "var(--labs-text-muted)" }}>vs Group:</span>
+                            <DeltaIndicator delta={w.myDelta} />
+                          </div>
+                        )}
                       </div>
                       <div className="grid grid-cols-5 gap-2 text-center">
                         {[

@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Radar, Users, User, ArrowLeft } from "lucide-react";
+import { Radar, Users, User, ArrowLeft, Compass } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
 import "./labs-theme.css";
@@ -23,6 +23,7 @@ function GlencairnIcon({ color, size = 22 }: { color: string; size?: number }) {
 
 const NAV_ITEMS = [
   { href: "/labs/tastings", icon: "glencairn" as const, label: "Tastings" },
+  { href: "/labs/explore", icon: "compass" as const, label: "Explore" },
   { href: "/labs/taste", icon: "radar" as const, label: "Taste" },
   { href: "/labs/circle", icon: "circle" as const, label: "Circle" },
 ];
@@ -110,6 +111,8 @@ export default function LabsLayout({ children }: LabsLayoutProps) {
                     <GlencairnIcon color={color} size={22} />
                   ) : item.icon === "radar" ? (
                     <Radar className="w-[22px] h-[22px]" strokeWidth={isActive ? 2 : 1.6} />
+                  ) : item.icon === "compass" ? (
+                    <Compass className="w-[22px] h-[22px]" strokeWidth={isActive ? 2 : 1.6} />
                   ) : (
                     <Users className="w-[22px] h-[22px]" strokeWidth={isActive ? 2 : 1.6} />
                   )}

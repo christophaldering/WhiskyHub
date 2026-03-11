@@ -364,6 +364,18 @@ export const ratingApi = {
   upsert: (data: any) => fetchJSON("/ratings", { method: "POST", body: JSON.stringify(data) }),
 };
 
+// ===== Labs Explore =====
+export const exploreApi = {
+  getWhiskies: (search?: string, region?: string) => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (region) params.set("region", region);
+    const qs = params.toString();
+    return fetchJSON(`/labs/explore/whiskies${qs ? `?${qs}` : ""}`);
+  },
+  getWhisky: (id: string) => fetchJSON(`/labs/explore/whiskies/${id}`),
+};
+
 // ===== Paper Sheet Scanning =====
 export const paperScanApi = {
   scanSheet: async (tastingId: string, photos: File[], participantId?: string) => {
