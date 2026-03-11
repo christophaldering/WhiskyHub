@@ -8,9 +8,42 @@ import { participantApi } from "@/lib/api";
 import {
   X, LogOut, User, Globe, Settings, Palette, Download,
   ArrowLeftRight, UserPlus, KeyRound, Mail, Eye, EyeOff,
-  Shield, ChevronLeft, Sun, Moon, CheckCircle2, Info, HandHeart
+  Shield, ChevronLeft, Sun, Moon, CheckCircle2, Info, HandHeart,
+  FlaskConical, Layout
 } from "lucide-react";
 import i18n from "@/lib/i18n";
+
+function mapRouteToCounterpart(path: string): { target: string; isLabs: boolean } {
+  const isLabs = path.startsWith("/labs");
+
+  const specialM2ToLabs: Record<string, string> = {
+    "/m2": "/labs/home",
+    "/m2/tastings": "/labs/tastings",
+    "/m2/tastings/host": "/labs/host",
+    "/m2/tastings/dashboard": "/labs/host/dashboard",
+    "/m2/tastings/solo": "/labs/solo",
+    "/m2/tastings/join": "/labs/join",
+    "/m2/taste/historical": "/labs/host/history",
+    "/m2/taste/historical/insights": "/labs/host/history/insights",
+    "/m2/discover/about": "/labs/about",
+    "/m2/circle": "/labs/circle",
+  };
+
+  const specialLabsToM2: Record<string, string> = {};
+  for (const [m2, labs] of Object.entries(specialM2ToLabs)) {
+    specialLabsToM2[labs] = m2;
+  }
+
+  if (isLabs) {
+    if (specialLabsToM2[path]) return { target: specialLabsToM2[path], isLabs: true };
+    const sub = path.replace(/^\/labs/, "");
+    return { target: "/m2" + (sub || ""), isLabs: true };
+  } else {
+    if (specialM2ToLabs[path]) return { target: specialM2ToLabs[path], isLabs: false };
+    const sub = path.replace(/^\/m2/, "");
+    return { target: "/labs" + (sub || "/home"), isLabs: false };
+  }
+}
 
 type MenuView = "main" | "register" | "forgot-pin" | "reset-pin" | "verify-email" | "guest";
 
@@ -21,7 +54,7 @@ interface M2ProfileMenuProps {
 
 export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const { t } = useTranslation();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const [session, setSession] = useState(getSession());
   const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
@@ -694,6 +727,22 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
         </>
       )}
 
+      {(() => {
+        const ri = mapRouteToCounterpart(location);
+        return (
+          <MenuButton
+            icon={ri.isLabs
+              ? <Layout style={{ width: 18, height: 18, color: v.accent }} />
+              : <FlaskConical style={{ width: 18, height: 18, color: v.accent }} />}
+            label={ri.isLabs
+              ? (i18n.language === "de" ? "Zu M2 wechseln" : "Switch to M2")
+              : (i18n.language === "de" ? "Zu Labs wechseln" : "Switch to Labs")}
+            onClick={() => { onClose(); navigate(ri.target); }}
+            testId="m2-profile-switch-version"
+          />
+        );
+      })()}
+
       <div style={{ height: 1, background: v.border, margin: "8px 0" }} />
 
       <MenuButton
@@ -892,6 +941,40 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           {i18n.language === "de" ? "English" : "Deutsch"}
         </button>
       </div>
+
+      {(() => {
+        const ri = mapRouteToCounterpart(location);
+        return (
+          <button
+            onClick={() => { onClose(); navigate(ri.target); }}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              padding: "14px 16px",
+              marginTop: 8,
+              background: "transparent",
+              border: `1px solid ${v.border}`,
+              borderRadius: 12,
+              cursor: "pointer",
+              color: v.text,
+              fontSize: 14,
+              fontWeight: 500,
+              fontFamily: "system-ui, sans-serif",
+            }}
+            data-testid="m2-profile-switch-version-signedout"
+          >
+            {ri.isLabs
+              ? <Layout style={{ width: 16, height: 16, color: v.accent }} />
+              : <FlaskConical style={{ width: 16, height: 16, color: v.accent }} />}
+            {ri.isLabs
+              ? (i18n.language === "de" ? "Zu M2 wechseln" : "Switch to M2")
+              : (i18n.language === "de" ? "Zu Labs wechseln" : "Switch to Labs")}
+          </button>
+        );
+      })()}
 
       <div style={{ height: 24 }} />
     </>
