@@ -181,21 +181,26 @@ export async function tryAutoResume(): Promise<boolean> {
     }
 
     const storedPid = localStorage.getItem("casksense_participant_id");
-    if (storedPid) {
+    const storePid = useAppStore.getState().currentParticipant?.id;
+    const candidatePid = storedPid || storePid;
+    if (candidatePid) {
       try {
-        const res = await fetch(`/api/participants/${storedPid}`, { headers: { "x-participant-id": storedPid } });
+        const res = await fetch(`/api/participants/${candidatePid}`, { headers: { "x-participant-id": candidatePid } });
         if (res.ok) {
           const p = await res.json();
           if (p?.id) {
             const mode = (localStorage.getItem(LK_MODE) || "log") as SessionMode;
             setSessionStorage(mode, p.name || null, p.id, p.role || undefined);
+            try { localStorage.setItem("casksense_participant_id", p.id); } catch {}
             syncStoreParticipant(p.id, p.name, p.role);
             window.dispatchEvent(new Event("session-change"));
             return true;
           }
         }
       } catch {}
-      try { localStorage.removeItem("casksense_participant_id"); } catch {}
+      if (storedPid) {
+        try { localStorage.removeItem("casksense_participant_id"); } catch {}
+      }
     }
 
     syncStoreParticipant(undefined);
