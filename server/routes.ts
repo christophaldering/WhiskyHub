@@ -11747,19 +11747,15 @@ Rules:
         const key = `${(w.name || "").toLowerCase()}::${(w.distillery || "").toLowerCase()}`;
         const whiskyRatings = allRatingsData.filter(r => r.whiskyId === w.id);
         const overallScores = whiskyRatings.map(r => r.overall).filter((v): v is number => v != null && v > 0);
-        const avgOverall = overallScores.length > 0 ? Math.round(overallScores.reduce((a, b) => a + b, 0) / overallScores.length) : null;
 
         if (whiskyMap.has(key)) {
           const existing = whiskyMap.get(key);
-          existing.ratingCount += overallScores.length;
+          existing._allScores.push(...overallScores);
+          existing.ratingCount = existing._allScores.length;
           existing.tastingCount += 1;
-          if (avgOverall != null) {
-            if (existing.avgOverall != null) {
-              existing.avgOverall = Math.round((existing.avgOverall * (existing.tastingCount - 1) + avgOverall) / existing.tastingCount);
-            } else {
-              existing.avgOverall = avgOverall;
-            }
-          }
+          existing.avgOverall = existing._allScores.length > 0
+            ? parseFloat((existing._allScores.reduce((a: number, b: number) => a + b, 0) / existing._allScores.length).toFixed(1))
+            : null;
           if (!existing.age && w.age) existing.age = w.age;
           if (!existing.abv && w.abv) existing.abv = w.abv;
           if (!existing.region && w.region) existing.region = w.region;
@@ -11779,11 +11775,18 @@ Rules:
             abv: w.abv || null,
             caskType: w.caskType || null,
             imageUrl: w.imageUrl || null,
-            avgOverall,
+            avgOverall: overallScores.length > 0
+              ? parseFloat((overallScores.reduce((a, b) => a + b, 0) / overallScores.length).toFixed(1))
+              : null,
             ratingCount: overallScores.length,
             tastingCount: 1,
+            _allScores: [...overallScores],
           });
         }
+      }
+
+      for (const entry of whiskyMap.values()) {
+        delete entry._allScores;
       }
 
       const journalEntries = await storage.getAllJournalEntries();
