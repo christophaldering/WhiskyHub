@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId } from "@/labs/data/flavor-data";
+import { FLAVOR_PROFILES, detectFlavorProfile, type FlavorProfileId, getEffectiveProfile } from "@/labs/data/flavor-data";
+import FlavorTagStrip from "@/labs/components/FlavorTagStrip";
 import { tastingApi, whiskyApi, blindModeApi, ratingApi, guidedApi, inviteApi, collectionApi, wishlistApi } from "@/lib/api";
 import { downloadDataUrl } from "@/lib/download";
 import { generateTastingMenu } from "@/components/tasting-menu-pdf";
@@ -84,12 +85,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
 
 type DimKey = "nose" | "taste" | "finish" | "balance";
 
-const FLAVOR_CHIPS: Record<DimKey, string[]> = {
-  nose: ["Fruity", "Floral", "Spicy", "Smoky", "Woody", "Sweet", "Malty", "Sherry", "Citrus", "Peaty"],
-  taste: ["Sweet", "Dry", "Oily", "Spicy", "Fruity", "Nutty", "Chocolate", "Vanilla", "Salty", "Peaty"],
-  finish: ["Short", "Medium", "Long", "Warm", "Dry", "Spicy", "Smoky", "Sweet", "Bitter"],
-  balance: ["Harmonious", "Complex", "Rough", "Elegant", "Powerful", "Thin"],
-};
+const BALANCE_CHIPS: string[] = ["Harmonious", "Complex", "Rough", "Elegant", "Powerful", "Thin"];
 
 const DIM_LABELS: Record<DimKey, string> = { nose: "Nose", taste: "Taste", finish: "Finish", balance: "Balance" };
 const DIM_COLORS: Record<DimKey, string> = { nose: "#D9A15B", taste: "#C97845", finish: "#9C6A5E", balance: "#7F8C5A" };
@@ -118,15 +114,14 @@ function HostRatingPanel({
   const queryClient = useQueryClient();
   const [activeIdx, setActiveIdx] = useState(0);
   const [ratings, setRatings] = useState<Record<string, HostRatingState>>({});
-  const [chips, setChips] = useState<Record<string, Record<DimKey, string[]>>>({});
-  const [texts, setTexts] = useState<Record<string, Record<DimKey, string>>>({});
+  const [flavorNotes, setFlavorNotes] = useState<Record<string, string>>({});
+  const [balanceChips, setBalanceChips] = useState<Record<string, string[]>>({});
+  const [balanceTexts, setBalanceTexts] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scaleMax = ratingScale || 100;
   const scaleDefault = Math.round(scaleMax / 2);
-  const emptyChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
-  const emptyTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
 
   const ratingUpsertMut = useMutation({
     mutationFn: (data: Record<string, unknown>) => ratingApi.upsert(data),
@@ -134,44 +129,76 @@ function HostRatingPanel({
   });
 
   const buildScoresBlock = useCallback((wId: string) => {
-    const ch = chips[wId] || emptyChips;
-    const tx = texts[wId] || emptyTexts;
-    const hasDimData = DIM_KEYS.some((d) => ch[d].length > 0 || tx[d].trim());
-    if (!hasDimData) return "";
+    const fn = flavorNotes[wId] || "";
+    const bChips = balanceChips[wId] || [];
+    const bText = balanceTexts[wId] || "";
+
     const parts: string[] = [];
-    for (const d of DIM_KEYS) {
-      const chipStr = ch[d].length > 0 ? ch[d].join(", ") : "";
-      const textStr = tx[d].trim();
-      if (chipStr || textStr) {
-        parts.push(`[${d.toUpperCase()}] ${[chipStr, textStr].filter(Boolean).join(" — ")} [/${d.toUpperCase()}]`);
-      }
+    if (fn.trim()) parts.push(fn.trim());
+    if (bChips.length > 0 || bText.trim()) {
+      const chipStr = bChips.length > 0 ? bChips.join(", ") : "";
+      const textStr = bText.trim();
+      parts.push(`[BALANCE] ${[chipStr, textStr].filter(Boolean).join(" — ")} [/BALANCE]`);
     }
     return parts.length > 0 ? "\n" + parts.join("\n") : "";
-  }, [chips, texts]);
+  }, [flavorNotes, balanceChips, balanceTexts]);
 
   const parseSavedNotes = useCallback((rawNotes: string) => {
-    const parsedChips: Record<DimKey, string[]> = { nose: [], taste: [], finish: [], balance: [] };
-    const parsedTexts: Record<DimKey, string> = { nose: "", taste: "", finish: "", balance: "" };
     let cleanNotes = rawNotes;
-    for (const d of DIM_KEYS) {
+    const flavorLines: string[] = [];
+    let parsedBalanceChips: string[] = [];
+    let parsedBalanceText = "";
+
+    for (const d of (["nose", "taste", "finish", "balance"] as DimKey[])) {
       const re = new RegExp(`\\[${d.toUpperCase()}\\]\\s*(.*?)\\s*\\[\\/${d.toUpperCase()}\\]`, "s");
       const m = rawNotes.match(re);
       if (m) {
         cleanNotes = cleanNotes.replace(m[0], "");
         const content = m[1].trim();
-        const dimParts = content.split(" — ");
-        if (dimParts.length >= 2) {
-          parsedChips[d] = dimParts[0].split(",").map(s => s.trim()).filter(Boolean);
-          parsedTexts[d] = dimParts.slice(1).join(" — ");
-        } else if (dimParts.length === 1) {
-          const maybeChips = dimParts[0].split(",").map(s => s.trim()).filter(Boolean);
-          if (maybeChips.every(c => c.length < 20)) parsedChips[d] = maybeChips;
-          else parsedTexts[d] = dimParts[0];
+        if (d === "balance") {
+          const dimParts = content.split(" — ");
+          if (dimParts.length >= 2) {
+            parsedBalanceChips = dimParts[0].split(",").map(s => s.trim()).filter(Boolean);
+            parsedBalanceText = dimParts.slice(1).join(" — ");
+          } else {
+            const maybeChips = dimParts[0].split(",").map(s => s.trim()).filter(Boolean);
+            if (maybeChips.every(c => c.length < 20)) parsedBalanceChips = maybeChips;
+            else parsedBalanceText = dimParts[0];
+          }
+        } else {
+          const dimParts = content.split(" — ");
+          const tags = dimParts[0].split(",").map(s => s.trim()).filter(Boolean);
+          if (tags.length > 0) {
+            const label = d.charAt(0).toUpperCase() + d.slice(1);
+            flavorLines.push(`[${label}] ${tags.join(", ")}`);
+          }
         }
       }
     }
+
+    const flavorMarker = /\[(Nose|Taste|Finish)\]\s*[^\n]*/gi;
+    let fm: RegExpExecArray | null;
+    while ((fm = flavorMarker.exec(cleanNotes)) !== null) {
+      flavorLines.push(fm[0]);
+    }
+    cleanNotes = cleanNotes.replace(/\[(Nose|Taste|Finish)\]\s*[^\n]*/gi, "");
     cleanNotes = cleanNotes.replace(/\[SCORES\].*?\[\/SCORES\]/s, "");
-    return { chips: parsedChips, texts: parsedTexts, cleanNotes: cleanNotes.trim() };
+    cleanNotes = cleanNotes.replace(/\n{2,}/g, "\n").trim();
+
+    const seen = new Set<string>();
+    const dedupedFlavorLines = flavorLines.filter(l => {
+      const key = l.replace(/\s+/g, " ").toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    return {
+      flavorNotes: dedupedFlavorLines.join("\n"),
+      balanceChips: parsedBalanceChips,
+      balanceText: parsedBalanceText,
+      cleanNotes,
+    };
   }, []);
 
   useEffect(() => {
@@ -194,8 +221,9 @@ function HostRatingPanel({
                 notes: parsed.cleanNotes,
               },
             }));
-            setChips(prev => ({ ...prev, [w.id]: parsed.chips }));
-            setTexts(prev => ({ ...prev, [w.id]: parsed.texts }));
+            setFlavorNotes(prev => ({ ...prev, [w.id]: parsed.flavorNotes }));
+            setBalanceChips(prev => ({ ...prev, [w.id]: parsed.balanceChips }));
+            setBalanceTexts(prev => ({ ...prev, [w.id]: parsed.balanceText }));
           }
         } catch {
           // Rating doesn't exist yet
@@ -243,7 +271,7 @@ function HostRatingPanel({
       debouncedSave(wId, currentRating);
     }, 100);
     return () => clearTimeout(timer);
-  }, [chips, texts]);
+  }, [flavorNotes, balanceChips, balanceTexts]);
 
   const getRating = (whiskyId: string): HostRatingState => {
     return ratings[whiskyId] || {
@@ -262,21 +290,17 @@ function HostRatingPanel({
     debouncedSave(whiskyId, updated);
   };
 
-  const toggleChip = (whiskyId: string, dim: DimKey, chip: string) => {
-    setChips(prev => {
-      const current = prev[whiskyId] || emptyChips;
-      const dimChips = current[dim];
-      const next = dimChips.includes(chip) ? dimChips.filter(c => c !== chip) : [...dimChips, chip];
-      return { ...prev, [whiskyId]: { ...current, [dim]: next } };
+  const toggleBalanceChip = (whiskyId: string, chip: string) => {
+    setBalanceChips(prev => {
+      const current = prev[whiskyId] || [];
+      const next = current.includes(chip) ? current.filter(c => c !== chip) : [...current, chip];
+      return { ...prev, [whiskyId]: next };
     });
   };
 
-  const updateText = (whiskyId: string, dim: DimKey, text: string) => {
-    setTexts(prev => {
-      const current = prev[whiskyId] || emptyTexts;
-      return { ...prev, [whiskyId]: { ...current, [dim]: text } };
-    });
-  };
+  const updateFlavorNotes = useCallback((whiskyId: string, newNotes: string) => {
+    setFlavorNotes(prev => ({ ...prev, [whiskyId]: newNotes }));
+  }, []);
 
   const currentWhisky = whiskies[activeIdx];
   if (!currentWhisky) {
@@ -289,8 +313,10 @@ function HostRatingPanel({
   }
 
   const rating = getRating(currentWhisky.id);
-  const currentChips = chips[currentWhisky.id] || emptyChips;
-  const currentTexts = texts[currentWhisky.id] || emptyTexts;
+  const currentFlavorNotes = flavorNotes[currentWhisky.id] || "";
+  const currentBalanceChips = balanceChips[currentWhisky.id] || [];
+  const currentBalanceText = balanceTexts[currentWhisky.id] || "";
+  const profileId = getEffectiveProfile(currentWhisky as any, false).profileId;
 
   return (
     <div className="labs-card" style={{ padding: 0 }} data-testid="host-rating-panel">
@@ -356,7 +382,7 @@ function HostRatingPanel({
           const dimColor = DIM_COLORS[dim];
           const value = rating[dim];
           return (
-            <div key={dim} style={{ marginBottom: 16 }} data-testid={`host-rating-dim-${dim}`}>
+            <div key={dim} style={{ marginBottom: 14 }} data-testid={`host-rating-dim-${dim}`}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: dimColor }}>{DIM_LABELS[dim]}</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: dimColor, fontVariantNumeric: "tabular-nums" }}>
@@ -377,57 +403,67 @@ function HostRatingPanel({
                 }}
                 data-testid={`host-rating-slider-${dim}`}
               />
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
-                {FLAVOR_CHIPS[dim].map(chip => {
-                  const selected = currentChips[dim].includes(chip);
-                  return (
-                    <button
-                      key={chip}
-                      onClick={() => toggleChip(currentWhisky.id, dim, chip)}
-                      style={{
-                        padding: "4px 10px",
-                        fontSize: 11,
-                        fontWeight: 500,
-                        borderRadius: 16,
-                        border: `1px solid ${selected ? dimColor : "var(--labs-border)"}`,
-                        background: selected ? `${dimColor}20` : "transparent",
-                        color: selected ? dimColor : "var(--labs-text-muted)",
-                        cursor: "pointer",
-                        fontFamily: "inherit",
-                        transition: "all 0.15s",
-                        whiteSpace: "nowrap",
-                      }}
-                      data-testid={`chip-${dim}-${chip.toLowerCase()}`}
-                    >
-                      {chip}
-                    </button>
-                  );
-                })}
-              </div>
-              <input
-                type="text"
-                placeholder={`${DIM_LABELS[dim]} notes...`}
-                value={currentTexts[dim]}
-                onChange={e => updateText(currentWhisky.id, dim, e.target.value)}
-                style={{
-                  width: "100%",
-                  marginTop: 6,
-                  padding: "6px 10px",
-                  fontSize: 12,
-                  borderRadius: 8,
-                  border: "1px solid var(--labs-border)",
-                  background: "var(--labs-surface)",
-                  color: "var(--labs-text)",
-                  outline: "none",
-                  fontFamily: "inherit",
-                }}
-                data-testid={`host-text-${dim}`}
-              />
+              {dim === "balance" && (
+                <>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
+                    {BALANCE_CHIPS.map(chip => {
+                      const selected = currentBalanceChips.includes(chip);
+                      return (
+                        <button
+                          key={chip}
+                          onClick={() => toggleBalanceChip(currentWhisky.id, chip)}
+                          style={{
+                            padding: "4px 10px",
+                            fontSize: 11,
+                            fontWeight: 500,
+                            borderRadius: 16,
+                            border: `1px solid ${selected ? dimColor : "var(--labs-border)"}`,
+                            background: selected ? `${dimColor}20` : "transparent",
+                            color: selected ? dimColor : "var(--labs-text-muted)",
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                            transition: "all 0.15s",
+                            whiteSpace: "nowrap",
+                          }}
+                          data-testid={`chip-balance-${chip.toLowerCase()}`}
+                        >
+                          {chip}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Balance notes..."
+                    value={currentBalanceText}
+                    onChange={e => setBalanceTexts(prev => ({ ...prev, [currentWhisky.id]: e.target.value }))}
+                    style={{
+                      width: "100%",
+                      marginTop: 6,
+                      padding: "6px 10px",
+                      fontSize: 12,
+                      borderRadius: 8,
+                      border: "1px solid var(--labs-border)",
+                      background: "var(--labs-surface)",
+                      color: "var(--labs-text)",
+                      outline: "none",
+                      fontFamily: "inherit",
+                    }}
+                    data-testid="host-text-balance"
+                  />
+                </>
+              )}
             </div>
           );
         })}
 
-        <div style={{ marginBottom: 16 }}>
+        <FlavorTagStrip
+          notes={currentFlavorNotes}
+          onNotesChange={(newNotes) => updateFlavorNotes(currentWhisky.id, newNotes)}
+          profileId={profileId}
+        />
+
+        <div style={{ marginTop: 16, marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: "var(--labs-accent)" }}>Overall</span>
             <span style={{ fontSize: 16, fontWeight: 700, color: "var(--labs-accent)", fontVariantNumeric: "tabular-nums" }}>
