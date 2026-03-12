@@ -1,16 +1,35 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronUp, Mic, Plus } from "lucide-react";
 import { FLAVOR_CATEGORIES, type FlavorCategory } from "@/labs/data/flavor-data";
 
-export const ATTRIBUTES = {
-  nose: ["Fruity", "Floral", "Spicy", "Smoky", "Woody", "Sweet", "Malty", "Sherry", "Citrus", "Peaty"],
-  taste: ["Sweet", "Dry", "Oily", "Spicy", "Fruity", "Nutty", "Chocolate", "Vanilla", "Salty", "Peaty"],
-  finish: ["Short", "Medium", "Long", "Warm", "Dry", "Spicy", "Smoky", "Sweet", "Bitter"],
-  balance: ["Harmonious", "Complex", "Rough", "Elegant", "Powerful", "Thin"],
-} as const;
-
 export type DimKey = "nose" | "taste" | "finish" | "balance";
+
+const LEGACY_CHIP_MAP: Record<string, string> = {
+  "Peaty": "Peat",
+  "Smoky": "Campfire",
+  "Salty": "Sea Salt",
+  "Nutty": "Walnut",
+  "Malty": "Cereal",
+  "Woody": "Oak",
+  "Fruity": "Apple",
+  "Floral": "Rose",
+  "Spicy": "Pepper",
+  "Sweet": "Honey",
+};
+
+function normalizeLegacyChip(chip: string): string {
+  return LEGACY_CHIP_MAP[chip] || chip;
+}
+
+const allSubEnLower = new Set(
+  FLAVOR_CATEGORIES.flatMap((c) => c.subcategories.map((s) => s.en.toLowerCase()))
+);
+
+export function chipMatchesSubcategory(chip: string): boolean {
+  const normalized = normalizeLegacyChip(chip);
+  return allSubEnLower.has(normalized.toLowerCase());
+}
 
 const DIM_KEYS: DimKey[] = ["nose", "taste", "finish", "balance"];
 
@@ -146,6 +165,14 @@ export default function LabsRatingPanel({
 
   const activeChips = chips[activeTab];
 
+  const normalizedActiveSet = useMemo(() => {
+    return new Set(activeChips.map((c) => normalizeLegacyChip(c).toLowerCase()));
+  }, [activeChips]);
+
+  const isChipSelected = useCallback((subEn: string) => {
+    return normalizedActiveSet.has(subEn.toLowerCase());
+  }, [normalizedActiveSet]);
+
   const renderTabBar = () => (
     <div style={{ display: "flex", gap: 0, marginBottom: 16, borderRadius: 8, overflow: "hidden", border: "1px solid var(--labs-border)" }} data-testid="rating-tab-bar">
       {DIM_KEYS.map((key) => {
@@ -274,7 +301,7 @@ export default function LabsRatingPanel({
           {categories.map((cat) => {
             const isExpanded = expandedCats[cat.id] || false;
             const catTagCount = cat.subcategories.filter((sub) =>
-              activeChips.some((c) => c.toLowerCase() === sub.en.toLowerCase())
+              isChipSelected(sub.en)
             ).length;
 
             return (
@@ -317,12 +344,20 @@ export default function LabsRatingPanel({
                 {isExpanded && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 5, padding: "8px 10px" }}>
                     {cat.subcategories.map((sub) => {
-                      const isSelected = activeChips.some((c) => c.toLowerCase() === sub.en.toLowerCase());
+                      const isSelected = isChipSelected(sub.en);
                       return (
                         <button
                           key={sub.id}
                           type="button"
-                          onClick={() => !disabled && onChipToggle(activeTab, sub.en)}
+                          onClick={() => {
+                            if (disabled) return;
+                            if (isSelected) {
+                              const legacyMatch = activeChips.find((c) => normalizeLegacyChip(c).toLowerCase() === sub.en.toLowerCase());
+                              onChipToggle(activeTab, legacyMatch || sub.en);
+                            } else {
+                              onChipToggle(activeTab, sub.en);
+                            }
+                          }}
                           data-testid={`flavor-tag-${activeTab}-${sub.id}`}
                           style={{
                             padding: compact ? "3px 8px" : "4px 10px",
