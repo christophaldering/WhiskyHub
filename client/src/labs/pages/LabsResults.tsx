@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Award, Sparkles, Download, FileText, FileSpreadsheet, Loader2 } from "lucide-react";
-import { useState, useMemo, useRef, useEffect } from "react";
+import { ArrowLeft, Wine, Trophy, Users, Star, BarChart3, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Target, MessageCircle, Award, Sparkles, Download, FileText, FileSpreadsheet, Loader2, Clock } from "lucide-react";
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import { tastingApi, whiskyApi, ratingApi } from "@/lib/api";
 import { downloadBlob } from "@/lib/download";
@@ -295,6 +295,8 @@ export default function LabsResults({ params }: LabsResultsProps) {
   const { currentParticipant } = useAppStore();
   const [, navigate] = useLocation();
   const [expandedWhisky, setExpandedWhisky] = useState<string | null>(null);
+  const [historyExpanded, setHistoryExpanded] = useState<Record<string, boolean>>({});
+  const [previousRatingsMap, setPreviousRatingsMap] = useState<Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; balance: number; overall: number }[]>>({});
 
   const { data: tasting, isLoading: loadingTasting, isError: tastingError } = useQuery({
     queryKey: ["tasting", tastingId],
@@ -321,6 +323,53 @@ export default function LabsResults({ params }: LabsResultsProps) {
   });
 
   const isLoading = loadingTasting || loadingWhiskies;
+
+  useEffect(() => {
+    if (!currentParticipant?.id || !whiskies?.length || !tastingId) return;
+    if (tasting?.status !== "reveal" && tasting?.status !== "archived" && tasting?.status !== "completed") return;
+    const pid = currentParticipant.id;
+
+    const fingerprint = (w: any) => {
+      if (w.whiskybaseId) return `wb:${w.whiskybaseId}`;
+      return `fp:${(w.name || "").toLowerCase().trim()}|${(w.distillery || "").toLowerCase().trim()}`;
+    };
+
+    const currentFpToId: Record<string, string> = {};
+    for (const w of whiskies as any[]) {
+      const fp = fingerprint(w);
+      if (fp !== "fp:|") currentFpToId[fp] = w.id;
+    }
+
+    fetch(`/api/participants/${pid}/tasting-history`, { headers: { "x-participant-id": pid } })
+      .then(r => r.ok ? r.json() : [])
+      .then((history: any[]) => {
+        const map: Record<string, { date: string; tastingTitle: string; nose: number; taste: number; finish: number; balance: number; overall: number }[]> = {};
+        for (const t of history) {
+          if (t.id === tastingId) continue;
+          for (const w of t.whiskies || []) {
+            if (!w.myRating) continue;
+            const fp = fingerprint(w);
+            const currentId = currentFpToId[fp];
+            if (!currentId) continue;
+            if (!map[currentId]) map[currentId] = [];
+            map[currentId].push({
+              date: t.date || "",
+              tastingTitle: t.title || "",
+              nose: w.myRating.nose,
+              taste: w.myRating.taste,
+              finish: w.myRating.finish,
+              balance: w.myRating.balance,
+              overall: w.myRating.overall,
+            });
+          }
+        }
+        for (const wid of Object.keys(map)) {
+          map[wid].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        }
+        setPreviousRatingsMap(map);
+      })
+      .catch(() => {});
+  }, [currentParticipant?.id, whiskies, tastingId, tasting?.status]);
 
   const whiskyResults = useMemo(() => {
     return (whiskies || []).map((w: any) => {
@@ -738,6 +787,17 @@ export default function LabsResults({ params }: LabsResultsProps) {
                       {w.name || "Unknown"}
                     </p>
                     <AgreementBadge stdDev={w.overallStdDev} count={w.ratingCount} />
+                    {previousRatingsMap[w.id]?.length > 0 && (tasting?.status === "reveal" || tasting?.status === "archived" || tasting?.status === "completed") && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px]" style={{ color: "var(--labs-accent)", opacity: 0.8 }} data-testid={`badge-prev-${w.id}`}>
+                        <Clock className="w-3 h-3" />
+                        {(() => {
+                          const mostRecent = previousRatingsMap[w.id][0];
+                          const d = w.myRating?.overall != null ? w.myRating.overall - mostRecent.overall : null;
+                          if (d == null) return null;
+                          return <span className="font-semibold" style={{ color: d > 0 ? "var(--labs-success)" : d < 0 ? "var(--labs-danger)" : "var(--labs-text-muted)" }}>{d > 0 ? `+${d}` : d === 0 ? "=" : d}</span>;
+                        })()}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
@@ -874,6 +934,66 @@ export default function LabsResults({ params }: LabsResultsProps) {
                       )}
                     </div>
                   )}
+
+                  {(() => {
+                    const prevList = previousRatingsMap[w.id];
+                    if (!prevList || prevList.length === 0) return null;
+                    if (tasting?.status !== "reveal" && tasting?.status !== "archived" && tasting?.status !== "completed") return null;
+                    const isHistExpanded = historyExpanded[w.id] || false;
+                    const mostRecent = prevList[0];
+                    const histDelta = w.myRating?.overall != null ? w.myRating.overall - mostRecent.overall : null;
+                    return (
+                      <div className="mt-3" data-testid={`results-history-${w.id}`}>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setHistoryExpanded(prev => ({ ...prev, [w.id]: !isHistExpanded })); }}
+                          style={{ background: "color-mix(in srgb, var(--labs-accent) 6%, transparent)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "8px 12px", borderRadius: 8, fontFamily: "inherit" }}
+                          data-testid={`button-toggle-history-${w.id}`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" style={{ color: "var(--labs-accent)" }} />
+                            <span className="text-xs font-medium" style={{ color: "var(--labs-text)" }}>
+                              Previously rated ({prevList.length})
+                            </span>
+                            {histDelta != null && (
+                              <span className="text-[10px] font-semibold" style={{ color: histDelta > 0 ? "var(--labs-success)" : histDelta < 0 ? "var(--labs-danger)" : "var(--labs-text-muted)" }}>
+                                {histDelta > 0 ? `↑+${histDelta}` : histDelta < 0 ? `↓${Math.abs(histDelta)}` : "="}
+                              </span>
+                            )}
+                          </div>
+                          <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--labs-text-muted)", transform: isHistExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+                        </button>
+                        {isHistExpanded && (
+                          <div className="mt-2 space-y-2">
+                            {prevList.map((pr, idx) => (
+                              <div key={idx} className="p-3 rounded-lg" style={{ background: "var(--labs-surface-elevated)", border: "1px solid var(--labs-border-subtle)" }} data-testid={`prev-result-${w.id}-${idx}`}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-[11px]" style={{ color: "var(--labs-text-muted)" }}>
+                                    {pr.tastingTitle || new Date(pr.date).toLocaleDateString()}
+                                  </span>
+                                  <span className="text-sm font-bold" style={{ color: "var(--labs-accent)" }}>{pr.overall}</span>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2 text-center">
+                                  {[
+                                    { label: "N", value: pr.nose },
+                                    { label: "T", value: pr.taste },
+                                    { label: "F", value: pr.finish },
+                                    { label: "B", value: pr.balance },
+                                  ].map(d => (
+                                    <div key={d.label}>
+                                      <p className="text-[9px]" style={{ color: "var(--labs-text-muted)" }}>{d.label}</p>
+                                      <p className="text-xs font-semibold" style={{ color: "var(--labs-text-secondary)" }}>{d.value || "—"}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                                {pr.date && <p className="text-[9px] mt-1" style={{ color: "var(--labs-text-muted)" }}>{new Date(pr.date).toLocaleDateString()}</p>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>

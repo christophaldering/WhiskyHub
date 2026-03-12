@@ -6605,6 +6605,7 @@ Return ONLY valid JSON object. If you cannot identify any whisky, return {"whisk
               caskInfluence: w.caskInfluence,
               peatLevel: w.peatLevel,
               imageUrl: w.imageUrl,
+              whiskybaseId: w.whiskybaseId || null,
               myRating: myRating ? {
                 nose: myRating.nose,
                 taste: myRating.taste,
