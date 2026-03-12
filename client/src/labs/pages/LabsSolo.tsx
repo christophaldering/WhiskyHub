@@ -320,6 +320,7 @@ export default function LabsSolo() {
     if (unknownAge.trim()) body.age = unknownAge.trim();
     if (unknownAbv.trim()) body.abv = unknownAbv.trim();
     if (unknownCask.trim()) body.caskType = unknownCask.trim();
+    if (matchedWhiskyRegion) body.region = matchedWhiskyRegion;
     if (unknownWbId.trim()) body.whiskybaseId = unknownWbId.trim();
     if (soloVoiceMemo) {
       if (soloVoiceMemo.audioUrl) body.voiceMemoUrl = soloVoiceMemo.audioUrl;
@@ -407,22 +408,35 @@ export default function LabsSolo() {
   const barcodeScannerRef = useRef<any>(null);
   const barcodeVideoRef = useRef<HTMLDivElement>(null);
 
-  const [previousRatings, setPreviousRatings] = useState<{ date: string; tastingTitle: string; nose: number; taste: number; finish: number; balance: number; overall: number }[]>([]);
+  const [previousRatings, setPreviousRatings] = useState<{ date: string; tastingTitle: string; source: string; nose: number; taste: number; finish: number; balance: number; overall: number }[]>([]);
   const [prevRatingsExpanded, setPrevRatingsExpanded] = useState(false);
   const [matchedWhiskyRegion, setMatchedWhiskyRegion] = useState("");
   const [matchedWhiskyCountry, setMatchedWhiskyCountry] = useState("");
 
-  const fetchPreviousRatings = useCallback(async (whiskyId: string) => {
+  const fetchPreviousRatings = useCallback(async (whiskyId: string, whiskyNameForJournal?: string) => {
     if (!pid) { setPreviousRatings([]); return; }
     try {
-      const res = await fetch(`/api/participants/${pid}/tasting-history`, { headers: { "x-participant-id": pid } });
-      if (!res.ok) { setPreviousRatings([]); return; }
-      const history = await res.json();
       const prev: typeof previousRatings = [];
-      for (const tasting of history) {
-        for (const w of tasting.whiskies || []) {
-          if (w.id === whiskyId && w.myRating) {
-            prev.push({ date: tasting.date || "", tastingTitle: tasting.title || "", nose: w.myRating.nose, taste: w.myRating.taste, finish: w.myRating.finish, balance: w.myRating.balance, overall: w.myRating.overall });
+      const [historyRes, journalRes] = await Promise.all([
+        fetch(`/api/participants/${pid}/tasting-history`, { headers: { "x-participant-id": pid } }),
+        fetch(`/api/journal/${pid}?status=final`, { headers: { "x-participant-id": pid } }),
+      ]);
+      if (historyRes.ok) {
+        const history = await historyRes.json();
+        for (const tasting of history) {
+          for (const w of tasting.whiskies || []) {
+            if (w.id === whiskyId && w.myRating) {
+              prev.push({ date: tasting.date || "", tastingTitle: tasting.title || "", source: "tasting", nose: w.myRating.nose, taste: w.myRating.taste, finish: w.myRating.finish, balance: w.myRating.balance, overall: w.myRating.overall });
+            }
+          }
+        }
+      }
+      if (journalRes.ok && whiskyNameForJournal) {
+        const entries = await journalRes.json();
+        const nameNorm = whiskyNameForJournal.trim().toLowerCase();
+        for (const e of entries) {
+          if ((e.whiskyName || e.title || "").trim().toLowerCase() === nameNorm && e.personalScore != null) {
+            prev.push({ date: e.createdAt || e.updatedAt || "", tastingTitle: e.title || "Solo dram", source: "journal", nose: 0, taste: 0, finish: 0, balance: 0, overall: Math.round(e.personalScore) });
           }
         }
       }
@@ -673,7 +687,7 @@ export default function LabsSolo() {
     setTimeout(() => setAcceptedBanner(false), 3500);
     setTimeout(() => { ratingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 300);
     if (cand.whiskyId) {
-      fetchPreviousRatings(cand.whiskyId);
+      fetchPreviousRatings(cand.whiskyId, cand.name);
       fetch(`/api/labs/explore/whiskies/${cand.whiskyId}`, { headers: pid ? { "x-participant-id": pid } : {} })
         .then(r => r.ok ? r.json() : null)
         .then(w => {
@@ -1479,7 +1493,7 @@ export default function LabsSolo() {
     const renderDelta = (curr: number, prev: number) => {
       const d = curr - prev;
       if (d === 0) return <span style={{ color: "var(--labs-text-muted)", fontSize: 11 }}>=</span>;
-      return <span style={{ color: d > 0 ? "var(--labs-success)" : "var(--labs-danger)", fontSize: 11, fontWeight: 600 }}>{d > 0 ? `+${d}` : d}</span>;
+      return <span style={{ color: d > 0 ? "var(--labs-success)" : "var(--labs-danger)", fontSize: 11, fontWeight: 600 }}>{d > 0 ? `\u2191+${d}` : `\u2193${d}`}</span>;
     };
     return (
       <div className="labs-fade-in" style={{ padding: "16px" }} data-testid="labs-solo-page">
@@ -1508,7 +1522,7 @@ export default function LabsSolo() {
                 <span style={{ color: "var(--labs-text-muted)", fontWeight: 500, textAlign: "right" }}>{t("m2.solo.now", "Now")}</span>
                 <span style={{ color: "var(--labs-text-muted)", fontWeight: 500, textAlign: "right" }}>{t("m2.solo.before", "Before")}</span>
                 <span style={{ color: "var(--labs-text-muted)", fontWeight: 500, textAlign: "center" }}></span>
-                {detailTouched && dims.map(d => (
+                {detailTouched && lastPrev.source === "tasting" && dims.map(d => (
                   <React.Fragment key={d.key}>
                     <span style={{ color: "var(--labs-text-secondary)" }}>{d.label}</span>
                     <span style={{ color: "var(--labs-text)", fontWeight: 600, textAlign: "right" }}>{detailedScores[d.key]}</span>
@@ -1516,10 +1530,12 @@ export default function LabsSolo() {
                     <span style={{ textAlign: "center" }}>{renderDelta(detailedScores[d.key], lastPrev[d.key])}</span>
                   </React.Fragment>
                 ))}
-                <span style={{ color: "var(--labs-text)", fontWeight: 700, borderTop: detailTouched ? "1px solid var(--labs-border)" : "none", paddingTop: detailTouched ? 6 : 0 }}>Overall</span>
-                <span style={{ color: "var(--labs-accent)", fontWeight: 700, textAlign: "right", borderTop: detailTouched ? "1px solid var(--labs-border)" : "none", paddingTop: detailTouched ? 6 : 0 }}>{currentOverall}</span>
-                <span style={{ color: "var(--labs-text-secondary)", textAlign: "right", borderTop: detailTouched ? "1px solid var(--labs-border)" : "none", paddingTop: detailTouched ? 6 : 0 }}>{lastPrev.overall}</span>
-                <span style={{ textAlign: "center", borderTop: detailTouched ? "1px solid var(--labs-border)" : "none", paddingTop: detailTouched ? 6 : 0 }}>{renderDelta(currentOverall, lastPrev.overall)}</span>
+                {(() => { const showBorder = detailTouched && lastPrev.source === "tasting"; return (<>
+                <span style={{ color: "var(--labs-text)", fontWeight: 700, borderTop: showBorder ? "1px solid var(--labs-border)" : "none", paddingTop: showBorder ? 6 : 0 }}>Overall</span>
+                <span style={{ color: "var(--labs-accent)", fontWeight: 700, textAlign: "right", borderTop: showBorder ? "1px solid var(--labs-border)" : "none", paddingTop: showBorder ? 6 : 0 }}>{currentOverall}</span>
+                <span style={{ color: "var(--labs-text-secondary)", textAlign: "right", borderTop: showBorder ? "1px solid var(--labs-border)" : "none", paddingTop: showBorder ? 6 : 0 }}>{lastPrev.overall}</span>
+                <span style={{ textAlign: "center", borderTop: showBorder ? "1px solid var(--labs-border)" : "none", paddingTop: showBorder ? 6 : 0 }}>{renderDelta(currentOverall, lastPrev.overall)}</span>
+                </>); })()}
               </div>
               <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginTop: 8 }}>
                 {lastPrev.tastingTitle || new Date(lastPrev.date).toLocaleDateString()}
@@ -1833,15 +1849,20 @@ export default function LabsSolo() {
               {previousRatings.map((pr, idx) => (
                 <div key={idx} style={{ padding: "10px 12px", borderRadius: 8, background: "color-mix(in srgb, var(--labs-accent) 6%, transparent)", border: "1px solid var(--labs-border)" }} data-testid={`prev-rating-${idx}`}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-                    <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{pr.tastingTitle || new Date(pr.date).toLocaleDateString()}</span>
+                    <div>
+                      <span style={{ fontSize: 12, color: "var(--labs-text-muted)" }}>{pr.tastingTitle || new Date(pr.date).toLocaleDateString()}</span>
+                      <span className="labs-badge" style={{ fontSize: 9, marginLeft: 6, opacity: 0.7 }}>{pr.source === "journal" ? "Solo" : "Tasting"}</span>
+                    </div>
                     <span style={{ fontSize: 18, fontWeight: 700, color: "var(--labs-accent)" }}>{pr.overall}</span>
                   </div>
-                  <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--labs-text-secondary)" }}>
-                    <span>N {pr.nose}</span>
-                    <span>T {pr.taste}</span>
-                    <span>F {pr.finish}</span>
-                    <span>B {pr.balance}</span>
-                  </div>
+                  {pr.source === "tasting" && (
+                    <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--labs-text-secondary)" }}>
+                      <span>N {pr.nose}</span>
+                      <span>T {pr.taste}</span>
+                      <span>F {pr.finish}</span>
+                      <span>B {pr.balance}</span>
+                    </div>
+                  )}
                   {pr.date && <div style={{ fontSize: 10, color: "var(--labs-text-muted)", marginTop: 4 }}>{new Date(pr.date).toLocaleDateString()}</div>}
                 </div>
               ))}
