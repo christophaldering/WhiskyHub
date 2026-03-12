@@ -789,6 +789,39 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
 
   const renderSignedOutView = () => (
     <>
+      {(() => {
+        const ri = mapRouteToCounterpart(location);
+        return (
+          <button
+            onClick={() => { onClose(); navigate(ri.target); }}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              padding: "14px 16px",
+              marginBottom: 12,
+              background: "transparent",
+              border: `1px solid ${v.border}`,
+              borderRadius: 12,
+              cursor: "pointer",
+              color: v.text,
+              fontSize: 14,
+              fontWeight: 500,
+              fontFamily: "system-ui, sans-serif",
+            }}
+            data-testid="m2-profile-switch-version-signedout"
+          >
+            {ri.isLabs
+              ? <Layout style={{ width: 16, height: 16, color: v.accent }} />
+              : <FlaskConical style={{ width: 16, height: 16, color: v.accent }} />}
+            {ri.isLabs
+              ? (i18n.language === "de" ? "Zu M2 wechseln" : "Switch to M2")
+              : (i18n.language === "de" ? "Zu Labs wechseln" : "Switch to Labs")}
+          </button>
+        );
+      })()}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <input
           type="email"
@@ -943,40 +976,6 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
           {i18n.language === "de" ? "English" : "Deutsch"}
         </button>
       </div>
-
-      {(() => {
-        const ri = mapRouteToCounterpart(location);
-        return (
-          <button
-            onClick={() => { onClose(); navigate(ri.target); }}
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              padding: "14px 16px",
-              marginTop: 8,
-              background: "transparent",
-              border: `1px solid ${v.border}`,
-              borderRadius: 12,
-              cursor: "pointer",
-              color: v.text,
-              fontSize: 14,
-              fontWeight: 500,
-              fontFamily: "system-ui, sans-serif",
-            }}
-            data-testid="m2-profile-switch-version-signedout"
-          >
-            {ri.isLabs
-              ? <Layout style={{ width: 16, height: 16, color: v.accent }} />
-              : <FlaskConical style={{ width: 16, height: 16, color: v.accent }} />}
-            {ri.isLabs
-              ? (i18n.language === "de" ? "Zu M2 wechseln" : "Switch to M2")
-              : (i18n.language === "de" ? "Zu Labs wechseln" : "Switch to Labs")}
-          </button>
-        );
-      })()}
 
       <div style={{ height: 24 }} />
     </>
