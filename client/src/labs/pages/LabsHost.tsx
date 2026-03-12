@@ -21,6 +21,56 @@ interface LabsHostProps {
   params?: { id?: string };
 }
 
+const REVEAL_DEFAULT_ORDER: string[][] = [
+  ["name"],
+  ["distillery", "age", "abv", "region", "country", "category", "caskInfluence", "bottler", "vintage", "peatLevel", "ppm", "price", "wbId", "wbScore", "hostNotes", "hostSummary"],
+  ["image"],
+];
+
+function getRevealState(tasting: any, whiskyCount: number) {
+  let stepGroups = REVEAL_DEFAULT_ORDER;
+  try {
+    if (tasting.revealOrder) {
+      const parsed = JSON.parse(tasting.revealOrder);
+      if (Array.isArray(parsed) && parsed.length > 0) stepGroups = parsed;
+    }
+  } catch {}
+  const maxSteps = stepGroups.length;
+  const revealIndex = tasting.revealIndex ?? 0;
+  const revealStep = tasting.revealStep ?? 0;
+  const allRevealed = whiskyCount > 0 && revealIndex >= whiskyCount - 1 && revealStep >= maxSteps;
+
+  const stepLabels = stepGroups.map((group: string[]) => {
+    if (group.includes("name")) return "Name";
+    if (group.includes("image")) return "Image";
+    if (group.includes("distillery") || group.length > 2) return "Details";
+    return group[0] || "Step";
+  });
+
+  let nextLabel = "Reveal Next";
+  if (allRevealed) {
+    nextLabel = "All Revealed";
+  } else if (revealStep < maxSteps) {
+    const lbl = stepLabels[revealStep];
+    nextLabel = lbl ? `Reveal ${lbl}` : "Reveal Next";
+  } else {
+    nextLabel = "Next Dram";
+  }
+
+  const revealedFields = new Set<string>();
+  for (let s = 0; s < revealStep && s < stepGroups.length; s++) {
+    for (const f of stepGroups[s]) revealedFields.add(f);
+  }
+
+  return { revealIndex, revealStep, maxSteps, allRevealed, stepLabels, nextLabel, revealedFields, stepGroups };
+}
+
+function isFieldRevealed(rv: ReturnType<typeof getRevealState> | null, fieldOrGroup: string | string[]): boolean {
+  if (!rv) return true;
+  const fields = Array.isArray(fieldOrGroup) ? fieldOrGroup : [fieldOrGroup];
+  return fields.some(f => rv.revealedFields.has(f));
+}
+
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   draft: { label: "Draft", color: "var(--labs-text-muted)", bg: "var(--labs-surface)" },
   open: { label: "Live", color: "var(--labs-success)", bg: "var(--labs-success-muted)" },
@@ -848,6 +898,92 @@ function MobileCompanion({
         </div>
       )}
 
+      {(() => {
+        const showBlindReveal = tasting.blindMode && !tasting.guidedMode && (isLive || tasting.status === "reveal");
+        if (!showBlindReveal || whiskyCount === 0) return null;
+        const rv = getRevealState(tasting, whiskyCount);
+        const currentWhisky = whiskies[rv.revealIndex];
+        return (
+          <div className="labs-card p-4 mb-4" data-testid="mobile-reveal-state">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <p className="labs-section-label mb-0" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Eye className="w-3.5 h-3.5" style={{ color: "var(--labs-info)" }} />
+                Reveal Progress
+              </p>
+              <span className="labs-badge" style={{ background: rv.allRevealed ? "var(--labs-success-muted)" : "var(--labs-info-muted)", color: rv.allRevealed ? "var(--labs-success)" : "var(--labs-info)", fontSize: 10 }}>
+                {rv.allRevealed ? "Complete" : `Dram ${rv.revealIndex + 1} of ${whiskyCount}`}
+              </span>
+            </div>
+
+            {currentWhisky && !rv.allRevealed && (
+              <div className="flex items-center gap-3 mb-3">
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
+                  style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                >
+                  {String.fromCharCode(65 + rv.revealIndex)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>
+                    {isFieldRevealed(rv, "name") ? (currentWhisky.name || `Whisky ${rv.revealIndex + 1}`) : `Dram ${String.fromCharCode(65 + rv.revealIndex)} (Blind)`}
+                  </p>
+                  {isFieldRevealed(rv, ["distillery", "age", "abv"]) && (
+                    <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
+                      {[currentWhisky.distillery, currentWhisky.age ? `${currentWhisky.age}y` : null, currentWhisky.abv ? `${currentWhisky.abv}%` : null].filter(Boolean).join(" · ") || "No details"}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-1 mb-1">
+              {rv.stepLabels.map((label: string, idx: number) => (
+                <div
+                  key={label}
+                  className="flex-1 h-1.5 rounded-full"
+                  style={{
+                    background: idx < rv.revealStep ? "var(--labs-accent)" : "var(--labs-border)",
+                    transition: "background 300ms ease",
+                  }}
+                />
+              ))}
+            </div>
+            <div className="flex justify-between">
+              {rv.stepLabels.map((label: string, idx: number) => (
+                <span key={label} className="text-[10px]" style={{ color: idx < rv.revealStep ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
+                  {label}
+                </span>
+              ))}
+            </div>
+
+            {whiskyCount > 1 && (
+              <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+                {whiskies.map((_: any, i: number) => {
+                  let bg = "var(--labs-border)";
+                  let fg = "var(--labs-text-muted)";
+                  if (i < rv.revealIndex || (i === rv.revealIndex && rv.revealStep >= rv.maxSteps)) {
+                    bg = "var(--labs-success)";
+                    fg = "var(--labs-bg)";
+                  } else if (i === rv.revealIndex) {
+                    bg = "var(--labs-accent)";
+                    fg = "var(--labs-bg)";
+                  }
+                  return (
+                    <div
+                      key={i}
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                      style={{ background: bg, color: fg }}
+                    >
+                      {i < rv.revealIndex || (i === rv.revealIndex && rv.revealStep >= rv.maxSteps) ? <Check className="w-3 h-3" /> : String.fromCharCode(65 + i)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {isDraft && (
           <button
@@ -881,17 +1017,21 @@ function MobileCompanion({
           </button>
         )}
 
-        {isLive && tasting.blindMode && (
-          <button
-            className="labs-btn-secondary flex items-center justify-center gap-2 w-full"
-            onClick={() => revealMutation.mutate()}
-            disabled={revealMutation.isPending}
-            data-testid="mobile-reveal"
-          >
-            <Eye className="w-4 h-4" />
-            Reveal Next
-          </button>
-        )}
+        {(isLive || tasting.status === "reveal") && tasting.blindMode && !tasting.guidedMode && whiskyCount > 0 && (() => {
+          const rv = getRevealState(tasting, whiskyCount);
+          return (
+            <button
+              className="labs-btn-secondary flex items-center justify-center gap-2 w-full"
+              onClick={() => revealMutation.mutate()}
+              disabled={revealMutation.isPending || rv.allRevealed}
+              style={{ opacity: rv.allRevealed ? 0.5 : 1 }}
+              data-testid="mobile-reveal"
+            >
+              {revealMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+              {rv.nextLabel}
+            </button>
+          );
+        })()}
 
         {isLive && (
           <button
@@ -929,29 +1069,50 @@ function MobileCompanion({
         )}
       </div>
 
-      {!isDraft && whiskyCount > 0 && (
-        <div className="mt-4">
-          <p className="labs-section-label">Whiskies ({whiskyCount})</p>
-          <div className="space-y-2">
-            {whiskies.map((w: any, i: number) => (
-              <div key={w.id} className="labs-card p-3 flex items-center gap-2" data-testid={`mobile-whisky-readonly-${w.id}`}>
-                <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
-                  style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
-                >
-                  {String.fromCharCode(65 + i)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{w.name || `Whisky ${i + 1}`}</p>
-                  <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
-                    {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ") || "No details"}
-                  </p>
-                </div>
-              </div>
-            ))}
+      {!isDraft && whiskyCount > 0 && (() => {
+        const rv = tasting.blindMode && !tasting.guidedMode ? getRevealState(tasting, whiskyCount) : null;
+        return (
+          <div className="mt-4">
+            <p className="labs-section-label">Whiskies ({whiskyCount})</p>
+            <div className="space-y-2">
+              {whiskies.map((w: any, i: number) => {
+                const isRevealed = !rv || i < rv.revealIndex || (i === rv.revealIndex && rv.revealStep >= rv.maxSteps);
+                const isActive = rv && i === rv.revealIndex && rv.revealStep < rv.maxSteps;
+                const isHidden = rv && !isRevealed && !isActive;
+                const itemRv = isActive ? rv : null;
+                const showName = isRevealed || isFieldRevealed(itemRv, "name");
+                const showDetails = isRevealed || isFieldRevealed(itemRv, ["distillery", "age", "abv"]);
+                return (
+                  <div key={w.id} className="labs-card p-3 flex items-center gap-2" style={{ opacity: isHidden ? 0.4 : 1, transition: "opacity 300ms" }} data-testid={`mobile-whisky-readonly-${w.id}`}>
+                    <div
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+                      style={{
+                        background: isRevealed ? "var(--labs-success-muted)" : isActive ? "var(--labs-accent-muted)" : "var(--labs-surface-elevated)",
+                        color: isRevealed ? "var(--labs-success)" : isActive ? "var(--labs-accent)" : "var(--labs-text-muted)",
+                      }}
+                    >
+                      {isRevealed ? <Check className="w-3 h-3" /> : String.fromCharCode(65 + i)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{showName ? (w.name || `Whisky ${i + 1}`) : `Dram ${String.fromCharCode(65 + i)}`}</p>
+                      <p className="text-xs truncate" style={{ color: "var(--labs-text-muted)" }}>
+                        {showDetails
+                          ? ([w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null].filter(Boolean).join(" · ") || "No details")
+                          : (isHidden ? "Hidden" : "Partially revealed")}
+                      </p>
+                    </div>
+                    {isActive && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}>
+                        Active
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {pid && whiskies.length > 0 && (
         <div style={{ marginTop: 16 }}>
@@ -3317,37 +3478,93 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           </div>
         </div>
 
-        {tasting.blindMode && (tasting.status === "open" || tasting.status === "closed" || tasting.status === "reveal") && (
-          <div>
-            <h2 className="labs-section-label">Reveal Controls</h2>
-            <div className="labs-card p-4">
-              <div className="flex flex-wrap gap-2">
-                {(tasting.status === "open" || tasting.status === "closed") && (
-                  <button
-                    className="labs-btn-secondary flex items-center gap-2"
-                    onClick={() => statusMutation.mutate({ status: "reveal" })}
-                    disabled={statusMutation.isPending}
-                    data-testid={tasting.status === "open" ? "labs-host-reveal-mode" : "labs-host-enter-reveal"}
-                  >
-                    <Eye className="w-4 h-4" />
-                    Enter Reveal
-                  </button>
-                )}
-                {tasting.status === "reveal" && (
-                  <button
-                    className="labs-btn-primary flex items-center gap-2"
-                    onClick={() => revealMutation.mutate()}
-                    disabled={revealMutation.isPending}
-                    data-testid="labs-host-reveal-next"
-                  >
-                    <Eye className="w-4 h-4" />
-                    Reveal Next
-                  </button>
+        {tasting.blindMode && (tasting.status === "open" || tasting.status === "closed" || tasting.status === "reveal") && (() => {
+          const whiskyCount = (whiskies || []).length;
+          const rv = getRevealState(tasting, whiskyCount);
+          return (
+            <div>
+              <h2 className="labs-section-label">Reveal Controls</h2>
+              <div className="labs-card p-4 space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  {(tasting.status === "open" || tasting.status === "closed") && (
+                    <button
+                      className="labs-btn-secondary flex items-center gap-2"
+                      onClick={() => statusMutation.mutate({ status: "reveal" })}
+                      disabled={statusMutation.isPending}
+                      data-testid={tasting.status === "open" ? "labs-host-reveal-mode" : "labs-host-enter-reveal"}
+                    >
+                      <Eye className="w-4 h-4" />
+                      Enter Reveal
+                    </button>
+                  )}
+                  {tasting.status === "reveal" && whiskyCount > 0 && (
+                    <button
+                      className="labs-btn-primary flex items-center gap-2"
+                      onClick={() => revealMutation.mutate()}
+                      disabled={revealMutation.isPending || rv.allRevealed}
+                      style={{ opacity: rv.allRevealed ? 0.5 : 1 }}
+                      data-testid="labs-host-reveal-next"
+                    >
+                      {revealMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+                      {rv.nextLabel}
+                    </button>
+                  )}
+                </div>
+
+                {tasting.status === "reveal" && whiskyCount > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium" style={{ color: "var(--labs-text-muted)" }}>
+                        {rv.allRevealed ? "All drams revealed" : `Dram ${rv.revealIndex + 1} of ${whiskyCount}`}
+                      </span>
+                      <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
+                        Step {Math.min(rv.revealStep, rv.maxSteps)}/{rv.maxSteps}
+                      </span>
+                    </div>
+                    <div className="flex gap-1 mb-1.5">
+                      {rv.stepLabels.map((label: string, idx: number) => (
+                        <div
+                          key={label}
+                          className="flex-1 h-1.5 rounded-full"
+                          style={{
+                            background: idx < rv.revealStep ? "var(--labs-accent)" : "var(--labs-border)",
+                            transition: "background 300ms ease",
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex justify-between mb-3">
+                      {rv.stepLabels.map((label: string, idx: number) => (
+                        <span key={label} className="text-[10px]" style={{ color: idx < rv.revealStep ? "var(--labs-accent)" : "var(--labs-text-muted)" }}>
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {(whiskies || []).map((_: any, i: number) => {
+                        const fullyDone = i < rv.revealIndex || (i === rv.revealIndex && rv.revealStep >= rv.maxSteps);
+                        const isCurrent = i === rv.revealIndex && rv.revealStep < rv.maxSteps;
+                        let bg = "var(--labs-border)";
+                        let fg = "var(--labs-text-muted)";
+                        if (fullyDone) { bg = "var(--labs-success)"; fg = "var(--labs-bg)"; }
+                        else if (isCurrent) { bg = "var(--labs-accent)"; fg = "var(--labs-bg)"; }
+                        return (
+                          <div
+                            key={i}
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold"
+                            style={{ background: bg, color: fg }}
+                          >
+                            {fullyDone ? <Check className="w-3 h-3" /> : String.fromCharCode(65 + i)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
       )}
 
@@ -3562,7 +3779,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
           </div>
         )}
 
-        {whiskyCount === 0 ? (
+        {(() => {
+          const rvDesktop = tasting.blindMode && !tasting.guidedMode && tasting.status === "reveal"
+            ? getRevealState(tasting, whiskyCount) : null;
+          return whiskyCount === 0 ? (
           <div className="labs-card p-6 text-center">
             <Wine className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--labs-text-muted)" }} />
             <p className="text-sm" style={{ color: "var(--labs-text-muted)" }}>
@@ -3576,6 +3796,12 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               const avgScore = whiskyRatings.length > 0
                 ? Math.round(whiskyRatings.reduce((sum: number, r: any) => sum + (r.overall || 0), 0) / whiskyRatings.length)
                 : null;
+              const rvRevealed = !rvDesktop || i < rvDesktop.revealIndex || (i === rvDesktop.revealIndex && rvDesktop.revealStep >= rvDesktop.maxSteps);
+              const rvActive = rvDesktop && i === rvDesktop.revealIndex && rvDesktop.revealStep < rvDesktop.maxSteps;
+              const rvHidden = rvDesktop && !rvRevealed && !rvActive;
+              const itemRvD = rvActive ? rvDesktop : null;
+              const rvShowName = rvRevealed || isFieldRevealed(itemRvD, "name");
+              const rvShowDetails = rvRevealed || isFieldRevealed(itemRvD, ["distillery", "age", "abv"]);
 
               if (editingWhiskyId === w.id) {
                 return (
@@ -3608,9 +3834,10 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                 <div
                   key={w.id}
                   className="labs-card p-4 flex items-center gap-3"
+                  style={{ opacity: rvHidden ? 0.4 : 1, transition: "opacity 300ms" }}
                   data-testid={`labs-host-whisky-${w.id}`}
                 >
-                  {w.imageUrl ? (
+                  {w.imageUrl && rvShowDetails ? (
                     <img
                       src={w.imageUrl}
                       alt={w.name}
@@ -3619,20 +3846,30 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
                   ) : (
                     <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
-                      style={{ background: "var(--labs-accent-muted)", color: "var(--labs-accent)" }}
+                      style={{
+                        background: rvRevealed && rvDesktop ? "var(--labs-success-muted)" : rvActive ? "var(--labs-info-muted)" : "var(--labs-accent-muted)",
+                        color: rvRevealed && rvDesktop ? "var(--labs-success)" : rvActive ? "var(--labs-info)" : "var(--labs-accent)",
+                      }}
                     >
-                      {String.fromCharCode(65 + i)}
+                      {rvRevealed && rvDesktop ? <Check className="w-3.5 h-3.5" /> : String.fromCharCode(65 + i)}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{w.name || `Whisky ${i + 1}`}</p>
+                    <p className="text-sm font-medium truncate">
+                      {rvShowName ? (w.name || `Whisky ${i + 1}`) : `Dram ${String.fromCharCode(65 + i)}`}
+                    </p>
                     <p className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
-                      {[w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country, w.caskType]
-                        .filter(Boolean)
-                        .join(" · ") || "No details"}
+                      {rvShowDetails
+                        ? ([w.distillery, w.age ? `${w.age}y` : null, w.abv ? `${w.abv}%` : null, w.country, w.caskType].filter(Boolean).join(" · ") || "No details")
+                        : (rvHidden ? "Hidden" : rvActive ? "Partially revealed" : "No details")}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {rvActive && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--labs-info-muted)", color: "var(--labs-info)" }}>
+                        Active
+                      </span>
+                    )}
                     <span className="text-xs" style={{ color: "var(--labs-text-muted)" }}>
                       {whiskyRatings.length}/{participantCount} rated
                     </span>
@@ -3688,7 +3925,8 @@ function ManageTasting({ tastingId }: { tastingId: string }) {
               );
             })}
           </div>
-        )}
+        );
+        })()}
       </div>
 
       {participantCount > 0 && !tasting.guidedMode && (
