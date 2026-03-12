@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Radar, Users, User, ArrowLeft, Compass, BookOpen, Bell, Download, X, Volume2, VolumeX, RefreshCw, Sun, Moon } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { participantApi } from "@/lib/api";
-import { getSession } from "@/lib/session";
+import { getSession, tryAutoResume } from "@/lib/session";
 import { playSoundscape, stopSoundscape, setVolume, type Soundscape } from "@/lib/ambient";
 import { queryClient } from "@/lib/queryClient";
 import M2ProfileMenu from "@/components/m2/M2ProfileMenu";
@@ -362,13 +362,23 @@ function useLabsTheme() {
 export default function LabsLayout({ children }: LabsLayoutProps) {
   const [location] = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
-  const { currentParticipant } = useAppStore();
+  const { currentParticipant, setParticipant } = useAppStore();
   const pwa = usePwaInstall();
   const mainRef = useRef<HTMLElement>(null);
   const { pullDistance, refreshing } = usePullToRefresh(mainRef);
   useHeartbeat();
   useFriendOnlineNotifications();
   const { theme, toggle: toggleTheme } = useLabsTheme();
+
+  useEffect(() => {
+    const session = getSession();
+    if (session.signedIn) return;
+    tryAutoResume().then((resumed) => {
+      if (!resumed && currentParticipant) {
+        setParticipant(null);
+      }
+    });
+  }, []);
 
   const isLabsHome = location === "/labs" || location === "/labs/";
 
