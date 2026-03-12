@@ -1206,7 +1206,7 @@ export default function LabsSolo() {
               background: "linear-gradient(135deg, var(--labs-accent), color-mix(in srgb, var(--labs-accent) 80%, black))",
               border: "none", cursor: "pointer", display: "flex", flexDirection: "column",
               alignItems: "center", gap: 10, marginBottom: 20,
-              boxShadow: "0 4px 20px rgba(212,162,86,0.25)",
+              boxShadow: "0 4px 20px color-mix(in srgb, var(--labs-accent) 25%, transparent)",
             }}
             data-testid="button-capture-photo"
           >

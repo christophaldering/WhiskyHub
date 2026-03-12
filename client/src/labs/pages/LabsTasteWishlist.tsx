@@ -16,9 +16,9 @@ import type { WishlistEntry } from "@shared/schema";
 type View = "list" | "form";
 
 const PRIORITY_COLORS: Record<string, { text: string; bg: string; border: string }> = {
-  high: { text: "var(--labs-danger)", bg: "rgba(212,106,106,0.1)", border: "rgba(212,106,106,0.2)" },
-  medium: { text: "var(--labs-accent)", bg: "var(--labs-accent-muted)", border: "rgba(212,162,86,0.2)" },
-  low: { text: "var(--labs-info)", bg: "rgba(106,168,212,0.1)", border: "rgba(106,168,212,0.2)" },
+  high: { text: "var(--labs-danger)", bg: "var(--labs-danger-muted)", border: "color-mix(in srgb, var(--labs-danger) 20%, transparent)" },
+  medium: { text: "var(--labs-accent)", bg: "var(--labs-accent-muted)", border: "color-mix(in srgb, var(--labs-accent) 20%, transparent)" },
+  low: { text: "var(--labs-info)", bg: "var(--labs-info-muted)", border: "color-mix(in srgb, var(--labs-info) 20%, transparent)" },
 };
 
 const PRIORITY_ICONS: Record<string, any> = { high: Flame, medium: Sparkles, low: Clock };
@@ -130,7 +130,7 @@ export default function LabsTasteWishlist() {
                           </div>
                           {entry.notes && <p className="text-xs mt-2" style={{ color: "var(--labs-text-muted)", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{entry.notes}</p>}
                           {entry.aiSummary && (
-                            <div className="mt-2.5 p-2.5 rounded-lg" style={{ background: "var(--labs-accent-muted)", border: "1px solid rgba(212,162,86,0.15)" }}>
+                            <div className="mt-2.5 p-2.5 rounded-lg" style={{ background: "var(--labs-accent-muted)", border: "1px solid color-mix(in srgb, var(--labs-accent) 15%, transparent)" }}>
                               <div className="flex items-center gap-1.5 mb-1">
                                 <Sparkles className="w-3 h-3" style={{ color: "var(--labs-accent)" }} />
                                 <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>Why Interesting</span>
@@ -319,7 +319,7 @@ function WishlistForm({ entry, onBack, onSave, isSaving, participantId }: {
         )}
 
         {aiSummary && (
-          <div className="labs-card p-3" style={{ border: "1px solid rgba(212,162,86,0.15)" }}>
+          <div className="labs-card p-3" style={{ border: "1px solid color-mix(in srgb, var(--labs-accent) 15%, transparent)" }}>
             <div className="flex items-center gap-1.5 mb-1">
               <Sparkles className="w-3 h-3" style={{ color: "var(--labs-accent)" }} />
               <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--labs-accent)" }}>AI Summary</span>

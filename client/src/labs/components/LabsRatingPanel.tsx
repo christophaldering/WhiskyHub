@@ -264,7 +264,7 @@ export default function LabsRatingPanel({
                         right: 8,
                         top: 8,
                         background: (voiceListening && voiceTarget === key) ? "var(--labs-danger)" : "var(--labs-accent-muted)",
-                        border: `1px solid ${(voiceListening && voiceTarget === key) ? "var(--labs-danger)" : "rgba(212,162,86,0.42)"}`,
+                        border: `1px solid ${(voiceListening && voiceTarget === key) ? "var(--labs-danger)" : "color-mix(in srgb, var(--labs-accent) 42%, transparent)"}`,
                         borderRadius: 999,
                         cursor: disabled ? "default" : "pointer",
                         width: 30,
@@ -274,7 +274,7 @@ export default function LabsRatingPanel({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        boxShadow: (voiceListening && voiceTarget === key) ? "0 0 0 4px rgba(212,106,106,0.25)" : "0 2px 8px rgba(0,0,0,0.22)",
+                        boxShadow: (voiceListening && voiceTarget === key) ? "0 0 0 4px color-mix(in srgb, var(--labs-danger) 25%, transparent)" : "0 2px 8px rgba(0,0,0,0.22)",
                         transition: "all 200ms ease",
                       }}
                     >

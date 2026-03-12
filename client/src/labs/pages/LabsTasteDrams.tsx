@@ -294,7 +294,7 @@ export default function LabsTasteDrams() {
               </h2>
               {selectedEntry.distillery && <div className="text-sm mt-1" style={{ color: "var(--labs-text-secondary)" }}>{selectedEntry.distillery}</div>}
               <div className="flex items-center gap-2 mt-1">
-                {selectedEntry.status === "draft" && <span className="labs-badge" style={{ background: "rgba(212,162,86,0.15)", color: "var(--labs-accent)", fontSize: 10 }}>Draft</span>}
+                {selectedEntry.status === "draft" && <span className="labs-badge" style={{ background: "color-mix(in srgb, var(--labs-accent) 15%, transparent)", color: "var(--labs-accent)", fontSize: 10 }}>Draft</span>}
                 {selectedEntry.createdAt && (
                   <span className="text-xs flex items-center gap-1" style={{ color: "var(--labs-text-muted)" }}>
                     <Calendar className="w-3 h-3" />{new Date(selectedEntry.createdAt).toLocaleDateString()}
@@ -555,7 +555,7 @@ export default function LabsTasteDrams() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="flex items-center gap-1.5">
                         <div className="text-sm font-semibold truncate" style={{ color: "var(--labs-text)" }}>{entry.whiskyName || entry.title || "—"}</div>
-                        {entry.status === "draft" && <span className="labs-badge" style={{ background: "rgba(212,162,86,0.15)", color: "var(--labs-accent)", fontSize: 10, padding: "2px 6px" }} data-testid={`labs-badge-draft-${entry.id}`}>Draft</span>}
+                        {entry.status === "draft" && <span className="labs-badge" style={{ background: "color-mix(in srgb, var(--labs-accent) 15%, transparent)", color: "var(--labs-accent)", fontSize: 10, padding: "2px 6px" }} data-testid={`labs-badge-draft-${entry.id}`}>Draft</span>}
                         {entry.source === "tasting" && <span className="labs-badge labs-badge-accent" style={{ fontSize: 10, padding: "2px 6px" }}>Tasting</span>}
                       </div>
                       {entry.distillery && <div className="text-xs mt-0.5" style={{ color: "var(--labs-text-secondary)" }}>{entry.distillery}</div>}
@@ -649,7 +649,7 @@ function ParsedNotesSection({ raw }: { raw: string }) {
                 {dim.chips.length > 0 && (
                   <div className="flex flex-wrap gap-1" style={{ marginBottom: dim.text ? 4 : 0 }}>
                     {dim.chips.map(chip => (
-                      <span key={chip} style={{ fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 999, background: "var(--labs-accent-muted)", color: "var(--labs-accent)", border: "1px solid rgba(212,162,86,0.2)" }}>{chip}</span>
+                      <span key={chip} style={{ fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 999, background: "var(--labs-accent-muted)", color: "var(--labs-accent)", border: "1px solid color-mix(in srgb, var(--labs-accent) 20%, transparent)" }}>{chip}</span>
                     ))}
                   </div>
                 )}
@@ -687,7 +687,7 @@ function VoiceMemoSection({ url, transcript, duration }: { url?: string | null; 
         <Mic className="w-3 h-3" /> Voice Memo {fmtDuration && <span style={{ fontWeight: 400, fontSize: 10 }}>({fmtDuration})</span>}
       </div>
       {url && (
-        <button type="button" onClick={togglePlay} className="inline-flex items-center gap-1.5 mb-2" style={{ padding: "6px 14px", borderRadius: 8, background: playing ? "rgba(212,106,106,0.15)" : "var(--labs-accent-muted)", border: `1px solid ${playing ? "rgba(212,106,106,0.3)" : "rgba(212,162,86,0.2)"}`, color: playing ? "var(--labs-danger)" : "var(--labs-accent)", fontSize: 12, fontWeight: 600, cursor: "pointer" }} data-testid="button-labs-play-voice-memo">
+        <button type="button" onClick={togglePlay} className="inline-flex items-center gap-1.5 mb-2" style={{ padding: "6px 14px", borderRadius: 8, background: playing ? "color-mix(in srgb, var(--labs-danger) 15%, transparent)" : "var(--labs-accent-muted)", border: `1px solid ${playing ? "color-mix(in srgb, var(--labs-danger) 30%, transparent)" : "color-mix(in srgb, var(--labs-accent) 20%, transparent)"}`, color: playing ? "var(--labs-danger)" : "var(--labs-accent)", fontSize: 12, fontWeight: 600, cursor: "pointer" }} data-testid="button-labs-play-voice-memo">
           {playing ? <Pause className="w-3 h-3" /> : <PlayIcon className="w-3 h-3" />} {playing ? "Pause" : "Play"}
         </button>
       )}

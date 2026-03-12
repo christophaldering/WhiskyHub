@@ -95,7 +95,7 @@ function ChapterCard({ chapter, index }: { chapter: ChapterData; index: number }
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center labs-serif text-sm font-bold"
           style={{
-            background: chapter.isDown ? "var(--labs-danger-muted, rgba(212,106,106,0.15))" : "var(--labs-accent-muted)",
+            background: chapter.isDown ? "var(--labs-danger-muted)" : "var(--labs-accent-muted)",
             color: chapter.isDown ? downColor : "var(--labs-accent)",
           }}
         >

@@ -380,13 +380,13 @@ export default function LabsVoiceMemoRecorder({ onMemoChange, memo, participantI
             alignItems: "center",
             gap: 14,
             padding: "14px 16px",
-            background: "linear-gradient(135deg, rgba(212,162,86,0.18) 0%, rgba(212,162,86,0.08) 42%, rgba(26,23,20,0.92) 100%)",
-            border: "1px solid rgba(212,162,86,0.32)",
+            background: "linear-gradient(135deg, color-mix(in srgb, var(--labs-accent) 18%, transparent) 0%, color-mix(in srgb, var(--labs-accent) 8%, transparent) 42%, color-mix(in srgb, var(--labs-bg) 92%, transparent) 100%)",
+            border: "1px solid color-mix(in srgb, var(--labs-accent) 32%, transparent)",
             borderRadius: "var(--labs-radius)",
             cursor: "pointer",
             width: "100%",
             fontFamily: "inherit",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 20px rgba(0,0,0,0.28)",
+            boxShadow: "inset 0 1px 0 color-mix(in srgb, var(--labs-text) 6%, transparent), 0 8px 20px rgba(0,0,0,0.18)",
             transition: "transform 180ms ease, box-shadow 180ms ease",
             textAlign: "left" as const,
           }}
@@ -406,7 +406,7 @@ export default function LabsVoiceMemoRecorder({ onMemoChange, memo, participantI
               justifyContent: "center",
               flexShrink: 0,
               animation: "cs-orb-breathe 3s ease-in-out infinite",
-              boxShadow: "0 2px 12px rgba(212,162,86,0.35)",
+              boxShadow: "0 2px 12px color-mix(in srgb, var(--labs-accent) 35%, transparent)",
             }}
           >
             <Mic style={{ width: 20, height: 20, color: "var(--labs-accent-dark)" }} />
@@ -425,7 +425,7 @@ export default function LabsVoiceMemoRecorder({ onMemoChange, memo, participantI
               padding: "0 10px",
               borderRadius: 999,
               background: "var(--labs-accent-muted)",
-              border: "1px solid rgba(212,162,86,0.32)",
+              border: "1px solid color-mix(in srgb, var(--labs-accent) 32%, transparent)",
               fontSize: 11,
               fontWeight: 600,
               color: "var(--labs-accent)",
@@ -455,8 +455,8 @@ export default function LabsVoiceMemoRecorder({ onMemoChange, memo, participantI
           100% { transform: translateX(200%); }
         }
         @keyframes cs-orb-breathe {
-          0%, 100% { transform: scale(1); box-shadow: 0 2px 12px rgba(212,162,86,0.35); }
-          50% { transform: scale(1.06); box-shadow: 0 4px 18px rgba(212,162,86,0.5); }
+          0%, 100% { transform: scale(1); box-shadow: 0 2px 12px color-mix(in srgb, var(--labs-accent) 35%, transparent); }
+          50% { transform: scale(1.06); box-shadow: 0 4px 18px color-mix(in srgb, var(--labs-accent) 50%, transparent); }
         }
       `}</style>
     </div>
