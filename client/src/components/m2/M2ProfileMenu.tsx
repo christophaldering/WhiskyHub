@@ -122,6 +122,10 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
   const [guestName, setGuestName] = useState("");
   const [guestPin, setGuestPin] = useState("");
 
+  const [labsTheme, setLabsThemeState] = useState<"dark" | "light">(() => {
+    try { return (localStorage.getItem("cs_labs_theme") as "dark" | "light") || "dark"; } catch { return "dark"; }
+  });
+
   const refreshSession = useCallback(() => {
     setSession(getSession());
   }, []);
@@ -200,9 +204,6 @@ export default function M2ProfileMenu({ open, onClose }: M2ProfileMenuProps) {
     setCurrentTheme(newTheme);
   };
 
-  const [labsTheme, setLabsThemeState] = useState<"dark" | "light">(() => {
-    try { return (localStorage.getItem("cs_labs_theme") as "dark" | "light") || "dark"; } catch { return "dark"; }
-  });
   const toggleLabsTheme = () => {
     const next = labsTheme === "dark" ? "light" : "dark";
     setLabsThemeState(next);

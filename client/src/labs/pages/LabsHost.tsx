@@ -2700,9 +2700,11 @@ function LabsSettingsPanel({
 
   const handleDelete = async () => {
     try {
-      await tastingApi.hardDelete(tastingId, pid);
+      await tastingApi.updateStatus(tastingId, "deleted", undefined, pid);
       navigate("/labs/tastings");
-    } catch {}
+    } catch (e: any) {
+      console.error("Delete failed:", e);
+    }
   };
 
   return (
