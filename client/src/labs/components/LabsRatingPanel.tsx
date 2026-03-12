@@ -287,7 +287,7 @@ export default function LabsRatingPanel({
           </div>
         )}
 
-        {showFlavors && (
+        {showFlavors && (<>
         <div style={{ borderRadius: 8, overflow: "hidden", border: "1px solid var(--labs-border-subtle)" }}>
           {categories.map((cat) => {
             const isExpanded = expandedCats[cat.id] || false;
@@ -403,7 +403,7 @@ export default function LabsRatingPanel({
             <Plus style={{ width: 16, height: 16 }} />
           </button>
         </div>
-        )}
+        </>)}
       </div>
     );
   };

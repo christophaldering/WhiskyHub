@@ -23,18 +23,7 @@ const resources = {
         uploadTooLarge: "File is too large. Maximum size: 2 MB.",
         uploadInvalidType: "Format not supported. Please use JPG, PNG, WebP, or GIF.",
       },
-      nav: {
-        tasting: "Tasting",
-        taste: "Taste",
-        myTaste: "Taste",
-        host: "Host",
-        sessions: "Sessions",
-        calendar: "Calendar",
-        join: "Joyn",
-        log: "Log",
-        discover: "Discover",
-        explore: "Explore",
-      },
+      
       emptyState: {
         dramsTitle: "No drams yet",
         dramsDesc: "Start logging the whiskies you taste.",
@@ -642,6 +631,13 @@ const resources = {
         backToLogin: "Back"
       },
       nav: {
+        tasting: "Tasting",
+        taste: "Taste",
+        myTaste: "Taste",
+        join: "Joyn",
+        log: "Log",
+        discover: "Discover",
+        explore: "Explore",
         lobby: "Home",
         backToTasting: "Cockpit",
         sessions: "Tastings",
@@ -5782,18 +5778,6 @@ const resources = {
         uploadTooLarge: "Datei ist zu groß. Maximale Größe: 2 MB.",
         uploadInvalidType: "Format nicht unterstützt. Bitte JPG, PNG, WebP oder GIF verwenden.",
       },
-      nav: {
-        tasting: "Tasting",
-        taste: "Taste",
-        myTaste: "Taste",
-        host: "Host",
-        sessions: "Tastings",
-        calendar: "Kalender",
-        join: "Joyn",
-        log: "Eintrag",
-        discover: "Entdecken",
-        explore: "Entdecken",
-      },
       emptyState: {
         dramsTitle: "Noch keine Drams",
         dramsDesc: "Beginne, deine verkosteten Whiskys zu dokumentieren.",
@@ -6401,6 +6385,13 @@ const resources = {
         backToLogin: "Zurück"
       },
       nav: {
+        tasting: "Tasting",
+        taste: "Taste",
+        myTaste: "Taste",
+        join: "Joyn",
+        log: "Eintrag",
+        discover: "Entdecken",
+        explore: "Entdecken",
         lobby: "Home",
         backToTasting: "Cockpit",
         sessions: "Tastings",
