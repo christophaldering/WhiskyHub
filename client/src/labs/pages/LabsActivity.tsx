@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { activityApi } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { FileText, Wine, Star, Activity, ChevronLeft } from "lucide-react";
@@ -24,6 +25,7 @@ function relTime(ts: string): string {
 }
 
 export default function LabsActivity() {
+  const [, navigate] = useLocation();
   const session = getSession();
   const pid = session.pid;
 
@@ -40,11 +42,11 @@ export default function LabsActivity() {
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-activity-page">
       <button
         onClick={() => navigate("/labs/home")}
-        className="flex items-center gap-1.5 text-xs mb-4"
-        style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-activity-back"
       >
-        <ChevronLeft className="w-3.5 h-3.5" /> Home
+        <ChevronLeft className="w-4 h-4" /> Home
       </button>
 
       <div className="flex items-center gap-2.5 mb-1">

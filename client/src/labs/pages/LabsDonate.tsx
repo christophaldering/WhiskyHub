@@ -1,21 +1,23 @@
 import { useTranslation } from "react-i18next";
+import { useLocation } from "wouter";
 import { Heart, ExternalLink, HandHeart, Eye, ChevronLeft } from "lucide-react";
 
 const HOSPIZ_NAME = "Christina-Kleintjes-Hospiz-Stiftung";
 const HOSPIZ_URL = "https://c-kleintjes-hospiz-stiftung.de";
 
 export default function LabsDonate() {
+  const [, navigate] = useLocation();
   const { t } = useTranslation();
 
   return (
     <div className="px-5 py-6 max-w-2xl mx-auto labs-fade-in" data-testid="labs-donate-page">
       <button
         onClick={() => navigate("/labs/about")}
-        className="flex items-center gap-1.5 text-xs mb-4"
-        style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }}
+        className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4"
+        style={{ color: "var(--labs-text-muted)" }}
         data-testid="labs-donate-back"
       >
-        <ChevronLeft className="w-3.5 h-3.5" /> About
+        <ChevronLeft className="w-4 h-4" /> About
       </button>
 
       <div className="flex items-center gap-2.5 mb-1">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "wouter";
 import { adminApi, feedbackApi } from "@/lib/api";
 import { apiRequest } from "@/lib/queryClient";
 import { useAIStatus } from "@/hooks/use-ai-status";
@@ -89,6 +90,7 @@ const labsSelect: React.CSSProperties = {
 };
 
 export default function LabsAdmin() {
+  const [, navigate] = useLocation();
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -136,8 +138,8 @@ export default function LabsAdmin() {
 
   return (
     <div className="px-4 py-6 labs-fade-in" data-testid="labs-admin-page">
-      <button onClick={() => navigate("/labs/home")} className="flex items-center gap-1.5 text-xs mb-4" style={{ color: "var(--labs-text-muted)", background: "none", border: "none", cursor: "pointer" }} data-testid="labs-admin-back">
-        <ChevronLeft className="w-3.5 h-3.5" /> Home
+      <button onClick={() => navigate("/labs/home")} className="labs-btn-ghost flex items-center gap-1 -ml-2 mb-4" style={{ color: "var(--labs-text-muted)" }} data-testid="labs-admin-back">
+        <ChevronLeft className="w-4 h-4" /> Home
       </button>
 
       <h1 className="labs-serif text-xl font-bold mb-3" style={{ color: "var(--labs-text)" }} data-testid="labs-admin-title">Admin Panel</h1>
